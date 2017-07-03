@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Collections.Concurrent;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -17,14 +15,15 @@ namespace EventStore.TestClient.Commands
         public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
-        private RequestMonitor _monitor = new RequestMonitor();
+        private readonly RequestMonitor _monitor = new RequestMonitor();
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            int clientsCnt = 1;
+            var clientsCnt = 1;
             long requestsCnt = 5000;
-            int streamsCnt = 1000;
-            int size = 256;
+            var streamsCnt = 1000;
+            var size = 256;
+            _monitor.Clear();
             if (args.Length > 0)
             {
                 if (args.Length < 2 || args.Length > 4)
@@ -69,7 +68,7 @@ namespace EventStore.TestClient.Commands
             var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
             //var streams = Enumerable.Range(0, streamsCnt).Select(x => string.Format("stream-{0}", x)).ToArray();
             var sw2 = new Stopwatch();
-            for (int i = 0; i < clientsCnt; i++)
+            for (var i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
                 long sent = 0;
@@ -119,7 +118,7 @@ namespace EventStore.TestClient.Commands
                         {
                             var elapsed = sw2.Elapsed;
                             sw2.Restart();
-                            context.Log.Trace("\nDONE TOTAL {0} WRITES IN {1} ({2:0.0}/s) [S:{3}, F:{4} (WEV:{5}, P:{6}, C:{7}, F:{8}, D:{9})].",
+                            context.Log.Trace("\nDID {0} TOTAL WRITES IN {1} ({2:0.0}/s) [S:{3}, F:{4} (WEV:{5}, P:{6}, C:{7}, F:{8}, D:{9})].",
                                               localAll, elapsed, 1000.0*100000/elapsed.TotalMilliseconds,
                                               succ, fail,
                                               wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
@@ -135,7 +134,7 @@ namespace EventStore.TestClient.Commands
 
                 threads.Add(new Thread(() =>
                 {
-                    for (int j = 0; j < count; ++j)
+                    for (var j = 0; j < count; ++j)
                     {
                         var corrid = Guid.NewGuid();
                         var write = new TcpClientMessageDto.WriteEvents(

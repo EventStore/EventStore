@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.Replication
                 {
                     ReplicaSubscription existingSubscr;
                     _subscriptions.TryGetValue(subscription.SubscriptionId, out existingSubscr);
-                    var msg = string.Format("There is already subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
+                    var msg = string.Format("There is already a subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
                                             subscription.SubscriptionId, existingSubscr, subscription);
                     Log.Error(msg);
                     subscription.SendBadRequestAndClose(message.CorrelationId, msg);
@@ -162,8 +162,8 @@ namespace EventStore.Core.Services.Replication
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc, "Exception during subscribing replica. Connection will be dropped.");
-                replica.SendBadRequestAndClose(correlationId, string.Format("Exception during subscribing replica. Connection will be dropped. Error: {0}", exc.Message));
+                Log.ErrorException(exc, "Exception while subscribing replica. Connection will be dropped.");
+                replica.SendBadRequestAndClose(correlationId, string.Format("Exception while subscribing replica. Connection will be dropped. Error: {0}", exc.Message));
                 return false;
             }
         }
@@ -176,7 +176,7 @@ namespace EventStore.Core.Services.Replication
                 {
                     // slave has some data, but doesn't have any epoch
                     // for now we'll just report error and close connection
-                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but doesn't have epochs.",
+                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
                                             replicaEndPoint, subscriptionId,
                                             string.Join(", ", epochs.Select(x => x.AsString())), logPosition);
                     Log.Info(msg);

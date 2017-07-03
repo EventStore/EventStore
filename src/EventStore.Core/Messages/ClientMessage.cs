@@ -81,6 +81,8 @@ namespace EventStore.Core.Messages
 
             public readonly IPrincipal User;
 
+            public DateTime Expires = DateTime.Now.AddSeconds(10);
+
             protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user)
             {
                 Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
@@ -866,7 +868,6 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-            public bool PreferRoundRobin { get; set; }
 
             public readonly int StartFrom;
             public readonly int MessageTimeoutMilliseconds;
@@ -880,6 +881,8 @@ namespace EventStore.Core.Messages
             
             public readonly string GroupName;
             public readonly string EventStreamId;
+            public int MaxSubscriberCount;
+            public string NamedConsumerStrategy;
             public int MaxCheckPointCount;
             public int MinCheckPointCount;
             public int CheckPointAfterMilliseconds;
@@ -887,8 +890,9 @@ namespace EventStore.Core.Messages
             public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
                 int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-                int liveBufferSize, int readbatchSize, bool preferRoundRobin,
+                int liveBufferSize, int readbatchSize,
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                int maxSubscriberCount, string namedConsumerStrategy,
                 IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -902,10 +906,11 @@ namespace EventStore.Core.Messages
                 BufferSize = bufferSize;
                 LiveBufferSize = liveBufferSize;
                 ReadBatchSize = readbatchSize;
-                PreferRoundRobin = preferRoundRobin;
                 MaxCheckPointCount = maxCheckPointCount;
                 MinCheckPointCount = minCheckPointCount;
                 CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+                MaxSubscriberCount = maxSubscriberCount;
+                NamedConsumerStrategy = namedConsumerStrategy;
             }
 
         }
@@ -939,7 +944,6 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-            public bool PreferRoundRobin { get; set; }
 
             public readonly int StartFrom;
             public readonly int MessageTimeoutMilliseconds;
@@ -953,15 +957,19 @@ namespace EventStore.Core.Messages
 
             public readonly string GroupName;
             public readonly string EventStreamId;
+            public int MaxSubscriberCount;
+            
             public int MaxCheckPointCount;
             public int MinCheckPointCount;
             public int CheckPointAfterMilliseconds;
+            public string NamedConsumerStrategy;
 
             public UpdatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                 string eventStreamId, string groupName, bool resolveLinkTos, int startFrom,
                 int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-                int liveBufferSize, int readbatchSize, bool preferRoundRobin,
+                int liveBufferSize, int readbatchSize,
                 int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
+                int maxSubscriberCount, string namedConsumerStrategy,
                 IPrincipal user, string username, string password)
                 : base(internalCorrId, correlationId, envelope, user)
             {
@@ -975,10 +983,11 @@ namespace EventStore.Core.Messages
                 BufferSize = bufferSize;
                 LiveBufferSize = liveBufferSize;
                 ReadBatchSize = readbatchSize;
-                PreferRoundRobin = preferRoundRobin;
                 MaxCheckPointCount = maxCheckPointCount;
                 MinCheckPointCount = minCheckPointCount;
                 CheckPointAfterMilliseconds = checkPointAfterMilliseconds;
+                MaxSubscriberCount = maxSubscriberCount;
+                NamedConsumerStrategy = namedConsumerStrategy;
             }
 
         }
@@ -1203,7 +1212,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        //End of persistens subscritions
+        //End of persistence subscriptions
 
 
         public class SubscribeToStream : ReadRequestMessage

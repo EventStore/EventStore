@@ -1,12 +1,12 @@
 # Event Store
 
 - [Documentation](http://docs.geteventstore.com)
-- [Download Binaries](http://geteventstore.com/downloads)
+- [Download Binaries](https://geteventstore.com/downloads)
 - [Quick Start](http://docs.geteventstore.com/server/latest)
 
 ## About
 
-This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at http://geteventstore.com.
+This is the repository for the open source version of Event Store, which now includes the clustering implementation for high availability. Further information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://geteventstore.com.
 
 **Development is on the “dev” branch (and feature branches). Please make any pull requests to the “dev” branch.**
 
@@ -14,15 +14,17 @@ This is the repository for the open source version of Event Store, which now inc
 
 Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine) it must be built for the platform on which you intend to run it.
 
-Binaries are available from http://geteventstore.com/downloads, however if you want to build it from source instructions for Windows and Linux are below.
+Binaries are available from https://geteventstore.com/downloads, however if you want to build it from source instructions for Windows and Linux are below.
 
 ### Debug Builds on Windows / .NET
 
 #### Prerequisites
 
 - .NET Framework 4.0+
-- Windows platform SDK with compilers (v7.1) or Visual C++ installed
+- Windows Platform SDK with compilers (v7.1) or Visual C++ installed
 - Git on `PATH`
+- Powershell Community Extensions installed (for packaging)
+- ExecutionPolicy for Powershell set to RemoteSigned or Unrestricted
 
 #### Building Event Store
 
@@ -61,9 +63,11 @@ Unfortunately Visual Studio runs these scripts in 32-bit PowerShell. Since it’
 #### Prerequisites
 
 - Git on `PATH`
-- Mono version 3.2.3 or greater on `PATH`
+- 64 bit Mono version 3.2.3 (minimum version, preferably later) development packages on `PATH`, and registered with `pkg-config` by way of setting `$PKG_CONFIG_PATH` to `/path/to/mono/lib/pkgconfig`, such that the exit codes of both `which xbuild` and `pkg-config --cflags monosgen-2` are 0.
 - SVN on `PATH`
 - GCC installed
+
+Note that if you are using the Xamarin packages on OS X you will have a 32 bit build of Mono. This is OK for development, but not for any serious workload, and is completely untested and unsupported. If Mono is installed in this manner, `$PKG_CONFIG_PATH` will likely need to include `/Library/Frameworks/Mono.framework/Libraries/pkgconfig/`.
 
 #### Building Event Store
 

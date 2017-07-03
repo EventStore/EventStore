@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services
             out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
         /// <summary>
-        /// Processes partition created notificatiion and updates internal state if necessary.  
+        /// Processes partition created notification and updates internal state if necessary.  
         /// </summary>
         /// <param name="partition"></param>
         /// <param name="createPosition"></param>

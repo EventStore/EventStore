@@ -25,14 +25,12 @@ namespace EventStore.ClientAPI.UserManagement
 
         public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/enable", login), string.Empty,
-                userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/enable", login), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
         public Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
         {
-            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/disable", login), string.Empty,
-                userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/disable", login), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
         public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials = null)
@@ -83,25 +81,19 @@ namespace EventStore.ClientAPI.UserManagement
         public Task UpdateUser(IPEndPoint endPoint, string login, UserUpdateInformation updatedUser,
             UserCredentials userCredentials)
         {
-            var userJson = updatedUser.ToJson();
-            return SendPut(endPoint.ToHttpUrl("/users/{0}", login), userJson, userCredentials,
-                HttpStatusCode.OK);
+            return SendPut(endPoint.ToHttpUrl("/users/{0}", login), updatedUser.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         public Task ChangePassword(IPEndPoint endPoint, string login, ChangePasswordDetails changePasswordDetails,
             UserCredentials userCredentials)
         {
-            var changePasswordJson = changePasswordDetails.ToJson();
-            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/change-password", login), changePasswordJson,
-                userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/change-password", login), changePasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         public Task ResetPassword(IPEndPoint endPoint, string login, ResetPasswordDetails resetPasswordDetails,
             UserCredentials userCredentials = null)
         {
-            var resetPasswordJson = resetPasswordDetails.ToJson();
-            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/reset-password", login), resetPasswordJson,
-                userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl("/users/{0}/command/reset-password", login), resetPasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
         }
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Http.BasicAuthentication.basic_authentication;
 using EventStore.Transport.Http;
@@ -196,9 +197,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                                                     .StartFromCurrent();
 
         private JArray _json;
-        private EventStorePersistentSubscription _sub4;
-        private EventStorePersistentSubscription _sub3;
-        private EventStorePersistentSubscription _sub5;
+        private EventStorePersistentSubscriptionBase _sub4;
+        private EventStorePersistentSubscriptionBase _sub3;
+        private EventStorePersistentSubscriptionBase _sub5;
 
         protected override void Given()
         {
@@ -343,9 +344,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
                                                     .StartFromCurrent();
 
         private JArray _json;
-        private EventStorePersistentSubscription _sub4;
-        private EventStorePersistentSubscription _sub3;
-        private EventStorePersistentSubscription _sub5;
+        private EventStorePersistentSubscriptionBase _sub4;
+        private EventStorePersistentSubscriptionBase _sub3;
+        private EventStorePersistentSubscriptionBase _sub5;
 
         protected override void Given()
         {
@@ -456,8 +457,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         protected string _streamName = Guid.NewGuid().ToString();
         protected string _groupName = Guid.NewGuid().ToString();
         protected IEventStoreConnection _conn;
-        protected EventStorePersistentSubscription _sub1;
-        protected EventStorePersistentSubscription _sub2;
+        protected EventStorePersistentSubscriptionBase _sub1;
+        protected EventStorePersistentSubscriptionBase _sub2;
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                     .DoNotResolveLinkTos()
                                                     .StartFromCurrent();

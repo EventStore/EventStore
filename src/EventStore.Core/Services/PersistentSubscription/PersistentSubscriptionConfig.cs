@@ -22,11 +22,34 @@ namespace EventStore.Core.Services.PersistentSubscription
             {
                 var ret = data.ParseJson<PersistentSubscriptionConfig>();
                 if(ret.Version == null) throw new BadConfigDataException("Deserialized but no version present, invalid configuration data.", null);
+
+                UpdateIfRequired(ret);
+
                 return ret;
             }
             catch (Exception ex)
             {
                 throw new BadConfigDataException("The config data appears to be invalid", ex);
+            }
+        }
+
+        private static void UpdateIfRequired(PersistentSubscriptionConfig ret)
+        {
+            if (ret.Version == "1")
+            {
+                if (ret.Entries != null)
+                {
+                    foreach (var persistentSubscriptionEntry in ret.Entries)
+                    {
+                        if (string.IsNullOrEmpty(persistentSubscriptionEntry.NamedConsumerStrategy))
+                        {
+                            persistentSubscriptionEntry.NamedConsumerStrategy = persistentSubscriptionEntry.PreferRoundRobin
+                                ? SystemConsumerStrategies.RoundRobin
+                                : SystemConsumerStrategies.DispatchToSingle;
+                        }
+                    }
+                }
+                ret.Version = "2";
             }
         }
     }
@@ -55,5 +78,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int CheckPointAfter { get; set; }
         public int MinCheckPointCount { get; set; }
         public int MaxCheckPointCount { get; set; }
+        public int MaxSubscriberCount { get; set; }
+        public string NamedConsumerStrategy { get; set; }
     }
 }

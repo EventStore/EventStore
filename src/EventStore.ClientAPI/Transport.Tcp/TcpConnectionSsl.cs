@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -33,12 +34,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       connection.InitClientSocket(socket, targetHost, validateServer);
                                       if (onConnectionEstablished != null)
-                                          onConnectionEstablished(connection);
+                                          ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
                                   },
                                   (_, socketError) =>
                                   {
                                       if (onConnectionFailed != null)
-                                          onConnectionFailed(connection, socketError);
+                                          ThreadPool.QueueUserWorkItem(o => onConnectionFailed(connection, socketError));
                                   }, connection, connectionTimeout);
             // ReSharper restore ImplicitlyCapturedClosure
             return connection;
@@ -50,11 +51,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly Guid _connectionId;
         private readonly ILogger _log;
 
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
-        private readonly SpinLock2 _streamLock = new SpinLock2();
+        private readonly object _streamLock = new object();
         private bool _isSending;
         private int _receiveHandling;
         private int _isClosed;
@@ -88,7 +89,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             _validateServer = validateServer;
 
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 try
                 {
@@ -126,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             try
             {
-                using (_streamLock.Acquire())
+                lock(_streamLock)
                 {
                     var sslStream = (SslStream) ar.AsyncState;
                     sslStream.EndAuthenticateAsClient(ar);
@@ -200,7 +201,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 int bytes = 0;
                 foreach (var segment in data)
@@ -215,7 +216,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TrySend()
         {
-            using (_streamLock.Acquire())
+            lock(_streamLock)
             {
                 if (_isSending || _sendQueue.Count == 0 || _sslStream == null || !_isAuthenticated) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
@@ -261,7 +262,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _sslStream.EndWrite(ar);
                 NotifySendCompleted(_sendingBytes);
 
-                using (_streamLock.Acquire())
+                lock(_streamLock)
                 {
                     _isSending = false;
                 }
@@ -292,8 +293,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
             {
-                _log.Error("ReceiveAsync called again while previous call wasn't fulfilled");
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                _log.Error("ReceiveAsync called again while previous call was not fulfilled");
+                throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
             }
             TryDequeueReceivedData();
         }
@@ -376,8 +377,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
                     {
-                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                        _log.Error("Threading issue in TryDequeueReceivedData. Callback is null.");
+                        throw new Exception("Threading issue in TryDequeueReceivedData. Callback is null.");
                     }
 
                     var res = new List<ArraySegment<byte>>(_receiveQueue.Count);

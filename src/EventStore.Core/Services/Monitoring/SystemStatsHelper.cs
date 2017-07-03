@@ -117,10 +117,13 @@ namespace EventStore.Core.Services.Monitoring
             var process = Process.GetCurrentProcess();
             try
             {
+                var procCpuUsage = _perfCounter.GetProcCpuUsage(); 
+                
                 stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
                 stats["proc-id"] = process.Id;
                 stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
-                stats["proc-cpu"] = new StatMetadata(_perfCounter.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+                stats["proc-cpu"] = new StatMetadata(procCpuUsage, "Process", "Process Cpu Usage");
+                stats["proc-cpuScaled"] = new StatMetadata(procCpuUsage / Environment.ProcessorCount, "Process", "Process Cpu Usage Scaled by Logical Processor Count");
                 stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
                 stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
                 stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
@@ -147,8 +150,9 @@ namespace EventStore.Core.Services.Monitoring
                 case OsFlavor.Windows:
                     return _perfCounter.GetFreeMemory();
                 case OsFlavor.Linux:
-                case OsFlavor.MacOS:
                     return GetFreeMemOnLinux();
+                case OsFlavor.MacOS:
+                    return GetFreeMemOnOSX();
                 case OsFlavor.BSD:
                     return GetFreeMemOnBSD();
                 default:
@@ -170,7 +174,7 @@ namespace EventStore.Core.Services.Monitoring
             }
             catch (Exception ex)
             {
-                _log.DebugException(ex, "Couldn't get free mem on linux, received memory info raw string: [{0}]", meminfo);
+                _log.DebugException(ex, "Could not get free mem on linux, received memory info raw string: [{0}]", meminfo);
                 return -1;
             }
         }
@@ -190,7 +194,35 @@ namespace EventStore.Core.Services.Monitoring
             }
             catch (Exception ex)
             {
-                _log.DebugException(ex, "Couldn't get free memory on BSD.");
+                _log.DebugException(ex, "Could not get free memory on BSD.");
+                return -1;
+            }
+        }
+
+
+        //TODO GFY THIS AND BSD SHOULD BE MOVED TO OS CALLS
+        private long GetFreeMemOnOSX()
+        {
+            int freePages = 0;
+            try
+            {
+                var vmstat = ShellExecutor.GetOutput("vm_stat");
+                var sysctlStats = vmstat.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                foreach(var line in sysctlStats) {
+                    var l = line.Substring(0, line.Length -1);
+                    var pieces = l.Split(':');
+                    if(pieces.Length == 2) {
+                        if(pieces[0].Trim().ToLower() == "pages free") {
+                            freePages = int.Parse(pieces[1]);
+                            break;
+                        }
+                    }
+                }
+                return 4096 * freePages;
+            }
+            catch (Exception ex)
+            {
+                _log.DebugException(ex, "Could not get free memory on OSX.");
                 return -1;
             }
         }

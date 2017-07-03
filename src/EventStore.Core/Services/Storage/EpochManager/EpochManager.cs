@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                     {
                         var result = reader.TryReadAt(epochPos);
                         if (!result.Success)
-                            throw new Exception(string.Format("Couldn't find Epoch record at LogPosition {0}.", epochPos));
+                            throw new Exception(string.Format("Could not find Epoch record at LogPosition {0}.", epochPos));
                         if (result.LogRecord.RecordType != LogRecordType.System)
                             throw new Exception(string.Format("LogRecord is not SystemLogRecord: {0}.", result.LogRecord));
                         
@@ -135,13 +135,13 @@ namespace EventStore.Core.Services.Storage.EpochManager
                         return null;
                     throw new ArgumentOutOfRangeException(
                             "epochNumber",
-                            string.Format("EpochNumber requested shouldn't be cached. Requested: {0}, min cached: {1}.",
+                            string.Format("EpochNumber requested should not be cached. Requested: {0}, min cached: {1}.",
                                             epochNumber,
                                             _minCachedEpochNumber));
                 }
                 EpochRecord epoch;
                 if (!_epochs.TryGetValue(epochNumber, out epoch) && throwIfNotFound)
-                    throw new Exception(string.Format("Concurrency failure, epoch #{0} shouldn't be null.", epochNumber));
+                    throw new Exception(string.Format("Concurrency failure, epoch #{0} should not be null.", epochNumber));
                 return epoch;
             }
         }

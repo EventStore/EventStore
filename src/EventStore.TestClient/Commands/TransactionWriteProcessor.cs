@@ -113,7 +113,7 @@ namespace EventStore.TestClient.Commands
                                     writtenEvents += 1;
                                     if (writtenEvents == eventsCnt)
                                     {
-                                        context.Log.Info("Written all events. Committing...");
+                                        context.Log.Info("All events written. Committing...");
 
                                         stage = Stage.Committing;
                                         var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, false);

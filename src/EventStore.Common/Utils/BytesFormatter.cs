@@ -17,7 +17,7 @@ namespace EventStore.Common.Utils
 
         public static string ToFriendlySizeString(this ulong bytes)
         {
-            return bytes > long.MaxValue ? "more then long.MaxValue" : ToFriendlySizeString((long) bytes);
+            return bytes > long.MaxValue ? "more than long.MaxValue" : ToFriendlySizeString((long) bytes);
         }
         public static string ToFriendlySizeString(this long bytes)
         {
@@ -26,7 +26,7 @@ namespace EventStore.Common.Utils
 
         public static string ToFriendlyNumberString(this ulong number)
         {
-            return number > long.MaxValue ? "more then long.MaxValue" : ToFriendlyNumberString((long)number);
+            return number > long.MaxValue ? "more than long.MaxValue" : ToFriendlyNumberString((long)number);
         }
         public static string ToFriendlyNumberString(this long number)
         {

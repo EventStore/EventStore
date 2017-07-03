@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Bus
             _bus = null;
         }
 
-        [Test, Ignore("We don't check each message for null for performance reasons.")]
+        [Test, Ignore("We do not check each message for null for performance reasons.")]
         public void null_message_app_should_throw()
         {
             Assert.Throws<ArgumentNullException>(() => _bus.Publish(null));

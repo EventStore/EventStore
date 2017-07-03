@@ -11,11 +11,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using HdrHistogram.NET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -67,6 +69,7 @@ namespace EventStore.Core.Services.Storage
         private long _lastFlushSize;
         private long _maxFlushSize;
         private long _maxFlushDelay;
+        private const string _writerFlushHistogram = "writer-flush";
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
@@ -88,7 +91,6 @@ namespace EventStore.Core.Services.Storage
             Db = db;
             _indexWriter = indexWriter;
             EpochManager = epochManager;
-
             _minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
             _lastFlushDelay = 0;
             _lastFlushTimestamp = _watch.ElapsedTicks;
@@ -192,7 +194,7 @@ namespace EventStore.Core.Services.Storage
         void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message)
         {
             if (_vnodeState != VNodeState.Master)
-                throw new Exception(string.Format("New Epoch request came not in master state!!! State: {0}.", _vnodeState));
+                throw new Exception(string.Format("New Epoch request not in master state. State: {0}.", _vnodeState));
             EpochManager.WriteNewEpoch();
             PurgeNotProcessedInfo();
         }
@@ -655,7 +657,8 @@ namespace EventStore.Core.Services.Storage
                 var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
 
                 Writer.Flush();
-
+                HistogramService.SetValue(_writerFlushHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - start)/Stopwatch.Frequency)*1000000000));
                 var end = _watch.ElapsedTicks;
                 var flushDelay = end - start;
                 Interlocked.Exchange(ref _lastFlushDelay, flushDelay);

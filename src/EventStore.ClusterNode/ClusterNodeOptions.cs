@@ -19,8 +19,10 @@ namespace EventStore.ClusterNode
         public string[] Defines { get; set; }
         [ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
         public bool WhatIf { get; set; }
+        [ArgDescription(Opts.DevelopmentModeDescr, Opts.AppGroup)]
+        public bool DevelopmentMode { get; set; }
 
-	[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
+        [ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
         public int MonoMinThreadpoolSize { get; set; }
 
         [ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
@@ -141,12 +143,26 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
         public bool UnsafeDisableFlushToDisk { get; set; }
 
+        [ArgDescription(Opts.WriteThroughDescr, Opts.DbGroup)]
+        public bool WriteThrough { get; set; }
+
+        [ArgDescription(Opts.Unbuffered, Opts.DbGroup)]
+        public bool Unbuffered { get; set; }
+
+
+        [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
+        public int IndexCacheDepth { get; set; }
+
+
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
         [ArgDescription(Opts.GossipAllowedDifferenceMsDescr, Opts.ClusterGroup)]
         public int GossipAllowedDifferenceMs { get; set; }
         [ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
         public int GossipTimeoutMs { get; set; }
+
+        [ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
+        public bool EnableHistograms { get; set; }
 
         public ClusterNodeOptions()
         {
@@ -221,12 +237,16 @@ namespace EventStore.ClusterNode
             PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
             CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
             DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
+            Unbuffered = Opts.UnbufferedDefault;
+            WriteThrough = Opts.WriteThroughDefault;
             GossipOnExt = Opts.GossipOnExtDefault;
             StatsOnExt = Opts.StatsOnExtDefault;
             AdminOnExt = Opts.AdminOnExtDefault;
             GossipIntervalMs = Opts.GossipIntervalMsDefault;
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
+            IndexCacheDepth = Opts.IndexCacheDepthDefault;
+            EnableHistograms = Opts.HistogramDefault;
         }
     }
 }

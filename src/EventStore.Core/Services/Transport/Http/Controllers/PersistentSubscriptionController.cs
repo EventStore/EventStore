@@ -110,6 +110,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
+
+                    var namedConsumerStrategy = CalculateNamedConsumerStrategyForOldClients(data);
+
                     //TODO competing validate data?
                     var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), 
                         Guid.NewGuid(),
@@ -124,10 +127,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         data == null ? 500 : data.BufferSize,
                         data == null ? 500 : data.LiveBufferSize,
                         data == null ? 20 : data.ReadBatchSize,
-                        data == null || data.PreferRoundRobin, 
                         data == null ? 1000 : data.CheckPointAfterMilliseconds,
                         data == null ? 10 : data.MinCheckPointCount,
                         data == null ? 500 : data.MaxCheckPointCount,
+                        data == null ? 0 : data.MaxSubscriberCount,
+                        namedConsumerStrategy,
                         http.User,
                         "",
                         "");
@@ -173,6 +177,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 (o, s) =>
                 {
                     var data = http.RequestCodec.From<SubscriptionConfigData>(s);
+
+                    var namedConsumerStrategy = CalculateNamedConsumerStrategyForOldClients(data);
+
                     //TODO competing validate data?
                     var message = new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(),
                         Guid.NewGuid(),
@@ -187,15 +194,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         data == null ? 500 : data.BufferSize,
                         data == null ? 500 : data.LiveBufferSize,
                         data == null ? 20 : data.ReadBatchSize,
-                        data == null || data.PreferRoundRobin,
                         data == null ? 1000 : data.CheckPointAfterMilliseconds,
                         data == null ? 10 : data.MinCheckPointCount,
                         data == null ? 500 : data.MaxCheckPointCount,
+                        data == null ? 0 : data.MaxSubscriberCount,
+                        namedConsumerStrategy,
                         http.User,
                         "",
                         "");
                     Publish(message);
                 }, x => Log.DebugException(x, "Reply Text Content Failed."));
+        }
+
+        private static string CalculateNamedConsumerStrategyForOldClients(SubscriptionConfigData data)
+        {
+            var namedConsumerStrategy = data == null ? null : data.NamedConsumerStrategy;
+            if (string.IsNullOrEmpty(namedConsumerStrategy))
+            {
+                var preferRoundRobin = data == null || data.PreferRoundRobin;
+                namedConsumerStrategy = preferRoundRobin
+                    ? SystemConsumerStrategies.RoundRobin
+                    : SystemConsumerStrategies.DispatchToSingle;
+            }
+            return namedConsumerStrategy;
         }
 
 
@@ -336,7 +357,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                         MaxRetryCount = stat.MaxRetryCount,
                         MessageTimeoutMilliseconds = stat.MessageTimeoutMilliseconds,
                         MinCheckPointCount = stat.MinCheckPointCount,
-                        PreferRoundRobin = stat.PreferRoundRobin,
+                        NamedConsumerStrategy = stat.NamedConsumerStrategy,
+                        PreferRoundRobin = stat.NamedConsumerStrategy == SystemConsumerStrategies.RoundRobin,
                         ReadBatchSize = stat.ReadBatchSize,
                         ResolveLinktos = stat.ResolveLinktos,
                         StartFrom = stat.StartFrom,
@@ -408,6 +430,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public int CheckPointAfterMilliseconds { get; set; }
             public int MinCheckPointCount { get; set; }
             public int MaxCheckPointCount { get; set; }
+            public int MaxSubscriberCount { get; set; }
+            public string NamedConsumerStrategy { get; set; }
         }
 
         private class SubscriptionSummary

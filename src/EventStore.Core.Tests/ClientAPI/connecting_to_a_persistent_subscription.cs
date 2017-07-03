@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
@@ -48,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class connect_to_existing_persistent_subscription_with_permissions : SpecificationWithMiniNode
     {
-        private EventStorePersistentSubscription _sub;
+        private EventStorePersistentSubscriptionBase _sub;
         private readonly string _stream = Guid.NewGuid().ToString();
         private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
                                                                 .DoNotResolveLinkTos()
@@ -92,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI
                     _stream,
                     "agroupname55",
                     (sub, e) => Console.Write("appeared"),
-                    (sub, reason, ex) => {Console.WriteLine("dropped.");});
+                    (sub, reason, ex) => Console.WriteLine("dropped."));
                 throw new Exception("should have thrown.");
             }
             catch (Exception ex)
@@ -100,6 +102,59 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.IsInstanceOf<AggregateException>(ex);
                 Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
             }
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_existing_persistent_subscription_with_max_one_client : SpecificationWithMiniNode
+    {
+        private readonly string _stream = "$" + Guid.NewGuid();
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromCurrent()
+                                                                .WithMaxSubscriberCountOf(1);
+
+        private Exception _exception;
+
+        private const string _group = "startinbeginning1";
+
+        protected override void Given()
+        {
+            base.Given();
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _conn.ConnectToPersistentSubscription(
+                _stream,
+                _group,
+                (s, e) => s.Acknowledge(e),
+                (sub, reason, ex) => { },
+                DefaultData.AdminCredentials);
+        }
+
+        protected override void When()
+        {
+            //TODO GFY FIND TESTS USING THIS PATTERN AND REPLACE WITH HELPER THROWS METHOD
+            try
+            {
+                _conn.ConnectToPersistentSubscription(
+                    _stream,
+                    _group,
+                    (s, e) => s.Acknowledge(e),
+                    (sub, reason, ex) => { },
+                    DefaultData.AdminCredentials);
+                throw new Exception("should have thrown.");
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
+        }
+
+        [Test]
+        public void the_second_subscription_fails_to_connect()
+        {
+            Assert.IsInstanceOf<AggregateException>(_exception);
+            Assert.IsInstanceOf<MaximumSubscribersReachedException>(_exception.InnerException);
         }
     }
 
@@ -137,7 +192,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();            
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (_set) return;
             _set = true;
@@ -194,7 +249,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (_set) return;
             _set = true;
@@ -253,7 +308,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials);
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (!_set)
             {
@@ -310,7 +365,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials);
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _resetEvent.Set();
         }
@@ -366,7 +421,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
@@ -428,7 +483,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
@@ -472,7 +527,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void Dropped(EventStorePersistentSubscription sub, SubscriptionDropReason reason, Exception exception)
+        private void Dropped(EventStorePersistentSubscriptionBase sub, SubscriptionDropReason reason, Exception exception)
         {
             _exception = exception;
             _reason = reason;
@@ -486,7 +541,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private static void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private static void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             throw new Exception("test");
         }
@@ -549,7 +604,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
@@ -613,7 +668,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         private bool _set = false;
-        private void HandleEvent(EventStorePersistentSubscription sub, ResolvedEvent resolvedEvent)
+        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (_set) return;
             _set = true;

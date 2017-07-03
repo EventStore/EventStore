@@ -33,9 +33,8 @@ Function Merge-ClusterNode
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % {[string] (Join-Path $relativeBuildDirectory $_ )}) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -75,9 +74,8 @@ Function Merge-TestClient
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -117,9 +115,8 @@ Function Merge-PAdmin
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -159,9 +156,8 @@ Function Merge-EsQuery
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ } ) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -201,9 +197,8 @@ Function Merge-ClientAPI
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -221,7 +216,7 @@ Function Merge-ClientAPIEmbedded
         [Parameter(Mandatory=$true)][string]$BuildDirectory,
         [Parameter(Mandatory=$true)][string]$OutputDirectory,
         [Parameter(Mandatory=$false)][string]$Executable = "EventStore.ClientAPI.Embedded.dll",
-        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll", "protobuf-net.dll"),
+        [Parameter(Mandatory=$false)][string[]]$ExcludeAssemblies = @("js1.dll", "EventStore.ClientAPI.dll", "EventStore.ClientAPI.Embedded.dll"),
         [Parameter(Mandatory=$false)][string]$IlMergeToolPath = (Join-Path $toolsDirectory "ilmerge\ilmerge.exe")
     )
 
@@ -238,9 +233,8 @@ Function Merge-ClientAPIEmbedded
     }
 
     # Find other assemblies to merge (with some specifically excluded for e.g. native code)
-    $otherAssemblies = Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
-                       % { Join-Path $relativeBuildDirectory $_ } |
-                       Join-String -Separator " "
+    $otherAssemblies = (Get-ChildItem $relativeBuildDirectory -Filter *.dll -Exclude $ExcludeAssemblies -Name |
+                       % { Join-Path $relativeBuildDirectory $_ }) -join " "
 
     # Find the path of the .NET Framework DLLs
     $platformPath = (Join-Path (Get-Item 'Env:ProgramFiles(x86)').Value 'Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0')
@@ -250,8 +244,8 @@ Function Merge-ClientAPIEmbedded
     $excludeFilePath = $outputPath + ".exclude.txt"
 	
     Write-Output "EventStore.*" | Out-File $excludeFilePath
-	
-    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/wildcards", "/internalize:""$excludeFilePath""", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
+
+    Start-Process -Wait -NoNewWindow -FilePath $IlMergeToolPath -ArgumentList @("/xmldocs", "/internalize:""$excludeFilePath""", "/target:library", "/targetPlatform:""v4,$platformPath""", "/out:""$outputPath""", $Executable, $otherAssemblies)
 	
     Remove-Item $excludeFilePath
 }

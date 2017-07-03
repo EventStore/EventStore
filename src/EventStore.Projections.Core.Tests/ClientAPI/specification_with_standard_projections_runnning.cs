@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;

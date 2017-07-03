@@ -14,7 +14,9 @@ namespace EventStore.Core.Services.PersistentSubscription
         private readonly TimeSpan _checkPointAfter;
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
-        private readonly bool _preferRoundRobin;
+        private readonly int _maxSubscriberCount;
+        private readonly IPersistentSubscriptionConsumerStrategy _consumerStrategy;
+
         private readonly int _maxRetryCount;
         private readonly int _liveBufferSize;
         private readonly int _bufferSize;
@@ -25,9 +27,11 @@ namespace EventStore.Core.Services.PersistentSubscription
         private IPersistentSubscriptionMessageParker _messageParker;
 
         public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId, string groupName, 
-                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout, bool preferRoundRobin, 
+                                           int startFrom, bool extraStatistics, TimeSpan messageTimeout, 
                                            int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
-                                           TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
+                                           TimeSpan checkPointAfter, int minCheckPointCount,
+                                           int maxCheckPointCount, int maxSubscriberCount, 
+                                           IPersistentSubscriptionConsumerStrategy consumerStrategy,
                                            IPersistentSubscriptionStreamReader streamReader, 
                                            IPersistentSubscriptionCheckpointReader checkpointReader, 
                                            IPersistentSubscriptionCheckpointWriter checkpointWriter,
@@ -40,13 +44,14 @@ namespace EventStore.Core.Services.PersistentSubscription
             _startFrom = startFrom;
             _extraStatistics = extraStatistics;
             _messageTimeout = messageTimeout;
-            _preferRoundRobin = preferRoundRobin;
             _maxRetryCount = maxRetryCount;
             _liveBufferSize = liveBufferSize;
             _bufferSize = bufferSize;
             _checkPointAfter = checkPointAfter;
             _minCheckPointCount = minCheckPointCount;
             _maxCheckPointCount = maxCheckPointCount;
+            _maxSubscriberCount = maxSubscriberCount;
+            _consumerStrategy = consumerStrategy;
             _readBatchSize = readBatchSize;
             _streamReader = streamReader;
             _checkpointReader = checkpointReader;
@@ -109,11 +114,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             get { return _messageParker; }
         }
 
-        public bool PreferRoundRobin
-        {
-            get { return _preferRoundRobin; }
-        }
-
         public int MaxRetryCount
         {
             get { return _maxRetryCount; }
@@ -147,6 +147,16 @@ namespace EventStore.Core.Services.PersistentSubscription
         public int MaxCheckPointCount
         {
             get { return _maxCheckPointCount; }
+        }
+
+        public int MaxSubscriberCount
+        {
+            get { return _maxSubscriberCount; }
+        }
+
+        public IPersistentSubscriptionConsumerStrategy ConsumerStrategy
+        {
+            get { return _consumerStrategy; }
         }
 
         public string ParkedMessageStream

@@ -118,7 +118,7 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("\n---" +
                      "\nRunning scenario {0} using {1} connections with {2} max concurrent requests," +
-                     "\nfor {3} streams {4} events each deleting every {5}th stream. " +
+                     "\nfor {3} streams {4} events each deleting every {5} streams. " +
                      "\nExecution period {6} minutes. " +
                      "\nDatabase path {7};" +
                      "\nCustom Node {8};" +

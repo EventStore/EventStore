@@ -13,7 +13,7 @@ namespace EventStore.Core.Authentication
 {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory
 	{
-		public IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, IBus mainBus, IPublisher workersQueue, InMemoryBus[] workerBusses)
+		public IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, ISubscriber mainBus, IPublisher workersQueue, InMemoryBus[] workerBusses)
 		{
 			var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
 			var dispatcher = new IODispatcher(mainQueue, new PublishEnvelope(workersQueue, crossThread: true));

@@ -11,6 +11,7 @@ $outputDirectory = Join-Path $baseDirectory "packages"
 $toolsPath = Join-Path $baseDirectory "tools"
 $nugetPath = Join-Path $toolsPath (Join-Path "nuget" "nuget.exe")
 $nuspecDirectory = Join-Path $baseDirectory (Join-Path "scripts" "nuget-clientapi")
+$svnClientPath = Join-Path $toolsPath (Join-Path "svn" "svn.exe")
 
 if ((Test-Path $stagingDirectory) -eq $false) {
     New-Item -Path $stagingDirectory -ItemType Directory > $null
@@ -68,7 +69,8 @@ Function Get-SourceDependencies() {
     try {
         Push-Location $stagingDirectory
         if ((Test-Path "protobuf-net-read-only") -eq $false) {
-            Exec { svn checkout --quiet -r 594 http://protobuf-net.googlecode.com/svn/trunk/ protobuf-net-read-only }
+            $svnCommand = "$svnClientPath checkout --quiet -r 594 http://protobuf-net.googlecode.com/svn/trunk/ protobuf-net-read-only"
+            Exec([ScriptBlock]::Create($svnCommand))
         }
 
         if ((Test-Path "Newtonsoft.Json") -eq $false) {
@@ -89,4 +91,3 @@ Get-SourceDependencies
 Update-DependencyVersions -NuSpec (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec") -Version $Version
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.nuspec")
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec") -Analysis $false
-Exec { git checkout (Resolve-Path -Relative (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")) }

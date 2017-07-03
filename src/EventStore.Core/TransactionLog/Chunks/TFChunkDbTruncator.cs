@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (chunks.Length == 0)
                 {
                     if (chunkNum != newLastChunkNum)
-                        throw new Exception(string.Format("Couldn't find any chunk #{0}.", chunkNum));
+                        throw new Exception(string.Format("Could not find any chunk #{0}.", chunkNum));
                     break;
                 }
                 using (var fs = File.OpenRead(chunks[0]))
@@ -127,7 +127,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 || truncateChk >= chunkHeader.ChunkEndPosition)
             {
                 throw new Exception(
-                    string.Format("Chunk #{0}-{1} ({2}) is not correct unscavenged chunk! TruncatePosition: {3}, ChunkHeader: {4}.",
+                    string.Format("Chunk #{0}-{1} ({2}) is not correct unscavenged chunk. TruncatePosition: {3}, ChunkHeader: {4}.",
                                   chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, chunkFilename, truncateChk, chunkHeader));
             }
 

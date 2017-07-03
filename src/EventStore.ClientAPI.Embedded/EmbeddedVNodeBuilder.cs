@@ -30,6 +30,7 @@ namespace EventStore.ClientAPI.Embedded
         private string _dbPath;
         private long _chunksCacheSize;
         private bool _inMemoryDb;
+        private bool _developmentMode;
 
         private IPEndPoint _internalTcp;
         private IPEndPoint _internalSecureTcp;
@@ -178,6 +179,17 @@ namespace EventStore.ClientAPI.Embedded
             };
             return ret;
         }
+
+        /// <summary>
+        /// Enable development mode. This disables caching for events over HTTP.
+        /// </summary>
+        /// <returns></returns>
+        public EmbeddedVNodeBuilder EnableDevelopmentMode()
+        {
+            _developmentMode = true;
+            return this;
+        }
+
 
 	/// <summary>
 	/// Sets the mode and the number of threads on which to run projections.
@@ -491,7 +503,7 @@ namespace EventStore.ClientAPI.Embedded
 	/// <param name="storeLocation">The location of the certificate store</param>
 	/// <param name="storeName">The name of the certificate store</param>
 	/// <param name="certificateSubjectName">The subject name of the certificate</param>
-	/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+	/// <param name="certificateThumbprint">The thumbprint of the certificate</param>
         /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
         public EmbeddedVNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
@@ -503,7 +515,7 @@ namespace EventStore.ClientAPI.Embedded
             }
             catch (Exception exc)
             {
-                throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", storeName, storeLocation), exc);
+                throw new Exception(string.Format("Could not open certificate store '{0}' in location {1}'.", storeName, storeLocation), exc);
             }
 
             if (!string.IsNullOrWhiteSpace(certificateThumbprint))
@@ -514,7 +526,7 @@ namespace EventStore.ClientAPI.Embedded
                 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 _certificate = certificates[0];
                 return this;
@@ -528,13 +540,37 @@ namespace EventStore.ClientAPI.Embedded
 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 _certificate = certificates[0];
                 return this;
             }
             
             throw new ArgumentException("No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
+        }
+
+        /// <summary>
+        /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
+        /// </summary>
+        /// <param name="chunkSize">The size of the chunk, in bytes</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunkSize(int chunkSize)
+        {
+            _chunkSize = chunkSize;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the transaction file chunk cache size. Default is <see cref="TFConsts.ChunksCacheSize"/>
+        /// </summary>
+        /// <param name="chunksCacheSize">The size of the cache</param>
+        /// <returns>A <see cref="EmbeddedVNodeBuilder"/> with the options set</returns>
+        public EmbeddedVNodeBuilder WithTfChunksCacheSize(long chunksCacheSize)
+        {
+            _chunksCacheSize = chunksCacheSize;
+
+            return this;
         }
 
         private void EnsureHttpPrefixes()
@@ -634,7 +670,8 @@ namespace EventStore.ClientAPI.Embedded
                 _extTcpHeartbeatTimeout,
                 _extTcpHeartbeatInterval,
                 !_skipVerifyDbHashes,
-                _maxMemtableSize);
+                _maxMemtableSize,
+                _developmentMode);
             var infoController = new InfoController(null, _projectionType);
             return new ClusterVNode(db, vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }

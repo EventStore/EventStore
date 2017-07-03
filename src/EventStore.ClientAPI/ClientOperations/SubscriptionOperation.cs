@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
@@ -21,7 +22,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
-        private readonly Common.Concurrent.ConcurrentQueue<Action> _actionQueue = new Common.Concurrent.ConcurrentQueue<Action>();
+        private readonly ConcurrentQueue<Action> _actionQueue = new ConcurrentQueue<Action>();
         private int _actionExecuting;
         private T _subscription;
         private int _unsubscribed;
@@ -147,7 +148,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     case TcpCommand.NotHandled:
                     {
                         if (_subscription != null)
-                            throw new Exception("NotHandled command appeared while we already subscribed.");
+                            throw new Exception("NotHandled command appeared while we were already subscribed.");
 
                         var message = package.Data.Deserialize<ClientMessage.NotHandled>();
                         switch (message.Reason)

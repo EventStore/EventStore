@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,7 +31,7 @@ namespace EventStore.BufferManagement
         private readonly int _segmentSize;
         private readonly bool _allowedToCreateMemory;
 
-        private readonly Common.Concurrent.ConcurrentStack<ArraySegment<byte>> _buffers = new Common.Concurrent.ConcurrentStack<ArraySegment<byte>>();
+        private readonly ConcurrentStack<ArraySegment<byte>> _buffers = new ConcurrentStack<ArraySegment<byte>>();
 
         private readonly List<byte[]> _segments;
         private readonly object _creatingNewSegmentLock = new object();
@@ -268,7 +269,7 @@ namespace EventStore.BufferManagement
         private void CheckBuffer(ArraySegment<byte> buffer)
         {
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
-                throw new Exception("Attempt to checking invalid buffer");
+                throw new Exception("Attempt to check in invalid buffer");
             if (buffer.Count != _chunkSize) 
                 throw new ArgumentException("Buffer was not of the same chunk size as the buffer manager", "buffer");
         }

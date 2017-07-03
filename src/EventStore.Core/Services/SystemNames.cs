@@ -144,4 +144,20 @@ namespace EventStore.Core.Services
         public const string Admins = "$admins";
         public const string All = "$all";
     }
+
+    /// <summary>
+    /// System supported consumer strategies for use with persistent subscriptions.
+    /// </summary>
+    public static class SystemConsumerStrategies
+    {
+        /// <summary>
+        /// Distributes events to a single client until it is full. Then round robin to the next client.
+        /// </summary>
+        public const string DispatchToSingle = "DispatchToSingle";
+
+        /// <summary>
+        /// Distribute events to each client in a round robin fashion.
+        /// </summary>
+        public const string RoundRobin = "RoundRobin";
+    }
 }

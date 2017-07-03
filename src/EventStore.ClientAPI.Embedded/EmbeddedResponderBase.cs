@@ -7,7 +7,12 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.ClientAPI.Embedded
 {
-    internal abstract class EmbeddedResponderBase<TResult, TResponse> : IEmbeddedResponse where TResponse : Message
+    internal interface IEmbeddedResponder
+    {
+        void InspectMessage(Message message);
+    }
+
+    internal abstract class EmbeddedResponderBase<TResult, TResponse> : IEmbeddedResponder where TResponse : Message
     {
         private readonly TaskCompletionSource<TResult> _source;
         private int _completed;
@@ -36,6 +41,7 @@ namespace EventStore.ClientAPI.Embedded
                 Fail(ex);
             }
         }
+
         protected abstract void InspectResponse(TResponse response);
 
         protected abstract TResult TransformResponse(TResponse response);

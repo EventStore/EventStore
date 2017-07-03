@@ -100,7 +100,7 @@ namespace EventStore.Transport.Http.Atom
                 ThrowHelper.ThrowSpecificationViolation("atom:feed elements MUST contain one or more atom:author elements");
             if (Links.Count == 0)
                 ThrowHelper.ThrowSpecificationViolation("atom:feed elements SHOULD contain one atom:link element with a " 
-                                                        + "rel attribute value of 'self'.This is the preferred URI for retrieving Atom Feed Documents                                                                   representing this Atom feed.");
+                                                        + "rel attribute value of 'self'. This is the preferred URI for retrieving Atom Feed Documents representing this Atom feed.");
 
             writer.WriteStartElement("feed", AtomSpecs.AtomV1Namespace);
 
@@ -299,7 +299,7 @@ namespace EventStore.Transport.Http.Atom
         public void WriteXml(XmlWriter writer)
         {
             if (string.IsNullOrEmpty(Uri))
-                ThrowHelper.ThrowSpecificationViolation("atom:link elements MUST have an href attribute, whose value MUST be a IRI reference");
+                ThrowHelper.ThrowSpecificationViolation("atom:link elements MUST have an href attribute, whose value MUST be a URI reference");
 
             writer.WriteStartElement("link", AtomSpecs.AtomV1Namespace);
             writer.WriteAttributeString("href", Uri);

@@ -14,7 +14,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly bool IsCompleted;
         public readonly bool IsMap12Bytes;
 
-        public readonly int PhysicalDataSize; // the size of a section of data in chunk
+        public readonly int PhysicalDataSize; // the size of the section of data in chunk
         public readonly long LogicalDataSize;  // the size of a logical data size (after scavenge LogicalDataSize can be > physicalDataSize)
         public readonly int MapSize;
         public readonly byte[] MD5Hash;
@@ -77,7 +77,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var logicalDataSize = isMap12Bytes ? reader.ReadInt64() : reader.ReadInt32();
             var mapSize = reader.ReadInt32();
 
-            stream.Seek(-ChecksumSize, SeekOrigin.End);
+            stream.Seek(stream.Length-ChecksumSize, SeekOrigin.Begin);
             var hash = reader.ReadBytes(ChecksumSize);
 
             return new ChunkFooter(isCompleted, isMap12Bytes, physicalDataSize, logicalDataSize, mapSize, hash);

@@ -16,11 +16,12 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool EnableTrustedAuth;
         public readonly X509Certificate2 Certificate;
         public readonly int WorkerThreads;
+        public readonly bool DevelopmentMode;
 
         public readonly bool DiscoverViaDns;
         public readonly string ClusterDns;
         public readonly IPEndPoint[] GossipSeeds;
-
+        public readonly bool EnableHistograms;
         public readonly TimeSpan MinFlushDelay;
 
         public readonly int ClusterNodeCount;
@@ -53,6 +54,7 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
+        public readonly int IndexCacheDepth;
 
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
@@ -92,8 +94,11 @@ namespace EventStore.Core.Cluster.Settings
                                     TimeSpan intTcpHeartbeatInterval,
                                     TimeSpan extTcpHeartbeatTimeout,
                                     TimeSpan extTcpHeartbeatInterval,
-				    bool verifyDbHash,
-				    int maxMemtableEntryCount)
+				                    bool verifyDbHash,
+				                    int maxMemtableEntryCount,
+                                    bool developmentMode,
+                                    bool enableHistograms = false,
+                                    int indexCacheDepth = 12)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -124,6 +129,7 @@ namespace EventStore.Core.Cluster.Settings
             EnableTrustedAuth = enableTrustedAuth;
             Certificate = certificate;
             WorkerThreads = workerThreads;
+            DevelopmentMode = developmentMode;
 
             DiscoverViaDns = discoverViaDns;
             ClusterDns = clusterDns;
@@ -160,6 +166,8 @@ namespace EventStore.Core.Cluster.Settings
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
+            EnableHistograms = enableHistograms;
+            IndexCacheDepth = indexCacheDepth;
         }
 
         public override string ToString()

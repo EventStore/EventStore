@@ -142,7 +142,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             try
             {
                 newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath, _db.Config.ChunkSize, chunkStartNumber, chunkEndNumber,
-                                                     isScavenged: true, inMem: _db.Config.InMemDb);
+                                                     isScavenged: true, inMem: _db.Config.InMemDb, unbuffered: _db.Config.UnbufferedIO,
+                                                     writethrough: _db.Config.WriteThrough);
             }
             catch (IOException exc)
             {
@@ -399,7 +400,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                result = chunk.TryReadClosestForward((int)result.NextPosition);
+                result = chunk.TryReadClosestForward(result.NextPosition);
             }
         }
 

@@ -7,12 +7,15 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
+using HdrHistogram.NET;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -25,7 +28,7 @@ namespace EventStore.Core.Services.Storage
 
         private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
-        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(10);
 
         public string Name { get { return _queueStats.Name; } }
 
@@ -46,6 +49,8 @@ namespace EventStore.Core.Services.Storage
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
         private bool _commitsAfterEof;
+        private const string _chaserWaitHistogram = "chaser-wait";
+        private const string _chaserFlushHistogram = "chaser-flush";
 
         public StorageChaser(IPublisher masterBus, 
                              ICheckpoint writerCheckpoint, 
@@ -64,7 +69,6 @@ namespace EventStore.Core.Services.Storage
             _chaser = chaser;
             _indexCommitter = indexCommitter;
             _epochManager = epochManager;
-
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
         }
@@ -108,10 +112,10 @@ namespace EventStore.Core.Services.Storage
             }
             catch (Exception exc)
             {
-                Log.FatalException(exc, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...");
+                Log.FatalException(exc, "Error in StorageChaser. Terminating...");
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedChaserState>(0);
-                Application.Exit(ExitCode.Error, "Error in StorageChaser. SOMETHING VERY BAD HAPPENED. Terminating...\nError: " + exc.Message);
+                Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {
                     Thread.Sleep(100);
@@ -143,6 +147,9 @@ namespace EventStore.Core.Services.Storage
             {
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                 _chaser.Flush();
+                var startflush = _watch.ElapsedTicks;
+                HistogramService.SetValue(_chaserFlushHistogram,
+                            (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
                 _queueStats.ProcessingEnded(1);
 
                 var end = _watch.ElapsedTicks;
@@ -153,8 +160,11 @@ namespace EventStore.Core.Services.Storage
             if (!result.Success)
             {
                 _queueStats.EnterIdle();
-                //Thread.Sleep(1);
+                //Thread.Sleep(1); 
+                var startwait = _watch.ElapsedTicks;
                 _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+                HistogramService.SetValue(_chaserWaitHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - startwait)/Stopwatch.Frequency)*1000000000));
             }
         }
 

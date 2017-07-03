@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -51,8 +52,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private int _sending;
@@ -204,7 +205,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 throw new ArgumentNullException("callback");
 
             if (Interlocked.Exchange(ref _receiveCallback, callback) != null)
-                throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
             TryDequeueReceivedData();
         }
 
@@ -262,8 +263,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
                     {
-                        _log.Error("Some threading issue in TryDequeueReceivedData! Callback is null!");
-                        throw new Exception("Some threading issue in TryDequeueReceivedData! Callback is null!");
+                        _log.Error("Threading issue in TryDequeueReceivedData. Callback is null.");
+                        throw new Exception("Threading issue in TryDequeueReceivedData. Callback is null.");
                     }
 
                     var res = new List<ArraySegment<byte>>(_receiveQueue.Count);

@@ -1,4 +1,5 @@
-﻿using EventStore.ClientAPI.Messages;
+﻿using EventStore.ClientAPI.Internal;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {

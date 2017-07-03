@@ -121,7 +121,8 @@ namespace EventStore.Core.Tests.Helpers
                                                          TimeSpan.FromSeconds(10),
                                                          TimeSpan.FromSeconds(10),
                                                          false,
-                                                         memTableSize);
+                                                         memTableSize,
+                                                         false);
             Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
                      + "{8,-25} {9} ({10}-bit)\n"
@@ -154,7 +155,7 @@ namespace EventStore.Core.Tests.Helpers
             Node.Start();
 
             if (!startedEvent.Wait(60000))
-                throw new TimeoutException("MiniNode haven't started in 60 seconds.");
+                throw new TimeoutException("MiniNode has not started in 60 seconds.");
 
             StartingTime.Stop();
         }

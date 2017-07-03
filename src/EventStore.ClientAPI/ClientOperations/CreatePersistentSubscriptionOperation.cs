@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
@@ -19,10 +21,11 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly int _liveBufferSize;
         private readonly int _readBatchSize;
         private readonly int _bufferSize;
-        private readonly bool _preferRoundRobin;
         private readonly int _checkPointAfter;
         private readonly int _minCheckPointCount;
         private readonly int _maxCheckPointCount;
+        private readonly int _maxSubscriberCount;
+        private readonly string _namedConsumerStrategy;
 
         public CreatePersistentSubscriptionOperation(ILogger log,
                                        TaskCompletionSource<PersistentSubscriptionCreateResult> source,
@@ -42,18 +45,19 @@ namespace EventStore.ClientAPI.ClientOperations
             _readBatchSize = settings.ReadBatchSize;
             _bufferSize = settings.HistoryBufferSize;
             _recordStatistics = settings.ExtraStatistics;
-            _preferRoundRobin = settings.PreferRoundRobin;
             _messageTimeoutMilliseconds = (int) settings.MessageTimeout.TotalMilliseconds;
             _checkPointAfter = (int) settings.CheckPointAfter.TotalMilliseconds;
             _minCheckPointCount = settings.MinCheckPointCount;
             _maxCheckPointCount = settings.MaxCheckPointCount;
+            _maxSubscriberCount = settings.MaxSubscriberCount;
+            _namedConsumerStrategy = settings.NamedConsumerStrategy;
         }
 
         protected override object CreateRequestDto()
         {
             return new ClientMessage.CreatePersistentSubscription(_groupName, _stream, _resolveLinkTos, _startFromBeginning, _messageTimeoutMilliseconds,
-                                    _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _preferRoundRobin, _checkPointAfter,
-                                    _maxCheckPointCount, _minCheckPointCount);
+                                    _recordStatistics, _liveBufferSize, _readBatchSize, _bufferSize, _maxRetryCount, _namedConsumerStrategy == SystemConsumerStrategies.RoundRobin, _checkPointAfter,
+                                    _maxCheckPointCount, _minCheckPointCount, _maxSubscriberCount, _namedConsumerStrategy);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.CreatePersistentSubscriptionCompleted response)
@@ -70,7 +74,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     Fail(new AccessDeniedException(string.Format("Write access denied for stream '{0}'.", _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
                 case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AlreadyExists:
-                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} alreay exists", _groupName, _stream)));
+                    Fail(new InvalidOperationException(String.Format("Subscription group {0} on stream {1} already exists", _groupName, _stream)));
                     return new InspectionResult(InspectionDecision.EndOperation, "AlreadyExists");
                 default:
                     throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));

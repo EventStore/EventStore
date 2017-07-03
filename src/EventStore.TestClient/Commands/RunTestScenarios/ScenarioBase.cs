@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
 using EventStore.Core.Services;
@@ -272,7 +273,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             if (streams.Length == 0)
             {
                 Debugger.Break();
-                throw new Exception("Streams shouldn't be empty.");
+                throw new Exception("Streams should not be empty.");
             }
             Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
 

@@ -221,7 +221,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
             catch (Exception e)
             {
-                SendBadRequestAndClose(package.CorrelationId, string.Format("Error during processing package. Error: {0}", e));
+                SendBadRequestAndClose(package.CorrelationId, string.Format("Error while processing package. Error: {0}", e));
             }
         }
 
@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                 _publisher.Publish(message);
             else
                 SendBadRequest(package.CorrelationId,
-                                       string.Format("Couldn't unwrap network package for command {0}.\n{1}", package.Command, error));
+                                       string.Format("Could not unwrap network package for command {0}.\n{1}", package.Command, error));
         }
 
         private void ReplyNotAuthenticated(Guid correlationId, string description)

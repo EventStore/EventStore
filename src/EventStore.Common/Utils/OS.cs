@@ -59,18 +59,18 @@ namespace EventStore.Common.Utils
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Couldn't determine the flavor of Unix-like OS.");
+                Log.ErrorException(ex, "Could not determine the flavor of Unix-like OS.");
             }
-
+            uname = uname.Trim().ToLower();
             switch (uname)
             {
-                case "Linux":
+                case "linux":
                     return OsFlavor.Linux;
-                case "Darwin":
+                case "darwin":
                     return OsFlavor.MacOS;
-                case "FreeBSD":
-                case "NetBSD":
-                case "OpenBSD":
+                case "freebsd":
+                case "netbsd":
+                case "openbsd":
                     return OsFlavor.BSD;
                 default:
                     return OsFlavor.Unknown;

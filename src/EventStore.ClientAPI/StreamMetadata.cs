@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -59,7 +60,7 @@ namespace EventStore.ClientAPI
             if (maxAge <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("maxAge", string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
             if (truncateBefore < 0)
-                throw new ArgumentOutOfRangeException("truncateBefore", string.Format("{0} should be non negative value.", SystemMetadata.TruncateBefore));
+                throw new ArgumentOutOfRangeException("truncateBefore", string.Format("{0} should be non-negative value.", SystemMetadata.TruncateBefore));
 
             if (cacheControl <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("cacheControl", string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));

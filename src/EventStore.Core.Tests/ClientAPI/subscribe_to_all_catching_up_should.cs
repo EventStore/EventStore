@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeToAllAsync(false, (s, x) => { }, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
 
-                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
+                Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
                 Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
                 subscription.Stop(Timeout);
                 Assert.IsTrue(dropped.Wait(Timeout));
@@ -136,7 +136,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
 
                 Assert.AreEqual(20, events.Count); 
@@ -229,7 +229,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
                 Log.Info("Events appeared...");
                 Assert.AreEqual(10, events.Count);
@@ -283,7 +283,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
-                    Assert.Fail("Couldn't wait for all events.");
+                    Assert.Fail("Could not wait for all events.");
                 }
                 Log.Info("Events appeared...");
                 Assert.AreEqual(1, events.Count);

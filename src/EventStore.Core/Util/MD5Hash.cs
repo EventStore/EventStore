@@ -18,7 +18,7 @@ namespace EventStore.Core.Util
         {
             Ensure.Nonnegative(count, "count");
 
-            using (MD5 md5 = MD5.Create())
+            using (var md5 = MD5.Create())
             {
                 ContinuousHashFor(md5, s, startPosition, count);
                 md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
@@ -35,10 +35,10 @@ namespace EventStore.Core.Util
                 s.Position = startPosition;
 
             var buffer = new byte[4096];
-            long toRead = count;
+            var toRead = count;
             while (toRead > 0)
             {
-                int read = s.Read(buffer, 0, (int)Math.Min(toRead, buffer.Length));
+                var read = s.Read(buffer, 0, (int)Math.Min(toRead, buffer.Length));
                 if (read == 0)
                     break;
 

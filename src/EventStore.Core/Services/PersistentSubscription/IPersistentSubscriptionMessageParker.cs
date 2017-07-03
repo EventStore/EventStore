@@ -6,8 +6,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 {
     public interface IPersistentSubscriptionMessageParker
     {
-        void BeginParkMessage(ResolvedEvent @event, string reason, Action<ResolvedEvent, OperationResult> completed);
+        void BeginParkMessage(ResolvedEvent ev, string reason, Action<ResolvedEvent, OperationResult> completed);
         void BeginReadEndSequence(Action<int?> completed);
         void BeginMarkParkedMessagesReprocessed(int sequence);
+        void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed);
     }
 }

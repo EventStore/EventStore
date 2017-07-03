@@ -35,7 +35,7 @@ namespace EventStore.ClientAPI
                     try
                     {
                         var pieces = q.Trim().Split(':');
-                        if (pieces.Length != 2) throw new Exception("could not split ip address from port.");
+                        if (pieces.Length != 2) throw new Exception("Could not split IP address from port.");
                             
                         return new GossipSeed(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
                     }

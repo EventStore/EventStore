@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -33,12 +34,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                   {
                                       connection.InitSocket(socket);
                                       if (onConnectionEstablished != null)
-                                          onConnectionEstablished(connection);
+                                          ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
                                   },
                                   (_, socketError) =>
                                   {
                                       if (onConnectionFailed != null)
-                                          onConnectionFailed(connection, socketError);
+                                          ThreadPool.QueueUserWorkItem(o => onConnectionFailed(connection, socketError));
                                   }, connection, connectionTimeout);
 // ReSharper restore ImplicitlyCapturedClosure
             return connection;
@@ -54,12 +55,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly Queue<ArraySegment<byte>> _receiveQueue = new Queue<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
-        private readonly SpinLock2 _sendingLock = new SpinLock2();
+        private readonly object _sendingLock = new object();
         private bool _isSending;
         private volatile int _closed;
 
@@ -81,7 +82,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             InitConnectionBase(socket);
             //_log.Info("TcpConnection::InitSocket[{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
-            using (_sendingLock.Acquire())
+            lock(_sendingLock)
             {
                 _socket = socket;
                 try
@@ -111,7 +112,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            using (_sendingLock.Acquire())
+            lock(_sendingLock)
             {
                 int bytes = 0;
                 foreach (var segment in data)
@@ -126,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void TrySend()
         {
-            using (_sendingLock.Acquire())
+            lock(_sendingLock)
             {
                 if (_isSending || _sendQueue.Count == 0 || _socket == null) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
@@ -179,7 +180,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     ReturnSendingSocketArgs();
                 else
                 {
-                    using (_sendingLock.Acquire())
+                    lock(_sendingLock)
                     {
                         _isSending = false;
                     }
@@ -196,7 +197,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             lock (_receivingLock)
             {
                 if (_receiveCallback != null)
-                    throw new InvalidOperationException("ReceiveAsync called again while previous call wasn't fulfilled");
+                    throw new InvalidOperationException("ReceiveAsync called again while previous call was not fulfilled");
                 _receiveCallback = callback;
             }
 
@@ -315,7 +316,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _socket = null;
             }
 
-            using (_sendingLock.Acquire())
+            lock(_sendingLock)
             {
                 if (!_isSending)
                     ReturnSendingSocketArgs();

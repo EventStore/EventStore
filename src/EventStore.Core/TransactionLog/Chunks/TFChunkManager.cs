@@ -63,7 +63,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 long totalSize = 0;
                 lastChunkToCache = _chunksCount;
 
-                for (int chunkNum = _chunksCount - 1; chunkNum >= 0;)
+                for (var chunkNum = _chunksCount - 1; chunkNum >= 0;)
                 {
                     var chunk = _chunks[chunkNum];
                     var chunkSize = chunk.IsReadOnly
@@ -100,7 +100,12 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize, _config.InMemDb);
+            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, 
+                                                    chunkHeader, 
+                                                    fileSize, 
+                                                    _config.InMemDb, 
+                                                    _config.UnbufferedIO, 
+                                                    _config.WriteThrough);
         }
 
         public TFChunk.TFChunk AddNewChunk()
@@ -109,7 +114,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 var chunkNumber = _chunksCount;
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, chunkNumber, isScavenged: false, inMem: _config.InMemDb);
+                var chunk = TFChunk.TFChunk.CreateNew(chunkName, 
+                                                      _config.ChunkSize, 
+                                                      chunkNumber, 
+                                                      chunkNumber, 
+                                                      isScavenged: false, 
+                                                      inMem: _config.InMemDb,
+                                                      unbuffered: _config.UnbufferedIO,
+                                                      writethrough: _config.WriteThrough);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -127,7 +139,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                       chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, _chunksCount));
 
                 var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, 0);
-                var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize, _config.InMemDb);
+                var chunk = TFChunk.TFChunk.CreateWithHeader(
+                                            chunkName, 
+                                            chunkHeader, 
+                                            fileSize, 
+                                            _config.InMemDb,
+                                            _config.UnbufferedIO,
+                                            _config.WriteThrough);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -178,7 +196,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
                 Log.Info("File {0} will be moved to file {1}", Path.GetFileName(oldFileName), Path.GetFileName(newFileName));
                 File.Move(oldFileName, newFileName);
-                newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash);
+                newChunk = TFChunk.TFChunk.FromCompletedFile(
+                                    newFileName, 
+                                    verifyHash,
+                                    _config.UnbufferedIO);
             }
 
             lock (_chunksLocker)
@@ -209,10 +230,20 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunkEndNumber = newChunk.ChunkHeader.ChunkEndNumber;
             for (int i = chunkStartNumber; i <= chunkEndNumber;)
             {
-                var chunkHeader = _chunks[i].ChunkHeader;
-                if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
-                    return false;
-                i = chunkHeader.ChunkEndNumber + 1;
+                var chunk = _chunks[i];
+                if (chunk != null)
+                {
+                    var chunkHeader = chunk.ChunkHeader;
+                    if (chunkHeader.ChunkStartNumber < chunkStartNumber || chunkHeader.ChunkEndNumber > chunkEndNumber)
+                        return false;
+                    i = chunkHeader.ChunkEndNumber + 1;
+                }
+                else
+                {
+                    //Cover the case of initial replication of merged chunks where they were never set
+                    // in the map in the first place.
+                    i = i + 1;
+                }
             }
 
             TFChunk.TFChunk lastRemovedChunk = null;
@@ -262,7 +293,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var chunkNum = (int)(logPosition / _config.ChunkSize);
             if (chunkNum < 0 || chunkNum >= _chunksCount)
-                throw new ArgumentOutOfRangeException("logPosition", string.Format("LogPosition {0} doesn't have corresponding chunk in DB.", logPosition));
+                throw new ArgumentOutOfRangeException("logPosition", string.Format("LogPosition {0} does not have corresponding chunk in DB.", logPosition));
 
             var chunk = _chunks[chunkNum];
             if (chunk == null)
@@ -273,7 +304,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk.TFChunk GetChunk(int chunkNum)
         {
             if (chunkNum < 0 || chunkNum >= _chunksCount)
-                throw new ArgumentOutOfRangeException("chunkNum", string.Format("Chunk #{0} isn't present in DB.", chunkNum));
+                throw new ArgumentOutOfRangeException("chunkNum", string.Format("Chunk #{0} is not present in DB.", chunkNum));
 
             var chunk = _chunks[chunkNum];
             if (chunk == null)

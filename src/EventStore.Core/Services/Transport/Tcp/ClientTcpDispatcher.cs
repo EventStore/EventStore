@@ -438,10 +438,20 @@ namespace EventStore.Core.Services.Transport.Tcp
             TcpConnectionManager connection) {
             var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
             if(dto == null) return null;
+
+            var namedConsumerStrategy = dto.NamedConsumerStrategy;
+            if (string.IsNullOrEmpty(namedConsumerStrategy))
+            {
+                  namedConsumerStrategy = dto.PreferRoundRobin
+                    ? SystemConsumerStrategies.RoundRobin
+                    : SystemConsumerStrategies.DispatchToSingle;
+            }
+
             return new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
                             dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom, dto.MessageTimeoutMilliseconds, 
                             dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
-                            dto.ReadBatchSize,dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount, dto.CheckpointMaxCount, 
+                            dto.ReadBatchSize, dto.CheckpointAfterTime, dto.CheckpointMinCount,
+                            dto.CheckpointMaxCount, dto.SubscriberMaxCount, namedConsumerStrategy,
                             user, username, password);
         }
 
@@ -449,14 +459,24 @@ namespace EventStore.Core.Services.Transport.Tcp
             TcpPackage package, IEnvelope envelope, IPrincipal user, string username, string password,
             TcpConnectionManager connection)
         {
+
             var dto = package.Data.Deserialize<TcpClientMessageDto.UpdatePersistentSubscription>();
             if (dto == null) return null;
+
+            var namedConsumerStrategy = dto.NamedConsumerStrategy;
+            if (string.IsNullOrEmpty(namedConsumerStrategy))
+            {
+                namedConsumerStrategy = dto.PreferRoundRobin
+                  ? SystemConsumerStrategies.RoundRobin
+                  : SystemConsumerStrategies.DispatchToSingle;
+            }
+
             return new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
                 dto.EventStreamId, dto.SubscriptionGroupName, dto.ResolveLinkTos, dto.StartFrom,
                 dto.MessageTimeoutMilliseconds,
                 dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
-                dto.ReadBatchSize, dto.PreferRoundRobin, dto.CheckpointAfterTime, dto.CheckpointMinCount,
-                dto.CheckpointMaxCount,
+                dto.ReadBatchSize, dto.CheckpointAfterTime, dto.CheckpointMinCount,
+                dto.CheckpointMaxCount, dto.SubscriberMaxCount, namedConsumerStrategy,
                 user, username, password);
         }
 

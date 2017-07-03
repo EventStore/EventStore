@@ -34,6 +34,9 @@
     <Reference Include="EventStore.Rags">
       <HintPath>..\libs\EventStore.Rags.dll</HintPath>
     </Reference>
+    <Reference Include="HdrHistogram.NET">
+      <HintPath>..\libs\hdrhistogram\HdrHistogram.NET.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>

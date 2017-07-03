@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -25,7 +26,7 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
         private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
         private Thread _thread;
@@ -88,9 +89,6 @@ namespace EventStore.Core.Bus
             _queueStats.Start();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
 
-            const int spinmax = 5000;
-            const int sleepmax = 500;
-            var iterationsCount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -99,22 +97,9 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         _queueStats.EnterIdle();
-
-                        iterationsCount += 1;
-                        if (iterationsCount < spinmax)
-                        {
-                            //do nothing... spin
-                        } 
-                        else if (iterationsCount < sleepmax)
-                        {
-                            Thread.Sleep(1);
-                        } 
-                        else
-                        {
-                            _starving = true;
-                            _msgAddEvent.WaitOne(100);
-                            _starving = false;
-                        }
+                        _starving = true;
+                        _msgAddEvent.WaitOne(100);
+                        _starving = false;
                     }
                     else
                     {
@@ -122,9 +107,6 @@ namespace EventStore.Core.Bus
 #if DEBUG
                         _queueStats.Dequeued(msg);
 #endif
-
-                        iterationsCount = 0;
-
                         var cnt = _queue.Count;
                         _queueStats.ProcessingStarted(msg.GetType(), cnt);
 

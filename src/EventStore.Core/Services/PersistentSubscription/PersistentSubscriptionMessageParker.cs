@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -40,16 +41,27 @@ namespace EventStore.Core.Services.PersistentSubscription
                 completed(ev, msg.Result);
         }
 
-        public void BeginParkMessage(ResolvedEvent @event,string reason, Action<ResolvedEvent, OperationResult> completed)
+        public void BeginParkMessage(ResolvedEvent ev,string reason, Action<ResolvedEvent, OperationResult> completed)
         {
-            var metadata = new ParkedMessageMetadata() {Added = DateTime.Now, Reason = reason};
-            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, GetLinkToFor(@event), metadata.ToJson());
-            _ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, evnt, SystemAccount.Principal, x => WriteStateCompleted(completed, @event, x));
+            var metadata = new ParkedMessageMetadata {Added = DateTime.Now, Reason = reason, SubscriptionEventNumber = ev.OriginalEventNumber};
+            
+            string data = GetLinkToFor(ev);
+
+            var parkedEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, data, metadata.ToJson());
+
+            _ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccount.Principal, x => WriteStateCompleted(completed, ev, x));
         }
 
-        private string GetLinkToFor(ResolvedEvent @event)
+        private string GetLinkToFor(ResolvedEvent ev)
         {
-            return string.Format("{0}@{1}", @event.OriginalEvent.EventNumber, @event.OriginalStreamId);
+            return string.Format("{0}@{1}", ev.Event.EventNumber, ev.Event.EventStreamId);
+        }
+
+
+        public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed)
+        {
+            _ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccount.Principal,
+                x => completed(this));
         }
 
         public void BeginReadEndSequence(Action<int?> completed)
@@ -63,7 +75,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     switch (comp.Result)
                     {
                         case ReadStreamResult.Success :
-                            completed(comp.NextEventNumber);
+                            completed(comp.LastEventNumber);
                             break;
                         case ReadStreamResult.NoStream :
                             completed(null);
@@ -97,13 +109,13 @@ namespace EventStore.Core.Services.PersistentSubscription
                             break;
                     }
                 });
-
         }
 
         class ParkedMessageMetadata
         {
             public DateTime Added { get; set; }
             public string Reason { get; set; }
+            public int SubscriptionEventNumber { get; set; }
         }
     }
 }

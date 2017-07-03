@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Core;
+using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
@@ -119,7 +119,7 @@ namespace EventStore.ClientAPI
             if (!IPAddress.TryParse(uri.Host, out ipaddress))
             {
                 var entries = Dns.GetHostAddresses(uri.Host);
-                if(entries.Length == 0) throw new Exception(string.Format("Unable to parse ip address or lookup dns host for '{0}'", uri.Host));
+                if(entries.Length == 0) throw new Exception(string.Format("Unable to parse IP address or lookup DNS host for '{0}'", uri.Host));
                 ipaddress = entries[0];
             }
             var port = uri.IsDefaultPort ? 2113 : uri.Port;

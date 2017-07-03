@@ -105,7 +105,7 @@ namespace EventStore.Core
 					"in later versions of Mono. Use the --gc=sgen flag on Mono to use the generational sgen collector instead. If you want to " + 
 					"run with the Boehm GC you can use --force flag on Event Store to override this error.");
                 }
-                if(OS.IsUnix && !OS.GetRuntimeVersion().StartsWith("3"))
+                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("3") || OS.GetRuntimeVersion().StartsWith("4")) )
                 {
                     Application.Exit(4, "It appears that we are running in Linux or MacOS with a version 2 build of Mono. This is generally not a good idea " +
 		                        "and we recommend running with Mono 3.6 or higher. If you really want to run with this version of Mono use the --force " +
@@ -197,7 +197,7 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize, bool inMemDb, bool unbuffered, bool writethrough)
         {
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
@@ -246,7 +246,9 @@ namespace EventStore.Core
                                                  chaserChk,
                                                  epochChk,
                                                  truncateChk,
-                                                 inMemDb);
+                                                 inMemDb,
+                                                 unbuffered,
+                                                 writethrough);
             return nodeConfig;
         }
 
@@ -263,11 +265,11 @@ namespace EventStore.Core
             {
                 StoreLocation location;
                 if (!Enum.TryParse(certificateStoreLocation, out location))
-                    throw new Exception(string.Format("Couldn't find certificate store location '{0}'", certificateStoreLocation));
+                    throw new Exception(string.Format("Could not find certificate store location '{0}'", certificateStoreLocation));
 
                 StoreName name;
                 if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
 
                 store = new X509Store(name, location);
                 
@@ -277,14 +279,14 @@ namespace EventStore.Core
                 }
                 catch (Exception exc)
                 {
-                    throw new Exception(string.Format("Couldn't open certificate store '{0}' in location {1}'.", name, location), exc);
+                    throw new Exception(string.Format("Could not open certificate store '{0}' in location {1}'.", name, location), exc);
                 }
             }
             else
             {
                 StoreName name;
                 if (!Enum.TryParse(certificateStoreName, out name))
-                    throw new Exception(string.Format("Couldn't find certificate store name '{0}'", certificateStoreName));
+                    throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
 
                 store = new X509Store(name);
 
@@ -294,7 +296,7 @@ namespace EventStore.Core
                 }
                 catch (Exception exc)
                 {
-                    throw new Exception(string.Format("Couldn't open certificate store '{0}'.", name), exc);
+                    throw new Exception(string.Format("Could not open certificate store '{0}'.", name), exc);
                 }
             }
 
@@ -306,7 +308,7 @@ namespace EventStore.Core
                 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 return certificates[0];
             }
@@ -319,7 +321,7 @@ namespace EventStore.Core
 
                 //Can this even happen?
                 if (certificates.Count > 1)
-                    throw new Exception(string.Format("Cannot determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
+                    throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.", certificateThumbprint));
 
                 return certificates[0];
             }

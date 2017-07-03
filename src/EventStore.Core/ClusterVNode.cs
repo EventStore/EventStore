@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
@@ -16,6 +17,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Gossip;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Replication;
@@ -45,12 +47,13 @@ namespace EventStore.Core
         public HttpService ExternalHttpService { get { return _externalHttpService; } }
         public TimerService TimerService { get { return _timerService; } }
         public IPublisher NetworkSendService { get { return _workersHandler; } }
+        public IAuthenticationProvider InternalAuthenticationProvider { get { return _internalAuthenticationProvider; } }
 
         internal MultiQueuedHandler WorkersHandler { get { return _workersHandler; } }
 
         private readonly VNodeInfo _nodeInfo;
         private readonly QueuedHandler _mainQueue;
-        private readonly InMemoryBus _mainBus;
+        private readonly ISubscriber _mainBus;
 
         private readonly ClusterVNodeController _controller;
         private readonly TimerService _timerService;
@@ -59,6 +62,7 @@ namespace EventStore.Core
         private readonly ITimeProvider _timeProvider;
         private readonly ISubsystem[] _subsystems;
         private readonly ManualResetEvent _shutdownEvent = new ManualResetEvent(false);
+        private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
 
         private readonly InMemoryBus[] _workerBuses;
@@ -87,6 +91,12 @@ namespace EventStore.Core
             _mainBus = new InMemoryBus("MainBus");
 
             var forwardingProxy = new MessageForwardingProxy();
+            //start watching jitter
+            HistogramService.StartJitterMonitor();
+            if (vNodeSettings.EnableHistograms)
+            {
+                HistogramService.CreateHistograms();
+            }
             // MISC WORKERS
             _workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
                 new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
@@ -100,7 +110,7 @@ namespace EventStore.Core
                                                             watchSlowMsg: true,
                                                             slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-            _controller = new ClusterVNodeController(_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
+            _controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this, forwardingProxy);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             
             _controller.SetMainQueue(_mainQueue);
@@ -133,6 +143,8 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
+            monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(_controller);
+
             var truncPos = db.Config.TruncateCheckpoint.Read();
             if (truncPos != -1)
             {
@@ -153,7 +165,8 @@ namespace EventStore.Core
                                             () => new TFReaderLease(readerPool),
                                             maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
-                                            inMem: db.Config.InMemDb);
+                                            inMem: db.Config.InMemDb,
+                                            indexCacheDepth: vNodeSettings.IndexCacheDepth);
 	        var hash = new XXHashUnsafe();
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
@@ -201,16 +214,16 @@ namespace EventStore.Core
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
             // AUTHENTICATION INFRASTRUCTURE - delegate to plugins
-	        var authenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
+	        _internalAuthenticationProvider = vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus, _workersHandler, _workerBuses);
 
-	        Ensure.NotNull(authenticationProvider, "authenticationProvider");
+	        Ensure.NotNull(_internalAuthenticationProvider, "authenticationProvider");
 		
             {
                 // EXTERNAL TCP
                 var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
                                                    TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
                                                    vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-                                                   authenticationProvider, null);
+                                                   _internalAuthenticationProvider, null);
                 _mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
                 _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
@@ -221,7 +234,7 @@ namespace EventStore.Core
                     var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
                                                           TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
                                                           vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-                                                          authenticationProvider, vNodeSettings.Certificate);
+                                                          _internalAuthenticationProvider, vNodeSettings.Certificate);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
                     _mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
                     _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
@@ -232,7 +245,7 @@ namespace EventStore.Core
                                                       TcpServiceType.Internal, TcpSecurityType.Normal,
                                                     new InternalTcpDispatcher(),
                                                     vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-                                                    authenticationProvider, null);
+                                                    _internalAuthenticationProvider, null);
                     _mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
                     _mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
                     _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
@@ -244,7 +257,7 @@ namespace EventStore.Core
                                                             TcpServiceType.Internal, TcpSecurityType.Secure,
                                                             new InternalTcpDispatcher(),
                                                             vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-                                                            authenticationProvider, vNodeSettings.Certificate);
+                                                            _internalAuthenticationProvider, vNodeSettings.Certificate);
                         _mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
                         _mainBus.Subscribe<SystemMessage.SystemStart>(intSecTcpService);
                         _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intSecTcpService);
@@ -262,7 +275,7 @@ namespace EventStore.Core
 
             var httpAuthenticationProviders = new List<HttpAuthenticationProvider>
             {
-                new BasicHttpAuthenticationProvider(authenticationProvider),
+                new BasicHttpAuthenticationProvider(_internalAuthenticationProvider),
             };
             if (vNodeSettings.EnableTrustedAuth)
                 httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
@@ -283,8 +296,9 @@ namespace EventStore.Core
 
             var adminController = new AdminController(_mainQueue);
             var pingController = new PingController();
+            var histogramController = new HistogramController();
             var statController = new StatController(monitoringQueue, _workersHandler);
-            var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler);
+            var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler, vNodeSettings.DevelopmentMode);
             var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
             var persistentSubscriptionController = new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
@@ -306,7 +320,7 @@ namespace EventStore.Core
             _externalHttpService.SetupController(atomController);
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
-
+            _externalHttpService.SetupController(histogramController);
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
@@ -322,6 +336,7 @@ namespace EventStore.Core
                 _internalHttpService.SetupController(atomController);
                 _internalHttpService.SetupController(gossipController);
                 _internalHttpService.SetupController(electController);
+                _internalHttpService.SetupController(histogramController);
                 _internalHttpService.SetupController(persistentSubscriptionController);
             }
 
@@ -392,7 +407,7 @@ namespace EventStore.Core
 
             // PERSISTENT SUBSCRIPTIONS
             // IO DISPATCHER
-            var ioDispatcher = new IODispatcher(_mainBus, new PublishEnvelope(_mainQueue));
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
             _mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
@@ -400,8 +415,6 @@ namespace EventStore.Core
             _mainBus.Subscribe(ioDispatcher);
             var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
             var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
-            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.BecomeMaster, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
@@ -455,7 +468,7 @@ namespace EventStore.Core
                 _mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
 
                 // REPLICA REPLICATION
-                var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, authenticationProvider,
+                var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, _internalAuthenticationProvider,
                                                     _nodeInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
                                                     vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);

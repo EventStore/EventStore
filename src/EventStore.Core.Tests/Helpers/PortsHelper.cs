@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -15,8 +16,7 @@ namespace EventStore.Core.Tests.Helpers
         public const int PortStart = 45000;
         public const int PortCount = 200;
 
-        private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = 
-            new EventStore.Common.Concurrent.ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
+        private static readonly ConcurrentQueue<int> AvailablePorts = new ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
 
         public static void InitPorts(IPAddress ip)
         {
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Helpers
                 try
                 {
                     var httpListener = new HttpListener();
-                    httpListener.Prefixes.Add(string.Format("http://+:{0}/", port));
+                    httpListener.Prefixes.Add(string.Format("http://127.0.0.1:{0}/", port));
                     httpListener.Start();
 
                     Exception httpListenerError = null;
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Helpers
             {
                 int port;
                 if (!AvailablePorts.TryDequeue(out port))
-                    throw new Exception("Couldn't get free TCP port for MiniNode.");
+                    throw new Exception("Could not get free TCP port for MiniNode.");
 
 /*
                 try
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Helpers
                     AvailablePorts.Enqueue(port);
                     continue;
 //                    throw new Exception(
-//                        string.Format("HttpListener couldn't listen on port {0}, but TcpListener was OK.\nError: {1}", port, exc), exc);
+//                        string.Format("HttpListener could not listen on port {0}, but TcpListener was OK.\nError: {1}", port, exc), exc);
                 }
                 return port;
             }

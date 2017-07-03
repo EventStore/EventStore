@@ -693,9 +693,15 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(14, IsRequired = true, Name=@"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int CheckpointMinCount;
   
+    [ProtoMember(15, IsRequired = true, Name=@"subscriber_max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int SubscriberMaxCount;
+  
+    [ProtoMember(16, IsRequired = false, Name=@"named_consumer_strategy", DataFormat = DataFormat.Default)]
+    public readonly string NamedConsumerStrategy;
+  
     private CreatePersistentSubscription() {}
   
-    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
+    public CreatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -711,6 +717,8 @@ namespace EventStore.ClientAPI.Messages
         CheckpointAfterTime = checkpointAfterTime;
         CheckpointMaxCount = checkpointMaxCount;
         CheckpointMinCount = checkpointMinCount;
+        SubscriberMaxCount = subscriberMaxCount;
+        NamedConsumerStrategy = namedConsumerStrategy;
     }
   }
   
@@ -777,9 +785,15 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(14, IsRequired = true, Name=@"checkpoint_min_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int CheckpointMinCount;
   
+    [ProtoMember(15, IsRequired = true, Name=@"subscriber_max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int SubscriberMaxCount;
+  
+    [ProtoMember(16, IsRequired = false, Name=@"named_consumer_strategy", DataFormat = DataFormat.Default)]
+    public readonly string NamedConsumerStrategy;
+  
     private UpdatePersistentSubscription() {}
   
-    public UpdatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount)
+    public UpdatePersistentSubscription(string subscriptionGroupName, string eventStreamId, bool resolveLinkTos, int startFrom, int messageTimeoutMilliseconds, bool recordStatistics, int liveBufferSize, int readBatchSize, int bufferSize, int maxRetryCount, bool preferRoundRobin, int checkpointAfterTime, int checkpointMaxCount, int checkpointMinCount, int subscriberMaxCount, string namedConsumerStrategy)
     {
         SubscriptionGroupName = subscriptionGroupName;
         EventStreamId = eventStreamId;
@@ -795,6 +809,8 @@ namespace EventStore.ClientAPI.Messages
         CheckpointAfterTime = checkpointAfterTime;
         CheckpointMaxCount = checkpointMaxCount;
         CheckpointMinCount = checkpointMinCount;
+        SubscriberMaxCount = subscriberMaxCount;
+        NamedConsumerStrategy = namedConsumerStrategy;
     }
   }
   
@@ -814,8 +830,8 @@ namespace EventStore.ClientAPI.Messages
       [ProtoEnum(Name=@"Success", Value=0)]
       Success = 0,
             
-      [ProtoEnum(Name=@"DoesNotExists", Value=1)]
-      DoesNotExists = 1,
+      [ProtoEnum(Name=@"DoesNotExist", Value=1)]
+      DoesNotExist = 1,
             
       [ProtoEnum(Name=@"Fail", Value=2)]
       Fail = 2,
@@ -1103,7 +1119,10 @@ namespace EventStore.ClientAPI.Messages
       NotFound = 2,
             
       [ProtoEnum(Name=@"PersistentSubscriptionDeleted", Value=3)]
-      PersistentSubscriptionDeleted = 3
+      PersistentSubscriptionDeleted = 3,
+            
+      [ProtoEnum(Name=@"SubscriberMaxCountReached", Value=4)]
+      SubscriberMaxCountReached = 4
     }
   
     private SubscriptionDropped() {}

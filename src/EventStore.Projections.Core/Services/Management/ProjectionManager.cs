@@ -278,7 +278,7 @@ namespace EventStore.Projections.Core.Services.Management
             var projection = GetProjection(message.Name);
             if (projection == null)
             {
-                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND.", message.Name);
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
@@ -307,7 +307,7 @@ namespace EventStore.Projections.Core.Services.Management
             var projection = GetProjection(message.Name);
             if (projection == null)
             {
-                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND.", message.Name);
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
@@ -323,7 +323,7 @@ namespace EventStore.Projections.Core.Services.Management
             var projection = GetProjection(message.Name);
             if (projection == null)
             {
-                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND!!!", message.Name);
+                _logger.Error("DBG: PROJECTION *{0}* NOT FOUND.", message.Name);
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             }
             else
