@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
 {
     public class specification_with_projection_manager_response_reader : TestFixtureWithExistingEvents
     {
-        private ProjectionManagerResponseReader _commandReader;
+        protected ProjectionManagerResponseReader _commandReader;
 
         protected override void Given()
         {

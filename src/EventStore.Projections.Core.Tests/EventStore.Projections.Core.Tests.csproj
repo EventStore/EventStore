@@ -541,6 +541,9 @@
     <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_index_based_checkpoint_read_timeout_occurs.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_event_reader\when_tf_based_read_timeout_occurs.cs" />
     <Compile Include="Services\event_reader\event_by_type_index_event_reader\EventByTypeIndexEventReaderTestFixture.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_read_times_out.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_timeout_received_after_read_succeeds.cs" />
+    <Compile Include="Services\projections_manager\projection_manager_response_reader\when_read_results_in_an_error.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
