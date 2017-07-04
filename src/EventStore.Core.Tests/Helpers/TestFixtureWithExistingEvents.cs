@@ -80,6 +80,7 @@ namespace EventStore.Core.Tests.Helpers
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private bool _readAllEnabled;
         private bool _noOtherStreams;
+        private bool _readsTimeOut;
         private static readonly char[] _linkToSeparator = new []{'@'};
 
         protected TFPos ExistingStreamMetadata(string streamId, string metadata)
@@ -108,6 +109,11 @@ namespace EventStore.Core.Tests.Helpers
             _all.Add(eventPosition, eventRecord);
             _fakePosition += 100;
             return eventPosition;
+        }
+
+        protected void AllReadsTimeOut()
+        {
+            _readsTimeOut = true;
         }
 
         protected void EnableReadAll()
@@ -215,6 +221,7 @@ namespace EventStore.Core.Tests.Helpers
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
+            if(_readsTimeOut) return;
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
             {
@@ -280,6 +287,7 @@ namespace EventStore.Core.Tests.Helpers
 
         public void Handle(ClientMessage.ReadStreamEventsForward message)
         {
+            if(_readsTimeOut) return;
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
             {
@@ -474,6 +482,7 @@ namespace EventStore.Core.Tests.Helpers
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
         {
+            if(_readsTimeOut) return;
             if (!_readAllEnabled)
                 return;
             var from = new TFPos(message.CommitPosition, message.PreparePosition);
