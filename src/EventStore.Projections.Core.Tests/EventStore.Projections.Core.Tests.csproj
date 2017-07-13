@@ -125,6 +125,7 @@
     <Compile Include="Services\emitted_stream\when_handling_a_timeout.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_cached_event_and_throws.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_persisted_state_write_fails.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_system_projection.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_registration_write_fails.cs" />
     <Compile Include="Services\projections_manager\when_reading_registered_projections\with_no_stream_and_intialize_system_projections.cs" />
