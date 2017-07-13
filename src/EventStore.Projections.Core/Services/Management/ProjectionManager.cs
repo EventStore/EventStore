@@ -732,7 +732,8 @@ namespace EventStore.Projections.Core.Services.Management
                     {
                         completedAction();
                         CreateSystemProjections();
-                    });
+                    },
+                    Guid.NewGuid());
                 return;
             }
             _logger.Debug("PROJECTIONS: Found the following projections. {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
@@ -758,7 +759,7 @@ namespace EventStore.Projections.Core.Services.Management
                    || _runProjections == ProjectionType.System && projectionName.StartsWith("$");
         }
 
-        private void WriteProjectionsInitialized(Action action)
+        private void WriteProjectionsInitialized(Action action, Guid registrationEventId)
         {
             var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
@@ -769,12 +770,12 @@ namespace EventStore.Projections.Core.Services.Management
                     true,
                     ProjectionNamesBuilder.ProjectionsRegistrationStream,
                     ExpectedVersion.NoStream,
-                    new Event(Guid.NewGuid(), EventTypes.ProjectionsInitialized, false, Empty.ByteArray, Empty.ByteArray),
+                    new Event(registrationEventId, EventTypes.ProjectionsInitialized, false, Empty.ByteArray, Empty.ByteArray),
                     SystemAccount.Principal),
-                completed => WriteProjectionsInitializedCompleted(completed, action));
+                completed => WriteProjectionsInitializedCompleted(completed, registrationEventId, action));
         }
 
-        private void WriteProjectionsInitializedCompleted(ClientMessage.WriteEventsCompleted completed, Action action)
+        private void WriteProjectionsInitializedCompleted(ClientMessage.WriteEventsCompleted completed, Guid registrationEventId, Action action)
         {
             switch (completed.Result)
             {
@@ -784,7 +785,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case OperationResult.CommitTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.PrepareTimeout:
-                    WriteProjectionsInitialized(action);
+                    WriteProjectionsInitialized(action, registrationEventId);
                     break;
                 default:
                     _logger.Fatal("Cannot initialize projections subsystem. Cannot write a fake projection");
