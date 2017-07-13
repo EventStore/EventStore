@@ -666,7 +666,7 @@ namespace EventStore.Projections.Core.Services.Management
         internal void WriteStartOrLoadStopped()
         {
             if (_pendingWritePersistedState)
-                WritePersistedState();
+                WritePersistedState(CreatePersistedStateEvent(Guid.NewGuid(), PersistedProjectionState, ProjectionNamesBuilder.ProjectionsStreamPrefix + _name));
             else
                 StartOrLoadStopped();
         }
@@ -676,7 +676,15 @@ namespace EventStore.Projections.Core.Services.Management
             Reply();
         }
 
-        private void WritePersistedState()
+        private ClientMessage.WriteEvents CreatePersistedStateEvent(Guid correlationId, PersistedState persistedState, string eventStreamId)
+        {
+            return new ClientMessage.WriteEvents(
+                correlationId, correlationId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
+                new Event(Guid.NewGuid(), EventTypes.ProjectionUpdated, true, persistedState.ToJsonBytes(), Empty.ByteArray),
+                SystemAccount.Principal);
+        }
+
+        private void WritePersistedState(ClientMessage.WriteEvents persistedStateEvent)
         {
             if (Mode == ProjectionMode.Transient)
             {
@@ -686,18 +694,12 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
             _writing = true;
-            var managedProjectionSerializedState = PersistedProjectionState.ToJsonBytes();
-            var eventStreamId = ProjectionNamesBuilder.ProjectionsStreamPrefix + _name;
-            var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
-                new ClientMessage.WriteEvents(
-                    corrId, corrId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), EventTypes.ProjectionUpdated, true, managedProjectionSerializedState, Empty.ByteArray),
-                    SystemAccount.Principal),
-                m => WritePersistedStateCompleted(m, eventStreamId));
+                persistedStateEvent,
+                m => WritePersistedStateCompleted(m, persistedStateEvent, persistedStateEvent.EventStreamId));
         }
 
-        private void WritePersistedStateCompleted(ClientMessage.WriteEventsCompleted message, string eventStreamId)
+        private void WritePersistedStateCompleted(ClientMessage.WriteEventsCompleted message, ClientMessage.WriteEvents eventToRetry, string eventStreamId)
         {
             if (!_writing)
             {
@@ -724,7 +726,7 @@ namespace EventStore.Projections.Core.Services.Management
                 || message.Result == OperationResult.WrongExpectedVersion)
             {
                 _logger.Info("Retrying write projection source for {0}", _name);
-                WritePersistedState();
+                WritePersistedState(eventToRetry);
             }
             else
                 throw new NotSupportedException("Unsupported error code received");
