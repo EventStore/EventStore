@@ -7,12 +7,12 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -26,9 +26,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             _workerId = Guid.NewGuid();
-            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, EventTypes.ProjectionCreated, null, "projection1");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated, null, "projection1");
             ExistingEvent(
-                "$projections-projection1", EventTypes.ProjectionUpdated, null,
+                "$projections-projection1", ProjectionEventTypes.ProjectionUpdated, null,
                 @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":true, ""HandlerType"":""JS""}");
         }
 

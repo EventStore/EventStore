@@ -12,6 +12,7 @@ using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -29,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _initializeSystemProjections = GivenInitializeSystemProjections();
             if (!_initializeSystemProjections)
             {
-                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, "$ProjectionsInitialized", "", "");
+                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionsInitialized, "", "");
             }
         }
 

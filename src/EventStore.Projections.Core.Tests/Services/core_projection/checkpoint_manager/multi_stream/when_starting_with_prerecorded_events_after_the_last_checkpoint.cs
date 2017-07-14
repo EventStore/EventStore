@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream
 {
@@ -26,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             base.Given();
             ExistingEvent(
-                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
+                "$projections-projection-checkpoint", ProjectionEventTypes.ProjectionCheckpoint,
                 @"{""s"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
             ExistingEvent("a", "StreamCreated", "", "");
             ExistingEvent("b", "StreamCreated", "", "");
