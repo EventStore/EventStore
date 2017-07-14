@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                     new EmittedDataEvent(
                         "test", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), null)
                 });
-            _stream.ProcessQueue();
+            _stream.Start();
         }
 
         [Test]

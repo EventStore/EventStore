@@ -3,7 +3,6 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using EventStore.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
@@ -19,7 +18,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             NoStream("stream1");
             NoStream("stream2");
             NoStream("stream3");
-            AllWritesSucceed();
         }
 
         [SetUp]
@@ -55,13 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [Test]
         public void should_publish_write_events()
         {
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => !SystemStreams.IsMetastream(x.EventStreamId)).Count());
-        }
-
-        [Test]
-        public void should_publish_write_events_for_metadata()
-        {
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => SystemStreams.IsMetastream(x.EventStreamId)).Count());
+            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }
 }

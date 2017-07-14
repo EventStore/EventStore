@@ -6,37 +6,35 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested_but_disabled : TestFixtureWithReadWriteDispatchers
+    public class a_checkpoint_requested_on_a_non_started_stream : TestFixtureWithReadWriteDispatchers
     {
         private EmittedStream _stream;
+
         private TestCheckpointManagerMessageHandler _readyHandler;
-        private Exception _exception;
+        private Exception _caughtException;
 
         [SetUp]
         public void setup()
         {
-            _exception = null;
             _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
             _stream = new EmittedStream(
                 "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler,
-                noCheckpoints: true);
-            _stream.Start();
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler);
             try
             {
                 _stream.Checkpoint();
             }
             catch (Exception ex)
             {
-                _exception = ex;
+                _caughtException = ex;
             }
         }
 
         [Test]
-        public void invalid_operation_exceptioon_is_thrown()
+        public void throws_invalid_operation_exception()
         {
-            Assert.IsNotNull(_exception);
-            Assert.IsInstanceOf<InvalidOperationException>(_exception);
+            Assert.Throws<InvalidOperationException>(()=> { if (_caughtException != null) throw _caughtException; });
         }
     }
 }

@@ -50,9 +50,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                         new EmittedDataEvent(
                             "stream1", Guid.NewGuid(), "type4", true, "data", null, CheckpointTag.FromPosition(0, 140, 130), null))
                 });
-            OneWriteCompletes(); // stream2
-            OneWriteCompletes(); // stream3
-            // Don't complete the write for stream1 as we need to ensure it gets grouped in later test
         }
 
         [Test]

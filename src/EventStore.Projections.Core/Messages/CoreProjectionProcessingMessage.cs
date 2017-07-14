@@ -229,16 +229,23 @@ public static class CoreProjectionProcessingMessage
             get { return TypeId; }
         }
 
+        private readonly IEnvelope _envelope;
         private readonly string _streamId;
 
-        public EmittedStreamAwaiting(string streamId)
+        public EmittedStreamAwaiting(string streamId, IEnvelope envelope)
         {
+            _envelope = envelope;
             _streamId = streamId;
         }
 
         public string StreamId
         {
             get { return _streamId; }
+        }
+
+        public IEnvelope Envelope
+        {
+            get { return _envelope; }
         }
     }
 
