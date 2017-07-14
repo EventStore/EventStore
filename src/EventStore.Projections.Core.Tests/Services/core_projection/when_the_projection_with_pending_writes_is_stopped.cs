@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -52,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWriteComplete();
             Assert.AreEqual(
                 1,
-                _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == "$ProjectionCheckpoint")));
+                _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == ProjectionEventTypes.ProjectionCheckpoint)));
         }
 
         [Test]
@@ -61,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWriteComplete();
             var index =
                 _writeEventHandler.HandledMessages.FindIndex(
-                    v => v.Events.Any(e => e.EventType == "$ProjectionCheckpoint"));
+                    v => v.Events.Any(e => e.EventType == ProjectionEventTypes.ProjectionCheckpoint));
             Assert.AreEqual(index + 1, _writeEventHandler.HandledMessages.Count());
         }
     }

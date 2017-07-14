@@ -6,8 +6,8 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
-using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -21,9 +21,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             NoStream("$projections-test-projection-order");
             AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
-            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, EventTypes.ProjectionCreated, null, "test-projection");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated, null, "test-projection");
             ExistingEvent(
-                "$projections-test-projection", EventTypes.ProjectionUpdated, null,
+                "$projections-test-projection", ProjectionEventTypes.ProjectionUpdated, null,
                 @"{
                     ""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", 
                     ""Mode"":""3"", 

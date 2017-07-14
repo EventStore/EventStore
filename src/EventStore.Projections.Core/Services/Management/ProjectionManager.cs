@@ -15,7 +15,6 @@ using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using EventStore.Core.Services;
-using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -606,7 +605,7 @@ namespace EventStore.Projections.Core.Services.Management
                     ExpectedVersion.Any,
                     new Event(
                         Guid.NewGuid(),
-                        EventTypes.ProjectionDeleted,
+                        ProjectionEventTypes.ProjectionDeleted,
                         false,
                         Helper.UTF8NoBom.GetBytes(message.Name),
                         Empty.ByteArray),
@@ -686,9 +685,9 @@ namespace EventStore.Projections.Core.Services.Management
                         var projectionId = evnt.Event.EventNumber;
                         if (projectionId == 0)
                             projectionId = Int32.MaxValue - 1;
-                        if(evnt.Event.EventType == EventTypes.ProjectionsInitialized)
+                        if(evnt.Event.EventType == ProjectionEventTypes.ProjectionsInitialized)
                         {
-                            registeredProjections.Add(EventTypes.ProjectionsInitialized, projectionId);
+                            registeredProjections.Add(ProjectionEventTypes.ProjectionsInitialized, projectionId);
                             continue;
                         }
                         var projectionName = Helper.UTF8NoBom.GetString(evnt.Event.Data);
@@ -698,11 +697,11 @@ namespace EventStore.Projections.Core.Services.Management
                             _logger.Warn("PROJECTIONS: The following projection: {0} has a duplicate registration event.", projectionName);
                             continue;
                         }
-                        if (evnt.Event.EventType == EventTypes.ProjectionCreated)
+                        if (evnt.Event.EventType == ProjectionEventTypes.ProjectionCreated)
                         {
                             registeredProjections.Add(projectionName, projectionId);
                         }
-                        else if(evnt.Event.EventType == EventTypes.ProjectionDeleted)
+                        else if(evnt.Event.EventType == ProjectionEventTypes.ProjectionDeleted)
                         {
                             registeredProjections.Remove(projectionName);
                         }
@@ -738,9 +737,9 @@ namespace EventStore.Projections.Core.Services.Management
             }
             _logger.Debug("PROJECTIONS: Found the following projections. {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
                 String.Join(", ", registeredProjections
-                    .Where(x => x.Key != EventTypes.ProjectionsInitialized)
+                    .Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized)
                     .Select(x => x.Key)));
-            foreach (var projectionRegistration in registeredProjections.Where(x => x.Key != EventTypes.ProjectionsInitialized))
+            foreach (var projectionRegistration in registeredProjections.Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized))
             {
                 int queueIndex = GetNextWorkerIndex();
                 var managedProjection = CreateManagedProjectionInstance(
@@ -770,7 +769,7 @@ namespace EventStore.Projections.Core.Services.Management
                     true,
                     ProjectionNamesBuilder.ProjectionsRegistrationStream,
                     ExpectedVersion.NoStream,
-                    new Event(registrationEventId, EventTypes.ProjectionsInitialized, false, Empty.ByteArray, Empty.ByteArray),
+                    new Event(registrationEventId, ProjectionEventTypes.ProjectionsInitialized, false, Empty.ByteArray, Empty.ByteArray),
                     SystemAccount.Principal),
                 completed => WriteProjectionsInitializedCompleted(completed, registrationEventId, action));
         }
@@ -1047,7 +1046,7 @@ namespace EventStore.Projections.Core.Services.Management
                     ExpectedVersion.Any,
                     new Event(
                         eventId,
-                        EventTypes.ProjectionCreated,
+                        ProjectionEventTypes.ProjectionCreated,
                         false,
                         Helper.UTF8NoBom.GetBytes(name),
                         Empty.ByteArray),

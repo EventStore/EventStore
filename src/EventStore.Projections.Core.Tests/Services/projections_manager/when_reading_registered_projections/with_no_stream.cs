@@ -4,7 +4,7 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
-using EventStore.Projections.Core.Common;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_reading_registered_projections
 {
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count(x => 
                     x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream && 
-                    x.Events[0].EventType == EventTypes.ProjectionsInitialized));
+                    x.Events[0].EventType == ProjectionEventTypes.ProjectionsInitialized));
         }
 
         [Test]
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
         {
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count(x => 
                     x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream && 
-                    x.Events[0].EventType == EventTypes.ProjectionCreated));
+                    x.Events[0].EventType == ProjectionEventTypes.ProjectionCreated));
         }
     }
 }

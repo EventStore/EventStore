@@ -16,7 +16,6 @@ using EventStore.Projections.Core.Utils;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using System.Threading;
 using EventStore.Core.Helpers;
-using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -680,7 +679,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             return new ClientMessage.WriteEvents(
                 correlationId, correlationId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
-                new Event(Guid.NewGuid(), EventTypes.ProjectionUpdated, true, persistedState.ToJsonBytes(), Empty.ByteArray),
+                new Event(Guid.NewGuid(), ProjectionEventTypes.ProjectionUpdated, true, persistedState.ToJsonBytes(), Empty.ByteArray),
                 SystemAccount.Principal);
         }
 

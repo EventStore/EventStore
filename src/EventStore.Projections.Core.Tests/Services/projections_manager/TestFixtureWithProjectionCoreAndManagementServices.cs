@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _initializeSystemProjections = GivenInitializeSystemProjections();
             if (!_initializeSystemProjections)
             {
-                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, "$ProjectionsInitialized", "", "");
+                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionsInitialized, "", "");
             }
         }
 

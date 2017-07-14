@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             Assert.AreEqual(
                 true,
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == "$ProjectionDeleted" && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
         }
 
         [Test, Category("v8")]

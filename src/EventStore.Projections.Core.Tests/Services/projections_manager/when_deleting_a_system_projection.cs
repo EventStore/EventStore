@@ -8,6 +8,7 @@ using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
 using System.Collections;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -61,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void a_projection_deleted_event_is_not_written()
         {
             Assert.IsFalse(
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == "$ProjectionDeleted" && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _systemProjectionName));
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _systemProjectionName));
         }
     }
 }

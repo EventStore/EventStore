@@ -7,7 +7,6 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
-using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -53,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             Assert.IsTrue(
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(
-                    v => v.Events[0].EventType == EventTypes.ProjectionUpdated));
+                    v => v.Events[0].EventType == ProjectionEventTypes.ProjectionUpdated));
         }
 
         [Test, Category("v8")]
