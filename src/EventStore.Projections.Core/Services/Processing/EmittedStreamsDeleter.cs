@@ -142,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void TryMarkCheckpoint(long eventNumber)
         {
-            _ioDispatcher.WriteEvent(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, new Event(Guid.NewGuid(), "$Checkpoint", true, eventNumber.ToJson(), null), SystemAccount.Principal, x =>
+            _ioDispatcher.WriteEvent(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, new Event(Guid.NewGuid(), ProjectionEventTypes.PartitionCheckpoint, true, eventNumber.ToJson(), null), SystemAccount.Principal, x =>
             {
                 if (x.Result == OperationResult.Success)
                 {

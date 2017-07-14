@@ -12,8 +12,8 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
-using EventStore.Projections.Core.Common;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             _workerId = Guid.NewGuid();
-            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, EventTypes.ProjectionCreated, null, "projection1");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated, null, "projection1");
             NoStream("$projections-projection1");
         }
 

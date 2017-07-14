@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up
 {
@@ -104,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 
                 yield return CreateWriteEvent("$et-type2", "$>", "1@test-stream", TFPosToMetadata(_tfPos2));
 
-                yield return CreateWriteEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos2), TFPosToMetadata(_tfPos2));
+                yield return CreateWriteEvent("$et", ProjectionEventTypes.PartitionCheckpoint, TFPosToMetadata(_tfPos2), TFPosToMetadata(_tfPos2));
 
                 // we are still in index-based reading mode
                 Assert.IsEmpty(_consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>());

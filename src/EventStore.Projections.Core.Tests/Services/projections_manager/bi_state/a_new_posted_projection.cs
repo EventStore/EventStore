@@ -109,9 +109,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             public void writes_both_stream_and_shared_partition_checkpoints()
             {
                 var writeProjectionCheckpoints =
-                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$ProjectionCheckpoint").ToArray();
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType(ProjectionEventTypes.ProjectionCheckpoint).ToArray();
                 var writeCheckpoints =
-                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$Checkpoint").ToArray();
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType(ProjectionEventTypes.PartitionCheckpoint).ToArray();
 
                 Assert.AreEqual(1, writeProjectionCheckpoints.Length);
                 Assert.AreEqual(@"[{""data"": 2}]", Encoding.UTF8.GetString(writeProjectionCheckpoints[0].Data));

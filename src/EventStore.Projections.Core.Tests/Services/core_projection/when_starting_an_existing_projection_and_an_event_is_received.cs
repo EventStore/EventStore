@@ -4,6 +4,7 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -18,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "$projections-projection-result", "Result", @"{""c"": 100, ""p"": 50}",
                 _testProjectionState);
             ExistingEvent(
-                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
+                "$projections-projection-checkpoint", ProjectionEventTypes.ProjectionCheckpoint,
                 @"{""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-result", "Result", @"{""c"": 200, ""p"": 150}",

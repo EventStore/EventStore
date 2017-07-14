@@ -44,8 +44,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void a_projection_deleted_event_is_not_written()
         {
             Assert.AreNotEqual(
-                "$ProjectionDeleted",
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].EventType, "$ProjectionDeleted event was not supposed to be written");
+                ProjectionEventTypes.ProjectionDeleted,
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Last().Events[0].EventType, $"{ProjectionEventTypes.ProjectionDeleted} event was not supposed to be written");
         }
     }
 }
