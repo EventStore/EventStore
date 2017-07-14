@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             base.Start(checkpointTag);
             _orderStream = CreateOrderStream(checkpointTag);
-            _orderStream.ProcessQueue();
+            _orderStream.Start();
         }
 
         public override void RecordEventOrder(
@@ -66,7 +66,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         false, resolvedEvent.PositionSequenceNumber + "@" + resolvedEvent.PositionStreamId, null,
                         orderCheckpointTag, _lastOrderCheckpointTag, v => committed())
                 });
-            _orderStream.ProcessQueue();
             _lastOrderCheckpointTag = orderCheckpointTag;
         }
 
@@ -244,7 +243,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_stopped)
                 return;
-            _orderStream.ProcessQueue();
         }
     }
 }

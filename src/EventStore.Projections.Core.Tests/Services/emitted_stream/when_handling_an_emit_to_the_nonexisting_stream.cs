@@ -29,6 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
                 _ioDispatcher, _readyHandler);
+            _stream.Start();
         }
 
         [Test]
@@ -52,7 +53,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 100, 50), null)
                 });
-            _stream.ProcessQueue();
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
@@ -69,7 +69,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
-            _stream.ProcessQueue();
             Assert.AreEqual(
                 1,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>()
@@ -86,7 +85,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
-            _stream.ProcessQueue();
             Assert.AreEqual(0, _readyHandler.HandledWriteCompletedMessage.Count);
         }
 
@@ -99,7 +97,6 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
                     new EmittedDataEvent(
                         "test_stream", Guid.NewGuid(), "type", true, "data", null, CheckpointTag.FromPosition(0, 200, 150), null)
                 });
-            _stream.ProcessQueue();
             OneWriteCompletes();
             Assert.IsTrue(_readyHandler.HandledWriteCompletedMessage.Any(v => v.StreamId == "test_stream"));
                 // more than one is ok

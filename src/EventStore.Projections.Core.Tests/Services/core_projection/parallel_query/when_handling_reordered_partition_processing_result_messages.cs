@@ -17,7 +17,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.parallel_qu
         {
             base.Given();
             _eventId = Guid.NewGuid();
-            AllWritesSucceed();
         }
 
         protected override void When()
