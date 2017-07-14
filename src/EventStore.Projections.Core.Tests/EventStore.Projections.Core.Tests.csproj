@@ -128,6 +128,7 @@
     <Compile Include="Services\projections_manager\managed_projection\when_persisted_state_write_fails.cs" />
     <Compile Include="Services\projections_manager\when_deleting_a_system_projection.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_registration_write_fails.cs" />
+    <Compile Include="Services\projections_manager\when_the_projections_initialized_write_fails.cs" />
     <Compile Include="Services\projections_manager\when_reading_registered_projections\with_no_stream_and_intialize_system_projections.cs" />
     <Compile Include="Services\projections_manager\when_reading_registered_projections\with_no_stream.cs" />
     <Compile Include="Services\projection_subscription\when_handling_enough_events_for_a_checkpoint_before_specified_time_elapses.cs" />
