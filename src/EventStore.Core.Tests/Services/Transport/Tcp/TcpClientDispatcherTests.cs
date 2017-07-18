@@ -12,7 +12,6 @@ using System.Text;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp
 {
@@ -35,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
                                 new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, Opts.ConnectionPendingSendBytesThresholdDefault);
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { });
         }
 
         [Test]
