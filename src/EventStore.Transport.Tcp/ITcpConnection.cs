@@ -14,7 +14,6 @@ namespace EventStore.Transport.Tcp
         IPEndPoint RemoteEndPoint { get; }
         IPEndPoint LocalEndPoint { get; }
         int SendQueueSize { get; }
-        int PendingSendBytes { get; }
         bool IsClosed { get; }
 
         void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);

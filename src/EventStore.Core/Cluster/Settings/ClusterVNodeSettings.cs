@@ -59,7 +59,6 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan IntTcpHeartbeatInterval;
         public readonly TimeSpan ExtTcpHeartbeatTimeout;
         public readonly TimeSpan ExtTcpHeartbeatInterval;
-        public readonly int ConnectionPendingSendBytesThreshold;
         public readonly bool UnsafeIgnoreHardDeletes;
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
@@ -123,7 +122,6 @@ namespace EventStore.Core.Cluster.Settings
                                     bool startStandardProjections,
                                     bool disableHTTPCaching,
                                     bool logHttpRequests,
-                                    int connectionPendingSendBytesThreshold,
                                     string index = null, bool enableHistograms = false,
                                     int indexCacheDepth = 16,
                                     byte indexBitnessVersion = 2,
@@ -207,7 +205,6 @@ namespace EventStore.Core.Cluster.Settings
             IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
             ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
             ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
-            ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -261,8 +258,7 @@ namespace EventStore.Core.Cluster.Settings
                                  + "HistogramEnabled: {32}\n"
                                  + "HTTPCachingDisabled: {33}\n"
                                  + "IndexPath: {34}\n"
-                                 + "ScavengeHistoryMaxAge: {35}\n"
-                                 + "ConnectionPendingSendBytesThreshold: {36}\n",
+                                 + "ScavengeHistoryMaxAge: {35}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -279,8 +275,7 @@ namespace EventStore.Core.Cluster.Settings
                                  UseSsl, SslTargetHost, SslValidateServer,
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
                                  NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
-                                 EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
-                                 ConnectionPendingSendBytesThreshold);
+                                 EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge);
         }
     }
 }
