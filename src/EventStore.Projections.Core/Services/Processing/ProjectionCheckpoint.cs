@@ -6,6 +6,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -26,12 +27,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
 
         private readonly IODispatcher _ioDispatcher;
+        private readonly IPublisher _publisher;
 
         private readonly ProjectionVersion _projectionVersion;
 
         private List<IEnvelope> _awaitingStreams;
 
         public ProjectionCheckpoint(
+            IPublisher publisher,
             IODispatcher ioDispatcher,
             ProjectionVersion projectionVersion,
             IPrincipal runAs,
@@ -41,11 +44,13 @@ namespace EventStore.Projections.Core.Services.Processing
             int maxWriteBatchLength,
             ILogger logger = null)
         {
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
+            _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _projectionVersion = projectionVersion;
             _runAs = runAs;
@@ -137,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
 
                 stream = new EmittedStream(
-                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _ioDispatcher, this);
+                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
 
                 if (_started)
                     stream.Start();
