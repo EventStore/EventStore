@@ -744,6 +744,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         }
     }
 
+    [TestFixture]
     public class with_custom_advertise_as : SingleNodeScenario
     {
         private Data.GossipAdvertiseInfo _advertiseInfo;
@@ -786,6 +787,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         }
     }
 
+    [TestFixture]
     public class with_always_keep_scavenged : SingleNodeScenario
     {
         public override void Given()
@@ -797,6 +799,23 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
         public void should_always_keep_scavenged() 
         {
             Assert.AreEqual(true, _settings.AlwaysKeepScavenged);
+        }
+    }
+
+    [TestFixture]
+    public class with_connection_pending_send_bytes_threshold : SingleNodeScenario
+    {
+        private int _threshold = 40 * 1024;
+        
+        public override void Given()
+        {
+            _builder.WithConnectionPendingSendBytesThreshold(_threshold);
+        }
+
+        [Test]
+        public void should_set_connection_pending_send_bytes_threshold() 
+        {
+            Assert.AreEqual(_threshold, _settings.ConnectionPendingSendBytesThreshold);
         }
     }
 }
