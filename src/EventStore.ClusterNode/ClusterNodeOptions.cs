@@ -73,6 +73,8 @@ namespace EventStore.ClusterNode
         public int ExtTcpHeartbeatInterval { get; set; }
         [ArgDescription(Opts.GossipOnSingleNodeDescr, Opts.InterfacesGroup)]
         public bool GossipOnSingleNode { get; set; }
+        [ArgDescription(Opts.ConnectionPendingSendBytesThresholdDescr, Opts.InterfacesGroup)]
+        public bool ConnectionPendingSendBytesThreshold { get; set; }
 
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
