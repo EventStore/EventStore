@@ -40,6 +40,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly TimeSpan _heartbeatTimeout;
         private readonly IAuthenticationProvider _authProvider;
         private readonly X509Certificate _certificate;
+        private readonly int _connectionPendingSendBytesThreshold;
 
         public TcpService(IPublisher publisher,
                           IPEndPoint serverEndPoint,
@@ -50,9 +51,10 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
                           IAuthenticationProvider authProvider,
-                          X509Certificate certificate)
+                          X509Certificate certificate,
+                          int connectionPendingSendBytesThreshold)
             : this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher, 
-                   heartbeatInterval, heartbeatTimeout, authProvider, certificate)
+                   heartbeatInterval, heartbeatTimeout, authProvider, certificate, connectionPendingSendBytesThreshold)
         {
         }
 
@@ -65,13 +67,15 @@ namespace EventStore.Core.Services.Transport.Tcp
                           TimeSpan heartbeatInterval,
                           TimeSpan heartbeatTimeout,
                           IAuthenticationProvider authProvider,
-                          X509Certificate certificate)
+                          X509Certificate certificate,
+                          int connectionPendingSendBytesThreshold)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
             Ensure.NotNull(networkSendQueue, "networkSendQueue");
             Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
             Ensure.NotNull(authProvider, "authProvider");
+            Ensure.Equal(true, connectionPendingSendBytesThreshold > 0, "connectionPendingSendBytesThreshold");
             if (securityType == TcpSecurityType.Secure)
                 Ensure.NotNull(certificate, "certificate");
 
@@ -84,6 +88,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _dispatcherFactory = dispatcherFactory;
             _heartbeatInterval = heartbeatInterval;
             _heartbeatTimeout = heartbeatTimeout;
+            _connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
             _authProvider = authProvider;
             _certificate = certificate;
         }
@@ -128,7 +133,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                     _authProvider,
                     _heartbeatInterval,
                     _heartbeatTimeout,
-                    (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e))); // TODO AN: race condition
+                    (m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e)),
+                    _connectionPendingSendBytesThreshold, true); // TODO AN: race condition
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));
             manager.StartReceiving();
         }
