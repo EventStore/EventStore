@@ -6,6 +6,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -804,6 +805,7 @@ namespace EventStore.Projections.Core.Messages
 
                 private readonly Guid _correlationId;
                 private readonly string _streamId;
+                private readonly Dictionary<string, object> _parameters;
 
                 public Guid CorrelationId
                 {
@@ -815,10 +817,20 @@ namespace EventStore.Projections.Core.Messages
                     get { return _streamId; }
                 }
 
-                public ReadTimeout(Guid correlationId, string streamId)
+                public Dictionary<string, object> Parameters
+                {
+                    get { return _parameters; }
+                }
+
+                public ReadTimeout(Guid correlationId, string streamId, Dictionary<string, object> parameters)
                 {
                     _correlationId = correlationId;
                     _streamId = streamId;
+                    _parameters = parameters;
+                }
+
+                public ReadTimeout(Guid correlationId, string streamId) : this(correlationId, streamId, new Dictionary<string, object>())
+                {
                 }
             }
 

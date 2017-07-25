@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _stream = new EmittedStream(
                 "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 20, 10),
-                _ioDispatcher, _readyHandler);
+                _bus, _ioDispatcher, _readyHandler);
             _stream.Start();
             _stream.EmitEvents(CreateEventBatch());
             OneWriteCompletes();
