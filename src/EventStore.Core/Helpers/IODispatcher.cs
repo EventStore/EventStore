@@ -78,14 +78,16 @@ namespace EventStore.Core.Helpers
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
+            Guid? corrId = null)
         {
-            var corrId = Guid.NewGuid();
+            if (!corrId.HasValue)
+                corrId = Guid.NewGuid();
             return
                 BackwardReader.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
-                        corrId,
-                        corrId,
+                        corrId.Value,
+                        corrId.Value,
                         BackwardReader.Envelope,
                         streamId,
                         fromEventNumber,

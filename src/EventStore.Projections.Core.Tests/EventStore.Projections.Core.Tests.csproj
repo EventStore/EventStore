@@ -122,6 +122,8 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
     <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
+    <Compile Include="Services\emitted_stream\when_a_read_completes_before_a_timeout_in_recovery.cs" />
+    <Compile Include="Services\emitted_stream\when_a_read_times_out_in_recovery.cs" />
     <Compile Include="Services\emitted_stream\when_handling_a_timeout.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_cached_event_and_throws.cs" />
     <Compile Include="Services\event_reader\heading_event_reader\when_the_heading_event_reader_with_a_subscribed_projection_handles_a_live_event_and_throws.cs" />

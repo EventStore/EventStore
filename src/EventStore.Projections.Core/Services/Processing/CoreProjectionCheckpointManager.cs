@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly bool _usePersistentCheckpoints;
 
-        private readonly IPublisher _publisher;
+        protected readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
         private readonly CheckpointTag _zeroTag;
 
