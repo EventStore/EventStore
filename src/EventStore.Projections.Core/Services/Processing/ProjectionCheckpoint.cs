@@ -33,6 +33,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private List<IEnvelope> _awaitingStreams;
 
+        private Guid _instanceId;
+
         public ProjectionCheckpoint(
             IPublisher publisher,
             IODispatcher ioDispatcher,
@@ -59,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
+            _instanceId = Guid.NewGuid();
         }
 
         public void Start()
@@ -142,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
 
                 stream = new EmittedStream(
-                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
+                    _instanceId, streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
 
                 if (_started)
                     stream.Start();
