@@ -43,8 +43,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 
         protected override IEnumerable<WhenStep> PreWhen()
         {
-            foreach (var m in base.PreWhen()) yield return m;
-            yield return new ProjectionCoreServiceMessage.StartCore();
+            var startCore = new ProjectionCoreServiceMessage.StartCore();
+            var startReader = CreateWriteEvent("$projections-$control", "$response-reader-started", "{}");
+            yield return new WhenStep(startCore, startReader);
             List<EventRecord> stream;
             _streams.TryGetValue("$projections-$master", out stream);
             Assume.That(stream != null);
