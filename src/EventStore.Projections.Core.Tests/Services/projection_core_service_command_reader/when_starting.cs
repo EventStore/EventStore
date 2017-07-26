@@ -37,7 +37,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
     {
         protected override IEnumerable<WhenStep> When()
         {
-            yield return new ProjectionCoreServiceMessage.StartCore();
+            var startCore = new ProjectionCoreServiceMessage.StartCore();
+            var startReader = CreateWriteEvent("$projections-$control", "$response-reader-started", "{}");
+            yield return new WhenStep(startCore, startReader);
         }
 
         [Test]

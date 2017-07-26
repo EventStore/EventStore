@@ -80,65 +80,56 @@ namespace EventStore.Projections.Core.Services.Processing
 
             Log.Debug("PROJECTIONS: Starting read control from {0}", fromEventNumber);
 
-            //TODO: handle shutdown here and in other readers
             long subscribeFrom = 0;
-            var doWriteRegistration = true;
             while (!_stopped)
             {
-                if (doWriteRegistration)
-                {
-                    var events = new[]
-                    {
-                        new Event(
-                            Guid.NewGuid(),
-                            "$projection-worker-started",
-                            true,
-                            "{\"id\":\"" + _coreServiceId + "\"}",
-                            null)
-                    };
-                    yield return
-                        _ioDispatcher.BeginWriteEvents(
-                        _cancellationScope,
-                            ProjectionNamesBuilder._projectionsMasterStream,
-                            ExpectedVersion.Any,
-                            SystemAccount.Principal,
-                            events,
-                            r => { });
-                }
-                do
-                {
-                    ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
-                    yield return
-                        _ioDispatcher.BeginReadForward(
-                        _cancellationScope,
-                            ProjectionNamesBuilder._projectionsControlStream,
-                            fromEventNumber,
-                            1,
-                            false,
-                            SystemAccount.Principal,
-                            completed => readResultForward = completed);
+                ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
+                yield return
+                    _ioDispatcher.BeginReadForward(
+                    _cancellationScope,
+                        ProjectionNamesBuilder._projectionsControlStream,
+                        fromEventNumber,
+                        1,
+                        false,
+                        SystemAccount.Principal,
+                        completed => readResultForward = completed);
 
-                    if (readResultForward.Result != ReadStreamResult.Success
-                        && readResultForward.Result != ReadStreamResult.NoStream)
-                        throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
-                    if (readResultForward.Events != null && readResultForward.Events.Length > 0)
+                if (readResultForward.Result != ReadStreamResult.Success
+                    && readResultForward.Result != ReadStreamResult.NoStream)
+                    throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
+                if (readResultForward.Events != null && readResultForward.Events.Length > 0)
+                {
+                    var doWriteRegistration =
+                        readResultForward.Events.Any(v => v.Event.EventType == "$response-reader-started");
+                    fromEventNumber = readResultForward.NextEventNumber;
+                    subscribeFrom = readResultForward.TfLastCommitPosition;
+                    if (doWriteRegistration)
                     {
-                        doWriteRegistration =
-                            readResultForward.Events.Any(v => v.Event.EventType == "$response-reader-started");
-                        fromEventNumber = readResultForward.NextEventNumber;
-                        subscribeFrom = readResultForward.TfLastCommitPosition;
-                        break;
+                        var events = new[]
+                        {
+                            new Event(
+                                Guid.NewGuid(), "$projection-worker-started", true, "{\"id\":\"" + _coreServiceId + "\"}", null)
+                        };
+                        yield return
+                            _ioDispatcher.BeginWriteEvents(
+                            _cancellationScope,
+                                ProjectionNamesBuilder._projectionsMasterStream,
+                                ExpectedVersion.Any,
+                                SystemAccount.Principal,
+                                events,
+                                r => { });
                     }
-                    if (readResultForward.Result == ReadStreamResult.Success)
-                        subscribeFrom = readResultForward.TfLastCommitPosition;
+                    break;
+                }
+                if (readResultForward.Result == ReadStreamResult.Success)
+                    subscribeFrom = readResultForward.TfLastCommitPosition;
 
-                    yield return
-                        _ioDispatcher.BeginSubscribeAwake(
-                        _cancellationScope,
-                            ProjectionNamesBuilder._projectionsControlStream,
-                            new TFPos(subscribeFrom, subscribeFrom),
-                            message => { });
-                } while (!_stopped);
+                yield return
+                    _ioDispatcher.BeginSubscribeAwake(
+                    _cancellationScope,
+                        ProjectionNamesBuilder._projectionsControlStream,
+                        new TFPos(subscribeFrom, subscribeFrom),
+                        message => { });
             }
         }
 
