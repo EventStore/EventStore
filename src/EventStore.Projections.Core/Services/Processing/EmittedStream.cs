@@ -64,6 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event _submittedWriteMetaStreamEvent;
         private const int MaxRetryCount = 5;
         private Guid _pendingRequestCorrelationId;
+        private Guid _instanceId;
 
         public class WriterConfiguration
         {
@@ -138,6 +139,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public EmittedStream(
             string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
             PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IPublisher publisher, IODispatcher ioDispatcher,
+            IEmittedStreamContainer readyHandler, bool noCheckpoints = false) : 
+            this(Guid.NewGuid(), streamId, writerConfiguration, projectionVersion,
+                 positionTagger, fromCheckpointPosition, publisher, ioDispatcher, readyHandler, noCheckpoints)
+        {
+        }
+
+        public EmittedStream(
+            Guid instanceId, string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
+            PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IPublisher publisher, IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (string.IsNullOrEmpty(streamId)) throw new ArgumentNullException("streamId");
@@ -147,6 +157,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
+            _instanceId = instanceId;
             _streamId = streamId;
             _metadataStreamId = SystemStreams.MetastreamOf(streamId);
             _writerConfiguration = writerConfiguration;
@@ -627,14 +638,14 @@ namespace EventStore.Projections.Core.Services.Processing
             var delayInSeconds = MaxRetryCount - retryCount;
             if (delayInSeconds == 0)
             {
-                _ioDispatcher.WriteEvents(
+                _ioDispatcher.QueueWriteEvents(_instanceId,
                     _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
                     m => HandleWriteEventsCompleted(m, retryCount));
             }
             else
             {
                 _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds), 
-                    () => _ioDispatcher.WriteEvents(
+                    () => _ioDispatcher.QueueWriteEvents(_instanceId,
                         _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
                         m => HandleWriteEventsCompleted(m, retryCount)));
             }

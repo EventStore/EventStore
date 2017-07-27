@@ -228,6 +228,9 @@
     <Compile Include="Hashes\SMHasher.cs" />
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helpers\ClientApiLoggerBridge.cs" />
+    <Compile Include="Helpers\IODispatcherTests\QueueWriteEventsTests\when_a_write_completes.cs" />
+    <Compile Include="Helpers\IODispatcherTests\QueueWriteEventsTests\when_requesting_multiple_writes_with_different_keys.cs" />
+    <Compile Include="Helpers\IODispatcherTests\QueueWriteEventsTests\when_requesting_multiple_writes_with_the_same_key.cs" />
     <Compile Include="Helpers\LengthPrefixSuffixFramer.cs" />
     <Compile Include="Helpers\ManualQueue.cs" />
     <Compile Include="Helpers\MiniClusterNode.cs" />
