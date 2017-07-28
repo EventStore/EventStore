@@ -28,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
                              ""checkpointUnhandledBytesThreshold"":10000,
                              ""pendingEventsThreshold"":5000, 
                              ""maxWriteBatchLength"":100,
+                             ""maximumAllowedWritesInFlight"":1,
                              ""emitEventEnabled"":true,
                              ""checkpointsEnabled"":true,
                              ""createTempStreams"":true,
@@ -62,6 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
             Assert.AreEqual(10000, createPrepareSlave.Config.CheckpointUnhandledBytesThreshold);
             Assert.AreEqual(5000, createPrepareSlave.Config.PendingEventsThreshold);
             Assert.AreEqual(100, createPrepareSlave.Config.MaxWriteBatchLength);
+            Assert.AreEqual(1, createPrepareSlave.Config.MaximumAllowedWritesInFlight);
             Assert.AreEqual(true, createPrepareSlave.Config.EmitEventEnabled);
             Assert.AreEqual(true, createPrepareSlave.Config.CheckpointsEnabled);
             Assert.AreEqual(true, createPrepareSlave.Config.CreateTempStreams);

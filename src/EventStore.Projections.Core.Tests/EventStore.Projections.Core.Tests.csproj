@@ -120,6 +120,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_maximum_allowed_writes_in_flight_set.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
     <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
     <Compile Include="Services\emitted_stream\when_a_read_completes_before_a_timeout_in_recovery.cs" />
@@ -548,6 +549,7 @@
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_read_times_out.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_timeout_received_after_read_succeeds.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_read_results_in_an_error.cs" />
+    <Compile Include="Services\projections_manager\managed_projection\when_updating_projection_config.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

@@ -350,6 +350,102 @@ namespace EventStore.Projections.Core.Messages
                 }
             }
 
+            public class GetConfig : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+
+                public GetConfig(IEnvelope envelope, string name, RunAs runAs):
+                    base(envelope, runAs)
+                {
+                    _name = name;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+            }
+
+            public class UpdateConfig : ControlMessage
+            {
+                private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+                public override int MsgTypeId { get { return TypeId; } }
+
+                private readonly string _name;
+                private readonly bool _emitEnabled;
+                private readonly bool _trackEmittedStreams;
+                private readonly int _checkpointAfterMs;
+                private readonly int _checkpointHandledThreshold;
+                private readonly int _checkpointUnhandledBytesThreshold;
+                private readonly int _pendingEventsThreshold;
+                private readonly int _maxWriteBatchLength;
+                private readonly int _maxAllowedWritesInFlight;
+
+                public UpdateConfig(IEnvelope envelope, string name, bool emitEnabled, bool trackEmittedStreams, int checkpointAfterMs,
+                    int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold, int pendingEventsThreshold,
+                    int maxWriteBatchLength, int maxAllowedWritesInFlight, RunAs runAs):
+                    base(envelope, runAs)
+                {
+                    _name = name;
+                    _emitEnabled = emitEnabled;
+                    _trackEmittedStreams = trackEmittedStreams;
+                    _checkpointAfterMs = checkpointAfterMs;
+                    _checkpointHandledThreshold = checkpointHandledThreshold;
+                    _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+                    _pendingEventsThreshold = pendingEventsThreshold;
+                    _maxWriteBatchLength = maxWriteBatchLength;
+                    _maxAllowedWritesInFlight = maxAllowedWritesInFlight;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public bool EmitEnabled
+                {
+                    get { return _emitEnabled; }
+                }
+
+                public bool TrackEmittedStreams
+                {
+                    get { return _trackEmittedStreams; }
+                }
+
+                public int CheckpointAfterMs
+                {
+                    get { return _checkpointAfterMs; }
+                }
+
+                public int CheckpointHandledThreshold
+                {
+                    get { return _checkpointHandledThreshold; }
+                }
+
+                public int CheckpointUnhandledBytesThreshold
+                {
+                    get { return _checkpointUnhandledBytesThreshold; }
+                }
+
+                public int PendingEventsThreshold
+                {
+                    get { return _pendingEventsThreshold; }
+                }
+
+                public int MaxWriteBatchLength
+                {
+                    get { return _maxWriteBatchLength; }
+                }
+
+                public int MaxAllowedWritesInFlight
+                {
+                    get { return _maxAllowedWritesInFlight; }
+                }
+            }
+
             public class StartSlaveProjections : ControlMessage
             {
                 private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -941,5 +1037,76 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class ProjectionConfig : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId
+            {
+                get
+                { return TypeId; }
+            }
+
+            private readonly bool _emitEnabled;
+            private readonly bool _trackEmittedStreams;
+            private readonly int _checkpointAfterMs;
+            private readonly int _checkpointHandledThreshold;
+            private readonly int _checkpointUnhandledBytesThreshold;
+            private readonly int _pendingEventsThreshold;
+            private readonly int _maxWriteBatchLength;
+            private readonly int _maxAllowedWritesInFlight;
+
+            public ProjectionConfig(bool emitEnabled, bool trackEmittedStreams, int checkpointAfterMs, int checkpointHandledThreshold,
+                int checkpointUnhandledBytesThreshold, int pendingEventsThreshold, int maxWriteBatchLength, int maxAllowedWritesInFlight)
+            {
+                _emitEnabled = emitEnabled;
+                _trackEmittedStreams = trackEmittedStreams;
+                _checkpointAfterMs = checkpointAfterMs;
+                _checkpointHandledThreshold = checkpointHandledThreshold;
+                _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+                _pendingEventsThreshold = pendingEventsThreshold;
+                _maxWriteBatchLength = maxWriteBatchLength;
+                _maxAllowedWritesInFlight = maxAllowedWritesInFlight;
+            }
+
+            public bool EmitEnabled
+            {
+                get { return _emitEnabled; }
+            }
+
+            public bool TrackEmittedStreams
+            {
+                get { return _trackEmittedStreams; }
+            }
+
+            public int CheckpointAfterMs
+            {
+                get { return _checkpointAfterMs; }
+            }
+
+            public int CheckpointHandledThreshold
+            {
+                get { return _checkpointHandledThreshold; }
+            }
+
+            public int CheckpointUnhandledBytesThreshold
+            {
+                get { return _checkpointUnhandledBytesThreshold; }
+            }
+
+            public int PendingEventsThreshold
+            {
+                get { return _pendingEventsThreshold; }
+            }
+
+            public int MaxWriteBatchLength
+            {
+                get { return _maxWriteBatchLength; }
+            }
+
+            public int MaxAllowedWritesInFlight
+            {
+                get { return _maxAllowedWritesInFlight; }
+            }
+        }
     }
 }

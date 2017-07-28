@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             Assert.Throws<ArgumentNullException>(() => {
             new ProjectionCheckpoint(
                 null, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
             });
         }
 
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             Assert.Throws<ArgumentNullException>(() => {
             new ProjectionCheckpoint(
                 _fakePublisher, null, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
             });
         }
 
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             Assert.Throws<ArgumentNullException>(() => {
             new ProjectionCheckpoint(
                 _fakePublisher, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, null,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
             });
         }
 
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             Assert.Throws<ArgumentException>(() => {
             new ProjectionCheckpoint(
                 _fakePublisher, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 101), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 101), new TransactionFilePositionTagger(0), 250, 1);
             });
         }
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             new ProjectionCheckpoint(
                 _fakePublisher, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
         }
     }
 }
