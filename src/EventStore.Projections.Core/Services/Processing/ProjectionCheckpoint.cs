@@ -33,7 +33,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private List<IEnvelope> _awaitingStreams;
 
-        private Guid _instanceId;
+        private Guid[] _writeKeys;
+        private int _maximumAllowedWritesInFlight;
 
         public ProjectionCheckpoint(
             IPublisher publisher,
@@ -44,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag from,
             PositionTagger positionTagger,
             int maxWriteBatchLength,
+            int maximumAllowedWritesInFlight,
             ILogger logger = null)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -52,6 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
+            _maximumAllowedWritesInFlight = maximumAllowedWritesInFlight;
             _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _projectionVersion = projectionVersion;
@@ -61,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
-            _instanceId = Guid.NewGuid();
+            _writeKeys = Enumerable.Range(0, _maximumAllowedWritesInFlight).Select(x => Guid.NewGuid()).ToArray();
         }
 
         public void Start()
@@ -145,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
 
                 stream = new EmittedStream(
-                    _instanceId, streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
+                    _writeKeys[_emittedStreams.Count % _maximumAllowedWritesInFlight], streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
 
                 if (_started)
                     stream.Start();

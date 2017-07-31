@@ -43,7 +43,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
                 true,
                 true,
                 true,
-                10000);
+                10000,
+                1);
 
         }
 
@@ -85,6 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
             Assert.AreEqual(_config.IsSlaveProjection, command.Config.IsSlaveProjection);
             Assert.AreEqual(_config.MaxWriteBatchLength, command.Config.MaxWriteBatchLength);
             Assert.AreEqual(_config.PendingEventsThreshold, command.Config.PendingEventsThreshold);
+            Assert.AreEqual(_config.MaximumAllowedWritesInFlight, command.Config.MaximumAllowedWritesInFlight);
             Assert.AreEqual(_config.RunAs.Identity.Name, command.Config.RunAs);
             Assert.AreEqual(_config.StopOnEof, command.Config.StopOnEof);
 

@@ -20,6 +20,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
         public bool IsSlaveProjection;
         public bool TrackEmittedStreams;
         public int CheckpointAfterMs;
+        public int MaximumAllowedWritesInFlight;
 
         public PersistedProjectionConfig()
         {
@@ -43,6 +44,7 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
             IsSlaveProjection = config.IsSlaveProjection;
             TrackEmittedStreams = config.TrackEmittedStreams;
             CheckpointAfterMs = config.CheckpointAfterMs;
+            MaximumAllowedWritesInFlight = config.MaximumAllowedWritesInFlight;
         }
 
         public ProjectionConfig ToConfig()
@@ -62,7 +64,8 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands
                     StopOnEof,
                     IsSlaveProjection,
                     TrackEmittedStreams,
-                    CheckpointAfterMs);
+                    CheckpointAfterMs,
+                    MaximumAllowedWritesInFlight);
         }
     }
 }

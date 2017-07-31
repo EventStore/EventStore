@@ -39,6 +39,8 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Command.SetRunAs>,
             IHandle<ProjectionManagementMessage.Command.Reset>,
             IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
+            IHandle<ProjectionManagementMessage.Command.GetConfig>,
+            IHandle<ProjectionManagementMessage.Command.UpdateConfig>,
             IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
             IHandle<ProjectionManagementMessage.Internal.Deleted>,
             IHandle<CoreProjectionStatusMessage.Started>,
@@ -454,6 +456,40 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
                 projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.Command.GetConfig message)
+        {
+            if (!_started)
+                return;
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Read, projection.RunAs, message)) return;
+                projection.Handle(message);
+            }
+        }
+
+        public void Handle(ProjectionManagementMessage.Command.UpdateConfig message)
+        {
+            if (!_started)
+                return;
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Read, projection.RunAs, message)) return;
+                try {
+                    projection.Handle(message);
+                }
+                catch (InvalidOperationException ex){
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
+                    return;
+                }
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
@@ -980,6 +1016,9 @@ namespace EventStore.Projections.Core.Services.Management
                         EmitEnabled = _emitEnabled,
                         CheckpointsDisabled = !_checkpointsEnabled,
                         TrackEmittedStreams = _trackEmittedStreams,
+                        CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold,
+                        CheckpointAfterMs = (int)ProjectionConsts.CheckpointAfterMs.TotalMilliseconds,
+                        MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight,
                         Epoch = -1,
                         Version = version,
                         RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null
