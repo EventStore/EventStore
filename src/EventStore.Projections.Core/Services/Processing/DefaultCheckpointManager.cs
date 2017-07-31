@@ -27,7 +27,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
         private PartitionStateUpdateManager _partitionStateUpdateManager;
 
-
         public DefaultCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
@@ -155,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ProjectionCheckpoint(
                 _publisher, _ioDispatcher, _projectionVersion, _runAs, this, checkpointPosition, _positionTagger,
-                _projectionConfig.MaxWriteBatchLength, _logger);
+                _projectionConfig.MaxWriteBatchLength, _projectionConfig.MaximumAllowedWritesInFlight, _logger);
         }
 
         public void Handle(CoreProjectionCheckpointWriterMessage.CheckpointWritten message)

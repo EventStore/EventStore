@@ -18,6 +18,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json.Linq;
+using EventStore.Projections.Core.Services.Management;
 
 namespace EventStore.Projections.Core.Services.Http
 {
@@ -93,6 +94,10 @@ namespace EventStore.Projections.Core.Services.Http
                      HttpMethod.Post, OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
             Register(service, "/projection/{name}/command/abort?enableRunAs={enableRunAs}",
                      HttpMethod.Post, OnProjectionCommandAbort, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/config",
+                     HttpMethod.Get, OnProjectionConfigGet, Codec.NoCodecs, SupportedCodecs);
+            Register(service, "/projection/{name}/config",
+                     HttpMethod.Put, OnProjectionConfigPut, SupportedCodecs , SupportedCodecs);
         }
 
         private void OnProjections(HttpEntityManager http, UriTemplateMatch match)
@@ -178,6 +183,43 @@ namespace EventStore.Projections.Core.Services.Http
                 Publish(
                     new ProjectionManagementMessage.Command.UpdateQuery(
                         envelope, match.BoundVariables["name"], GetRunAs(http, match), match.BoundVariables["type"], s, emitEnabled: emitEnabled)), Console.WriteLine);
+        }
+
+        private void OnProjectionConfigGet(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if(_httpForwarder.ForwardRequest(http))
+                return;
+
+            var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionConfig>(
+                _networkSendQueue, http, ProjectionConfigFormatter, ProjectionConfigConfigurator, ErrorsEnvelope(http));
+            Publish(
+                new ProjectionManagementMessage.Command.GetConfig(
+                    envelope, match.BoundVariables["name"], GetRunAs(http, match)));
+        }
+
+        private void OnProjectionConfigPut(HttpEntityManager http, UriTemplateMatch match)
+        {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
+
+            var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
+                _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+            http.ReadTextRequestAsync(
+                (o, s) =>
+                {
+                    var config = http.RequestCodec.From<ProjectionConfigData>(s);
+                    if(config == null)
+                    {
+                        SendBadRequest(o, "Failed to parse the projection config");
+                        return;
+                    }
+                    var message = new ProjectionManagementMessage.Command.UpdateConfig(
+                        envelope, match.BoundVariables["name"], config.EmitEnabled, config.TrackEmittedStreams,
+                        config.CheckpointAfterMs, config.CheckpointHandledThreshold,
+                        config.CheckpointUnhandledBytesThreshold, config.PendingEventsThreshold,
+                        config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, GetRunAs(http, match));
+                    Publish(message);
+                }, ex => Log.Debug("Failed to update projection configuration. Error: {0}", ex));
         }
 
         private void OnProjectionCommandDisable(HttpEntityManager http, UriTemplateMatch match)
@@ -470,6 +512,16 @@ namespace EventStore.Projections.Core.Services.Http
             return Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false);
         }
 
+        private string ProjectionConfigFormatter(ICodec codec, ProjectionManagementMessage.ProjectionConfig config)
+        {
+            return config.ToJson();
+        }
+
+        private ResponseConfiguration ProjectionConfigConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionConfig state)
+        {
+            return Configure.Ok("application/json", Helper.UTF8NoBom, null, null, false);
+        }
+
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
             return new ResponseConfiguration(200, "OK", codec.ContentType, Helper.UTF8NoBom);
@@ -590,14 +642,16 @@ namespace EventStore.Projections.Core.Services.Http
             }
         }
 
-/*
-        private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
+        public class ProjectionConfigData
         {
-            Publish(new ClientMessage.RequestShutdown());
-            entity.Manager.ReplyStatus(HttpStatusCode.OK,
-                                 "OK",
-                                 (s, e) => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+            public bool EmitEnabled { get; set; }
+            public bool TrackEmittedStreams { get; set; }
+            public int CheckpointAfterMs { get; set; }
+            public int CheckpointHandledThreshold { get; set; }
+            public int CheckpointUnhandledBytesThreshold { get; set; }
+            public int PendingEventsThreshold { get; set; }
+            public int MaxWriteBatchLength { get; set; }
+            public int MaxAllowedWritesInFlight { get; set; }
         }
-*/
     }
 }

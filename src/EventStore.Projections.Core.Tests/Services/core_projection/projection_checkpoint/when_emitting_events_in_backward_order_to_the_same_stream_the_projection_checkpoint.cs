@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _checkpoint = new ProjectionCheckpoint(
                 _bus, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
             try
             {
                 _checkpoint.ValidateOrderAndEmitEvents(

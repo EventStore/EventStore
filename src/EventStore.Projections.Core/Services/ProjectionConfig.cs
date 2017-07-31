@@ -17,10 +17,11 @@ namespace EventStore.Projections.Core.Services
         private readonly bool _isSlaveProjection;
         private readonly bool _trackEmittedStreams;
         private readonly int _checkpointAfterMs;
+        private readonly int _maximumAllowedWritesInFlight;
 
         public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
             int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
-            bool createTempStreams, bool stopOnEof, bool isSlaveProjection, bool trackEmittedStreams, int checkpointAfterMs)
+            bool createTempStreams, bool stopOnEof, bool isSlaveProjection, bool trackEmittedStreams, int checkpointAfterMs, int maximumAllowedWritesInFlight)
         {
             if (checkpointsEnabled)
             {
@@ -36,6 +37,10 @@ namespace EventStore.Projections.Core.Services
                 if (checkpointUnhandledBytesThreshold != 0)
                     throw new ArgumentException("checkpointUnhandledBytesThreshold must be 0");
             }
+            if(maximumAllowedWritesInFlight <= 0)
+            {
+                throw new ArgumentException("The Maximum Number of Allowed Writes in Flight cannot be less or equal to 0");
+            }
             _runAs = runAs;
             _checkpointHandledThreshold = checkpointHandledThreshold;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
@@ -48,6 +53,7 @@ namespace EventStore.Projections.Core.Services
             _isSlaveProjection = isSlaveProjection;
             _trackEmittedStreams = trackEmittedStreams;
             _checkpointAfterMs = checkpointAfterMs;
+            _maximumAllowedWritesInFlight = maximumAllowedWritesInFlight;
         }
 
         public int CheckpointHandledThreshold
@@ -110,16 +116,21 @@ namespace EventStore.Projections.Core.Services
             get { return _checkpointAfterMs; }
         }
 
+        public int MaximumAllowedWritesInFlight
+        {
+            get { return _maximumAllowedWritesInFlight; }
+        }
+
         public static ProjectionConfig GetTest()
         {
-            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false, true, 10000);
+            return new ProjectionConfig(null, 1000, 1000*1000, 100, 500, true, true, false, false, false, true, 10000, 1);
         }
 
         public ProjectionConfig SetIsSlave()
         {
             return new ProjectionConfig(
                 _runAs, CheckpointHandledThreshold, CheckpointUnhandledBytesThreshold, PendingEventsThreshold,
-                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true, true, _checkpointAfterMs);
+                MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true, true, _checkpointAfterMs, _maximumAllowedWritesInFlight);
         }
     }
 }
