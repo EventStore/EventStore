@@ -1,3 +1,4 @@
+using EventStore.Projections.Core.Common;
 using System;
 using System.Security.Principal;
 
@@ -37,9 +38,9 @@ namespace EventStore.Projections.Core.Services
                 if (checkpointUnhandledBytesThreshold != 0)
                     throw new ArgumentException("checkpointUnhandledBytesThreshold must be 0");
             }
-            if(maximumAllowedWritesInFlight <= 0)
+            if(maximumAllowedWritesInFlight < AllowedWritesInFlight.Unlimited)
             {
-                throw new ArgumentException("The Maximum Number of Allowed Writes in Flight cannot be less or equal to 0");
+                throw new ArgumentException($"The Maximum Number of Allowed Writes in Flight cannot be less than {AllowedWritesInFlight.Unlimited}");
             }
             _runAs = runAs;
             _checkpointHandledThreshold = checkpointHandledThreshold;

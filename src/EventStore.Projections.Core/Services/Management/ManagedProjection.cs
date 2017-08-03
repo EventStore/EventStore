@@ -16,6 +16,7 @@ using EventStore.Projections.Core.Utils;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using System.Threading;
 using EventStore.Core.Helpers;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Management
 {

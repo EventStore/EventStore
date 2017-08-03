@@ -14,7 +14,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
-using EventStore.Core.Services;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Management
 {

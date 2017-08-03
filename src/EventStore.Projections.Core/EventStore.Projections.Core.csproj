@@ -122,6 +122,8 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\AllowedWritesInFlight.cs" />
+    <Compile Include="Common\ProjectionConsts.cs" />
     <Compile Include="EventReaders\Feeds\FeedReader.cs" />
     <Compile Include="EventReaders\Feeds\FeedReaderService.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
@@ -214,7 +216,6 @@
     <Compile Include="Services\Management\ManagedProjectionStates\StoppedState.cs" />
     <Compile Include="Services\Management\ManagedProjectionStates\StoppingState.cs" />
     <Compile Include="Services\Management\ProjectionBalancer.cs" />
-    <Compile Include="Services\Management\ProjectionConsts.cs" />
     <Compile Include="Services\Management\ProjectionCoreCoordinator.cs" />
     <Compile Include="Services\Management\ProjectionCoreResponseWriter.cs" />
     <Compile Include="Services\Management\ProjectionManagerResponseReader.cs" />
@@ -248,6 +249,7 @@
     <Compile Include="Services\Processing\EmittedLinkTo.cs" />
     <Compile Include="Services\Processing\EmittedStreamsDeleter.cs" />
     <Compile Include="Services\Processing\EmittedStreamsTracker.cs" />
+    <Compile Include="Services\Processing\EmittedStreamsWriter.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
@@ -261,6 +263,7 @@
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
     <Compile Include="Services\Processing\ICoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\ICoreProjectionForProcessingPhase.cs" />
+    <Compile Include="Services\Processing\IEmittedStreamsWriter.cs" />
     <Compile Include="Services\Processing\IEventReader.cs" />
     <Compile Include="Services\Processing\IEventWriter.cs" />
     <Compile Include="Services\Processing\IEventProcessingPhase.cs" />
@@ -304,6 +307,7 @@
     <Compile Include="Services\Processing\ProjectionOutputConfig.cs" />
     <Compile Include="Services\Processing\ProjectionProcessingStrategy.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefinition.cs" />
+    <Compile Include="Services\Processing\QueuedEmittedStreamsWriter.cs" />
     <Compile Include="Services\Processing\ReaderSubscriptionBase.cs" />
     <Compile Include="Services\Processing\ProjectionVersion.cs" />
     <Compile Include="Services\Processing\QueryProcessingStrategy.cs" />
