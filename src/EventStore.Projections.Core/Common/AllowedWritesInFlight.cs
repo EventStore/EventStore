@@ -8,6 +8,6 @@ namespace EventStore.Projections.Core.Common
 {
     public static class AllowedWritesInFlight
     {
-        public const int Unlimited = 0;
+        public const int Unbounded = 0;
     }
 }
