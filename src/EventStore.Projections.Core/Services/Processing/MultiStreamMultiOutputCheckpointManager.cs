@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 /* MUST NEVER SEND READY MESSAGE */
                 _namingBuilder.GetOrderStreamName(),
                 new EmittedStream.WriterConfiguration(
-                    new EmittedStream.WriterConfiguration.StreamMetadata(), SystemAccount.Principal, 100, _logger),
+                    new EmittedStreamsWriter(_ioDispatcher), new EmittedStream.WriterConfiguration.StreamMetadata(), SystemAccount.Principal, 100, _logger),
                 _projectionVersion, _positionTagger, @from, _publisher, _ioDispatcher, this, noCheckpoints: true);
         }
 
