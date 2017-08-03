@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var streamMetadata = emittedEvents.Length > 0 ? emittedEvents[0].StreamMetadata : null;
 
-                var writeQueueId = _maximumAllowedWritesInFlight == AllowedWritesInFlight.Unlimited 
+                var writeQueueId = _maximumAllowedWritesInFlight == AllowedWritesInFlight.Unbounded 
                     ? (Guid?)null 
                     :_writeQueueIds[_emittedStreams.Count % _maximumAllowedWritesInFlight];
 
