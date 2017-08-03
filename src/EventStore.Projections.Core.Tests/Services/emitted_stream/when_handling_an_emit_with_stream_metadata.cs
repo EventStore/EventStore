@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             AllWritesQueueUp();
             NoStream("test_stream");
             _streamMetadata = new EmittedStream.WriterConfiguration.StreamMetadata(maxCount: 10);
-            _writerConfiguration = new EmittedStream.WriterConfiguration(_streamMetadata, null, maxWriteBatchLength: 50);
+            _writerConfiguration = new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),_streamMetadata, null, maxWriteBatchLength: 50);
         }
 
         [SetUp]

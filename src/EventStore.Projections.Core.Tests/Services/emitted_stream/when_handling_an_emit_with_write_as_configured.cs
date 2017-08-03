@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _writeAs = new OpenGenericPrincipal("test-user");
             _stream = new EmittedStream(
-                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), _writeAs, maxWriteBatchLength: 50),
+                "test_stream", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), _writeAs, maxWriteBatchLength: 50),
                 new ProjectionVersion(1, 0, 0), new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 40, 30),
                 _bus, _ioDispatcher, _readyHandler);
             _stream.Start();

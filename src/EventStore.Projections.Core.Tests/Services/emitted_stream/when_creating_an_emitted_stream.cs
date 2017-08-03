@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                null, new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                null, new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _fakePublisher, _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
             });
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                "", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _fakePublisher, _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
             });
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                "", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), null, _fakePublisher, _ioDispatcher, new TestCheckpointManagerMessageHandler());
             });
         }
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "test", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), null, _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
             });
@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "test", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _fakePublisher, null,
                 new TestCheckpointManagerMessageHandler());
             });
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         {
             Assert.Throws<ArgumentNullException>(() => {
             new EmittedStream(
-                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "test", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _fakePublisher, _ioDispatcher, null);
             });
         }
@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
         public void it_can_be_created()
         {
             new EmittedStream(
-                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                "test", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
                 new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _fakePublisher, _ioDispatcher,
                 new TestCheckpointManagerMessageHandler());
         }
