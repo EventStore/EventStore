@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _awaitingCommit -= 1;
             if(message.IsSelf) _hadSelf = true;
-            if (_awaitingCommit == 0 && _hadSelf)
+            if (_awaitingCommit <= 0 && _hadSelf)
                 CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
         }
 
