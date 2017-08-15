@@ -414,34 +414,31 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         protected override Task ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos,
                         UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber) =>
-            ReadEventsInternalAsync(connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber);
+            ReadEventsInternalAsync(connection, resolveLinkTos, userCredentials, lastCommitPosition);
 
         private async Task ReadEventsInternalAsync(IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+                       UserCredentials userCredentials, long? lastCommitPosition)
         {
-            var slice = await connection.ReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials).ConfigureAwait(false);
-            await ReadEventsCallbackAsync(slice, connection, resolveLinkTos, userCredentials, lastCommitPosition, lastEventNumber).ConfigureAwait(false);
+            bool shouldStopOrDone;
+            do
+            {
+                var slice = await connection.ReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, userCredentials).ConfigureAwait(false);
+                shouldStopOrDone = await ReadEventsCallbackAsync(slice, lastCommitPosition).ConfigureAwait(false);
+            } while (!shouldStopOrDone);
         }
 
-        private async Task ReadEventsCallbackAsync(AllEventsSlice slice, IEventStoreConnection connection, bool resolveLinkTos,
-                       UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber)
+        private async Task<bool> ReadEventsCallbackAsync(AllEventsSlice slice, long? lastCommitPosition)
         {
-            if (!(await ProcessEventsAsync(lastCommitPosition, slice).ConfigureAwait(false)) && !ShouldStop)
+            bool shouldStopOrDone = ShouldStop || await ProcessEventsAsync(lastCommitPosition, slice).ConfigureAwait(false);
+            if(shouldStopOrDone && Verbose)
             {
-                await ReadEventsInternalAsync(connection, resolveLinkTos, userCredentials,
-                    lastCommitPosition, lastEventNumber).ConfigureAwait(false);
+                Log.Debug(
+                    "Catch-up Subscription {0} to {1}: finished reading events, nextReadPosition = {2}.",
+                    SubscriptionName,
+                    IsSubscribedToAll ? "<all>" : StreamId,
+                    _nextReadPosition);
             }
-            else
-            {
-                if (Verbose)
-                {
-                    Log.Debug(
-                        "Catch-up Subscription {0} to {1}: finished reading events, nextReadPosition = {2}.",
-                        SubscriptionName,
-                        IsSubscribedToAll ? "<all>" : StreamId,
-                        _nextReadPosition);
-                }
-            }
+            return shouldStopOrDone;
         }
 
         private async Task<bool> ProcessEventsAsync(long? lastCommitPosition, AllEventsSlice slice)
