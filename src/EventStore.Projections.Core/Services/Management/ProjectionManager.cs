@@ -228,25 +228,23 @@ namespace EventStore.Projections.Core.Services.Management
                     message,
                     replace: message.EnableRunAs)) return;
 
-            if(message.Mode == ProjectionMode.OneTime && message.CheckpointsEnabled)
-            {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.OperationFailed("Checkpoints are currently not supported with One Time Projections."));
-                return;
-            }
             if (message.Name == null)
             {
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.OperationFailed("Projection name is required"));
-                return;
             }
-            if (_projections.ContainsKey(message.Name))
+            else
             {
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.Conflict("Duplicate projection name: " + message.Name));
-                return;
+                if (_projections.ContainsKey(message.Name))
+                {
+                    message.Envelope.ReplyWith(
+                        new ProjectionManagementMessage.Conflict("Duplicate projection name: " + message.Name));
+                }
+                else
+                {
+                    PostNewProjection(message, message.Envelope);
+                }
             }
-            PostNewProjection(message, message.Envelope);
         }
 
         public void Handle(ProjectionManagementMessage.Command.Delete message)
