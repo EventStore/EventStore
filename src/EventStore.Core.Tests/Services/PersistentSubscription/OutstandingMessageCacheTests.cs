@@ -44,18 +44,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
 
         [Test]
-        public void can_remove_duplicate()
-        {
-            var id = Guid.NewGuid();
-            var cache = new OutstandingMessageCache();
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 0), 0), DateTime.Now);
-            cache.StartMessage(new OutstandingMessage(id, null, Helper.BuildFakeEvent(id, "type", "name", 1), 0), DateTime.Now);
-            cache.Remove(id);
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(long.MaxValue, cache.GetLowestPosition());
-        }
-
-        [Test]
         public void can_remove_existing_item()
         {
             var id = Guid.NewGuid();
