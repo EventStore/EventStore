@@ -677,9 +677,6 @@
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
-    <Compile Include="Services\Storage\Scavenge\when_stream_contains_link_to_events_and_some_of_the_original_events_have_been_removed.cs" />
-    <Compile Include="Services\Storage\Scavenge\when_stream_contains_link_to_event_that_points_to_an_event_that_still_exists.cs" />
-    <Compile Include="Services\Storage\Scavenge\when_stream_contains_link_to_event_that_points_to_an_event_that_no_longer_exists.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
