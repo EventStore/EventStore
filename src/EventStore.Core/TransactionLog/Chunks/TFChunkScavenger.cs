@@ -395,12 +395,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return false;
             }
 
-            if (IsLinkToWithDeletedEvent(prepare))
-            {
-                commitInfo.TryNotToKeep();
-                return false;
-            }
-
             var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
                                       ? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
                                       : commitInfo.EventNumber + prepare.TransactionOffset;
@@ -437,28 +431,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
             if(result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) return false;
             return true;
-        }
-
-        private bool IsLinkToWithDeletedEvent(PrepareLogRecord prepare)
-        {
-            if(prepare.EventType != SystemEventTypes.LinkTo)
-                return false;
-                
-            try
-            {
-                string[] parts = Helper.UTF8NoBom.GetString(prepare.Data).Split('@');
-                long eventNumber = long.Parse(parts[0]);
-                string streamId = parts[1];
-
-                var res = _readIndex.ReadEvent(streamId, eventNumber);
-                if (res.Result != ReadEventResult.Success)
-                    return true;
-            }
-            catch (Exception exc)
-            {
-                Log.ErrorException(exc, "Error while resolving link for prepare record: {0}", prepare.ToString());
-            }
-            return false;
         }
 
         private bool IsSoftDeletedTempStreamWithinSameChunk(string eventStreamId, long chunkStart, long chunkEnd)
