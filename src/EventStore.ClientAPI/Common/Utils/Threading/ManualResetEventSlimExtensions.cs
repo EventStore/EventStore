@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI.Common.Utils.Threading
 
         public static Task AsTask(this ManualResetEventSlim resetEvent, int timeoutMs)
         {
-            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+            TaskCompletionSource<object> tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             RegisteredWaitHandle registration = ThreadPool.RegisterWaitForSingleObject(resetEvent.WaitHandle, (state, timedOut) =>
             {

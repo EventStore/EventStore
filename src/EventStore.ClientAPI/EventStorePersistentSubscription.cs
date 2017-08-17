@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI
             Func<EventStoreSubscription, ResolvedEvent, Task> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped, ConnectionSettings settings)
         {
-            var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
+            var source = new TaskCompletionSource<PersistentEventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
             _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, subscriptionId, streamId, bufferSize,
                 userCredentials, onEventAppeared,
                 onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout));
