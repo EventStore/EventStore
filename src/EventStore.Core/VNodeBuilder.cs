@@ -103,6 +103,8 @@ namespace EventStore.Core
         protected bool _writethrough;
 
         protected string _index;
+        protected bool _useMemoryMappedIndexFiles;
+        protected bool _skipIndexVerification;
         protected int _indexCacheDepth;
         protected bool _unsafeIgnoreHardDelete;
         protected bool _unsafeDisableFlushToDisk;
@@ -926,6 +928,26 @@ namespace EventStore.Core
         }
 
         /// <summary>
+        /// Enables the use of Memory Mapped Files for Indexes
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder UseMemoryMappedIndexFiles()
+        {
+            _useMemoryMappedIndexFiles = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Skips index verification
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder SkipIndexVerification()
+        {
+            _skipIndexVerification = true;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the depth to cache for the mid point cache in index
         /// </summary>
         /// <param name="indexCacheDepth">The index cache depth</param>
@@ -1329,6 +1351,8 @@ namespace EventStore.Core
                     _connectionPendingSendBytesThreshold,
                     _index,
                     _enableHistograms,
+                    _useMemoryMappedIndexFiles,
+                    _skipIndexVerification,
                     _indexCacheDepth,
                     _indexBitnessVersion,
                     consumerStrategies,

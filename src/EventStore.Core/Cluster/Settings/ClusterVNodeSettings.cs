@@ -64,6 +64,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
         public readonly int HashCollisionReadLimit;
+        public readonly bool UseMemoryMappedIndexFiles;
+        public readonly bool SkipIndexVerification;
         public readonly int IndexCacheDepth;
         public readonly byte IndexBitnessVersion;
 
@@ -124,7 +126,10 @@ namespace EventStore.Core.Cluster.Settings
                                     bool disableHTTPCaching,
                                     bool logHttpRequests,
                                     int connectionPendingSendBytesThreshold,
-                                    string index = null, bool enableHistograms = false,
+                                    string index = null,
+                                    bool enableHistograms = false,
+                                    bool useMemoryMappedIndexFiles = false,
+                                    bool skipIndexVerification = false,
                                     int indexCacheDepth = 16,
                                     byte indexBitnessVersion = 2,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
@@ -214,6 +219,8 @@ namespace EventStore.Core.Cluster.Settings
             HashCollisionReadLimit = hashCollisionReadLimit;
 
             EnableHistograms = enableHistograms;
+            UseMemoryMappedIndexFiles = useMemoryMappedIndexFiles;
+            SkipIndexVerification = skipIndexVerification;
             IndexCacheDepth = indexCacheDepth;
             IndexBitnessVersion = indexBitnessVersion;
             Index = index;

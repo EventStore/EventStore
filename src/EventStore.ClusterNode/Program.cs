@@ -214,6 +214,12 @@ namespace EventStore.ClusterNode
                         .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
                         .HavingReaderThreads(options.ReaderThreadsCount);
 
+            if (options.UseMemoryMappedIndexFiles)
+                builder.UseMemoryMappedIndexFiles();
+
+            if (options.SkipIndexVerification)
+                builder.SkipIndexVerification();
+
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);
 

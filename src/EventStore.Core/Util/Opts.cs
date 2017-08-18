@@ -328,6 +328,12 @@ namespace EventStore.Core.Util
         public const string IndexCacheDepthDescr = "Sets the depth to cache for the mid point cache in index.";
         public static int IndexCacheDepthDefault = 16;
 
+        public const string UseMemoryMappedIndexFilesDescr = "Use Memory Mapped Files for the Indexes";
+        public static bool UseMemoryMappedIndexFilesDefault = false;
+
+        public const string SkipIndexVerificationDescr = "Skip Index Verification for Index Files";
+        public static bool SkipIndexVerificationDefault = false;
+
         public const string IndexBitnessVersionDescr = "Sets the bitness version for the indexes to use";
         public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV3;
 		/*
