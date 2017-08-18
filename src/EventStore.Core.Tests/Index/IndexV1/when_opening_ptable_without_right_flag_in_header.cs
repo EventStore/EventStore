@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void the_invalid_file_exception_is_thrown()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, false, false, 16));
             Assert.IsInstanceOf<InvalidFileException>(exc.InnerException);
         }
     }

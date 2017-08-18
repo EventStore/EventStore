@@ -26,16 +26,16 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outfile");
 
-            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 4);
+            _map = IndexMap.FromFile(_filename, false, false, maxTablesPerLevel: 4);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 123);
-            var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            var merged = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = merged.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            var table = PTable.FromMemtable(memtable, _tablename, false, false);
+            _result = _map.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
+            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
+            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
+            var merged = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
+            _result = merged.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
+            _result = _result.MergedMap.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
             _result.MergedMap.SaveToFile(_filename);
 
             table.Dispose();
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename);
+            var map = IndexMap.FromFile(_filename, false, false);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);

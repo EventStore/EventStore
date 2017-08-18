@@ -64,6 +64,8 @@ namespace EventStore.Core.Index
 
         private PTable(string filename,
                        Guid id,
+                       bool useMemoryMappedIndexFiles, 
+                       bool skipIndexVerification,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
                        int maxReaders = ESConsts.PTableMaxReaderCount,
                        int depth = 16)

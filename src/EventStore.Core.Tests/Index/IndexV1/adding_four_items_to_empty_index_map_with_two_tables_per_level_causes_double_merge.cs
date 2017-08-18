@@ -14,7 +14,6 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private string _mergeFile;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
-
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
@@ -23,21 +22,21 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _mergeFile = GetTempFilePath();
             _filename = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 2);
+            _map = IndexMap.FromFile(_filename, false, false, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
 
-            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                     10, 20, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                     10, 20, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                                  20, 30, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                                  20, 30, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                                  30, 40, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                                  30, 40, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                                  50, 60, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile + ".firstmerge", _mergeFile), _ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                                  50, 60, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile + ".firstmerge", _mergeFile), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

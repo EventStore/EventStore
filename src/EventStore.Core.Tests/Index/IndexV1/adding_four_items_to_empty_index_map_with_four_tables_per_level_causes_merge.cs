@@ -22,28 +22,28 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _mergeFile = GetTempFilePath();
             _filename = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 4);
+            _map = IndexMap.FromFile(_filename, false, false, maxTablesPerLevel: 4);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
 
-            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 1, 2,
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false), 1, 2,
                                      (streamId, hash) => hash,
-                                     _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                     _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 3, 4,
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false), 3, 4,
                                                  (streamId, hash) => hash,
-                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 4, 5,
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false), 4, 5,
                                                  (streamId, hash) => hash,
-                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
 
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()), 0, 1,
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false), 0, 1,
                                                  (streamId, hash) => hash,
-                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+                                                  _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

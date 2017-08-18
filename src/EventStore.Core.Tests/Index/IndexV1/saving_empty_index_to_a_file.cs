@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             base.TestFixtureSetUp();
             
             _filename = GetFilePathFor("indexfile");
-            _map = IndexMap.FromFile(_filename);
+            _map = IndexMap.FromFile(_filename, false, false);
             _map.SaveToFile(_filename);
         }
 
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename);
+            var map = IndexMap.FromFile(_filename, false, false);
 
             Assert.AreEqual(-1, map.PrepareCheckpoint);
             Assert.AreEqual(-1, map.CommitCheckpoint);

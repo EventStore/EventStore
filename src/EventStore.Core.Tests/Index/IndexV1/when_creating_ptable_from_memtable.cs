@@ -13,13 +13,13 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void null_file_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null, false, false));
         }
 
         [Test]
         public void null_memtable_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt"));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt", false, false));
         }
 
         [Test]
@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var table = new HashListMemTable(_ptableVersion, maxSize: 10);
             table.Add(0x010100000000, 0x0001, 0x0001);
-            var ptable = PTable.FromMemtable(table, Filename);
+            var ptable = PTable.FromMemtable(table, Filename, false, false);
             Assert.Throws<TimeoutException>(() => ptable.WaitForDisposal(1));
 
             // tear down
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010500000000, 0x0001, 0x0002);
             table.Add(0x010200000000, 0x0001, 0x0003);
             table.Add(0x010200000000, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, Filename))
+            using (var sstable = PTable.FromMemtable(table, Filename, false, false))
             {
                 var fileinfo = new FileInfo(Filename);
                 Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*indexEntrySize, fileinfo.Length);
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010500000000, 0x0001, 0x0002);
             table.Add(0x010200000000, 0x0001, 0x0003);
             table.Add(0x010200000000, 0x0002, 0x0003);
-            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename)) {}});
+            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename, false, false)) {}});
         }
 
         private ulong GetHash(ulong value){

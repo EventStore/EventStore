@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var mtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             mtable.Add(0x010100000000, 0x0001, 0x0001);
             mtable.Add(0x010500000000, 0x0001, 0x0002);
-            _table = PTable.FromMemtable(mtable, _filename);
+            _table = PTable.FromMemtable(mtable, _filename, false, false);
             _table.Dispose();
             File.Copy(_filename, _copiedfilename);
             using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, false, false, 16));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
 

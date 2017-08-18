@@ -7,7 +7,6 @@ namespace EventStore.Core.Tests.Index.IndexV1
     {
         private readonly int _midpointCacheDepth;
         protected byte _ptableVersion = PTableVersions.IndexV1;
-
         protected PTable PTable;
 
         protected PTableReadScenario(int midpointCacheDepth)
@@ -24,7 +23,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
 
             AddItemsForScenario(table);
 
-            PTable = PTable.FromMemtable(table, Filename, cacheDepth: _midpointCacheDepth);
+            PTable = PTable.FromMemtable(table, Filename, false, false, cacheDepth: _midpointCacheDepth);
         }
 
         [TearDown]

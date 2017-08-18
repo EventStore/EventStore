@@ -24,11 +24,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("mergefile");
 
-            _map = IndexMap.FromFile(_filename);
+            _map = IndexMap.FromFile(_filename, false, false);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
-            var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            var table = PTable.FromMemtable(memtable, _tablename, false, false);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
             table.MarkForDestruction();
         }
 

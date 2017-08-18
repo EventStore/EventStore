@@ -50,12 +50,17 @@ namespace EventStore.Core.Index
 
         private bool _initialized;
 
+        private bool _useMemoryMappedIndexFiles;
+        private bool _skipIndexVerification;
+
         public TableIndex(string directory,
                           IHasher lowHasher,
                           IHasher highHasher,
                           Func<IMemTable> memTableFactory,
                           Func<TFReaderLease> tfReaderFactory,
                           byte ptableVersion,
+                          bool useMemoryMappedIndexFiles,
+                          bool skipIndexVerification,
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false,
@@ -85,6 +90,9 @@ namespace EventStore.Core.Index
 
             _lowHasher = lowHasher; 
             _highHasher = highHasher;
+
+            _useMemoryMappedIndexFiles = useMemoryMappedIndexFiles;
+            _skipIndexVerification = skipIndexVerification;
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -112,7 +120,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
+                _indexMap = IndexMap.FromFile(indexmapFile, _useMemoryMappedIndexFiles, _skipIndexVerification, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -125,7 +133,7 @@ namespace EventStore.Core.Index
                 LogIndexMapContent(indexmapFile);
                 DumpAndCopyIndex();
                 File.Delete(indexmapFile);
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
+                _indexMap = IndexMap.FromFile(indexmapFile, _useMemoryMappedIndexFiles, _skipIndexVerification, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
@@ -254,7 +262,7 @@ namespace EventStore.Core.Index
                     if (memtable != null)
                     {
                         memtable.MarkForConversion();
-                        ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth);
+                        ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _useMemoryMappedIndexFiles, _skipIndexVerification, _indexCacheDepth);
                     }
                     else
                         ptable = (PTable)tableItem.Table;
@@ -267,7 +275,7 @@ namespace EventStore.Core.Index
                         mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint,
                                                           (streamId, currentHash) => UpgradeHash(streamId, currentHash),
                                                           entry => reader.ExistsAt(entry.Position),
-                                                          entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion, _indexCacheDepth);
+                                                          entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion, _useMemoryMappedIndexFiles, _skipIndexVerification, _indexCacheDepth);
                     }
                     _indexMap = mergeResult.MergedMap;
                     _indexMap.SaveToFile(indexmapFile);
@@ -324,7 +332,7 @@ namespace EventStore.Core.Index
 
                 Log.Trace("Putting awaiting file as PTable instead of MemTable [{0}].", memtable.Id);
 
-                var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth);
+                var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _useMemoryMappedIndexFiles, _skipIndexVerification, _indexCacheDepth);
                 var swapped = false;
                 lock (_awaitingTablesLock)
                 {

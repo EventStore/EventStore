@@ -22,15 +22,15 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _filename = GetTempFilePath();
             _mergeFile = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, maxTablesPerLevel: 2);
+            _map = IndexMap.FromFile(_filename, false, false, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
 
-            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                     123, 321, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion);
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                     123, 321, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath()),
-                                                  100, 400, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), false, false),
+                                                  100, 400, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

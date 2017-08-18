@@ -16,7 +16,6 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private string _mergeFile;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
-
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
@@ -26,11 +25,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
-            _map = IndexMap.FromFile(_filename);
+            _map = IndexMap.FromFile(_filename, false, false);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 7);
-            var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            var table = PTable.FromMemtable(memtable, _tablename, false, false);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, false, false);
             _result.MergedMap.SaveToFile(_filename);
             _result.ToDelete.ForEach(x => x.Dispose());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.Dispose());
@@ -77,7 +76,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename);
+            var map = IndexMap.FromFile(_filename, false, false);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);

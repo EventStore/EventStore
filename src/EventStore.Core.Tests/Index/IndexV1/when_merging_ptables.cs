@@ -24,14 +24,14 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010200000000, 0, 0x0102);
             table.Add(0x010300000000, 0, 0x0103);
             table.Add(0x010400000000, 0, 0x0104);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
             table.Add(0x010500000000, 0, 0x0105);
             table.Add(0x010600000000, 0, 0x0106);
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1);
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1, false, false);
         }
 
         [OneTimeTearDown]
@@ -85,14 +85,14 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010200000000, 0, 0x0102);
             table.Add(0x010300000000, 0, 0x0103);
             table.Add(0x010400000000, 0, 0x0104);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
             table.Add(0x010500000000, 0, 0x0105);
             table.Add(0x010600000000, 0, 0x0106);
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3);
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3, false, false);
         }
 
         [OneTimeTearDown]
@@ -146,20 +146,20 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010200000000, 0, 0x010200000000);
             table.Add(0x010300000000, 0, 0x010300000000);
             table.Add(0x010400000000, 0, 0x010400000000);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
             table.Add(0x010500000000, 0, 0x010500000000);
             table.Add(0x010600000000, 0, 0x010600000000);
             table.Add(0x010700000000, 0, 0x010700000000);
             table.Add(0x010800000000, 0, 0x010800000000);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
             table.Add(0x010900000000, 0, 0x010900000000);
             table.Add(0x101000000000, 0, 0x101000000000);
             table.Add(0x111000000000, 0, 0x111000000000);
             table.Add(0x121000000000, 0, 0x121000000000);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2);
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2, false, false);
         }
 
         [OneTimeTearDown]
@@ -223,15 +223,15 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010200000000, 2, 7);
             table.Add(0x010400000000, 0, 8);
             table.Add(0x010400000000, 1, 9);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
             table.Add(0x010100000000, 1, 10);
             table.Add(0x010100000000, 2, 11);
             table.Add(0x010500000000, 1, 12);
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2);
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, false, false);
         }
 
         [OneTimeTearDown]
@@ -290,22 +290,22 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010200000000, 0, 2);
             table.Add(0x010300000000, 0, 3);
             table.Add(0x010300000000, 1, 4);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
             table.Add(0x010100000000, 2, 5);
             table.Add(0x010200000000, 1, 6);
             table.Add(0x010200000000, 2, 7);
             table.Add(0x010400000000, 0, 8);
             table.Add(0x010400000000, 1, 9);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
             table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
             table.Add(0x010100000000, 1, 10);
             table.Add(0x010100000000, 2, 11);
             table.Add(0x010500000000, 1, 12);
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
-            _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2);
+            _tables.Add(PTable.FromMemtable(table, GetTempFilePath(), false, false));
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, false, false);
         }
 
         [OneTimeTearDown]

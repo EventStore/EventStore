@@ -25,6 +25,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => new HashListMemTable(version: _ptableVersion, maxSize: 40),
                                          () => { throw new InvalidOperationException(); },
                                          _ptableVersion,
+                                         false,
+                                         false,
                                          maxSizeForMemory: 20);
             _tableIndex.Initialize(long.MaxValue);
 

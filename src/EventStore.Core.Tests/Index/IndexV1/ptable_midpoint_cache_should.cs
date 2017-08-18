@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 memTable.Add((uint)rnd.Next(), rnd.Next(0, 1<<20), Math.Abs(rnd.Next() * rnd.Next()));
             }
 
-            var ptable = PTable.FromMemtable(memTable, file, 0);
+            var ptable = PTable.FromMemtable(memTable, file, false, false, 0);
             return ptable;
         }
 

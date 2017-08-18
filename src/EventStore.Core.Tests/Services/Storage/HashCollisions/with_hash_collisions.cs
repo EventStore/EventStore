@@ -37,6 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                                          () => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
                                          PTableVersions.IndexV1,
+                                         false, false,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
@@ -208,6 +209,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                                          () => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
                                          () => _fakeReader,
                                          PTableVersions.IndexV2,
+                                         false, false,
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);

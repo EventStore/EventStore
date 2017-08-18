@@ -173,6 +173,8 @@ namespace EventStore.Core
                                             () => new HashListMemTable(vNodeSettings.IndexBitnessVersion, maxSize: vNodeSettings.MaxMemtableEntryCount * 2),
                                             () => new TFReaderLease(readerPool),
                                             vNodeSettings.IndexBitnessVersion,
+                                            vNodeSettings.UseMemoryMappedIndexFiles,
+                                            vNodeSettings.SkipIndexVerification,
                                             maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,

@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [SetUp]
         public void Setup()
         {
-            _map = IndexMap.FromFile("thisfiledoesnotexist");
+            _map = IndexMap.FromFile("thisfiledoesnotexist", false, false);
         }
 
         [Test]

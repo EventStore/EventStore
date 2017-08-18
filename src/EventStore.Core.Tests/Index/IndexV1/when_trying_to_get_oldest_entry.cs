@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, false, false))
             {
                 IndexEntry entry;
                 Assert.IsFalse(ptable.TryGetOldestEntry(0x12, out entry));
@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, false, false))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
             memTable.Add(0x010100000000, 0x02, 0xfff2);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, false, false))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             memTable.Add(0x010100000000, 0x02, 0xfff2);
             memTable.Add(0x010100000000, 0x01, 0xfff3);
             memTable.Add(0x010100000000, 0x02, 0xfff4);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, false, false))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             memTable.Add(0x010100000000, 0x01, 0xfff1);
             memTable.Add(0x010100000000, 0x01, 0xfff3);
             memTable.Add(0x010100000000, 0x01, 0xfff5);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, false, false))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
