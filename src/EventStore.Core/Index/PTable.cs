@@ -11,6 +11,8 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Unbuffered;
+using System.IO.MemoryMappedFiles;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
 {
@@ -60,7 +62,10 @@ namespace EventStore.Core.Index
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
 
-        internal Midpoint[] GetMidPoints() {return _midpoints;} 
+        internal Midpoint[] GetMidPoints() {return _midpoints;}
+
+        private bool _useMemoryMappedIndexFiles;
+        private bool _skipIndexVerification;
 
         private PTable(string filename,
                        Guid id,
@@ -80,6 +85,8 @@ namespace EventStore.Core.Index
 
             _id = id;
             _filename = filename;
+            _useMemoryMappedIndexFiles = useMemoryMappedIndexFiles;
+            _skipIndexVerification = skipIndexVerification;
 
             Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
@@ -87,12 +94,37 @@ namespace EventStore.Core.Index
 
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
-            _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
-                                                  initialReaders,
-                                                  maxReaders,
-                                                  () => new WorkItem(filename, DefaultBufferSize),
-                                                  workItem => workItem.Dispose(),
-                                                  pool => OnAllWorkItemsDisposed());
+            if (_useMemoryMappedIndexFiles)
+            {
+                var fileStream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, FileOptions.RandomAccess);
+                var memoryMappedFile = MemoryMappedFile.CreateFromFile(fileStream,
+                                                               Guid.NewGuid().ToString(),
+                                                               fileStream.Length,
+                                                               MemoryMappedFileAccess.Read,
+                                                               new MemoryMappedFileSecurity(),
+                                                               HandleInheritability.None,
+                                                               false);
+                _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items (memory mapped)", _id),
+                                                      initialReaders,
+                                                      maxReaders,
+                                                      () => new WorkItem(memoryMappedFile, fileStream.Length),
+                                                      workItem => workItem.Dispose(),
+                                                      pool =>
+                                                      {
+                                                          memoryMappedFile.Dispose();
+                                                          OnAllWorkItemsDisposed();
+                                                      });
+            }
+            else
+            {
+                _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
+                                                      initialReaders,
+                                                      maxReaders,
+                                                      () => new WorkItem(filename, DefaultBufferSize),
+                                                      workItem => workItem.Dispose(),
+                                                      pool => OnAllWorkItemsDisposed());
+
+            }
 
             var readerWorkItem = GetWorkItem();
             try
@@ -147,8 +179,15 @@ namespace EventStore.Core.Index
             int calcdepth = 0;
             try
             {
-                calcdepth = GetDepth(_size, depth);
-                _midpoints = CacheMidpointsAndVerifyHash(calcdepth);
+                if (_useMemoryMappedIndexFiles && !_skipIndexVerification)
+                {
+                    VerifyFileHash();
+                }
+                else
+                {
+                    calcdepth = GetDepth(_size, depth);
+                    _midpoints = CacheMidpointsAndVerifyHash(calcdepth);
+                }
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
@@ -168,7 +207,64 @@ namespace EventStore.Core.Index
             }
             return minDepth;
         }
-        
+
+        internal void VerifyFileHash()
+        {
+            var sw = Stopwatch.StartNew();
+            Log.Trace("Verifying file hash of PTable '{0}' started...", Path.GetFileName(Filename));
+#if  MONO
+            var workItem = GetWorkItem();
+            var stream = workItem.Stream;
+            try {
+#else
+            using (var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096))
+            {
+#endif
+                try
+                {
+                    var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
+
+                    var fileHash = new byte[MD5Size];
+                    stream.Read(fileHash, 0, MD5Size);
+
+                    if (hash == null)
+                        throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
+                    if (fileHash.Length != hash.Length)
+                        throw new CorruptIndexException(
+                            new HashValidationException(
+                                string.Format(
+                                    "Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
+                                    fileHash.Length,
+                                    BitConverter.ToString(fileHash),
+                                    hash.Length,
+                                    BitConverter.ToString(hash))));
+
+                    for (int i = 0; i < fileHash.Length; i++)
+                    {
+                        if (fileHash[i] != hash[i])
+                            throw new CorruptIndexException(
+                                new HashValidationException(
+                                    string.Format(
+                                        "Hashes are different! FileHash: {0}, hash: {1}.",
+                                        BitConverter.ToString(fileHash),
+                                        BitConverter.ToString(hash))));
+                    }
+                }
+                catch
+                {
+                    Dispose();
+                    throw;
+                }
+            }
+#if MONO            
+            finally
+            {
+                ReturnWorkItem(workItem);
+            }
+#endif
+            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Path.GetFileName(Filename), Count, sw.Elapsed);
+        }
+
         internal Midpoint[] CacheMidpointsAndVerifyHash(int depth)
         {
             var buffer = new byte[4096];
@@ -671,12 +767,18 @@ namespace EventStore.Core.Index
 
         private class WorkItem : IDisposable
         {
-            public readonly FileStream Stream;
+            public readonly Stream Stream;
             public readonly BinaryReader Reader;
 
             public WorkItem(string filename, int bufferSize)
             {
                 Stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.RandomAccess);
+                Reader = new BinaryReader(Stream);
+            }
+
+            public WorkItem(MemoryMappedFile memoryMappedFile, long length)
+            {
+                Stream = memoryMappedFile.CreateViewStream(0, length, MemoryMappedFileAccess.Read);
                 Reader = new BinaryReader(Stream);
             }
 
