@@ -227,7 +227,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetResultAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetState(_httpEndPoint, name, userCredentials);
+            return _client.GetResult(_httpEndPoint, name, userCredentials);
         }
 
         /// <summary>
@@ -241,7 +241,7 @@ namespace EventStore.ClientAPI.Projections
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(partitionId, "partitionId");
-            return _client.GetPartitionStateAsync(_httpEndPoint, name, partitionId, userCredentials);
+            return _client.GetPartitionResultAsync(_httpEndPoint, name, partitionId, userCredentials);
         }
 
         /// <summary>
