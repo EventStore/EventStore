@@ -66,11 +66,13 @@ namespace EventStore.Core.Index
 
         private bool _useMemoryMappedIndexFiles;
         private bool _skipIndexVerification;
+        private bool _usePersistedMidpoints;
 
         private PTable(string filename,
                        Guid id,
-                       bool useMemoryMappedIndexFiles, 
+                       bool useMemoryMappedIndexFiles,
                        bool skipIndexVerification,
+                       bool usePersistedMidpoints = false,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
                        int maxReaders = ESConsts.PTableMaxReaderCount,
                        int depth = 16)
@@ -87,6 +89,7 @@ namespace EventStore.Core.Index
             _filename = filename;
             _useMemoryMappedIndexFiles = useMemoryMappedIndexFiles;
             _skipIndexVerification = skipIndexVerification;
+            _usePersistedMidpoints = usePersistedMidpoints;
 
             Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
@@ -179,14 +182,18 @@ namespace EventStore.Core.Index
             int calcdepth = 0;
             try
             {
-                if (_useMemoryMappedIndexFiles && !_skipIndexVerification)
-                {
-                    VerifyFileHash();
-                }
-                else
+                if (!_skipIndexVerification)
                 {
                     calcdepth = GetDepth(_size, depth);
                     _midpoints = CacheMidpointsAndVerifyHash(calcdepth);
+                    if (_usePersistedMidpoints && !MidpointsCache.Exists(CreateMidpointsCacheFilename()))
+                    {
+                        MidpointsCache.Write(CreateMidpointsCacheFilename(), _midpoints);
+                    }
+                }
+                else if (_usePersistedMidpoints)
+                {
+                    _midpoints = MidpointsCache.Read(CreateMidpointsCacheFilename());
                 }
             }
             catch (PossibleToHandleOutOfMemoryException)
@@ -198,6 +205,11 @@ namespace EventStore.Core.Index
                       _version, Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
         }
 
+        private string CreateMidpointsCacheFilename()
+        {
+            return $"{_filename}_midpoints";
+        }
+
         private int GetDepth(long fileSize, int minDepth) {
             if((2L << 28) * 4096L < fileSize) return 28;
             for(int i=27;i>minDepth;i--) {
@@ -206,63 +218,6 @@ namespace EventStore.Core.Index
                 }
             }
             return minDepth;
-        }
-
-        internal void VerifyFileHash()
-        {
-            var sw = Stopwatch.StartNew();
-            Log.Trace("Verifying file hash of PTable '{0}' started...", Path.GetFileName(Filename));
-#if  MONO
-            var workItem = GetWorkItem();
-            var stream = workItem.Stream;
-            try {
-#else
-            using (var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096))
-            {
-#endif
-                try
-                {
-                    var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
-
-                    var fileHash = new byte[MD5Size];
-                    stream.Read(fileHash, 0, MD5Size);
-
-                    if (hash == null)
-                        throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
-                    if (fileHash.Length != hash.Length)
-                        throw new CorruptIndexException(
-                            new HashValidationException(
-                                string.Format(
-                                    "Hash sizes differ! FileHash({0}): {1}, hash({2}): {3}.",
-                                    fileHash.Length,
-                                    BitConverter.ToString(fileHash),
-                                    hash.Length,
-                                    BitConverter.ToString(hash))));
-
-                    for (int i = 0; i < fileHash.Length; i++)
-                    {
-                        if (fileHash[i] != hash[i])
-                            throw new CorruptIndexException(
-                                new HashValidationException(
-                                    string.Format(
-                                        "Hashes are different! FileHash: {0}, hash: {1}.",
-                                        BitConverter.ToString(fileHash),
-                                        BitConverter.ToString(hash))));
-                    }
-                }
-                catch
-                {
-                    Dispose();
-                    throw;
-                }
-            }
-#if MONO            
-            finally
-            {
-                ReturnWorkItem(workItem);
-            }
-#endif
-            Log.Trace("Verifying file hash of PTable '{0}' ({1} entries) done in {2}.", Path.GetFileName(Filename), Count, sw.Elapsed);
         }
 
         internal Midpoint[] CacheMidpointsAndVerifyHash(int depth)
@@ -701,7 +656,8 @@ namespace EventStore.Core.Index
                 throw new TimeoutException();
         }
 
-        internal struct Midpoint
+        [Serializable]
+        public struct Midpoint
         {
             public readonly IndexEntryKey Key;
             public readonly long ItemIndex;
@@ -713,7 +669,8 @@ namespace EventStore.Core.Index
             }
         }
 
-        internal struct IndexEntryKey
+        [Serializable]
+        public struct IndexEntryKey
         {
             public ulong Stream;
             public long Version;
