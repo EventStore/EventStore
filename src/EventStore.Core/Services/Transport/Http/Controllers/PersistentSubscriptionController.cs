@@ -69,6 +69,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void AckMessages(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
             var envelope = new NoopEnvelope();
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
@@ -98,6 +100,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void NackMessages(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
             var envelope = new NoopEnvelope();
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
@@ -134,6 +138,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void AckMessage(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
             var envelope = new NoopEnvelope();
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
@@ -157,6 +163,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void NackMessage(HttpEntityManager http, UriTemplateMatch match)
         {
+            if (_httpForwarder.ForwardRequest(http))
+                return;
             var envelope = new NoopEnvelope();
             var groupname = match.BoundVariables["subscription"];
             var stream = match.BoundVariables["stream"];
