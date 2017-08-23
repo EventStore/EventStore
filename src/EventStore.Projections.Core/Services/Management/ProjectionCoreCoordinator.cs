@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool _systemReady = false;
         private VNodeState _currentState = VNodeState.Unknown;
+        private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
             _systemReady = true;
@@ -56,7 +57,23 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _currentState = message.State;
+            _epochId = GetEpochIdFromStateChange(message);
             StartWhenConditionsAreMet();
+        }
+
+        private Guid GetEpochIdFromStateChange(SystemMessage.StateChangeMessage message)
+        {
+            Guid epochId = Guid.Empty;
+            switch (message.State)
+            {
+                case VNodeState.Master:
+                    epochId = ((SystemMessage.BecomeMaster)message).EpochId;
+                    break;
+                case VNodeState.Slave:
+                    epochId = ((SystemMessage.BecomeSlave)message).EpochId;
+                    break;
+            }
+            return epochId;
         }
 
         private void StartWhenConditionsAreMet()
@@ -100,7 +117,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 queue.Publish(new ReaderCoreServiceMessage.StartReader());
                 if (_runProjections >= ProjectionType.System)
-                    queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+                    queue.Publish(new ProjectionCoreServiceMessage.StartCore(_epochId));
                 else{
                     _publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
                 }

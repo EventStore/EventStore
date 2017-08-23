@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 
             protected override IEnumerable<WhenStep> When()
             {
-                yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+                yield return new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid());
                 yield return new SystemMessage.SystemCoreReady();
                 yield return
                     new ProjectionManagementMessage.Command.Post(
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 
             protected override IEnumerable<WhenStep> When()
             {
-                yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+                yield return new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid());
                 yield return new SystemMessage.SystemCoreReady();
                 yield return
                     new ProjectionManagementMessage.Command.Post(
@@ -132,7 +132,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas
 
             protected override IEnumerable<WhenStep> PreWhen()
             {
-                yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+                yield return new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid());
                 yield return new SystemMessage.SystemCoreReady();
                 yield return
                     new ProjectionManagementMessage.Command.Post(

@@ -97,9 +97,11 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid EpochId;
 
-            public BecomeMaster(Guid correlationId): base(correlationId, VNodeState.Master)
+            public BecomeMaster(Guid correlationId, Guid epochId): base(correlationId, VNodeState.Master)
             {
+                EpochId = epochId;
             }
         }
 
@@ -189,9 +191,11 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid EpochId;
 
-            public BecomeSlave(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
+            public BecomeSlave(Guid correlationId, Guid epochId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
             {
+                EpochId = epochId;
             }
         }
 

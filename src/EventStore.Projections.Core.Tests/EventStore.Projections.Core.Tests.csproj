@@ -99,6 +99,7 @@
     <Compile Include="ClientAPI\with_standard_projections_running.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_with_stream_metadata.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\when_a_node_becomes_master.cs" />
     <Compile Include="Integration\scenarios\when_deleting_already_categorized_stream.cs" />
     <Compile Include="Integration\system_projections\when_changing_categorization_projection_configurations.cs" />
     <Compile Include="Other\json_serialization.cs" />
@@ -120,6 +121,9 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_event_type_index_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_phase.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_catalog_stream.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\specification_with_command_reader_and_response_reader.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\when_response_reader_starts_before_command_reader.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\when_command_reader_starts_before_response_reader.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_maximum_allowed_writes_in_flight_set.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
     <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
@@ -424,7 +428,7 @@
     <Compile Include="Services\projections_system\when_requesting_state_from_a_faulted_projection.cs" />
     <Compile Include="Services\projections_system\with_projection_config.cs" />
     <Compile Include="Services\projections_system\with_projections_subsystem.cs" />
-    <Compile Include="Services\projections_system\startup.cs" />
+    <Compile Include="Services\projections_system\when_starting_up.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\projection_version\when_comparing.cs" />
     <Compile Include="Services\result_emitter\result_emitter.cs" />
