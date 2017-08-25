@@ -177,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Start()
         {
-            _publisher.Publish(new ProjectionManagementMessage.Starting());
+            _publisher.Publish(new ProjectionManagementMessage.Starting(_epochId));
         }
 
         public void Handle(ProjectionManagementMessage.ReaderReady message)
@@ -594,6 +594,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private VNodeState _currentState = VNodeState.Unknown;
         private bool _systemIsReady = false;
+        private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
             _systemIsReady = true;
@@ -603,7 +604,23 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _currentState = message.State;
+            _epochId = GetEpochIdFromStateChange(message);
             StartWhenConditionsAreMet();
+        }
+
+        private Guid GetEpochIdFromStateChange(SystemMessage.StateChangeMessage message)
+        {
+            Guid epochId = Guid.Empty;
+            switch (message.State)
+            {
+                case VNodeState.Master:
+                    epochId = ((SystemMessage.BecomeMaster)message).EpochId;
+                    break;
+                case VNodeState.Slave:
+                    epochId = ((SystemMessage.BecomeSlave)message).EpochId;
+                    break;
+            }
+            return epochId;
         }
 
         private void StartWhenConditionsAreMet()

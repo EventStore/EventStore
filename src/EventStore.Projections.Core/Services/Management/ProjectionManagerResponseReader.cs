@@ -52,15 +52,15 @@ namespace EventStore.Projections.Core.Services.Management
             _cancellationScope = new IODispatcherAsync.CancellationScope();
             Log.Debug("PROJECTIONS: Starting Projection Manager Response Reader (reads from $projections-$master)");
             _numberOfStartedWorkers = 0;
-            PerformStartReader().Run();
+            PerformStartReader(message.EpochId).Run();
         }
 
-        private IEnumerable<IODispatcherAsync.Step> PerformStartReader()
+        private IEnumerable<IODispatcherAsync.Step> PerformStartReader(Guid epochId)
         {
             yield return
                 _ioDispatcher.BeginUpdateStreamAcl(
                     _cancellationScope,
-                    ProjectionNamesBuilder._projectionsControlStream,
+                    ProjectionNamesBuilder.BuildControlStreamName(epochId),
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
                     new StreamMetadata(maxAge: ProjectionNamesBuilder.ControlStreamMaxAge),
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Management
             yield return
                 _ioDispatcher.BeginWriteEvents(
                 _cancellationScope,
-                    ProjectionNamesBuilder._projectionsControlStream,
+                    ProjectionNamesBuilder.BuildControlStreamName(epochId),
                     ExpectedVersion.Any,
                     SystemAccount.Principal,
                     new[] {new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null)},

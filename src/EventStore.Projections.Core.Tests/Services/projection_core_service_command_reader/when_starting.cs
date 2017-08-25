@@ -29,6 +29,10 @@
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using System;
+using EventStore.Projections.Core.Services.Processing;
+using System.Linq;
+using EventStore.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_core_service_command_reader
 {
@@ -37,8 +41,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
     {
         protected override IEnumerable<WhenStep> When()
         {
-            var startCore = new ProjectionCoreServiceMessage.StartCore();
-            var startReader = CreateWriteEvent("$projections-$control", "$response-reader-started", "{}");
+            var uniqueId = Guid.NewGuid();
+            var startCore = new ProjectionCoreServiceMessage.StartCore(uniqueId);
+            var startReader = CreateWriteEvent(ProjectionNamesBuilder.BuildControlStreamName(uniqueId), "$response-reader-started", "{}");
             yield return new WhenStep(startCore, startReader);
         }
 

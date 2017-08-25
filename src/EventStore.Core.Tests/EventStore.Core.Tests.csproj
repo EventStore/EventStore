@@ -342,6 +342,10 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
+    <Compile Include="Integration\specification_with_a_single_node.cs" />
+    <Compile Include="Integration\specification_with_cluster.cs" />
+    <Compile Include="Integration\when_a_single_node_is_restarted_multiple_times.cs" />
+    <Compile Include="Integration\when_a_master_is_shutdown.cs" />
     <Compile Include="Services\ElectionsService\ClusterSettings.cs" />
     <Compile Include="Services\ElectionsService\ClusterSettingsFactory.cs" />
     <Compile Include="Services\ElectionsService\ElectionServiceUnit.cs" />

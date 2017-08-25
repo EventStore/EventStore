@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             _source = @"fromAll(); on_any(function(){});log(1);";
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid()));
             yield return (new SystemMessage.SystemCoreReady());
             yield return
                 (new ProjectionManagementMessage.Command.Post(

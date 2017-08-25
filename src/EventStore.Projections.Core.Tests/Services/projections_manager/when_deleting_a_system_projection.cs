@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
         protected override IEnumerable<WhenStep> When()
         {
-            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid());
             yield return new SystemMessage.SystemCoreReady();
             yield return
                 new ProjectionManagementMessage.Command.Disable(

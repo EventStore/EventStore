@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
     {
         protected override IEnumerable<WhenStep> PreWhen()
         {
-            yield return new ProjectionManagementMessage.Starting();
+            yield return new ProjectionManagementMessage.Starting(System.Guid.NewGuid());
         }
 
     }

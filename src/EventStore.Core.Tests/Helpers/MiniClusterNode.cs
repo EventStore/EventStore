@@ -22,6 +22,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
+using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Helpers
 {
@@ -44,10 +45,14 @@ namespace EventStore.Core.Tests.Helpers
         public IPEndPoint ExternalTcpSecEndPoint { get; private set; }
         public IPEndPoint ExternalHttpEndPoint { get; private set; }
 
+        public readonly int DebugIndex;
+
         public readonly ClusterVNode Node;
         public readonly TFChunkDb Db;
         private readonly string _dbPath;
         public ManualResetEvent StartedEvent;
+
+        public VNodeState NodeState = VNodeState.Unknown;
 
         public MiniClusterNode(
             string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
@@ -58,6 +63,8 @@ namespace EventStore.Core.Tests.Helpers
         {
             RunningTime.Start();
             RunCount += 1;
+
+            DebugIndex = debugIndex;
 
             _dbPath = Path.Combine(
                 pathname,
@@ -91,8 +98,8 @@ namespace EventStore.Core.Tests.Helpers
                 new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30, adminOnPublic: true,
                 statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
                 gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
-                extTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), extTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
-                intTcpHeartbeatTimeout: TimeSpan.FromSeconds(10), intTcpHeartbeatInterval: TimeSpan.FromSeconds(10),
+                extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
+                intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
                 verifyDbHash: false, maxMemtableEntryCount: memTableSize, hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
                 startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
                 connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault);
@@ -119,14 +126,24 @@ namespace EventStore.Core.Tests.Helpers
 
             StartedEvent = new ManualResetEvent(false);
             Node.MainBus.Subscribe(
-                new AdHocHandler<SystemMessage.SystemStart>(m => StartedEvent.Set()));
+                new AdHocHandler<SystemMessage.StateChangeMessage>(m =>
+                {
+                    NodeState = VNodeState.Unknown;
+                }));
+            Node.MainBus.Subscribe(
+                new AdHocHandler<SystemMessage.BecomeMaster>(m =>
+                {
+                    NodeState = VNodeState.Master;
+                    StartedEvent.Set();
+                }));
+            Node.MainBus.Subscribe(
+                new AdHocHandler<SystemMessage.BecomeSlave>(m =>
+                {
+                    NodeState = VNodeState.Slave;
+                    StartedEvent.Set();
+                }));
 
             Node.Start();
-
-            //if (!StartedEvent.Wait(60000))
-            //    throw new TimeoutException("MiniNode haven't started in 60 seconds.");
-
-            //StartingTime.Stop();
         }
 
         public void Shutdown(bool keepDb = false, bool keepPorts = false)

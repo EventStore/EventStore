@@ -38,7 +38,7 @@ fromStreamCatalog('catalog').foreachStream().when({
 
         protected override IEnumerable<WhenStep> When()
         {
-            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid()));
             yield return (new SystemMessage.SystemCoreReady());
             yield return
                 (new ProjectionManagementMessage.Command.Post(

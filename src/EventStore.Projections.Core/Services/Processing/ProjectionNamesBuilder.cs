@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _emittedStreamsCheckpointName;
 
         public static TimeSpan MasterStreamMaxAge = TimeSpan.FromHours(2);
-        public static TimeSpan ControlStreamMaxAge = TimeSpan.FromHours(2);
+        public static TimeSpan ControlStreamMaxAge = TimeSpan.FromMinutes(5);
         public static TimeSpan SlaveProjectionControlStreamMaxAge = TimeSpan.FromHours(2);
         public static TimeSpan CoreControlStreamMaxAge = TimeSpan.FromHours(2);
 
@@ -86,6 +86,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public const string _projectionsControlStream = "$projections-$control";
         public const string _projectionsMasterStream = "$projections-$master";
         public const string ProjectionsRegistrationStream = "$projections-$all";
+
+        public static string BuildControlStreamName(Guid uniqueId)
+        {
+            return $"{_projectionsControlStream}-{uniqueId}";
+        }
 
         public string GetPartitionCatalogStreamName()
         {
