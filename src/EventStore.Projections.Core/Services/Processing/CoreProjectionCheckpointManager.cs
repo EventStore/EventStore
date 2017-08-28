@@ -129,6 +129,12 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureStarted();
             _started = false;
             _stopped = true;
+
+            if(_currentCheckpoint!=null) _currentCheckpoint.Dispose();
+            _currentCheckpoint = null;
+
+            if(_closingCheckpoint!=null) _closingCheckpoint.Dispose();
+            _closingCheckpoint = null;
         }
 
         public virtual void GetStatistics(ProjectionStatistics info)
@@ -280,7 +286,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_inCheckpoint) // checkpoint in progress.  no other writes will happen, so we can stop here.
                 return;
             // do not request checkpoint if no events were processed since last checkpoint
-            //NOTE: we ignore _usePersistentCheckpoints flag as we need to flush final writes before query object 
+            //NOTE: we ignore _usePersistentCheckpoints flag as we need to flush final writes before query object
             // has been disposed
             if (/* _usePersistentCheckpoints && */ _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
             {
@@ -339,7 +345,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 Guid.Empty, new ResolvedEvent(pair, null), null, -1, source: this.GetType());
             _publisher.Publish(
                 EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                    committedEvent, positionTag, null, _projectionCorrelationId, 
+                    committedEvent, positionTag, null, _projectionCorrelationId,
                     prerecordedEventMessageSequenceNumber));
         }
 
