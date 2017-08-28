@@ -97,8 +97,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _ioDispatcher.Writer.CancelAll();
 
             var allProjections = _projections.Values;
-            //foreach (var projection in allProjections)
-                //projection.Kill();
+            foreach (var projection in allProjections)
+                projection.Kill();
+
             if (_projections.Count > 0)
             {
                 _logger.Info("_projections is not empty after all the projections have been killed");
@@ -201,7 +202,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         projectionConfig,
                         stateHandler,
                         message.MasterWorkerId,
-                        _publisher, 
+                        _publisher,
                         message.MasterCoreProjectionId,
                         this);
                 CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
