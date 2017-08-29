@@ -55,7 +55,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount,
                                       hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
-                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault);
+                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
+                                      replicationCheckpoint: Db.Config.ReplicationCheckpoint);
             ReadIndex.Init(ChaserCheckpoint.Read());
         }
     }

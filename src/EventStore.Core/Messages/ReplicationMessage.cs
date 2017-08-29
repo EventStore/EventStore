@@ -425,6 +425,16 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class ReplicationCheckTick : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public ReplicationCheckTick()
+            {
+            }
+        }
+
         public class ReplicationStats
         {
             public Guid SubscriptionId { get; private set; }

@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage
         protected TFChunkWriter Writer;
         protected ICheckpoint WriterCheckpoint;
         protected ICheckpoint ChaserCheckpoint;
+        protected ICheckpoint ReplicationCheckpoint;
         protected IODispatcher IODispatcher;
         protected InMemoryBus Bus;
 
@@ -56,18 +57,12 @@ namespace EventStore.Core.Tests.Services.Storage
 
             WriterCheckpoint = new InMemoryCheckpoint(0);
             ChaserCheckpoint = new InMemoryCheckpoint(0);
+            ReplicationCheckpoint = new InMemoryCheckpoint(-1);
 
             Bus = new InMemoryBus("bus");
             IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
 
-            Db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                   new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                   10000,
-                                                   0,
-                                                   WriterCheckpoint,
-                                                   ChaserCheckpoint,
-                                                   new InMemoryCheckpoint(-1),
-                                                   new InMemoryCheckpoint(-1)));
+            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, WriterCheckpoint, ChaserCheckpoint, replicationCheckpoint: ReplicationCheckpoint));
 
             Db.Open();
             // create db
@@ -97,7 +92,8 @@ namespace EventStore.Core.Tests.Services.Storage
                                       additionalCommitChecks: PerformAdditionalCommitChecks,
                                       metastreamMaxCount: MetastreamMaxCount,
                                       hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
-                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault);
+                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
+                                      replicationCheckpoint: Db.Config.ReplicationCheckpoint);
 
             ReadIndex.Init(ChaserCheckpoint.Read());
 

@@ -122,6 +122,13 @@ namespace EventStore.Core
 
             _controller.SetMainQueue(_mainQueue);
 
+            if(!isSingleNode)
+            {
+                var filter = new ReplicationCheckpointFilter((IPublisher)_mainBus, _mainQueue, db.Config.ReplicationCheckpoint);
+                _mainBus.Subscribe<ReplicationMessage.ReplicationCheckTick>(filter);
+                _controller.SetFilter(filter);
+            }
+
             //SELF
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
@@ -184,7 +191,8 @@ namespace EventStore.Core
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
                                           vNodeSettings.HashCollisionReadLimit,
-                                          vNodeSettings.SkipIndexScanOnReads);
+                                          vNodeSettings.SkipIndexScanOnReads,
+                                          db.Config.ReplicationCheckpoint);
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,
@@ -507,6 +515,7 @@ namespace EventStore.Core
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
                 _mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
                 _mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
+                _mainBus.Subscribe<StorageMessage.CommitAck>(masterReplicationService);
                 monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(masterReplicationService);
 
                 // REPLICA REPLICATION

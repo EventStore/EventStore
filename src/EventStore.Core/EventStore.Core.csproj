@@ -427,6 +427,7 @@
     <Compile Include="VNodeBuilder.cs" />
     <Compile Include="Index\IndexEntryV2.cs" />
     <Compile Include="Helpers\StreamVersionConverter.cs" />
+    <Compile Include="Services\Replication\ReplicationCheckpointFilter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

@@ -5,6 +5,7 @@ using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
@@ -40,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
-            _indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(), _hashCollisionReadLimit, skipIndexScanOnRead: false);
+            _indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(), _hashCollisionReadLimit, false, new InMemoryCheckpoint(-1));
 
             when();
             //wait for the mem table to be dumped
@@ -211,7 +212,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
                                          maxSizeForMemory: _maxMemTableSize,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
-            _indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(), _hashCollisionReadLimit, skipIndexScanOnRead: false);
+            _indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(), _hashCollisionReadLimit, false, new InMemoryCheckpoint(-1));
             //memtable with 64bit indexes
             _tableIndex.Add(1, streamId, 0, 8);
         }

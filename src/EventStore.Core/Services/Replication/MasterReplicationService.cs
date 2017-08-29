@@ -27,7 +27,8 @@ namespace EventStore.Core.Services.Replication
                                             IHandle<SystemMessage.StateChangeMessage>,
                                             IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
                                             IHandle<ReplicationMessage.ReplicaLogPositionAck>,
-                                            IHandle<ReplicationMessage.GetReplicationStats>
+                                            IHandle<ReplicationMessage.GetReplicationStats>,
+                                            IHandle<StorageMessage.CommitAck>
     {
         public const int MaxQueueSize = 100;
         public const int CloneThreshold = 1024;
@@ -55,6 +56,7 @@ namespace EventStore.Core.Services.Replication
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Master Replication Service");
 
         private readonly ConcurrentDictionary<Guid, ReplicaSubscription> _subscriptions = new ConcurrentDictionary<Guid, ReplicaSubscription>();
+        private readonly Dictionary<Guid, List<StorageMessage.CommitAck>> _commitAcks = new Dictionary<Guid, List<StorageMessage.CommitAck>>();
         
         private volatile VNodeState _state = VNodeState.Initializing;
 
@@ -98,6 +100,10 @@ namespace EventStore.Core.Services.Replication
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _state = message.State;
+            if(_state != VNodeState.Master)
+            {
+                _db.Config.ReplicationCheckpoint.Write(-1);
+            }
 
             if (message.State == VNodeState.ShuttingDown)
                 _stop = true;
@@ -189,6 +195,32 @@ namespace EventStore.Core.Services.Replication
                 Log.ErrorException(exc, "Exception while subscribing replica. Connection will be dropped.");
                 replica.SendBadRequestAndClose(correlationId, string.Format("Exception while subscribing replica. Connection will be dropped. Error: {0}", exc.Message));
                 return false;
+            }
+        }
+
+        public void Handle(StorageMessage.CommitAck message)
+        {
+            var checkpoint = _db.Config.ReplicationCheckpoint.ReadNonFlushed();
+            if(message.LogPosition < checkpoint) return;
+
+            List<StorageMessage.CommitAck> commits;
+            if(_commitAcks.TryGetValue(message.CorrelationId, out commits))
+            {
+                commits.Add(message);
+                if(commits.Count >= _clusterSize / 2 + 1)
+                {
+                    _db.Config.ReplicationCheckpoint.Write(message.LogPosition);
+                    var commitAcksToRemove = _commitAcks.Where(x => x.Value.Any(y => y.LogPosition <= message.LogPosition))
+                                                .Select(z => z.Key).ToList();
+                    foreach(var ca in commitAcksToRemove)
+                    {
+                        _commitAcks.Remove(ca);
+                    }
+                }
+            }
+            else
+            {
+                _commitAcks.Add(message.CorrelationId, new List<StorageMessage.CommitAck>{ message });
             }
         }
 

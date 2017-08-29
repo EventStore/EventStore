@@ -681,6 +681,24 @@
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
+    <Compile Include="Services\Replication\CheckpointFilter\when_processing_event_committed_and_commit_position_is_less_than_replication.cs" />
+    <Compile Include="Services\Replication\MasterReplication\with_master_replication_service.cs" />
+    <Compile Include="Services\Replication\MasterReplication\when_3_node_cluster_receives_1_commit_ack.cs" />
+    <Compile Include="Services\Replication\MasterReplication\when_3_node_cluster_receives_2_commit_acks.cs" />
+    <Compile Include="Services\Replication\MasterReplication\when_3_node_cluster_receives_2_commit_acks_for_positions_lower_than_checkpoint.cs" />
+    <Compile Include="Services\Replication\MasterReplication\when_3_node_cluster_receives_multiple_acks_for_different_positions.cs" />
+    <Compile Include="Services\Replication\CheckpointFilter\with_replication_checkpoint_filter.cs" />
+    <Compile Include="Services\Replication\CheckpointFilter\when_processing_event_committed_and_commit_position_is_greater_than_checkpoint.cs" />
+    <Compile Include="Services\Replication\CheckpointFilter\when_processing_multiple_event_committed_messages.cs" />
+    <Compile Include="Services\Replication\CheckpointFilter\when_processing_multiple_event_committed_messages_for_the_same_positions.cs" />
+    <Compile Include="Services\Replication\ReplicationTestHelper.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_an_event_from_a_single_node.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_an_event_committed_on_master_and_on_slaves.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_events_from_cluster_with_replication_checkpoint_not_set.cs" />
+    <Compile Include="Services\Replication\Subscriptions\TestSubscription.cs" />
+    <Compile Include="Services\Replication\Subscriptions\when_subscribed_to_stream_on_master_and_event_is_replicated_to_slaves.cs" />
+    <Compile Include="TransactionLog\when_reading_a_single_record.cs" />
+    <Compile Include="Services\Storage\AllReader\when_reading_all_with_replication_checkpoint_set.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

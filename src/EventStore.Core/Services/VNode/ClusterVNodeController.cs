@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.VNode
@@ -41,6 +42,8 @@ namespace EventStore.Core.Services.VNode
         private readonly MessageForwardingProxy _forwardingProxy;
         private readonly TimeSpan _forwardingTimeout;
         private readonly ISubsystem[] _subSystems;
+
+        private ReplicationCheckpointFilter _filter;
 
         private int _subSystemInitsToExpect;
 
@@ -89,6 +92,11 @@ namespace EventStore.Core.Services.VNode
 
             _mainQueue = mainQueue;
             _publishEnvelope = new PublishEnvelope(mainQueue);
+        }
+
+        public void SetFilter(ReplicationCheckpointFilter filter)
+        {
+            _filter = filter;
         }
 
         private VNodeFSM CreateFSM()
@@ -249,6 +257,7 @@ namespace EventStore.Core.Services.VNode
                     .When<StorageMessage.WriteTransactionData>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteTransactionPrepare>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteCommit>().ForwardTo(_outputBus)
+                    .When<StorageMessage.EventCommitted>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
 
                 .InAllStatesExcept(VNodeState.Master)
@@ -852,6 +861,18 @@ namespace EventStore.Core.Services.VNode
             Log.Error("========== [{0}] Shutdown Timeout.", _nodeInfo.InternalHttp);
             Shutdown();
             _outputBus.Publish(message);
+        }
+
+        private void Handle(StorageMessage.EventCommitted message)
+        {
+            if(_filter != null)
+            {
+                _filter.Handle(message);
+            }
+            else
+            {
+                _outputBus.Publish(message);
+            }
         }
 
         private void Shutdown()

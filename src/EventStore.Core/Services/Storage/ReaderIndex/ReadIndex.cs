@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
@@ -30,21 +31,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          bool additionalCommitChecks,
                          long metastreamMaxCount,
                          int hashCollisionReadLimit,
-                         bool skipIndexScanOnReads)
+                         bool skipIndexScanOnReads,
+                         ICheckpoint replicationCheckpoint)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(readerPool, "readerPool");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
+            Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 
             var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
             _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
-            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);
+            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads, replicationCheckpoint);
             _indexWriter = new IndexWriter(_indexBackend, _indexReader);
             _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
-            _allReader = new AllReader(_indexBackend, _indexCommitter);
+            _allReader = new AllReader(_indexBackend, _indexCommitter, replicationCheckpoint);
         }
 
         void IReadIndex.Init(long buildToPosition)

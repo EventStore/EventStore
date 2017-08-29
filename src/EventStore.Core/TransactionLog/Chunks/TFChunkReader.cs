@@ -45,6 +45,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             while (true)
             {
                 var pos = _curPos;
+
                 var writerChk = _writerCheckpoint.Read();
                 if (pos >= writerChk)
                     return SeqReadResult.Failure;

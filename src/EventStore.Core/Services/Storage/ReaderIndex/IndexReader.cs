@@ -2,11 +2,13 @@
 using System.Linq;
 using System.Security.Principal;
 using System.Threading;
+using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
@@ -45,23 +47,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly ITableIndex _tableIndex;
         private readonly bool _skipIndexScanOnRead;
         private readonly StreamMetadata _metastreamMetadata;
+        private readonly ICheckpoint _replicationCheckpoint;
 
         private long _hashCollisions;
         private long _cachedStreamInfo;
         private long _notCachedStreamInfo;
         private int _hashCollisionReadLimit;
 
-        public IndexReader(IIndexBackend backend, ITableIndex tableIndex, StreamMetadata metastreamMetadata, int hashCollisionReadLimit, bool skipIndexScanOnRead)
+        public IndexReader(IIndexBackend backend, ITableIndex tableIndex, StreamMetadata metastreamMetadata, int hashCollisionReadLimit, bool skipIndexScanOnRead, ICheckpoint replicationCheckpoint)
         {
             Ensure.NotNull(backend, "backend");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(metastreamMetadata, "metastreamMetadata");
+            Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 
             _backend = backend;
             _tableIndex = tableIndex;
             _metastreamMetadata = metastreamMetadata;
             _hashCollisionReadLimit = hashCollisionReadLimit;
             _skipIndexScanOnRead = skipIndexScanOnRead;
+            _replicationCheckpoint = replicationCheckpoint;
         }
 
         IndexReadEventResult IIndexReader.ReadEvent(string streamId, long eventNumber)
@@ -72,6 +77,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 return ReadEventInternal(reader, streamId, eventNumber);
             }
+        }
+
+        private bool IsReplicated(long position)
+        {
+            var checkpoint = _replicationCheckpoint.ReadNonFlushed();
+            if (checkpoint == -1) return true;
+            return checkpoint >= position;
         }
 
         private IndexReadEventResult ReadEventInternal(TFReaderLease reader, string streamId, long eventNumber)
@@ -101,6 +113,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             PrepareLogRecord prepare = ReadPrepareInternal(reader, streamId, eventNumber);
             if (prepare != null)
             {
+                if (!IsReplicated(prepare.LogPosition))
+                    return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber, originalStreamExists);
                 if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
                     return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber, originalStreamExists);
                 return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare), metadata, lastEventNumber, originalStreamExists);
@@ -210,7 +224,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
-                                              .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
+                                              .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId && IsReplicated(x.Prepare.LogPosition));
                 if (!skipIndexScanOnRead) { 
                     recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
                                                .GroupBy(x => x.Version).Select(x => x.Last());
@@ -275,7 +289,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
-                                              .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
+                                              .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId  && IsReplicated(x.Prepare.LogPosition));
                 if (!skipIndexScanOnRead) {
                     recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
                                                .GroupBy(x => x.Version).Select(x => x.Last()); ;

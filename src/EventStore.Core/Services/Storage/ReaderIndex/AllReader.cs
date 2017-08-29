@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
@@ -26,13 +27,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         private readonly IIndexBackend _backend;
         private readonly IIndexCommitter _indexCommitter;
+        private readonly ICheckpoint _replicationCheckpoint;
 
-        public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter)
+        public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, ICheckpoint replicationCheckpoint)
         {
             Ensure.NotNull(backend, "backend");
             Ensure.NotNull(indexCommitter, "indexCommitter");
+            Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
             _backend = backend;
             _indexCommitter = indexCommitter;
+            _replicationCheckpoint = replicationCheckpoint;
         }
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
@@ -50,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 long nextCommitPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    if (nextCommitPos > _indexCommitter.LastCommitPosition)
+                    if (nextCommitPos > _indexCommitter.LastCommitPosition || !IsReplicated(nextCommitPos))
                     {
                         break;
                     }
@@ -141,6 +145,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
+        private bool IsReplicated(long position)
+        {
+            var checkpoint = _replicationCheckpoint.ReadNonFlushed();
+            if (checkpoint == -1) return true;
+            return checkpoint >= position;
+        }
+
         public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount)
         {
             var records = new List<CommitEventRecord>();
@@ -154,6 +165,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             using (var reader = _backend.BorrowReader())
             {
                 long nextCommitPostPos = pos.CommitPosition;
+                
                 while (count < maxCount)
                 {
                     reader.Reposition(nextCommitPostPos);
@@ -169,6 +181,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     nextCommitPostPos = result.RecordPrePosition;
 
+                    if(!IsReplicated(nextCommitPostPos))
+                    {
+                        continue;
+                    }
                     switch (result.LogRecord.RecordType)
                     {
                         case LogRecordType.Prepare:
