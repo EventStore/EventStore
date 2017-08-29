@@ -230,7 +230,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
 
 	[TestFixture]
 	[Category("ProjectionsManager")]
-	public class when_listing_all_projections : SpecificationWithNodeAndProjectionsManager
+	public class when_listing_the_projections : SpecificationWithNodeAndProjectionsManager
 	{
 		private List<ProjectionDetails> _result;
 		public override void Given()

@@ -276,6 +276,7 @@ namespace EventStore.Projections.Core.Services.Management
                 status = new ProjectionStatistics
                     {
                         Name = _name,
+                        ProjectionId = _projectionId,
                         Epoch = -1,
                         Version = -1,
                         Mode = Mode,
@@ -288,6 +289,7 @@ namespace EventStore.Projections.Core.Services.Management
                 status = _lastReceivedStatistics.Clone();
                 status.Mode = Mode;
                 status.Name = _name;
+                status.ProjectionId = _projectionId;
                 var enabledSuffix = ((_state == ManagedProjectionState.Stopped || _state == ManagedProjectionState.Faulted) && Enabled ? " (Enabled)" : "");
                 status.Status = (status.Status == "Stopped" && _state == ManagedProjectionState.Completed
                                     ? _state.EnumValueName()

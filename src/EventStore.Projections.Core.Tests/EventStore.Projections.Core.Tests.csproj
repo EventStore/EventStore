@@ -554,6 +554,7 @@
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_timeout_received_after_read_succeeds.cs" />
     <Compile Include="Services\projections_manager\projection_manager_response_reader\when_read_results_in_an_error.cs" />
     <Compile Include="Services\projections_manager\managed_projection\when_updating_projection_config.cs" />
+    <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_duplicate_projection_created.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

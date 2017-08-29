@@ -750,6 +750,12 @@ namespace EventStore.Projections.Core.Services.Management
                         }
                         if (evnt.Event.EventType == ProjectionEventTypes.ProjectionCreated)
                         {
+                            if(registeredProjections.ContainsKey(projectionName))
+                            {
+                                registeredProjections[projectionName] = projectionId;
+                                _logger.Warn("PROJECTIONS: The following projection: {0} has a duplicate created event. Using projection Id {1}", projectionName, projectionId);
+                                continue;
+                            }
                             registeredProjections.Add(projectionName, projectionId);
                         }
                         else if(evnt.Event.EventType == ProjectionEventTypes.ProjectionDeleted)
