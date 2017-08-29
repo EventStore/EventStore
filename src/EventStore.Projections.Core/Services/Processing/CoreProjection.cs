@@ -208,9 +208,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Kill()
+        public void Kill(bool silently=false)
         {
-            SetFaulted("Killed");
+            if(!silently)
+                SetFaulted("Killed");
+            else if(_state != State.Stopped)
+                GoToState(State.Stopped);
         }
 
         private void GetStatistics(ProjectionStatistics info)

@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var allProjections = _projections.Values;
             foreach (var projection in allProjections)
-                projection.Kill();
+                projection.Kill(silently:true);
 
             if (_projections.Count > 0)
             {
