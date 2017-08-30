@@ -104,8 +104,8 @@ namespace EventStore.ClientAPI
                                                 TimeSpan checkPointAfter, int minCheckPointCount, int maxCheckPointCount,
                                                 int maxSubscriberCount, string namedConsumerStrategy)
         {
-            if(messageTimeout.TotalMilliseconds > Int32.MaxValue) throw new ArgumentException("messageTimeout", "milliseconds must be less or equal to than int32.MaxValue");
-            if(checkPointAfter.TotalMilliseconds > Int32.MaxValue) throw new ArgumentException("checkPointAfter", "milliseconds must be less or equal to than int32.MaxValue");
+            if(messageTimeout.TotalMilliseconds > Int32.MaxValue) throw new ArgumentException("milliseconds must be less or equal to than int32.MaxValue", nameof(messageTimeout));
+            if(checkPointAfter.TotalMilliseconds > Int32.MaxValue) throw new ArgumentException("milliseconds must be less or equal to than int32.MaxValue", nameof(checkPointAfter));
             MessageTimeout = messageTimeout;
             ResolveLinkTos = resolveLinkTos;
             StartFrom = startFrom;
