@@ -127,6 +127,7 @@
     <Compile Include="RawStreamMetadataResult.cs" />
     <Compile Include="StreamMetadataBuilder.cs" />
     <Compile Include="StreamMetadataResult.cs" />
+    <Compile Include="Transport.Http\EndpointExtensions.cs" />
     <Compile Include="UserManagement\ChangePasswordDetails.cs" />
     <Compile Include="UserManagement\RelLink.cs" />
     <Compile Include="UserManagement\ResetPasswordDetails.cs" />
@@ -204,7 +205,6 @@
     <Compile Include="Transport.Http\HttpMethod.cs" />
     <Compile Include="Transport.Http\HttpResponse.cs" />
     <Compile Include="Transport.Http\HttpStatusCode.cs" />
-    <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
     <Compile Include="Transport.Http\WebRequestExtensions.cs" />
     <Compile Include="Messages\ClientMessage.cs" />
     <Compile Include="Transport.Tcp\PackageFramingException.cs" />

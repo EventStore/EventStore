@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             for (var i = 0; i < requests.Length; i++)
             {
                 var i1 = i;
-                _portableServer.BuiltInClient.Get(_serverEndPoint.ToHttpUrl(requests[i]),
+                _portableServer.BuiltInClient.Get(_serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, requests[i]),
                             response =>
                                 {
                                     successes[i1] = response.HttpStatusCode == (int) HttpStatusCode.NotFound;
@@ -115,7 +115,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Category("Network")]
         public void handle_invalid_characters_in_url()
         {
-            var url = _serverEndPoint.ToHttpUrl("/ping^\"");
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping^\"");
             Func<HttpResponse, bool> verifier = response => string.IsNullOrEmpty(response.Body) &&
                                                             response.HttpStatusCode == (int) HttpStatusCode.NotFound;
 
@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void should_throw_an_exception()
         {
             var sleepFor = _timeout + 1000;
-            var url = _serverEndPoint.ToHttpUrl(string.Format("/test-timeout?sleepfor={0}", sleepFor));
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, string.Format("/test-timeout?sleepfor={0}", sleepFor));
             Func<HttpResponse, bool> verifier = response => {
                 return true;
             };

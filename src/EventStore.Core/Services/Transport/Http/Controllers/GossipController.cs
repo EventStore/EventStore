@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Ensure.NotNull(message, "message");
             Ensure.NotNull(message, "endPoint");
 
-            var url = endPoint.ToHttpUrl("/gossip");
+            var url = endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/gossip");
             _client.Post(
                 url,
                 Codec.Json.To(new ClusterInfoDto(message.ClusterInfo, message.ServerEndPoint)),

@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                 var httpAuthenticationProviders = new HttpAuthenticationProvider[] {new AnonymousHttpAuthenticationProvider()};
 
                 _service = new HttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
-                                           _multiQueuedHandler, false, null, 0, _serverEndPoint.ToHttpUrl());
+                                           _multiQueuedHandler, false, null, 0, _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA));
                 HttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
                 _client = new HttpAsyncClient(_timeout);
             }
