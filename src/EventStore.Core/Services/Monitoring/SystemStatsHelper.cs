@@ -63,18 +63,6 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
             stats["proc-tcp-sentBytesTotal"] = tcp.SentBytesTotal;
 
-            var gcStats = _perfCounter.GetGcStats();
-            stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
-            stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
-            stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
-            stats["proc-gc-gen1ItemsCount"] = gcStats.Gen1ItemsCount;
-            stats["proc-gc-gen1Size"] = gcStats.Gen1Size;
-            stats["proc-gc-gen2ItemsCount"] = gcStats.Gen2ItemsCount;
-            stats["proc-gc-gen2Size"] = gcStats.Gen2Size;
-            stats["proc-gc-largeHeapSize"] = gcStats.LargeHeapSize;
-            stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
-            stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
-
             stats["es-checksum"] = _writerCheckpoint.Read();
             stats["es-checksumNonFlushed"] = _writerCheckpoint.ReadNonFlushed();
 
@@ -130,6 +118,18 @@ namespace EventStore.Core.Services.Monitoring
 
                 stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
                 stats["sys-freeMem"] = GetFreeMem();
+
+                var gcStats = _perfCounter.GetGcStats();
+                stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
+                stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
+                stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
+                stats["proc-gc-gen1ItemsCount"] = gcStats.Gen1ItemsCount;
+                stats["proc-gc-gen1Size"] = gcStats.Gen1Size;
+                stats["proc-gc-gen2ItemsCount"] = gcStats.Gen2ItemsCount;
+                stats["proc-gc-gen2Size"] = gcStats.Gen2Size;
+                stats["proc-gc-largeHeapSize"] = gcStats.LargeHeapSize;
+                stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
+                stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
             }
             catch (InvalidOperationException)
             {
