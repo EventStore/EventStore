@@ -556,6 +556,10 @@
     <Compile Include="Services\projections_manager\managed_projection\when_updating_projection_config.cs" />
     <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_duplicate_projection_created.cs" />
     <Compile Include="Services\core_projection\when_killing_a_projection_and_an_event_is_received.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_starting_at_event_zero.cs" />
+    <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_starting_after_event_zero.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_starting_at_event_zero.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_starting_after_event_zero.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

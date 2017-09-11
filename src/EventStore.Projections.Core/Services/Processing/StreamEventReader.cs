@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _streamName;
         private long _fromSequenceNumber;
+        private bool _firstEventProcessed = false;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -143,11 +144,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
         {
-            if (fromSequenceNumber != 0) return fromSequenceNumber;
-            if(message.Events.Length > 0)
-            {
-                return message.Events[0].OriginalEventNumber;
+            if(!_firstEventProcessed){
+                if(message.Events.Length>0){
+                    _firstEventProcessed = true;
+
+                    if(message.Events[0].OriginalEventNumber > fromSequenceNumber)
+                        return message.Events[0].OriginalEventNumber;
+                    else
+                        return fromSequenceNumber;
+                }
             }
+
             return fromSequenceNumber;
         }
 

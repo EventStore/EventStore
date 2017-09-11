@@ -21,6 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
+        private Dictionary<string,bool> _firstEventProcessed = new Dictionary<string, bool>();
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
 
@@ -60,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pendingRequests = new Dictionary<string, Guid>();
             foreach (var stream in streams)
             {
+                _firstEventProcessed.Add(stream,false);
                 _pendingRequests.Add(stream, Guid.Empty);
                 _preparePositions.Add(stream, null);
             }
@@ -144,6 +146,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                     {
                         _eofs[message.EventStreamId] = false;
+
+                        if(!_firstEventProcessed[message.EventStreamId]){
+                            _firstEventProcessed[message.EventStreamId] = true;
+                            //if events have been deleted from the beginning of a stream, update the stream position to the current event number
+                            if(message.Events[0].OriginalEventNumber>_fromPositions.Streams[message.EventStreamId])
+                                _fromPositions = _fromPositions.UpdateStreamPosition(message.EventStreamId, message.Events[0].OriginalEventNumber);
+                        }
+
                         for (int index = 0; index < message.Events.Length; index++)
                         {
                             var @event = message.Events[index].Event;
