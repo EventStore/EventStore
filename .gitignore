@@ -101,3 +101,5 @@ test_results
 # Mac
 .DS_Store
 
+# Visual Studio Code
+src/.vscode/
