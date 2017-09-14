@@ -218,6 +218,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
         public bool AlwaysKeepScavenged { get; set; }
 
+        [ArgDescription(Opts.SkipIndexScanOnReadsDescr, Opts.AppGroup)]
+        public bool SkipIndexScanOnReads { get; set; }
+
         public ClusterNodeOptions()
         {
             Config = "";
@@ -327,6 +330,8 @@ namespace EventStore.ClusterNode
             WriteThrough = Opts.WriteThroughDefault;
 
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
+
+            SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
         }
     }
 }

@@ -123,6 +123,7 @@ namespace EventStore.Core
         private int _advertiseExternalTcpPortAs;
         protected byte _indexBitnessVersion;
         protected bool _alwaysKeepScavenged;
+        protected bool _skipIndexScanOnReads;
 
         private bool _gossipOnSingleNode;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -207,6 +208,7 @@ namespace EventStore.Core
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             _alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
+            _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -1147,6 +1149,17 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// Skip index scan on reads.
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder SkipIndexScanOnReads()
+        {
+            _skipIndexScanOnReads = true;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
@@ -1336,7 +1349,8 @@ namespace EventStore.Core
                     _betterOrdering,
                     _readerThreadsCount,
                     _alwaysKeepScavenged,
-                    _gossipOnSingleNode);
+                    _gossipOnSingleNode,
+                    _skipIndexScanOnReads);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

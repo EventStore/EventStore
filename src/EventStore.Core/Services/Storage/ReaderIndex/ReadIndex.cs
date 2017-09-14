@@ -29,7 +29,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          int streamInfoCacheCapacity,
                          bool additionalCommitChecks,
                          long metastreamMaxCount,
-                         int hashCollisionReadLimit)
+                         int hashCollisionReadLimit,
+                         bool skipIndexScanOnReads)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(readerPool, "readerPool");
@@ -40,7 +41,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
             _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
-            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit);
+            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);
             _indexWriter = new IndexWriter(_indexBackend, _indexReader);
             _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
             _allReader = new AllReader(_indexBackend, _indexCommitter);
