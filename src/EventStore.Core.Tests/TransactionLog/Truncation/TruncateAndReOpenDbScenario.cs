@@ -54,7 +54,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
                                       0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: MetastreamMaxCount,
-                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
+                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
+                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault);
             ReadIndex.Init(ChaserCheckpoint.Read());
         }
     }

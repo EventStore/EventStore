@@ -264,7 +264,9 @@ namespace EventStore.ClusterNode
                 builder.DoNotVerifyDbHashes();
             if(options.AlwaysKeepScavenged)
                 builder.AlwaysKeepScavenged();
-
+            if (options.SkipIndexScanOnReads)
+                builder.SkipIndexScanOnReads();
+                
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))

@@ -147,6 +147,9 @@ namespace EventStore.Core.Util
         public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
         public static readonly bool LogHttpRequestsDefault = false;
 
+        public const string SkipIndexScanOnReadsDescr = "Skip Index Scan on Reads. This skips the index scan which was used to stop reading duplicates.";
+        public static readonly bool SkipIndexScanOnReadsDefault = false;
+
         //Loading certificates from files
         public const string CertificateFileDescr = "The path to certificate file.";
         public static readonly string CertificateFileDefault = string.Empty;

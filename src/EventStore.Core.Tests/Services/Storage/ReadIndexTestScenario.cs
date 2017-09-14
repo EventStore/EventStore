@@ -96,7 +96,8 @@ namespace EventStore.Core.Tests.Services.Storage
                                       0,
                                       additionalCommitChecks: PerformAdditionalCommitChecks,
                                       metastreamMaxCount: MetastreamMaxCount,
-                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
+                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
+                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault);
 
             ReadIndex.Init(ChaserCheckpoint.Read());
 
