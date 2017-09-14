@@ -185,6 +185,11 @@ namespace EventStore.Projections.Core.Services.Management
             set { PersistedProjectionState.Enabled = value; }
         }
 
+        private bool IsMultiStream
+        {
+            get { return PersistedProjectionState.SourceDefinition != null && PersistedProjectionState.SourceDefinition.Streams != null && PersistedProjectionState.SourceDefinition.Streams.Length > 1; }
+        }
+
         public bool Deleted
         {
             get { return PersistedProjectionState.Deleted; }
@@ -441,6 +446,10 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 PersistedProjectionState.NumberOfPrequisitesMetForDeletion++;
             }
+            if ((PersistedProjectionState.EmitEnabled ?? false) && IsMultiStream)
+            {
+                PersistedProjectionState.NumberOfPrequisitesMetForDeletion++;
+            }
 
             Delete();
             UpdateProjectionVersion();
@@ -488,6 +497,10 @@ namespace EventStore.Projections.Core.Services.Management
         {
             var sourceDefinition = PersistedProjectionState.SourceDefinition ?? new ProjectionSourceDefinition();
             var projectionNamesBuilder = new ProjectionNamesBuilder(_name, sourceDefinition);
+            if ((PersistedProjectionState.EmitEnabled ?? false) && IsMultiStream)
+            {
+                DeleteStream(projectionNamesBuilder.GetOrderStreamName(), DeleteIfConditionsAreMet);
+            }
             if (PersistedProjectionState.DeleteCheckpointStream)
             {
                 DeleteStream(projectionNamesBuilder.MakeCheckpointStreamName(), DeleteIfConditionsAreMet);
