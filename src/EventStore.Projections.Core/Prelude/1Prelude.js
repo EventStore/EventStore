@@ -218,6 +218,18 @@ function scope($on, $notify) {
         return fromStreams(arr);
     }
 
+    function fromEventType(eventType) {
+        return fromStream('$et-' + eventType);
+    }
+
+    function fromEventTypes(eventTypes) {
+        var arr = Array.isArray(eventTypes) ? eventTypes : Array.prototype.slice.call(arguments);
+        arr = arr.map(function (x) {
+            return '$et-' + x;
+        });
+        return fromStreams(arr);
+    }
+
     function emit(streamId, eventName, eventBody, metadata) {
         var message = { streamId: streamId, eventName: eventName , body: JSON.stringify(eventBody), metadata: metadata, isJson: true };
         eventProcessor.emit(message);
@@ -268,9 +280,11 @@ function scope($on, $notify) {
         fromCategories: fromCategories,
         fromStreamCatalog: fromStreamCatalog,
         fromStreamsMatching: fromStreamsMatching,
+        fromEventType: fromEventType,
+        fromEventTypes: fromEventTypes,
 
         options: options,
-        emit: emit, 
+        emit: emit,
         linkTo: linkTo,
         copyTo: copyTo,
         linkStreamTo: linkStreamTo,
