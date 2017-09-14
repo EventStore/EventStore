@@ -145,6 +145,60 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         }
 
         [TestFixture]
+        public class with_from_event_type : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromEventType('EventOfInterest').when({
+                    $any: function(state, event) {
+                            return state;
+                        }});
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(1, _source.Streams.Length);
+                Assert.AreEqual("$et-EventOfInterest", _source.Streams[0]);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(true, _source.ByStreams);
+            }
+        }
+
+        [TestFixture]
+        public class with_from_event_types : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromEventTypes(['EventOfInterest', 'AnotherEventOfInterest', 'YetAnotherEventOfInterest']).when({
+                    $any: function(state, event) {
+                            return state;
+                        }});
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(3, _source.Streams.Length);
+                Assert.AreEqual("$et-EventOfInterest", _source.Streams[0]);
+                Assert.AreEqual("$et-AnotherEventOfInterest", _source.Streams[1]);
+                Assert.AreEqual("$et-YetAnotherEventOfInterest", _source.Streams[2]);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(true, _source.ByStreams);
+            }
+        }
+
+        [TestFixture]
         public class with_multiple_from_categories_plain : TestFixtureWithJsProjection
         {
             protected override void Given()
