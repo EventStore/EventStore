@@ -21,50 +21,50 @@ namespace EventStore.ClientAPI.Projections
             _client = new HttpAsyncClient(_operationTimeout);
         }
 
-        public Task Enable(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task Enable(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/command/enable", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Disable(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task Disable(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/command/disable", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Abort(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task Abort(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPost(endPoint.ToHttpUrl("/projection/{0}/command/abort", name), string.Empty, userCredentials, HttpStatusCode.OK);
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/command/abort", name), string.Empty, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task CreateOneTime(IPEndPoint endPoint, string query, UserCredentials userCredentials = null)
+        public Task CreateOneTime(EndPoint endPoint, string query, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, userCredentials, HttpStatusCode.Created);
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projections/onetime?type=JS"), query, userCredentials, HttpStatusCode.Created);
         }
 
-        public Task CreateTransient(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
+        public Task CreateTransient(EndPoint endPoint, string name, string query, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
             return SendPost(
-                endPoint.ToHttpUrl("/projections/transient?name={0}&type=JS", name),
+                endPoint.ToHttpUrl(httpSchema, "/projections/transient?name={0}&type=JS", name),
                 query,
                 userCredentials,
                 HttpStatusCode.Created);
         }
 
-        public Task CreateContinuous(IPEndPoint endPoint, string name, string query, bool trackEmitted, UserCredentials userCredentials = null)
+        public Task CreateContinuous(EndPoint endPoint, string name, string query, bool trackEmitted, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1&trackemittedstreams={1}", name, trackEmitted),
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projections/continuous?name={0}&type=JS&emit=1&trackemittedstreams={1}", name, trackEmitted),
                             query, userCredentials, HttpStatusCode.Created);
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
-        public Task<string> ListAllAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListAllAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/any"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<List<ProjectionDetails>> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListAll(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/any"), userCredentials, HttpStatusCode.OK)
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/any"), userCredentials, HttpStatusCode.OK)
                     .ContinueWith(x =>
                     {
                         if (x.IsFaulted) throw x.Exception;
@@ -74,14 +74,14 @@ namespace EventStore.ClientAPI.Projections
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
-        public Task<string> ListOneTimeAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListOneTimeAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/onetime"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<List<ProjectionDetails>> ListOneTime(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListOneTime(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/onetime"), userCredentials, HttpStatusCode.OK)
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/onetime"), userCredentials, HttpStatusCode.OK)
                     .ContinueWith(x =>
                     {
                         if (x.IsFaulted) throw x.Exception;
@@ -91,14 +91,14 @@ namespace EventStore.ClientAPI.Projections
         }
 
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
-        public Task<string> ListContinuousAsString(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<string> ListContinuousAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/continuous"), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<List<ProjectionDetails>> ListContinuous(IPEndPoint endPoint, UserCredentials userCredentials = null)
+        public Task<List<ProjectionDetails>> ListContinuous(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projections/continuous"), userCredentials, HttpStatusCode.OK)
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/continuous"), userCredentials, HttpStatusCode.OK)
                     .ContinueWith(x =>
                     {
                         if (x.IsFaulted) throw x.Exception;
@@ -107,49 +107,49 @@ namespace EventStore.ClientAPI.Projections
                     });
         }
 
-        public Task<string> GetStatus(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task<string> GetStatus(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}", name), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetState(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task<string> GetState(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/state", name), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/state", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetPartitionStateAsync(IPEndPoint endPoint, string name, string partition, UserCredentials userCredentials = null)
+        public Task<string> GetPartitionStateAsync(EndPoint endPoint, string name, string partition, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/state?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/state?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetResult(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task<string> GetResult(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/result", name), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/result", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetPartitionResultAsync(IPEndPoint endPoint, string name, string partition, UserCredentials userCredentials = null)
+        public Task<string> GetPartitionResultAsync(EndPoint endPoint, string name, string partition, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/result?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/result?partition={1}", name, partition), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetStatistics(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task<string> GetStatistics(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/statistics", name), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/statistics", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task<string> GetQuery(IPEndPoint endPoint, string name, UserCredentials userCredentials = null)
+        public Task<string> GetQuery(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendGet(endPoint.ToHttpUrl("/projection/{0}/query", name), userCredentials, HttpStatusCode.OK);
+            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/query", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task UpdateQuery(IPEndPoint endPoint, string name, string query, UserCredentials userCredentials = null)
+        public Task UpdateQuery(EndPoint endPoint, string name, string query, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendPut(endPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, userCredentials, HttpStatusCode.OK);
+            return SendPut(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/query?type=JS", name), query, userCredentials, HttpStatusCode.OK);
         }
 
-        public Task Delete(IPEndPoint endPoint, string name, bool deleteEmittedStreams, UserCredentials userCredentials = null)
+        public Task Delete(EndPoint endPoint, string name, bool deleteEmittedStreams, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
-            return SendDelete(endPoint.ToHttpUrl("/projection/{0}?deleteEmittedStreams={1}", name, deleteEmittedStreams), userCredentials, HttpStatusCode.OK);
+            return SendDelete(endPoint.ToHttpUrl(httpSchema, "/projection/{0}?deleteEmittedStreams={1}", name, deleteEmittedStreams), userCredentials, HttpStatusCode.OK);
         }
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)

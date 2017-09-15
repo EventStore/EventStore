@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         protected override void Given()
         {
             _serverEndPoint = new IPEndPoint(IPAddress.Loopback, PortsHelper.GetAvailablePort(IPAddress.Loopback));
-            _url = _HttpEndPoint.ToHttpUrl("/stats/tcp");
+            _url = _HttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
             
             var settings = ConnectionSettings.Create();
             _connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);

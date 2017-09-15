@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI.Projections
 {
@@ -14,21 +15,24 @@ namespace EventStore.ClientAPI.Projections
     public class ProjectionsManager
     {
         private readonly ProjectionsClient _client;
-        private readonly IPEndPoint _httpEndPoint;
+        private readonly EndPoint _httpEndPoint;
+        private readonly string _httpSchema;
 
         /// <summary>
         /// Creates a new instance of <see cref="ProjectionsManager"/>.
         /// </summary>
         /// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
         /// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
+        /// <param name="httpSchema">HTTP endpoint schema http|https.</param>
         /// <param name="operationTimeout"></param>
-        public ProjectionsManager(ILogger log, IPEndPoint httpEndPoint, TimeSpan operationTimeout)
+        public ProjectionsManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
             _client = new ProjectionsClient(log, operationTimeout);
             _httpEndPoint = httpEndPoint;
+            _httpSchema = httpSchema;
         }
 
         /// <summary>
@@ -40,7 +44,7 @@ namespace EventStore.ClientAPI.Projections
         public Task EnableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Enable(_httpEndPoint, name, userCredentials);
+            return _client.Enable(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -52,7 +56,7 @@ namespace EventStore.ClientAPI.Projections
         public Task DisableAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Disable(_httpEndPoint, name, userCredentials);
+            return _client.Disable(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -64,7 +68,7 @@ namespace EventStore.ClientAPI.Projections
         public Task AbortAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Abort(_httpEndPoint, name, userCredentials);
+            return _client.Abort(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -75,7 +79,7 @@ namespace EventStore.ClientAPI.Projections
         public Task CreateOneTimeAsync(string query, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(query, "query");
-            return _client.CreateOneTime(_httpEndPoint, query, userCredentials);
+            return _client.CreateOneTime(_httpEndPoint, query, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace EventStore.ClientAPI.Projections
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
-            return _client.CreateTransient(_httpEndPoint, name, query, userCredentials);
+            return _client.CreateTransient(_httpEndPoint, name, query, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -114,7 +118,7 @@ namespace EventStore.ClientAPI.Projections
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.CreateContinuous(_httpEndPoint, name, query, trackEmittedStreams, userCredentials);
+            return _client.CreateContinuous(_httpEndPoint, name, query, trackEmittedStreams, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -125,7 +129,7 @@ namespace EventStore.ClientAPI.Projections
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
         public Task<string> ListAllAsStringAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListAllAsString(_httpEndPoint, userCredentials);
+            return _client.ListAllAsString(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -135,7 +139,7 @@ namespace EventStore.ClientAPI.Projections
         /// <returns>List of all ProjectionDetails items containing projection statuses.</returns>
         public Task<List<ProjectionDetails>> ListAllAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListAll(_httpEndPoint, userCredentials);
+            return _client.ListAll(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -146,7 +150,7 @@ namespace EventStore.ClientAPI.Projections
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
         public Task<string> ListOneTimeAsStringAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListOneTimeAsString(_httpEndPoint, userCredentials);
+            return _client.ListOneTimeAsString(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -156,7 +160,7 @@ namespace EventStore.ClientAPI.Projections
         /// <returns>List of one-time ProjectionDetails items containing projection statuses.</returns>
         public Task<List<ProjectionDetails>> ListOneTimeAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListOneTime(_httpEndPoint, userCredentials);
+            return _client.ListOneTime(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -167,7 +171,7 @@ namespace EventStore.ClientAPI.Projections
         [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
         public Task<string> ListContinuousAsStringAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListContinuousAsString(_httpEndPoint, userCredentials);
+            return _client.ListContinuousAsString(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -177,7 +181,7 @@ namespace EventStore.ClientAPI.Projections
         /// <returns>List of continuous ProjectionDetails items containing projection statuses.</returns>
         public Task<List<ProjectionDetails>> ListContinuousAsync(UserCredentials userCredentials = null)
         {
-            return _client.ListContinuous(_httpEndPoint, userCredentials);
+            return _client.ListContinuous(_httpEndPoint, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -189,7 +193,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetStatusAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetStatus(_httpEndPoint, name, userCredentials);
+            return _client.GetStatus(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -201,7 +205,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetStateAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetState(_httpEndPoint, name, userCredentials);
+            return _client.GetState(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -215,7 +219,7 @@ namespace EventStore.ClientAPI.Projections
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(partitionId, "partitionId");
-            return _client.GetPartitionStateAsync(_httpEndPoint, name, partitionId, userCredentials);
+            return _client.GetPartitionStateAsync(_httpEndPoint, name, partitionId, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -227,7 +231,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetResultAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetResult(_httpEndPoint, name, userCredentials);
+            return _client.GetResult(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -241,7 +245,7 @@ namespace EventStore.ClientAPI.Projections
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(partitionId, "partitionId");
-            return _client.GetPartitionResultAsync(_httpEndPoint, name, partitionId, userCredentials);
+            return _client.GetPartitionResultAsync(_httpEndPoint, name, partitionId, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -253,7 +257,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetStatisticsAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetStatistics(_httpEndPoint, name, userCredentials);
+            return _client.GetStatistics(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -265,7 +269,7 @@ namespace EventStore.ClientAPI.Projections
         public Task<string> GetQueryAsync(string name, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.GetQuery(_httpEndPoint, name, userCredentials);
+            return _client.GetQuery(_httpEndPoint, name, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -279,7 +283,7 @@ namespace EventStore.ClientAPI.Projections
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials);
+            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials, _httpSchema);
         }
 
         /// <summary>
@@ -303,7 +307,7 @@ namespace EventStore.ClientAPI.Projections
         public Task DeleteAsync(string name, bool deleteEmittedStreams, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _client.Delete(_httpEndPoint, name, deleteEmittedStreams, userCredentials);
+            return _client.Delete(_httpEndPoint, name, deleteEmittedStreams, userCredentials, _httpSchema);
         }
     }
 }

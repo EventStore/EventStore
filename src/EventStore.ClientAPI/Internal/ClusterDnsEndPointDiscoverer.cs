@@ -181,7 +181,7 @@ namespace EventStore.ClientAPI.Internal
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
-            var url = endPoint.EndPoint.ToHttpUrl("/gossip?format=json");
+            var url = endPoint.EndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/gossip?format=json");
             _client.Get(
                 url,
                 null,

@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void respond_with_httpmessage_text_message()
         {
-            var url = _serverEndPoint.ToHttpUrl("/ping?format=json");
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=json");
             Func<HttpResponse, bool> verifier = response => Codec.Json.From<HttpMessage.TextMessage>(response.Body) != null;
 
             var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void return_response_in_json_if_requested_by_query_param_and_set_content_type_header()
         {
-            var url = _serverEndPoint.ToHttpUrl("/ping?format=json");
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=json");
             Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.Json,
                                                             StringComparison.InvariantCultureIgnoreCase);
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void return_response_in_xml_if_requested_by_query_param_and_set_content_type_header()
         {
-            var url = _serverEndPoint.ToHttpUrl("/ping?format=xml");
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=xml");
             Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.Xml,
                                                             StringComparison.InvariantCultureIgnoreCase);
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void return_response_in_plaintext_if_requested_by_query_param_and_set_content_type_header()
         {
-            var url = _serverEndPoint.ToHttpUrl("/ping?format=text");
+            var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping?format=text");
             Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.ContentType),
                                                             ContentType.PlainText,
                                                             StringComparison.InvariantCultureIgnoreCase);
