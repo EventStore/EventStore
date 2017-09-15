@@ -67,6 +67,7 @@ The list of precompiled projections libraries can be found in `src/libs/x64`
 ### Linux
 **Prerequisites**
 - git
+- a c++ compiler (e.g `sudo apt-get install g++`)
 
 The scripts attempts to do it's best to have no dependencies from the user's point of view. If you do encounter any issues, please don't hesitate to raise an issue.
 
