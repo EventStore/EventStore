@@ -126,7 +126,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
-                    if (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0)
+                    if (message.Result == ReadStreamResult.StreamDeleted
+                    || (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0))
                         EnqueueItem(null, message.EventStreamId);
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
@@ -227,9 +228,14 @@ namespace EventStore.Projections.Core.Services.Processing
             while (true)
             {
                 var anyNonEmpty = false;
+
+                var anyEvent = false;
                 var minStreamId = "";
-                var any = false;
                 var minPosition = GetMaxPosition();
+
+                var anyDeletedStream = false;
+                var deletedStreamId = "";
+
                 foreach (var buffer in _buffers)
                 {
                     if (buffer.Value.Count == 0)
@@ -238,27 +244,42 @@ namespace EventStore.Projections.Core.Services.Processing
                     var head = buffer.Value.Peek();
 
                     var currentStreamId = buffer.Key;
-                    var itemPosition = GetItemPosition(head);
 
-                    if (_safePositionToJoin != null
-                        && itemPosition.CompareTo(_safePositionToJoin.GetValueOrDefault()) <= 0
-                        && itemPosition.CompareTo(minPosition) < 0)
-                    {
-                        minPosition = itemPosition;
-                        minStreamId = currentStreamId;
-                        any = true;
+                    if(head!=null){
+                        var itemPosition = GetItemPosition(head);
+                        if (_safePositionToJoin != null
+                            && itemPosition.CompareTo(_safePositionToJoin.GetValueOrDefault()) <= 0
+                            && itemPosition.CompareTo(minPosition) < 0)
+                        {
+                            minPosition = itemPosition;
+                            minStreamId = currentStreamId;
+                            anyEvent = true;
+                        }
+                    }
+                    else{
+                        anyDeletedStream = true;
+                        deletedStreamId = currentStreamId;
                     }
                 }
-                if (!any)
+                if (!anyEvent && !anyDeletedStream)
                 {
                     if (!anyNonEmpty)
                         DeliverSafePositionToJoin();
                     break;
                 }
-                var minHead = _buffers[minStreamId].Dequeue();
-                DeliverEvent(minHead.Item1, minHead.Item2);
-                if (_buffers[minStreamId].Count == 0)
-                    PauseOrContinueProcessing();
+
+                if(anyEvent){
+                    var minHead = _buffers[minStreamId].Dequeue();
+                    DeliverEvent(minHead.Item1, minHead.Item2);
+
+                    if (_buffers[minStreamId].Count == 0)
+                        PauseOrContinueProcessing();
+                }
+            
+                if(anyDeletedStream){
+                    _buffers[deletedStreamId].Dequeue();
+                    SendPartitionDeleted_WhenReadingDataStream(deletedStreamId,-1,null,null,null,null);
+                }
             }
         }
 
