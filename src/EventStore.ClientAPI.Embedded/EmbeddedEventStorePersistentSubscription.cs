@@ -28,7 +28,7 @@ namespace EventStore.ClientAPI.Embedded
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
             ConnectionSettings settings)
         {
-            var source = new TaskCompletionSource<PersistentEventStoreSubscription>();
+            var source = new TaskCompletionSource<PersistentEventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             _subscriptions.StartPersistentSubscription(Guid.NewGuid(), source, subscriptionId, streamId, userCredentials, bufferSize, onEventAppeared,
                 onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout);

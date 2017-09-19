@@ -154,7 +154,7 @@ namespace EventStore.ClientAPI.Projections
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<string>();
+            var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             _client.Get(url,
                         userCredentials,
                         response =>
@@ -176,7 +176,7 @@ namespace EventStore.ClientAPI.Projections
 
         private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<string>();
+            var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             _client.Delete(url,
                            userCredentials,
                            response =>
@@ -198,7 +198,7 @@ namespace EventStore.ClientAPI.Projections
 
         private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<object>();
+            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             _client.Put(url,
                         content,
                         "application/json",
@@ -222,7 +222,7 @@ namespace EventStore.ClientAPI.Projections
 
         private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<object>();
+            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             _client.Post(url,
                          content,
                          "application/json",

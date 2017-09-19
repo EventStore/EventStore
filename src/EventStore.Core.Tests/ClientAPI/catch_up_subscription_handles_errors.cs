@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var expectedException = new ApplicationException("Test");
             _connection.HandleReadStreamEventsForwardAsync((stream, start, max) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                 Assert.That(stream, Is.EqualTo(StreamId));
                 Assert.That(start, Is.EqualTo(0));
                 Assert.That(max, Is.EqualTo(1));
@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (callCount++ == 0)
                 {
                     Assert.That(start, Is.EqualTo(0));
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetResult(CreateStreamEventsSlice());
                     return taskCompletionSource.Task;
 
@@ -157,14 +157,14 @@ namespace EventStore.Core.Tests.ClientAPI
                 if (callCount++ == 0)
                 {
                     Assert.That(start, Is.EqualTo(0));
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetResult(CreateStreamEventsSlice());
                     return taskCompletionSource.Task;
                 }
                 else
                 {
                     Assert.That(start, Is.EqualTo(1));
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetException(expectedException);
                     return taskCompletionSource.Task;
                 }
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.HandleReadStreamEventsForwardAsync((stream, start, max) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                 taskCompletionSource.SetResult(CreateStreamEventsSlice(isEnd: true));
                 return taskCompletionSource.Task;
             });
@@ -203,14 +203,14 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.HandleReadStreamEventsForwardAsync((stream, start, max) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                 taskCompletionSource.SetResult(CreateStreamEventsSlice(isEnd: true));
                 return taskCompletionSource.Task;
             });
 
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
                 taskCompletionSource.SetException(expectedException);
                 return taskCompletionSource.Task;
             });
@@ -229,7 +229,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 if (callCount++ == 0)
                 {
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetResult(CreateStreamEventsSlice(isEnd: true));
                     return taskCompletionSource.Task;
                 }
@@ -242,7 +242,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
                 taskCompletionSource.SetResult(CreateVolatileSubscription(raise, drop, 1));
                 return taskCompletionSource.Task;
             });
@@ -262,14 +262,14 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 if (callCount++ == 0)
                 {
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetResult(CreateStreamEventsSlice(isEnd: true));
                     return taskCompletionSource.Task;
                 }
                 else
                 {
                     Assert.That(start, Is.EqualTo(1));
-                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                    var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                     taskCompletionSource.SetException(expectedException);
                     return taskCompletionSource.Task;
                 }
@@ -277,7 +277,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
                 taskCompletionSource.SetResult(CreateVolatileSubscription(raise, drop, 1));
                 return taskCompletionSource.Task;
             });
@@ -330,7 +330,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 callCount++;
 
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (callCount == 1)
                 {
                     taskCompletionSource.SetResult(CreateStreamEventsSlice(fromEvent: 0, count: 0, isEnd: true));
@@ -348,7 +348,7 @@ namespace EventStore.Core.Tests.ClientAPI
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
                 innerSubscriptionDrop = drop;
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
                 volatileEventStoreSubscription = CreateVolatileSubscription(raise, drop, null);
                 taskCompletionSource.SetResult(volatileEventStoreSubscription);
                 return taskCompletionSource.Task;
@@ -369,7 +369,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 callCount++;
 
-                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>();
+                var taskCompletionSource = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (callCount == 1)
                 {
                     taskCompletionSource.SetResult(CreateStreamEventsSlice(fromEvent: 0, count:0, isEnd: true));
@@ -387,7 +387,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
             _connection.HandleSubscribeToStreamAsync((stream, raise, drop) =>
             {
-                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+                var taskCompletionSource = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
                 VolatileEventStoreSubscription volatileEventStoreSubscription2 = CreateVolatileSubscription(raise, drop, null);
                 taskCompletionSource.SetResult(volatileEventStoreSubscription);
 
@@ -417,7 +417,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private static VolatileEventStoreSubscription CreateVolatileSubscription(Func<EventStoreSubscription, ResolvedEvent, Task> raise, Action<EventStoreSubscription, SubscriptionDropReason, Exception> drop, int? lastEventNumber)
         {
-            return new VolatileEventStoreSubscription(new VolatileSubscriptionOperation(new NoopLogger(), new TaskCompletionSource<EventStoreSubscription>(), StreamId, false, null, raise, drop, false, () => null), StreamId, -1, lastEventNumber);
+            return new VolatileEventStoreSubscription(new VolatileSubscriptionOperation(new NoopLogger(), new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously), StreamId, false, null, raise, drop, false, () => null), StreamId, -1, lastEventNumber);
         }
 
         private static StreamEventsSlice CreateStreamEventsSlice(int fromEvent = 0, int count = 1, bool isEnd = false)
