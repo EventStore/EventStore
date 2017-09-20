@@ -150,7 +150,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             Log.Trace("Resulting temp chunk file: {0}.", Path.GetFileName(tmpChunkPath));
 
             TFChunk.TFChunk newChunk;
+            TFChunk.TFChunk memChunk;
+
             try
+
             {
                 newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath,
                                                      _db.Config.ChunkSize,
@@ -158,6 +161,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                      chunkEndNumber,
                                                      isScavenged: true,
                                                      inMem: _db.Config.InMemDb,
+                                                     unbuffered: _db.Config.Unbuffered,
+                                                     writethrough: _db.Config.WriteThrough);
+
+                memChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath + ".mem",
+                                                     _db.Config.ChunkSize,
+                                                     chunkStartNumber,
+                                                     chunkEndNumber,
+                                                     isScavenged: true,
+                                                     inMem: true,
                                                      unbuffered: _db.Config.Unbuffered,
                                                      writethrough: _db.Config.WriteThrough);
             }
@@ -183,6 +195,46 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   system => { /* NOOP */ });
                 }
 
+                var memPositionMapping = new List<PosMap>();
+                foreach (var oldChunk in oldChunks)
+                {
+                    TraverseChunk(oldChunk,
+                                  prepare => 
+                                  {
+                                      if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+                                          memPositionMapping.Add(WriteRecord(memChunk, prepare));
+                                  },
+                                  commit =>
+                                  {
+                                      if (ShouldKeepCommit(commit, commits))
+                                          memPositionMapping.Add(WriteRecord(memChunk, commit));
+                                  },
+                                  system => memPositionMapping.Add(WriteRecord(memChunk, system)));
+                }
+                memChunk.CompleteScavenge(memPositionMapping);
+
+                var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != 3);
+                var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
+
+                var memNewSize = (long)memChunk.PhysicalDataSize + PosMap.FullSize * memPositionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
+
+                if (oldSize <= memNewSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion)
+                {
+                    Log.Trace("Scavenging of chunks:");
+                    Log.Trace(oldChunksList);
+                    Log.Trace("completed in {0}.", sw.Elapsed);
+                    Log.Trace("Old chunks' versions are kept as they are smaller.");
+                    Log.Trace("Old chunk total size: {0}, scavenged chunk size: {1}.", oldSize, memNewSize);
+                    Log.Trace("Scavenged chunk removed.");
+
+                    newChunk.MarkForDeletion();
+                    memChunk.MarkForDeletion();
+                    PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
+                    return false;
+                }
+
+                memChunk.MarkForDeletion();
+
                 var positionMapping = new List<PosMap>();
                 foreach (var oldChunk in oldChunks)
                 {
@@ -202,14 +254,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 newChunk.CompleteScavenge(positionMapping);
 
-                var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
+                //var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
                 var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
 
                 if(_unsafeIgnoreHardDeletes) {
                     Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
                 }
-
-                var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != 3);
+                
                 if(oldVersion) {
                     Log.Trace("Forcing scavenged chunk to be kept as old chunk is a previous version.");
                 }
