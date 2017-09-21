@@ -182,25 +182,30 @@ namespace EventStore.Core.Services
             // Copy unrestricted headers (including cookies, if any)
             foreach (var headerKey in srcReq.Headers.AllKeys)
             {
-                switch (headerKey.ToLower())
-                {
-                    case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "connection":        break;
-                    case "content-type":      break;
-                    case "content-length":    break;
-                    case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "expect":            break;
-                    case "host":              request.Headers.Host = forwardUri.Host; break;
-                    case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "proxy-connection":  break;
-                    case "range":             break;
-                    case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
-                    case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
+                try{
+                    switch (headerKey.ToLower())
+                    {
+                        case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
+                        case "connection":        break;
+                        case "content-type":      break;
+                        case "content-length":    break;
+                        case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                        case "expect":            break;
+                        case "host":              request.Headers.Host = forwardUri.Host; break;
+                        case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                        case "proxy-connection":  break;
+                        case "range":             break;
+                        case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
+                        case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
+                        case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
 
-                    default:
-                        request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
-                        break;
+                        default:
+                            request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
+                            break;
+                    }
+                }
+                catch(System.FormatException){
+                    request.Headers.TryAddWithoutValidation(headerKey,srcReq.Headers[headerKey]);
                 }
             }
 
