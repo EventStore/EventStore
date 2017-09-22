@@ -418,7 +418,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     if (!end.HasValue)
                     {
-                        _state |= PersistentSubscriptionState.ReplayingParkedMessages;
+                        _state ^= PersistentSubscriptionState.ReplayingParkedMessages;
                         return; //nothing to do.
                     }
                     TryReadingParkedMessagesFrom(0, end.Value + 1);
