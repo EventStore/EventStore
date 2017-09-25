@@ -84,13 +84,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             }
 
             [Test]
-            public void core_readers_should_use_the_unique_id_provided_by_the_state_change_message()
+            public void projections_core_coordinator_should_not_publish_start_core_message()
             {
-                var becomeMaster = _consumer.HandledMessages.OfType<SystemMessage.BecomeSlave>().First();
+                //projections are not allowed (yet) to run on slaves
                 var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
-
-                Assert.AreEqual(1, startCoreMessages.Select(x => x.EpochId).Distinct().Count());
-                Assert.AreEqual(becomeMaster.EpochId, startCoreMessages.First().EpochId);
+                Assert.AreEqual(0, startCoreMessages.Select(x => x.EpochId).Distinct().Count());
             }
         }
     }

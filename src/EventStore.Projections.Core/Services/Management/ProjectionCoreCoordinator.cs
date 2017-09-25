@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartWhenConditionsAreMet()
         {
-            if (_systemReady && (_currentState == VNodeState.Master || _currentState == VNodeState.Slave))
+            if (_systemReady && (_currentState == VNodeState.Master))
             {
                 if (!_started)
                 {
