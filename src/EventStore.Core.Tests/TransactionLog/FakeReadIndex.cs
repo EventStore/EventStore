@@ -12,6 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog
     internal class FakeReadIndex: IReadIndex
     {
         public long LastCommitPosition { get { throw new NotImplementedException(); } }
+        public long LastReplicatedPosition { get { throw new NotImplementedException(); } }
         public IIndexWriter IndexWriter { get { throw new NotImplementedException(); } }
 
         private readonly Func<string, bool> _isStreamDeleted;

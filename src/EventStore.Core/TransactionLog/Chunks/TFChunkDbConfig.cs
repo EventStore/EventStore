@@ -13,6 +13,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly ICheckpoint ChaserCheckpoint;
         public readonly ICheckpoint EpochCheckpoint;
         public readonly ICheckpoint TruncateCheckpoint;
+        public readonly ICheckpoint ReplicationCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
         public readonly bool InMemDb;
         public readonly bool Unbuffered;
@@ -26,6 +27,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                ICheckpoint chaserCheckpoint,
                                ICheckpoint epochCheckpoint,
                                ICheckpoint truncateCheckpoint,
+                               ICheckpoint replicationCheckpoint,
                                bool inMemDb = false,
                                bool unbuffered = false,
                                bool writethrough = false)
@@ -38,6 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
             Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
             Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
+            Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
             
             Path = path;
             ChunkSize = chunkSize;
@@ -46,10 +49,27 @@ namespace EventStore.Core.TransactionLog.Chunks
             ChaserCheckpoint = chaserCheckpoint;
             EpochCheckpoint = epochCheckpoint;
             TruncateCheckpoint = truncateCheckpoint;
+            ReplicationCheckpoint = replicationCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
             InMemDb = inMemDb;
             Unbuffered = unbuffered;
             WriteThrough = writethrough;
+        }
+
+         public TFChunkDbConfig(string path, 
+                               IFileNamingStrategy fileNamingStrategy, 
+                               int chunkSize,
+                               long maxChunksCacheSize,
+                               ICheckpoint writerCheckpoint, 
+                               ICheckpoint chaserCheckpoint,
+                               ICheckpoint epochCheckpoint,
+                               ICheckpoint truncateCheckpoint,
+                               bool inMemDb = false,
+                               bool unbuffered = false,
+                               bool writethrough = false)
+        : this(path, fileNamingStrategy, chunkSize, maxChunksCacheSize, writerCheckpoint, chaserCheckpoint,
+               epochCheckpoint, truncateCheckpoint, new InMemoryCheckpoint(-1), inMemDb, unbuffered, writethrough)
+        {
         }
     }
 }

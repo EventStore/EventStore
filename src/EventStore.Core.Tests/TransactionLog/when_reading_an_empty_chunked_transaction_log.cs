@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -15,14 +16,8 @@ namespace EventStore.Core.Tests.TransactionLog
         public void try_read_returns_false_when_writer_checksum_is_zero()
         {
             var writerchk = new InMemoryCheckpoint(0);
-            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                       10000,
-                                                       0,
-                                                       writerchk,
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
-                                                       new InMemoryCheckpoint(-1)));
+            var chaserchk = new InMemoryCheckpoint(0);
+            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerchk, chaserchk));
             db.Open();
 
             var reader = new TFChunkReader(db, writerchk, 0);
@@ -35,14 +30,8 @@ namespace EventStore.Core.Tests.TransactionLog
         public void try_read_does_not_cache_anything_and_returns_record_once_it_is_written_later()
         {
             var writerchk = new InMemoryCheckpoint(0);
-            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                       10000,
-                                                       0,
-                                                       writerchk,
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
-                                                       new InMemoryCheckpoint(-1)));
+            var chaserchk = new InMemoryCheckpoint(0);
+            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerchk, chaserchk));
             db.Open();
 
             var writer = new TFChunkWriter(db);

@@ -10,6 +10,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -44,14 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         {
             base.TestFixtureSetUp();
 
-            var dbConfig = new TFChunkDbConfig(PathName,
-                                               new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                               1024*1024,
-                                               0,
-                                               new InMemoryCheckpoint(0),
-                                               new InMemoryCheckpoint(0),
-                                               new InMemoryCheckpoint(-1),
-                                               new InMemoryCheckpoint(-1));
+            var dbConfig = TFChunkDbConfigHelper.Create(PathName, 0, chunkSize: 1024 * 1024);
             var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
             _dbResult = CreateDb(dbCreationHelper);
             _keptRecords = KeptRecords(_dbResult);
@@ -72,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                             PTableVersions.IndexV3,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
-            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault);
+            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault, _dbResult.Db.Config.ReplicationCheckpoint);
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);

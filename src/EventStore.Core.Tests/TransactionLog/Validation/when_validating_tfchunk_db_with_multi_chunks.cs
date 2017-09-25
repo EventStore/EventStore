@@ -13,14 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void with_not_enough_files_to_reach_checksum_throws()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(25000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 25000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
@@ -33,14 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void with_checksum_inside_multi_chunk_throws()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(25000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 25000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateMultiChunk(config, 0, 2, GetFilePathFor("chunk-000000.000000"));
@@ -53,14 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void allows_with_exactly_enough_file_to_reach_checksum_while_last_is_multi_chunk()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(30000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 30000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -77,14 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void allows_next_new_chunk_when_checksum_is_exactly_in_between_two_chunks_if_last_is_ongoing_chunk()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(20000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 20000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
@@ -100,14 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test, Ignore("Due to truncation such situation can happen, so must be considered valid.")]
         public void does_not_allow_next_new_chunk_when_checksum_is_exactly_in_between_two_chunks_and_last_is_multi_chunk()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(10000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 10000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -125,14 +90,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
             File.Create(GetFilePathFor("foo")).Close();
             File.Create(GetFilePathFor("bla")).Close();
 
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             100,
-                                             0,
-                                             new InMemoryCheckpoint(350),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 350, chunkSize: 100);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -158,14 +116,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_not_present_but_should_be_created()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             100,
-                                             0,
-                                             new InMemoryCheckpoint(200),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 200, chunkSize: 100);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
@@ -182,14 +133,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_present()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             100,
-                                             0,
-                                             new InMemoryCheckpoint(200),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 200, chunkSize: 100);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
@@ -207,14 +151,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_no_exception_is_thrown()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             100,
-                                             0,
-                                             new InMemoryCheckpoint(300),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 300, chunkSize: 100);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -233,14 +170,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void does_not_allow_checkpoint_to_point_into_the_middle_of_multichunk_chunk()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             1000,
-                                             0,
-                                             new InMemoryCheckpoint(1500),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 1500, chunkSize: 1000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -255,14 +185,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void allows_last_chunk_to_be_multichunk_when_checkpoint_point_at_the_start_of_next_chunk()
         {
-            var config = new TFChunkDbConfig(PathName,
-                                             new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                             1000,
-                                             0,
-                                             new InMemoryCheckpoint(4000),
-                                             new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
-                                             new InMemoryCheckpoint(-1));
+            var config = TFChunkDbConfigHelper.Create(PathName, 4000, chunkSize: 1000);
             using (var db = new TFChunkDb(config))
             {
                 DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
