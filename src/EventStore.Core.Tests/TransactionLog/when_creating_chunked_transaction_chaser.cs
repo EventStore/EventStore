@@ -21,28 +21,14 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_writer_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                       10000,
-                                                       0,
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
-                                                       new InMemoryCheckpoint(-1)));
+            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 0));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint()));
         }
 
         [Test]
         public void a_null_chaser_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                       10000,
-                                                       0,
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
-                                                       new InMemoryCheckpoint(-1)));
+            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 0));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null));
         }
     }

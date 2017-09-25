@@ -55,21 +55,5 @@ namespace EventStore.Core.TransactionLog.Chunks
             Unbuffered = unbuffered;
             WriteThrough = writethrough;
         }
-
-         public TFChunkDbConfig(string path, 
-                               IFileNamingStrategy fileNamingStrategy, 
-                               int chunkSize,
-                               long maxChunksCacheSize,
-                               ICheckpoint writerCheckpoint, 
-                               ICheckpoint chaserCheckpoint,
-                               ICheckpoint epochCheckpoint,
-                               ICheckpoint truncateCheckpoint,
-                               bool inMemDb = false,
-                               bool unbuffered = false,
-                               bool writethrough = false)
-        : this(path, fileNamingStrategy, chunkSize, maxChunksCacheSize, writerCheckpoint, chaserCheckpoint,
-               epochCheckpoint, truncateCheckpoint, new InMemoryCheckpoint(-1), inMemDb, unbuffered, writethrough)
-        {
-        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -17,14 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             base.TestFixtureSetUp();
 
-            _config = new TFChunkDbConfig(PathName,
-                                          new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                          1000,
-                                          0,
-                                          new InMemoryCheckpoint(11111),
-                                          new InMemoryCheckpoint(5500),
-                                          new InMemoryCheckpoint(5500),
-                                          new InMemoryCheckpoint(5757));
+            _config = TFChunkDbConfigHelper.Create(PathName, 11111, 5500, 5500, 5757, 1000);
 
             DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000001"));
             DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000002"));

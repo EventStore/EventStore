@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -38,14 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage
         {
             base.TestFixtureSetUp();
 
-            var dbConfig = new TFChunkDbConfig(PathName,
-                                               new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                               1024*1024,
-                                               0,
-                                               new InMemoryCheckpoint(0),
-                                               new InMemoryCheckpoint(0),
-                                               new InMemoryCheckpoint(-1),
-                                               new InMemoryCheckpoint(-1));
+            var dbConfig = TFChunkDbConfigHelper.Create(PathName, 0, chunkSize: 1024 * 1024);
             var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
             
             DbRes = CreateDb(dbCreationHelper);

@@ -5,6 +5,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -104,14 +105,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
             var bus = new InMemoryBus("bus");
             new IODispatcher(bus, new PublishEnvelope(bus));
 
-            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                   new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                   10000,
-                                                   0,
-                                                   writerCheckpoint,
-                                                   chaserCheckpoint,
-                                                   new InMemoryCheckpoint(-1),
-                                                   new InMemoryCheckpoint(-1)));
+            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerCheckpoint, chaserCheckpoint));
 
             _db.Open();
             // create db

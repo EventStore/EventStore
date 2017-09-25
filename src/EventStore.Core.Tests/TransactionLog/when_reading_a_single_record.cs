@@ -1,9 +1,8 @@
 using System;
 using EventStore.Core.Data;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -21,15 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                    4096,
-                                                    0,
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1)));
+            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 0));
             _db.Open();
 
             var chunk = _db.Manager.GetChunk(0);

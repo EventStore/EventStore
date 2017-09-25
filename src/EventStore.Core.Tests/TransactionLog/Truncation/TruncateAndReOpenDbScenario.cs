@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -29,14 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
         private void ReOpenDb()
         {
-            Db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                   new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                   10000,
-                                                   0,
-                                                   WriterCheckpoint,
-                                                   ChaserCheckpoint,
-                                                   new InMemoryCheckpoint(-1),
-                                                   new InMemoryCheckpoint(-1)));
+            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, WriterCheckpoint, ChaserCheckpoint));
 
             Db.Open();
 

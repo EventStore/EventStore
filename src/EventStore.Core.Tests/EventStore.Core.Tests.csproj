@@ -699,6 +699,7 @@
     <Compile Include="Services\Replication\Subscriptions\when_subscribed_to_stream_on_master_and_event_is_replicated_to_slaves.cs" />
     <Compile Include="TransactionLog\when_reading_a_single_record.cs" />
     <Compile Include="Services\Storage\AllReader\when_reading_all_with_replication_checkpoint_set.cs" />
+    <Compile Include="TransactionLog\TFChunkDbConfigHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
