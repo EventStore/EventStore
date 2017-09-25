@@ -1492,6 +1492,40 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
+    [TestFixture]
+    public class ParkTests
+    {
+        [Test]
+        public void retrying_parked_messages_with_empty_stream_should_allow_retrying_parked_messages_again()
+        {
+            //setup the persistent subscription
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .StartFromBeginning());
+            reader.Load(null);
+
+            Assert.AreEqual(0,parker.BeginReadEndSequenceCount);
+
+            //retry all parked messages
+            sub.RetryAllParkedMessages();
+
+            //this should invoke message parker's BeginReadEndSequence
+            Assert.AreEqual(1,parker.BeginReadEndSequenceCount);
+
+            //retry all parked messages again
+            sub.RetryAllParkedMessages();
+
+            //this should invoke message parker's BeginReadEndSequence again
+            Assert.AreEqual(2,parker.BeginReadEndSequenceCount);            
+        }
+    }
+
     [TestFixture, Ignore("very long test")]
     public class DeadlockTest : SpecificationWithMiniNode
     {
@@ -1594,11 +1628,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeMessageParker : IPersistentSubscriptionMessageParker
     {
-        private Action<long?> _readEndSequenceCompleted;
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
         private readonly Action _deleteAction;
-
+        private long _lastParkedEventNumber = -1;
+        public int BeginReadEndSequenceCount { get; private set; } = 0;
         public FakeMessageParker() { }
 
         public FakeMessageParker(Action deleteAction)
@@ -1608,11 +1642,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
         public long MarkedAsProcessed { get; private set; }
 
-        public void ReadEndSequenceCompleted(int sequence)
-        {
-            if (_readEndSequenceCompleted != null) _readEndSequenceCompleted(sequence);
-        }
-
         public void ParkMessageCompleted(int idx, OperationResult result)
         {
             if (_parkMessageCompleted != null) _parkMessageCompleted(ParkedEvents[idx], result);
@@ -1621,12 +1650,17 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         public void BeginParkMessage(ResolvedEvent ev, string reason, Action<ResolvedEvent, OperationResult> completed)
         {
             ParkedEvents.Add(ev);
+            _lastParkedEventNumber = ev.OriginalEventNumber;
             _parkMessageCompleted = completed;
         }
 
         public void BeginReadEndSequence(Action<long?> completed)
         {
-            _readEndSequenceCompleted = completed;
+            BeginReadEndSequenceCount++;
+            if(_lastParkedEventNumber==-1)
+                completed(null); //NoStream
+            else
+                completed(_lastParkedEventNumber);
         }
 
         public void BeginMarkParkedMessagesReprocessed(long sequence)
