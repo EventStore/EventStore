@@ -74,7 +74,7 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.GossipOnSingleNodeDescr, Opts.InterfacesGroup)]
         public bool GossipOnSingleNode { get; set; }
         [ArgDescription(Opts.ConnectionPendingSendBytesThresholdDescr, Opts.InterfacesGroup)]
-        public bool ConnectionPendingSendBytesThreshold { get; set; }
+        public int ConnectionPendingSendBytesThreshold { get; set; }
 
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
@@ -327,6 +327,8 @@ namespace EventStore.ClusterNode
             WriteThrough = Opts.WriteThroughDefault;
 
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
+
+            ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
         }
     }
 }
