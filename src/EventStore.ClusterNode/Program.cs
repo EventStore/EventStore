@@ -212,7 +212,8 @@ namespace EventStore.ClusterNode
                         .AdvertiseExternalTCPPortAs(options.ExtTcpPortAdvertiseAs)
                         .AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
                         .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
-                        .HavingReaderThreads(options.ReaderThreadsCount);
+                        .HavingReaderThreads(options.ReaderThreadsCount)
+                        .WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold);
 
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);
@@ -276,7 +277,7 @@ namespace EventStore.ClusterNode
                 builder.EnableWriteThrough();
             if (options.SkipIndexScanOnReads)
                 builder.SkipIndexScanOnReads();
-                
+               
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))
