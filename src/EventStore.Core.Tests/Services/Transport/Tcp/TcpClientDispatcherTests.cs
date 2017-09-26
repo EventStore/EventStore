@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
                                 new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, Opts.ConnectionPendingSendBytesThresholdDefault, true);
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, Opts.ConnectionPendingSendBytesThresholdDefault);
         }
 
         [Test]
