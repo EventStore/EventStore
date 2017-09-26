@@ -14,6 +14,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Threading;
+using EventStore.Core.Settings;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp
 {
@@ -31,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             var tcpConnectionManager = new TcpConnectionManager(
                 Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold, true);
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
 
             tcpConnectionManager.ProcessPackage(package);
 
@@ -64,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             var tcpConnectionManager = new TcpConnectionManager(
                 Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
                 publisher, dummyConnection, publisher, new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold, true);
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
 
             tcpConnectionManager.ProcessPackage(package);
 
@@ -76,7 +77,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         }
 
         [Test]
-        public void when_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_conenction()
+        public void when_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_connection()
         {
             var mre = new ManualResetEventSlim();
 
@@ -93,7 +94,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => {
                     mre.Set();
-                }, _connectionPendingSendBytesThreshold, true);
+                }, _connectionPendingSendBytesThreshold);
 
             tcpConnectionManager.SendMessage(message);
 
@@ -117,7 +118,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             var tcpConnectionManager = new TcpConnectionManager(
                 Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold, true);
+                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
 
             tcpConnectionManager.SendMessage(message);
 
@@ -128,7 +129,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         }
 
         [Test]
-        public void when_not_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_conenction()
+        public void when_not_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_not_close_connection()
         {
             var mre = new ManualResetEventSlim();
 
@@ -145,7 +146,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
                 TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => {
                     mre.Set();
-                }, _connectionPendingSendBytesThreshold, false);
+                }, ESConsts.UnrestrictedPendingSendBytes);
 
             tcpConnectionManager.SendMessage(message);
 
