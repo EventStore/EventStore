@@ -21,7 +21,6 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
-        private Dictionary<string,bool> _firstEventProcessed = new Dictionary<string, bool>();
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
 
@@ -61,7 +60,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _pendingRequests = new Dictionary<string, Guid>();
             foreach (var stream in streams)
             {
-                _firstEventProcessed.Add(stream,false);
                 _pendingRequests.Add(stream, Guid.Empty);
                 _preparePositions.Add(stream, null);
             }
@@ -147,14 +145,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                     {
                         _eofs[message.EventStreamId] = false;
-
-                        if(!_firstEventProcessed[message.EventStreamId]){
-                            _firstEventProcessed[message.EventStreamId] = true;
-                            //if events have been deleted from the beginning of a stream, update the stream position to the current event number
-                            if(message.Events[0].OriginalEventNumber>_fromPositions.Streams[message.EventStreamId])
-                                _fromPositions = _fromPositions.UpdateStreamPosition(message.EventStreamId, message.Events[0].OriginalEventNumber);
-                        }
-
                         for (int index = 0; index < message.Events.Length; index++)
                         {
                             var @event = message.Events[index].Event;
@@ -356,11 +346,21 @@ namespace EventStore.Projections.Core.Services.Processing
             var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
             long fromPosition = _fromPositions.Streams[streamId];
-            if (positionEvent.EventNumber != fromPosition)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Event number {0} was expected in the stream {1}, but event number {2} was received",
-                        fromPosition, streamId, positionEvent.EventNumber));
+
+            //if events have been deleted from the beginning of the stream, start from the first event we find
+            if(fromPosition==0 && positionEvent.EventNumber>0){
+                fromPosition = positionEvent.EventNumber;
+            }
+
+            if (positionEvent.EventNumber != fromPosition){
+                string reason = string.Format(
+                        "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
+                        fromPosition, streamId, positionEvent.EventNumber);
+
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
+                throw new InvalidOperationException(reason);
+            }
+
             _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
             _publisher.Publish(
                 //TODO: publish both link and event data

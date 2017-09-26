@@ -15,7 +15,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
     [TestFixture]
-    public class when_handling_streams_with_deleted_events_and_starting_after_event_zero : TestFixtureWithExistingEvents
+    public class when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero : TestFixtureWithExistingEvents
     {
         private MultiStreamEventReader _edp;
         private int _fromSequenceNumber;
@@ -96,19 +96,20 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         }
 
         [Test]
-        public void allows_first_event_to_be_greater_than_sequence_number()
+        public void should_not_allow_first_event_to_be_greater_than_sequence_number()
         {
             long eventSequenceNumber = _fromSequenceNumber+5;
 
-            Assert.DoesNotThrow(() => {
+            Assert.Throws<InvalidOperationException>(() => {
                 HandleEvents(_streamNames[0],eventSequenceNumber,eventSequenceNumber);
                 //to trigger event delivery:
                 HandleEvents(_streamNames[1],100,101);    
             });
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
 
         [Test]
-        public void does_not_allow_first_event_to_be_less_than_sequence_number()
+        public void should_not_allow_first_event_to_be_less_than_sequence_number()
         {
             long eventSequenceNumber = _fromSequenceNumber-1;
 
@@ -117,6 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 //to trigger event delivery:
                 HandleEvents(_streamNames[1],100,101);                 
             });
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
 
         [Test]
@@ -127,7 +129,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 HandleEvents(_streamNames[0],new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
                 //to trigger event delivery:
                 HandleEvents(_streamNames[1],100,101);                  
-            });        
+            });
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
     }
 }

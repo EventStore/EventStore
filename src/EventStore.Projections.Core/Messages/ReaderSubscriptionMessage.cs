@@ -294,5 +294,29 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
+        public class Faulted : SubscriptionMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+            public override int MsgTypeId
+            {
+                get { return TypeId; }
+            }
+
+            private readonly string _reason;
+
+            public Faulted(
+                Guid correlationId, string reason, object source = null)
+                : base(correlationId, null, source)
+            {
+                _reason = reason;
+            }
+
+            public string Reason
+            {
+                get { return _reason; }
+            }
+        }        
+
     }
 }

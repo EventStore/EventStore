@@ -18,7 +18,6 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _streamName;
         private long _fromSequenceNumber;
-        private bool _firstEventProcessed = false;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -144,17 +143,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
         {
-            if(!_firstEventProcessed){
-                if(message.Events.Length>0){
-                    _firstEventProcessed = true;
-
-                    if(message.Events[0].OriginalEventNumber > fromSequenceNumber)
-                        return message.Events[0].OriginalEventNumber;
-                    else
-                        return fromSequenceNumber;
-                }
+            if (fromSequenceNumber != 0) return fromSequenceNumber;
+            if(message.Events.Length > 0)
+            {
+                return message.Events[0].OriginalEventNumber;
             }
-
             return fromSequenceNumber;
         }
 
@@ -223,11 +216,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref long sequenceNumber)
         {
             EventRecord positionEvent = pair.OriginalEvent;
-            if (positionEvent.EventNumber != sequenceNumber)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Event number {0} was expected in the stream {1}, but event number {2} was received",
-                        sequenceNumber, _streamName, positionEvent.EventNumber));
+            if (positionEvent.EventNumber != sequenceNumber){
+                string reason = string.Format("Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection."
+                ,sequenceNumber, _streamName, positionEvent.EventNumber);
+
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
+                throw new InvalidOperationException(reason);
+            }
+
             sequenceNumber = positionEvent.EventNumber + 1;
             var resolvedEvent = new ResolvedEvent(pair, null);
 

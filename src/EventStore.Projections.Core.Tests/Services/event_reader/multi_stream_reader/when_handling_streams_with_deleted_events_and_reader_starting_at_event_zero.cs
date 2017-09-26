@@ -15,7 +15,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
     [TestFixture]
-    public class when_handling_streams_with_deleted_events_and_starting_at_event_zero : TestFixtureWithExistingEvents
+    public class when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero : TestFixtureWithExistingEvents
     {
         private MultiStreamEventReader _edp;
         private int _fromSequenceNumber;
@@ -115,7 +115,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                 HandleEvents(_streamNames[0],new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
                 //to trigger event delivery:
                 HandleEvents(_streamNames[1],100,101);
-            });        
+            });
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());
         }
     }
 }

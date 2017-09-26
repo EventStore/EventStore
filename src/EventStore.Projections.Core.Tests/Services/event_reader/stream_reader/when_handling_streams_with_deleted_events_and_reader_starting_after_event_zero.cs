@@ -15,7 +15,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
     [TestFixture]
-    public class when_handling_streams_with_deleted_events_and_starting_at_event_zero : TestFixtureWithExistingEvents
+    public class when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero : TestFixtureWithExistingEvents
     {
         private StreamEventReader _edp;
         private int _fromSequenceNumber;
@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         protected override void Given()
         {
             TicksAreHandledImmediately();
-            _fromSequenceNumber = 0;
+            _fromSequenceNumber = 10;
         }
 
         [SetUp]
@@ -86,13 +86,27 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         }
 
         [Test]
-        public void allows_first_event_to_be_greater_than_sequence_number()
+        public void should_not_allow_first_event_to_be_greater_than_sequence_number()
         {
             long eventSequenceNumber = _fromSequenceNumber+5;
 
-            Assert.DoesNotThrow(() => {
+            Assert.Throws<InvalidOperationException>(() => {
                 HandleEvents(eventSequenceNumber,eventSequenceNumber);
             });
+
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
+        }
+
+        [Test]
+        public void should_not_allow_first_event_to_be_less_than_sequence_number()
+        {
+            long eventSequenceNumber = _fromSequenceNumber-1;
+
+            Assert.Throws<InvalidOperationException>(() => {
+                HandleEvents(eventSequenceNumber,eventSequenceNumber);
+            });
+            
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());
         }
 
         [Test]
@@ -101,7 +115,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             Assert.Throws<InvalidOperationException>(() => {
                 //_fromSequenceNumber+2 has been omitted
                 HandleEvents(new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
-            });        
+            });
+
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
     }
 }

@@ -15,7 +15,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
     [TestFixture]
-    public class when_handling_streams_with_deleted_events_and_starting_after_event_zero : TestFixtureWithExistingEvents
+    public class when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero : TestFixtureWithExistingEvents
     {
         private StreamEventReader _edp;
         private int _fromSequenceNumber;
@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         protected override void Given()
         {
             TicksAreHandledImmediately();
-            _fromSequenceNumber = 10;
+            _fromSequenceNumber = 0;
         }
 
         [SetUp]
@@ -96,22 +96,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         }
 
         [Test]
-        public void does_not_allow_first_event_to_be_less_than_sequence_number()
-        {
-            long eventSequenceNumber = _fromSequenceNumber-1;
-
-            Assert.Throws<InvalidOperationException>(() => {
-                HandleEvents(eventSequenceNumber,eventSequenceNumber);
-            });
-        }
-
-        [Test]
         public void events_after_first_event_should_be_in_sequence()
         {            
             Assert.Throws<InvalidOperationException>(() => {
                 //_fromSequenceNumber+2 has been omitted
                 HandleEvents(new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
-            });        
+            });
+            
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
     }
 }

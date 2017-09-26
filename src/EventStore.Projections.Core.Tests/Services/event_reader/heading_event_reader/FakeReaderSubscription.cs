@@ -112,6 +112,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _receivedNotAuthorizedNotifications.Add(message);
         }
 
+        public void Handle(ReaderSubscriptionMessage.Faulted message)
+        {
+            //ignore
+        }
+
         public string Tag
         {
             get { return "FakeReaderSubscription"; }
