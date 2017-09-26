@@ -29,7 +29,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
-        IHandle<ReaderCoreServiceMessage.ReaderTick>
+        IHandle<ReaderSubscriptionMessage.Faulted>,
+        IHandle<ReaderCoreServiceMessage.ReaderTick>        
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
@@ -251,6 +252,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
             Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
+        }
+
+        public void Handle(ReaderSubscriptionMessage.Faulted message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+
+            var subscription = _subscriptions[projectionId];
+            Handle(new ReaderSubscriptionManagement.Unsubscribe(subscription.SubscriptionId));
+            _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId,message.Reason));            
         }
 
         private void StartReaders()
