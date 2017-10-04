@@ -104,6 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
             _bus.Subscribe<SystemMessage.SystemCoreReady>(_manager);
+            _bus.Subscribe<SystemMessage.EpochWritten>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
             _bus.Subscribe(
                 CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
@@ -111,6 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
             _bus.Subscribe<SystemMessage.SystemCoreReady>(_coordinator);
+            _bus.Subscribe<SystemMessage.EpochWritten>(_coordinator);
 
             if (GetInputQueue() != _processingQueues.First().Item2)
             {
