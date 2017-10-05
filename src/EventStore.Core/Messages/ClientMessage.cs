@@ -221,7 +221,7 @@ namespace EventStore.Core.Messages
                 CurrentVersion = currentVersion;
             }
 
-            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, long firstEventNumber, long lastEventNumber, long preparePosition, long commitPosition)
+            private WriteEventsCompleted(Guid correlationId, OperationResult result, string message, long firstEventNumber, long lastEventNumber, long preparePosition, long commitPosition, long currentVersion)
             {
                 CorrelationId = correlationId;
                 Result = result;
@@ -230,17 +230,18 @@ namespace EventStore.Core.Messages
                 LastEventNumber = lastEventNumber;
                 PreparePosition = preparePosition;
                 CommitPosition = commitPosition;
+                CurrentVersion = currentVersion;
             }
 
             public WriteEventsCompleted WithCorrelationId(Guid newCorrId)
             {
-                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber, LastEventNumber, PreparePosition, CommitPosition);
+                return new WriteEventsCompleted(newCorrId, Result, Message, FirstEventNumber, LastEventNumber, PreparePosition, CommitPosition, CurrentVersion);
             }
 
             public override string ToString()
             {
-                return String.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}, LastEventNumber: {4}",
-                                     CorrelationId, Result, Message, FirstEventNumber, LastEventNumber);
+                return String.Format("WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}, LastEventNumber: {4}, CurrentVersion: {5}",
+                                     CorrelationId, Result, Message, FirstEventNumber, LastEventNumber, CurrentVersion);
             }
         }
 
