@@ -142,9 +142,10 @@ namespace EventStore.ClientAPI.Projections
             return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/query", name), userCredentials, HttpStatusCode.OK);
         }
 
-        public Task UpdateQuery(EndPoint endPoint, string name, string query, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
+        public Task UpdateQuery(EndPoint endPoint, string name, string query, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA, bool emitEnabled = true)
         {
-            return SendPut(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/query?type=JS", name), query, userCredentials, HttpStatusCode.OK);
+            var emit = emitEnabled ? "yes" : "no";
+            return SendPut(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/query?emit={1}", name, emit), query, userCredentials, HttpStatusCode.OK);
         }
 
         public Task Delete(EndPoint endPoint, string name, bool deleteEmittedStreams, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
