@@ -183,7 +183,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   (system, _) => { /* NOOP */ });
                 }
 
-                int newSize = 0;
+                long newSize = 0;
                 int positionMapCount = 0;
 
                 foreach (var oldChunk in oldChunks)
@@ -193,7 +193,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
                                       {
-                                          newSize += len + 8;
+                                          newSize += len + 2 * sizeof(int);
                                           positionMapCount++;
                                       }
                                   },
@@ -201,13 +201,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   {
                                       if (ShouldKeepCommit(commit, commits))
                                       {
-                                          newSize += len + 8;
+                                          newSize += len + 2 * sizeof(int);
                                           positionMapCount++;
                                       }
                                   },
                                   (system, len) =>
                                   {
-                                      newSize += len + 8;
+                                      newSize += len + 2 * sizeof(int);
                                       positionMapCount++;
                                   });
                 }
