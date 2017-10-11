@@ -366,7 +366,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                             FileAccess.Read,
                             FileShare.ReadWrite,
                             ReadBufferSize,
-                            FileOptions.RandomAccess);
+                            FileOptions.None);
             }
             var reader = new BinaryReader(stream);
             return new ReaderWorkItem(stream, reader, false);
