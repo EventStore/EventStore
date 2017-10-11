@@ -174,45 +174,48 @@ namespace EventStore.Core.TransactionLog.Chunks
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
-                                  prepare => { /* NOOP */ },
-                                  commit =>
+                                  (prepare, _) => { /* NOOP */ },
+                                  (commit, _) =>
                                   {
                                       if (commit.TransactionPosition >= chunkStartPos)
                                           commits.Add(commit.TransactionPosition, new CommitInfo(commit));
                                   },
-                                  system => { /* NOOP */ });
+                                  (system, _) => { /* NOOP */ });
                 }
 
-                var positionMapping = new List<PosMap>();
+                long newSize = 0;
+                int positionMapCount = 0;
+
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
-                                  prepare =>
+                                  (prepare, len) =>
                                   {
                                       if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
-                                          positionMapping.Add(WriteRecord(newChunk, prepare));
+                                      {
+                                          newSize += len + 2 * sizeof(int);
+                                          positionMapCount++;
+                                      }
                                   },
-                                  commit =>
+                                  (commit, len) =>
                                   {
                                       if (ShouldKeepCommit(commit, commits))
-                                          positionMapping.Add(WriteRecord(newChunk, commit));
+                                      {
+                                          newSize += len + 2 * sizeof(int);
+                                          positionMapCount++;
+                                      }
                                   },
-                                  // we always keep system log records for now
-                                  system => positionMapping.Add(WriteRecord(newChunk, system)));
+                                  (system, len) =>
+                                  {
+                                      newSize += len + 2 * sizeof(int);
+                                      positionMapCount++;
+                                  });
                 }
-                newChunk.CompleteScavenge(positionMapping);
 
-                var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
-                var newSize = (long)newChunk.PhysicalDataSize + PosMap.FullSize * positionMapping.Count + ChunkHeader.Size + ChunkFooter.Size;
-
-                if(_unsafeIgnoreHardDeletes) {
-                    Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
-                }
+                newSize += positionMapCount * PosMap.FullSize + ChunkHeader.Size + ChunkFooter.Size;
 
                 var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != 3);
-                if(oldVersion) {
-                    Log.Trace("Forcing scavenged chunk to be kept as old chunk is a previous version.");
-                }
+                var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
 
                 if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion)
                 {
@@ -227,6 +230,34 @@ namespace EventStore.Core.TransactionLog.Chunks
                     PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved);
                     return false;
                 }
+
+                var positionMapping = new List<PosMap>();
+                foreach (var oldChunk in oldChunks)
+                {
+                    TraverseChunk(oldChunk,
+                                  (prepare, _) =>
+                                  {
+                                      if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+                                          positionMapping.Add(WriteRecord(newChunk, prepare));
+                                  },
+                                  (commit, _) =>
+                                  {
+                                      if (ShouldKeepCommit(commit, commits))
+                                          positionMapping.Add(WriteRecord(newChunk, commit));
+                                  },
+                                  // we always keep system log records for now
+                                  (system, _) => positionMapping.Add(WriteRecord(newChunk, system)));
+                }
+                newChunk.CompleteScavenge(positionMapping);
+
+                if(_unsafeIgnoreHardDeletes) {
+                    Log.Trace("Forcing scavenge chunk to be kept even if bigger.");
+                }
+
+                if(oldVersion) {
+                    Log.Trace("Forcing scavenged chunk to be kept as old chunk is a previous version.");
+                }
+
                 var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, removeChunksWithGreaterNumbers: false);
                 if (chunk != null)
                 {
@@ -472,9 +503,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         }
 
         private void TraverseChunk(TFChunk.TFChunk chunk,
-                                   Action<PrepareLogRecord> processPrepare,
-                                   Action<CommitLogRecord> processCommit,
-                                   Action<SystemLogRecord> processSystem)
+                                   Action<PrepareLogRecord, int> processPrepare,
+                                   Action<CommitLogRecord, int> processCommit,
+                                   Action<SystemLogRecord, int> processSystem)
         {
             var result = chunk.TryReadFirst();
             while (result.Success)
@@ -485,19 +516,19 @@ namespace EventStore.Core.TransactionLog.Chunks
                     case LogRecordType.Prepare:
                     {
                         var prepare = (PrepareLogRecord)record;
-                        processPrepare(prepare);
+                        processPrepare(prepare, result.RecordLength);
                         break;
                     }
                     case LogRecordType.Commit:
                     {
                         var commit = (CommitLogRecord)record;
-                        processCommit(commit);
+                        processCommit(commit, result.RecordLength);
                         break;
                     }
                     case LogRecordType.System:
                     {
                         var system = (SystemLogRecord)record;
-                        processSystem(system);
+                        processSystem(system, result.RecordLength);
                         break;
                     }
                     default:
