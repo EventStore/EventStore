@@ -562,6 +562,7 @@
     <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />    
+    <Compile Include="Services\projection_core_service_command_reader\when_two_instances_started_and_one_stopped.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
