@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IODispatcher _ioDispatcher;
         private readonly string _coreServiceId;
         private bool _stopped;
+        private int _starts = 0;
         private IODispatcherAsync.CancellationScope _cancellationScope;
 
         public ProjectionCoreServiceCommandReader(IPublisher publisher, IODispatcher ioDispatcher, string workerId)
@@ -39,11 +40,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _cancellationScope = new IODispatcherAsync.CancellationScope();
             Log.Debug("PROJECTIONS: Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
             _stopped = false;
+            _starts++;
             StartCoreSteps(message).Run();
         }
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
+            _starts--;
+            if(_starts>0) return;
+            _starts = 0;
+
             Log.Debug("PROJECTIONS: Stopping Projection Core Reader ({0})", _coreServiceId);
             _cancellationScope.Cancel();
             _stopped = true;
