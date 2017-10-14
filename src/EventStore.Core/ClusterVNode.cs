@@ -186,7 +186,8 @@ namespace EventStore.Core
                                           vNodeSettings.HashCollisionReadLimit,
                                           vNodeSettings.SkipIndexScanOnReads);
             var writer = new TFChunkWriter(db);
-            var epochManager = new EpochManager(ESConsts.CachedEpochCount,
+            var epochManager = new EpochManager(_mainQueue,
+                                                ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,
                                                 writer,
                                                 initialReaderCount: 1,

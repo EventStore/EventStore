@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 if (tag <= checkpointTag)
                                 {
                                     SetOrderStreamReadCompleted();
-                                    break;
+                                    return;
                                 }
                                 EnqueuePrerecordedEvent(@event.Event, tag);
                             }

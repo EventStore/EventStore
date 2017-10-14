@@ -1,6 +1,7 @@
 ﻿using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -19,8 +20,12 @@ namespace EventStore.Projections.Core.Tests.Services.command_reader_response_rea
 
         protected override IEnumerable<WhenStep> When()
         {
+            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            
             _uniqueId = Guid.NewGuid();
-            yield return new SystemMessage.BecomeMaster(Guid.NewGuid(), _uniqueId);
+            EpochRecord epochRecord = new EpochRecord(0L,0,_uniqueId,0L,DateTime.Now);
+
+            yield return new SystemMessage.EpochWritten(epochRecord);
             yield return new SystemMessage.SystemCoreReady();
         }
 
