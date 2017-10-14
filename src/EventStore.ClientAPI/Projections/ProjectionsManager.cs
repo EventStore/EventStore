@@ -279,12 +279,26 @@ namespace EventStore.ClientAPI.Projections
         /// <param name="query">The JavaScript source code of the query.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <param name="emitEnabled">Allow projection to send events to other streams</param>
-        public Task UpdateQueryAsync(string name, string query, UserCredentials userCredentials = null, bool emitEnabled = true)
+        public Task UpdateQueryAsync(string name, string query, bool? emitEnabled = null, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials, _httpSchema, emitEnabled);
+            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials, _httpSchema);
+        }
+
+        /// <summary>
+        /// Asynchronously updates the definition of a query.
+        /// </summary>
+        /// <param name="name">The name of the query.</param>
+        /// <param name="query">The JavaScript source code of the query.</param>
+        /// <param name="userCredentials">Credentials for the operation.</param>
+        public Task UpdateQueryAsync(string name, string query, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.UpdateQuery(_httpEndPoint, name, query, userCredentials, _httpSchema);
         }
 
         /// <summary>
