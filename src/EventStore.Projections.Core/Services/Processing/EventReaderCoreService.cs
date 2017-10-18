@@ -349,14 +349,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderCoreServiceMessage.StartReader message)
         {
             StartReaders();
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("EventReaderCoreService"));
         }
 
         public void Handle(ReaderCoreServiceMessage.StopReader message)
         {
             StopReaders();
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStopped("EventReaderCoreService"));            
         }
-
-
         public void Handle(ReaderCoreServiceMessage.ReaderTick message)
         {
             message.Action();

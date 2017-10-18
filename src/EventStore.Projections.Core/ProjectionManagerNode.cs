@@ -167,7 +167,11 @@ namespace EventStore.Projections.Core
             standardComponents.MainBus.Subscribe(
                 Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.MasterInputQueue));
             standardComponents.MainBus.Subscribe(
-                Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.MasterInputQueue));            
+                Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.MasterInputQueue));
+            standardComponents.MainBus.Subscribe(
+                Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents.MasterInputQueue));
+            standardComponents.MainBus.Subscribe(
+                Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents.MasterInputQueue));                                
             projectionsStandardComponents.MasterMainBus.Subscribe(new UnwrapEnvelopeHandler());
         }
     }
