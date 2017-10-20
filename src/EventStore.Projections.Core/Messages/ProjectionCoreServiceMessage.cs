@@ -59,5 +59,27 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class SubComponentStarted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string SubComponent;
+            public SubComponentStarted(string subComponent)
+            {
+                SubComponent = subComponent;
+            }            
+        }
+
+        public class SubComponentStopped : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string SubComponent;
+            public SubComponentStopped(string subComponent)
+            {
+                SubComponent = subComponent;
+            }          
+        }                
+
     }
 }

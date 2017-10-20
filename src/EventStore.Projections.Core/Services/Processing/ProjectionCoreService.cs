@@ -83,11 +83,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("ProjectionCoreService"));            
         }
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
             StopProjections();
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStopped("ProjectionCoreService"));
         }
 
         private void StopProjections()

@@ -563,6 +563,15 @@
     <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_all.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_all.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_all.cs" />    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
