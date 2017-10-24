@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Integration
         private const int _numberOfNodeStarts = 5;
         protected override void BeforeNodeStarts()
         {
-            _node.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.StateChangeMessage>(Handle));
+            _node.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(Handle));
             base.BeforeNodeStarts();
         }
 
@@ -29,14 +29,9 @@ namespace EventStore.Core.Tests.Integration
             base.Given();
         }
 
-        private void Handle(SystemMessage.StateChangeMessage msg)
+        private void Handle(SystemMessage.EpochWritten msg)
         {
-            switch (msg.State)
-            {
-                case Data.VNodeState.Master:
-                    _epochIds.Add(((SystemMessage.BecomeMaster)msg).EpochId);
-                    break;
-            }
+            _epochIds.Add(msg.Epoch.EpochId);
         }
 
         [Test]

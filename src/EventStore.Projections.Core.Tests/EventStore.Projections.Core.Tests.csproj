@@ -124,6 +124,7 @@
     <Compile Include="Services\command_reader_response_reader_integration\specification_with_command_reader_and_response_reader.cs" />
     <Compile Include="Services\command_reader_response_reader_integration\when_response_reader_starts_before_command_reader.cs" />
     <Compile Include="Services\command_reader_response_reader_integration\when_command_reader_starts_before_response_reader.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_before_the_last_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_maximum_allowed_writes_in_flight_set.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_with_null_streamId.cs" />
     <Compile Include="Services\core_service\when_a_subscribed_projection_handler_throws.cs" />
@@ -561,7 +562,16 @@
     <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero.cs" />
-    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />    
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_streams_with_deleted_events_and_reader_starting_after_event_zero.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_starting_with_projection_type_all.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_all.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_none.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_system.cs" />
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_all.cs" />    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

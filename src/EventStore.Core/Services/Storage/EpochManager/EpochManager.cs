@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -12,6 +14,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
     public class EpochManager: IEpochManager
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<EpochManager>();
+        private readonly IPublisher _bus;
 
         public readonly int CachedEpochCount;
         public int LastEpochNumber { get { return _lastEpochNumber; } }
@@ -26,13 +29,15 @@ namespace EventStore.Core.Services.Storage.EpochManager
         private long _lastEpochPosition = -1;
         private int _minCachedEpochNumber = -1;
 
-        public EpochManager(int cachedEpochCount, 
+        public EpochManager(IPublisher bus,
+                            int cachedEpochCount, 
                             ICheckpoint checkpoint, 
                             ITransactionFileWriter writer,
                             int initialReaderCount,
                             int maxReaderCount, 
                             Func<ITransactionFileReader> readerFactory)
         {
+            Ensure.NotNull(bus, "bus");
             Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
             Ensure.NotNull(checkpoint, "checkpoint");
             Ensure.NotNull(writer, "chunkWriter");
@@ -42,6 +47,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 throw new ArgumentOutOfRangeException("initialReaderCount", "initialReaderCount is greater than maxReaderCount.");
             Ensure.NotNull(readerFactory, "readerFactory");
 
+            _bus = bus;
             CachedEpochCount = cachedEpochCount;
             _checkpoint = checkpoint;
             _readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount, maxReaderCount, readerFactory);
@@ -226,6 +232,8 @@ namespace EventStore.Core.Services.Storage.EpochManager
                     throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
             }
             Log.Debug("=== Writing E{0}@{1}:{2:B} (previous epoch at {3}).", epochNumber, epoch.EpochPosition, epochId, lastEpochPosition);
+
+            _bus.Publish(new SystemMessage.EpochWritten(epoch));
             return epoch;
         }
 
@@ -271,7 +279,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 _checkpoint.Flush();
 
                 Log.Debug("=== Update Last Epoch E{0}@{1}:{2:B} (previous epoch at {3}).", 
-                          epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition);
+                          epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition);                
             }
         }
 

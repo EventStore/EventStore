@@ -1,5 +1,6 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -10,7 +11,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                                  IHandle<ClientMessage.ReadAllEventsForward>,
                                                  IHandle<ClientMessage.WriteEvents>,
                                                  IHandle<ClientMessage.DeleteStream>,
-                                                 IHandle<SystemMessage.SubSystemInitialized>
+                                                 IHandle<SystemMessage.SubSystemInitialized>,
+                                                 IHandle<ProjectionCoreServiceMessage.SubComponentStarted>,
+                                                 IHandle<ProjectionCoreServiceMessage.SubComponentStopped>
     {
         private readonly IPublisher _externalRequestQueue;
         private readonly IPublisher _inputQueue;
@@ -77,5 +80,19 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new SystemMessage.SubSystemInitialized(msg.SubSystemName));
         }
+
+        void IHandle<ProjectionCoreServiceMessage.SubComponentStarted>.Handle(ProjectionCoreServiceMessage.SubComponentStarted message)
+        {
+            _externalRequestQueue.Publish(
+                new ProjectionCoreServiceMessage.SubComponentStarted(message.SubComponent)
+            );
+        }
+
+        void IHandle<ProjectionCoreServiceMessage.SubComponentStopped>.Handle(ProjectionCoreServiceMessage.SubComponentStopped message)
+        {
+            _externalRequestQueue.Publish(
+                new ProjectionCoreServiceMessage.SubComponentStopped(message.SubComponent)
+            );
+        }        
     }
 }

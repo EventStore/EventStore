@@ -41,13 +41,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             [Test]
             public void core_readers_should_use_the_unique_id_provided_by_the_state_change_message()
             {
-                var becomeMaster = _consumer.HandledMessages.OfType<SystemMessage.BecomeMaster>().First();
+                var epochWrittenMessages = _consumer.HandledMessages.OfType<SystemMessage.EpochWritten>().First();
                 var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
                 var startingMessage = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Starting>().First();
 
                 Assert.AreEqual(1, startCoreMessages.Select(x => x.EpochId).Distinct().Count());
-                Assert.AreEqual(becomeMaster.EpochId, startCoreMessages.First().EpochId);
-                Assert.AreEqual(becomeMaster.EpochId, startingMessage.EpochId);
+                Assert.AreEqual(epochWrittenMessages.Epoch.EpochId, startCoreMessages.First().EpochId);
+                Assert.AreEqual(epochWrittenMessages.Epoch.EpochId, startingMessage.EpochId);
             }
         }
 
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
         {
             protected override IEnumerable<WhenStep> PreWhen()
             {
-                yield return (new SystemMessage.BecomeSlave(Guid.NewGuid(), Guid.NewGuid(),
+                yield return (new SystemMessage.BecomeSlave(Guid.NewGuid(),
                     new EventStore.Core.Data.VNodeInfo(Guid.NewGuid(), 1,
                         new IPEndPoint(IPAddress.Loopback, 1111),
                         new IPEndPoint(IPAddress.Loopback, 1112),
