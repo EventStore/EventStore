@@ -25,6 +25,9 @@ namespace EventStore.TestClient
         public readonly ClientOptions Options;
         public readonly IPEndPoint TcpEndpoint;
         public readonly IPEndPoint HttpEndpoint;
+        public readonly bool UseSsl;
+        public readonly string TargetHost;
+        public readonly bool ValidateServer;
 
         private readonly BufferManager _bufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
         private readonly TcpClientConnector _connector = new TcpClientConnector();
@@ -37,6 +40,10 @@ namespace EventStore.TestClient
 
             TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
             HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
+
+            UseSsl = options.UseSsl;
+            TargetHost = options.TargetHost;
+            ValidateServer = options.ValidateServer;
 
             InteractiveMode = options.Command.IsEmpty();
 
@@ -152,39 +159,62 @@ namespace EventStore.TestClient
             var connectionCreatedEvent = new ManualResetEventSlim(false);
             Connection typedConnection = null;
 
-            var connection = _connector.ConnectTo(
-                Guid.NewGuid(),
-                tcpEndPoint ?? TcpEndpoint,
-                TcpConnectionManager.ConnectionTimeout,
-                conn =>
+            Action<ITcpConnection> onConnectionEstablished = conn =>
+            {
+                // we execute callback on ThreadPool because on FreeBSD it can be called synchronously
+                // causing deadlock
+                ThreadPool.QueueUserWorkItem(_ => 
                 {
-                    // we execute callback on ThreadPool because on FreeBSD it can be called synchronously
-                    // causing deadlock
-                    ThreadPool.QueueUserWorkItem(_ => 
+                    if (!InteractiveMode)
+                        Log.Info("TcpTypedConnection: connected to [{0}, L{1}, {2:B}].", conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
+                    if (connectionEstablished != null)
                     {
-                        if (!InteractiveMode)
-                            Log.Info("TcpTypedConnection: connected to [{0}, L{1}, {2:B}].", conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
-                        if (connectionEstablished != null)
-                        {
-                            if (!connectionCreatedEvent.Wait(10000))
-                                throw new Exception("TcpTypedConnection: creation took too long!");
-                            connectionEstablished(typedConnection);
-                        }
-                    });
-                },
-                (conn, error) =>
+                        if (!connectionCreatedEvent.Wait(10000))
+                            throw new Exception("TcpTypedConnection: creation took too long!");
+                        connectionEstablished(typedConnection);
+                    }
+                });
+            };
+            Action<ITcpConnection, SocketError> onConnectionFailed = (conn, error) =>
+            {
+                var message = string.Format("TcpTypedConnection: connection to [{0}, L{1}, {2:B}] failed. Error: {3}.",
+                                            conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId, error);
+                Log.Error(message);
+
+                if (connectionClosed != null)
+                    connectionClosed(null, error);
+
+                if (failContextOnError)
+                    context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));
+            };
+
+            ITcpConnection connection;
+            if(UseSsl)
+            {
+                if (string.IsNullOrEmpty(TargetHost))
                 {
-                    var message = string.Format("TcpTypedConnection: connection to [{0}, L{1}, {2:B}] failed. Error: {3}.",
-                                                conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId, error);
-                    Log.Error(message);
-
-                    if (connectionClosed != null)
-                        connectionClosed(null, error);
-
-                    if (failContextOnError)
-                        context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));
-                },
-                verbose: !InteractiveMode);
+                    context.Fail(reason:"TargetHost is required if using SSL");
+                }
+                connection = _connector.ConnectSslTo(
+                    Guid.NewGuid(),
+                    tcpEndPoint ?? TcpEndpoint,
+                    TcpConnectionManager.ConnectionTimeout,
+                    TargetHost,
+                    ValidateServer,
+                    onConnectionEstablished,
+                    onConnectionFailed,
+                    verbose: !InteractiveMode);
+            }
+            else
+            {
+                connection = _connector.ConnectTo(
+                    Guid.NewGuid(),
+                    tcpEndPoint ?? TcpEndpoint,
+                    TcpConnectionManager.ConnectionTimeout,
+                    onConnectionEstablished,
+                    onConnectionFailed,
+                    verbose: !InteractiveMode);
+            }
 
             typedConnection = new Connection(connection, new RawMessageFormatter(_bufferManager), new LengthPrefixMessageFramer());
             typedConnection.ConnectionClosed +=
