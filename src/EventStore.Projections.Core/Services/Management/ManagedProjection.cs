@@ -555,14 +555,12 @@ namespace EventStore.Projections.Core.Services.Management
                     // NOTE: workaround for stop not working on creating state (just ignore them)
                     return;
                 }
+                _logger.Warn("Projection {0} has expired and will be disabled. Last accessed at {1}", _name, _lastAccessed);
                 Handle(
-                    new ProjectionManagementMessage.Command.Delete(
+                    new ProjectionManagementMessage.Command.Disable(
                         new NoopEnvelope(),
                         _name,
-                        ProjectionManagementMessage.RunAs.System,
-                        false,
-                        false,
-                        false));
+                        ProjectionManagementMessage.RunAs.System));
             }
         }
 
