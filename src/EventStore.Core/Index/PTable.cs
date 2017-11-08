@@ -60,13 +60,14 @@ namespace EventStore.Core.Index
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
 
-        internal Midpoint[] GetMidPoints() {return _midpoints;} 
+        internal Midpoint[] GetMidPoints() {return _midpoints;}
 
         private PTable(string filename,
                        Guid id,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
                        int maxReaders = ESConsts.PTableMaxReaderCount,
-                       int depth = 16)
+                       int depth = 16,
+                       bool skipIndexVerify = false)
         {
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.NotEmptyGuid(id, "id");
@@ -79,7 +80,7 @@ namespace EventStore.Core.Index
             _id = id;
             _filename = filename;
 
-            Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
+            Log.Trace("Loading "+(skipIndexVerify?"":"and Verification ")+"of PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
             _size = new FileInfo(_filename).Length;
 
@@ -146,7 +147,7 @@ namespace EventStore.Core.Index
             try
             {
                 calcdepth = GetDepth(_size, depth);
-                _midpoints = CacheMidpointsAndVerifyHash(calcdepth);
+                _midpoints = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
@@ -166,8 +167,8 @@ namespace EventStore.Core.Index
             }
             return minDepth;
         }
-        
-        internal Midpoint[] CacheMidpointsAndVerifyHash(int depth)
+
+        internal Midpoint[] CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify)
         {
             var buffer = new byte[4096];
             if (depth < 0 || depth > 30)
@@ -175,6 +176,10 @@ namespace EventStore.Core.Index
             var count = Count;
             if (count == 0 || depth == 0)
                 return null;
+
+            if(skipIndexVerify){
+                Log.Debug("Disabling Verification of PTable");
+            }
 #if  MONO
             var workItem = GetWorkItem();
             var stream = workItem.Stream;
@@ -197,18 +202,29 @@ namespace EventStore.Core.Index
                         {
                             throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                         }
-                        stream.Seek(0, SeekOrigin.Begin);
-                        stream.Read(buffer, 0, PTableHeader.Size);
-                        md5.TransformBlock(buffer, 0, PTableHeader.Size, null, 0);
+
+                        if(!skipIndexVerify){
+                            stream.Seek(0, SeekOrigin.Begin);
+                            stream.Read(buffer, 0, PTableHeader.Size);
+                            md5.TransformBlock(buffer, 0, PTableHeader.Size, null, 0);
+                        }
+
                         long previousNextIndex = long.MinValue;
                         var previousKey = new IndexEntryKey(long.MaxValue, long.MaxValue);
                         for (long k = 0; k < midpointsCount; ++k)
                         {
                             var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
                             if (previousNextIndex != nextIndex) {
-                                ReadUntilWithMd5(PTableHeader.Size + _indexEntrySize * nextIndex, stream, md5);
-                                stream.Read(buffer, 0, _indexKeySize);
-                                md5.TransformBlock(buffer, 0, _indexKeySize, null, 0);
+                                if(!skipIndexVerify){
+                                    ReadUntilWithMd5(PTableHeader.Size + _indexEntrySize * nextIndex, stream, md5);
+                                    stream.Read(buffer, 0, _indexKeySize);
+                                    md5.TransformBlock(buffer, 0, _indexKeySize, null, 0);
+                                }
+                                else{
+                                    stream.Seek(PTableHeader.Size + _indexEntrySize * nextIndex, SeekOrigin.Begin);
+                                    stream.Read(buffer, 0, _indexKeySize);
+                                }
+
                                 IndexEntryKey key;
                                 if (_version == PTableVersions.IndexV1)
                                 {
@@ -230,12 +246,15 @@ namespace EventStore.Core.Index
                             }
                         }
 
-                        ReadUntilWithMd5(stream.Length - MD5Size, stream, md5);
-                        //verify hash (should be at stream.length - MD5Size)
-                        md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
-                        var fileHash = new byte[MD5Size];
-                        stream.Read(fileHash, 0, MD5Size);
-                        ValidateHash(md5.Hash, fileHash);
+                        if(!skipIndexVerify){
+                            ReadUntilWithMd5(stream.Length - MD5Size, stream, md5);
+                            //verify hash (should be at stream.length - MD5Size)
+                            md5.TransformFinalBlock(Empty.ByteArray, 0, 0);
+                            var fileHash = new byte[MD5Size];
+                            stream.Read(fileHash, 0, MD5Size);
+                            ValidateHash(md5.Hash, fileHash);
+                        }
+
                         return midpoints;
                     }
                 }

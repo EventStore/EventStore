@@ -198,6 +198,7 @@ namespace EventStore.ClusterNode
                         .WithNodePriority(options.NodePriority)
                         .WithScavengeHistoryMaxAge(options.ScavengeHistoryMaxAge)
                         .WithIndexPath(options.Index)
+                        .WithIndexVerification(options.SkipIndexVerify)
                         .WithIndexCacheDepth(options.IndexCacheDepth)
                         .WithSslTargetHost(options.SslTargetHost)
                         .RunProjections(options.RunProjections, options.ProjectionThreads)
@@ -236,7 +237,7 @@ namespace EventStore.ClusterNode
             foreach(var prefix in options.ExtHttpPrefixes) {
                 builder.AddExternalHttpPrefix(prefix);
             }
-            
+
             if(options.EnableTrustedAuth)
                 builder.EnableTrustedAuth();
             if(options.StartStandardProjections)
@@ -277,7 +278,7 @@ namespace EventStore.ClusterNode
                 builder.EnableWriteThrough();
             if (options.SkipIndexScanOnReads)
                 builder.SkipIndexScanOnReads();
-               
+
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))
@@ -304,7 +305,7 @@ namespace EventStore.ClusterNode
             var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
             var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
             builder.WithAuthenticationProvider(authenticationProviderFactory);
-            
+
             return builder.Build(options, consumerStrategyFactories);
         }
 

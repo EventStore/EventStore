@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -46,7 +47,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16, false));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
     }
