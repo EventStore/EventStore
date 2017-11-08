@@ -52,9 +52,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             }
 
             [Test]
-            public void projection_is_not_found()
+            public void projection_is_disabled()
             {
-                Assert.IsTrue(_consumer.HandledMessages.OfType<ProjectionManagementMessage.NotFound>().Any());
+                var res = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().First();
+                Assert.AreEqual("Stopped", res.Projections[0].Status);
             }
         }
     }
