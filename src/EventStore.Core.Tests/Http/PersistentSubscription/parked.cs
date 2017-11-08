@@ -65,9 +65,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     class when_replaying_parked_message : with_subscription_having_events
     {
         private string _nackLink;
-        private AutoResetEvent _eventParked = new AutoResetEvent(false);
+        private TaskCompletionSource<EventStore.ClientAPI.ResolvedEvent> _eventParked =
+                            new TaskCompletionSource<EventStore.ClientAPI.ResolvedEvent>();
         private Guid _eventIdToPark;
-        private EventStore.ClientAPI.ResolvedEvent replayedParkedEvent;
         protected override void Given()
         {
             NumberOfEventsToCreate = 1;
@@ -93,8 +93,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         {
             _connection.ConnectToPersistentSubscriptionAsync(TestStreamName, GroupName, (x, y) =>
             {
-                replayedParkedEvent = y;
-                _eventParked.Set();
+                _eventParked.SetResult(y);
                 return Task.CompletedTask;
             },
             (x, y, z) => { },
@@ -107,13 +106,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
 
         [Test]
-        public void should_have_replayed_the_parked_event()
+        public async Task should_have_replayed_the_parked_event()
         {
-            if(!_eventParked.WaitOne(TimeSpan.FromSeconds(5))) 
+            var completedTask = await Task.WhenAny(_eventParked.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+            if(completedTask != _eventParked.Task) 
             {
                 Assert.Fail("Timed out waiting for parked event");
             }
-            Assert.AreEqual(replayedParkedEvent.Event.EventId, _eventIdToPark);
+            var res = _eventParked.Task.Result;
+            Assert.AreEqual(_eventIdToPark, res.Event.EventId);
         }
     }
 }
