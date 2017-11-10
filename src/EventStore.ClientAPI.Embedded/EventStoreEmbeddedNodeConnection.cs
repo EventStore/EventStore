@@ -420,7 +420,7 @@ namespace EventStore.ClientAPI.Embedded
 
         public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
             string stream, string groupName,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
@@ -440,10 +440,11 @@ namespace EventStore.ClientAPI.Embedded
 
         public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
             string stream, string groupName,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
         {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
             var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared, subscriptionDropped,
                 GetUserCredentials(_settings, userCredentials), _settings.Log, _settings.VerboseLogging, _settings, _subscriptions, bufferSize,
                 autoAck);

@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI
 
         private readonly string _subscriptionId;
         private readonly string _streamId;
-        private readonly Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> _eventAppeared;
+        private readonly Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> _eventAppeared;
         private readonly Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly UserCredentials _userCredentials;
         private readonly ILogger _log;
@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI
         private readonly bool _autoAck;
 
         private PersistentEventStoreSubscription _subscription;
-        private readonly ConcurrentQueue<ResolvedEvent> _queue = new ConcurrentQueue<ResolvedEvent>();
+        private readonly ConcurrentQueue<PersistentSubscriptionResolvedEvent> _queue = new ConcurrentQueue<PersistentSubscriptionResolvedEvent>();
         private int _isProcessing;
         private DropData _dropData;
 
@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI
 
         internal EventStorePersistentSubscriptionBase(string subscriptionId, 
             string streamId,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, 
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared, 
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped,
             UserCredentials userCredentials,
             ILogger log,
@@ -77,7 +77,7 @@ namespace EventStore.ClientAPI
 
         internal abstract Task<PersistentEventStoreSubscription> StartSubscription(
             string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
-            Func<EventStoreSubscription, ResolvedEvent, Task> onEventAppeared,
+            Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
             ConnectionSettings settings);
 
@@ -168,7 +168,7 @@ namespace EventStore.ClientAPI
             var dropData = new DropData(reason, error);
             if (Interlocked.CompareExchange(ref _dropData, dropData, null) == null)
             {
-                Enqueue(DropSubscriptionEvent);
+                Enqueue(new PersistentSubscriptionResolvedEvent(DropSubscriptionEvent, null));
             }
         }
 
@@ -177,13 +177,13 @@ namespace EventStore.ClientAPI
             EnqueueSubscriptionDropNotification(reason, exception);
         }
 
-        private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+        private Task OnEventAppeared(EventStoreSubscription subscription, PersistentSubscriptionResolvedEvent resolvedEvent)
         {
             Enqueue(resolvedEvent);
             return Task.CompletedTask;
         }
 
-        private void Enqueue(ResolvedEvent resolvedEvent)
+        private void Enqueue(PersistentSubscriptionResolvedEvent resolvedEvent)
         {
             _queue.Enqueue(resolvedEvent);
             if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
@@ -200,11 +200,11 @@ namespace EventStore.ClientAPI
                     Thread.Sleep(1);
                 }
                 else
-                { 
-                    ResolvedEvent e;
+                {
+                    PersistentSubscriptionResolvedEvent e;
                     while (_queue.TryDequeue(out e))
                     {
-                        if (e.Equals(DropSubscriptionEvent)) // drop subscription artificial ResolvedEvent
+                        if (e.Event.Equals(DropSubscriptionEvent)) // drop subscription artificial ResolvedEvent
                         {
                             if (_dropData == null) throw new Exception("Drop reason not specified.");
                             DropSubscription(_dropData.Reason, _dropData.Error);
@@ -217,13 +217,13 @@ namespace EventStore.ClientAPI
                         }
                         try
                         {
-                            await _eventAppeared(this, e).ConfigureAwait(false);
+                            await _eventAppeared(this, e, e.RetryCount).ConfigureAwait(false);
                             if (_autoAck)
-                                _subscription.NotifyEventsProcessed(new[] { e.OriginalEvent.EventId });
+                                _subscription.NotifyEventsProcessed(new[] { e.Event.OriginalEvent.EventId });
                             if (_verbose)
                                 _log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}).",
                                           _streamId,
-                                          e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
+                                          e.Event.OriginalEvent.EventStreamId, e.Event.OriginalEvent.EventNumber, e.Event.OriginalEvent.EventType, e.Event.OriginalEventNumber);
                         }
                         catch (Exception exc)
                         {

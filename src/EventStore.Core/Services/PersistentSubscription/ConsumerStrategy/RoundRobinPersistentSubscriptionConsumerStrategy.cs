@@ -35,12 +35,12 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
             }
         }
 
-        public virtual ConsumerPushResult PushMessageToClient(ResolvedEvent ev)
+        public virtual ConsumerPushResult PushMessageToClient(ResolvedEvent ev, int retryCount)
         {
             for (int i = 0; i < Clients.Count; i++)
             {
                 var c = Clients.Dequeue();
-                var pushed = c.Push(ev);
+                var pushed = c.Push(ev, retryCount);
                 Clients.Enqueue(c);
                 if (pushed)
                 {

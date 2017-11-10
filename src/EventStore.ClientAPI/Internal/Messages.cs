@@ -136,13 +136,13 @@ namespace EventStore.ClientAPI.Internal
         public readonly string StreamId;
         public readonly int BufferSize;
         public readonly UserCredentials UserCredentials;
-        public readonly Func<PersistentEventStoreSubscription, ResolvedEvent, Task> EventAppeared;
+        public readonly Func<PersistentEventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> EventAppeared;
         public readonly Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
            
         public readonly int MaxRetries;
         public readonly TimeSpan Timeout;
 
-        public StartPersistentSubscriptionMessage(TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials, Func<PersistentEventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan timeout)
+        public StartPersistentSubscriptionMessage(TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials, Func<PersistentEventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan timeout)
         {
             Ensure.NotNull(source, "source");
             Ensure.NotNull(eventAppeared, "eventAppeared");

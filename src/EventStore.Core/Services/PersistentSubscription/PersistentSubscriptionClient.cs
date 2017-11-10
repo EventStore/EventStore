@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             return removedAny;
         }
 
-        public bool Push(ResolvedEvent evnt)
+        public bool Push(ResolvedEvent evnt, int retryCount)
         {
             if (!CanSend()) { return false; }
             _allowedMessages--;
@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_extraStatistics != null)
                 _extraStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
-            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt));
+            _envelope.ReplyWith(new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt, retryCount));
             if(!_unconfirmedEvents.ContainsKey(evnt.OriginalEvent.EventId)) {
                 _unconfirmedEvents.Add(evnt.OriginalEvent.EventId, evnt);
             }

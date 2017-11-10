@@ -13,6 +13,7 @@ namespace EventStore.ClientAPI.Embedded
         private readonly UserCredentials _userCredentials;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly bool _resolveLinkTos;
+        private readonly Func<EventStoreSubscription, ResolvedEvent, Task> _eventAppeared;
 
 
         public EmbeddedSubscription(
@@ -20,11 +21,12 @@ namespace EventStore.ClientAPI.Embedded
             string streamId, UserCredentials userCredentials, IAuthenticationProvider authenticationProvider,
             bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
-            : base(log, publisher, connectionId, source, streamId, eventAppeared, subscriptionDropped)
+            : base(log, publisher, connectionId, source, streamId, subscriptionDropped)
         {
             _userCredentials = userCredentials;
             _authenticationProvider = authenticationProvider;
             _resolveLinkTos = resolveLinkTos;
+            _eventAppeared = eventAppeared;
         }
 
         override protected EventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber)
@@ -47,5 +49,11 @@ namespace EventStore.ClientAPI.Embedded
                     _resolveLinkTos,
                     user));
         }
+
+
+        public Task EventAppeared(Core.Data.ResolvedEvent resolvedEvent) =>
+            _eventAppeared(Subscription, resolvedEvent.OriginalPosition == null
+                ? new ResolvedEvent(resolvedEvent.ConvertToClientResolvedIndexEvent())
+                : new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
     }
 }
