@@ -223,6 +223,9 @@ namespace EventStore.ClusterNode
             else
                 builder.DisableDnsDiscovery();
 
+            if (options.DisableIndexMerging)
+                builder.WithIndexMergingDisabled();
+
             if (!options.AddInterfacePrefixes){
                 builder.DontAddInterfacePrefixes();
             }

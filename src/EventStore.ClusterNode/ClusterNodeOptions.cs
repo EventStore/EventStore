@@ -201,6 +201,8 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
         public int IndexCacheDepth { get; set; }
+        [ArgDescription(Opts.DisableIndexMergingDescr, Opts.DbGroup)]
+        public bool DisableIndexMerging { get; set; }
 
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
@@ -319,6 +321,7 @@ namespace EventStore.ClusterNode
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
             IndexCacheDepth = Opts.IndexCacheDepthDefault;
+            DisableIndexMerging = Opts.DisableIndexMergingDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
             ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 

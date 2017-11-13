@@ -680,6 +680,21 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building
     }
 
     [TestFixture]
+    public class with_index_merging_disabled : SingleNodeScenario
+    {
+        public override void Given()
+        {
+            _builder.WithIndexMergingDisabled();
+        }
+
+        [Test]
+        public void should_set_index_cache_depth()
+        {
+            Assert.AreEqual(false, _settings.IndexMerging);
+        }
+    }
+
+    [TestFixture]
     public class with_custom_authentication_provider_factory : SingleNodeScenario
     {
         public override void Given()
