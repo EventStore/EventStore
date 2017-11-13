@@ -319,7 +319,8 @@ namespace EventStore.Core.Index
                                      Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
                                      IIndexFilenameProvider filenameProvider,
                                      byte version,
-                                     int indexCacheDepth = 16)
+                                     int indexCacheDepth = 16,
+                                     bool mergeIfNecessary = true)
         {
             Ensure.Nonnegative(prepareCheckpoint, "prepareCheckpoint");
             Ensure.Nonnegative(commitCheckpoint, "commitCheckpoint");
@@ -329,22 +330,28 @@ namespace EventStore.Core.Index
             tables[0].Add(tableToAdd);
 
             var toDelete = new List<PTable>();
-            for (int level = 0; level < tables.Count; level++)
+
+            if (mergeIfNecessary)
             {
-                if (tables[level].Count >= _maxTablesPerLevel)
+                for (int level = 0; level < tables.Count; level++)
                 {
-                    var filename = filenameProvider.GetFilenameNewTable();
-                    PTable table = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt, version, indexCacheDepth);
-                    CreateIfNeeded(level + 1, tables);
-                    tables[level + 1].Add(table);
-                    toDelete.AddRange(tables[level]);
-                    tables[level].Clear();
+                    if (tables[level].Count >= _maxTablesPerLevel)
+                    {
+                        var filename = filenameProvider.GetFilenameNewTable();
+                        PTable table = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt,
+                            version, indexCacheDepth);
+                        CreateIfNeeded(level + 1, tables);
+                        tables[level + 1].Add(table);
+                        toDelete.AddRange(tables[level]);
+                        tables[level].Clear();
+                    }
                 }
             }
 
             var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
         }
+
 
         public void Dispose(TimeSpan timeout)
         {

@@ -23,11 +23,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
             service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+
+            service.RegisterAction(new ControllerAction("/admin/indexMerging?enabled={enabled}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostSetIndexMerging);
+        }
+        
+
+        private void OnPostSetIndexMerging(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (IsAuthorized(entity))
+            {
+                bool mergingEnabled;
+                if (bool.TryParse(match.BoundVariables["enabled"], out mergingEnabled))
+                {
+                    Log.Info(
+                        $"Request set index merging={mergingEnabled} because {nameof(OnPostSetIndexMerging)} has been triggered.");
+                    Publish(new ClientMessage.SetIndexMerging(mergingEnabled));
+                    entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+                }
+                else
+                {
+                    entity.ReplyStatus(HttpStatusCode.BadRequest, "enabled should be bool parsable", LogReplyError);
+                }
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
         }
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
+            if (IsAuthorized(entity))
             {
                 Log.Info("Request shut down of node because shutdown command has been received.");
                 Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
@@ -41,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
+            if (IsAuthorized(entity))
             {
                 Log.Info("Request scavenging because /admin/scavenge request has been received.");
                 Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
@@ -51,6 +77,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
             }
+        }
+
+        private static bool IsAuthorized(HttpEntityManager entity)
+        {
+            return entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations));
         }
 
         private void LogReplyError(Exception exc)

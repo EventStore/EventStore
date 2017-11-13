@@ -24,7 +24,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile></DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -272,8 +273,11 @@
     <Compile Include="Http\Users\users.cs" />
     <Compile Include="Index\FakeIndexHasher.cs" />
     <Compile Include="Index\FakeIndexReader.cs" />
+    <Compile Include="Index\IndexV1\merging_doesnt_occur_when_merging_is_disabled.cs" />
     <Compile Include="Index\IndexV1\when_merging_ptables.cs" />
+    <Compile Include="Index\IndexV2\merging_doesnt_occur_when_merging_is_disabled.cs" />
     <Compile Include="Index\IndexV2\table_index_hash_collision_when_upgrading_to_64bit.cs" />
+    <Compile Include="Index\IndexV3\merging_doesnt_occur_when_merging_is_disabled.cs" />
     <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />

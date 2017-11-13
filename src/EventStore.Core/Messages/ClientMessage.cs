@@ -1450,5 +1450,18 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
             }
         }
+
+        public class SetIndexMerging : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly bool MergingEnabled;
+
+            public SetIndexMerging(bool mergingEnabled)
+            {
+                MergingEnabled = mergingEnabled;
+            }
+        }
     }
 }

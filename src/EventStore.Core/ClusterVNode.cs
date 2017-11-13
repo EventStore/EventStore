@@ -167,6 +167,7 @@ namespace EventStore.Core
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
                 () => new TFChunkReader(db, db.Config.WriterCheckpoint));
+
             var tableIndex = new TableIndex(indexPath,
                                             new XXHashUnsafe(),
                                             new Murmur3AUnsafe(),
@@ -177,7 +178,12 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,
                                             indexCacheDepth: vNodeSettings.IndexCacheDepth);
-			var readIndex = new ReadIndex(_mainQueue,
+
+            // ReSharper disable RedundantTypeArgumentsOfMethod
+            _mainBus.Subscribe<ClientMessage.SetIndexMerging>(tableIndex);
+            // ReSharper enable RedundantTypeArgumentsOfMethod
+
+            var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
                                           ESConsts.StreamInfoCacheCapacity,
