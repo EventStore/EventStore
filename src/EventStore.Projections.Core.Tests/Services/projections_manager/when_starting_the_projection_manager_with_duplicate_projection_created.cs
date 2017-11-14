@@ -7,6 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -45,7 +46,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 queues,
                 _timeProvider,
                 ProjectionType.All,
-                _ioDispatcher);
+                _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
