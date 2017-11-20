@@ -103,6 +103,7 @@ namespace EventStore.Core
         protected bool _writethrough;
 
         protected string _index;
+        protected bool _skipIndexVerify;
         protected int _indexCacheDepth;
         protected bool _unsafeIgnoreHardDelete;
         protected bool _unsafeDisableFlushToDisk;
@@ -202,6 +203,7 @@ namespace EventStore.Core
             _logHttpRequests = Opts.LogHttpRequestsDefault;
             _enableHistograms = Opts.LogHttpRequestsDefault;
             _index = null;
+            _skipIndexVerify = Opts.SkipIndexVerifyDefault;
             _indexCacheDepth = Opts.IndexCacheDepthDefault;
             _indexBitnessVersion = Opts.IndexBitnessVersionDefault;
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
@@ -928,6 +930,17 @@ namespace EventStore.Core
         }
 
         /// <summary>
+        /// Verifies the index integrity using the specified method on startup
+        /// </summary>
+        /// <param name="indexVerification">The index verification method</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithIndexVerification(bool skipIndexVerify)
+        {
+            _skipIndexVerify = skipIndexVerify;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the depth to cache for the mid point cache in index
         /// </summary>
         /// <param name="indexCacheDepth">The index cache depth</param>
@@ -1342,6 +1355,7 @@ namespace EventStore.Core
                     _connectionPendingSendBytesThreshold,
                     _index,
                     _enableHistograms,
+                    _skipIndexVerify,
                     _indexCacheDepth,
                     _indexBitnessVersion,
                     consumerStrategies,

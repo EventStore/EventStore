@@ -5,6 +5,7 @@ using System.IO;
 using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Common.Utils;
+using EventStore.Common.Options;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
@@ -28,7 +29,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _size = _ptableCount * (long)indexEntrySize + PTableHeader.Size + PTable.MD5Size;
             Console.WriteLine("Creating PTable at {0}. Size of PTable: {1}", Filename, _size);
             CreatePTableFile(Filename, _size, indexEntrySize);
-            _ptable = PTable.FromFile(Filename, 22);
+            _ptable = PTable.FromFile(Filename, 22, false);
         }
 
         public static void CreatePTableFile(string filename, long ptableSize, int indexEntrySize, int cacheDepth = 16)
