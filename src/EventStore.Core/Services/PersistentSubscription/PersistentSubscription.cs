@@ -178,7 +178,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 foreach (StreamBuffer.OutstandingMessagePointer messagePointer in _streamBuffer.Scan())
                 {
                     OutstandingMessage message = messagePointer.Message;
-                    ConsumerPushResult result = _pushClients.PushMessageToClient(message.ResolvedEvent);
+                    ConsumerPushResult result = _pushClients.PushMessageToClient(message.ResolvedEvent, message.RetryCount);
                     if (result == ConsumerPushResult.Sent)
                     {
                         messagePointer.MarkSent();

@@ -457,7 +457,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
         public void when_wrapping_persistent_subscription_stream_event_appeared_with_deleted_event_should_downgrade_version()
         {
             var msg = new ClientMessage.PersistentSubscriptionStreamEventAppeared(Guid.NewGuid(),
-                                                            ResolvedEvent.ForUnresolvedEvent(CreateDeletedEventRecord(), 0));
+                                                            ResolvedEvent.ForUnresolvedEvent(CreateDeletedEventRecord(), 0), 0);
 
             var package = _dispatcher.WrapMessage(msg, _version);
             Assert.IsNotNull(package, "Package is null");
@@ -467,12 +467,12 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             Assert.IsNotNull(dto, "DTO is null");
             Assert.AreEqual(int.MaxValue, dto.Event.Event.EventNumber, "Event Number");
         }
-
+        
         [Test]
         public void when_wrapping_persistent_subscription_stream_event_appeared_with_link_to_deleted_event_should_downgrade_version()
         {
             var msg = new ClientMessage.PersistentSubscriptionStreamEventAppeared(Guid.NewGuid(),
-                                                            ResolvedEvent.ForResolvedLink(CreateLinkEventRecord(), CreateDeletedEventRecord(), 0));
+                                                            ResolvedEvent.ForResolvedLink(CreateLinkEventRecord(), CreateDeletedEventRecord(), 0), 0);
 
             var package = _dispatcher.WrapMessage(msg, _version);
             Assert.IsNotNull(package, "Package is null");

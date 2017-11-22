@@ -307,6 +307,7 @@ message PersistentSubscriptionConfirmation {
 
 message PersistentSubscriptionStreamEventAppeared {
 	required ResolvedIndexedEvent event = 1;
+	optional int32 retryCount = 2;
 }
 
 message SubscribeToStream {

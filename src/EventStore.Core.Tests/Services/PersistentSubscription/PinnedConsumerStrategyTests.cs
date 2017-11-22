@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             Assert.AreEqual(2, client1Envelope.Replies.Count);
             Assert.AreEqual(2, client2Envelope.Replies.Count);
         }
-
+        
         [Test]
         public void unsubscribed_client_has_assigned_streams_sent_to_another_client()
         {

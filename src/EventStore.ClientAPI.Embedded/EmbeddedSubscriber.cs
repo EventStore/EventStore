@@ -32,7 +32,9 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.StreamEventAppeared message)
         {
-            StreamEventAppeared(message.CorrelationId, message.Event);
+            IEmbeddedSubscription subscription;
+            _subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
+            ((EmbeddedSubscription)subscription).EventAppeared(message.Event);
         }
 
         public void Handle(ClientMessage.SubscriptionConfirmation message)
@@ -54,14 +56,9 @@ namespace EventStore.ClientAPI.Embedded
 
         public void Handle(ClientMessage.PersistentSubscriptionStreamEventAppeared message)
         {
-            StreamEventAppeared(message.CorrelationId, message.Event);
-        }
-
-        private void StreamEventAppeared(Guid correlationId, EventStore.Core.Data.ResolvedEvent resolvedEvent)
-        {
             IEmbeddedSubscription subscription;
-            _subscriptions.TryGetActiveSubscription(correlationId, out subscription);
-            subscription.EventAppeared(resolvedEvent);
+            _subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
+            ((EmbeddedPersistentSubscription) subscription).EventAppeared(message.Event, message.RetryCount);
         }
 
         private void ConfirmSubscription(Guid correlationId, long lastCommitPosition, long? lastEventNumber)
@@ -89,7 +86,7 @@ namespace EventStore.ClientAPI.Embedded
             _subscriptions.StartSubscription(correlationId, subscription);
         }
 
-        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
+        public void StartPersistentSubscription(Guid correlationId, TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId, UserCredentials userCredentials, int bufferSize, Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries, TimeSpan operationTimeout)
         {
             var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
                 subscriptionId, streamId, userCredentials, _authenticationProvider, bufferSize, eventAppeared,

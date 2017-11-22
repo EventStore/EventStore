@@ -357,7 +357,7 @@ namespace EventStore.ClientAPI
         EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
             string stream,
             string groupName,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
             int bufferSize = 10,
@@ -384,7 +384,7 @@ namespace EventStore.ClientAPI
         Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(
             string stream,
             string groupName,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
             Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
             UserCredentials userCredentials = null,
             int bufferSize = 10,

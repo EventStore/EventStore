@@ -17,24 +17,22 @@ namespace EventStore.ClientAPI.Embedded
         private readonly ILogger _log;
         protected readonly Guid ConnectionId;
         private readonly TaskCompletionSource<TSubscription> _source;
-        private readonly Func<EventStoreSubscription, ResolvedEvent, Task> _eventAppeared;
         private readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> _subscriptionDropped;
         private int _actionExecuting;
         private readonly ConcurrentQueue<Action> _actionQueue;
         private int _unsubscribed;
-        private TSubscription _subscription;
+        protected TSubscription Subscription;
         protected IPublisher Publisher;
         protected string StreamId;
         protected Guid CorrelationId;
 
         protected EmbeddedSubscriptionBase(
             ILogger log, IPublisher publisher, Guid connectionId, TaskCompletionSource<TSubscription> source,
-            string streamId, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+            string streamId, 
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped)
         {
             Ensure.NotNull(source, "source");
             Ensure.NotNull(streamId, "streamId");
-            Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(publisher, "publisher");
 
             Publisher = publisher;
@@ -42,7 +40,6 @@ namespace EventStore.ClientAPI.Embedded
             ConnectionId = connectionId;
             _log = log;
             _source = source;
-            _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped ?? ((a, b, c) => { });
             _actionQueue = new ConcurrentQueue<Action>();
         }
@@ -66,20 +63,15 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        public Task EventAppeared(Core.Data.ResolvedEvent resolvedEvent) =>
-            _eventAppeared(_subscription, resolvedEvent.OriginalPosition == null
-                ? new ResolvedEvent(resolvedEvent.ConvertToClientResolvedIndexEvent())
-                : new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()));
-
         public void ConfirmSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             if (lastCommitPosition < -1)
                 throw new ArgumentOutOfRangeException("lastCommitPosition", string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
-            if (_subscription != null)
+            if (Subscription != null)
                 throw new Exception("Double confirmation of subscription.");
 
-            _subscription = CreateVolatileSubscription(lastCommitPosition, lastEventNumber);
-            _source.SetResult(_subscription);
+            Subscription = CreateVolatileSubscription(lastCommitPosition, lastEventNumber);
+            _source.SetResult(Subscription);
         }
 
         protected abstract TSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber);
@@ -100,11 +92,11 @@ namespace EventStore.ClientAPI.Embedded
                     _source.TrySetException(exception);
                 }
 
-                if (reason == SubscriptionDropReason.UserInitiated && _subscription != null)
+                if (reason == SubscriptionDropReason.UserInitiated && Subscription != null)
                     Publisher.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), CorrelationId, new NoopEnvelope(), SystemAccount.Principal));
 
-                if (_subscription != null)
-                    ExecuteActionAsync(() => _subscriptionDropped(_subscription, reason, exception));
+                if (Subscription != null)
+                    ExecuteActionAsync(() => _subscriptionDropped(Subscription, reason, exception));
 
             }
         }

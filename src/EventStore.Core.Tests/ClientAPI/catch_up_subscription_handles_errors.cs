@@ -575,7 +575,14 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
-            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+            Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
+            bool autoAck = true)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
+            Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
             bool autoAck = true)
         {
             throw new NotImplementedException();
@@ -686,11 +693,6 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var handler = Connected;
             if (handler != null) handler(this, e);
-        }
-
-        public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true)
-        {
-            throw new NotImplementedException();
         }
     }
 }

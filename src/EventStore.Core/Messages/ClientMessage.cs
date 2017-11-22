@@ -1337,11 +1337,12 @@ namespace EventStore.Core.Messages
 
             public readonly Guid CorrelationId;
             public readonly ResolvedEvent Event;
-
-            public PersistentSubscriptionStreamEventAppeared(Guid correlationId, ResolvedEvent @event)
+            public readonly int RetryCount;
+            public PersistentSubscriptionStreamEventAppeared(Guid correlationId, ResolvedEvent @event, int retryCount)
             {
                 CorrelationId = correlationId;
                 Event = @event;
+                RetryCount = retryCount;
             }
         }
 
