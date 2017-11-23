@@ -24,7 +24,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile></DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -516,6 +517,7 @@
     <Compile Include="Services\Transport\Http\Authentication\basic_http_authentication_provider.cs" />
     <Compile Include="Services\Transport\Http\Authentication\rfc_2898_password_hash_algorithm.cs" />
     <Compile Include="Authentication\with_internal_authentication_provider.cs" />
+    <Compile Include="Services\Transport\Http\compress_response_should.cs" />
     <Compile Include="Services\Transport\Http\media_type.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
     <Compile Include="Services\Transport\Http\auto_convertion.cs" />
