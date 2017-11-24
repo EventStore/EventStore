@@ -17,7 +17,7 @@ using EventStore.Core.Util;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using System.Net.NetworkInformation;
+using EventStore.Core.Index;
 
 namespace EventStore.Core
 {
@@ -746,7 +746,7 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the maximum number of pending send bytes allowed before a connection is closed.
         /// </summary>
-        /// <param name="WithConnectionPendingSendBytesThreshold">The number of pending send bytes allowed</param>
+        /// <param name="connectionPendingSendBytesThreshold">The number of pending send bytes allowed</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder WithConnectionPendingSendBytesThreshold(int connectionPendingSendBytesThreshold)
         {
@@ -932,7 +932,7 @@ namespace EventStore.Core
         /// <summary>
         /// Verifies the index integrity using the specified method on startup
         /// </summary>
-        /// <param name="indexVerification">The index verification method</param>
+        /// <param name="skipIndexVerify">The index verification method</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder WithIndexVerification(bool skipIndexVerify)
         {
@@ -1144,7 +1144,7 @@ namespace EventStore.Core
         /// <summary>
         /// The bitness version of the indexes
         /// </summary>
-        /// <param name="indexBitnessVersion">The version of the bitness <see cref="PTableVersion"/></param>
+        /// <param name="indexBitnessVersion">The version of the bitness <see cref="PTableVersions"/></param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder WithIndexBitnessVersion(byte indexBitnessVersion){
             _indexBitnessVersion = indexBitnessVersion;
