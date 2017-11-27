@@ -21,15 +21,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                    4096,
-                                                    0,
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1)));
+            _db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 4096));
             _db.Open();
 
             var chunk = _db.Manager.GetChunk(0);

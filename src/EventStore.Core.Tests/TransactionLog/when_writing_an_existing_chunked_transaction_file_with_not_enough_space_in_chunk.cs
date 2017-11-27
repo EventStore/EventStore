@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.WriteAllBytes(filename1, bytes);
 
             _checkpoint = new InMemoryCheckpoint(0);
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, _checkpoint, new InMemoryCheckpoint()));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
             db.Open();
             var tf = new TFChunkWriter(db);
             long pos;

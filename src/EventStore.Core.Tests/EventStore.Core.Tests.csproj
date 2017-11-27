@@ -626,7 +626,7 @@
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
-    <Compile Include="TransactionLog\TFChunkDbConfigHelper.cs" />
+    <Compile Include="TransactionLog\TFChunkHelper.cs" />
     <Compile Include="Index\IndexV1\when_a_ptable_is_loaded_from_disk.cs" />
     <Compile Include="Index\IndexV4\ptable_midpoint_calculations_should.cs" />
     <Compile Include="Index\IndexV4\when_merging_ptables_with_entries_to_nonexisting_record.cs" />

@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
 
         private void ReOpenDb()
         {
-            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, WriterCheckpoint, ChaserCheckpoint));
+            Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint));
 
             Db.Open();
 

@@ -67,6 +67,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool SkipIndexVerify;
         public readonly int IndexCacheDepth;
         public readonly byte IndexBitnessVersion;
+        public readonly int ChunkInitialReaderCount;
 
         public readonly bool BetterOrdering;
         public readonly string Index;
@@ -126,6 +127,7 @@ namespace EventStore.Core.Cluster.Settings
                                     bool disableHTTPCaching,
                                     bool logHttpRequests,
                                     int connectionPendingSendBytesThreshold,
+                                    int chunkInitialReaderCount,
                                     string index = null, bool enableHistograms = false,
                                     bool skipIndexVerify = false,
                                     int indexCacheDepth = 16,
@@ -212,6 +214,7 @@ namespace EventStore.Core.Cluster.Settings
             ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
             ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
             ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+            ChunkInitialReaderCount = chunkInitialReaderCount;
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -268,7 +271,8 @@ namespace EventStore.Core.Cluster.Settings
                                  + "HTTPCachingDisabled: {33}\n"
                                  + "IndexPath: {34}\n"
                                  + "ScavengeHistoryMaxAge: {35}\n"
-                                 + "ConnectionPendingSendBytesThreshold: {36}\n",
+                                 + "ConnectionPendingSendBytesThreshold: {36}\n"
+                                 + "ChunkInitialReaderCount: {37}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -286,7 +290,7 @@ namespace EventStore.Core.Cluster.Settings
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
                                  NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
                                  EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
-                                 ConnectionPendingSendBytesThreshold);
+                                 ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount);
         }
     }
 }

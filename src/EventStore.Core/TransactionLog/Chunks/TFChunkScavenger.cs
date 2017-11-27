@@ -159,7 +159,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                      isScavenged: true,
                                                      inMem: _db.Config.InMemDb,
                                                      unbuffered: _db.Config.Unbuffered,
-                                                     writethrough: _db.Config.WriteThrough);
+                                                     writethrough: _db.Config.WriteThrough,
+                                                     initialReaderCount: _db.Config.InitialReaderCount);
             }
             catch (IOException exc)
             {

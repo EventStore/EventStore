@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             base.TestFixtureSetUp();
 
-            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 0, chunkSize: 4096));
+            _db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 4096));
             _db.Open();
 
             var chunk = _db.Manager.GetChunk(0);

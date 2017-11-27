@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.WriteAllBytes(filename, bytes);
 
             _checkpoint = new InMemoryCheckpoint(137);
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, _checkpoint, new InMemoryCheckpoint()));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
             db.Open();
             var tf = new TFChunkWriter(db);
             var record = new PrepareLogRecord(logPosition: _checkpoint.Read(),

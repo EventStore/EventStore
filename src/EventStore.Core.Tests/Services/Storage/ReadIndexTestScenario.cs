@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Services.Storage
             Bus = new InMemoryBus("bus");
             IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
 
-            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, WriterCheckpoint, ChaserCheckpoint, replicationCheckpoint: ReplicationCheckpoint));
+            Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint, replicationCheckpoint: ReplicationCheckpoint));
 
             Db.Open();
             // create db

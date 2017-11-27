@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation
         {
             base.TestFixtureSetUp();
 
-            _config = TFChunkDbConfigHelper.Create(PathName, 1711, 5500, 5500, 1111, 1000);
+            _config = TFChunkHelper.CreateDbConfig(PathName, 1711, 5500, 5500, 1111, 1000);
 
             var rnd = new Random();
             _file1Contents = new byte[_config.ChunkSize];

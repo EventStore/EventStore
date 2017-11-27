@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
             var bus = new InMemoryBus("bus");
             new IODispatcher(bus, new PublishEnvelope(bus));
 
-            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerCheckpoint, chaserCheckpoint));
+            _db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerCheckpoint, chaserCheckpoint));
 
             _db.Open();
             // create db

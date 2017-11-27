@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
-            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, _writerCheckpoint, new InMemoryCheckpoint(), 1024));
+            _db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _writerCheckpoint, new InMemoryCheckpoint(), 1024));
             _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
