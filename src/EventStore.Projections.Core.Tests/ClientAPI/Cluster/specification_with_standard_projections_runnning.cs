@@ -12,6 +12,7 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
@@ -110,7 +111,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
         private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)
         {
-            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All, startStandardProjections: false);
+            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
+                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             var node = new MiniClusterNode(
                 PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,

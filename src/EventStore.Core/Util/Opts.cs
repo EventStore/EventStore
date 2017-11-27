@@ -127,6 +127,9 @@ namespace EventStore.Core.Util
         public const string ProjectionThreadsDescr = "The number of threads to use for projections.";
         public const int    ProjectionThreadsDefault = 3;
 
+        public const string ProjectionsQueryExpiryDescr = "The number of minutes a query can be idle before it expires";
+        public const int    ProjectionsQueryExpiryDefault = 5;
+
         public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
         public const int    WorkerThreadsDefault = 5;
 

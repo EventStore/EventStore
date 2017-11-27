@@ -10,6 +10,7 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
@@ -88,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         private void CreateNode()
         {
             var projectionWorkerThreadCount = GivenWorkerThreadCount();
-            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All, startStandardProjections: false);
+            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
+                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             _node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { _projections });
             _node.Start();

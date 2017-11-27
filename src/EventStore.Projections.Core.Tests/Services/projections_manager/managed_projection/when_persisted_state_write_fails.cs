@@ -3,6 +3,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -75,12 +76,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
-                    new PublishEnvelope(_bus)), new RequestResponseDispatcher
+                    new PublishEnvelope(_bus)),
+                new RequestResponseDispatcher
                         <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>(
                         _bus,
                         v => v.CorrelationId,
                         v => v.CorrelationId,
-                        new PublishEnvelope(_bus)), _ioDispatcher);
+                        new PublishEnvelope(_bus)),
+                _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
         }
 
         protected override IEnumerable<WhenStep> When()

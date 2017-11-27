@@ -147,6 +147,8 @@ namespace EventStore.ClusterNode
         public int ProjectionThreads { get; set; }
         [ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
+        [ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
+        public int ProjectionsQueryExpiry { get; set; }
 
         [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] IntHttpPrefixes { get; set; }

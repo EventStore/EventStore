@@ -7,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 using EventStore.Core.Helpers;
@@ -47,7 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _queues,
                     _timeProvider,
                     ProjectionType.All,
-                    _ioDispatcher))
+                    _ioDispatcher,
+                    TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)))
             {
             }
 
@@ -64,7 +66,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _queues,
                     _timeProvider,
                     ProjectionType.All,
-                    _ioDispatcher))
+                    _ioDispatcher,
+                    TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)))
             {
             }
             });
@@ -81,7 +84,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _queues,
                     _timeProvider,
                     ProjectionType.All,
-                    _ioDispatcher))
+                    _ioDispatcher,
+                    TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)))
             {
             }
             });
@@ -98,7 +102,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     null,
                     _timeProvider,
                     ProjectionType.All,
-                    _ioDispatcher))
+                    _ioDispatcher,
+                    TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)))
             {
             }
             });
@@ -115,7 +120,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new Dictionary<Guid, IPublisher>(),
                     _timeProvider,
                     ProjectionType.All,
-                    _ioDispatcher))
+                    _ioDispatcher,
+                    TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)))
             {
             }
             });

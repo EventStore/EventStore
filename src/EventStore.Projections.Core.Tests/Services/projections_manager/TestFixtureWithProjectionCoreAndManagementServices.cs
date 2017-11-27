@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _timeProvider,
                 ProjectionType.All,
                 _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
                 _initializeSystemProjections);
 
             _coordinator = new ProjectionCoreCoordinator(

@@ -22,7 +22,8 @@ namespace EventStore.Projections.Core
         public static void CreateManagerService(
             StandardComponents standardComponents,
             ProjectionsStandardComponents projectionsStandardComponents,
-            IDictionary<Guid, IPublisher> queues)
+            IDictionary<Guid, IPublisher> queues,
+            TimeSpan projectionQueryExpiry)
         {
             IQueuedHandler inputQueue = projectionsStandardComponents.MasterInputQueue;
             InMemoryBus outputBus = projectionsStandardComponents.MasterOutputBus;
@@ -56,7 +57,8 @@ namespace EventStore.Projections.Core
                 queues,
                 new RealTimeProvider(),
                 projectionsStandardComponents.RunProjections,
-                ioDispatcher);
+                ioDispatcher,
+                projectionQueryExpiry);
 
             SubscribeMainBus(
                 projectionsStandardComponents.MasterMainBus,

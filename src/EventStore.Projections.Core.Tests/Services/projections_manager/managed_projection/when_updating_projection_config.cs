@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.TimeService;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -253,7 +254,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                         v => v.CorrelationId,
                         v => v.CorrelationId,
                         new PublishEnvelope(_bus)),
-                _ioDispatcher);
+                _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
         }
 
         protected ProjectionManagementMessage.Command.UpdateConfig CreateConfig()

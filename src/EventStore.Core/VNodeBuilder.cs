@@ -110,6 +110,7 @@ namespace EventStore.Core
         protected bool _betterOrdering;
         protected ProjectionType _projectionType;
         protected int _projectionsThreads;
+        protected TimeSpan _projectionsQueryExpiry;
 
         protected TFChunkDb _db;
         protected ClusterVNodeSettings _vNodeSettings;
@@ -211,6 +212,8 @@ namespace EventStore.Core
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             _alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
             _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
+
+            _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -262,6 +265,18 @@ namespace EventStore.Core
             _projectionsThreads = numberOfThreads;
             return this;
         }
+
+        /// <summary>
+        /// Sets how long a projection query can be idle before it expires.
+        /// </summary>
+        /// <param name="projectionQueryExpiry">The length of time a projection query can be idle before it expires.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithProjectionQueryExpirationOf(TimeSpan projectionQueryExpiry)
+        {
+            _projectionsQueryExpiry = projectionQueryExpiry;
+            return this;
+        }
+
 
         /// <summary>
         /// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!

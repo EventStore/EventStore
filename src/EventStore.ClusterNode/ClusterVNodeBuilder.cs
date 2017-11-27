@@ -35,7 +35,8 @@ namespace EventStore.ClusterNode
         
         protected override void SetUpProjectionsIfNeeded()
         {
-            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType, _startStandardProjections));
+            _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType,
+                            _startStandardProjections, _projectionsQueryExpiry));
         }
     }
 }
