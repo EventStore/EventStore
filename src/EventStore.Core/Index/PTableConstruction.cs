@@ -150,7 +150,7 @@ namespace EventStore.Core.Index
         }
 
         private static PTable MergeTo2(IList<PTable> tables, long fileSize, int indexEntrySize, string outputFile,
-                                       Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, 
+                                       Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord,
                                        byte version, int cacheDepth)
         {
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
@@ -266,6 +266,9 @@ namespace EventStore.Core.Index
             private List<IndexEntry> _list;
             private IEnumerator<IndexEntry> _enumerator;
             readonly IEnumerator<IndexEntry> _ptableEnumerator;
+            private bool _firstIteration = true;
+            private bool _lastIteration = false;
+
             readonly Func<string, ulong, ulong> _upgradeHash;
             readonly Func<IndexEntry, bool> _existsAt;
             readonly Func<IndexEntry, Tuple<string, bool>> _readRecord;
@@ -343,17 +346,47 @@ namespace EventStore.Core.Index
             private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord)
             {
                 var list = new List<IndexEntry>();
-                IndexEntry current = new IndexEntry(0, 0, 0); 
-                ulong hash = 0;
-                while (hash == current.Stream && ptableEnumerator.MoveNext())
+
+                if(_lastIteration)
+                    return list;
+
+                //move to the next entry if it's the first iteration
+                if(_firstIteration){
+                    _firstIteration = false;
+                    if(!ptableEnumerator.MoveNext()){
+                        _lastIteration = true;
+                        return list;
+                    }
+                }
+
+                //move until we find an index entry that exists
+                while(!existsAt(ptableEnumerator.Current)){
+                    if(!ptableEnumerator.MoveNext()){
+                        _lastIteration = true;
+                        return list;
+                    }
+                }
+
+                //add index entries as long as the stream hashes match
+                ulong hash = ptableEnumerator.Current.Stream;
+                do
                 {
-                    current = ptableEnumerator.Current;
-                    if (existsAt(current))
+                    if (existsAt(ptableEnumerator.Current))
                     {
+                        var current = ptableEnumerator.Current;
                         list.Add(new IndexEntry(upgradeHash(readRecord(current).Item1, current.Stream), current.Version, current.Position));
                     }
-                    if (hash == 0) hash = current.Stream;
-                }
+
+                    if(!ptableEnumerator.MoveNext()){
+                        _lastIteration = true;
+                        break;
+                    }
+
+                    if(hash != ptableEnumerator.Current.Stream)
+                        break;
+                }while (true);
+
+                //sort the index entries with upgraded hashes
                 list.Sort(EntryComparer);
                 return list;
             }
