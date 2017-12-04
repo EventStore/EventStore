@@ -458,7 +458,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     throw new InvalidReadException(
                         string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-                                      + " in chunk.", actualPosition, length, Chunk));
+                                      + " in chunk {2}.", actualPosition, length, Chunk));
                 }
                 if (length > TFConsts.MaxLogRecordSize)
                 {
