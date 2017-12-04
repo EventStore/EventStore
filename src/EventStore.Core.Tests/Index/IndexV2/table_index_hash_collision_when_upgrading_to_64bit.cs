@@ -9,7 +9,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Index.IndexV2
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture(0,0)]
+    [TestFixture(10,0)]
+    [TestFixture(0,10)]
+    [TestFixture(10,10)]
     public class table_index_hash_collision_when_upgrading_to_64bit : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
@@ -17,10 +20,14 @@ namespace EventStore.Core.Tests.Index.IndexV2
         private IHasher _highHasher;
         private string _indexDir;
         protected byte _ptableVersion;
+        private int _extraStreamHashesAtBeginning;
+        private int _extraStreamHashesAtEnd;
 
-        public table_index_hash_collision_when_upgrading_to_64bit()
+        public table_index_hash_collision_when_upgrading_to_64bit(int extraStreamHashesAtBeginning, int extraStreamHashesAtEnd):base()
         {
             _ptableVersion = PTableVersions.IndexV2;
+            _extraStreamHashesAtBeginning = extraStreamHashesAtBeginning;
+            _extraStreamHashesAtEnd = extraStreamHashesAtEnd;
         }
 
         [OneTimeSetUp]
@@ -36,9 +43,19 @@ namespace EventStore.Core.Tests.Index.IndexV2
                                          () => new HashListMemTable(PTableVersions.IndexV1, maxSize: 5),
                                          () => fakeReader,
                                          PTableVersions.IndexV1,
-                                         maxSizeForMemory: 5,
+                                         maxSizeForMemory: 5 + _extraStreamHashesAtBeginning + _extraStreamHashesAtEnd,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize(long.MaxValue);
+
+            Assert.Greater(_lowHasher.Hash("abcd"), _lowHasher.Hash("LPN-FC002_LPK51001"));
+            for(int i=0;i<_extraStreamHashesAtBeginning;i++){
+                _tableIndex.Add(1, "abcd", i, i+1);
+            }
+
+            Assert.Less(_lowHasher.Hash("wxyz"), _lowHasher.Hash("LPN-FC002_LPK51001"));
+            for(int i=0;i<_extraStreamHashesAtEnd;i++){
+                _tableIndex.Add(1, "wxyz", i, i+1);
+            }
 
             _tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 1);
             _tableIndex.Add(1, "account--696193173", 0, 2);
