@@ -198,6 +198,8 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message)
         {
+            if(_vnodeState == VNodeState.PreMaster)
+                return;
             if (_vnodeState != VNodeState.Master)
                 throw new Exception(string.Format("New Epoch request not in master state. State: {0}.", _vnodeState));
             EpochManager.WriteNewEpoch();
