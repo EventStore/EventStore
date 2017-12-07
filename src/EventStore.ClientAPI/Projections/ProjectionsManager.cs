@@ -9,8 +9,8 @@ using EventStore.ClientAPI.Transport.Http;
 namespace EventStore.ClientAPI.Projections
 {
     /// <summary>
-    /// API for managing projections in the Event Store through C# code. Communicates
-    /// with the Event Store over the RESTful API.
+    /// API for managing projections in Event Store through C# code. Communicates
+    /// with Event Store over the RESTful API. All methods in this class are asynchronous, and you must have access to a projection to use a method.
     /// </summary>
     public class ProjectionsManager
     {
@@ -36,10 +36,10 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously enables a projection 
+        /// Enables a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to enable a projection</param>
+        /// <param name="userCredentials">Credentials for a user with permission to enable a projection.</param>
         /// <returns>A task representing the operation.</returns>
         public Task EnableAsync(string name, UserCredentials userCredentials = null)
         {
@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously aborts and disables a projection without writing a checkpoint.
+        /// Disables a projection without writing a checkpoint.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously disables a projection.
+        /// Aborts and disables a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for a user with permission to disable a projection.</param>
@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously creates a one-time query.
+        /// Creates a one-time query with JavaScript code. The projection will run until the end of the log and then stop.
         /// </summary>
         /// <param name="query">The JavaScript source code for the query.</param>
         /// <param name="userCredentials">Credentials for a user with permission to create a query.</param>
@@ -83,7 +83,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously creates a one-time query.
+        /// TODO: Missing from docs, needs further explanation.
+        /// Creates a one-time query with JavaScript code.
         /// </summary>
         /// <param name="name">A name for the query.</param>
         /// <param name="query">The JavaScript source code for the query.</param>
@@ -96,7 +97,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously creates a continuous projection.
+        /// Creates a continuous projection with JavaScript code that will run until the end of the log and then continue running. Continuous projections have explicit names and you can enable or disable them via this name.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="query">The JavaScript source code for the query.</param>
@@ -107,7 +108,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously creates a continuous projection.
+        /// TODO: Missing from docs, needs further explanation, mostly the additional parameter.
+        /// Creates a continuous projection with JavaScript code that will run until the end of the log and then continue running. Continuous projections have explicit names and you can enable or disable them via this name.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="query">The JavaScript source code for the query.</param>
@@ -122,7 +124,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously lists this status of all projections.
+        /// Lists the status of all projections.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
@@ -133,9 +135,10 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously lists this status of all projections.
+        /// Lists the status of all projections.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
+        /// TODO: Can below be a proper object link?
         /// <returns>List of all ProjectionDetails items containing projection statuses.</returns>
         public Task<List<ProjectionDetails>> ListAllAsync(UserCredentials userCredentials = null)
         {
@@ -143,7 +146,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously lists this status of all one-time projections.
+        /// Lists the status of all one-time projections.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
@@ -154,7 +157,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously lists this status of all one-time projections.
+        /// Lists the status of all one-time projections.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>List of one-time ProjectionDetails items containing projection statuses.</returns>
@@ -164,7 +167,9 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Synchronously lists this status of all continuous projections.
+        /// Lists the status of all continuous projections.
+        /// TODO: Difference?
+        /// TODO: Wasn't in docs
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing projection statuses.</returns>
@@ -175,7 +180,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Synchronously lists this status of all continuous projections.
+        /// Lists the status of all continuous projections.
+        /// TODO: Wasn't in docs
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>List of continuous ProjectionDetails items containing projection statuses.</returns>
@@ -185,7 +191,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the status of a projection.
+        /// Gets the status of a projection.
+        /// TODO: Wasn't in docs
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -197,7 +204,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the state of a projection.
+        /// Gets the state of a projection.
+        /// TODO: Wasn't in docs
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -209,7 +217,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the state of a projection for a specified partition.
+        /// Gets the state of a projection for a specified partition.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="partitionId">The id of the partition.</param>
@@ -223,7 +231,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the state of a projection.
+        /// Gets the state of a projection.
+        /// Wasn't in docs
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -235,7 +244,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the state of a projection for a specified partition.
+        /// Gets the result of a projection for a specified partition.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="partitionId">The id of the partition.</param>
@@ -249,7 +258,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the statistics of a projection.
+        /// Returns the statistics associated with a named projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -261,7 +270,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously gets the status of a query.
+        /// Gets the status of a query.
+        /// TODO: Wasn't in docs.
         /// </summary>
         /// <param name="name">The name of the query.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>
@@ -273,7 +283,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously updates the definition of a query.
+        /// Updates the definition of a query.
+        /// TODO: Wasn't in docs.
         /// </summary>
         /// <param name="name">The name of the query.</param>
         /// <param name="query">The JavaScript source code of the query.</param>
@@ -287,7 +298,7 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously deletes a projection 
+        /// Deletes a projection.
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
@@ -298,7 +309,8 @@ namespace EventStore.ClientAPI.Projections
         }
 
         /// <summary>
-        /// Asynchronously deletes a projection 
+        /// Deletes a projection.
+        /// TODO: Difference?
         /// </summary>
         /// <param name="name">The name of the projection.</param>
         /// <param name="deleteEmittedStreams">Whether to delete the streams that were emitted by this projection.</param>

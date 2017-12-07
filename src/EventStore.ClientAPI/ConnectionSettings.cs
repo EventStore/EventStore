@@ -6,7 +6,7 @@ namespace EventStore.ClientAPI
 {
     /// <summary>
     /// A <see cref="ConnectionSettings"/> object is an immutable representation of the settings for an
-    /// <see cref="IEventStoreConnection"/>. A <see cref="ConnectionSettings"/> object can be built using
+    /// <see cref="IEventStoreConnection"/>. You can build a <see cref="ConnectionSettings"/> object using
     /// a <see cref="ConnectionSettingsBuilder"/>, either via the <see cref="Create"/> method, or via
     /// the constructor of <see cref="ConnectionSettingsBuilder"/>.
     /// </summary>
@@ -15,53 +15,53 @@ namespace EventStore.ClientAPI
         private static readonly Lazy<ConnectionSettings> DefaultSettings = new Lazy<ConnectionSettings>(() => Create(), true);
 
         /// <summary>
-        /// The default <see cref="ConnectionSettings"></see>
+        /// The default <see cref="ConnectionSettings"></see>.
         /// </summary>
         public static ConnectionSettings Default { get { return DefaultSettings.Value; } }
 
         /// <summary>
-        /// Creates a new set of <see cref="ConnectionSettings"/>
+        /// Creates a new set of <see cref="ConnectionSettings"/>.
         /// </summary>
-        /// <returns>A <see cref="ConnectionSettingsBuilder"/> that can be used to build up a <see cref="ConnectionSettings"/></returns>
+        /// <returns>A <see cref="ConnectionSettingsBuilder"/> you can use to build up a <see cref="ConnectionSettings"/></returns>.
         public static ConnectionSettingsBuilder Create()
         {
             return new ConnectionSettingsBuilder();
         }
 
         /// <summary>
-        /// The <see cref="ILogger"/> that this connection will use
+        /// The <see cref="ILogger"/> that this connection will use.
         /// </summary>
         public readonly ILogger Log;
         /// <summary>
-        /// Whether or not do excessive logging of <see cref="EventStoreConnection"/> internal logic.
+        /// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.
         /// </summary>
         public readonly bool VerboseLogging;
         /// <summary>
-        /// The maximum number of outstanding items allowed in the queue
+        /// The maximum number of outstanding items allowed in the queue.
         /// </summary>
         public readonly int MaxQueueSize;
         /// <summary>
-        /// The maximum number of allowed asynchronous operations to be in process
+        /// The maximum number of allowed asynchronous operations to be in process.
         /// </summary>
         public readonly int MaxConcurrentItems;
         /// <summary>
-        /// The maximum number of retry attempts
+        /// The maximum number of retry attempts.
         /// </summary>
         public readonly int MaxRetries;
         /// <summary>
-        /// The maximum number of times to allow for reconnection
+        /// The maximum number of times to allow for reconnection.
         /// </summary>
         public readonly int MaxReconnections;
         /// <summary>
-        /// Whether or not to require EventStore to refuse serving read or write request if it is not master
+        /// Whether to require EventStore to refuse serving read or write request if it is not master.
         /// </summary>
         public readonly bool RequireMaster;
         /// <summary>
-        /// The amount of time to delay before attempting to reconnect
+        /// The amount of time to delay before attempting to reconnect.
         /// </summary>
         public readonly TimeSpan ReconnectionDelay;
         /// <summary>
-        /// The amount of time before an operation is considered to have timed out
+        /// The amount of time before an operation is considered to have timed out.
         /// </summary>
         public readonly TimeSpan OperationTimeout;
         /// <summary>
@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly UserCredentials DefaultUserCredentials;
         /// <summary>
-        /// Whether or not the connection is encrypted using SSL.
+        /// Whether the connection is encrypted using SSL.
         /// </summary>
         public readonly bool UseSslConnection;
         /// <summary>
@@ -81,12 +81,12 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly string TargetHost;
         /// <summary>
-        /// Whether or not to validate the server SSL certificate.
+        /// Whether to validate the server SSL certificate.
         /// </summary>
         public readonly bool ValidateServer;
 
         /// <summary>
-        /// Whether or not to raise an error if no response is received from the server for an operation.
+        /// Whether to raise an error if no response is received from the server for an operation.
         /// </summary>
         public readonly bool FailOnNoServerResponse;
         /// <summary>

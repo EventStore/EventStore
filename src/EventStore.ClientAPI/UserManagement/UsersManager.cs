@@ -8,8 +8,8 @@ using EventStore.ClientAPI.SystemData;
 namespace EventStore.ClientAPI.UserManagement
 {
     /// <summary>
-    /// API for managing users in the Event Store through C# code. Communicates
-    /// with the Event Store over the RESTful API.
+    /// API for managing users in Event Store through C# code. Communicates
+    /// with Event Store over the RESTful API. All methods in this class are asynchronous.
     /// </summary>
     public class UsersManager
     {
@@ -33,10 +33,10 @@ namespace EventStore.ClientAPI.UserManagement
         }
 
         /// <summary>
-        /// Asynchronously enables a user
+        /// Enables a user
         /// </summary>
-        /// <param name="login">The login of the user to enable</param>
-        /// <param name="userCredentials">Credentials for a user with permission to enable a user</param>
+        /// <param name="login">The login of the user to enable.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to enable a user.</param>
         /// <returns>A task representing the operation.</returns>
         public Task EnableAsync(string login, UserCredentials userCredentials = null)
         {
@@ -45,10 +45,10 @@ namespace EventStore.ClientAPI.UserManagement
         }
 
         /// <summary>
-        /// Asynchronously disables a user
+        /// Disables a user
         /// </summary>
-        /// <param name="login">The login of the user to disable</param>
-        /// <param name="userCredentials">Credentials for a user with permission to disable a user</param>
+        /// <param name="login">The login of the user to disable.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to disable a user.</param>
         /// <returns>A task representing the operation.</returns>
         public Task DisableAsync(string login, UserCredentials userCredentials = null)
         {
@@ -57,10 +57,10 @@ namespace EventStore.ClientAPI.UserManagement
         }
 
         /// <summary>
-        /// Asynchronously deletes a user
+        /// Deletes a user.
         /// </summary>
         /// <param name="login">The login of the user.</param>
-        /// <param name="userCredentials">Credentials for a user with permission to delete a user</param>
+        /// <param name="userCredentials">Credentials for a user with permission to delete a user.</param>
         /// <returns>A task representing the operation.</returns>
         public Task DeleteUserAsync(string login, UserCredentials userCredentials = null)
         {
@@ -69,7 +69,7 @@ namespace EventStore.ClientAPI.UserManagement
         }
 
         /// <summary>
-        /// Asynchronously lists all users.
+        /// Lists all users.
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
         /// <returns>String of JSON containing user full names and logins.</returns>
@@ -79,17 +79,17 @@ namespace EventStore.ClientAPI.UserManagement
         }
 
         /// <summary>
-        /// Asynchronously gets the current users details
+        /// Gets the current users details
         /// </summary>
         /// <param name="userCredentials">Credentials for the operation.</param>
-        /// <returns>A <see cref="UserDetails"/> object for the currently logged in user</returns>
+        /// <returns>A <see cref="UserDetails"/> object for the currently logged in user.</returns>
         public Task<UserDetails> GetCurrentUserAsync(UserCredentials userCredentials) 
         {
             return _client.GetCurrentUser(_httpEndPoint, userCredentials);
         }
 
         /// <summary>
-        /// Asynchronously gets a users details
+        /// Gets a users details.
         /// </summary>
         /// <param name="login">the login for the user who's details should be retrieved.</param>
         /// <param name="userCredentials">Credentials for the operation.</param>

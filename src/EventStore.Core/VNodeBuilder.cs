@@ -231,7 +231,7 @@ namespace EventStore.Core
         /// <summary>
         /// Start standard projections.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder StartStandardProjections()
         {
             _startStandardProjections = true;
@@ -241,7 +241,7 @@ namespace EventStore.Core
         /// <summary>
         /// Disable HTTP Caching.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DisableHTTPCaching()
         {
             _disableHTTPCaching = true;
@@ -251,9 +251,9 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the mode and the number of threads on which to run projections.
         /// </summary>
-        /// <param name="projectionType">The mode in which to run the projections system</param>
+        /// <param name="projectionType">The mode in which to run the projections system.</param>
         /// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder RunProjections(ProjectionType projectionType, int numberOfThreads = Opts.ProjectionThreadsDefault)
         {
             _projectionType = projectionType;
@@ -262,10 +262,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!
+        /// Adds a custom subsystem to the builder. This is an advanced use case that most people will never need
         /// </summary>
-        /// <param name="subsystem">The subsystem to add</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="subsystem">The subsystem to add.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AddCustomSubsystem(ISubsystem subsystem)
         {
             _subsystems.Add(subsystem);
@@ -273,9 +273,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Returns a builder set to run in memory only
+        /// Returns a builder set to run in memory only.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder RunInMemory()
         {
             _inMemoryDb = true;
@@ -284,10 +284,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Returns a builder set to write database files to the specified path
+        /// Returns a builder set to write database files to the specified path.
         /// </summary>
-        /// <param name="path">The path on disk in which to write the database files</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="path">The path on disk in which to write the database files.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder RunOnDisk(string path)
         {
             _inMemoryDb = false;
@@ -296,9 +296,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the default endpoints on localhost (1113 tcp, 2113 http)
+        /// Sets the default endpoints on localhost (1113 tcp, 2113 http).
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder OnDefaultEndpoints()
         {
             _internalHttp = new IPEndPoint(Opts.InternalIpDefault, 2112);
@@ -309,9 +309,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal IP that would be advertised 
+        /// Sets up the Internal IP to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseInternalIPAs(IPAddress intIpAdvertiseAs)
         {
             _advertiseInternalIPAs = intIpAdvertiseAs;
@@ -319,9 +319,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the External IP that would be advertised 
+        /// Sets up the External IP to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseExternalIPAs(IPAddress extIpAdvertiseAs)
         {
             _advertiseExternalIPAs = extIpAdvertiseAs;
@@ -329,9 +329,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal Http Port that would be advertised 
+        /// Sets up the internal HTTP port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseInternalHttpPortAs(int intHttpPortAdvertiseAs)
         {
             _advertiseInternalHttpPortAs = intHttpPortAdvertiseAs;
@@ -342,7 +342,7 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the number of reader threads to process read requests.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder HavingReaderThreads(int readerThreadsCount)
         {
             _readerThreadsCount = readerThreadsCount;
@@ -352,9 +352,9 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets up the External Http Port that would be advertised 
+        /// Sets up the External HTTP port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseExternalHttpPortAs(int extHttpPortAdvertiseAs)
         {
             _advertiseExternalHttpPortAs = extHttpPortAdvertiseAs;
@@ -362,9 +362,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal Secure TCP Port that would be advertised 
+        /// Sets up the Internal Secure TCP Port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseInternalSecureTCPPortAs(int intSecureTcpPortAdvertiseAs)
         {
             _advertiseInternalSecureTcpPortAs = intSecureTcpPortAdvertiseAs;
@@ -372,9 +372,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the External Secure TCP Port that would be advertised 
+        /// Sets up the External Secure TCP Port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseExternalSecureTCPPortAs(int extSecureTcpPortAdvertiseAs)
         {
             _advertiseExternalSecureTcpPortAs = extSecureTcpPortAdvertiseAs;
@@ -382,9 +382,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal TCP Port that would be advertised 
+        /// Sets up the Internal TCP Port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseInternalTCPPortAs(int intTcpPortAdvertiseAs)
         {
             _advertiseInternalTcpPortAs = intTcpPortAdvertiseAs;
@@ -392,9 +392,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Enables gossip when running on a single node for testing purposes
+        /// Enables gossip when running on a single node for testing purposes.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder GossipAsSingleNode()
         {
             _gossipOnSingleNode = true;
@@ -403,9 +403,9 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets up the External TCP Port that would be advertised 
+        /// Sets up the External TCP Port to advertise.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AdvertiseExternalTCPPortAs(int extTcpPortAdvertiseAs)
         {
             _advertiseExternalTcpPortAs = extTcpPortAdvertiseAs;
@@ -414,10 +414,10 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets the internal gossip port (used when using cluster dns, this should point to a known port gossip will be running on)
+        /// Sets the internal gossip port (used with cluster DNS, this should point to a known port gossip will be running on).
         /// </summary>
-        /// <param name="port">The cluster gossip to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="port">The cluster gossip to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithClusterGossipPort(int port)
         {
             _clusterGossipPort = port;
@@ -425,10 +425,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the internal http endpoint to the specified value
+        /// Sets the internal HTTP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The internal endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The internal endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithInternalHttpOn(IPEndPoint endpoint)
         {
             _internalHttp = endpoint;
@@ -436,10 +436,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the external http endpoint to the specified value
+        /// Sets the external HTTP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The external endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The external endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithExternalHttpOn(IPEndPoint endpoint)
         {
             _externalHttp = endpoint;
@@ -447,10 +447,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the internal tcp endpoint to the specified value
+        /// Sets the internal TCP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The internal endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The internal endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithInternalTcpOn(IPEndPoint endpoint)
         {
             _internalTcp = endpoint;
@@ -458,10 +458,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the internal secure tcp endpoint to the specified value
+        /// Sets the internal secure TCP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The internal secure endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The internal secure endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithInternalSecureTcpOn(IPEndPoint endpoint)
         {
             _internalSecureTcp = endpoint;
@@ -469,10 +469,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the external tcp endpoint to the specified value
+        /// Sets the external TCP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The external endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The external endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithExternalTcpOn(IPEndPoint endpoint)
         {
             _externalTcp = endpoint;
@@ -480,10 +480,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the external secure tcp endpoint to the specified value
+        /// Sets the external secure TCP endpoint to the specified value.
         /// </summary>
-        /// <param name="endpoint">The external secure endpoint to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoint">The external secure endpoint to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithExternalSecureTcpOn(IPEndPoint endpoint)
         {
             _externalSecureTcp = endpoint;
@@ -491,9 +491,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets that SSL should be used on connections
+        /// Sets that SSL should be used on connections.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableSsl()
         {
             _useSsl = true;
@@ -501,9 +501,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disable Insecure TCP Communication
+        /// Disable Insecure TCP communication.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DisableInsecureTCP()
         {
             _disableInsecureTCP = true;
@@ -514,7 +514,7 @@ namespace EventStore.Core
         /// Sets the target host of the server's SSL certificate. 
         /// </summary>
         /// <param name="targetHost">The target host of the server's SSL certificate</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithSslTargetHost(string targetHost)
         {
             _sslTargetHost = targetHost;
@@ -524,7 +524,7 @@ namespace EventStore.Core
         /// <summary>
         /// Sets whether to validate that the server's certificate is trusted.  
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder ValidateSslServer()
         {
             _sslValidateServer = true;
@@ -532,10 +532,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the gossip seeds this node should talk to
+        /// Sets the gossip seeds this node should talk to.
         /// </summary>
-        /// <param name="endpoints">The gossip seeds this node should try to talk to</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="endpoints">The gossip seeds this node should try to talk to.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithGossipSeeds(params IPEndPoint[] endpoints)
         {
             _gossipSeeds.Clear();
@@ -545,10 +545,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the maximum size a memtable is allowed to reach (in count) before being moved to be a ptable
+        /// Sets the maximum size a memtable is allowed to reach (in count) before being moved to be a ptable.
         /// </summary>
-        /// <param name="size">The maximum count</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="size">The maximum count.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder MaximumMemoryTableSizeOf(int size)
         {
             _maxMemtableSize = size;
@@ -556,10 +556,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the maximum number of events to read in case of a stream Id hash collision
+        /// Sets the maximum number of events to read in case of a stream Id hash collision.
         /// </summary>
-        /// <param name="hashCollisionReadLimit">The maximum count</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="hashCollisionReadLimit">The maximum count.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithHashCollisionReadLimitOf(int hashCollisionReadLimit)
         {
             _hashCollisionReadLimit = hashCollisionReadLimit;
@@ -570,7 +570,7 @@ namespace EventStore.Core
         /// <summary>
         /// Marks that the existing database files should not be checked for checksums on startup.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DoNotVerifyDbHashes()
         {
             _skipVerifyDbHashes = true;
@@ -578,9 +578,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables gossip on the public (client) interface
+        /// Disables gossip on the public (client) interface.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder NoGossipOnPublicInterface()
         {
             _gossipOnPublic = false;
@@ -588,9 +588,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables the admin interface on the public (client) interface
+        /// Disables the admin interface on the public (client) interface.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder NoAdminOnPublicInterface()
         {
             _adminOnPublic = false;
@@ -598,9 +598,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables statistics screens on the public (client) interface
+        /// Disables statistics screens on the public (client) interface.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder NoStatsOnPublicInterface()
         {
             _statsOnPublic = false;
@@ -610,7 +610,7 @@ namespace EventStore.Core
         /// <summary>
         /// Marks that the existing database files should be checked for checksums on startup.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder VerifyDbHashes()
         {
             _skipVerifyDbHashes = false;
@@ -618,10 +618,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the dns name used for the discovery of other cluster nodes
+        /// Sets the DNS name used for the discovery of other cluster nodes.
         /// </summary>
-        /// <param name="name">The dns name the node should use to discover gossip partners</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="name">The dns name the node should use to discover gossip partners.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithClusterDnsName(string name)
         {
             _clusterDns = name;
@@ -631,9 +631,9 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Disable dns discovery for the cluster
+        /// Disable DNS discovery for the cluster.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DisableDnsDiscovery()
         {
             _discoverViaDns = false;
@@ -641,10 +641,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the number of worker threads to use in shared threadpool
+        /// Sets the number of worker threads to use in shared threadpool.
         /// </summary>
-        /// <param name="count">The number of worker threads</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="count">The number of worker threads.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithWorkerThreads(int count)
         {
             _workerThreads = count;
@@ -652,10 +652,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Adds a http prefix for the internal http endpoint
+        /// Adds a http prefix for the internal HTTP endpoint.
         /// </summary>
-        /// <param name="prefix">The prefix to add</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="prefix">The prefix to add.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AddInternalHttpPrefix(string prefix)
         {
             _intHttpPrefixes.Add(prefix);
@@ -663,10 +663,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Adds a http prefix for the external http endpoint
+        /// Adds a HTTP prefix for the external HTTP endpoint.
         /// </summary>
-        /// <param name="prefix">The prefix to add</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="prefix">The prefix to add<./param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AddExternalHttpPrefix(string prefix)
         {
             _extHttpPrefixes.Add(prefix);
@@ -674,9 +674,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix) 
+        /// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix) .
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DontAddInterfacePrefixes()
         {
             _addInterfacePrefixes = false;
@@ -684,11 +684,11 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the Server SSL Certificate to be loaded from a file
+        /// Sets the Server SSL Certificate to be loaded from a file.
         /// </summary>
-        /// <param name="path">The path to the certificate file</param>
-        /// <param name="password">The password for the certificate</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="path">The path to the certificate file.</param>
+        /// <param name="password">The password for the certificate.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithServerCertificateFromFile(string path, string password)
         {
             var cert = new X509Certificate2(path, password);
@@ -700,8 +700,8 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the heartbeat interval for the internal network interface.
         /// </summary>
-        /// <param name="heartbeatInterval">The heartbeat interval</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="heartbeatInterval">The heartbeat interval.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithInternalHeartbeatInterval(TimeSpan heartbeatInterval)
         {
             _intTcpHeartbeatInterval = heartbeatInterval;
@@ -711,8 +711,8 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the heartbeat interval for the external network interface.
         /// </summary>
-        /// <param name="heartbeatInterval">The heartbeat interval</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="heartbeatInterval">The heartbeat interval.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithExternalHeartbeatInterval(TimeSpan heartbeatInterval)
         {
             _extTcpHeartbeatInterval = heartbeatInterval;
@@ -722,8 +722,8 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the heartbeat timeout for the internal network interface.
         /// </summary>
-        /// <param name="heartbeatTimeout">The heartbeat timeout</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="heartbeatTimeout">The heartbeat timeout.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithInternalHeartbeatTimeout(TimeSpan heartbeatTimeout)
         {
             _intTcpHeartbeatTimeout = heartbeatTimeout;
@@ -733,8 +733,8 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the heartbeat timeout for the external network interface.
         /// </summary>
-        /// <param name="heartbeatTimeout">The heartbeat timeout</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="heartbeatTimeout">The heartbeat timeout.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithExternalHeartbeatTimeout(TimeSpan heartbeatTimeout)
         {
             _extTcpHeartbeatTimeout = heartbeatTimeout;
@@ -744,8 +744,8 @@ namespace EventStore.Core
         /// <summary>
         /// Sets the maximum number of pending send bytes allowed before a connection is closed.
         /// </summary>
-        /// <param name="WithConnectionPendingSendBytesThreshold">The number of pending send bytes allowed</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="WithConnectionPendingSendBytesThreshold">The number of pending send bytes allowed.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithConnectionPendingSendBytesThreshold(int connectionPendingSendBytesThreshold)
         {
             _connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
@@ -753,10 +753,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the gossip interval
+        /// Sets the gossip interval.
         /// </summary>
-        /// <param name="gossipInterval">The gossip interval</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="gossipInterval">The gossip interval.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithGossipInterval(TimeSpan gossipInterval)
         {
             _gossipInterval = gossipInterval;
@@ -764,10 +764,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the allowed gossip time difference
+        /// Sets the allowed gossip time difference.
         /// </summary>
-        /// <param name="gossipAllowedDifference">The allowed gossip time difference</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="gossipAllowedDifference">The allowed gossip time difference.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithGossipAllowedTimeDifference(TimeSpan gossipAllowedDifference)
         {
             _gossipAllowedTimeDifference = gossipAllowedDifference;
@@ -775,10 +775,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the gossip timeout
+        /// Sets the gossip timeout.
         /// </summary>
-        /// <param name="gossipTimeout">The gossip timeout</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="gossipTimeout">The gossip timeout.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithGossipTimeout(TimeSpan gossipTimeout)
         {
             _gossipTimeout = gossipTimeout;
@@ -786,10 +786,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the minimum flush delay 
+        /// Sets the minimum flush delay.
         /// </summary>
-        /// <param name="minFlushDelay">The minimum flush delay</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="minFlushDelay">The minimum flush delay.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithMinFlushDelay(TimeSpan minFlushDelay)
         {
             _minFlushDelay = minFlushDelay;
@@ -797,10 +797,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the prepare timeout 
+        /// Sets the prepare timeout.
         /// </summary>
-        /// <param name="prepareTimeout">The prepare timeout</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="prepareTimeout">The prepare timeout.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithPrepareTimeout(TimeSpan prepareTimeout)
         {
             _prepareTimeout = prepareTimeout;
@@ -808,10 +808,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the commit timeout 
+        /// Sets the commit timeout.
         /// </summary>
-        /// <param name="commitTimeout">The commit timeout</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="commitTimeout">The commit timeout.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithCommitTimeout(TimeSpan commitTimeout)
         {
             _commitTimeout = commitTimeout;
@@ -819,10 +819,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the period between statistics gathers
+        /// Sets the period between statistics gathers.
         /// </summary>
-        /// <param name="statsPeriod">The period between statistics gathers</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="statsPeriod">The period between statistics gathers.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithStatsPeriod(TimeSpan statsPeriod)
         {
             _statsPeriod = statsPeriod;
@@ -830,10 +830,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets how stats are stored. Default is Stream
+        /// Sets how stats are stored. Default is Stream.
         /// </summary>
-        /// <param name="statsStorage">The storage method to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="statsStorage">The storage method to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithStatsStorage(StatsStorage statsStorage)
         {
             _statsStorage = statsStorage;
@@ -844,8 +844,8 @@ namespace EventStore.Core
         /// Sets the number of nodes which must acknowledge prepares. 
         /// The minimum allowed value is one greater than half the cluster size.
         /// </summary>
-        /// <param name="prepareCount">The number of nodes which must acknowledge prepares</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="prepareCount">The number of nodes which must acknowledge prepares.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithPrepareCount(int prepareCount)
         {
             _prepareAckCount = prepareCount > _prepareAckCount ? prepareCount : _prepareAckCount;
@@ -856,8 +856,8 @@ namespace EventStore.Core
         /// Sets the number of nodes which must acknowledge commits before acknowledging to a client.  
         /// The minimum allowed value is one greater than half the cluster size.
         /// </summary>
-        /// <param name="commitCount">The number of nodes which must acknowledge commits</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="commitCount">The number of nodes which must acknowledge commits.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithCommitCount(int commitCount)
         {
             _commitAckCount = commitCount > _commitAckCount ? commitCount : _commitAckCount;
@@ -865,10 +865,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the node priority used during master election
+        /// Sets the node priority used during master election.
         /// </summary>
-        /// <param name="nodePriority">The node priority used during master election</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="nodePriority">The node priority used during master election.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithNodePriority(int nodePriority)
         {
             _nodePriority = nodePriority;
@@ -876,9 +876,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables the merging of chunks when scavenge is running 
+        /// Disables the merging of chunks when scavenge is running.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder DisableScavengeMerging()
         {
             _disableScavengeMerging = true;
@@ -886,10 +886,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// The number of days to keep scavenge history (Default: 30)
+        /// The number of days to keep scavenge history (Default: 30).
         /// </summary>
-        /// <param name="scavengeHistoryMaxAge">The number of days to keep scavenge history</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="scavengeHistoryMaxAge">The number of days to keep scavenge history.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithScavengeHistoryMaxAge(int scavengeHistoryMaxAge)
         {
             _scavengeHistoryMaxAge = scavengeHistoryMaxAge;
@@ -897,10 +897,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the path the index should be loaded/saved to
+        /// Sets the path the index should be loaded/saved to.
         /// </summary>
-        /// <param name="indexPath">The index path</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="indexPath">The index path.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithIndexPath(string indexPath)
         {
             _index = indexPath;
@@ -908,9 +908,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Enable logging of Http Requests and Responses before they are processed
+        /// Enable logging of HTTP Requests and Responses before they are processed.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableLoggingOfHttpRequests()
         {
             _logHttpRequests = true;
@@ -918,9 +918,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Enable the tracking of various histograms in the backend, typically only used for debugging
+        /// Enable the tracking of various histograms in the backend, typically only used for debugging.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableHistograms()
         {
             _enableHistograms = true;
@@ -928,10 +928,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the depth to cache for the mid point cache in index
+        /// Sets the depth to cache for the mid point cache in index.
         /// </summary>
-        /// <param name="indexCacheDepth">The index cache depth</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="indexCacheDepth">The index cache depth.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithIndexCacheDepth(int indexCacheDepth)
         {
             _indexCacheDepth = indexCacheDepth;
@@ -939,9 +939,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables Hard Deletes (UNSAFE: use to remove hard deletes)
+        /// Disables Hard Deletes (UNSAFE: use to remove hard deletes).
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithUnsafeIgnoreHardDelete()
         {
             _unsafeIgnoreHardDelete = true;
@@ -949,9 +949,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables Hard Deletes (UNSAFE: use to remove hard deletes)
+        /// Disables Hard Deletes (UNSAFE: use to remove hard deletes).
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithUnsafeDisableFlushToDisk()
         {
             _unsafeDisableFlushToDisk = true;
@@ -961,7 +961,7 @@ namespace EventStore.Core
         /// <summary>
         /// Enable Queue affinity on reads during write process to try to get better ordering.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithBetterOrdering()
         {
             _betterOrdering = true;
@@ -969,9 +969,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Enable trusted authentication by an intermediary in the HTTP
+        /// Enable trusted authentication by an intermediary in the HTTP.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableTrustedAuth()
         {
             _enableTrustedAuth = true;
@@ -979,10 +979,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the authentication provider factory to use
+        /// Sets the authentication provider factory to use.
         /// </summary>
-        /// <param name="authenticationProviderFactory">The authentication provider factory to use </param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="authenticationProviderFactory">The authentication provider factory to use. </param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithAuthenticationProvider(IAuthenticationProviderFactory authenticationProviderFactory)
         {
             _authenticationProviderFactory = authenticationProviderFactory;
@@ -990,9 +990,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets whether or not to use unbuffered/directio
+        /// Sets whether or not to use unbuffered/directio.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableUnbuffered()
         {
             _unbuffered = true;
@@ -1000,9 +1000,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets whether or not to set the write-through flag on writes to the filesystem
+        /// Sets whether or not to set the write-through flag on writes to the filesystem.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder EnableWriteThrough()
         {
             _writethrough = true;
@@ -1011,10 +1011,10 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets the Server SSL Certificate
+        /// Sets the Server SSL Certificate.
         /// </summary>
-        /// <param name="sslCertificate">The server SSL certificate to use</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="sslCertificate">The server SSL certificate to use.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithServerCertificate(X509Certificate2 sslCertificate)
         {
             _certificate = sslCertificate;
@@ -1022,13 +1022,13 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the Server SSL Certificate to be loaded from a certificate store
+        /// Sets the Server SSL Certificate to be loaded from a certificate store.
         /// </summary>
-        /// <param name="storeLocation">The location of the certificate store</param>
-        /// <param name="storeName">The name of the certificate store</param>
-        /// <param name="certificateSubjectName">The subject name of the certificate</param>
-        /// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="storeLocation">The location of the certificate store.</param>
+        /// <param name="storeName">The name of the certificate store.</param>
+        /// <param name="certificateSubjectName">The subject name of the certificate.</param>
+        /// <param name="certificateThumbprint">The thumbpreint of the certificate.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
             var store = new X509Store(storeName, storeLocation);
@@ -1037,12 +1037,12 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the Server SSL Certificate to be loaded from a certificate store
+        /// Sets the Server SSL Certificate to be loaded from a certificate store.
         /// </summary>
-        /// <param name="storeName">The name of the certificate store</param>
-        /// <param name="certificateSubjectName">The subject name of the certificate</param>
-        /// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="storeName">The name of the certificate store.</param>
+        /// <param name="certificateSubjectName">The subject name of the certificate.</param>
+        /// <param name="certificateThumbprint">The thumbpreint of the certificate.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithServerCertificateFromStore(StoreName storeName, string certificateSubjectName, string certificateThumbprint)
         {
             var store = new X509Store(storeName);
@@ -1092,10 +1092,10 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
+        /// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>.
         /// </summary>
-        /// <param name="chunkSize">The size of the chunk, in bytes</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="chunkSize">The size of the chunk, in bytes.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithTfChunkSize(int chunkSize)
         {
             _chunkSize = chunkSize;
@@ -1104,10 +1104,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the transaction file chunk cache size. Default is <see cref="TFConsts.ChunksCacheSize"/>
+        /// Sets the transaction file chunk cache size. Default is <see cref="TFConsts.ChunksCacheSize"/>.
         /// </summary>
-        /// <param name="chunksCacheSize">The size of the cache</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="chunksCacheSize">The size of the cache<./param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithTfChunksCacheSize(long chunksCacheSize)
         {
             _chunksCacheSize = chunksCacheSize;
@@ -1119,8 +1119,8 @@ namespace EventStore.Core
         /// <summary>
         /// The number of chunks to cache in unmanaged memory.        
         /// </summary>
-        /// <param name="cachedChunks">The number of chunks to cache</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="cachedChunks">The number of chunks to cache.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithTfCachedChunks(int cachedChunks)
         {
             _cachedChunks = cachedChunks;
@@ -1129,10 +1129,10 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// The bitness version of the indexes
+        /// The bitness version of the indexes.
         /// </summary>
-        /// <param name="indexBitnessVersion">The version of the bitness <see cref="PTableVersion"/></param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <param name="indexBitnessVersion">The version of the bitness <see cref="PTableVersion"/>.</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder WithIndexBitnessVersion(byte indexBitnessVersion){
             _indexBitnessVersion = indexBitnessVersion;
 
@@ -1140,9 +1140,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// The newer chunks during a scavenge are always kept
+        /// The newer chunks during a scavenge are always kept.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder AlwaysKeepScavenged(){
             _alwaysKeepScavenged = true;
 
@@ -1152,7 +1152,7 @@ namespace EventStore.Core
         /// <summary>
         /// Skip index scan on reads.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public VNodeBuilder SkipIndexScanOnReads()
         {
             _skipIndexScanOnReads = true;
@@ -1259,7 +1259,7 @@ namespace EventStore.Core
         /// Converts an <see cref="VNodeBuilder"/> to a <see cref="ClusterVNode"/>.
         /// </summary>
         /// <param name="builder"></param>
-        /// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
+        /// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/>.</returns>
         public static implicit operator ClusterVNode(VNodeBuilder builder)
         {
             return builder.Build();
@@ -1268,9 +1268,9 @@ namespace EventStore.Core
         /// <summary>
         /// Converts an <see cref="VNodeBuilder"/> to a <see cref="ClusterVNode"/>.
         /// </summary>
-        /// <param name="options">The options with which to build the infoController</param>
-        /// <param name="consumerStrategies">The consumer strategies with which to build the node</param>
-        /// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
+        /// <param name="options">The options with which to build the infoController.</param>
+        /// <param name="consumerStrategies">The consumer strategies with which to build the node.</param>
+        /// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/>.</returns>
         public ClusterVNode Build(IOptions options = null, IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null)
         {
             EnsureHttpPrefixes();
@@ -1472,7 +1472,7 @@ namespace EventStore.Core
         /// </summary>
         /// <param name="projectionsMode">The mode in which to run the projections system</param>
         /// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         [Obsolete("Will be removed in 4.0, use the RunProjections method that uses EventStore.Common.Options.ProjectionType instead")]
         public VNodeBuilder RunProjections(ClientAPI.Embedded.ProjectionsMode projectionsMode, int numberOfThreads = Opts.ProjectionThreadsDefault)
         {

@@ -12,7 +12,7 @@ namespace EventStore.Rags
     public struct ConsoleCharacter
     {
         /// <summary>
-        /// The value of the character
+        /// The value of the character.
         /// </summary>
         public char Value { get; set; }
 
@@ -45,7 +45,7 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Write this formatted character to the console
+        /// Write this formatted character to the console.
         /// </summary>
         public void Write()
         {
@@ -53,7 +53,7 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Gets the string representation of the character
+        /// Gets the string representation of the character.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -79,10 +79,10 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Operator overload for Equals
+        /// Operator overload for Equals.
         /// </summary>
-        /// <param name="a">The first operand</param>
-        /// <param name="b">The second operand</param>
+        /// <param name="a">The first operand.</param>
+        /// <param name="b">The second operand.</param>
         /// <returns></returns>
         public static bool operator ==(ConsoleCharacter a, ConsoleCharacter b)
         {
@@ -90,10 +90,10 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Operator overload for !Equals
+        /// Operator overload for !Equals.
         /// </summary>
-        /// <param name="a">The first operand</param>
-        /// <param name="b">The second operand</param>
+        /// <param name="a">The first operand.</param>
+        /// <param name="b">The second operand.</param>
         /// <returns></returns>
         public static bool operator !=(ConsoleCharacter a, ConsoleCharacter b)
         {
@@ -102,10 +102,10 @@ namespace EventStore.Rags
 
 
         /// <summary>
-        /// Operator overload for Equals
+        /// Operator overload for Equals.
         /// </summary>
-        /// <param name="a">The first operand</param>
-        /// <param name="b">The second operand</param>
+        /// <param name="a">The first operand.</param>
+        /// <param name="b">The second operand.</param>
         /// <returns></returns>
         public static bool operator ==(ConsoleCharacter a, char b)
         {
@@ -113,10 +113,10 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Operator overload for !Equals
+        /// Operator overload for !Equals.
         /// </summary>
-        /// <param name="a">The first operand</param>
-        /// <param name="b">The second operand</param>
+        /// <param name="a">The first operand.</param>
+        /// <param name="b">The second operand.</param>
         /// <returns></returns>
         public static bool operator !=(ConsoleCharacter a, char b)
         {
@@ -178,7 +178,7 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Create a new empty ConsoleString
+        /// Create a new empty ConsoleString.
         /// </summary>
         public ConsoleString() : this("", DefaultForegroundColor, DefaultBackgroundColor) { }
 
@@ -240,8 +240,8 @@ namespace EventStore.Rags
         /// <summary>
         /// Replaces all occurrances of the given string with the replacement value using the specified formatting.
         /// </summary>
-        /// <param name="toFind">The substring to find</param>
-        /// <param name="toReplace">The replacement value</param>
+        /// <param name="toFind">The substring to find.</param>
+        /// <param name="toReplace">The replacement value.</param>
         /// <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
         /// <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
         /// <returns>A new ConsoleString with the replacements.</returns>
@@ -269,7 +269,7 @@ namespace EventStore.Rags
         /// Replaces all matches of the given regular expression with the replacement value using the specified formatting.
         /// </summary>
         /// <param name="regex">The regular expression to find.</param>
-        /// <param name="toReplace">The replacement value</param>
+        /// <param name="toReplace">The replacement value.</param>
         /// <param name="foregroundColor">The foreground color (defaults to the console's foreground color at initialization time).</param>
         /// <param name="backgroundColor">The background color (defaults to the console's background color at initialization time).</param>
         /// <returns></returns>
@@ -401,7 +401,7 @@ namespace EventStore.Rags
         /// Compare this ConsoleString to another ConsoleString or a plain string.
         /// </summary>
         /// <param name="obj">The ConsoleString or plain string to compare to.</param>
-        /// <returns>True if equal, false otherwise</returns>
+        /// <returns>True if equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj is string) return ToString().Equals(obj as string);
@@ -423,16 +423,16 @@ namespace EventStore.Rags
         /// Compare this ConsoleString to another ConsoleString.
         /// </summary>
         /// <param name="other">The ConsoleString to compare to.</param>
-        /// <returns>True if equal, false otherwise</returns>
+        /// <returns>True if equal, false otherwise.</returns>
         public int CompareTo(string other)
         {
             return ToString().CompareTo(other);
         }
 
         /// <summary>
-        /// Gets the hashcode of the underlying string
+        /// Gets the hashcode of the underlying string.
         /// </summary>
-        /// <returns>the hashcode of the underlying string</returns>
+        /// <returns>the hashcode of the underlying string.</returns>
         public override int GetHashCode()
         {
             return ToString().GetHashCode();
@@ -441,8 +441,8 @@ namespace EventStore.Rags
         /// <summary>
         /// Operator overload that concatenates 2 ConsoleString instances and returns a new one.
         /// </summary>
-        /// <param name="a">The left operand</param>
-        /// <param name="b">The right operand</param>
+        /// <param name="a">The left operand.</param>
+        /// <param name="b">The right operand.</param>
         /// <returns>A new, concatenated ConsoleString</returns>
         public static ConsoleString operator +(ConsoleString a, ConsoleString b)
         {
@@ -454,8 +454,8 @@ namespace EventStore.Rags
         /// <summary>
         /// Operator overload that concatenates a ConsoleString with a string and returns a new one.
         /// </summary>
-        /// <param name="a">The left operand</param>
-        /// <param name="b">The right operand</param>
+        /// <param name="a">The left operand.</param>
+        /// <param name="b">The right operand.</param>
         /// <returns>A new, concatenated ConsoleString</returns>
         public static ConsoleString operator +(ConsoleString a, string b)
         {
@@ -467,8 +467,8 @@ namespace EventStore.Rags
         /// <summary>
         /// Compares 2 ConsoleStrings for equality.
         /// </summary>
-        /// <param name="a">The left operand</param>
-        /// <param name="b">The right operand</param>
+        /// <param name="a">The left operand.</param>
+        /// <param name="b">The right operand.</param>
         /// <returns>True if they are the same, false otherwise</returns>
         public static bool operator ==(ConsoleString a, ConsoleString b)
         {
@@ -479,8 +479,8 @@ namespace EventStore.Rags
         /// <summary>
         /// Compares 2 ConsoleStrings for inequality.
         /// </summary>
-        /// <param name="a">The left operand</param>
-        /// <param name="b">The right operand</param>
+        /// <param name="a">The left operand.</param>
+        /// <param name="b">The right operand.</param>
         /// <returns>False if they are the same, true otherwise</returns>
         public static bool operator !=(ConsoleString a, ConsoleString b)
         {
