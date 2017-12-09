@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI
         public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos, string subscriptionName = "") {
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxLiveQueueSize, "maxLiveQueueSize");
-            if (readBatchSize > Consts.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", Consts.MaxReadSize));
+            if (readBatchSize > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Read batch size should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
             MaxLiveQueueSize = maxLiveQueueSize;
             ReadBatchSize = readBatchSize;
             VerboseLogging = verboseLogging;
