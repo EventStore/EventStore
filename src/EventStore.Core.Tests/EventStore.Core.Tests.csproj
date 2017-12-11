@@ -276,39 +276,12 @@
     <Compile Include="Index\IndexV1\when_merging_ptables.cs" />
     <Compile Include="Index\IndexV2\table_index_hash_collision_when_upgrading_to_64bit.cs" />
     <Compile Include="Index\IndexV2\table_index_when_merging_upgrading_to_64bit_if_entry_doesnt_exist_drops_entry_and_carries_on.cs" />
-    <Compile Include="Index\MemTableTests.cs" />
-    <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\IndexV2\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\IndexV2\adding_item_to_empty_index_map.cs" />
-    <Compile Include="Index\IndexV2\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\IndexV2\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\IndexV2\destroying_ptable.cs" />
-    <Compile Include="Index\IndexV2\index_map_should.cs" />
-    <Compile Include="Index\IndexV2\index_map_should_detect_corruption.cs" />
     <Compile Include="Index\IndexV2\opening_a_ptable_with_more_than_32bits_of_records.cs" />
-    <Compile Include="Index\IndexV2\ptable_midpoint_cache_should.cs" />
-    <Compile Include="Index\IndexV2\ptable_range_query_tests.cs" />
-    <Compile Include="Index\IndexV2\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
-    <Compile Include="Index\IndexV2\ptable_read_scenario_with_usual_items.cs" />
-    <Compile Include="Index\IndexV2\ptable_should.cs" />
-    <Compile Include="Index\IndexV2\saving_index_with_single_item_to_a_file.cs" />
-    <Compile Include="Index\IndexV2\saving_index_with_six_items_to_a_file.cs" />
-    <Compile Include="Index\IndexV2\table_index_on_range_query.cs" />
-    <Compile Include="Index\IndexV2\table_index_on_try_get_one_value_query.cs" />
-    <Compile Include="Index\IndexV2\table_index_should.cs" />
-    <Compile Include="Index\IndexV2\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\IndexV2\when_a_ptable_header_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\IndexV2\when_a_ptable_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\IndexV2\when_creating_ptable_from_memtable.cs" />
-    <Compile Include="Index\IndexV2\when_merging_four_ptables.cs" />
-    <Compile Include="Index\IndexV2\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
-    <Compile Include="Index\IndexV2\when_merging_two_ptables.cs" />
-    <Compile Include="Index\IndexV2\when_trying_to_get_latest_entry.cs" />
-    <Compile Include="Index\IndexV2\when_trying_to_get_oldest_entry.cs" />
+    <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\IndexV1\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\IndexV1\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\IndexV1\when_trying_to_get_oldest_entry.cs" />
-    <Compile Include="Index\IndexV1\create_index_map_from_non_existing_file.cs" />
+    <Compile Include="Index\IndexVAny\create_index_map_from_non_existing_file.cs" />
     <Compile Include="Index\IndexV1\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\IndexV1\destroying_ptable.cs" />
     <Compile Include="Index\IndexV1\opening_a_ptable_with_more_than_32bits_of_records.cs" />
@@ -322,7 +295,7 @@
     <Compile Include="Index\IndexV1\index_map_should_detect_corruption.cs" />
     <Compile Include="Index\IndexV1\table_index_should.cs" />
     <Compile Include="Index\IndexV1\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\IndexV1\saving_empty_index_to_a_file.cs" />
+    <Compile Include="Index\IndexVAny\saving_empty_index_to_a_file.cs" />
     <Compile Include="Index\IndexV1\saving_index_with_six_items_to_a_file.cs" />
     <Compile Include="Index\IndexV1\ptable_range_query_tests.cs" />
     <Compile Include="Index\IndexV1\PTableReadScenario.cs" />
@@ -337,7 +310,7 @@
     <Compile Include="Index\IndexV1\when_trying_to_get_latest_entry.cs" />
     <Compile Include="Index\IndexV1\table_index_on_range_query.cs" />
     <Compile Include="Index\IndexV1\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
-    <Compile Include="Index\IndexV1\when_opening_ptable_without_right_flag_in_header.cs" />
+    <Compile Include="Index\IndexVAny\when_opening_ptable_without_right_flag_in_header.cs" />
     <Compile Include="Index\IndexV1\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\IndexV1\adding_item_to_empty_index_map.cs" />
     <Compile Include="Infrastructure\RandTestQueueItem.cs" />
@@ -633,39 +606,11 @@
     <Compile Include="ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_duplicate_events.cs" />
     <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_duplicate_events_in_a_stream.cs" />
-    <Compile Include="Index\IndexV3\ptable_should.cs" />
-    <Compile Include="Index\IndexV3\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\IndexV3\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\IndexV3\adding_item_to_empty_index_map.cs" />
-    <Compile Include="Index\IndexV3\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
-    <Compile Include="Index\IndexV3\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\IndexV3\destroying_ptable.cs" />
-    <Compile Include="Index\IndexV3\opening_a_ptable_with_more_than_32bits_of_records.cs" />
-    <Compile Include="Index\IndexV3\when_trying_to_get_oldest_entry.cs" />
-    <Compile Include="Index\IndexV3\when_trying_to_get_latest_entry.cs" />
-    <Compile Include="Index\IndexV3\when_merging_two_ptables.cs" />
-    <Compile Include="Index\IndexV3\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
-    <Compile Include="Index\IndexV3\when_merging_four_ptables.cs" />
-    <Compile Include="Index\IndexV3\when_creating_ptable_from_memtable.cs" />
-    <Compile Include="Index\IndexV3\when_a_ptable_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\IndexV3\when_a_ptable_header_is_corrupt_on_disk.cs" />
-    <Compile Include="Index\IndexV3\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
-    <Compile Include="Index\IndexV3\table_index_should.cs" />
-    <Compile Include="Index\IndexV3\table_index_on_try_get_one_value_query.cs" />
-    <Compile Include="Index\IndexV3\table_index_on_range_query.cs" />
-    <Compile Include="Index\IndexV3\table_index_hash_collision_when_upgrading_to_64bit.cs" />
-    <Compile Include="Index\IndexV3\saving_index_with_six_items_to_a_file.cs" />
-    <Compile Include="Index\IndexV3\saving_index_with_single_item_to_a_file.cs" />
-    <Compile Include="Index\IndexV3\ptable_read_scenario_with_usual_items.cs" />
-    <Compile Include="Index\IndexV3\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
-    <Compile Include="Index\IndexV3\ptable_range_query_tests.cs" />
-    <Compile Include="Index\IndexV3\ptable_midpoint_cache_should.cs" />
-    <Compile Include="Index\IndexV3\index_map_should_detect_corruption.cs" />
-    <Compile Include="Index\IndexV3\index_map_should.cs" />
     <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_prepares_and_commits_for_log_records_of_mixed_versions.cs" />
     <Compile Include="Services\Storage\BuildingIndex\when_building_an_index_off_tfile_with_prepares_and_commits_for_events_with_version_numbers_greater_than_int_maxvalue.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_reading_deleted_stream_written_with_old_log_record_version.cs" />
     <Compile Include="Index\IndexV3\when_upgrading_index_to_64bit_stream_version.cs" />
+    <Compile Include="Index\IndexV3\opening_a_ptable_with_more_than_32bits_of_records.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_log_record_version_0.cs" />
     <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records.cs" />
     <Compile Include="Services\Storage\Scavenge\when_scavenging_tfchunk_with_version0_log_records_and_deleted_records.cs" />
@@ -685,8 +630,12 @@
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
     <Compile Include="Index\IndexV1\when_a_ptable_is_loaded_from_disk.cs" />
-    <Compile Include="Index\IndexV2\when_a_ptable_is_loaded_from_disk.cs" />
-    <Compile Include="Index\IndexV3\when_a_ptable_is_loaded_from_disk.cs" />
+    <Compile Include="Index\IndexV4\ptable_midpoint_calculations_should.cs" />
+    <Compile Include="Index\IndexV4\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
+    <Compile Include="Index\IndexV4\when_merging_ptables_vx_to_v4.cs" />
+    <Compile Include="Index\IndexV4\opening_a_ptable_with_more_than_32bits_of_records.cs" />
+    <Compile Include="Index\IndexV1\corrupt_index_should.cs" />
+    <Compile Include="Index\IndexV1\table_index_with_corrupt_index_entries_should.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
@@ -740,7 +689,7 @@
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

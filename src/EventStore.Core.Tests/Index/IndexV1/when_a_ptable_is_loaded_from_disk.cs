@@ -7,13 +7,27 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class when_a_ptable_is_loaded_from_disk: SpecificationWithDirectory
     {
         private string _filename;
         private PTable _table;
         private string _copiedfilename;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+
+        private bool _skipIndexVerify;
+
+        public when_a_ptable_is_loaded_from_disk(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [SetUp]
         public override void SetUp()
@@ -39,7 +53,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                     eventNumber++;
                 mtable.Add(streamId , eventNumber, logPosition);
             }
-            _table = PTable.FromMemtable(mtable, _filename);
+            _table = PTable.FromMemtable(mtable, _filename, skipIndexVerify:_skipIndexVerify);
             _table.Dispose();
             File.Copy(_filename, _copiedfilename);
         }

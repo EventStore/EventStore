@@ -165,6 +165,7 @@
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableConstruction.cs" />
     <Compile Include="Index\PTableHeader.cs" />
+    <Compile Include="Index\PTableFooter.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="ISubsystem.cs" />
     <Compile Include="Messages\ClusterInfoDto.cs" />
@@ -427,6 +428,7 @@
     <Compile Include="VNodeBuilder.cs" />
     <Compile Include="Index\IndexEntryV2.cs" />
     <Compile Include="Helpers\StreamVersionConverter.cs" />
+    <Compile Include="Exceptions\MaybeCorruptIndexException.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

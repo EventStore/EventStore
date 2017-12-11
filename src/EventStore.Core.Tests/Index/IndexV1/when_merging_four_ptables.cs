@@ -6,7 +6,14 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class when_merging_four_ptables: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
@@ -14,6 +21,13 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private PTable _newtable;
         protected byte _ptableVersion = PTableVersions.IndexV1;
         private IHasher hasher;
+
+        private bool _skipIndexVerify;
+
+        public when_merging_four_ptables(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -30,10 +44,10 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 {
                     table.Add((ulong)(0x010100000000 << (j + 1)), i + 1, i*j);
                 }
-                _tables.Add(PTable.FromMemtable(table, _files[i]));
+                _tables.Add(PTable.FromMemtable(table, _files[i],skipIndexVerify: _skipIndexVerify));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId), _ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion);
+            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId), _ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]

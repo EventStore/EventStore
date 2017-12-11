@@ -4,7 +4,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Index.IndexV1
+namespace EventStore.Core.Tests.Index.IndexVAny
 {
     [TestFixture]
     public class when_opening_ptable_without_right_flag_in_header: SpecificationWithFile

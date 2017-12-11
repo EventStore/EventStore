@@ -331,13 +331,13 @@ namespace EventStore.Core.Util
             "Enables the tracking of various histograms in the backend, typically only used for debugging etc";
         public static readonly bool HistogramEnabledDefault = false;
         public const string SkipIndexVerifyDescr =
-            "Bypasses the checking of file hashes of indexes during startup (allows for faster startup).";
+            "Bypasses the checking of file hashes of indexes during startup and after index merges (allows for faster startup and less disk pressure after merges).";
         public static readonly bool SkipIndexVerifyDefault = false;
         public const string IndexCacheDepthDescr = "Sets the depth to cache for the mid point cache in index.";
         public static int IndexCacheDepthDefault = 16;
 
         public const string IndexBitnessVersionDescr = "Sets the bitness version for the indexes to use";
-        public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV3;
+        public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV4;
 		/*
 		 * Authentication Options
 		 */

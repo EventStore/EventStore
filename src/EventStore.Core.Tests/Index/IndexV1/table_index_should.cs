@@ -6,11 +6,24 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class table_index_should : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public table_index_should(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         public override void TestFixtureSetUp()
         {
@@ -21,7 +34,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => new HashListMemTable(_ptableVersion, maxSize: 20),
                                          () => { throw new InvalidOperationException(); },
                                          _ptableVersion,
-                                         maxSizeForMemory: 10);
+                                         maxSizeForMemory: 10,
+                                         skipIndexVerify: _skipIndexVerify);
             _tableIndex.Initialize(long.MaxValue);
         }
 
