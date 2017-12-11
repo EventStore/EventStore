@@ -421,8 +421,11 @@ namespace EventStore.Core.Services.VNode
         {
             if (_master != null && _master.InstanceId == message.Master.InstanceId)
             {
-                if (_master.InstanceId == _nodeInfo.InstanceId)
+                //if the master hasn't changed, we skip state changes through PreMaster or PreReplica
+                if (_master.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Master){
+                    //transitioning from master to master, we just write a new epoch
                     _fsm.Handle(new SystemMessage.WriteEpoch());
+                }
                 return;
             }
 
