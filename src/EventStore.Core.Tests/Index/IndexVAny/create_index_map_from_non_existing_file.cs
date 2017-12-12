@@ -2,7 +2,7 @@ using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Index.IndexV1
+namespace EventStore.Core.Tests.Index.IndexVAny
 {
     [TestFixture]
     public class create_index_map_from_non_existing_file

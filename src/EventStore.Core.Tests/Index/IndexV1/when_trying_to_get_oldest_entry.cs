@@ -3,10 +3,25 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class when_trying_to_get_oldest_entry: SpecificationWithFile
     {
         protected byte _ptableVersion = PTableVersions.IndexV1;
+
+        private bool _skipIndexVerify;
+
+        public when_trying_to_get_oldest_entry(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
+        
         private ulong GetHash(ulong value){
             return _ptableVersion == PTableVersions.IndexV1 ? value >> 32 : value;
         }
@@ -15,7 +30,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 IndexEntry entry;
                 Assert.IsFalse(ptable.TryGetOldestEntry(0x12, out entry));
@@ -27,7 +42,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -43,7 +58,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memTable.Add(0x010100000000, 0x01, 0xffff);
             memTable.Add(0x010100000000, 0x02, 0xfff2);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -61,7 +76,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             memTable.Add(0x010100000000, 0x02, 0xfff2);
             memTable.Add(0x010100000000, 0x01, 0xfff3);
             memTable.Add(0x010100000000, 0x02, 0xfff4);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
@@ -78,7 +93,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             memTable.Add(0x010100000000, 0x01, 0xfff1);
             memTable.Add(0x010100000000, 0x01, 0xfff3);
             memTable.Add(0x010100000000, 0x01, 0xfff5);
-            using (var ptable = PTable.FromMemtable(memTable, Filename))
+            using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));

@@ -8,7 +8,14 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV1,false), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV1,true), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV2,false), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV2,true), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV3,false), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV3,true), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV4,false), Category("LongRunning")]
+    [TestFixture(PTableVersions.IndexV4,true), Category("LongRunning")]    
     public class table_index_with_two_ptables_and_memtable_on_range_query : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
@@ -16,6 +23,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IHasher _highHasher;
         private string _indexDir;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public table_index_with_two_ptables_and_memtable_on_range_query(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -31,7 +44,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => fakeReader,
                                          _ptableVersion,
                                          maxSizeForMemory: 2,
-                                         maxTablesPerLevel: 2);
+                                         maxTablesPerLevel: 2,
+                                         skipIndexVerify: _skipIndexVerify);
             _tableIndex.Initialize(long.MaxValue);
 
             // ptable level 2

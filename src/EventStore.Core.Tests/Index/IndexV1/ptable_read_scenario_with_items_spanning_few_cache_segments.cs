@@ -4,30 +4,42 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false,10)]
+    [TestFixture(PTableVersions.IndexV1,true,10)]
+    [TestFixture(PTableVersions.IndexV2,false,10)]
+    [TestFixture(PTableVersions.IndexV2,true,10)]
+    [TestFixture(PTableVersions.IndexV3,false,10)]
+    [TestFixture(PTableVersions.IndexV3,true,10)]
+    [TestFixture(PTableVersions.IndexV4,false,10)]
+    [TestFixture(PTableVersions.IndexV4,true,10)]
     public class searching_ptable_with_items_spanning_few_cache_segments_and_all_items_in_cache : ptable_read_scenario_with_items_spanning_few_cache_segments
     {
-        public searching_ptable_with_items_spanning_few_cache_segments_and_all_items_in_cache()
-            : base(midpointCacheDepth: 10)
+        public searching_ptable_with_items_spanning_few_cache_segments_and_all_items_in_cache(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+            : base(ptableVersion, skipIndexVerify, midpointCacheDepth)
         {
-
         }
     }
 
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false,0)]
+    [TestFixture(PTableVersions.IndexV1,true,0)]
+    [TestFixture(PTableVersions.IndexV2,false,0)]
+    [TestFixture(PTableVersions.IndexV2,true,0)]
+    [TestFixture(PTableVersions.IndexV3,false,0)]
+    [TestFixture(PTableVersions.IndexV3,true,0)]
+    [TestFixture(PTableVersions.IndexV4,false,0)]
+    [TestFixture(PTableVersions.IndexV4,true,0)]
     public class searching_ptable_with_items_spanning_few_cache_segments_and_only_some_items_in_cache : ptable_read_scenario_with_items_spanning_few_cache_segments
     {
-        public searching_ptable_with_items_spanning_few_cache_segments_and_only_some_items_in_cache()
-            : base(midpointCacheDepth: 0)
+        public searching_ptable_with_items_spanning_few_cache_segments_and_only_some_items_in_cache(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+            : base(ptableVersion, skipIndexVerify, midpointCacheDepth)
         {
         }
     }
 
-    [TestFixture]
     public abstract class ptable_read_scenario_with_items_spanning_few_cache_segments : PTableReadScenario
     {
-        protected ptable_read_scenario_with_items_spanning_few_cache_segments(int midpointCacheDepth)
-            : base(midpointCacheDepth)
+        protected ptable_read_scenario_with_items_spanning_few_cache_segments(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+            : base(ptableVersion,skipIndexVerify,midpointCacheDepth)
         {
         }
 

@@ -9,9 +9,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
         protected byte _ptableVersion = PTableVersions.IndexV1;
 
         protected PTable PTable;
+        private bool _skipIndexVerify;
 
-        protected PTableReadScenario(int midpointCacheDepth)
+        protected PTableReadScenario(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
         {
+            _ptableVersion = ptableVersion;
+            _skipIndexVerify = skipIndexVerify;
             _midpointCacheDepth = midpointCacheDepth;
         }
 
@@ -24,7 +27,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
 
             AddItemsForScenario(table);
 
-            PTable = PTable.FromMemtable(table, Filename, cacheDepth: _midpointCacheDepth);
+            PTable = PTable.FromMemtable(table, Filename, cacheDepth: _midpointCacheDepth,skipIndexVerify:_skipIndexVerify);
         }
 
         [TearDown]

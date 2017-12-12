@@ -5,7 +5,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Index.IndexV1
+namespace EventStore.Core.Tests.Index.IndexVAny
 {
     [TestFixture]
     public class saving_empty_index_to_a_file: SpecificationWithDirectoryPerTestFixture

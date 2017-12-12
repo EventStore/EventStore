@@ -9,7 +9,7 @@ using EventStore.Common.Options;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture, Explicit]
+    [TestFixture(PTable.IndexEntryV1Size),Explicit]
     public class opening_a_ptable_with_more_than_32bits_of_records : SpecificationWithFilePerTestFixture
     {
         public const int MD5Size = 16;
@@ -20,15 +20,18 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private long _size;
         private long _ptableCount;
 
-        protected int indexEntrySize = PTable.IndexEntryV1Size;
+        protected int _indexEntrySize = PTable.IndexEntryV1Size;
+        public opening_a_ptable_with_more_than_32bits_of_records(int indexEntrySize){
+            _indexEntrySize = indexEntrySize;
+        }
 
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
             _ptableCount = (long)(uint.MaxValue + 10000000L);
-            _size = _ptableCount * (long)indexEntrySize + PTableHeader.Size + PTable.MD5Size;
+            _size = _ptableCount * (long)_indexEntrySize + PTableHeader.Size + PTable.MD5Size;
             Console.WriteLine("Creating PTable at {0}. Size of PTable: {1}", Filename, _size);
-            CreatePTableFile(Filename, _size, indexEntrySize);
+            CreatePTableFile(Filename, _size, _indexEntrySize);
             _ptable = PTable.FromFile(Filename, 22, false);
         }
 

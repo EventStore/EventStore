@@ -7,7 +7,14 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class table_index_on_try_get_one_value_query: SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
@@ -15,6 +22,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IHasher _highHasher;
         private string _indexDir;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public table_index_on_try_get_one_value_query(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -29,7 +42,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => new HashListMemTable(_ptableVersion, maxSize: 10),
                                          () => fakeReader,
                                          _ptableVersion,
-                                         maxSizeForMemory: 5);
+                                         maxSizeForMemory: 5,
+                                         skipIndexVerify: _skipIndexVerify);
             _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, "0xDEAD", 0, 0xFF00);

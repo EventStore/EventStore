@@ -9,7 +9,10 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1)]
+    [TestFixture(PTableVersions.IndexV2)]
+    [TestFixture(PTableVersions.IndexV3)]
+    [TestFixture(PTableVersions.IndexV4)]
     public class index_map_should: SpecificationWithDirectory
     {
         private string _indexMapFileName;
@@ -17,6 +20,10 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IndexMap _emptyIndexMap;
         private PTable _ptable;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+
+        public index_map_should(byte version){
+            _ptableVersion = version;
+        }
 
         [SetUp]
         public override void SetUp()

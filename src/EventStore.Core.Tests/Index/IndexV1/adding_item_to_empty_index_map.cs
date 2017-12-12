@@ -5,7 +5,14 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class adding_item_to_empty_index_map: SpecificationWithDirectoryPerTestFixture
     {
         private string _filename;
@@ -14,6 +21,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private string _mergeFile;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public adding_item_to_empty_index_map(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -27,8 +40,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _map = IndexMap.FromFile(_filename);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
-            var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            var table = PTable.FromMemtable(memtable, _tablename,skipIndexVerify:_skipIndexVerify);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion,skipIndexVerify: _skipIndexVerify);
             table.MarkForDestruction();
         }
 

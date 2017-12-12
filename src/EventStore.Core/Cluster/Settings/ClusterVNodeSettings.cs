@@ -129,7 +129,7 @@ namespace EventStore.Core.Cluster.Settings
                                     string index = null, bool enableHistograms = false,
                                     bool skipIndexVerify = false,
                                     int indexCacheDepth = 16,
-                                    byte indexBitnessVersion = 2,
+                                    byte indexBitnessVersion = 4,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
