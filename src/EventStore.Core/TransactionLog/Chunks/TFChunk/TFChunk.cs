@@ -857,6 +857,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkFooter WriteFooter(ICollection<PosMap> mapping)
         {
             var workItem = _writerWorkItem;
+
+            var alignedSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize);
+            if(_chunkHeader.Version >= (byte)ChunkVersions.Aligned && workItem.StreamLength != alignedSize)
+            {
+                workItem.ResizeStream(alignedSize);
+            }
             int mapSize = 0;
             if (mapping != null)
             {
@@ -901,8 +907,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 //TODO GFY this is dead code as all chunks are now Aligned.
                 Log.Debug("Resizing stream as header is unaligned");
                 workItem.ResizeStream(fileSize);
-                _fileSize = fileSize;
             }
+            _fileSize = fileSize;
 
             return footerWithHash;
         }
