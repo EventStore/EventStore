@@ -21,7 +21,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
     public unsafe partial class TFChunk : IDisposable
     {
-        enum ChunkVersions : byte {
+        public enum ChunkVersions : byte {
             OriginalNotUsed = 1,
             Unaligned = 2,
             Aligned = 3
@@ -859,6 +859,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkFooter WriteFooter(ICollection<PosMap> mapping)
         {
             var workItem = _writerWorkItem;
+            workItem.ResizeStream((int)workItem.StreamPosition);
+
             int mapSize = 0;
             if (mapping != null)
             {
@@ -882,13 +884,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             }
             workItem.FlushToDisk();
-            var bufferSize = workItem.StreamLength - workItem.StreamPosition - ChunkFooter.Size;
-            Log.Debug("Buffer size is " + bufferSize);
-            if(bufferSize > 0) {
-                byte[] buffer = new byte[bufferSize];
-                WriteRawData(workItem, buffer, buffer.Length);
+
+            if(_chunkHeader.Version >= (byte) ChunkVersions.Aligned){
+                var alignedSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size);
+                var bufferSize = alignedSize - workItem.StreamPosition - ChunkFooter.Size;
+                Log.Debug("Buffer size is " + bufferSize);
+                if(bufferSize > 0) {
+                    byte[] buffer = new byte[bufferSize];
+                    WriteRawData(workItem, buffer, buffer.Length);
+                }
             }
             Flush();
+
             var footerNoHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
@@ -896,16 +903,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var footerWithHash = new ChunkFooter(true, true, _physicalDataSize, LogicalDataSize, mapSize, workItem.MD5.Hash);
             workItem.AppendData(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
-            Flush(); // trying to prevent bug with resized file, but no data in it
-            var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
-            if (_chunkHeader.Version == (byte) ChunkVersions.Unaligned && workItem.StreamLength != fileSize)
-            {
-                //TODO GFY this is dead code as all chunks are now Aligned.
-                Log.Debug("Resizing stream as header is unaligned");
-                workItem.ResizeStream(fileSize);
-                _fileSize = fileSize;
-            }
+            Flush();
 
+            _fileSize = (int) workItem.StreamLength;
             return footerWithHash;
         }
 
@@ -1000,7 +1000,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             _destroyEvent.Set();
         }
 
-        private static int GetAlignedSize(int size) {
+        public static int GetAlignedSize(int size) {
             if(size % 4096 == 0) return size;
             return (size / 4096 + 1) * 4096;
         }

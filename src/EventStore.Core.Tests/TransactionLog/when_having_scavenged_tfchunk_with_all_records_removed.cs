@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.Tests.Fakes;
@@ -23,6 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog
     {
         private TFChunkDb _db;
         private TFChunk _scavengedChunk;
+        private int _originalFileSize;
         private PrepareLogRecord _p1, _p2, _p3;
         private CommitLogRecord _c1, _c2, _c3;
         private RecordWriteResult _res1, _res2, _res3;
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var chunk = _db.Manager.GetChunkFor(0);
 
             _p1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-                                          new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
+                                          new byte[2048], new byte[] { 5, 7 });
             _res1 = chunk.TryAppend(_p1);
 
             _c1 = LogRecord.Commit(_res1.NewPosition, Guid.NewGuid(), _p1.LogPosition, 0);
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             _p2 = LogRecord.SingleWrite(_cres1.NewPosition,
                                         Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-                                        new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
+                                        new byte[2048], new byte[] { 5, 7 });
             _res2 = chunk.TryAppend(_p2);
 
             _c2 = LogRecord.Commit(_res2.NewPosition, Guid.NewGuid(), _p2.LogPosition, 1);
@@ -54,13 +54,14 @@ namespace EventStore.Core.Tests.TransactionLog
             
             _p3 = LogRecord.SingleWrite(_cres2.NewPosition,
                                         Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-                                        new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
+                                        new byte[2048], new byte[] { 5, 7 });
             _res3 = chunk.TryAppend(_p3);
 
             _c3 = LogRecord.Commit(_res3.NewPosition, Guid.NewGuid(), _p3.LogPosition, 2);
             _cres3 = chunk.TryAppend(_c3);
 
             chunk.Complete();
+            _originalFileSize = chunk.FileSize;
 
             _db.Config.WriterCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
             _db.Config.WriterCheckpoint.Flush();
@@ -157,6 +158,19 @@ namespace EventStore.Core.Tests.TransactionLog
                 res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);
             }
             Assert.AreEqual(0, records.Count);
+        }
+
+        [Test]
+        public void scavenged_chunk_should_have_saved_space()
+        {
+            Assert.IsTrue(_scavengedChunk.FileSize < _originalFileSize,
+                String.Format("Expected scavenged file size ({0}) to be less than original file size ({1})", _scavengedChunk.FileSize, _originalFileSize));
+        }
+
+        [Test]
+        public void scavenged_chunk_should_be_aligned()
+        {
+            Assert.IsTrue(_scavengedChunk.FileSize % 4096 == 0);
         }
     }
 }
