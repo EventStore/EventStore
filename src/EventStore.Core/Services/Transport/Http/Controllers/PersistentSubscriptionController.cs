@@ -725,7 +725,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             public SubscriptionConfigData()
             {
                 StartFrom = 0;
-                MessageTimeoutMilliseconds = 10000;
+                MessageTimeoutMilliseconds = int.MaxValue;
                 MaxRetryCount = 10;
                 CheckPointAfterMilliseconds = 1000;
                 MinCheckPointCount = 10;

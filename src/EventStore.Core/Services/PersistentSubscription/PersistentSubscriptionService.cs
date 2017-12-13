@@ -809,7 +809,12 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private TimeSpan ToTimeout(int milliseconds)
         {
-            return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+            if (milliseconds == 0)
+                return TimeSpan.MaxValue;
+            else if (milliseconds == int.MaxValue)
+                return TimeSpan.FromMilliseconds(0);
+            else
+                return TimeSpan.FromMilliseconds(milliseconds);
         }
     }
 }
