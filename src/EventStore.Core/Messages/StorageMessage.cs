@@ -222,6 +222,34 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class CommitReplicated: Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly long LogPosition;
+            public readonly long TransactionPosition;
+            public readonly long FirstEventNumber;
+            public readonly long LastEventNumber;
+            
+            public CommitReplicated(Guid correlationId, long logPosition, long transactionPosition, long firstEventNumber, long lastEventNumber)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.Nonnegative(logPosition, "logPosition");
+                Ensure.Nonnegative(transactionPosition, "transactionPosition");
+                if (firstEventNumber < -1)
+                    throw new ArgumentOutOfRangeException("firstEventNumber", string.Format("FirstEventNumber: {0}", firstEventNumber));
+                if (lastEventNumber - firstEventNumber + 1 < 0)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", string.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+                CorrelationId = correlationId;
+                LogPosition = logPosition;
+                TransactionPosition = transactionPosition;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
+            }
+        }
+
         public class EventCommitted: Message
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

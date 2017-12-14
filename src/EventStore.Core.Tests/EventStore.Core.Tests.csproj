@@ -367,7 +367,7 @@
     <Compile Include="Services\PersistentSubscription\PersistentSubscriptionTests.cs" />
     <Compile Include="Services\PersistentSubscription\PinnedConsumerStrategyTests.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBufferTests.cs" />
-    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit.cs" />
+    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_after_commit_replicated.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_reset_password_cache_in_between.cs" />
     <Compile Include="Authentication\when_handling_multiple_requests_with_the_same_correct_user_name_and_password.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_prepare_timeout_after_prepares.cs" />
@@ -375,7 +375,7 @@
     <Compile Include="Services\Replication\DeleteStream\when_creating_delete_stream_request_manager.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_already_committed.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_before_commit_stage.cs" />
-    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_before_final_commit.cs" />
+    <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_commit_timeout_before_commit_replicated.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Replication\DeleteStream\when_delete_stream_gets_stream_deleted.cs" />
     <Compile Include="Services\Replication\FakeEnvelope.cs" />
@@ -384,19 +384,16 @@
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_completes_successfully.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_already_committed.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_commit_timeout_before_commit_stage.cs" />
-    <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Replication\TransactionCommit\when_transaction_commit_gets_stream_deleted.cs" />
-    <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_after_commit.cs" />
+    <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_after_commit_replicated.cs" />
     <Compile Include="Services\Replication\WriteStream\when_creating_write_stream_request_manager.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_stream_deleted.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_already_committed.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_completes_successfully.cs" />
-    <Compile Include="Services\Replication\WriteStream\when_master_has_not_acked.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
-    <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteStream\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Storage\AllReader\when_a_single_write_before_the_transaction_is_present.cs" />
     <Compile Include="Services\Storage\AllReader\when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present.cs" />
@@ -629,6 +626,7 @@
     <Compile Include="Services\Transport\Tcp\TcpClientDispatcherTests.cs" />
     <Compile Include="Services\Storage\Scavenge\when_stream_is_softdeleted_with_mixed_log_record_version_0_and_version_1.cs" />
     <Compile Include="ClientAPI\ExpectedVersion64Bit\read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue.cs" />
+    <Compile Include="TransactionLog\TFChunkDbConfigHelper.cs" />
     <Compile Include="Index\IndexV1\when_a_ptable_is_loaded_from_disk.cs" />
     <Compile Include="Index\IndexV4\ptable_midpoint_calculations_should.cs" />
     <Compile Include="Index\IndexV4\when_merging_ptables_with_entries_to_nonexisting_record.cs" />
@@ -636,6 +634,26 @@
     <Compile Include="Index\IndexV4\opening_a_ptable_with_more_than_32bits_of_records.cs" />
     <Compile Include="Index\IndexV1\corrupt_index_should.cs" />
     <Compile Include="Index\IndexV1\table_index_with_corrupt_index_entries_should.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_1_commit_ack.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_2_commit_acks.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_2_commit_acks_for_positions_lower_than_checkpoint.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_multiple_acks_for_different_positions.cs" />
+    <Compile Include="Services\Replication\ReplicationTestHelper.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_an_event_from_a_single_node.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_an_event_committed_on_master_and_on_slaves.cs" />
+    <Compile Include="Services\Replication\ReadStream\when_reading_events_from_cluster_with_replication_checkpoint_not_set.cs" />
+    <Compile Include="Services\Replication\Subscriptions\TestSubscription.cs" />
+    <Compile Include="Services\Replication\Subscriptions\when_subscribed_to_stream_on_master_and_event_is_replicated_to_slaves.cs" />
+    <Compile Include="TransactionLog\when_reading_a_single_record.cs" />
+    <Compile Include="Services\Storage\AllReader\when_reading_all_with_replication_checkpoint_set.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_single_node_receives_commit_ack.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_slave_node_in_3_node_cluster_receives_commit_ack.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_master_node_in_3_node_cluster_with_outstanding_commit_acks_becomes_unknown.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_multiple_acks_for_different_positions_out_of_order.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_3_node_cluster_receives_multiple_acks_for_same_positions.cs" />
+    <Compile Include="Services\Replication\CommitReplication\with_index_committer_service.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_single_node_cluster_receives_commit_ack_for_multiple_prepares.cs" />
+    <Compile Include="Services\Replication\CommitReplication\when_constructing_index_committer_service.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

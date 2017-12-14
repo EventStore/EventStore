@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _masterBus;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly ITransactionFileChaser _chaser;
-        private readonly IIndexCommitter _indexCommitter;
+        private readonly IIndexCommitterService _indexCommitterService;
         private readonly IEpochManager _epochManager;
         private Thread _thread;
         private volatile bool _stop;
@@ -58,19 +58,19 @@ namespace EventStore.Core.Services.Storage
         public StorageChaser(IPublisher masterBus,
                              ICheckpoint writerCheckpoint,
                              ITransactionFileChaser chaser,
-                             IIndexCommitter indexCommitter,
+                             IIndexCommitterService indexCommitterService,
                              IEpochManager epochManager)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaser, "chaser");
-            Ensure.NotNull(indexCommitter, "indexCommitter");
+            Ensure.NotNull(indexCommitterService, "indexCommitterService");
             Ensure.NotNull(epochManager, "epochManager");
 
             _masterBus = masterBus;
             _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
-            _indexCommitter = indexCommitter;
+            _indexCommitterService = indexCommitterService;
             _epochManager = epochManager;
 
             _flushDelay = 0;
@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Storage
                 // everything else will be done by chaser as during replication
                 // with no concurrency issues with writer, as writer before jumping
                 // into master-mode and accepting writes will wait till chaser caught up.
-                _indexCommitter.Init(_chaser.Checkpoint.Read());
+                _indexCommitterService.Init(_chaser.Checkpoint.Read());
                 _masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
 
                 while (!_stop)
@@ -196,14 +196,14 @@ namespace EventStore.Core.Services.Storage
                 case LogRecordType.Prepare:
                 {
                     var record = (PrepareLogRecord) result.LogRecord;
-                    ProcessPrepareRecord(record, result.Eof);
+                    ProcessPrepareRecord(record, result.RecordPostPosition);
                     break;
                 }
                 case LogRecordType.Commit:
                 {
                     _commitsAfterEof = !result.Eof;
                     var record = (CommitLogRecord)result.LogRecord;
-                    ProcessCommitRecord(record, result.Eof);
+                    ProcessCommitRecord(record, result.RecordPostPosition);
                     break;
                 }
                 case LogRecordType.System:
@@ -222,10 +222,10 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private void ProcessPrepareRecord(PrepareLogRecord record, bool isTfEof)
+        private void ProcessPrepareRecord(PrepareLogRecord record, long postPosition)
         {
             if (_transaction.Count > 0 && _transaction[0].TransactionPosition != record.TransactionPosition)
-                CommitPendingTransaction(_transaction, isTfEof);
+                CommitPendingTransaction(_transaction, postPosition);
 
             if (record.Flags.HasAnyOf(PrepareFlags.IsCommitted))
             {
@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.Storage
 
                 if (record.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
                 {
-                    CommitPendingTransaction(_transaction, isTfEof);
+                    CommitPendingTransaction(_transaction, postPosition);
 
                     long firstEventNumber;
                     long lastEventNumber;
@@ -262,12 +262,13 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private void ProcessCommitRecord(CommitLogRecord record, bool isTfEof)
+        private void ProcessCommitRecord(CommitLogRecord record, long postPosition)
         {
-            CommitPendingTransaction(_transaction, isTfEof);
+            CommitPendingTransaction(_transaction, postPosition);
 
             var firstEventNumber = record.FirstEventNumber;
-            var lastEventNumber = _indexCommitter.Commit(record, isTfEof, true);
+            var lastEventNumber = _indexCommitterService.GetCommitLastEventNumber(record);
+            _indexCommitterService.AddPendingCommit(record, postPosition);
             if (lastEventNumber == EventNumber.Invalid)
                 lastEventNumber = record.FirstEventNumber - 1;
             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, firstEventNumber, lastEventNumber, true));
@@ -275,7 +276,7 @@ namespace EventStore.Core.Services.Storage
 
         private void ProcessSystemRecord(SystemLogRecord record)
         {
-            CommitPendingTransaction(_transaction, isTfEof: true);
+            CommitPendingTransaction(_transaction, record.LogPosition);
 
             if (record.SystemRecordType == SystemRecordType.Epoch)
             {
@@ -288,11 +289,11 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private void CommitPendingTransaction(List<PrepareLogRecord> transaction, bool isTfEof)
+        private void CommitPendingTransaction(List<PrepareLogRecord> transaction, long postPosition)
         {
             if (transaction.Count > 0)
             {
-                _indexCommitter.Commit(_transaction, isTfEof, true);
+                _indexCommitterService.AddPendingPrepare(transaction.ToArray(), postPosition);
                 _transaction.Clear();
             }
         }

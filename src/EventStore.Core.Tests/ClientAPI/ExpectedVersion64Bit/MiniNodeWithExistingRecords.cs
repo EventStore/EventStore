@@ -2,6 +2,7 @@ using System;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.TransactionLog;
 using NUnit.Framework;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -70,16 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
                 ChaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
             }
 
-            Db = new TFChunkDb(new TFChunkDbConfig(dbPath,
-                                                   new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                                                   TFConsts.ChunkSize,
-                                                   0,
-                                                   WriterCheckpoint,
-                                                   ChaserCheckpoint,
-                                                   new InMemoryCheckpoint(-1),
-                                                   new InMemoryCheckpoint(-1),
-                                                   inMemDb: false));
-
+            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
             Db.Open();
 
             // create DB

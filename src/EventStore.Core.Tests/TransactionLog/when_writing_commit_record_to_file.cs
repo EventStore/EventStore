@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -21,14 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
-            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                    1024,
-                                                    0,
-                                                    _writerCheckpoint,
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1)));
+            _db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, _writerCheckpoint, new InMemoryCheckpoint(), 1024));
             _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();

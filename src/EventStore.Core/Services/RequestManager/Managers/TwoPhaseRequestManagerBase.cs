@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                        IHandle<StorageMessage.CheckStreamAccessCompleted>,
                                                        IHandle<StorageMessage.AlreadyCommitted>,
                                                        IHandle<StorageMessage.PrepareAck>,
-                                                       IHandle<StorageMessage.CommitAck>,
+                                                       IHandle<StorageMessage.CommitReplicated>,
                                                        IHandle<StorageMessage.WrongExpectedVersion>,
                                                        IHandle<StorageMessage.StreamDeleted>,
                                                        IHandle<StorageMessage.RequestManagerTimerTick>
@@ -31,14 +31,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected readonly TimeSpan PrepareTimeout;
         protected readonly TimeSpan CommitTimeout;
-        private bool _hadSelf = false;
         private IEnvelope _responseEnvelope;
         private Guid _internalCorrId;
         private Guid _clientCorrId;
         private long _transactionId = -1;
 
         private int _awaitingPrepare;
-        private int _awaitingCommit;
         private DateTime _nextTimeoutTime;
 
         private bool _completed;
@@ -46,14 +44,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
         private bool _betterOrdering;
         protected TwoPhaseRequestManagerBase(IPublisher publisher,
                                                                        int prepareCount,
-                                                                       int commitCount,
                                                                        TimeSpan prepareTimeout,
                                                                        TimeSpan commitTimeout,
                                                                        bool betterOrdering)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.Positive(prepareCount, "prepareCount");
-            Ensure.Positive(commitCount, "commitCount");
 
             Publisher = publisher;
             PublishEnvelope = new PublishEnvelope(publisher);
@@ -63,7 +59,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _betterOrdering = betterOrdering;
 
             _awaitingPrepare = prepareCount;
-            _awaitingCommit = commitCount;
         }
 
         protected abstract void OnSecurityAccessGranted(Guid internalCorrId);
@@ -166,15 +161,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
             }
         }
 
-        public void Handle(StorageMessage.CommitAck message)
+        public void Handle(StorageMessage.CommitReplicated message)
         {
             if (_completed)
                 return;
 
-            _awaitingCommit -= 1;
-            if(message.IsSelf) _hadSelf = true;
-            if (_awaitingCommit <= 0 && _hadSelf)
-                CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
+            CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
         }
 
         protected virtual void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber, long preparePosition, long commitPosition)

@@ -188,6 +188,7 @@ namespace EventStore.Core.Tests.Helpers
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
+            ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
             if (inMemDb)
             {
                 writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
@@ -221,7 +222,7 @@ namespace EventStore.Core.Tests.Helpers
             }
             var nodeConfig = new TFChunkDbConfig(
                 dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-                chaserChk, epochChk, truncateChk, inMemDb);
+                chaserChk, epochChk, truncateChk, replicationCheckpoint, inMemDb);
             return nodeConfig;
         }
     }
