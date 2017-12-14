@@ -346,11 +346,10 @@ namespace EventStore.Core.Services.Storage
                 if (_commitAckNodes.TryGetValue(message.CorrelationId, out commitAckNode))
                 {
                     var currentNode = commitAckNode;
-                    var nextNode = currentNode.Next;
                     // Ensure that we have all nodes at this position
-                    while (nextNode != null && nextNode.Value.LogPosition == commitAckNode.Value.LogPosition)
+                    while (currentNode.Next != null && currentNode.Next.Value.LogPosition == currentNode.Value.LogPosition)
                     {
-                        currentNode = nextNode;
+                        currentNode = currentNode.Next;
                     }
 
                     var result = new List<CommitAckNode>();
