@@ -571,7 +571,8 @@
     <Compile Include="Services\core_coordinator\when_stopping_with_projection_type_all.cs" />
     <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_none.cs" />
     <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_system.cs" />
-    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_all.cs" />    
+    <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_all.cs" />
+    <Compile Include="Services\core_projection\when_stopping_a_projection_with_existing_state_without_updating_the_state.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

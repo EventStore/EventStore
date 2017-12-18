@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null);
         }
 
 

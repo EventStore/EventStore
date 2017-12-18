@@ -101,12 +101,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
         }
 
-        public virtual void Start(CheckpointTag checkpointTag)
+        public virtual void Start(CheckpointTag checkpointTag, PartitionState rootPartitionState)
         {
             Contract.Requires(_currentCheckpoint == null);
             if (_started)
                 throw new InvalidOperationException("Already started");
             _started = true;
+
+            if(rootPartitionState != null)
+                _currentProjectionState = rootPartitionState;
+
             _lastProcessedEventPosition.UpdateByCheckpointTagInitial(checkpointTag);
             _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
