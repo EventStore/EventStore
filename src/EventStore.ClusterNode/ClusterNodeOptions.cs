@@ -140,6 +140,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
         public bool Unbuffered { get; set; }
 
+        [ArgDescription(Opts.ChunkInitialReaderCountDescr, Opts.DbGroup)]
+        public int ChunkInitialReaderCount { get; set; }
+
 
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
         public ProjectionType RunProjections { get; set; }
@@ -340,6 +343,7 @@ namespace EventStore.ClusterNode
             SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+            ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
         }
     }
 }

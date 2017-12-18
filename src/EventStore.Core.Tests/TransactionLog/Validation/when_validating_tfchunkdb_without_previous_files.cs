@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void with_a_writer_checksum_of_nonzero_and_no_files_a_corrupted_database_exception_is_thrown()
         {
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 500));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 500));
             var exc = Assert.Throws<CorruptDatabaseException>(() => db.Open());
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
         [Test]
         public void with_a_writer_checksum_of_zero_and_no_files_is_valid()
         {
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, 0));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
             Assert.DoesNotThrow(() => db.Open());
             db.Dispose();
         }

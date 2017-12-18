@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         {
             base.TestFixtureSetUp();
 
-            var dbConfig = TFChunkDbConfigHelper.Create(PathName, 0, chunkSize: 1024 * 1024);
+            var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
             var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
             _dbResult = CreateDb(dbCreationHelper);
             _keptRecords = KeptRecords(_dbResult);

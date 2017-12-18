@@ -117,9 +117,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             FreeCachedData();
         }
 
-        public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead)
+        public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead, int initialReaderCount)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount,
+            var chunk = new TFChunk(filename, initialReaderCount, ESConsts.TFChunkMaxReaderCount,
                                     TFConsts.MidpointsDepth, false, unbufferedRead, false);
             try
             {
@@ -133,10 +133,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return chunk;
         }
 
-        public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered, bool writethrough)
+        public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered, bool writethrough, int initialReaderCount)
         {
             var chunk = new TFChunk(filename,
-                                    ESConsts.TFChunkInitialReaderCount,
+                                    initialReaderCount,
                                     ESConsts.TFChunkMaxReaderCount,
                                     TFConsts.MidpointsDepth,
                                     false,
@@ -161,11 +161,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                         bool isScavenged,
                                         bool inMem,
                                         bool unbuffered,
-                                        bool writethrough)
+                                        bool writethrough,
+                                        int initialReaderCount)
         {
             var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
             var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged, Guid.NewGuid());
-            return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough);
+            return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount);
         }
 
         public static TFChunk CreateWithHeader(string filename,
@@ -173,10 +174,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                                                int fileSize,
                                                bool inMem,
                                                bool unbuffered,
-                                               bool writethrough)
+                                               bool writethrough,
+                                               int initialReaderCount)
         {
             var chunk = new TFChunk(filename,
-                                    ESConsts.TFChunkInitialReaderCount,
+                                    initialReaderCount,
                                     ESConsts.TFChunkMaxReaderCount,
                                     TFConsts.MidpointsDepth,
                                     inMem,

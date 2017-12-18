@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit
                 ChaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
             }
 
-            Db = new TFChunkDb(TFChunkDbConfigHelper.Create(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
+            Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
             Db.Open();
 
             // create DB

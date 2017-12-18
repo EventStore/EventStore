@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.WriteAllBytes(filename, buf);
 
             _checkpoint = new InMemoryCheckpoint(137);
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, _checkpoint, new InMemoryCheckpoint(), chunkSize: chunkHeader.ChunkSize));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint(), chunkSize: chunkHeader.ChunkSize));
             db.Open();
 
             var bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!

@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_zero_the_first_chunk_is_created_with_correct_name_and_is_aligned()
         {
-            var config = TFChunkDbConfigHelper.Create(PathName, 0);
+            var config = TFChunkHelper.CreateDbConfig(PathName, 0);
             var db = new TFChunkDb(config);
             db.Open();
             db.Dispose();

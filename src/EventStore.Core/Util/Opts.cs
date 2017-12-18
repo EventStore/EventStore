@@ -115,6 +115,9 @@ namespace EventStore.Core.Util
         public const string WriteThroughDescr = "Enables Write Through when writing to the file system, this bypasses filesystem caches.";
         public const bool WriteThroughDefault = false;
 
+        public const string ChunkInitialReaderCountDescr = "The initial number of readers to start when opening a TFChunk";
+        public const int ChunkInitialReaderCountDefault  = 5;
+
         public const string UnbufferedDescr = "Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.";
         public const bool UnbufferedDefault = false;
 

@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage
         {
             base.TestFixtureSetUp();
 
-            var dbConfig = TFChunkDbConfigHelper.Create(PathName, 0, chunkSize: 1024 * 1024);
+            var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
             var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
             
             DbRes = CreateDb(dbCreationHelper);

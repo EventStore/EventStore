@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var writerchk = new InMemoryCheckpoint(0);
             var chaserchk = new InMemoryCheckpoint(0);
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerchk, chaserchk));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
             db.Open();
 
             var reader = new TFChunkReader(db, writerchk, 0);
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var writerchk = new InMemoryCheckpoint(0);
             var chaserchk = new InMemoryCheckpoint(0);
-            var db = new TFChunkDb(TFChunkDbConfigHelper.Create(PathName, writerchk, chaserchk));
+            var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
             db.Open();
 
             var writer = new TFChunkWriter(db);
