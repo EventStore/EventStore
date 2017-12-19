@@ -416,7 +416,8 @@ namespace EventStore.Core.Index
         internal class EnumerableTable : IEnumerator<IndexEntry>
         {
             private ISearchTable _ptable;
-            private List<IndexEntry> _list;
+            private bool isUpgradeFromV1 = false;
+            private List<IEnumerator<IndexEntry>> _list;
             private IEnumerator<IndexEntry> _enumerator;
             readonly IEnumerator<IndexEntry> _ptableEnumerator;
             private bool _firstIteration = true;
@@ -426,7 +427,7 @@ namespace EventStore.Core.Index
             readonly Func<IndexEntry, bool> _existsAt;
             readonly Func<IndexEntry, Tuple<string, bool>> _readRecord;
             readonly byte _mergedPTableVersion;
-            static readonly IComparer<IndexEntry> EntryComparer = new IndexEntryComparer();
+            static readonly IComparer<ulong> HashComparer = new IndexEntryHashComparer();
 
             public byte GetVersion()
             {
@@ -460,12 +461,14 @@ namespace EventStore.Core.Index
 
                 if(table.Version == PTableVersions.IndexV1 && mergedPTableVersion != PTableVersions.IndexV1)
                 {
-                    _list = new List<IndexEntry>();
-                    _enumerator = _list.GetEnumerator();
+                    isUpgradeFromV1 = true;
+                    _list = new List<IEnumerator<IndexEntry>>();
+                    _enumerator = null;
                     _ptableEnumerator = _ptable.IterateAllInOrder().GetEnumerator();
                 }
                 else
                 {
+                    isUpgradeFromV1 = false;
                     _enumerator = _ptable.IterateAllInOrder().GetEnumerator();
                 }
             }
@@ -486,19 +489,35 @@ namespace EventStore.Core.Index
 
             public bool MoveNext()
             {
-                var hasMovedToNext = _enumerator.MoveNext();
-                if (_list == null || hasMovedToNext) return hasMovedToNext;
+                if(!isUpgradeFromV1) return _enumerator.MoveNext();
 
-                _enumerator.Dispose();
+                //upgrading from V1
+                if(_enumerator!=null){
+                    if(_enumerator.MoveNext()) return true;
+                    else{
+                        _enumerator.Dispose();
+                        _list.RemoveAt(0);
+                    }
+                }
+
+                if(_list.Count > 0){
+                    _enumerator = _list[0];
+                    return _enumerator.MoveNext();
+                }
+
                 _list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt, _readRecord);
-                _enumerator = _list.GetEnumerator();
 
-                return _enumerator.MoveNext();
+                if(_list.Count > 0){
+                    _enumerator = _list[0];
+                    return _enumerator.MoveNext();
+                }
+
+                return false;
             }
 
-            private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord)
+            private List<IEnumerator<IndexEntry>> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator, Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord)
             {
-                var list = new List<IndexEntry>();
+                var list = new List<IEnumerator<IndexEntry>>();
 
                 if(_lastIteration)
                     return list;
@@ -521,13 +540,19 @@ namespace EventStore.Core.Index
                 }
 
                 //add index entries as long as the stream hashes match
+                SortedSet<ulong> hashesFound = new SortedSet<ulong>();
                 ulong hash = ptableEnumerator.Current.Stream;
                 do
                 {
                     if (existsAt(ptableEnumerator.Current))
                     {
                         var current = ptableEnumerator.Current;
-                        list.Add(new IndexEntry(upgradeHash(readRecord(current).Item1, current.Stream), current.Version, current.Position));
+                        //list.Add(new IndexEntry(, current.Version, current.Position));
+                        var newHash = upgradeHash(readRecord(current).Item1, current.Stream);
+                        var indexEntry = new IndexEntry(hash, current.Version, current.Position);
+
+                        hashesFound.Add(newHash);
+                        WriteTemporaryPTableEntry(newHash, indexEntry);
                     }
 
                     if(!ptableEnumerator.MoveNext()){
@@ -539,14 +564,16 @@ namespace EventStore.Core.Index
                         break;
                 }while (true);
 
-                //sort the index entries with upgraded hashes
-                list.Sort(EntryComparer);
+                foreach(ulong h in hashesFound.ToArray()){
+                    list.Add(GetTemporaryPTableEnumerator(h));
+                }
+
                 return list;
             }
 
-            private class IndexEntryComparer : IComparer<IndexEntry>
+            private class IndexEntryHashComparer : IComparer<ulong>
             {
-                public int Compare(IndexEntry x, IndexEntry y)
+                public int Compare(ulong x, ulong y)
                 {
                     return -x.CompareTo(y);
                 }
