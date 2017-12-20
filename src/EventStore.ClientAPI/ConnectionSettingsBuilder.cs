@@ -180,6 +180,7 @@ namespace EventStore.ClientAPI
         public ConnectionSettingsBuilder KeepReconnecting()
         {
             _maxReconnections = -1;
+            _maxDiscoverAttempts = -1;
             return this;
         }
 
