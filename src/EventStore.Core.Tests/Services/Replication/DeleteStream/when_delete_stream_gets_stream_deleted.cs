@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout, false);
+            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()

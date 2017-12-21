@@ -140,6 +140,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
         public bool Unbuffered { get; set; }
 
+        [ArgDescription(Opts.ChunkInitialReaderCountDescr, Opts.DbGroup)]
+        public int ChunkInitialReaderCount { get; set; }
+
 
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
         public ProjectionType RunProjections { get; set; }
@@ -147,6 +150,8 @@ namespace EventStore.ClusterNode
         public int ProjectionThreads { get; set; }
         [ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
+        [ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
+        public int ProjectionsQueryExpiry { get; set; }
 
         [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] IntHttpPrefixes { get; set; }
@@ -198,6 +203,9 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
         public bool UnsafeIgnoreHardDelete { get; set; }
+
+        [ArgDescription(Opts.SkipIndexVerifyDescr, Opts.DbGroup)]
+        public bool SkipIndexVerify { get; set; }
 
         [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
         public int IndexCacheDepth { get; set; }
@@ -319,6 +327,7 @@ namespace EventStore.ClusterNode
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
             IndexCacheDepth = Opts.IndexCacheDepthDefault;
+            SkipIndexVerify = Opts.SkipIndexVerifyDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
             ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 
@@ -334,6 +343,7 @@ namespace EventStore.ClusterNode
             SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+            ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
         }
     }
 }

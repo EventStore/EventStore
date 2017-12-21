@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
@@ -46,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             protected override IEnumerable<WhenStep> When()
             {
                 foreach (var s in base.When()) yield return s;
+                _consumer.HandledMessages.Clear();
                 yield return (
                     new ProjectionManagementMessage.Command.GetStatistics(
                         new PublishEnvelope(_bus), null, _projectionName, false));
@@ -54,7 +56,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query
             [Test]
             public void projection_is_not_found()
             {
-                Assert.IsTrue(_consumer.HandledMessages.OfType<ProjectionManagementMessage.NotFound>().Any());
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.NotFound>().Count());
+                Assert.IsFalse(_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Any());
             }
         }
     }

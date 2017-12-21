@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Management
         : IDisposable,
             IHandle<SystemMessage.StateChangeMessage>,
             IHandle<SystemMessage.SystemCoreReady>,
+            IHandle<SystemMessage.EpochWritten>,
             IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
             IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
             IHandle<ClientMessage.WriteEventsCompleted>,
@@ -65,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _publisher;
         private readonly Tuple<Guid, IPublisher>[] _queues;
         private readonly Guid[] _workers;
+        private readonly TimeSpan _projectionsQueryExpiry;
 
         private readonly ITimeProvider _timeProvider;
         private readonly ProjectionType _runProjections;
@@ -92,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _lastUsedQueue = 0;
         private bool _started;
+        private bool _projectionsStarted;
         private readonly PublishEnvelope _publishEnvelope;
 
         private readonly
@@ -112,6 +115,7 @@ namespace EventStore.Projections.Core.Services.Management
             ITimeProvider timeProvider,
             ProjectionType runProjections,
             IODispatcher ioDispatcher,
+            TimeSpan projectionQueryExpiry,
             bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
@@ -128,6 +132,7 @@ namespace EventStore.Projections.Core.Services.Management
             _runProjections = runProjections;
             _initializeSystemProjections = initializeSystemProjections;
             _ioDispatcher = ioDispatcher;
+            _projectionsQueryExpiry = projectionQueryExpiry;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -177,6 +182,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Start()
         {
+            if(_started)
+                throw new InvalidOperationException();
+            _started = true;
             _publisher.Publish(new ProjectionManagementMessage.Starting(_epochId));
         }
 
@@ -186,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Management
                 StartExistingProjections(
                     () =>
                     {
-                        _started = true;
+                        _projectionsStarted = true;
                         ScheduleExpire();
                         _publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
                     });
@@ -195,7 +203,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void ScheduleExpire()
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _publisher.Publish(
                 TimerMessage.Schedule.Create(
@@ -207,6 +215,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Stop()
         {
             _started = false;
+            _projectionsStarted = false;
 
             _writeDispatcher.CancelAll();
             _readDispatcher.CancelAll();
@@ -217,7 +226,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Post message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
 
             if (
@@ -249,7 +258,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -282,7 +291,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetQuery message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -296,7 +305,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info(
                 "Updating '{0}' projection source to '{1}' (Requested type is: '{2}')",
@@ -315,7 +324,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Disable message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Disabling '{0}' projection", message.Name);
 
@@ -331,7 +340,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Enabling '{0}' projection", message.Name);
 
@@ -350,7 +359,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Abort message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Aborting '{0}' projection", message.Name);
 
@@ -366,7 +375,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Setting RunAs1 account for '{0}' projection", message.Name);
 
@@ -389,7 +398,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Reset message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Resetting '{0}' projection", message.Name);
 
@@ -408,7 +417,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetStatistics message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             if (!string.IsNullOrEmpty(message.Name))
             {
@@ -436,7 +445,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetState message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -447,7 +456,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetResult message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -458,7 +467,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetConfig message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -472,7 +481,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.UpdateConfig message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -594,6 +603,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private VNodeState _currentState = VNodeState.Unknown;
         private bool _systemIsReady = false;
+        private bool _ready = false;        
         private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
@@ -604,30 +614,30 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _currentState = message.State;
-            _epochId = GetEpochIdFromStateChange(message);
+            if(_currentState != VNodeState.Master)
+                _ready = false;            
+            
             StartWhenConditionsAreMet();
         }
 
-        private Guid GetEpochIdFromStateChange(SystemMessage.StateChangeMessage message)
+        public void Handle(SystemMessage.EpochWritten message)
         {
-            Guid epochId = Guid.Empty;
-            switch (message.State)
-            {
-                case VNodeState.Master:
-                    epochId = ((SystemMessage.BecomeMaster)message).EpochId;
-                    break;
-                case VNodeState.Slave:
-                    epochId = ((SystemMessage.BecomeSlave)message).EpochId;
-                    break;
+            if(_ready) return;
+            
+            if(_currentState == VNodeState.Master){
+                _epochId = message.Epoch.EpochId;
+                _ready = true;
             }
-            return epochId;
+
+            StartWhenConditionsAreMet(); 
         }
 
         private void StartWhenConditionsAreMet()
         {
-            if (_currentState == VNodeState.Master)
+            //run if and only if these conditions are met
+            if (_systemIsReady && _ready)
             {
-                if (!_started && _systemIsReady)
+                if (!_started)
                 {
                     _logger.Debug("PROJECTIONS: Starting Projections Manager. (Node State : {0})", _currentState);
                     Start();
@@ -1074,6 +1084,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _getStateDispatcher,
                 _getResultDispatcher,
                 _ioDispatcher,
+                _projectionsQueryExpiry,
                 isSlave,
                 slaveMasterWorkerId,
                 slaveMasterCorrelationId);

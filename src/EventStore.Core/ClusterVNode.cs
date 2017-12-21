@@ -176,6 +176,7 @@ namespace EventStore.Core
                                             maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,
+                                            skipIndexVerify: vNodeSettings.SkipIndexVerify,
                                             indexCacheDepth: vNodeSettings.IndexCacheDepth);
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
@@ -184,9 +185,11 @@ namespace EventStore.Core
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
                                           vNodeSettings.HashCollisionReadLimit,
-                                          vNodeSettings.SkipIndexScanOnReads);
+                                          vNodeSettings.SkipIndexScanOnReads,
+                                          db.Config.ReplicationCheckpoint);
             var writer = new TFChunkWriter(db);
-            var epochManager = new EpochManager(ESConsts.CachedEpochCount,
+            var epochManager = new EpochManager(_mainQueue,
+                                                ESConsts.CachedEpochCount,
                                                 db.Config.EpochCheckpoint,
                                                 writer,
                                                 initialReaderCount: 1,
@@ -205,8 +208,13 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
+            var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue, db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
+            _mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
+
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex.IndexCommitter, epochManager);
+            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, indexCommitterService, epochManager);
 #if DEBUG
             QueueStatsCollector.InitializeCheckpoints(
                 _nodeInfo.DebugIndex, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
@@ -376,7 +384,6 @@ namespace EventStore.Core
             // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(_mainQueue,
                                                                  vNodeSettings.PrepareAckCount,
-                                                                 vNodeSettings.CommitAckCount,
                                                                  vNodeSettings.PrepareTimeout,
                                                                  vNodeSettings.CommitTimeout,
                                                                  vNodeSettings.BetterOrdering);
@@ -389,7 +396,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
             _mainBus.Subscribe<StorageMessage.CheckStreamAccessCompleted>(requestManagement);
             _mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
-            _mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
+            _mainBus.Subscribe<StorageMessage.CommitReplicated>(requestManagement);
             _mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
             _mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
             _mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);

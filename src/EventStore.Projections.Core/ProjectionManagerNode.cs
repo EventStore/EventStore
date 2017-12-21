@@ -22,7 +22,8 @@ namespace EventStore.Projections.Core
         public static void CreateManagerService(
             StandardComponents standardComponents,
             ProjectionsStandardComponents projectionsStandardComponents,
-            IDictionary<Guid, IPublisher> queues)
+            IDictionary<Guid, IPublisher> queues,
+            TimeSpan projectionQueryExpiry)
         {
             IQueuedHandler inputQueue = projectionsStandardComponents.MasterInputQueue;
             InMemoryBus outputBus = projectionsStandardComponents.MasterOutputBus;
@@ -56,7 +57,8 @@ namespace EventStore.Projections.Core
                 queues,
                 new RealTimeProvider(),
                 projectionsStandardComponents.RunProjections,
-                ioDispatcher);
+                ioDispatcher,
+                projectionQueryExpiry);
 
             SubscribeMainBus(
                 projectionsStandardComponents.MasterMainBus,
@@ -80,6 +82,7 @@ namespace EventStore.Projections.Core
         {
             mainBus.Subscribe<SystemMessage.StateChangeMessage>(projectionManager);
             mainBus.Subscribe<SystemMessage.SystemCoreReady>(projectionManager);
+            mainBus.Subscribe<SystemMessage.EpochWritten>(projectionManager);
             if (runProjections >= ProjectionType.System)
             {
                 mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
@@ -165,6 +168,12 @@ namespace EventStore.Projections.Core
                 Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.MasterInputQueue));
             standardComponents.MainBus.Subscribe(
                 Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.MasterInputQueue));
+            standardComponents.MainBus.Subscribe(
+                Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.MasterInputQueue));
+            standardComponents.MainBus.Subscribe(
+                Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents.MasterInputQueue));
+            standardComponents.MainBus.Subscribe(
+                Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents.MasterInputQueue));                                
             projectionsStandardComponents.MasterMainBus.Subscribe(new UnwrapEnvelopeHandler());
         }
     }

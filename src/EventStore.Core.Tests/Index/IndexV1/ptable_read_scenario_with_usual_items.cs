@@ -4,32 +4,44 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false,10)]
+    [TestFixture(PTableVersions.IndexV1,true,10)]
+    [TestFixture(PTableVersions.IndexV2,false,10)]
+    [TestFixture(PTableVersions.IndexV2,true,10)]
+    [TestFixture(PTableVersions.IndexV3,false,10)]
+    [TestFixture(PTableVersions.IndexV3,true,10)]
+    [TestFixture(PTableVersions.IndexV4,false,10)]
+    [TestFixture(PTableVersions.IndexV4,true,10)]
     public class searching_ptable_with_usual_items_and_all_items_in_cache : ptable_read_scenario_with_usual_items
     {
-        public searching_ptable_with_usual_items_and_all_items_in_cache()
-            : base(midpointCacheDepth: 10)
+        public searching_ptable_with_usual_items_and_all_items_in_cache(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+            : base(ptableVersion, skipIndexVerify, midpointCacheDepth)
         {
 
         }
     }
 
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false,0)]
+    [TestFixture(PTableVersions.IndexV1,true,0)]
+    [TestFixture(PTableVersions.IndexV2,false,0)]
+    [TestFixture(PTableVersions.IndexV2,true,0)]
+    [TestFixture(PTableVersions.IndexV3,false,0)]
+    [TestFixture(PTableVersions.IndexV3,true,0)]
+    [TestFixture(PTableVersions.IndexV4,false,0)]
+    [TestFixture(PTableVersions.IndexV4,true,0)]
     public class searching_ptable_with_usual_items_and_only_some_items_in_cache : ptable_read_scenario_with_usual_items
     {
-        public searching_ptable_with_usual_items_and_only_some_items_in_cache()
-            : base(midpointCacheDepth: 0)
+        public searching_ptable_with_usual_items_and_only_some_items_in_cache(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+            : base(ptableVersion, skipIndexVerify, midpointCacheDepth)
         {
         }
     }
     
-    [TestFixture]
     public abstract class ptable_read_scenario_with_usual_items : PTableReadScenario
     {
-        protected ptable_read_scenario_with_usual_items(int midpointCacheDepth)
-                : base(midpointCacheDepth)
+        protected ptable_read_scenario_with_usual_items(byte ptableVersion, bool skipIndexVerify, int midpointCacheDepth)
+                : base(ptableVersion, skipIndexVerify, midpointCacheDepth)
         {
-
         }
 
         protected override void AddItemsForScenario(IMemTable memTable)

@@ -159,7 +159,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         return rec;
                 }
             }
-            return null; ;
+            return null;
         }
 
         protected static PrepareLogRecord ReadPrepareInternal(TFReaderLease reader, long logPosition)

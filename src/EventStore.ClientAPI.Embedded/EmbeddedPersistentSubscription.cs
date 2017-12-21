@@ -15,21 +15,23 @@ namespace EventStore.ClientAPI.Embedded
         private readonly UserCredentials _userCredentials;
         private readonly IAuthenticationProvider _authenticationProvider;
         private readonly int _bufferSize;
+        private readonly Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> _eventAppeared;
         private string _subscriptionId;
 
         public EmbeddedPersistentSubscription(
             ILogger log, IPublisher publisher, Guid connectionId,
             TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId,
             UserCredentials userCredentials, IAuthenticationProvider authenticationProvider, int bufferSize,
-            Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+            Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries,
             TimeSpan operationTimeout)
-            : base(log, publisher, connectionId, source, streamId, eventAppeared, subscriptionDropped)
+            : base(log, publisher, connectionId, source, streamId, subscriptionDropped)
         {
             _subscriptionId = subscriptionId;
             _userCredentials = userCredentials;
             _authenticationProvider = authenticationProvider;
             _bufferSize = bufferSize;
+            _eventAppeared = eventAppeared;
         }
 
         protected override PersistentEventStoreSubscription CreateVolatileSubscription(long lastCommitPosition, long? lastEventNumber)
@@ -76,6 +78,14 @@ namespace EventStore.ClientAPI.Embedded
                     new PublishEnvelope(Publisher, true), _subscriptionId, reason,
                     (ClientMessage.PersistentSubscriptionNackEvents.NakAction) action, processedEvents,
                     user));
+        }
+
+        public void EventAppeared(Core.Data.ResolvedEvent resolvedEvent, int? retryCount)
+        {
+            var @event = new PersistentSubscriptionResolvedEvent(resolvedEvent.OriginalPosition == null
+                ? new ResolvedEvent(resolvedEvent.ConvertToClientResolvedIndexEvent())
+                : new ResolvedEvent(resolvedEvent.ConvertToClientResolvedEvent()), retryCount);
+            _eventAppeared(Subscription, @event);
         }
     }
 }

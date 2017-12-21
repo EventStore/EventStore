@@ -97,6 +97,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly bool _enabledToRun;
         private ManagedProjectionState _state;
         internal PersistedState PersistedProjectionState = new PersistedState();
+        private bool _persistedStateLoaded = false;
         //private int _version;
 
         private string _faultedReason;
@@ -113,6 +114,7 @@ namespace EventStore.Projections.Core.Services.Management
         internal bool Prepared;
         internal bool Created;
         private bool _pendingWritePersistedState;
+        private readonly TimeSpan _projectionsQueryExpiry;
 
         private ManagedProjectionStateBase _stateHandler;
         private IEnvelope _lastReplyEnvelope;
@@ -139,6 +141,7 @@ namespace EventStore.Projections.Core.Services.Management
                 <CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
                 getResultDispatcher,
             IODispatcher ioDispatcher,
+            TimeSpan projectionQueryExpiry,
             bool isSlave = false,
             Guid slaveMasterWorkerId = default(Guid),
             Guid slaveMasterCorrelationId = default(Guid))
@@ -167,6 +170,7 @@ namespace EventStore.Projections.Core.Services.Management
             _getResultDispatcher = getResultDispatcher;
             _lastAccessed = _timeProvider.Now;
             _ioDispatcher = ioDispatcher;
+            _projectionsQueryExpiry = projectionQueryExpiry;
         }
 
         private string HandlerType
@@ -547,7 +551,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
-            //TODO: configurable expiration
             if (IsExpiredProjection())
             {
                 if (_state == ManagedProjectionState.Creating)
@@ -555,6 +558,7 @@ namespace EventStore.Projections.Core.Services.Management
                     // NOTE: workaround for stop not working on creating state (just ignore them)
                     return;
                 }
+                _logger.Warn("Transient projection {0} has expired and will be deleted. Last accessed at {1}", _name, _lastAccessed);
                 Handle(
                     new ProjectionManagementMessage.Command.Delete(
                         new NoopEnvelope(),
@@ -622,7 +626,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private bool IsExpiredProjection()
         {
-            return Mode == ProjectionMode.Transient && !_isSlave && _lastAccessed.AddMinutes(5) < _timeProvider.Now;
+            return Mode == ProjectionMode.Transient && !_isSlave && _lastAccessed.Add(_projectionsQueryExpiry) < _timeProvider.Now && _persistedStateLoaded;
         }
 
         public void InitializeNew(PersistedState persistedState, IEnvelope replyEnvelope)
@@ -726,6 +730,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             PersistedProjectionState = persistedState;
             _runAs = SerializedRunAs.DeserializePrincipal(persistedState.RunAs);
+            _persistedStateLoaded = true;
         }
 
         internal void WriteStartOrLoadStopped()

@@ -25,8 +25,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "Eve
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Projections.Core.Tests", "EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj", "{B3792B44-423E-4937-B065-F2D61785017F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "esquery", "esquery\esquery.csproj", "{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClusterNode.Web", "EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj", "{898C5545-7749-42F0-961A-048AF92B2A79}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClusterNode", "EventStore.ClusterNode\EventStore.ClusterNode.csproj", "{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}"
@@ -83,10 +81,6 @@ Global
 		{B3792B44-423E-4937-B065-F2D61785017F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3792B44-423E-4937-B065-F2D61785017F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3792B44-423E-4937-B065-F2D61785017F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{81D9A25A-2BE8-4620-A0CE-F82FE5A3A769}.Release|Any CPU.Build.0 = Release|Any CPU
 		{898C5545-7749-42F0-961A-048AF92B2A79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{898C5545-7749-42F0-961A-048AF92B2A79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{898C5545-7749-42F0-961A-048AF92B2A79}.Release|Any CPU.ActiveCfg = Release|Any CPU

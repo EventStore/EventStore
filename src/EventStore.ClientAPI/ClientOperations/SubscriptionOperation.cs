@@ -10,14 +10,21 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal abstract class SubscriptionOperation<T> : ISubscriptionOperation where T : EventStoreSubscription
+    internal interface IResolvedEvent
+    {
+        string OriginalStreamId{ get; }
+        long OriginalEventNumber { get; }
+        RecordedEvent OriginalEvent { get; }
+        Position? OriginalPosition { get; }
+    }
+    internal abstract class SubscriptionOperation<T, TE> : ISubscriptionOperation where T : EventStoreSubscription where TE: IResolvedEvent
     {
         private readonly ILogger _log;
         private readonly TaskCompletionSource<T> _source;
         protected readonly string _streamId;
         protected readonly bool _resolveLinkTos;
         protected readonly UserCredentials _userCredentials;
-        protected readonly Func<T, ResolvedEvent, Task> _eventAppeared;
+        protected readonly Func<T, TE, Task> _eventAppeared;
         private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
@@ -33,7 +40,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                      string streamId,
                                      bool resolveLinkTos,
                                      UserCredentials userCredentials,
-                                     Func<T, ResolvedEvent, Task> eventAppeared,
+                                     Func<T, TE, Task> eventAppeared,
                                      Action<T, SubscriptionDropReason, Exception> subscriptionDropped,
                                      bool verboseLogging,
                                      Func<TcpPackageConnection> getConnection)
@@ -84,7 +91,6 @@ namespace EventStore.ClientAPI.ClientOperations
         }
 
         protected abstract bool InspectPackage(TcpPackage package, out InspectionResult result);
-
         public InspectionResult InspectPackage(TcpPackage package)
         {
             try
@@ -97,13 +103,6 @@ namespace EventStore.ClientAPI.ClientOperations
 
                 switch (package.Command)
                 {
-                    case TcpCommand.StreamEventAppeared:
-                        {
-                            var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
-                            EventAppeared(new ResolvedEvent(dto.Event));
-                            return new InspectionResult(InspectionDecision.DoNothing, "StreamEventAppeared");
-                        }
-
                     case TcpCommand.SubscriptionDropped:
                         {
                             var dto = package.Data.Deserialize<ClientMessage.SubscriptionDropped>();
@@ -240,7 +239,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected abstract T CreateSubscriptionObject(long lastCommitPosition, long? lastEventNumber);
 
-        protected void EventAppeared(ResolvedEvent e)
+        protected void EventAppeared(TE e)
         {
             if (_unsubscribed != 0)
                 return;

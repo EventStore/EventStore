@@ -5,11 +5,24 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class ptable_should: SpecificationWithFilePerTestFixture
     {
         protected byte _ptableVersion = PTableVersions.IndexV1;
         private PTable _ptable;
+        private bool _skipIndexVerify;
+
+        public ptable_should(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         public override void TestFixtureSetUp()
         {
@@ -17,7 +30,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
 
             var table = new HashListMemTable(_ptableVersion, maxSize: 10);
             table.Add(0x010100000000, 0x0001, 0x0001);
-            _ptable = PTable.FromMemtable(table, Filename, cacheDepth: 0);
+            _ptable = PTable.FromMemtable(table, Filename, cacheDepth: 0,skipIndexVerify:_skipIndexVerify);
         }
 
         public override void TestFixtureTearDown()

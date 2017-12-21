@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="AllCheckpoint.cs" />
     <Compile Include="AllEventsSlice.cs" />
+    <Compile Include="ClientApiConstants.cs" />
     <Compile Include="ClientOperations\ConditionalAppendToStreamOperation.cs" />
     <Compile Include="ClientOperations\ConnectToPersistentSubscriptionOperation.cs" />
     <Compile Include="ClientOperations\CreatePersistentSubscriptionOperation.cs" />

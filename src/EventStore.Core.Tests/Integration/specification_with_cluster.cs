@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EventStore.Core.Tests.Integration
 {
@@ -131,6 +132,16 @@ namespace EventStore.Core.Tests.Integration
         protected static void WaitIdle()
         {
             QueueStatsCollector.WaitIdle();
+        }
+
+        protected MiniClusterNode GetMaster()
+        {
+            return _nodes.First(x => x.NodeState == Data.VNodeState.Master);
+        }
+
+        protected MiniClusterNode[] GetSlaves()
+        {
+            return _nodes.Where(x => x.NodeState != Data.VNodeState.Master).ToArray();
         }
     }
 }

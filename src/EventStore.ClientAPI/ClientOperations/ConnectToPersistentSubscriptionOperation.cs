@@ -9,13 +9,13 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ConnectToPersistentSubscriptionOperation : SubscriptionOperation<PersistentEventStoreSubscription>, IConnectToPersistentSubscriptions
+    internal class ConnectToPersistentSubscriptionOperation : SubscriptionOperation<PersistentEventStoreSubscription, PersistentSubscriptionResolvedEvent>, IConnectToPersistentSubscriptions
     {
         private readonly string _groupName;
         private readonly int _bufferSize;
         private string _subscriptionId;
 
-        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Func<PersistentEventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
+        public ConnectToPersistentSubscriptionOperation(ILogger log, TaskCompletionSource<PersistentEventStoreSubscription> source, string groupName, int bufferSize, string streamId, UserCredentials userCredentials, Func<PersistentEventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared, Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
             : base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
             _groupName = groupName;
@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
             if (package.Command == TcpCommand.PersistentSubscriptionStreamEventAppeared)
             {
                 var dto = package.Data.Deserialize<ClientMessage.PersistentSubscriptionStreamEventAppeared>();
-                EventAppeared(new ResolvedEvent(dto.Event));
+                EventAppeared(new PersistentSubscriptionResolvedEvent(new ResolvedEvent(dto.Event), dto.RetryCount));
                 result = new InspectionResult(InspectionDecision.DoNothing, "StreamEventAppeared");
                 return true;
             }

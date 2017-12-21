@@ -14,23 +14,18 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout, false);
+            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123", ExpectedVersion.Any, true, null);
-//            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-//            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-//            yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3, true);
 
         }
 
         protected override Message When()
         {
-            return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
+            return new StorageMessage.CommitReplicated(InternalCorrId, 100, 2, 3, 3);
         }
 
         [Test]

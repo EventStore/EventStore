@@ -15,9 +15,9 @@ namespace EventStore.Core.Tests.TransactionLog
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
+            _chunk = TFChunkHelper.CreateNewChunk(Filename);
             _chunk.Complete();
-            _testChunk = TFChunk.FromCompletedFile(Filename, true, false);
+            _testChunk = TFChunk.FromCompletedFile(Filename, true, false, 5);
         }
 
         [TearDown]

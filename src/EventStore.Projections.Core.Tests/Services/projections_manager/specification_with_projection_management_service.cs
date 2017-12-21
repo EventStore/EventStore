@@ -7,6 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
@@ -59,6 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _timeProvider,
                 ProjectionType.All,
                 _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
                 _initializeSystemProjections);
 
             IPublisher inputQueue = GetInputQueue();

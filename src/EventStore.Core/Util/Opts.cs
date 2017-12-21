@@ -66,7 +66,7 @@ namespace EventStore.Core.Util
 
         public const string ConnectionPendingSendBytesThresholdDescr = "The maximum number of pending send bytes allowed before a connection is closed.";
         public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
-        
+
         public const string GossipOnSingleNodeDescr = "When enabled tells a single node to run gossip as if it is a cluster";
         public const bool GossipOnSingleNodeDefault = false;
 
@@ -115,6 +115,9 @@ namespace EventStore.Core.Util
         public const string WriteThroughDescr = "Enables Write Through when writing to the file system, this bypasses filesystem caches.";
         public const bool WriteThroughDefault = false;
 
+        public const string ChunkInitialReaderCountDescr = "The initial number of readers to start when opening a TFChunk";
+        public const int ChunkInitialReaderCountDefault  = 5;
+
         public const string UnbufferedDescr = "Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.";
         public const bool UnbufferedDefault = false;
 
@@ -126,6 +129,9 @@ namespace EventStore.Core.Util
 
         public const string ProjectionThreadsDescr = "The number of threads to use for projections.";
         public const int    ProjectionThreadsDefault = 3;
+
+        public const string ProjectionsQueryExpiryDescr = "The number of minutes a query can be idle before it expires";
+        public const int    ProjectionsQueryExpiryDefault = 5;
 
         public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
         public const int    WorkerThreadsDefault = 5;
@@ -327,12 +333,14 @@ namespace EventStore.Core.Util
         public const string HistogramDescr =
             "Enables the tracking of various histograms in the backend, typically only used for debugging etc";
         public static readonly bool HistogramEnabledDefault = false;
-
+        public const string SkipIndexVerifyDescr =
+            "Bypasses the checking of file hashes of indexes during startup and after index merges (allows for faster startup and less disk pressure after merges).";
+        public static readonly bool SkipIndexVerifyDefault = false;
         public const string IndexCacheDepthDescr = "Sets the depth to cache for the mid point cache in index.";
         public static int IndexCacheDepthDefault = 16;
 
         public const string IndexBitnessVersionDescr = "Sets the bitness version for the indexes to use";
-        public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV3;
+        public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV4;
 		/*
 		 * Authentication Options
 		 */

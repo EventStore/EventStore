@@ -1,11 +1,12 @@
-﻿using EventStore.ClientAPI.Messages;
+﻿using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
     /// <summary>
     /// A structure representing a single event or an resolved link event.
     /// </summary>
-    public struct ResolvedEvent
+    public struct ResolvedEvent : IResolvedEvent
     {
         /// <summary>
         /// The event, or the resolved link event if this <see cref="ResolvedEvent"/> is
@@ -61,5 +62,10 @@ namespace EventStore.ClientAPI
             Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
             OriginalPosition = null;
         }
+
+        Position? IResolvedEvent.OriginalPosition => OriginalPosition;
+        RecordedEvent IResolvedEvent.OriginalEvent => OriginalEvent;
+        long IResolvedEvent.OriginalEventNumber=> OriginalEventNumber;
+        string IResolvedEvent.OriginalStreamId => OriginalStreamId;
     }
 }

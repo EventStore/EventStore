@@ -44,11 +44,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 queues,
                 _timeProvider,
                 ProjectionType.All,
-                _ioDispatcher);
+                _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
-            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid(), Guid.NewGuid()));
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
             _manager.Handle(new ProjectionManagementMessage.ReaderReady());
         }
 

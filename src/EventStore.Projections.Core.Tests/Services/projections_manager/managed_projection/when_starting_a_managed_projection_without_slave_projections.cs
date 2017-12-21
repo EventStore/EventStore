@@ -9,6 +9,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Core.Util;
 using NUnit.Framework;
 using TestFixtureWithExistingEvents =
     EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
@@ -63,7 +64,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                         _bus, 
                         v => v.CorrelationId,
                         v => v.CorrelationId,
-                        new PublishEnvelope(_bus)), _ioDispatcher);
+                        new PublishEnvelope(_bus)), _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
         }
 
         protected override IEnumerable<WhenStep> When()

@@ -4,6 +4,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
 {
@@ -97,11 +98,9 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-            public readonly Guid EpochId;
 
-            public BecomeMaster(Guid correlationId, Guid epochId): base(correlationId, VNodeState.Master)
+            public BecomeMaster(Guid correlationId): base(correlationId, VNodeState.Master)
             {
-                EpochId = epochId;
             }
         }
 
@@ -191,11 +190,9 @@ namespace EventStore.Core.Messages
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
-            public readonly Guid EpochId;
 
-            public BecomeSlave(Guid correlationId, Guid epochId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
+            public BecomeSlave(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
             {
-                EpochId = epochId;
             }
         }
 
@@ -298,5 +295,19 @@ namespace EventStore.Core.Messages
 		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		    public override int MsgTypeId { get { return TypeId; } }
 	    }
+
+        public class EpochWritten: Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly EpochRecord Epoch;
+
+            public EpochWritten(EpochRecord epoch)
+            {
+                Ensure.NotNull(epoch,"epoch");
+                Epoch = epoch;
+            }            
+        }           
     }
 }
