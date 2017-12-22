@@ -1442,7 +1442,7 @@ namespace EventStore.Core
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
-            ICheckpoint replicationChk = new InMemoryCheckpoint(-1);
+            ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
             if (inMemDb)
             {
                 writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
