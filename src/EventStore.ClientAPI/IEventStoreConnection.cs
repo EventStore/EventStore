@@ -137,7 +137,7 @@ namespace EventStore.ClientAPI
         /// </remarks>
         /// <param name="stream">The name of the stream to append events to.</param>
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to.</param>
-        /// <param name="events">The events to append to the stream<./param>
+        /// <param name="events">The events to append to the stream.</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;ConditionalWriteResult&gt;"/> describing if the operation succeeded and, if not, the reason for failure (which can be either stream version mismatch or trying to write to a deleted stream).</returns>
         Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null);
@@ -183,8 +183,8 @@ namespace EventStore.ClientAPI
         /// Asynchronously reads count events from an event stream forwards (e.g. oldest to newest) starting from position start.
         /// </summary>
         /// <param name="stream">The stream to read from.</param>
-        /// <param name="start">The starting point to read from<./param>
-        /// <param name="count">The count of items to read<./param>
+        /// <param name="start">The starting point to read from.</param>
+        /// <param name="count">The count of items to read.</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation.</returns>
@@ -229,8 +229,8 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="stream">The stream to subscribe to.</param>
         /// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
-        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription<./param>
-        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped<./param>
+        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
         /// <param name="userCredentials">User credentials to use for the operation.</param>
         /// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
         Task<EventStoreSubscription> SubscribeToStreamAsync(
