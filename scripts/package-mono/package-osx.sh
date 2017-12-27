@@ -115,7 +115,9 @@ mkdir $PACKAGEDIRECTORY
 pushd $SCRIPTDIR/../../bin/clusternode/
 
 # Update the global DllMap config file to avoid a hard coded location for libMonoPosixHelper
-sed -i '/libMonoPosixHelper\.dylib/c\\	<dllmap dll=\"MonoPosixHelper\" target=\"libMonoPosixHelper\.dylib\" os=\"!windows\" \/\>' "$MONOCONFIG"
+sed -i '' '/libMonoPosixHelper\.dylib/ c\
+\<dllmap dll=MonoPosixHelper target=libMonoPosixHelper\.dylib\" os=\"\!windows\" \/\>
+' "$MONOCONFIG"
 
 mkbundle -c \
     -o clusternode.c \
