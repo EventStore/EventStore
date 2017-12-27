@@ -99,6 +99,9 @@ mkdir "$PACKAGEDIRECTORY"
 
 pushd "$SCRIPTDIR/../../bin/clusternode/"
 
+# Update the global DllMap config file to avoid a hard coded location for libMonoPosixHelper
+sed -i '/libMonoPosixHelper\.so/c\\	<dllmap dll=\"MonoPosixHelper\" target=\"libMonoPosixHelper\.so\" os=\"!windows\" \/\>' "$MONOCONFIG"
+
 # There is an issue with mkbundled packages in mono
 # https://bugzilla.xamarin.com/show_bug.cgi?id=33483
 # https://bugzilla.xamarin.com/show_bug.cgi?id=42735
@@ -107,8 +110,6 @@ pushd "$SCRIPTDIR/../../bin/clusternode/"
 # The fix for now would be to just remove this prefix path
 cp "$MONOCONFIG" "$MONOCONFIG.custom"
 sed -e 's/$mono_libdir\///g' -i "$MONOCONFIG.custom"
-# Update the DllMap config file to avoid a hard coded location for libMonoPosixHelper
-sed -i '/libMonoPosixHelper\.dylib/c\\<dllmap dll=\"MonoPosixHelper\" target=\"libMonoPosixHelper\.dylib\" os=\"!windows\" \/\>' "$MONOCONFIG.custom"
 MONOCONFIG="$MONOCONFIG.custom"
 
 # mkbundle -c -o clusternode.c -oo clusternode.a \
