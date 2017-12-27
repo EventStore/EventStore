@@ -67,6 +67,15 @@ else
     exit 1
 fi
 
+MONOPOSIXHELPER=/usr/lib/libMonoPosixHelper.so
+if [[ -f $MONOPOSIXHELPER ]] ; then
+    writeLog "Using libMonoPosixHelper: $MONOPOSIXHELPER"
+else
+    writeLog "Cannot find libMonoPosixHelper. Searching for it:"
+    echo | find / -name "libMonoPosixHelper.so"
+    exit 1
+fi
+
 GCCPATH=$(which gcc)
 if [[ $? != 0 ]] ; then
 	writeLog "Cannot find gcc"
@@ -89,6 +98,9 @@ fi
 mkdir "$PACKAGEDIRECTORY"
 
 pushd "$SCRIPTDIR/../../bin/clusternode/"
+
+# Update the global DllMap config file to avoid a hard coded location for libMonoPosixHelper
+sed -i '/libMonoPosixHelper\.so/c\\	<dllmap dll=\"MonoPosixHelper\" target=\"libMonoPosixHelper\.so\" os=\"!windows\" \/\>' "$MONOCONFIG"
 
 # There is an issue with mkbundled packages in mono
 # https://bugzilla.xamarin.com/show_bug.cgi?id=33483
@@ -217,6 +229,8 @@ cc -o testclient \
     -Wl,-Bdynamic $(pkg-config --libs-only-l monosgen-2 | sed -e "s/\-lmonosgen-2.0 //") \
 	testclient.a
 
+# Ensure libMonoPosixHelper is present in the package
+cp $MONOPOSIXHELPER "$PACKAGEDIRECTORY/"
 cp testclient "$PACKAGEDIRECTORY/"
 
 popd
