@@ -7,9 +7,8 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class CatchUpSubscriptionSettings
     {
-        /// TODO: In what size?
         /// <summary>
-        /// The maximum amount to cache when processing from a live subscription. Going above this value will drop the subscription.
+        /// The maximum amount of events to cache when processing from a live subscription. Going above this value will drop the subscription.
         /// </summary>
         public readonly int MaxLiveQueueSize;
 
@@ -43,11 +42,10 @@ namespace EventStore.ClientAPI
             resolveLinkTos: true,
             subscriptionName: String.Empty
             );
-        /// TODO: Again, what is the unit?
         /// <summary>
         /// Constructs a <see cref="CatchUpSubscriptionSettings"/> object.
         /// </summary>
-        /// <param name="maxLiveQueueSize">The maximum amount to buffer when processing from a live subscription. Going above this amount will drop the subscription.</param>
+        /// <param name="maxLiveQueueSize">The maximum amount of events to buffer when processing from a live subscription. Going above this amount will drop the subscription.</param>
         /// <param name="readBatchSize">The number of events to read per batch when reading through history.</param>
         /// <param name="verboseLogging">Enables verbose logging on the subscription.</param>
         /// <param name="resolveLinkTos">Whether to resolve link events.</param>
