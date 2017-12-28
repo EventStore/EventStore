@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public interface ICoreProjectionCheckpointManager
     {
         void Initialize();
-        void Start(CheckpointTag checkpointTag);
+        void Start(CheckpointTag checkpointTag,PartitionState rootPartitionState);
         void Stopping();
         void Stopped();
         void GetStatistics(ProjectionStatistics info);

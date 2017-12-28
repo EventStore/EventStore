@@ -261,7 +261,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
             {
             }
 
-            public void Start(CheckpointTag checkpointTag)
+            public void Start(CheckpointTag checkpointTag, PartitionState rootPartitionState)
             {
                 _started = true;
                 _startedAt = checkpointTag;

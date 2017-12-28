@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
                 _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
 
-                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null);
 //                _manager.StateUpdated("", @"{""state"":""state1""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);
 //                _manager.StateUpdated("", @"{""state"":""state2""}");
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null);
         }
 
 
