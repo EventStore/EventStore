@@ -6,7 +6,6 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
-    /// TODO: How are new lines handled?   
     /// <summary>
     /// Maintains a full duplex connection to Event Store.
     /// </summary>
@@ -54,14 +53,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="stream">The name of the stream to delete.</param>
         /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
-        /// <param name="hardDelete">Indicator for tombstoning vs soft-deleting the stream. Tombstoned streams can never be recreated. Soft-deleted streams
-        /// TODO: Can the below be a link?
-        /// can be written to again, but the EventNumber sequence will not start from 0.</param>
+        /// <param name="hardDelete">Indicator for tombstoning vs soft-deleting the stream. Tombstoned streams can never be recreated. Soft-deleted streams can be written to again, but the EventNumber sequence will not start from 0.</param>
         /// <param name="userCredentials">The optional user credentials to perform operation with.</param>
         /// <returns>A <see cref="Task&lt;DeleteResult&gt;"/> containing the results of the delete stream operation.</returns>
         Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null);
-
-        /// TODO: Differences?
 
         /// <summary>
         /// Appends events asynchronously to a stream.
@@ -202,7 +197,6 @@ namespace EventStore.ClientAPI
         Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null);
 
         /// <summary>
-        /// TODO: Have we defined node before as a typical word?
         /// Asynchronously reads all events in the node forward (e.g. beginning to end).
         /// </summary>
         /// <param name="position">The position to start reading from.</param>
