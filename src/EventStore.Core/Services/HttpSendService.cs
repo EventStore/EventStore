@@ -221,10 +221,14 @@ namespace EventStore.Core.Services
                 && hasContentLength)
             {
                 var streamContent = new StreamContent(srcReq.InputStream);
-                streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(srcReq.ContentType);
                 streamContent.Headers.ContentLength = srcReq.ContentLength64;
                 request.Content = streamContent;
 
+                MediaTypeHeaderValue contentType;
+                if(MediaTypeHeaderValue.TryParse(srcReq.ContentType, out contentType))
+                {
+                    streamContent.Headers.ContentType = contentType;
+                }
             }
             ForwardResponse(manager, request);
         }
