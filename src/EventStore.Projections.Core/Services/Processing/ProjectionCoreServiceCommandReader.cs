@@ -60,16 +60,24 @@ namespace EventStore.Projections.Core.Services.Processing
             while (!_stopped)
             {
                 ClientMessage.ReadStreamEventsForwardCompleted readResultForward = null;
-                yield return
-                    _ioDispatcher.BeginReadForward(
-                    _cancellationScope,
-                        ProjectionNamesBuilder.BuildControlStreamName(epochId),
-                        fromEventNumber,
-                        1,
-                        false,
-                        SystemAccount.Principal,
-                        completed => readResultForward = completed);
-
+                var success = false;
+                while (!success)
+                {
+                    yield return
+                        _ioDispatcher.BeginReadForward(
+                            _cancellationScope,
+                            ProjectionNamesBuilder.BuildControlStreamName(epochId),
+                            fromEventNumber,
+                            1,
+                            false,
+                            SystemAccount.Principal,
+                            completed =>
+                            {
+                                readResultForward = completed;
+                                success = true;
+                            },
+                            () => Log.Warn("Read forward of stream {0} timed out. Retrying", ProjectionNamesBuilder.BuildControlStreamName(epochId)));
+                }
                 if (readResultForward.Result != ReadStreamResult.Success
                     && readResultForward.Result != ReadStreamResult.NoStream)
                     throw new Exception("Control reader failed. Read result: " + readResultForward.Result);
@@ -122,16 +130,24 @@ namespace EventStore.Projections.Core.Services.Processing
                     completed => { });
 
             ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
-            yield return
-                _ioDispatcher.BeginReadBackward(
-                _cancellationScope,
-                    coreControlStreamID,
-                    -1,
-                    1,
-                    false,
-                    SystemAccount.Principal,
-                    completed => readResult = completed);
-
+            bool success = false;
+            while(!success)
+            {
+                yield return
+                    _ioDispatcher.BeginReadBackward(
+                    _cancellationScope,
+                        coreControlStreamID,
+                        -1,
+                        1,
+                        false,
+                        SystemAccount.Principal,
+                        completed =>
+                        {
+                            readResult = completed;
+                            success = true;
+                        },
+                        () => Log.Warn("Read backward of stream {0} timed out. Retrying", coreControlStreamID));
+            }
 
             long from = 0;
 
@@ -148,7 +164,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             Log.Debug("PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
-            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("ProjectionCoreServiceCommandReader"));            
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("ProjectionCoreServiceCommandReader"));
 
             ControlSteps(startCoreMessage.EpochId).Run();
 
@@ -160,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     yield return
                         _ioDispatcher.BeginReadForward(
-                        _cancellationScope,
+                            _cancellationScope,
                             coreControlStreamID,
                             @from,
                             10,
@@ -176,7 +192,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                     completed.TfLastCommitPosition);
                                 foreach (var e in completed.Events)
                                     PublishCommand(e);
-                            });
+                            },
+                            () => Log.Warn("Read forward of stream {0} timed out. Retrying", coreControlStreamID));
                 } while (!eof);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake(_cancellationScope, coreControlStreamID, subscribeFrom, message => { });

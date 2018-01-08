@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IODispatcher _ioDispatcher;
         private readonly string _projectionCheckpointStreamId;
         private readonly bool _useCheckpoints;
-
+        private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointReader>();
 
         private bool _stateRequested;
 
@@ -73,9 +73,14 @@ namespace EventStore.Projections.Core.Services.Processing
         protected void RequestLoadState()
         {
             const int recordsToRequest = 10;
-            _readRequestId = _ioDispatcher.ReadBackward(
+            _readRequestId = Guid.NewGuid();
+            _ioDispatcher.ReadBackward(
                 _projectionCheckpointStreamId, _nextStateIndexToRequest, recordsToRequest, false,
-                SystemAccount.Principal, OnLoadStateReadRequestCompleted);
+                SystemAccount.Principal, OnLoadStateReadRequestCompleted, 
+                () => {
+                    _logger.Warn("Read forward of stream {0} timed out. Retrying.", _projectionCheckpointStreamId);
+                    RequestLoadState();
+                }, _readRequestId);
         }
 
 

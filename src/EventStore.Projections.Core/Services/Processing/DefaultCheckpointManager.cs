@@ -88,12 +88,27 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var stateEventType = ProjectionEventTypes.PartitionCheckpoint;
             var partitionCheckpointStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
+            
+            ReadPartitionStream(partitionCheckpointStreamName, -1, requestedStateCheckpointTag, loadCompleted, stateEventType);
+        }
+
+        private void ReadPartitionStream(string partitionStreamName, long eventNumber, CheckpointTag requestedStateCheckpointTag,
+            Action<PartitionState> loadCompleted, string stateEventType)
+        {
             _readRequestsInProgress++;
-            var requestId = _ioDispatcher.ReadBackward(
-                partitionCheckpointStreamName, -1, 1, false, SystemAccount.Principal,
+            var requestId = Guid.NewGuid();
+            _ioDispatcher.ReadBackward(
+                partitionStreamName, eventNumber, 1, false, SystemAccount.Principal,
                 m =>
                     OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-                        m, requestedStateCheckpointTag, loadCompleted, partitionCheckpointStreamName, stateEventType));
+                        m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType),
+                () =>
+                {
+                    _logger.Warn("Read backward for stream {0} timed out. Retrying", partitionStreamName);
+                    _loadStateRequests.Remove(requestId);
+                    _readRequestsInProgress--;
+                    ReadPartitionStream(partitionStreamName, eventNumber, requestedStateCheckpointTag, loadCompleted, stateEventType);
+                }, requestId);
             if (requestId != Guid.Empty)
                 _loadStateRequests.Add(requestId);
         }
@@ -140,16 +155,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 loadCompleted(state);
                 return;
             }
-            _readRequestsInProgress++;
-            var requestId = _ioDispatcher.ReadBackward(
-                partitionStreamName, message.NextEventNumber, 1, false, SystemAccount.Principal,
-                m =>
-                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-                        m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
+            ReadPartitionStream(partitionStreamName, message.NextEventNumber, requestedStateCheckpointTag, loadCompleted, stateEventType);
         }
-
+        
         protected override ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition)
         {
             return new ProjectionCheckpoint(

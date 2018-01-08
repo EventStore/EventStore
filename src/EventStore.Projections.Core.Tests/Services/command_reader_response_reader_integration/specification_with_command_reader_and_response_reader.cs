@@ -14,6 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.command_reader_response_rea
         protected ProjectionCoreServiceCommandReader _commandReader;
         protected ProjectionManagerResponseReader _responseReader;
         protected int _numberOfWorkers;
+        protected string _coreServiceId;
 
         protected override void Given()
         {
@@ -21,7 +22,9 @@ namespace EventStore.Projections.Core.Tests.Services.command_reader_response_rea
             AllWritesSucceed();
             NoOtherStreams();
 
-            _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher, Guid.NewGuid().ToString("N"));
+            if (String.IsNullOrEmpty(_coreServiceId))_coreServiceId = Guid.NewGuid().ToString("N");
+            
+            _commandReader = new ProjectionCoreServiceCommandReader(_bus, _ioDispatcher, _coreServiceId);
             _responseReader = new ProjectionManagerResponseReader(_bus, _ioDispatcher, _numberOfWorkers);
 
             _bus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_commandReader);
