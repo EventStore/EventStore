@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
             db.Open();
 
-            var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint());
+            var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false);
             chaser.Open();
 
             LogRecord record;
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog
             chaserchk.Write(12);
             chaserchk.Flush();
 
-            var chaser = new TFChunkChaser(db, writerchk, chaserchk);
+            var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
             chaser.Open();
 
             LogRecord record;
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
             db.Open();
 
-            var chaser = new TFChunkChaser(db, writerchk, chaserchk);
+            var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
             chaser.Open();
 
             LogRecord record;
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-            var reader = new TFChunkChaser(db, writerchk, chaserchk);
+            var reader = new TFChunkChaser(db, writerchk, chaserchk, false);
             reader.Open();
 
             LogRecord record;
@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
-            var chaser = new TFChunkChaser(db, writerchk, chaserchk);
+            var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
             chaser.Open();
 
             LogRecord record;
