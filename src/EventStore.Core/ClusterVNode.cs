@@ -166,7 +166,7 @@ namespace EventStore.Core
             var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
-                () => new TFChunkReader(db, db.Config.WriterCheckpoint));
+                () => new TFChunkReader(db, db.Config.WriterCheckpoint, optimizeReadSideCache: db.Config.OptimizeReadSideCache));
             var tableIndex = new TableIndex(indexPath,
                                             new XXHashUnsafe(),
                                             new Murmur3AUnsafe(),
@@ -194,7 +194,7 @@ namespace EventStore.Core
                                                 writer,
                                                 initialReaderCount: 1,
                                                 maxReaderCount: 5,
-                                                readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
+                                                readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint, optimizeReadSideCache: db.Config.OptimizeReadSideCache));
             epochManager.Init();
 
             var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,
@@ -213,7 +213,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
             _mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 
-            var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
+            var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint, db.Config.OptimizeReadSideCache);
             var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, indexCommitterService, epochManager);
 #if DEBUG
             QueueStatsCollector.InitializeCheckpoints(
@@ -325,7 +325,7 @@ namespace EventStore.Core
 
             // EXTERNAL HTTP
             _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-                                                    _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs, 
+                                                    _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
                                                     vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs, vNodeSettings.ExtHttpPrefixes);
             _externalHttpService.SetupController(persistentSubscriptionController);
             if(vNodeSettings.AdminOnPublic)
@@ -345,7 +345,7 @@ namespace EventStore.Core
             // INTERNAL HTTP
             if(!isSingleNode) {
                 _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
-                                                       _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs, 
+                                                       _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
                                                        vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs, vNodeSettings.IntHttpPrefixes);
                 _internalHttpService.SetupController(adminController);
                 _internalHttpService.SetupController(pingController);

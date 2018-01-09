@@ -106,6 +106,8 @@ namespace EventStore.Core
         protected string _index;
         protected bool _skipIndexVerify;
         protected int _indexCacheDepth;
+        protected bool _optimizeIndexMerge;
+
         protected bool _unsafeIgnoreHardDelete;
         protected bool _unsafeDisableFlushToDisk;
         protected bool _betterOrdering;
@@ -194,7 +196,7 @@ namespace EventStore.Core
             _extTcpHeartbeatInterval = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatIntervalDefault);
             _extTcpHeartbeatTimeout = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatTimeoutDefault);
             _connectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
-            
+
             _skipVerifyDbHashes = Opts.SkipDbVerifyDefault;
             _maxMemtableSize = Opts.MaxMemtableSizeDefault;
             _subsystems = new List<ISubsystem>();
@@ -208,6 +210,7 @@ namespace EventStore.Core
             _skipIndexVerify = Opts.SkipIndexVerifyDefault;
             _indexCacheDepth = Opts.IndexCacheDepthDefault;
             _indexBitnessVersion = Opts.IndexBitnessVersionDefault;
+            _optimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
@@ -327,7 +330,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal IP that would be advertised 
+        /// Sets up the Internal IP that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseInternalIPAs(IPAddress intIpAdvertiseAs)
@@ -337,7 +340,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the External IP that would be advertised 
+        /// Sets up the External IP that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseExternalIPAs(IPAddress extIpAdvertiseAs)
@@ -347,7 +350,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal Http Port that would be advertised 
+        /// Sets up the Internal Http Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseInternalHttpPortAs(int intHttpPortAdvertiseAs)
@@ -370,7 +373,7 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets up the External Http Port that would be advertised 
+        /// Sets up the External Http Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseExternalHttpPortAs(int extHttpPortAdvertiseAs)
@@ -380,7 +383,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal Secure TCP Port that would be advertised 
+        /// Sets up the Internal Secure TCP Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseInternalSecureTCPPortAs(int intSecureTcpPortAdvertiseAs)
@@ -390,7 +393,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the External Secure TCP Port that would be advertised 
+        /// Sets up the External Secure TCP Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseExternalSecureTCPPortAs(int extSecureTcpPortAdvertiseAs)
@@ -400,7 +403,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets up the Internal TCP Port that would be advertised 
+        /// Sets up the Internal TCP Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseInternalTCPPortAs(int intTcpPortAdvertiseAs)
@@ -421,7 +424,7 @@ namespace EventStore.Core
 
 
         /// <summary>
-        /// Sets up the External TCP Port that would be advertised 
+        /// Sets up the External TCP Port that would be advertised
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder AdvertiseExternalTCPPortAs(int extTcpPortAdvertiseAs)
@@ -529,7 +532,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the target host of the server's SSL certificate. 
+        /// Sets the target host of the server's SSL certificate.
         /// </summary>
         /// <param name="targetHost">The target host of the server's SSL certificate</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -540,7 +543,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets whether to validate that the server's certificate is trusted.  
+        /// Sets whether to validate that the server's certificate is trusted.
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder ValidateSslServer()
@@ -692,7 +695,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix) 
+        /// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix)
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder DontAddInterfacePrefixes()
@@ -804,7 +807,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the minimum flush delay 
+        /// Sets the minimum flush delay
         /// </summary>
         /// <param name="minFlushDelay">The minimum flush delay</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -815,7 +818,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the prepare timeout 
+        /// Sets the prepare timeout
         /// </summary>
         /// <param name="prepareTimeout">The prepare timeout</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -826,7 +829,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the commit timeout 
+        /// Sets the commit timeout
         /// </summary>
         /// <param name="commitTimeout">The commit timeout</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -859,7 +862,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the number of nodes which must acknowledge prepares. 
+        /// Sets the number of nodes which must acknowledge prepares.
         /// The minimum allowed value is one greater than half the cluster size.
         /// </summary>
         /// <param name="prepareCount">The number of nodes which must acknowledge prepares</param>
@@ -871,7 +874,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Sets the number of nodes which must acknowledge commits before acknowledging to a client.  
+        /// Sets the number of nodes which must acknowledge commits before acknowledging to a client.
         /// The minimum allowed value is one greater than half the cluster size.
         /// </summary>
         /// <param name="commitCount">The number of nodes which must acknowledge commits</param>
@@ -894,7 +897,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Disables the merging of chunks when scavenge is running 
+        /// Disables the merging of chunks when scavenge is running
         /// </summary>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder DisableScavengeMerging()
@@ -946,9 +949,9 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// Verifies the index integrity using the specified method on startup
+        /// Skips verification of indexes on startup
         /// </summary>
-        /// <param name="skipIndexVerify">The index verification method</param>
+        /// <param name="skipIndexVerify">Skips verification of indexes on startup</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder WithIndexVerification(bool skipIndexVerify)
         {
@@ -964,6 +967,17 @@ namespace EventStore.Core
         public VNodeBuilder WithIndexCacheDepth(int indexCacheDepth)
         {
             _indexCacheDepth = indexCacheDepth;
+            return this;
+        }
+
+        /// <summary>
+        /// Optimizes index merges
+        /// </summary>
+        /// <param name="optimizeIndexMerge">Optimizes index merges</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithIndexMergeOptimization(bool optimizeIndexMerge)
+        {
+            _optimizeIndexMerge = optimizeIndexMerge;
             return this;
         }
 
@@ -1156,7 +1170,7 @@ namespace EventStore.Core
         }
 
         /// <summary>
-        /// The number of chunks to cache in unmanaged memory.        
+        /// The number of chunks to cache in unmanaged memory.
         /// </summary>
         /// <param name="cachedChunks">The number of chunks to cache</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -1278,7 +1292,7 @@ namespace EventStore.Core
                 var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
 
                 var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
-                var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port; 
+                var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
 
                 var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
                 var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
@@ -1291,7 +1305,7 @@ namespace EventStore.Core
             }
             return _gossipAdvertiseInfo;
         }
-        
+
         protected abstract void SetUpProjectionsIfNeeded();
 
         /// <summary>
@@ -1316,15 +1330,15 @@ namespace EventStore.Core
             SetUpProjectionsIfNeeded();
             _gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
-
-            _dbConfig = CreateDbConfig(_chunkSize, 
-                                       _cachedChunks, 
-                                       _dbPath, 
+            _dbConfig = CreateDbConfig(_chunkSize,
+                                       _cachedChunks,
+                                       _dbPath,
                                        _chunksCacheSize,
-                                       _inMemoryDb, 
+                                       _inMemoryDb,
                                        _unbuffered,
                                        _writethrough,
                                        _chunkInitialReaderCount,
+                                       _optimizeIndexMerge?true:false,
                                        _log);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1386,6 +1400,7 @@ namespace EventStore.Core
                     _skipIndexVerify,
                     _indexCacheDepth,
                     _indexBitnessVersion,
+                    _optimizeIndexMerge,
                     consumerStrategies,
                     _unsafeIgnoreHardDelete,
                     _betterOrdering,
@@ -1428,14 +1443,15 @@ namespace EventStore.Core
             return gossipSeedSource;
         }
 
-        private static TFChunkDbConfig CreateDbConfig(int chunkSize, 
-                                                      int cachedChunks, 
-                                                      string dbPath, 
-                                                      long chunksCacheSize, 
+        private static TFChunkDbConfig CreateDbConfig(int chunkSize,
+                                                      int cachedChunks,
+                                                      string dbPath,
+                                                      long chunksCacheSize,
                                                       bool inMemDb,
                                                       bool unbuffered,
                                                       bool writethrough,
                                                       int chunkInitialReaderCount,
+                                                      bool optimizeReadSideCache,
                                                       ILogger log)
         {
             ICheckpoint writerChk;
@@ -1508,7 +1524,8 @@ namespace EventStore.Core
                                                  chunkInitialReaderCount,
                                                  inMemDb,
                                                  unbuffered,
-                                                 writethrough);
+                                                 writethrough,
+                                                 optimizeReadSideCache);
 
             return nodeConfig;
         }

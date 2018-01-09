@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void the_data_is_written()
         {
             //TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
-            using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint))
+            using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false))
             {
                 reader.Open();
                 LogRecord r;
