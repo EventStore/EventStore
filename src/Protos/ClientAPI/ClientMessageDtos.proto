@@ -335,6 +335,8 @@ message SubscriptionDropped {
 		NotFound=2;
 		PersistentSubscriptionDeleted=3;
 		SubscriberMaxCountReached=4;
+		PersistentSubscriptionUpdated=5;
+		ServerDown=6;
 	}
 	
 	optional SubscriptionDropReason reason = 1 [default = Unsubscribed];

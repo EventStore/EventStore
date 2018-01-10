@@ -248,11 +248,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void Shutdown()
+        public void Shutdown(SubscriptionDropReason reason)
         {
             lock (_lock)
             {
-                _pushClients.ShutdownAll();
+                _pushClients.ShutdownAll(reason);
             }
         }
 
@@ -271,11 +271,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
+        public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification, SubscriptionDropReason reason)
         {
             lock (_lock)
             {
-                var lostMessages = _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification)
+                var lostMessages = _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification, reason)
                     .OrderBy(v => v.OriginalEventNumber);
                 foreach (var m in lostMessages)
                 {

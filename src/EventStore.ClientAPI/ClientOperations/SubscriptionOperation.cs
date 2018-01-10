@@ -119,6 +119,10 @@ namespace EventStore.ClientAPI.ClientOperations
                                     DropSubscription(SubscriptionDropReason.NotFound,
                                                      new ArgumentException(string.Format("Subscription to '{0}' failed due to not found.", _streamId == string.Empty ? "<all>" : _streamId)));
                                     break;
+                                case ClientMessage.SubscriptionDropped.SubscriptionDropReason.PersistentSubscriptionDeleted:
+                                    DropSubscription(SubscriptionDropReason.PersistentSubscriptionDeleted, null /*TODO: Add exception and reason*/);
+                                    break;
+                                //TODO: Handle other cases here (maybe adding additional messages to SubscriptionDropReason and additional exceptions)
                                 default:
                                     if (_verboseLogging) _log.Debug("Subscription dropped by server. Reason: {0}.", dto.Reason);
                                     DropSubscription(SubscriptionDropReason.Unknown,

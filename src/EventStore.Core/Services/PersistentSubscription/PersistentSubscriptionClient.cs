@@ -113,9 +113,9 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _unconfirmedEvents.Values;
         }
 
-        internal void SendDropNotification()
+        internal void SendDropNotification(SubscriptionDropReason reason)
         {
-            _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, SubscriptionDropReason.Unsubscribed));
+            _envelope.ReplyWith(new ClientMessage.SubscriptionDropped(CorrelationId, reason));
         }
 
         internal ObservedTimingMeasurement GetExtraStats()

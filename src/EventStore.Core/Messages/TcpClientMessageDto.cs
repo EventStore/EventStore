@@ -1130,7 +1130,13 @@ namespace EventStore.Core.Messages
       PersistentSubscriptionDeleted = 3,
             
       [ProtoEnum(Name=@"SubscriberMaxCountReached", Value=4)]
-      SubscriberMaxCountReached = 4
+      SubscriberMaxCountReached = 4,
+
+      [ProtoEnum(Name=@"PersistentSubscriptionUpdated", Value=5)]
+      PersistentSubscriptionUpdated = 5,
+
+      [ProtoEnum(Name=@"ServerDown", Value=6)]
+      ServerDown = 6
     }
   
     private SubscriptionDropped() {}

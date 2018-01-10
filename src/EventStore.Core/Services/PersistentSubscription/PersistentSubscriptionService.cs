@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             if (message.State == VNodeState.Master) return;
             Log.Debug(string.Format("Subscriptions received state change to {0} stopping listening.", _state));
-            ShutdownSubscriptions();
+            ShutdownSubscriptions(SubscriptionDropReason.ServerDown);
             Stop();
         }
 
@@ -103,17 +103,17 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            ShutdownSubscriptions();
+            ShutdownSubscriptions(SubscriptionDropReason.ServerDown);
             Stop();
             _queuedHandler.RequestStop();
         }
 
-        private void ShutdownSubscriptions()
+        private void ShutdownSubscriptions(SubscriptionDropReason reason)
         {
             if (_subscriptionsById == null) return;
             foreach (var subscription in _subscriptionsById.Values)
             {
-                subscription.Shutdown();
+                subscription.Shutdown(reason);
             }
         }
 
@@ -130,7 +130,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(ClientMessage.UnsubscribeFromStream message)
         {
             if (!_started) return;
-            UnsubscribeFromStream(message.CorrelationId, true);
+            UnsubscribeFromStream(message.CorrelationId, true, SubscriptionDropReason.Unsubscribed);
         }
 
         public void Handle(ClientMessage.CreatePersistentSubscription message)
@@ -243,7 +243,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
             }
 
-            RemoveSubscription(message.EventStreamId, message.GroupName);
+            RemoveSubscription(message.EventStreamId, message.GroupName, SubscriptionDropReason.PersistentSubscriptionUpdated);
             RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
             CreateSubscriptionGroup(message.EventStreamId,
                                     message.GroupName,
@@ -365,7 +365,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 return;
 
             }
-            RemoveSubscription(message.EventStreamId, message.GroupName);
+            RemoveSubscription(message.EventStreamId, message.GroupName, SubscriptionDropReason.PersistentSubscriptionDeleted);
             RemoveSubscriptionConfig(message.User.Identity.Name, message.EventStreamId, message.GroupName);
             subscription.Delete();
             SaveConfiguration(() => message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(message.CorrelationId,
@@ -381,7 +381,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _config.Entries.RemoveAt(index);
         }
 
-        private void RemoveSubscription(string eventStreamId, string groupName)
+        private void RemoveSubscription(string eventStreamId, string groupName, SubscriptionDropReason reason)
         {
             List<PersistentSubscription> subscribers;
             var key = BuildSubscriptionGroupKey(eventStreamId, groupName);
@@ -393,7 +393,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     var sub = subscribers[i];
                     if (sub.SubscriptionId == key)
                     {
-                        sub.Shutdown();
+                        sub.Shutdown(reason);
                         subscribers.RemoveAt(i);
                         break;
                     }
@@ -401,11 +401,11 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        private void UnsubscribeFromStream(Guid correlationId, bool sendDropNotification)
+        private void UnsubscribeFromStream(Guid correlationId, bool sendDropNotification, SubscriptionDropReason reason)
         {
             foreach (var subscription in _subscriptionsById.Values)
             {
-                subscription.RemoveClientByCorrelationId(correlationId, sendDropNotification);
+                subscription.RemoveClientByCorrelationId(correlationId, sendDropNotification, reason);
             }
         }
 

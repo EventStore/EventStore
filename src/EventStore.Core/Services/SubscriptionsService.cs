@@ -18,7 +18,9 @@ namespace EventStore.Core.Services
         AccessDenied = 1,
         NotFound = 2,
         PersistentSubscriptionDeleted = 3,
-        SubscriberMaxCountReached = 4
+        SubscriberMaxCountReached = 4,
+        PersistentSubscriptionUpdated = 5,
+        ServerDown = 6
     }
 
     public class SubscriptionsService : IHandle<SystemMessage.SystemStart>, 

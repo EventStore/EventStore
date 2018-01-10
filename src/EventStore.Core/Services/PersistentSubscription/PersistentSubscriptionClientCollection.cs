@@ -34,26 +34,26 @@ namespace EventStore.Core.Services.PersistentSubscription
         public IEnumerable<ResolvedEvent> RemoveClientByConnectionId(Guid connectionId)
         {
             var clients = _hash.Values.Where(x => x.ConnectionId == connectionId).ToList();
-            return clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false));
+            return clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false, null));
         }
 
-        public void ShutdownAll()
+        public void ShutdownAll(SubscriptionDropReason reason)
         {
             foreach (var client in _hash.Values.ToArray())
             {
-                RemoveClientByCorrelationId(client.CorrelationId, true);
+                RemoveClientByCorrelationId(client.CorrelationId, true, reason);
             }
         }
 
-        public IEnumerable<ResolvedEvent> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification)
+        public IEnumerable<ResolvedEvent> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification, SubscriptionDropReason? reason)
         {
             PersistentSubscriptionClient client;
             if (!_hash.TryGetValue(correlationId, out client)) return new ResolvedEvent[0];
             _hash.Remove(client.CorrelationId);
             _consumerStrategy.ClientRemoved(client);
-            if (sendDropNotification)
+            if (sendDropNotification && reason != null)
             {
-                client.SendDropNotification();
+                client.SendDropNotification((SubscriptionDropReason)reason);
             }
             return client.GetUnconfirmedEvents();
         }
