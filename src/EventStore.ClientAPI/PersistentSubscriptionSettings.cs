@@ -4,8 +4,8 @@ using EventStore.ClientAPI.Common;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// Represents the settings for a <see cref="PersistentEventStoreSubscription"></see>. This should not be used
-    /// directly, but instead created via a <see cref="PersistentSubscriptionSettingsBuilder"></see>
+    /// Represents the settings for a <see cref="PersistentEventStoreSubscription"></see>. You should not use
+    /// this directly, but instead created via a <see cref="PersistentSubscriptionSettingsBuilder"></see>.
     /// </summary>
     public class PersistentSubscriptionSettings
     {
@@ -32,57 +32,57 @@ namespace EventStore.ClientAPI
 
 
         /// <summary>
-        /// Whether or not the <see cref="PersistentEventStoreSubscription"></see> should resolve linkTo events to their linked events.
+        /// Whether the <see cref="PersistentEventStoreSubscription"></see> should resolve linkTo events to their linked events.
         /// </summary>
         public readonly bool ResolveLinkTos;
 
         /// <summary>
-        /// Where the subscription should start from (position)
+        /// Which event position in the stream the subscription should start from.
         /// </summary>
         public readonly long StartFrom;
 
         /// <summary>
-        /// Whether or not in depth latency statistics should be tracked on this subscription.
+        /// Whether to track latency statistics on this subscription.
         /// </summary>
         public readonly bool ExtraStatistics;
 
         /// <summary>
-        /// The amount of time after which a message should be considered to be timedout and retried.
+        /// The amount of time after which to consider a message as timedout and retried.
         /// </summary>
         public readonly TimeSpan MessageTimeout;
 
         /// <summary>
-        /// The maximum number of retries (due to timeout) before a message get considered to be parked
+        /// The maximum number of retries (due to timeout) before a message is considered to be parked.
         /// </summary>
         public int MaxRetryCount;
 
         /// <summary>
-        /// The size of the buffer listening to live messages as they happen
+        /// The size of the buffer (in-memory) listening to live messages as they happen before paging occurs.
         /// </summary>
         public int LiveBufferSize;
 
         /// <summary>
-        /// The number of events read at a time when paging in history
+        /// The number of events read at a time when paging through history.
         /// </summary>
         public int ReadBatchSize;
 
         /// <summary>
-        /// The number of events to cache when paging through history
+        /// The number of events to cache when paging through history.
         /// </summary>
         public int HistoryBufferSize;
 
         /// <summary>
-        /// The amount of time to try to checkpoint after
+        /// The amount of time to try to checkpoint after.
         /// </summary>
         public readonly TimeSpan CheckPointAfter;
 
         /// <summary>
-        /// The minimum number of messages to checkpoint
+        /// The minimum number of messages to write to a checkpoint.
         /// </summary>
         public readonly int MinCheckPointCount;
 
         /// <summary>
-        /// The maximum number of messages to checkpoint if this number is a reached a checkpoint will be forced.
+        /// The maximum number of messages not checkpointed before forcing a checkpoint.
         /// </summary>
         public readonly int MaxCheckPointCount;
 
@@ -97,7 +97,7 @@ namespace EventStore.ClientAPI
         public string NamedConsumerStrategy;
 
         /// <summary>
-        /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>
+        /// Constructs a new <see cref="PersistentSubscriptionSettings"></see>.
         /// </summary>
         internal PersistentSubscriptionSettings(bool resolveLinkTos, long startFrom, bool extraStatistics, TimeSpan messageTimeout,
                                                 int maxRetryCount, int liveBufferSize, int readBatchSize, int historyBufferSize,
