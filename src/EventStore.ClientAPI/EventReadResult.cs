@@ -4,17 +4,17 @@ using EventStore.ClientAPI.Messages;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// A Event Read Result is the result of a single event read operation to the event store.
+    /// A event read result is the result of a single event read operation to Event Store.
     /// </summary>
     public class EventReadResult
     {
         /// <summary>
-        /// The <see cref="EventReadStatus"/> representing the status of this read attempt
+        /// The <see cref="EventReadStatus"/> representing the status of this read attempt.
         /// </summary>
         public readonly EventReadStatus Status;
 
         /// <summary>
-        /// The name of the stream read
+        /// The name of the stream read.
         /// </summary>
         public readonly string Stream;
 
@@ -24,7 +24,7 @@ namespace EventStore.ClientAPI
         public readonly long EventNumber;
 
         /// <summary>
-        /// The event read represented as <see cref="ResolvedEvent"/>
+        /// The event read represented as <see cref="ResolvedEvent"/>.
         /// </summary>
         public readonly ResolvedEvent? Event;
 

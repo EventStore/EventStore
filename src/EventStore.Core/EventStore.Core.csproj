@@ -429,6 +429,7 @@
     <Compile Include="Index\IndexEntryV2.cs" />
     <Compile Include="Helpers\StreamVersionConverter.cs" />
     <Compile Include="Exceptions\MaybeCorruptIndexException.cs" />
+    <Compile Include="Services\Storage\IndexCommitterService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

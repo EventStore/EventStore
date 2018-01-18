@@ -9,7 +9,7 @@ namespace EventStore.Rags
     public class ArgShortcut : Attribute
     {
         /// <summary>
-        /// The shortcut for the given property
+        /// The shortcut for the given property.
         /// </summary>
         public string Shortcut { get; private set; }
 
@@ -29,7 +29,7 @@ namespace EventStore.Rags
         }
 
         /// <summary>
-        /// Creates a new ArgShortcut using the given policy
+        /// Creates a new ArgShortcut using the given policy.
         /// </summary>
         /// <param name="policy"></param>
         public ArgShortcut(ArgShortcutPolicy policy)

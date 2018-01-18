@@ -21,6 +21,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void Dispose();
         long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
         long Commit(IList<PrepareLogRecord> commitedPrepares, bool isTfEof, bool cacheLastEventNumber);
+        long GetCommitLastEventNumber(CommitLogRecord commit);
     }
 
     public class IndexCommitter : IIndexCommitter
@@ -139,6 +140,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 Log.ErrorException(exc, "Timeout exception when trying to close TableIndex.");
                 throw;
             }
+        }
+
+        public long GetCommitLastEventNumber(CommitLogRecord commit)
+        {
+            long eventNumber = EventNumber.Invalid;
+
+            var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
+            if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+                return eventNumber;
+
+            foreach(var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
+            {
+                if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
+                    continue;
+                eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
+                                      ? EventNumber.DeletedStream
+                                      : commit.FirstEventNumber + prepare.TransactionOffset;
+            }
+            return eventNumber;
         }
 
         public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber)

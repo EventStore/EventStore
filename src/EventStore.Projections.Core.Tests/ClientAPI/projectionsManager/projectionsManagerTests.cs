@@ -235,11 +235,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
 		private List<ProjectionDetails> _result;
 		public override void Given()
 		{
+			CreateContinuousProjection(Guid.NewGuid().ToString());
 		}
 
 		public override void When()
 		{
-			_result = _projManager.ListAllAsync(_credentials).Result.ToList();
+            _result = _projManager.ListAllAsync(_credentials).Result.ToList();
 		}
 
 		[Test]

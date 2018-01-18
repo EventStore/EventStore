@@ -101,6 +101,7 @@ namespace EventStore.Core
         protected int _readerThreadsCount;
         protected bool _unbuffered;
         protected bool _writethrough;
+        protected int _chunkInitialReaderCount;
 
         protected string _index;
         protected bool _skipIndexVerify;
@@ -212,7 +213,7 @@ namespace EventStore.Core
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             _alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
             _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
-
+            _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
         }
 
@@ -1037,6 +1038,16 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// Sets the initial number of readers to open per TFChunk
+        /// </summary>
+        /// <param name="chunkInitialReaderCount">The initial number of readers to open per TFChunk</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithChunkInitialReaderCount(int chunkInitialReaderCount)
+        {
+            _chunkInitialReaderCount = chunkInitialReaderCount;
+            return this;
+        }
 
         /// <summary>
         /// Sets the Server SSL Certificate
@@ -1313,6 +1324,7 @@ namespace EventStore.Core
                                        _inMemoryDb, 
                                        _unbuffered,
                                        _writethrough,
+                                       _chunkInitialReaderCount,
                                        _log);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1368,6 +1380,7 @@ namespace EventStore.Core
                     _disableHTTPCaching,
                     _logHttpRequests,
                     _connectionPendingSendBytesThreshold,
+                    _chunkInitialReaderCount,
                     _index,
                     _enableHistograms,
                     _skipIndexVerify,
@@ -1422,12 +1435,14 @@ namespace EventStore.Core
                                                       bool inMemDb,
                                                       bool unbuffered,
                                                       bool writethrough,
+                                                      int chunkInitialReaderCount,
                                                       ILogger log)
         {
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
+            ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
             if (inMemDb)
             {
                 writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
@@ -1489,6 +1504,8 @@ namespace EventStore.Core
                                                  chaserChk,
                                                  epochChk,
                                                  truncateChk,
+                                                 replicationChk,
+                                                 chunkInitialReaderCount,
                                                  inMemDb,
                                                  unbuffered,
                                                  writethrough);

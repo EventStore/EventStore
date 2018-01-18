@@ -49,14 +49,15 @@ namespace EventStore.Core.Index
                     List<Midpoint> midpoints = new List<Midpoint>();
                     var requiredMidpointCount = GetRequiredMidpointCountCached(table.Count,table.Version,cacheDepth);
 
-                    for(var indexEntry=0;indexEntry<records.Count();indexEntry++)
+                    var indexEntry = 0;
+                    foreach(var rec in records)
                     {
-                        var rec = records.ElementAt(indexEntry);
                         AppendRecordTo(bs, buffer, table.Version, rec, indexEntrySize);
                         dumpedEntryCount+=1;
                         if(table.Version >= PTableVersions.IndexV4 && IsMidpointIndex(indexEntry,table.Count,requiredMidpointCount)){
                             midpoints.Add(new Midpoint(new IndexEntryKey(rec.Stream,rec.Version),indexEntry));
                         }
+                        indexEntry++;
                     }
 
                     //WRITE MIDPOINTS

@@ -81,6 +81,15 @@ else
     exit 1
 fi
 
+MONOPOSIXHELPER=/usr/local/lib/libMonoPosixHelper.dylib
+if [[ -f $MONOPOSIXHELPER ]] ; then
+    writeLog "Using libMonoPosixHelper: $MONOPOSIXHELPER"
+else
+    writeLog "Cannot find libMonoPosixHelper. Searching for it:"
+    echo | find / -name "libMonoPosixHelper.dylib"
+    exit 1
+fi
+
 GCCPATH=`which gcc`
 if [[ $? != 0 ]] ; then
 	writeLog "Cannot find gcc"
@@ -104,6 +113,11 @@ fi
 mkdir $PACKAGEDIRECTORY
 
 pushd $SCRIPTDIR/../../bin/clusternode/
+
+# Update the global DllMap config file to avoid a hard coded location for libMonoPosixHelper
+sed -i '' '/libMonoPosixHelper\.dylib/ c\
+\<dllmap dll=MonoPosixHelper target=libMonoPosixHelper\.dylib\" os=\"\!windows\" \/\>
+' "$MONOCONFIG"
 
 mkbundle -c \
     -o clusternode.c \
@@ -182,6 +196,8 @@ gcc \
     $MONOPREFIX/lib/libmonosgen-2.0.a \
     $MONOPREFIX/lib/libMonoPosixHelper.a
 
+# Ensure libMonoPosixHelper is present in the package
+cp $MONOPOSIXHELPER "$PACKAGEDIRECTORY/"
 cp testclient $PACKAGEDIRECTORY/
 
 popd

@@ -46,12 +46,12 @@ namespace EventStore.ClientAPI
         public bool PreferRandomNode;
 
         /// <summary>
-        /// Used if we're connecting with gossip seeds
+        /// Used if connecting with gossip seeds.
         /// </summary>
-        /// <param name="gossipSeeds">Endpoints for seeding gossip</param>
-        /// <param name="maxDiscoverAttempts">Maximum number of attempts to discover the cluster</param>
-        /// <param name="gossipTimeout">Timeout for cluster gossip</param>
-        /// <param name="preferRandomNode">Whether to prefer a random node selection or master</param>
+        /// <param name="gossipSeeds">Endpoints for seeding gossip</param>.
+        /// <param name="maxDiscoverAttempts">Maximum number of attempts to discover the cluster</param>.
+        /// <param name="gossipTimeout">Timeout for cluster gossip</param>.
+        /// <param name="preferRandomNode">Whether to prefer a random node selection or master</param>.
         internal ClusterSettings(GossipSeed[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout, bool preferRandomNode)
         {
             ClusterDns = "";
@@ -63,13 +63,13 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Used if we're discovering via DNS
+        /// Used if discovering via DNS.
         /// </summary>
-        /// <param name="clusterDns">The DNS name to use for discovering endpoints</param>
-        /// <param name="maxDiscoverAttempts">The maximum number of attempts for discovering endpoints</param>
-        /// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>
-        /// <param name="gossipTimeout">Timeout for cluster gossip</param>
-        /// <param name="preferRandomNode">Whether to prefer a random node selection or master</param>
+        /// <param name="clusterDns">The DNS name to use for discovering endpoints</param>.
+        /// <param name="maxDiscoverAttempts">The maximum number of attempts for discovering endpoints</param>.
+        /// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>.
+        /// <param name="gossipTimeout">Timeout for cluster gossip</param>.
+        /// <param name="preferRandomNode">Whether to prefer a random node selection or master</param>.
         internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort, TimeSpan gossipTimeout, bool preferRandomNode)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");

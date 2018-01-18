@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.VNode
         private int _serviceShutdownsToExpect = 1 /* StorageChaser */
                                               + 1 /* StorageReader */
                                               + 1 /* StorageWriter */
+                                              + 1 /* IndexCommitterService */
                                               + 1 /* MasterReplicationService */
                                               + 1 /* HttpService Internal*/
                                               + 1 /* HttpService External*/;

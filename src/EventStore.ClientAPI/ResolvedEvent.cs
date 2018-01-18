@@ -24,7 +24,7 @@ namespace EventStore.ClientAPI
         /// 
         /// If this <see cref="ResolvedEvent"/> represents a link event, the Link
         /// will be the <see cref="OriginalEvent"/>, otherwise it will be the
-        /// Event.
+        /// event.
         /// </summary>
         public RecordedEvent OriginalEvent { get { return Link ?? Event; } }
 

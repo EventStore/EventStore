@@ -14,9 +14,9 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-        /// Returns a builder set to construct options for a single node instance
+        /// Returns a builder set to construct options for a single node instance.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public static EmbeddedVNodeBuilder AsSingleNode()
         {
             var ret = new EmbeddedVNodeBuilder().WithSingleNodeSettings();
@@ -24,9 +24,9 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-        /// Returns a builder set to construct options for a cluster node instance with a cluster size 
+        /// Returns a builder set to construct options for a cluster node instance with a cluster size.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public static EmbeddedVNodeBuilder AsClusterMember(int clusterSize)
         {
             var ret = new EmbeddedVNodeBuilder().WithClusterNodeSettings(clusterSize);
@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         /// <summary>
-        /// Sets up the projections subsystem
+        /// Sets up the projections subsystem.
         /// </summary>
         protected override void SetUpProjectionsIfNeeded()
         {

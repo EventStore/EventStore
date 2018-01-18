@@ -42,9 +42,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _orderStream = null;
         }
 
-        public override void Start(CheckpointTag checkpointTag)
+        public override void Start(CheckpointTag checkpointTag, PartitionState rootPartitionState)
         {
-            base.Start(checkpointTag);
+            base.Start(checkpointTag,rootPartitionState);
             _orderStream = CreateOrderStream(checkpointTag);
             _orderStream.Start();
         }

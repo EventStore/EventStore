@@ -159,7 +159,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                      isScavenged: true,
                                                      inMem: _db.Config.InMemDb,
                                                      unbuffered: _db.Config.Unbuffered,
-                                                     writethrough: _db.Config.WriteThrough);
+                                                     writethrough: _db.Config.WriteThrough,
+                                                     initialReaderCount: _db.Config.InitialReaderCount);
             }
             catch (IOException exc)
             {
@@ -213,9 +214,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 newSize += positionMapCount * PosMap.FullSize + ChunkHeader.Size + ChunkFooter.Size;
+                if(newChunk.ChunkHeader.Version >= (byte) TFChunk.TFChunk.ChunkVersions.Aligned)
+                    newSize = TFChunk.TFChunk.GetAlignedSize((int)newSize);
 
                 var oldVersion = oldChunks.Any(x => x.ChunkHeader.Version != 3);
-                var oldSize = oldChunks.Sum(x => (long)x.PhysicalDataSize + x.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size);
+                var oldSize = oldChunks.Sum(x => (long)x.FileSize);
 
                 if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion)
                 {

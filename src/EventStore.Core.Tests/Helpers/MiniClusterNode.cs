@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.Helpers
                 intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
                 verifyDbHash: false, maxMemtableEntryCount: memTableSize, hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
                 startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
-                connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault);
+                connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault, chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
 
             Log.Info(
                 "\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -188,6 +188,7 @@ namespace EventStore.Core.Tests.Helpers
             ICheckpoint chaserChk;
             ICheckpoint epochChk;
             ICheckpoint truncateChk;
+            ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
             if (inMemDb)
             {
                 writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
@@ -221,7 +222,7 @@ namespace EventStore.Core.Tests.Helpers
             }
             var nodeConfig = new TFChunkDbConfig(
                 dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-                chaserChk, epochChk, truncateChk, inMemDb);
+                chaserChk, epochChk, truncateChk, replicationCheckpoint, Opts.ChunkInitialReaderCountDefault, inMemDb);
             return nodeConfig;
         }
     }

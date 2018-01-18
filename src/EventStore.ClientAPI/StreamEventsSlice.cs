@@ -5,17 +5,17 @@ using EventStore.ClientAPI.Messages;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// An Stream Events Slice represents the result of a single read operation to the event store.
+    /// A stream events slice represents the result of a single read operation to Event Store.
     /// </summary>
     public class StreamEventsSlice
     {
         /// <summary>
-        /// The <see cref="SliceReadStatus"/> representing the status of this read attempt
+        /// The <see cref="SliceReadStatus"/> representing the status of this read attempt.
         /// </summary>
         public readonly SliceReadStatus Status;
 
         /// <summary>
-        /// The name of the stream read
+        /// The name of the stream to read.
         /// </summary>
         public readonly string Stream;
 
@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI
         public readonly ReadDirection ReadDirection;
 
         /// <summary>
-        /// The events read represented as <see cref="ResolvedEvent"/>
+        /// The events read represented as <see cref="ResolvedEvent"/>.
         /// </summary>
         public readonly ResolvedEvent[] Events;
 

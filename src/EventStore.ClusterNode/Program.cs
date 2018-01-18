@@ -215,7 +215,8 @@ namespace EventStore.ClusterNode
                         .AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
                         .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
                         .HavingReaderThreads(options.ReaderThreadsCount)
-                        .WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold);
+                        .WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold)
+                        .WithChunkInitialReaderCount(options.ChunkInitialReaderCount);
 
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);

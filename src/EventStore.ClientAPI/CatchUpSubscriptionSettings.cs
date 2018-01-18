@@ -3,37 +3,37 @@ using EventStore.ClientAPI.Common.Utils;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// Settings for <see cref="EventStoreCatchUpSubscription"/>
+    /// Settings for <see cref="EventStoreCatchUpSubscription"/>.
     /// </summary>
     public class CatchUpSubscriptionSettings
     {
         /// <summary>
-        /// The maximum amount to cache when processing from live subscription. Going above will drop subscription.
+        /// The maximum amount of events to cache when processing from a live subscription. Going above this value will drop the subscription.
         /// </summary>
         public readonly int MaxLiveQueueSize;
 
         /// <summary>
-        /// The number of events to read per batch when reading history
+        /// The number of events to read per batch when reading the history.
         /// </summary>
         public readonly int ReadBatchSize;
 
         /// <summary>
-        /// Enables verbose logging on the subscription
+        /// Enables verbose logging on the subscription.
         /// </summary>
         public readonly bool VerboseLogging;
 
         /// <summary>
-        /// Whether or not to resolve link events
+        /// Whether to resolve link events.
         /// </summary>
         public readonly bool ResolveLinkTos;
 
         /// <summary>
-        /// The name of subscription.
+        /// The name of the subscription.
         /// </summary>
         public readonly string SubscriptionName;
 
         ///<summary>
-        /// Returns default settings
+        /// Returns default settings.
         ///</summary>
         public static readonly CatchUpSubscriptionSettings Default = new CatchUpSubscriptionSettings(
             Consts.CatchUpDefaultMaxPushQueueSize,
@@ -42,15 +42,14 @@ namespace EventStore.ClientAPI
             resolveLinkTos: true,
             subscriptionName: String.Empty
             );
-
         /// <summary>
-        /// Constructs a <see cref="CatchUpSubscriptionSettings"/> object
+        /// Constructs a <see cref="CatchUpSubscriptionSettings"/> object.
         /// </summary>
-        /// <param name="maxLiveQueueSize">The maximum amount to buffer when processing from live subscription. Going above will drop subscription.</param>
-        /// <param name="readBatchSize">The number of events to read per batch when reading history</param>
-        /// <param name="verboseLogging">Enables verbose logging on the subscription</param>
-        /// <param name="resolveLinkTos">Whether or not to resolve link events</param>
-        /// <param name="subscriptionName">The name of subscription.</param>
+        /// <param name="maxLiveQueueSize">The maximum amount of events to buffer when processing from a live subscription. Going above this amount will drop the subscription.</param>
+        /// <param name="readBatchSize">The number of events to read per batch when reading through history.</param>
+        /// <param name="verboseLogging">Enables verbose logging on the subscription.</param>
+        /// <param name="resolveLinkTos">Whether to resolve link events.</param>
+        /// <param name="subscriptionName">The name of the subscription.</param>
         public CatchUpSubscriptionSettings(int maxLiveQueueSize, int readBatchSize, bool verboseLogging, bool resolveLinkTos, string subscriptionName = "") {
             Ensure.Positive(readBatchSize, "readBatchSize");
             Ensure.Positive(maxLiveQueueSize, "maxLiveQueueSize");

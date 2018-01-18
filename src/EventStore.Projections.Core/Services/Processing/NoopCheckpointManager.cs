@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = false;
         }
 
-        public void Start(CheckpointTag checkpointTag)
+        public void Start(CheckpointTag checkpointTag, PartitionState rootPartitionState)
         {
             if (_started)
                 throw new InvalidOperationException("Already started");

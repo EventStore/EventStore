@@ -14,9 +14,9 @@ namespace EventStore.ClusterNode
         }
 
         /// <summary>
-        /// Returns a builder set to construct options for a single node instance
+        /// Returns a builder set to construct options for a single node instance.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public static ClusterVNodeBuilder AsSingleNode()
         {
             var ret = new ClusterVNodeBuilder().WithSingleNodeSettings();
@@ -24,9 +24,9 @@ namespace EventStore.ClusterNode
         }
 
         /// <summary>
-        /// Returns a builder set to construct options for a cluster node instance with a cluster size 
+        /// Returns a builder set to construct options for a cluster node instance with a cluster size.
         /// </summary>
-        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set.</returns>
         public static ClusterVNodeBuilder AsClusterMember(int clusterSize)
         {
             var ret = new ClusterVNodeBuilder().WithClusterNodeSettings(clusterSize);

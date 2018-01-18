@@ -14,11 +14,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,
                                                   int prepareCount,
-                                                  int commitCount,
                                                   TimeSpan prepareTimeout,
                                                   TimeSpan commitTimeout,
                                                   bool betterOrdering)
-            : base(publisher, prepareCount, commitCount, prepareTimeout, commitTimeout, betterOrdering)
+            : base(publisher, prepareCount, prepareTimeout, commitTimeout, betterOrdering)
         {
         }
 

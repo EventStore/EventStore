@@ -71,14 +71,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+            _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null);
         }
 
         [Test]
         public void cannot_be_started_from_incompatible_checkpoint_tag()
         {
             //TODO: move to when loaded
-            Assert.Throws<InvalidOperationException>(()=> { _manager.Start(CheckpointTag.FromStreamPosition(0, "stream1", 10)); });
+            Assert.Throws<InvalidOperationException>(()=> { _manager.Start(CheckpointTag.FromStreamPosition(0, "stream1", 10),null); });
         }
     }
 }
