@@ -11,6 +11,6 @@
         /// Indicates that a catch-up subscription should receive all events
         /// in the stream.
         /// </summary>
-        public static int? StreamStart = null;
+        public static long? StreamStart = null;
     }
 }
