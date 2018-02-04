@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI
         private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
         private GossipSeed[] _gossipSeeds;
-        private bool _preferRandomNode = false;
+        private NodePreference _nodePreference = NodePreference.Master;
 
 
         internal ConnectionSettingsBuilder()
@@ -350,7 +350,17 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
         public ConnectionSettingsBuilder PreferRandomNode()
         {
-            _preferRandomNode = true;
+            _nodePreference = NodePreference.Random;
+            return this;
+        }
+
+        /// <summary>
+        /// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+        /// </summary>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public ConnectionSettingsBuilder PreferSlaveNode()
+        {
+            _nodePreference = NodePreference.Slave;
             return this;
         }
 
@@ -454,7 +464,7 @@ namespace EventStore.ClientAPI
                                           _maxDiscoverAttempts,
                                           _gossipExternalHttpPort,
                                           _gossipTimeout,
-                                          _preferRandomNode);
+                                          _nodePreference);
         }
     }
 }
