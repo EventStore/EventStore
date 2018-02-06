@@ -90,6 +90,7 @@
     <Compile Include="Internal\PersistentSubscriptionUpdateResult.cs" />
     <Compile Include="Internal\PersistentSubscriptionUpdateStatus.cs" />
     <Compile Include="Internal\VolatileEventStoreSubscription.cs" />
+    <Compile Include="NodePreference.cs" />
     <Compile Include="PersistentEventStoreSubscription.cs" />
     <Compile Include="PersistentSubscriptionNakEventAction.cs" />
     <Compile Include="PersistentSubscriptionSettings.cs" />
