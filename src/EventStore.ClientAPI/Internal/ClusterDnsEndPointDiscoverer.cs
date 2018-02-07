@@ -235,6 +235,7 @@ namespace EventStore.ClientAPI.Internal
                     break;
                 case NodePreference.Slave:
                     nodes = nodes.OrderBy(nodeEntry => nodeEntry.State != ClusterMessages.VNodeState.Slave).ToArray(); // OrderBy is a stable sort and only affects order of matching entries
+                    RandomShuffle(nodes, 0, nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
                     break;
             }
 
