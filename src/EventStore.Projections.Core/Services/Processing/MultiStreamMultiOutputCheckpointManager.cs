@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using EventStore.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -143,7 +144,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         default:
                             throw new Exception("Cannot read order stream");
                     }
-                });
+                }, () =>
+                {
+                    _logger.Warn("Read backward of stream {0} timed out. Retrying", _namingBuilder.GetOrderStreamName());
+                    BeginLoadPrerecordedEventsChunk(checkpointTag, fromEventNumber);
+                }, Guid.NewGuid());
         }
 
         private void EnqueuePrerecordedEvent(EventRecord @event, CheckpointTag tag)
@@ -165,9 +170,7 @@ namespace EventStore.Projections.Core.Services.Processing
             long eventNumber = long.Parse(parts[0]);
             string streamId = parts[1];
 
-
-            _ioDispatcher.ReadBackward(
-                streamId, eventNumber, 1, true, SystemAccount.Principal, completed =>
+            ReadPrerecordedEventStream(streamId, eventNumber, completed =>
                 {
                     switch (completed.Result)
                     {
@@ -183,6 +186,16 @@ namespace EventStore.Projections.Core.Services.Processing
                             throw new Exception(string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
                     }
                 });
+        }
+
+        private void ReadPrerecordedEventStream(string streamId, long eventNumber, Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
+        {
+            _ioDispatcher.ReadBackward(
+                streamId, eventNumber, 1, true, SystemAccount.Principal, action, () =>
+                {
+                    _logger.Warn("Read backward of stream {0} timed out. Retrying", streamId);
+                    ReadPrerecordedEventStream(streamId, eventNumber, action);
+                }, Guid.NewGuid());
         }
 
         private void CheckAllEventsLoaded()

@@ -13,11 +13,14 @@ namespace EventStore.Core.Helpers
 {
     public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>
     {
+        public const int ReadTimeoutMs = 10000;
+
         private readonly Guid _selfId = Guid.NewGuid();
         private readonly IPublisher _publisher;
         private readonly IEnvelope _inputQueueEnvelope;
         private readonly WriterQueueSet _writerQueueSet = new WriterQueueSet();
         private readonly PendingRequests _pendingRequests = new PendingRequests();
+        private readonly PendingReads _pendingReads = new PendingReads();
 
         public readonly
             RequestResponseDispatcher
@@ -102,6 +105,46 @@ namespace EventStore.Core.Helpers
                     action);
         }
 
+        public Guid ReadBackward(
+            string streamId,
+            long fromEventNumber,
+            int maxCount,
+            bool resolveLinks,
+            IPrincipal principal,
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
+            Action timeoutAction,
+            Guid corrId)
+        {
+            _pendingReads.Register(corrId);
+
+            BackwardReader.Publish(
+                    new ClientMessage.ReadStreamEventsBackward(
+                        corrId,
+                        corrId,
+                        BackwardReader.Envelope,
+                        streamId,
+                        fromEventNumber,
+                        maxCount,
+                        resolveLinks,
+                        false,
+                        null,
+                        principal),
+                        res =>
+                        {
+                            if (!_pendingReads.IsRegistered(res.CorrelationId)) return;
+                            _pendingReads.Remove(res.CorrelationId);
+                            action(res);
+                        }
+                    );
+            Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => 
+            {
+                if (!_pendingReads.IsRegistered(corrId)) return;
+                _pendingReads.Remove(corrId);
+                timeoutAction();
+            }, corrId);
+            return corrId;
+        }
+
         public Guid ReadForward(
             string streamId,
             long fromEventNumber,
@@ -127,6 +170,44 @@ namespace EventStore.Core.Helpers
                         null,
                         principal),
                     action);
+        }
+
+        public Guid ReadForward(
+            string streamId,
+            long fromEventNumber,
+            int maxCount,
+            bool resolveLinks,
+            IPrincipal principal,
+            Action<ClientMessage.ReadStreamEventsForwardCompleted> action,
+            Action timeoutAction,
+            Guid corrId)
+        {
+            _pendingReads.Register(corrId);
+            
+            ForwardReader.Publish(
+                    new ClientMessage.ReadStreamEventsForward(
+                        corrId,
+                        corrId,
+                        ForwardReader.Envelope,
+                        streamId,
+                        fromEventNumber,
+                        maxCount,
+                        resolveLinks,
+                        false,
+                        null,
+                        principal),
+                    res => {
+                        if (!_pendingReads.IsRegistered(corrId)) return;
+                        _pendingReads.Remove(corrId);
+                        action(res);
+                    });
+            Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => 
+            {
+                if (!_pendingReads.IsRegistered(corrId)) return;
+                _pendingReads.Remove(corrId);
+                timeoutAction();
+            }, corrId);
+            return corrId;
         }
 
         public void ConfigureStreamAndWriteEvents(
@@ -223,6 +304,27 @@ namespace EventStore.Core.Helpers
                     _map.Remove(message.CorrelationId);
                     action(message);
                 }
+            }
+        }
+
+        private class PendingReads
+        {
+            private readonly List<Guid> _pendingReads = new List<Guid>();
+
+            public void Register(Guid id)
+            {
+                _pendingReads.Add(id);
+            }
+
+            public bool IsRegistered(Guid id)
+            {
+                var ret = _pendingReads.Contains(id);
+                return ret;
+            }
+
+            public void Remove(Guid id)
+            {
+                _pendingReads.Remove(id);
             }
         }
 
@@ -428,13 +530,13 @@ namespace EventStore.Core.Helpers
                 completed);
         }
 
-        public void Delay(TimeSpan delay, Action action)
+        public void Delay(TimeSpan delay, Action action, Guid? _messageCorrelationId = null)
         {
             _publisher.Publish(
                 TimerMessage.Schedule.Create(
                     delay,
                     _inputQueueEnvelope,
-                    new IODispatcherDelayedMessage(_selfId, action)));
+                    new IODispatcherDelayedMessage(_selfId, action, _messageCorrelationId)));
         }
 
         public void Handle(IODispatcherDelayedMessage message)

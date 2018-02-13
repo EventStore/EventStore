@@ -573,6 +573,22 @@
     <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_system.cs" />
     <Compile Include="Services\core_coordinator\when_restarting_with_projection_type_all.cs" />
     <Compile Include="Services\core_projection\when_stopping_a_projection_with_existing_state_without_updating_the_state.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\when_command_reader_times_out_reading_control_stream_on_startup.cs" />
+    <Compile Include="Services\command_reader_response_reader_integration\when_command_reader_times_out_reading_projection_core_stream_on_startup.cs" />
+    <Compile Include="Services\master_core_projection_response_reader\with_master_core_response_reader.cs" />
+    <Compile Include="Services\master_core_projection_response_reader\when_response_reader_has_read_timeout.cs" />
+    <Compile Include="Services\master_core_projection_response_reader\when_response_reader_starts_up_successfully.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint_reader\with_projection_checkpoint_reader.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint_reader\when_projection_reader_reads_successfully.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint_reader\when_projection_reader_times_out_on_read.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_and_read_prerecorded_events_times_out.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\with_multi_stream_checkpoint_manager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_and_read_prerecorded_events_successfully.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_and_enqueue_prerecorded_events_read_times_out.cs" />
+    <Compile Include="Services\emitted_streams_deleter\when_deleting\with_emitted_stream_deleter.cs" />
+    <Compile Include="Services\emitted_streams_deleter\when_deleting\when_delete_stream_succeeds.cs" />
+    <Compile Include="Services\emitted_streams_deleter\when_deleting\when_checkpoint_read_times_out.cs" />
+    <Compile Include="Services\emitted_streams_deleter\when_deleting\when_emitted_streams_read_times_out.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">

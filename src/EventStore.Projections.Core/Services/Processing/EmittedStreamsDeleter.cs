@@ -34,16 +34,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void DeleteEmittedStreams(Action onEmittedStreamsDeleted)
         {
-            ReadLastCheckpoint(result =>
-            {
-                var deleteFromPosition = GetPositionToDeleteFrom(result);
-                DeleteEmittedStreamsFrom(deleteFromPosition, onEmittedStreamsDeleted);
-            });
-        }
-
-        private void ReadLastCheckpoint(Action<ClientMessage.ReadStreamEventsBackwardCompleted> onReadCompleted)
-        {
-            _ioDispatcher.ReadBackward(_emittedStreamsCheckpointStreamId, -1, 1, false, SystemAccount.Principal, onReadCompleted);
+            _ioDispatcher.ReadBackward(_emittedStreamsCheckpointStreamId, -1, 1, false, SystemAccount.Principal,
+                result => {
+                    var deleteFromPosition = GetPositionToDeleteFrom(result);
+                    DeleteEmittedStreamsFrom(deleteFromPosition, onEmittedStreamsDeleted);
+                },
+                () => DeleteEmittedStreams(onEmittedStreamsDeleted),
+                Guid.NewGuid());
         }
 
         private int GetPositionToDeleteFrom(ClientMessage.ReadStreamEventsBackwardCompleted onReadCompleted)
@@ -65,7 +62,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeleteEmittedStreamsFrom(long fromPosition, Action onEmittedStreamsDeleted)
         {
-            _ioDispatcher.ReadForward(_emittedStreamsId, fromPosition, 1, false, SystemAccount.Principal, x => ReadCompleted(x, onEmittedStreamsDeleted));
+            _ioDispatcher.ReadForward(_emittedStreamsId, fromPosition, 1, false, SystemAccount.Principal, x => ReadCompleted(x, onEmittedStreamsDeleted),
+                () => DeleteEmittedStreamsFrom(fromPosition, onEmittedStreamsDeleted),
+                Guid.NewGuid());
         }
 
         private void ReadCompleted(ClientMessage.ReadStreamEventsForwardCompleted onReadCompleted, Action onEmittedStreamsDeleted)
