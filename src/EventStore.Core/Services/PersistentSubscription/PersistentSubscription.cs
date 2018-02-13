@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
             Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
             Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
-            _nextEventToPullFrom = 0;            
+            _nextEventToPullFrom = 0;
             _totalTimeWatch = new Stopwatch();
             _settings = persistentSubscriptionParams;
             _totalTimeWatch.Start();
@@ -125,7 +125,7 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void SetLive()
         {
-            //TODO GFY this is hacky and just trying to keep the state at this level when it 
+            //TODO GFY this is hacky and just trying to keep the state at this level when it
             //lives in the streambuffer its for reporting reasons and likely should be revisited
             //at some point.
             _state &= ~PersistentSubscriptionState.Behind;
@@ -159,9 +159,10 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
                 if (isEndOfStream)
                 {
-                    SetLive();
-                    _streamBuffer.MoveToLive();
-                    return;
+                    if(_streamBuffer.TryMoveToLive()){
+                        SetLive();
+                        return;
+                    }
                 }
                 _nextEventToPullFrom = newposition;
                 TryReadingNewBatch();
@@ -186,7 +187,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                         _lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
                     }
                     else if (result == ConsumerPushResult.Skipped)
-                    {                        
+                    {
                         // The consumer strategy skipped the message so leave it in the buffer and continue.
                     }
                     else if (result == ConsumerPushResult.NoMoreCapacity)
@@ -194,7 +195,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                         return;
                     }
                 }
-                
+
             }
         }
 
@@ -402,7 +403,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 lock (_lock)
                 {
                     _outstandingMessages.Remove(e.OriginalEvent.EventId);
-                    _pushClients.RemoveProcessingMessage(e.OriginalEvent.EventId); 
+                    _pushClients.RemoveProcessingMessage(e.OriginalEvent.EventId);
                     TryPushingMessagesToClients();
                 }
             });
@@ -463,7 +464,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
                 else
                 {
-                    TryReadingParkedMessagesFrom(newposition, stopAt);                    
+                    TryReadingParkedMessagesFrom(newposition, stopAt);
                 }
             }
         }
@@ -474,9 +475,9 @@ namespace EventStore.Core.Services.PersistentSubscription
 
             if (result == StartMessageResult.SkippedDuplicate)
             {
-                Log.Warn("Skipping message {0}/{1} with duplicate eventId {2}", 
+                Log.Warn("Skipping message {0}/{1} with duplicate eventId {2}",
                     message.ResolvedEvent.OriginalStreamId,
-                    message.ResolvedEvent.OriginalEventNumber, 
+                    message.ResolvedEvent.OriginalEventNumber,
                     message.EventId);
             }
         }

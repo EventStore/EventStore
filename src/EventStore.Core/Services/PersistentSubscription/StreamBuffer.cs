@@ -133,9 +133,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
         }
 
-        public void MoveToLive()
+        public bool TryMoveToLive()
         {
-            if (_liveBuffer.Count == 0) Live = true;
+            if (_liveBuffer.Count == 0){
+                Live = true;
+                return true;
+            }
+            return false;
         }
 
         public long GetLowestRetry()
