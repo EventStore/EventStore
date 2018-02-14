@@ -317,6 +317,65 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             }, 1, false);
             Assert.AreEqual(2, envelope1.Replies.Count);
         }
+
+        [Test]
+        public async Task when_reading_end_of_stream_and_a_live_event_is_received_subscription_should_read_stream_again()
+        {
+            var envelope = new FakeEnvelope();
+            var checkpointReader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(
+                    (stream,startEventNumber,countToLoad,batchSize,resolveLinkTos,onEventsFound) => {
+                        List<ResolvedEvent> events = new List<ResolvedEvent>();
+                        int nextEventNumber;
+                        bool isEndOfStream;
+
+                        if(startEventNumber == 1){
+                            //Existing events: #1, #2
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 1));
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 2));
+                            nextEventNumber = 3;
+                            isEndOfStream = true;
+                        }
+                        else if(startEventNumber == 3){
+                            //New live event: #3
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 3));
+                            nextEventNumber = 4;
+                            isEndOfStream = true;
+                        }
+                        else{
+                            throw new Exception("Invalid start event number: "+startEventNumber);
+                        }
+
+                        Task.Delay(100).ContinueWith((action)=>{
+                            onEventsFound(events.ToArray(),nextEventNumber,isEndOfStream);
+                        });
+                    }))
+                    .WithCheckpointReader(checkpointReader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromBeginning());
+
+            //load the existing checkpoint at event #0
+            //this should trigger reading of events #1 and #2 reaching the end of stream.
+            //the read is handled by the subscription after 100ms
+            checkpointReader.Load(0);
+
+            //Meanwhile, during this 100ms time window, a new live event #3 comes in and subscription is notified
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3));
+
+            //the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
+
+            //a subscriber coming in a while later, should receive all 3 events
+            await Task.Delay(500).ContinueWith((action)=>{
+                //add a subscriber
+                sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
+
+                //all 3 events should be received by the subscriber
+                Assert.AreEqual(3, envelope.Replies.Count);
+            });
+        }
     }
 
     [TestFixture]
@@ -986,7 +1045,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             {
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
                 Helper.BuildLinkEvent(id2, "streamName", 1, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamSource", 0))
-                
+
             }, 1, false);
             envelope1.Replies.Clear();
             sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(3));
@@ -1522,7 +1581,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             sub.RetryAllParkedMessages();
 
             //this should invoke message parker's BeginReadEndSequence again
-            Assert.AreEqual(2,parker.BeginReadEndSequenceCount);            
+            Assert.AreEqual(2,parker.BeginReadEndSequenceCount);
         }
     }
 
@@ -1597,17 +1656,25 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeStreamReader : IPersistentSubscriptionStreamReader
     {
-        private readonly Action<long> _action;
+        private readonly Action<long> _action1 = null;
+        private readonly Action<string,long,int,int,bool,Action<ResolvedEvent[], long, bool>> _action2 = null;
+
 
         public FakeStreamReader(Action<long> action)
         {
-            _action = action;
+            _action1 = action;
+        }
+
+        public FakeStreamReader(Action<string,long,int,int,bool,Action<ResolvedEvent[], long, bool>> action)
+        {
+            _action2 = action;
         }
 
         public void BeginReadEvents(string stream, long startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
             Action<ResolvedEvent[], long, bool> onEventsFound)
         {
-            _action(startEventNumber);
+            if(_action1 != null) _action1(startEventNumber);
+            else if(_action2 != null) _action2(stream,startEventNumber,countToLoad,batchSize,resolveLinkTos,onEventsFound);
         }
     }
 
