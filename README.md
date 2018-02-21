@@ -16,7 +16,7 @@ Information on commercial support and options such as LDAP authentication can be
 |**Windows 8.1**|[![Build status](https://ci.appveyor.com/api/projects/status/rpg0xvt6facomw0b?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore-aasj1)|
 
 ## Documentation
-Documentation for Event Store can be found [here](http://docs.geteventstore.com/)
+Documentation for Event Store can be found [here](https://eventstore.org/docs/)
 
 ## Community
 We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel [here](http://ddd-cqrs-es.herokuapp.com/).
