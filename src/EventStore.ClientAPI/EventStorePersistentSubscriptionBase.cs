@@ -197,7 +197,7 @@ namespace EventStore.ClientAPI
             {
                 if (_subscription == null)
                 {
-                    Thread.Sleep(1);
+                    await Task.Delay(1).ConfigureAwait(false);
                 }
                 else
                 {

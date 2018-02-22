@@ -455,7 +455,7 @@ namespace EventStore.ClientAPI
                 : slice.NextPosition >= new Position(lastCommitPosition.Value, lastCommitPosition.Value);
 
             if (!done && slice.IsEndOfStream)
-                Thread.Sleep(1); // we are waiting for server to flush its data
+                await Task.Delay(1).ConfigureAwait(false); // we are awaiting the server to flush its data
             return done;
         }
 
@@ -595,7 +595,7 @@ namespace EventStore.ClientAPI
             }
 
             if (!done && slice.IsEndOfStream)
-                Thread.Sleep(1); // we are waiting for server to flush its data
+                await Task.Delay(1).ConfigureAwait(false); // we are awaiting the server to flush its data
             return done;
         }
 
