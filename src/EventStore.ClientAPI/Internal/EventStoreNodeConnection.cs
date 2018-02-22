@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
@@ -81,14 +80,15 @@ namespace EventStore.ClientAPI.Internal
             return DeleteStreamAsync(stream, expectedVersion, false, userCredentials);
         }
 
-        public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
+        public async Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<DeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new DeleteStreamOperation(Settings.Log, source, Settings.RequireMaster,
-                                                       stream, expectedVersion, hardDelete, userCredentials));
-            return source.Task;
+            var operation = new DeleteStreamOperation(Settings.Log, source, Settings.RequireMaster,
+                                                      stream, expectedVersion, hardDelete, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
         public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events)
@@ -107,20 +107,21 @@ namespace EventStore.ClientAPI.Internal
 // ReSharper restore RedundantCast
         }
 
-        public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
+        public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events, UserCredentials userCredentials = null)
         {
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new AppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
-                                                         stream, expectedVersion, events, userCredentials));
-            return source.Task;
+            var operation = new AppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
+                                                        stream, expectedVersion, events, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
 // ReSharper restore PossibleMultipleEnumeration
         }
 
-        public Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
+        public async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
             UserCredentials userCredentials = null)
         {
             // ReSharper disable PossibleMultipleEnumeration
@@ -128,20 +129,22 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<ConditionalWriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new ConditionalAppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
-                                                         stream, expectedVersion, events, userCredentials));
-            return source.Task;
+            var operation = new ConditionalAppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
+                                                                   stream, expectedVersion, events, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
             // ReSharper restore PossibleMultipleEnumeration
         }
 
-        public Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion, UserCredentials userCredentials = null)
+        public async Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new StartTransactionOperation(Settings.Log, source, Settings.RequireMaster,
-                                                           stream, expectedVersion, this, userCredentials));
-            return source.Task;
+            var operation = new StartTransactionOperation(Settings.Log, source, Settings.RequireMaster,
+                                                          stream, expectedVersion, this, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
         public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null)
@@ -150,42 +153,44 @@ namespace EventStore.ClientAPI.Internal
             return new EventStoreTransaction(transactionId, userCredentials, this);
         }
 
-        Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials)
+        async Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events, UserCredentials userCredentials)
         {
 // ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new TransactionalWriteOperation(Settings.Log, source, Settings.RequireMaster,
-                                                             transaction.TransactionId, events, userCredentials));
-            return source.Task;
+            var operation = new TransactionalWriteOperation(Settings.Log, source, Settings.RequireMaster,
+                                                            transaction.TransactionId, events, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            await source.Task.ConfigureAwait(false);
 // ReSharper restore PossibleMultipleEnumeration
         }
 
-        Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials)
+        async Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction, UserCredentials userCredentials)
         {
             Ensure.NotNull(transaction, "transaction");
 
             var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new CommitTransactionOperation(Settings.Log, source, Settings.RequireMaster,
-                                                            transaction.TransactionId, userCredentials));
-            return source.Task;
+            var operation = new CommitTransactionOperation(Settings.Log, source, Settings.RequireMaster,
+                                                           transaction.TransactionId, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
 
-        public Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public async Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
             var source = new TaskCompletionSource<EventReadResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadEventOperation(Settings.Log, source, stream, eventNumber, resolveLinkTos,
                                                    Settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task;
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public async Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
@@ -194,11 +199,11 @@ namespace EventStore.ClientAPI.Internal
             var source = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadStreamEventsForwardOperation(Settings.Log, source, stream, start, count,
                                                                  resolveLinkTos, Settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task;
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
-        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public async Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
@@ -206,37 +211,37 @@ namespace EventStore.ClientAPI.Internal
             var source = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadStreamEventsBackwardOperation(Settings.Log, source, stream, start, count,
                                                                   resolveLinkTos, Settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task;
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
-        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public async Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
             if (maxCount > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
                                                               resolveLinkTos, Settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task;
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
-        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
+        public async Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, UserCredentials userCredentials = null)
         {
             Ensure.Positive(maxCount, "maxCount");
             if (maxCount > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
             var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
                                                                resolveLinkTos, Settings.RequireMaster, userCredentials);
-            EnqueueOperation(operation);
-            return source.Task;
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            return await source.Task.ConfigureAwait(false);
         }
 
-        private void EnqueueOperation(IClientOperation operation)
+        private async Task EnqueueOperation(IClientOperation operation)
         {
             while (_handler.TotalOperationCount >= Settings.MaxQueueSize)
             {
-                Thread.Sleep(1);
+                await Task.Delay(1).ConfigureAwait(false);
             }
             _handler.EnqueueMessage(new StartOperationMessage(operation, Settings.MaxRetries, Settings.OperationTimeout));
         }
@@ -404,23 +409,25 @@ namespace EventStore.ClientAPI.Internal
         */
 
 
-        public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials = null) {
+        public async Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNull(settings, "settings");
             var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials));
-            return source.Task;
+            var operation = new CreatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            await source.Task.ConfigureAwait(false);
         }
 
-        public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials = null)
+        public async Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings, UserCredentials credentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNull(settings, "settings");
             var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new UpdatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials));
-            return source.Task;
+            var operation = new UpdatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            await source.Task.ConfigureAwait(false);
         }
 /*
 
@@ -434,12 +441,13 @@ namespace EventStore.ClientAPI.Internal
         }
 
 */
-        public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
+        public async Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new DeletePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, userCredentials));
-            return source.Task;
+            var operation = new DeletePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+            await source.Task.ConfigureAwait(false);
         }
 /*
 
@@ -458,7 +466,7 @@ namespace EventStore.ClientAPI.Internal
             return SetStreamMetadataAsync(stream, expectedMetastreamVersion, metadata.AsJsonBytes(), userCredentials);
         }
 
-        public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
+        public async Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata, UserCredentials userCredentials = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (SystemStreams.IsMetastream(stream))
@@ -467,14 +475,16 @@ namespace EventStore.ClientAPI.Internal
             var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
-            EnqueueOperation(new AppendToStreamOperation(Settings.Log,
-                                                         source,
-                                                         Settings.RequireMaster,
-                                                         SystemStreams.MetastreamOf(stream),
-                                                         expectedMetastreamVersion,
-                                                         new[] { metaevent },
-                                                         userCredentials));
-            return source.Task;
+            var operation = new AppendToStreamOperation(Settings.Log,
+                                                        source,
+                                                        Settings.RequireMaster,
+                                                        SystemStreams.MetastreamOf(stream),
+                                                        expectedMetastreamVersion,
+                                                        new[] {metaevent},
+                                                        userCredentials);
+            await EnqueueOperation(operation).ConfigureAwait(false);
+                
+            return await source.Task.ConfigureAwait(false);
         }
 
         public Task<StreamMetadataResult> GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null)
