@@ -323,10 +323,38 @@ namespace EventStore.Core
             gossipController.SubscribeSenders(httpPipe);
             electController.SubscribeSenders(httpPipe);
 
+            //Workaround for HttpListener bug: https://bugzilla.xamarin.com/show_bug.cgi?id=53256
+            //This bug can cause a crash if a TCP connection is accepted before the endpoint listener is properly initialized
+            ManualResetEvent _externalHttpServiceMre = new ManualResetEvent(false);
+            ManualResetEvent _internalHttpServiceMre = new ManualResetEvent(false);
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                if(e.ExceptionObject is System.ArgumentNullException){
+                    if(!_externalHttpServiceMre.WaitOne(0)){
+                        Log.Debug("External HTTP service start up crash caught. Restarting service.");
+                        _externalHttpServiceMre.Set();
+                    }
+
+                    if(!_internalHttpServiceMre.WaitOne(0)){
+                        Log.Debug("Internal HTTP service start up crash caught. Restarting service.");
+                        _internalHttpServiceMre.Set();
+                    }
+                }
+            };
+
             // EXTERNAL HTTP
-            _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-                                                    _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
-                                                    vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs, vNodeSettings.ExtHttpPrefixes);
+            while(true){
+                _externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+                                                        _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
+                                                        vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs, vNodeSettings.ExtHttpPrefixes);
+
+                //workaround for HttpListener mono bug: https://bugzilla.xamarin.com/show_bug.cgi?id=53256
+                if(!_externalHttpServiceMre.WaitOne(TimeSpan.FromMilliseconds(100))){
+                    _externalHttpServiceMre.Set();
+                    break;
+                }
+                _externalHttpServiceMre.Reset();
+            }
             _externalHttpService.SetupController(persistentSubscriptionController);
             if(vNodeSettings.AdminOnPublic)
                 _externalHttpService.SetupController(adminController);
@@ -344,9 +372,18 @@ namespace EventStore.Core
             _mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
             // INTERNAL HTTP
             if(!isSingleNode) {
-                _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
+                while(true){
+                    _internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
                                                        _workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
                                                        vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs, vNodeSettings.IntHttpPrefixes);
+                    //workaround for HttpListener mono bug: https://bugzilla.xamarin.com/show_bug.cgi?id=53256
+                    if(!_internalHttpServiceMre.WaitOne(TimeSpan.FromMilliseconds(100))){
+                        _internalHttpServiceMre.Set();
+                        break;
+                    }
+                    _internalHttpServiceMre.Reset();
+                }
+
                 _internalHttpService.SetupController(adminController);
                 _internalHttpService.SetupController(pingController);
                 _internalHttpService.SetupController(infoController);
