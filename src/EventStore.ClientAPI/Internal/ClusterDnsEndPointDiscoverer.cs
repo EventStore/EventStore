@@ -50,23 +50,27 @@ namespace EventStore.ClientAPI.Internal
         {
             return Task.Factory.StartNew(() =>
             {
+                var maxDiscoverAttemptsStr = "";
+                if(_maxDiscoverAttempts != Int32.MaxValue) 
+                   maxDiscoverAttemptsStr = "/" + _maxDiscoverAttempts;
+
                 for (int attempt = 1; attempt <= _maxDiscoverAttempts; ++attempt)
                 {
                     //_log.Info("Discovering cluster. Attempt {0}/{1}...", attempt, _maxDiscoverAttempts);
                     try
-                    {
+                    {                            
                         var endPoints = DiscoverEndPoint(failedTcpEndPoint);
                         if (endPoints != null)
                         {
-                            _log.Info("Discovering attempt {0}/{1} successful: best candidate is {2}.", attempt, _maxDiscoverAttempts, endPoints);
+                            _log.Info("Discovering attempt {0}{1} successful: best candidate is {2}.", attempt, maxDiscoverAttemptsStr, endPoints);
                             return endPoints.Value;
                         }
 
-                        _log.Info("Discovering attempt {0}/{1} failed: no candidate found.", attempt, _maxDiscoverAttempts);
+                        _log.Info("Discovering attempt {0}{1} failed: no candidate found.", attempt, maxDiscoverAttemptsStr);
                     }
                     catch (Exception exc)
                     {
-                        _log.Info("Discovering attempt {0}/{1} failed with error: {2}.", attempt, _maxDiscoverAttempts, exc);
+                        _log.Info("Discovering attempt {0}{1} failed with error: {2}.", attempt, maxDiscoverAttemptsStr, exc);
                     }
 
                     Thread.Sleep(500);

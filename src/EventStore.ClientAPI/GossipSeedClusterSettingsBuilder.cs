@@ -52,6 +52,16 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Allows infinite nodes discovery attempts.
+        /// </summary>
+        /// <returns></returns>
+        public GossipSeedClusterSettingsBuilder KeepDiscovering()
+        {
+            _maxDiscoverAttempts = Int32.MaxValue;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the maximum number of attempts for discovery.
         /// </summary>
         /// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
