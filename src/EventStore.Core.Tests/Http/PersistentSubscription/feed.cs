@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Xml;
@@ -300,6 +301,66 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         public void returns_not_acceptable()
         {
             Assert.AreEqual(HttpStatusCode.NotAcceptable, _lastResponse.StatusCode);
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    class when_retrieving_a_feed_with_events_using_prefix : SpecificationWithLongFeed
+    {
+        private JObject _feed;
+        private List<JToken> _entries;
+        private string _prefix;
+
+        protected override void When()
+        {
+            _prefix = "myprefix";
+            var headers = new NameValueCollection();
+            headers.Add("X-Forwarded-Prefix", _prefix);
+            var allMessagesFeedLink = String.Format("{0}/{1}", _subscriptionEndpoint, _numberOfEvents);
+            _feed = GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson, headers: headers);
+            _entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+        }
+
+        [Test]
+        public void returns_ok_status_code()
+        {
+            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+        }
+
+        [Test]
+        public void contains_all_the_events()
+        {
+            Assert.AreEqual(_numberOfEvents, _entries.Count);
+        }
+
+        [Test]
+        public void contains_previous_link_with_prefix()
+        {
+            var previousLink = String.Format("{0}/subscriptions/{1}/{2}/5", _prefix, TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(previousLink), GetLink(_feed, "previous"));
+        }
+        
+        [Test]
+        public void contains_self_link_with_prefix()
+        {
+            var selfLink = String.Format("{0}/subscriptions/{1}/{2}", _prefix, TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(selfLink), GetLink(_feed, "self"));
+        }
+
+        [Test]
+        public void the_ackAll_link_is_to_correct_uri_with_prefix()
+        {
+            var ids = String.Format("ids={0}", String.Join(",", _eventIds.ToArray()));
+            var ackAllLink = String.Format("{0}/subscriptions/{1}/{2}/ack", _prefix, TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(ackAllLink, ids), GetLink(_feed, "ackAll"));
+        }
+
+        [Test]
+        public void the_nackAll_link_is_to_correct_uri_with_prefix()
+        {
+            var ids = String.Format("ids={0}", String.Join(",", _eventIds.ToArray()));
+            var nackAllLink = String.Format("{0}/subscriptions/{1}/{2}/nack", _prefix, TestStreamName, SubscriptionGroupName);
+            Assert.AreEqual(MakeUrl(nackAllLink, ids), GetLink(_feed, "nackAll"));
         }
     }
 }

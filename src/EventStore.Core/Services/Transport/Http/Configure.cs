@@ -305,7 +305,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (msg.Result)
                 {
                     case OperationResult.Success:
-                        var location = HostName.Combine(entity.RequestedUrl, "/streams/{0}/{1}",
+                        var location = HostName.Combine(entity.ResponseUrl, "/streams/{0}/{1}",
                                                         Uri.EscapeDataString(eventStreamId), msg.FirstEventNumber);
                         return new ResponseConfiguration(HttpStatusCode.Created, "Created", "text/plain", Helper.UTF8NoBom,
                                                          new KeyValuePair<string, string>("Location", location));
