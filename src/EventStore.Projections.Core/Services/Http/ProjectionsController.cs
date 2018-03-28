@@ -479,6 +479,9 @@ namespace EventStore.Projections.Core.Services.Http
                           let metadata = isJson
                                        ? EatException(() => (object) (resolvedEvent.Metadata.ParseJson<JObject>()), resolvedEvent.Metadata)
                                        : resolvedEvent.Metadata
+                          let linkMetadata = isJson
+                                       ? EatException(() => (object) (resolvedEvent.PositionMetadata.ParseJson<JObject>()), resolvedEvent.PositionMetadata)
+                                       : resolvedEvent.PositionMetadata
                           select new
                           {
                               EventStreamId = resolvedEvent.EventStreamId,
@@ -486,6 +489,7 @@ namespace EventStore.Projections.Core.Services.Http
                               EventType = resolvedEvent.EventType,
                               Data = data,
                               Metadata = metadata,
+                              LinkMetadata = linkMetadata,
                               IsJson = isJson,
                               ReaderPosition = e.ReaderPosition.ToJsonRaw(),
                           }).ToArray()
