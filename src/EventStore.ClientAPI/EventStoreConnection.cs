@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI
                         connectionSettings.MaxQueueSize, connectionSettings.MaxConcurrentItems,
                         connectionSettings.MaxRetries, connectionSettings.MaxReconnections,
                         connectionSettings.RequireMaster, connectionSettings.ReconnectionDelay,
-                        connectionSettings.OperationTimeout,
+                        connectionSettings.QueueTimeout, connectionSettings.OperationTimeout,
                         connectionSettings.OperationTimeoutCheckPeriod, credential, connectionSettings.UseSslConnection,
                         connectionSettings.TargetHost,
                         connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse,

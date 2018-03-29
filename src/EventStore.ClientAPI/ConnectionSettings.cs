@@ -61,6 +61,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan ReconnectionDelay;
         /// <summary>
+        /// The amount of time a request for an operation is permitted to be queued awaiting transmission to the server.
+        /// </summary>
+        public readonly TimeSpan QueueTimeout;
+        /// <summary>
         /// The amount of time before an operation is considered to have timed out.
         /// </summary>
         public readonly TimeSpan OperationTimeout;
@@ -139,6 +143,7 @@ namespace EventStore.ClientAPI
                                     int maxReconnections,
                                     bool requireMaster,
                                     TimeSpan reconnectionDelay,
+                                    TimeSpan queueTimeout,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
                                     UserCredentials defaultUserCredentials,
@@ -173,6 +178,7 @@ namespace EventStore.ClientAPI
             MaxReconnections = maxReconnections;
             RequireMaster = requireMaster;
             ReconnectionDelay = reconnectionDelay;
+            QueueTimeout = queueTimeout;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
             ClientConnectionTimeout = clientConnectionTimeout;

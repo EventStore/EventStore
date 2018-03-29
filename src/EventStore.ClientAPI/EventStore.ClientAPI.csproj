@@ -72,6 +72,7 @@
     <Compile Include="ConnectionString.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="EventStorePersistentSubscriptionBase.cs" />
+    <Compile Include="Exceptions\OperationExpiredException.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />

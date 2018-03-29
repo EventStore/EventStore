@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -54,7 +55,7 @@ namespace EventStore.ClientAPI.Internal
         private readonly string _connectionName;
         private readonly ConnectionSettings _settings;
         private readonly Dictionary<Guid, OperationItem> _activeOperations = new Dictionary<Guid, OperationItem>();
-        private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
+        private readonly ConcurrentQueue<OperationItem> _waitingOperations = new ConcurrentQueue<OperationItem>();
         private readonly List<OperationItem> _retryPendingOperations = new List<OperationItem>();
         private readonly object _lock = new object();
         private int _totalOperationCount;
@@ -82,7 +83,8 @@ namespace EventStore.ClientAPI.Internal
                 operation.Operation.Fail(connectionClosedException);
             }
             _activeOperations.Clear();
-            _waitingOperations.Clear();
+            OperationItem dummy;
+            while(_waitingOperations.TryDequeue(out dummy));
             _retryPendingOperations.Clear();
             _totalOperationCount = 0;
         }
@@ -175,12 +177,41 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(connection, "connection");
             lock(_lock)
             {
-                while (_waitingOperations.Count > 0 && _activeOperations.Count < _settings.MaxConcurrentItems)
+                // We don't want to transmit or retain expired requests, so we trim any from before the cutoff implied by the current time
+                var cutoff = _settings.QueueTimeout == TimeSpan.Zero ? (DateTime?)null : DateTime.UtcNow - _settings.QueueTimeout;
+
+                OperationItem operation;
+                while (_activeOperations.Count < _settings.MaxConcurrentItems)
                 {
-                    ExecuteOperation(_waitingOperations.Dequeue(), connection);
+                    if (!_waitingOperations.TryDequeue(out operation))
+                        break;
+                    if (cutoff == null || !TryExpireItem(cutoff.Value, operation))
+                        ExecuteOperation(operation, connection);
+                }
+
+                if (cutoff != null)
+                {
+                    // In case the active operations queue is at capacity, we trim expired items from the front of the queue
+                    while (_waitingOperations.TryPeek(out operation) && TryExpireItem(cutoff.Value, operation))
+                    {
+                        _waitingOperations.TryDequeue(out operation);
+                    }
                 }
                 _totalOperationCount = _activeOperations.Count + _waitingOperations.Count;
             }
+        }
+
+        bool TryExpireItem(DateTime cutoffDate, OperationItem operation)
+        {
+            if (operation.CreatedTime > cutoffDate)
+                return false;
+
+            var err = string.Format("EventStoreConnection '{0}': request expired.\n"
+                                                    + "UTC now: {1:HH:mm:ss.fff}, operation: {2}.",
+                                                    _connectionName, DateTime.UtcNow, operation);
+            _settings.Log.Debug(err);
+            operation.Operation.Fail(new OperationExpiredException(err));
+            return true;
         }
 
         public void ExecuteOperation(OperationItem operation, TcpPackageConnection connection) {

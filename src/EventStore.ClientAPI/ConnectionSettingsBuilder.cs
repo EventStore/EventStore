@@ -23,6 +23,7 @@ namespace EventStore.ClientAPI
         private bool _requireMaster = Consts.DefaultRequireMaster;
 
         private TimeSpan _reconnectionDelay = Consts.DefaultReconnectionDelay;
+        private TimeSpan _queueTimeout = Consts.DefaultQueueTimeout;
         private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
@@ -211,6 +212,17 @@ namespace EventStore.ClientAPI
         public ConnectionSettingsBuilder SetReconnectionDelayTo(TimeSpan reconnectionDelay)
         {
             _reconnectionDelay = reconnectionDelay;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum permitted time a request may be queued awaiting transmission; if exceeded an <see cref="Exceptions.OperationExpiredException"/> is thrown.
+        /// </summary>
+        /// <param name="queueTimeout"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder SetQueueTimeoutTo(TimeSpan queueTimeout)
+        {
+            _queueTimeout = queueTimeout;
             return this;
         }
 
@@ -449,6 +461,7 @@ namespace EventStore.ClientAPI
                                           _maxReconnections,
                                           _requireMaster,
                                           _reconnectionDelay,
+                                          _queueTimeout,
                                           _operationTimeout,
                                           _operationTimeoutCheckPeriod,
                                           _defaultUserCredentials,
