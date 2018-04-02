@@ -10,11 +10,11 @@ namespace EventStore.ClientAPI
     {
 
         /// <summary>
-        /// The TCP endpoint of the node.
+        /// The tcp endpoint of the node.
         /// </summary>
         public readonly IPEndPoint TcpEndPoint;
         /// <summary>
-        /// The ssh endpoint of the node
+        /// The ssl endpoint of the node
         /// </summary>
         public readonly IPEndPoint SecureTcpEndPoint;
 
@@ -32,7 +32,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Formats as a tring the endpoints
+        /// Formats the endpoints as a string
         /// </summary>
         public override string ToString()
         {
