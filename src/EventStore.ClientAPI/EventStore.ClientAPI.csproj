@@ -77,7 +77,7 @@
     <Compile Include="Internal\Empty.cs" />
     <Compile Include="Internal\EventStoreNodeConnection.cs" />
     <Compile Include="Internal\IEventStoreConnectionLogicHandler.cs" />
-    <Compile Include="Internal\NodeEndPoints.cs" />
+    <Compile Include="NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
     <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
@@ -138,7 +138,7 @@
     <Compile Include="EventReadResult.cs" />
     <Compile Include="CatchUpSubscriptionSettings.cs" />
     <Compile Include="Internal\EventStoreConnectionLogicHandler.cs" />
-    <Compile Include="Internal\IEndPointDiscoverer.cs" />
+    <Compile Include="IEndPointDiscoverer.cs" />
     <Compile Include="Internal\OperationsManager.cs" />
     <Compile Include="Internal\StaticEndPointDiscoverer.cs" />
     <Compile Include="Internal\SubscriptionsManager.cs" />
