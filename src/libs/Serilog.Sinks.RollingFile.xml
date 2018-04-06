@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Serilog.Sinks.RollingFile</name>
+    </assembly>
+    <members>
+        <member name="T:Serilog.RollingFileLoggerConfigurationExtensions">
+            <summary>
+            Extends <see cref="T:Serilog.Configuration.LoggerSinkConfiguration"/> with rolling file configuration methods.
+            </summary>
+        </member>
+        <member name="M:Serilog.RollingFileLoggerConfigurationExtensions.RollingFile(Serilog.Configuration.LoggerSinkConfiguration,System.String,Serilog.Events.LogEventLevel,System.String,System.IFormatProvider,System.Nullable{System.Int64},System.Nullable{System.Int32},Serilog.Core.LoggingLevelSwitch,System.Boolean,System.Boolean,System.Nullable{System.TimeSpan})">
+            <summary>
+            Write log events to a series of files. Each file will be named according to
+            the date of the first log entry written to it. Only simple date-based rolling is
+            currently supported.
+            </summary>
+            <param name="sinkConfiguration">Logger sink configuration.</param>
+            <param name="pathFormat">String describing the location of the log files,
+            with {Date} in the place of the file date. E.g. "Logs\myapp-{Date}.log" will result in log
+            files such as "Logs\myapp-2013-10-20.log", "Logs\myapp-2013-10-21.log" and so on.</param>
+            <param name="restrictedToMinimumLevel">The minimum level for
+            events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+            <param name="levelSwitch">A switch allowing the pass-through minimum level
+            to be changed at runtime.</param>
+            <param name="outputTemplate">A message template describing the format used to write to the sink.
+            the default is "{Timestamp} [{Level}] {Message}{NewLine}{Exception}".</param>
+            <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
+            <param name="fileSizeLimitBytes">The maximum size, in bytes, to which any single log file will be allowed to grow.
+            For unrestricted growth, pass null. The default is 1 GB.</param>
+            <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
+            including the current log file. For unlimited retention, pass null. The default is 31.</param>
+            <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
+            is false.</param>
+            <param name="shared">Allow the log files to be shared by multiple processes. The default is false.</param>
+            <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+            <remarks>The file will be written using the UTF-8 encoding without a byte-order mark.</remarks>
+        </member>
+        <member name="M:Serilog.RollingFileLoggerConfigurationExtensions.RollingFile(Serilog.Configuration.LoggerSinkConfiguration,Serilog.Formatting.ITextFormatter,System.String,Serilog.Events.LogEventLevel,System.Nullable{System.Int64},System.Nullable{System.Int32},Serilog.Core.LoggingLevelSwitch,System.Boolean,System.Boolean,System.Nullable{System.TimeSpan})">
+            <summary>
+            Write log events to a series of files. Each file will be named according to
+            the date of the first log entry written to it. Only simple date-based rolling is
+            currently supported.
+            </summary>
+            <param name="sinkConfiguration">Logger sink configuration.</param>
+            <param name="formatter">Formatter to control how events are rendered into the file. To control
+            plain text formatting, use the overload that accepts an output template instead.</param>
+            <param name="pathFormat">String describing the location of the log files,
+            with {Date} in the place of the file date. E.g. "Logs\myapp-{Date}.log" will result in log
+            files such as "Logs\myapp-2013-10-20.log", "Logs\myapp-2013-10-21.log" and so on.</param>
+            <param name="restrictedToMinimumLevel">The minimum level for
+            events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+            <param name="levelSwitch">A switch allowing the pass-through minimum level
+            to be changed at runtime.</param>
+            <param name="fileSizeLimitBytes">The maximum size, in bytes, to which any single log file will be allowed to grow.
+            For unrestricted growth, pass null. The default is 1 GB.</param>
+            <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
+            including the current log file. For unlimited retention, pass null. The default is 31.</param>
+            <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
+            is false.</param>
+            <param name="shared">Allow the log files to be shared by multiple processes. The default is false.</param>
+            <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+            <remarks>The file will be written using the UTF-8 encoding without a byte-order mark.</remarks>
+        </member>
+        <member name="T:Serilog.Sinks.RollingFile.RollingFileSink">
+            <summary>
+            Write log events to a series of files. Each file will be named according to
+            the date of the first log entry written to it. Only simple date-based rolling is
+            currently supported.
+            </summary>
+        </member>
+        <member name="M:Serilog.Sinks.RollingFile.RollingFileSink.#ctor(System.String,Serilog.Formatting.ITextFormatter,System.Nullable{System.Int64},System.Nullable{System.Int32},System.Text.Encoding,System.Boolean,System.Boolean)">
+            <summary>Construct a <see cref="T:Serilog.Sinks.RollingFile.RollingFileSink"/>.</summary>
+            <param name="pathFormat">String describing the location of the log files,
+            with {Date} in the place of the file date. E.g. "Logs\myapp-{Date}.log" will result in log
+            files such as "Logs\myapp-2013-10-20.log", "Logs\myapp-2013-10-21.log" and so on.</param>
+            <param name="textFormatter">Formatter used to convert log events to text.</param>
+            <param name="fileSizeLimitBytes">The maximum size, in bytes, to which a log file will be allowed to grow.
+            For unrestricted growth, pass null. The default is 1 GB.</param>
+            <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
+            including the current log file. For unlimited retention, pass null. The default is 31.</param>
+            <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
+            <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
+            is false.</param>
+            <param name="shared">Allow the log files to be shared by multiple processes. The default is false.</param>
+            <returns>Configuration object allowing method chaining.</returns>
+            <remarks>The file will be written using the UTF-8 character set.</remarks>
+        </member>
+        <member name="M:Serilog.Sinks.RollingFile.RollingFileSink.Emit(Serilog.Events.LogEvent)">
+            <summary>
+            Emit the provided log event to the sink.
+            </summary>
+            <param name="logEvent">The log event to write.</param>
+            <remarks>Events that come in out-of-order (e.g. around the rollovers)
+            may end up written to a later file than their timestamp
+            would indicate.</remarks>
+        </member>
+        <member name="M:Serilog.Sinks.RollingFile.RollingFileSink.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or
+            resetting unmanaged resources.
+            </summary>
+        </member>
+        <member name="M:Serilog.Sinks.RollingFile.RollingFileSink.FlushToDisk">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.IO;
 using EventStore.Common.Utils;
+using Serilog;
 
 namespace EventStore.Common.Log
 {
@@ -10,7 +11,7 @@ namespace EventStore.Common.Log
         public static string LogsDirectory
         {
             get
-            {
+            { // Checks if Logs Directory is initialized
                 if (!_initialized)
                     throw new InvalidOperationException("Init method must be called");
                 return _logsDirectory;
@@ -19,12 +20,12 @@ namespace EventStore.Common.Log
 
         public static bool Initialized
         {
-            get 
-            {
+            get
+            { // return initialized or not
                 return _initialized;
             }
         }
-
+        
         private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
@@ -41,6 +42,8 @@ namespace EventStore.Common.Log
 
         public static ILogger GetLoggerFor(Type type)
         {
+            //MessageHierarchy
+            //LogManager.GetLoggerFor(typeof(PerfUtils))
             return GetLogger(type.Name);
         }
 
@@ -60,21 +63,28 @@ namespace EventStore.Common.Log
             if (_initialized)
                 throw new InvalidOperationException("Cannot initialize twice");
 
-            var potentialNLogConfigurationFilePaths = new []{
+            var potentialSeriLogConfigurationFilePaths = new []{
+                //etc/eventstore"+"App.config
+                //
                 Path.Combine(Locations.ApplicationDirectory, EVENTSTORE_LOG_FILENAME),
                 Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
-            var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
+            var configFilePath = potentialSeriLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
-                NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
+                //NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
+                 Serilog.Log.Logger =
+                 new Serilog.LoggerConfiguration()
+                 .ReadFrom
+                 .AppSettings(null,configFilePath)
+                 .CreateLogger();
             }
             else
-            {
+            {                                           //App.Config , ,
                 Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to defaults.",
                         EVENTSTORE_LOG_FILENAME,
-                        String.Join(",\n", potentialNLogConfigurationFilePaths));
-                SetDefaultLog();
+                        String.Join(",\n", potentialSeriLogConfigurationFilePaths));
+                //SetDefaultLog();
             }
 
             _initialized = true;
@@ -91,10 +101,12 @@ namespace EventStore.Common.Log
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
         }
-
+/* 
         private static void SetDefaultLog()
         {
             NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
+           // var logger = new LoggerConfiguration();
+
             NLog.LogManager.Configuration.LoggingRules.Add(new NLog.Config.LoggingRule("*", NLog.LogLevel.Trace,
                 new NLog.Targets.ColoredConsoleTarget
                 {
@@ -110,7 +122,7 @@ namespace EventStore.Common.Log
                 }));
             NLog.LogManager.ReconfigExistingLoggers();
         }
-
+*/
         public static void Finish()
         {
             try

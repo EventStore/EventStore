@@ -50,6 +50,18 @@
     <Reference Include="NLog">
       <HintPath>..\libs\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="Serilog">
+      <HintPath>..\libs\Serilog.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Settings.AppSettings">
+      <HintPath>..\libs\Serilog.Settings.AppSettings.dll</HintPath>
+    </Reference>
+     <Reference Include="Serilog.Sinks.Console">
+      <HintPath>..\libs\Serilog.Sinks.Console.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.RollingFile">
+      <HintPath>..\libs\Serilog.Sinks.RollingFile.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -62,6 +74,7 @@
     <Compile Include="Log\LogManager.cs" />
     <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
+    <Compile Include="Log\Serilogger.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
