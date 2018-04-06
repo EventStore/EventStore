@@ -23,14 +23,14 @@ namespace EventStore.Projections.Core.Services.v8
 
         public V8ProjectionStateHandler(
             string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
-            Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory)
+            Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory,int compileTimeoutMs,int processEventTimeoutMs)
         {
             var preludeSource = getModuleSource(preludeName);
-            var prelude = new PreludeScript(preludeSource.Item1, preludeSource.Item2, getModuleSource, cancelCallbackFactory, logger);
+            var prelude = new PreludeScript(preludeSource.Item1, preludeSource.Item2, getModuleSource, cancelCallbackFactory, compileTimeoutMs, logger);
             QueryScript query;
             try
             {
-                query = new QueryScript(prelude, querySource, "POST-BODY");
+                query = new QueryScript(prelude, querySource, "POST-BODY", compileTimeoutMs,processEventTimeoutMs);
                 query.Emit += QueryOnEmit;
             }
             catch

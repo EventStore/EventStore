@@ -64,12 +64,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
                     {
                         try {
                             _connection.Close();
-                        } catch { 
+                        } catch {
                         }
                     }
                     if (_node != null)
                     {
-                        try { 
+                        try {
                         	_node.Shutdown();
                         } catch {
                         }
@@ -96,7 +96,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
         protected MiniNode CreateNode()
         {
             var projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
-                                startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
+                                startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault)
+                                ,compileTimeout: TimeSpan.FromSeconds(Opts.ProjectionsCompileTimeoutSecsDefault)
+                                ,eventProcessTimeout: TimeSpan.FromSeconds(Opts.ProjectionsEventProcessTimeoutSecsDefault));
             return new MiniNode(
             PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { projections });
         }
@@ -139,7 +141,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
                 .when({
                     ""$any"":function(s,e) {
                         emit(""" + emittingStream + @""", ""emittedEvent"", e);
-                    } 
+                    }
                 });";
         }
     }

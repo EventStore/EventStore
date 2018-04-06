@@ -152,6 +152,10 @@ namespace EventStore.ClusterNode
         public int WorkerThreads { get; set; }
         [ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
         public int ProjectionsQueryExpiry { get; set; }
+        [ArgDescription(Opts.JSProjectionsCompileTimeoutDescr, Opts.ProjectionsGroup)]
+        public int JSProjectionsCompileTimeout { get; set; }
+        [ArgDescription(Opts.JSProjectionsProcessTimeoutDescr, Opts.ProjectionsGroup)]
+        public int JSProjectionsProcessTimeout { get; set; }
 
         [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] IntHttpPrefixes { get; set; }

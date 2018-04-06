@@ -380,6 +380,7 @@
     <Compile Include="v8\Js1Exception.cs" />
     <Compile Include="v8\PreludeScript.cs" />
     <Compile Include="v8\QueryScript.cs" />
+    <Compile Include="ProjectionSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">

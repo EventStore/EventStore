@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private readonly ISingletonTimeoutScheduler _timeoutScheduler;
-
+        private readonly ProjectionSettings _projectionSettings;
 
         public ProjectionCoreService(
             Guid workerId,
@@ -61,7 +61,8 @@ namespace EventStore.Projections.Core.Services.Processing
             ITimeProvider timeProvider,
             IODispatcher ioDispatcher,
             SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
-            ISingletonTimeoutScheduler timeoutScheduler)
+            ISingletonTimeoutScheduler timeoutScheduler,
+            ProjectionSettings projectionSettings)
         {
             _workerId = workerId;
             _inputQueue = inputQueue;
@@ -74,6 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingStrategySelector = new ProcessingStrategySelector(
                 _subscriptionDispatcher,
                 _spoolProcessingResponseDispatcher);
+            _projectionSettings = projectionSettings;
         }
 
         public ILogger Logger
@@ -123,7 +125,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     _timeoutScheduler,
                     _logger,
                     message.HandlerType,
-                    message.Query);
+                    message.Query,
+                    _projectionSettings.V8.CompileTimeout.Milliseconds,
+                    _projectionSettings.V8.EventProcessTimeout.Milliseconds);
 
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
@@ -190,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
-                var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query);
+                var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query, _projectionSettings.V8.CompileTimeout.Milliseconds, _projectionSettings.V8.EventProcessTimeout.Milliseconds);
 
                 string name = message.Name;
                 var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
@@ -328,11 +332,15 @@ namespace EventStore.Projections.Core.Services.Processing
             ISingletonTimeoutScheduler singletonTimeoutScheduler,
             ILogger logger,
             string handlerType,
-            string query)
+            string query,
+            int compileTimeoutMs,
+            int eventProcessTimeoutMs)
         {
             var stateHandler = new ProjectionStateHandlerFactory().Create(
                 handlerType,
                 query,
+                compileTimeoutMs,
+                eventProcessTimeoutMs,
                 logger: logger.Trace,
                 cancelCallbackFactory:
                     singletonTimeoutScheduler == null ? (Action<int, Action>) null : singletonTimeoutScheduler.Schedule);

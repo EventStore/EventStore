@@ -11,8 +11,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8
     [TestFixture]
     public class when_creating_v8_projection
     {
-        private ProjectionStateHandlerFactory _stateHandlerFactory;
-
+        private ProjectionStateHandlerFactory _stateHandlerFactory;        
+        const int t = 5000; //5 seconds
         [SetUp]
         public void Setup()
         {
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         [Test, Category("v8")]
         public void it_can_be_created()
         {
-            using (_stateHandlerFactory.Create("JS", @""))
+            using (_stateHandlerFactory.Create("JS", @"",t,t))
             {
             }
         }
@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         public void it_can_log_messages()
         {
             string m = null;
-            using (_stateHandlerFactory.Create("JS", @"log(""Message1"");", logger: (s, _) => m = s))
+            using (_stateHandlerFactory.Create("JS", @"log(""Message1"");",t,t,logger: (s, _) => m = s))
             {
             }
             Assert.AreEqual("Message1", m);
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         {
             try
             {
-                using (_stateHandlerFactory.Create("JS", @"log(1;", logger: (s, _) => { }))
+                using (_stateHandlerFactory.Create("JS", @"log(1;",t,t,logger: (s, _) => { }))
                 {
                 }
             }
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         {
             try 
             {
-                using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: (s, _) => { }))
+                using (_stateHandlerFactory.Create("JS", @"throw 123;",t,t,logger: (s, _) => { }))
                 {
                 }
             }
@@ -93,6 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                                 var i = 0;
                                 while (true) i++;
                     ",
+                    t,
+                    t,
                     logger: (s, _) => { },
                     cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                         {
@@ -126,6 +128,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                             }
                         });
                     ",
+                    t,
+                    t,
                     logger: Console.WriteLine,
                     cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                     {
@@ -168,6 +172,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                                 while (true) i++;
                         });
                     ",
+                    t,
+                    t,
                     logger: Console.WriteLine,
                     cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
                     {
@@ -210,7 +216,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                             while (true) i++;
                         }
                     });
-                ", logger: Console.WriteLine,
+                ", t, t, logger: Console.WriteLine,
                         cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(
                             state =>
                                 {

@@ -33,14 +33,16 @@ namespace EventStore.Projections.Core.v8
         private Exception _reverseCommandHandlerException;
 
         public event Action<string> Emit;
+        private int _eventProcessTimeoutMs;
 
-        public QueryScript(PreludeScript prelude, string script, string fileName)
+        public QueryScript(PreludeScript prelude, string script, string fileName,int compileTimeoutMs, int eventProcessTimeoutMs)
         {
             _prelude = prelude;
             _commandHandlerRegisteredCallback = CommandHandlerRegisteredCallback;
             _reverseCommandHandlerDelegate = ReverseCommandHandler;
+            _eventProcessTimeoutMs = eventProcessTimeoutMs;
 
-            _script = CompileScript(prelude, script, fileName);
+            _script = CompileScript(prelude, script, fileName,compileTimeoutMs);
 
             try
             {
@@ -53,13 +55,19 @@ namespace EventStore.Projections.Core.v8
             }
         }
 
-        private CompiledScript CompileScript(PreludeScript prelude, string script, string fileName)
+        private CompiledScript CompileScript(PreludeScript prelude, string script, string fileName,int compileTimeoutMs)
         {
-            prelude.ScheduleTerminateExecution();
+            prelude.ScheduleTerminateExecution(compileTimeoutMs);
             IntPtr query = Js1.CompileQuery(
                 prelude.GetHandle(), script, fileName, _commandHandlerRegisteredCallback, _reverseCommandHandlerDelegate);
             var terminated = prelude.CancelTerminateExecution();
-            CompiledScript.CheckResult(query, terminated, disposeScriptOnException: true);
+            try{
+                CompiledScript.CheckResult(query, terminated, disposeScriptOnException: true);
+            }
+            catch(Js1Exception ex){
+                throw new Js1Exception(ex.ErrorCode, String.Format("Failed to compile script '{0}': {1}",fileName,ex.Message));
+            }
+
             return new CompiledScript(query);
         }
 
@@ -167,7 +175,7 @@ namespace EventStore.Projections.Core.v8
         {
             _reverseCommandHandlerException = null;
 
-            _prelude.ScheduleTerminateExecution();
+            _prelude.ScheduleTerminateExecution(_eventProcessTimeoutMs);
 
             IntPtr resultJsonPtr;
             IntPtr result2JsonPtr;
@@ -177,8 +185,14 @@ namespace EventStore.Projections.Core.v8
                 out resultJsonPtr, out result2JsonPtr, out memoryHandle);
 
             var terminated = _prelude.CancelTerminateExecution();
-            if (!success)
-                CompiledScript.CheckResult(_script.GetHandle(), terminated, disposeScriptOnException: false);
+            if (!success){
+                try{
+                    CompiledScript.CheckResult(_script.GetHandle(), terminated, disposeScriptOnException: false);
+                }
+                catch(Js1Exception ex){
+                    throw new Js1Exception(ex.ErrorCode, String.Format("Failed to process event: {0}",ex.Message));
+                }
+            }
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
             string result2Json = Marshal.PtrToStringUni(result2JsonPtr);
             Js1.FreeResult(memoryHandle);

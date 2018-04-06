@@ -114,6 +114,8 @@ namespace EventStore.Core
         protected ProjectionType _projectionType;
         protected int _projectionsThreads;
         protected TimeSpan _projectionsQueryExpiry;
+        protected TimeSpan _jsProjectionsCompileTimeout;
+        protected TimeSpan _jsProjectionsEventProcessTimeout;
 
         protected TFChunkDb _db;
         protected ClusterVNodeSettings _vNodeSettings;
@@ -218,6 +220,8 @@ namespace EventStore.Core
             _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
+            _jsProjectionsCompileTimeout = TimeSpan.FromSeconds(Opts.JSProjectionsCompileTimeoutDefault);
+            _jsProjectionsEventProcessTimeout = TimeSpan.FromSeconds(Opts.JSProjectionsProcessTimeoutDefault);
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -281,6 +285,27 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// Sets the timeout to compile a script before faulting a javascript projection
+        /// </summary>
+        /// <param name="compileTimeout">The timeout to compile a script</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithJSProjectionCompileTimeoutOf(TimeSpan compileTimeout)
+        {
+            _jsProjectionsCompileTimeout = compileTimeout;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the timeout to process an event before faulting a javascript projection
+        /// </summary>
+        /// <param name="eventProcessTimeout">The timeout to process an event</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithJSProjectionProcessTimeoutOf(TimeSpan eventProcessTimeout)
+        {
+            _jsProjectionsEventProcessTimeout = eventProcessTimeout;
+            return this;
+        }
 
         /// <summary>
         /// Adds a custom subsystem to the builder. NOTE: This is an advanced use case that most people will never need!

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
+using EventStore.Projections.Core;
 
 namespace EventStore.Projections.Core
 {
@@ -12,19 +13,22 @@ namespace EventStore.Projections.Core
         private readonly InMemoryBus _masterOutputBus;
         private readonly IQueuedHandler _masterInputQueue;
         private readonly InMemoryBus _masterMainBus;
+        private readonly ProjectionSettings _projectionSettings;
 
         public ProjectionsStandardComponents(
             int projectionWorkerThreadCount,
             ProjectionType runProjections,
             InMemoryBus masterOutputBus,
             IQueuedHandler masterInputQueue,
-            InMemoryBus masterMainBus)
+            InMemoryBus masterMainBus,
+            ProjectionSettings projectionSettings)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
             _runProjections = runProjections;
             _masterOutputBus = masterOutputBus;
             _masterInputQueue = masterInputQueue;
             _masterMainBus = masterMainBus;
+            _projectionSettings = projectionSettings;
         }
 
         public int ProjectionWorkerThreadCount
@@ -51,5 +55,10 @@ namespace EventStore.Projections.Core
         {
             get { return _masterMainBus; }
         }
+
+        public ProjectionSettings ProjectionSettings
+        {
+            get { return _projectionSettings; }
+        }        
     }
 }

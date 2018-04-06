@@ -7,7 +7,6 @@ namespace EventStore.Projections.Core.v8
 {
     public class PreludeScript : IDisposable
     {
-        private const int CompileTimeoutMs = 5000;
         private const int RetryLimit = 3;
 
         private readonly ILogger Log = LogManager.GetLoggerFor<PreludeScript>();
@@ -34,7 +33,7 @@ namespace EventStore.Projections.Core.v8
 
         public PreludeScript(
             string script, string fileName, Func<string, Tuple<string, string>> getModuleSourceAndFileName,
-            Action<int, Action> cancelCallbackFactory, Action<string, object[]> logger = null)
+            Action<int, Action> cancelCallbackFactory, int compileTimeoutMs,  Action<string, object[]> logger = null)
         {
             _logDelegate = LogHandler;
             _loadModuleDelegate = GetModule;
@@ -43,10 +42,10 @@ namespace EventStore.Projections.Core.v8
             _enterCancellableRegion = EnterCancellableRegion;
             _exitCancellableRegion = ExitCancellableRegion;
             _cancelCallbackFactory = cancelCallbackFactory;
-            _script = CompileScript(script, fileName);
+            _script = CompileScript(script, fileName,compileTimeoutMs);
         }
 
-        private CompiledScript CompileScript(string script, string fileName)
+        private CompiledScript CompileScript(string script, string fileName, int compileTimeoutMs)
         {
             try
             {
@@ -57,7 +56,7 @@ namespace EventStore.Projections.Core.v8
                     attempts--;
                     try
                     {
-                        ScheduleTerminateExecution();
+                        ScheduleTerminateExecution(compileTimeoutMs);
                         prelude = Js1.CompilePrelude(
                             script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion,
                             _logDelegate);
@@ -71,7 +70,9 @@ namespace EventStore.Projections.Core.v8
                             // timeouts
                             Thread.Sleep(2000);
                         }
-                        else throw;
+                        else{
+                            throw new Js1Exception(ex.ErrorCode,String.Format("Failed to compile script '{0}': {1}",fileName,ex.Message));
+                        }
                     }
                 } while (prelude == default(IntPtr));
                 return new CompiledScript(prelude);
@@ -163,7 +164,7 @@ namespace EventStore.Projections.Core.v8
             }
         }
 
-        public void ScheduleTerminateExecution()
+        public void ScheduleTerminateExecution(int timeout)
         {
             int currentCancelToken = ++_currentCancelToken;
             if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, NonScheduled) != NonScheduled) //TODO: no need for interlocked?
@@ -173,7 +174,7 @@ namespace EventStore.Projections.Core.v8
                 var terminateRequested = new CancelRef();
                 _terminateRequested = terminateRequested;
                 _cancelCallbackFactory(
-                    CompileTimeoutMs, () => AnotherThreadCancel(currentCancelToken, GetHandle(), terminateRequested.Terminate));
+                    timeout, () => AnotherThreadCancel(currentCancelToken, GetHandle(), terminateRequested.Terminate));
             }
             else
             {

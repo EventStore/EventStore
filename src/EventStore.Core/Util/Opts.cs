@@ -133,6 +133,11 @@ namespace EventStore.Core.Util
         public const string ProjectionsQueryExpiryDescr = "The number of minutes a query can be idle before it expires";
         public const int    ProjectionsQueryExpiryDefault = 5;
 
+        public const string JSProjectionsCompileTimeoutDescr = "The timeout, in seconds, to compile a script after which a javascript projection is faulted";
+        public const int    JSProjectionsCompileTimeoutDefault = 5;
+        public const string JSProjectionsProcessTimeoutDescr = "The timeout, in seconds, to process one event after which a javascript projection is faulted";
+        public const int    JSProjectionsProcessTimeoutDefault = 60;
+
         public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
         public const int    WorkerThreadsDefault = 5;
 

@@ -32,6 +32,7 @@ namespace EventStore.Projections.Core
         private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
         private readonly ProjectionCoreResponseWriter _coreResponseWriter;
         private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
+        private readonly ProjectionSettings _projectionSettings;
 
         public ProjectionWorkerNode(
             Guid workerId,
@@ -39,9 +40,11 @@ namespace EventStore.Projections.Core
             IQueuedHandler inputQueue,
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
-            ProjectionType runProjections)
+            ProjectionType runProjections,
+            ProjectionSettings projectionSettings)
         {
             _runProjections = runProjections;
+            _projectionSettings = projectionSettings;
             Ensure.NotNull(db, "db");
 
             _coreOutput = new InMemoryBus("Core Output");
@@ -77,7 +80,8 @@ namespace EventStore.Projections.Core
                     timeProvider,
                     _ioDispatcher,
                     _spoolProcessingResponseDispatcher,
-                    timeoutScheduler);
+                    timeoutScheduler,
+                    _projectionSettings);
 
                 var responseWriter = new ResponseWriter(_ioDispatcher);
                 _coreResponseWriter = new ProjectionCoreResponseWriter(responseWriter);

@@ -204,6 +204,8 @@ namespace EventStore.ClusterNode
                         .WithSslTargetHost(options.SslTargetHost)
                         .RunProjections(options.RunProjections, options.ProjectionThreads)
                         .WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
+                        .WithJSProjectionCompileTimeoutOf(TimeSpan.FromSeconds(options.JSProjectionsCompileTimeout))
+                        .WithJSProjectionProcessTimeoutOf(TimeSpan.FromSeconds(options.JSProjectionsProcessTimeout))
                         .WithTfCachedChunks(options.CachedChunks)
                         .WithTfChunksCacheSize(options.ChunksCacheSize)
                         .WithStatsStorage(StatsStorage.StreamAndCsv)

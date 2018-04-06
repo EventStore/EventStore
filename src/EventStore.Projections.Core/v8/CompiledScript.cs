@@ -24,10 +24,10 @@ namespace EventStore.Projections.Core.v8
         {
             if (terminated)
                 throw new Js1Exception(
-                    -2, "Failed to compile script. Script execution terminated.  Timeout expired. (1)");
+                    -2, "Timeout expired (1)");
             if (scriptHandle == IntPtr.Zero)
                 throw new Js1Exception(
-                    -1, "Failed to compile script. Script execution terminated.  Timeout expired. (2)");
+                    -1, "Timeout expired (2)");
             int? errorCode = null;
             string errorMessage = null;
             _reportErrorCallback =
@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.v8
                 }
                 if (errorCode == 2)
                     throw new Js1Exception(
-                        errorCode.Value, "Failed to compile script. Script execution terminated.  Timeout expired. (3)");
+                        errorCode.Value, "Execution terminated by V8");
                 throw new Js1Exception(errorCode.Value, errorMessage);
             }
         }

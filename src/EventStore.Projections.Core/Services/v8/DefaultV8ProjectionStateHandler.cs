@@ -8,8 +8,8 @@ namespace EventStore.Projections.Core.Services.v8
     public class DefaultV8ProjectionStateHandler : V8ProjectionStateHandler
     {
         public DefaultV8ProjectionStateHandler(
-            string query, Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory)
-            : base("1Prelude", query, GetModuleSource, logger, cancelCallbackFactory)
+            string query, Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory, int compileTimeoutMs,int processEventTimeoutMs)
+            : base("1Prelude", query, GetModuleSource, logger, cancelCallbackFactory,compileTimeoutMs,processEventTimeoutMs)
         {
         }
 

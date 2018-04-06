@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                 try
                 {
                     //var cancelToken = 123;
-                    prelude.ScheduleTerminateExecution();
+                    prelude.ScheduleTerminateExecution(PreludeScript.CompileTimeoutMs);
                     Thread.Sleep(500);
                     _commandHandlerRegisteredCallback = (name, handle) => { };
                     _reverseCommandHandlerDelegate = (name, body) => { };

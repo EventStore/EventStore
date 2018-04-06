@@ -38,8 +38,13 @@ namespace EventStore.ClientAPI.Embedded
         /// </summary>
         protected override void SetUpProjectionsIfNeeded()
         {
+            var projectionSettings = new ProjectionSettings(
+                new GeneralProjectionSettings(_projectionsQueryExpiry),
+                new V8ProjectionSettings(_jsProjectionsCompileTimeout, _jsProjectionsEventProcessTimeout)
+            );
+
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType,
-                            _startStandardProjections, _projectionsQueryExpiry));
+                            _startStandardProjections, projectionSettings));
         }
     }
 }

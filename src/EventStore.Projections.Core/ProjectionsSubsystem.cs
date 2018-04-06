@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core
         private readonly int _projectionWorkerThreadCount;
         private readonly ProjectionType _runProjections;
         private readonly bool _startStandardProjections;
-        private readonly TimeSpan _projectionsQueryExpiry;
+        private readonly ProjectionSettings _projectionSettings;   
         public const int VERSION = 3;
 
         private IQueuedHandler _masterInputQueue;
@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core
         private bool _subsystemStarted;
 
         public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
-            bool startStandardProjections, TimeSpan projectionQueryExpiry)
+            bool startStandardProjections, ProjectionSettings projectionSettings)
         {
             if (runProjections <= ProjectionType.System)
                 _projectionWorkerThreadCount = 1;
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core
 
             _runProjections = runProjections;
             _startStandardProjections = startStandardProjections;
-            _projectionsQueryExpiry = projectionQueryExpiry;
+            _projectionSettings = projectionSettings;
         }
 
         public void Register(StandardComponents standardComponents)
@@ -50,13 +50,14 @@ namespace EventStore.Projections.Core
                 _runProjections,
                 _masterOutputBus,
                 _masterInputQueue,
-                _masterMainBus);
+                _masterMainBus,
+                _projectionSettings);
 
             CreateAwakerService(standardComponents);
             _coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
             _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher) v.Value);
 
-            ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap, _projectionsQueryExpiry);
+            ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap, _projectionSettings.General.ProjectionQueryExpiry);
             projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
         }
 
