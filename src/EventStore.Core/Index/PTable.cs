@@ -286,7 +286,7 @@ namespace EventStore.Core.Index
                         var previousKey = new IndexEntryKey(long.MaxValue, long.MaxValue);
                         for (long k = 0; k < midpointsCount; ++k)
                         {
-                            var nextIndex = GetMidpointIndex(k,count,midpointsCount);
+                            long nextIndex = GetMidpointIndex(k,count,midpointsCount);
                             if (previousNextIndex != nextIndex) {
                                 if(!skipIndexVerify){
                                     ReadUntilWithMd5(PTableHeader.Size + _indexEntrySize * nextIndex, stream, md5);
