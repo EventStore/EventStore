@@ -5,13 +5,13 @@
     <version>0.0.0</version>
     <authors>Event Store LLP</authors>
     <owners>Event Store LLP</owners>
-    <licenseUrl>http://geteventstore.com/terms/licence/bsd/</licenseUrl>
-    <projectUrl>http://geteventstore.com</projectUrl>
-    <iconUrl>http://geteventstore.com/assets/ouro-200.png</iconUrl>
+    <licenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://eventstore.org</projectUrl>
+    <iconUrl>https://eventstore.org/images/ouro.svg</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
-    <releaseNotes>Client API for version 3 of the Event Store</releaseNotes>
-    <copyright>Copyright 2012-2015 Event Store LLP</copyright>
+    <description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from https://eventstore.org/</description>
+    <releaseNotes>Client API for version 4 of the Event Store</releaseNotes>
+    <copyright>Copyright 2012-2018 Event Store LLP</copyright>
     <tags>eventstore client</tags>
     <dependencies>
     </dependencies>
