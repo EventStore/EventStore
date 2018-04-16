@@ -6,32 +6,32 @@ namespace EventStore.ClientAPI.Common.Log
     {
         public void Error(string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("ERROR", format, args));
+            System.Diagnostics.Trace.WriteLine(Log("ERROR", format, args));
         }
 
         public void Error(Exception ex, string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("ERROR", ex, format, args));
+            System.Diagnostics.Trace.WriteLine(Log("ERROR", ex, format, args));
         }
 
         public void Debug(string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("DEBUG", format, args));
+            System.Diagnostics.Trace.WriteLine(Log("DEBUG", format, args));
         }
 
         public void Debug(Exception ex, string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("DEBUG", ex, format, args));
+            System.Diagnostics.Trace.WriteLine(Log("DEBUG", ex, format, args));
         }
 
         public void Info(string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("INFO", format, args));
+            System.Diagnostics.Trace.WriteLine(Log("INFO", format, args));
         }
 
         public void Info(Exception ex, string format, params object[] args)
         {
-            System.Diagnostics.Debug.WriteLine(Log("INFO", ex, format, args));
+            System.Diagnostics.Trace.WriteLine(Log("INFO", ex, format, args));
         }
 
 
