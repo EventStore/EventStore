@@ -73,7 +73,7 @@ namespace EventStore.Common.Log
             if(!String.IsNullOrEmpty(configFilePath))
             {
                 //NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
-                 Serilog.Log.Logger =
+                 Serilog.Log.Logger = 
                  new Serilog.LoggerConfiguration()
                  .ReadFrom
                  .AppSettings(null,configFilePath)
