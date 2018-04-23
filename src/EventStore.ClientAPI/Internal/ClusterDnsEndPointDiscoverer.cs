@@ -10,6 +10,7 @@ using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
+using System.Net.Sockets;
 
 namespace EventStore.ClientAPI.Internal
 {
@@ -125,7 +126,7 @@ namespace EventStore.ClientAPI.Internal
             IPAddress[] addresses;
             try
             {
-                addresses = Dns.GetHostAddresses(dns);
+                addresses = Dns.GetHostAddresses(dns).Where(x => x.AddressFamily == AddressFamily.InterNetwork).ToArray();
             }
             catch (Exception exc)
             {
