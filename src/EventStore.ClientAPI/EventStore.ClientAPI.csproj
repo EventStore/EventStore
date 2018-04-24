@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\clientapi\</OutputPath>
-    <DefineConstants>CLIENTAPI</DefineConstants>
+    <DefineConstants>CLIENTAPI;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapi\EventStore.ClientAPI.xml</DocumentationFile>
