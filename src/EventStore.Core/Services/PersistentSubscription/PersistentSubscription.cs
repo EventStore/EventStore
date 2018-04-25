@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.PersistentSubscription
 {
@@ -439,29 +437,26 @@ namespace EventStore.Core.Services.PersistentSubscription
             _settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,_settings.ReadBatchSize, true, (events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
         }
 
-        public void HandleParkedReadCompleted(ResolvedEvent[] parkedEvents, long newposition, bool isEndofStream, long stopAt)
+        public void HandleParkedReadCompleted(ResolvedEvent[] events, long newposition, bool isEndofStrem, long stopAt)
         {
             lock (_lock)
             {
                 if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0) return;
 
-                foreach (var parkedEvent in parkedEvents)
+                foreach (var ev in events)
                 {
-                    if (parkedEvent.OriginalEventNumber == stopAt)
+                    if (ev.OriginalEventNumber == stopAt)
                     {
                         break;
                     }
 
-                    GetOriginalEventFromParkedEvent(parkedEvent,(ev)=>{
-                        Log.Debug("Retrying event {0} on subscription {1}", ev.OriginalEvent.EventId, _settings.SubscriptionId);
-                        _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
-                        return true;
-                    });
+                    Log.Debug("Retrying event {0} on subscription {1}", ev.OriginalEvent.EventId, _settings.SubscriptionId);
+                    _streamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
                 }
 
                 TryPushingMessagesToClients();
 
-                if (isEndofStream || stopAt <= newposition)
+                if (isEndofStrem || stopAt <= newposition)
                 {
                     var replayedEnd = newposition == -1 ? stopAt : Math.Min(stopAt, newposition);
                     _settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd);
@@ -472,39 +467,6 @@ namespace EventStore.Core.Services.PersistentSubscription
                     TryReadingParkedMessagesFrom(newposition, stopAt);
                 }
             }
-        }
-
-        private void GetOriginalEventFromParkedEvent(ResolvedEvent parkedEvent,Func<ResolvedEvent,bool> onEventReceived)
-        {
-            var eventRecord = parkedEvent.Event;
-
-            long? commitPosition = null;
-            if(eventRecord.Flags.HasFlag(PrepareFlags.IsCommitted)) //we do not have the commit position for transactions
-                commitPosition = eventRecord.LogPosition;
-
-            if (_settings.ResolveLinkTos && eventRecord.EventType == SystemEventTypes.LinkTo)
-            {
-                try
-                {
-                    _settings.StreamReader.BeginReadEvents(eventRecord.EventStreamId,eventRecord.EventNumber,1,_settings.ReadBatchSize,true,
-                    (events,newPosition,isEndOfStream)=>{
-                        if(events.Length==1 && events[0].ResolveResult == ReadEventResult.Success){
-                            onEventReceived(ResolvedEvent.ForResolvedLink(events[0].Event, eventRecord, commitPosition));
-                        }
-                        else{
-                            Log.Error("Could not resolve link for event record: {0}. Resolve result: {1}", eventRecord.ToString(), events[0].ResolveResult);
-                            onEventReceived(ResolvedEvent.ForFailedResolvedLink(eventRecord, events[0].ResolveResult, commitPosition));
-                        }
-                    });
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
-                    onEventReceived(ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition));
-                }
-            }
-            else
-                onEventReceived(ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition));
         }
 
         private void StartMessage(OutstandingMessage message, DateTime expires)
