@@ -251,6 +251,7 @@
     <Compile Include="Services\Processing\EmittedStreamsTracker.cs" />
     <Compile Include="Services\Processing\EmittedStreamsWriter.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexEventFilter.cs" />
+    <Compile Include="Standard\ByCorrelationId.cs"/>
     <Compile Include="Services\Processing\EventByTypeIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventByTypeIndexPositionTagger.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
