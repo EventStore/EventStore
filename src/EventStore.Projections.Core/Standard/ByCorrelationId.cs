@@ -68,7 +68,10 @@ namespace EventStore.Projections.Core.Standard
             newState = null;
             if (data.EventStreamId != data.PositionStreamId)
                 return false;
+            if (!data.IsJson) 
+                return false;
             var indexedEventType = data.EventType;
+            var metadata = data.Metadata;
             string correlationId = Guid.NewGuid().ToString(); //just to compile need to get from event
             string positionStreamId = data.PositionStreamId;
             emittedEvents = new[]
@@ -79,6 +82,7 @@ namespace EventStore.Projections.Core.Standard
                         data.EventSequenceNumber + "@" + positionStreamId,
                         null, eventPosition, expectedTag: null))
             };
+
 
             return true;
         }
