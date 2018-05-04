@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -123,10 +125,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide
         {
             private Midpoint[] _midpoints;
+            private bool _optimizeCache;
+            private BloomFilter _logPositionsBloomFilter;
 
-            public TFChunkReadSideScavenged(TFChunk chunk)
+            private bool CacheIsOptimized { get { return _optimizeCache && _logPositionsBloomFilter != null; }}
+
+            public TFChunkReadSideScavenged(TFChunk chunk, bool optimizeCache)
                 : base(chunk)
             {
+                _optimizeCache = optimizeCache;
                 if (!chunk.ChunkHeader.IsScavenged)
                     throw new ArgumentException(string.Format("Chunk provided is not scavenged: {0}", chunk));
             }
@@ -139,6 +146,66 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             public void Cache()
             {
                 _midpoints = PopulateMidpoints(Chunk.MidpointsDepth);
+            }
+
+            public void OptimizeExistsAt(){
+                if(_optimizeCache && _logPositionsBloomFilter == null)
+                    _logPositionsBloomFilter = PopulateBloomFilter();
+            }
+
+            public void DeOptimizeExistsAt(){
+                if(_logPositionsBloomFilter != null)
+                    _logPositionsBloomFilter = null;
+            }
+
+            private BloomFilter PopulateBloomFilter(){
+                var mapCount = Chunk.ChunkFooter.MapCount;
+                if(mapCount <= 0) return null;
+
+                BloomFilter bf = null;
+                double p = 1e-4; //false positive probability
+
+                while(p < 1.0){
+                    try{
+                        bf = new BloomFilter(mapCount, p);
+                        //Log.Debug("Created bloom filter with {0} bits and {1} hash functions for chunk {2} with map count: {3}", bf.NumBits, bf.NumHashFunctions, Chunk.FileName, mapCount);
+                        break;
+                    }
+                    catch(ArgumentOutOfRangeException){
+                        p *= 10.0;
+                    }
+                }
+
+                if(bf == null){
+                    Log.Warn(String.Format("Could not create bloom filter for chunk: {0}, map count: {1}",Chunk.FileName, mapCount));
+                    return null;
+                }
+
+                ReaderWorkItem workItem = null;
+                try
+                {
+                    workItem = Chunk.GetReaderWorkItem();
+
+                    foreach(var posMap in ReadPosMap(workItem, 0, mapCount)){
+                        bf.Add(posMap.LogPos);
+                    }
+
+                    //Log.Debug("{0} items added to bloom filter for chunk {1}", mapCount, Chunk.FileName);
+                    return bf;
+                }
+                catch (FileBeingDeletedException)
+                {
+                    return null;
+                }
+                catch (OutOfMemoryException)
+                {
+                    return null;
+                }
+                finally
+                {
+                    if (workItem != null)
+                        Chunk.ReturnReaderWorkItem(workItem);
+                }
             }
 
             private Midpoint[] PopulateMidpoints(int depth)
@@ -193,24 +260,35 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
             }
 
-            private PosMap ReadPosMap(ReaderWorkItem workItem, long index)
+            private PosMap ReadPosMap(ReaderWorkItem workItem, long index){
+                foreach(var posMap in ReadPosMap(workItem, index, 1)){
+                    return posMap;
+                }
+                throw new ArgumentOutOfRangeException("Could not read PosMap at index: "+index);
+            }
+
+            private IEnumerable<PosMap> ReadPosMap(ReaderWorkItem workItem, long index, int count)
             {
                 if (Chunk.ChunkFooter.IsMap12Bytes)
                 {
                     var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index*PosMap.FullSize;
                     workItem.Stream.Seek(pos, SeekOrigin.Begin);
-                    return PosMap.FromNewFormat(workItem.Reader);
+                    for(int i=0;i<count;i++)
+                        yield return PosMap.FromNewFormat(workItem.Reader);
                 }
                 else
                 {
                     var pos = ChunkHeader.Size + Chunk.ChunkFooter.PhysicalDataSize + index*PosMap.DeprecatedSize;
                     workItem.Stream.Seek(pos, SeekOrigin.Begin);
-                    return PosMap.FromOldFormat(workItem.Reader);
+                    for(int i=0;i<count;i++)
+                        yield return PosMap.FromOldFormat(workItem.Reader);
                 }
             }
 
-            public bool ExistsAt(long logicalPosition)
-            {
+            public bool ExistsAt(long logicalPosition){
+                if(CacheIsOptimized)
+                    return MayExistAt(logicalPosition);
+
                 var workItem = Chunk.GetReaderWorkItem();
                 try
                 {
@@ -221,6 +299,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     Chunk.ReturnReaderWorkItem(workItem);
                 }
+            }
+
+            public bool MayExistAt(long logicalPosition)
+            {
+                /* This function is much faster than ExistsAt. However, it may return false positives (with a very low probability) but never false negatives */
+                return _logPositionsBloomFilter.MayExist(logicalPosition);
             }
 
             public RecordReadResult TryReadAt(long logicalPosition)

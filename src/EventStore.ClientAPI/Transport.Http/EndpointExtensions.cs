@@ -11,7 +11,7 @@ namespace EventStore.ClientAPI.Transport.Http
             if(endPoint is IPEndPoint)
             {
                 var ipEndPoint = endPoint as IPEndPoint;
-                return CreateHttpUrl(schema, ipEndPoint.Address.ToString(), ipEndPoint.Port, rawUrl != null ? rawUrl.TrimStart('/') : string.Empty);
+                return CreateHttpUrl(schema, ipEndPoint.ToString(), rawUrl != null ? rawUrl.TrimStart('/') : string.Empty);
             }
             if (endPoint is DnsEndPoint)
             {
@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.Transport.Http
             if (endPoint is IPEndPoint)
             {
                 var ipEndPoint = endPoint as IPEndPoint;
-                return CreateHttpUrl(schema, ipEndPoint.Address.ToString(), ipEndPoint.Port, string.Format(formatString.TrimStart('/'), args));
+                return CreateHttpUrl(schema, ipEndPoint.ToString(), string.Format(formatString.TrimStart('/'), args));
             }
             if (endPoint is DnsEndPoint)
             {
@@ -39,6 +39,11 @@ namespace EventStore.ClientAPI.Transport.Http
         private static string CreateHttpUrl(string schema, string host, int port, string path)
         {
             return $"{schema}://{host}:{port}/{path}";
+        }
+
+        private static string CreateHttpUrl(string schema, string address, string path)
+        {
+            return $"{schema}://{address}/{path}";
         }
     }
 }

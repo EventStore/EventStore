@@ -14,7 +14,7 @@ namespace EventStore.ClientAPI
         private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
         private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
-        private bool _preferRandomNode = false;
+        private NodePreference _nodePreference = NodePreference.Master;
 
         /// <summary>
         /// Sets the DNS name under which cluster nodes are listed.
@@ -55,12 +55,33 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Allows infinite nodes discovery attempts.
+        /// </summary>
+        /// <returns></returns>
+
+        public DnsClusterSettingsBuilder KeepDiscovering()
+        {
+            _maxDiscoverAttempts = Int32.MaxValue;
+            return this;
+        }
+
+        /// <summary>
         /// Whether to randomly choose a node that's alive from the known nodes. 
         /// </summary>
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
         public DnsClusterSettingsBuilder PreferRandomNode()
         {
-            _preferRandomNode = true;
+            _nodePreference = NodePreference.Random;
+            return this;
+        }
+
+        /// <summary>
+        /// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+        /// </summary>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public DnsClusterSettingsBuilder PreferSlaveNode()
+        {
+            _nodePreference = NodePreference.Slave;
             return this;
         }
 
@@ -103,7 +124,7 @@ namespace EventStore.ClientAPI
                 this._maxDiscoverAttempts,
                 this._managerExternalHttpPort,
                 this._gossipTimeout,
-                this._preferRandomNode); 
+                this._nodePreference); 
         }
     }
 }

@@ -117,13 +117,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             FreeCachedData();
         }
 
-        public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead, int initialReaderCount)
+        public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead, int initialReaderCount, bool optimizeReadSideCache = false)
         {
             var chunk = new TFChunk(filename, initialReaderCount, ESConsts.TFChunkMaxReaderCount,
                                     TFConsts.MidpointsDepth, false, unbufferedRead, false);
             try
             {
-                chunk.InitCompleted(verifyHash);
+                chunk.InitCompleted(verifyHash, optimizeReadSideCache);
             }
             catch
             {
@@ -196,7 +196,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return chunk;
         }
 
-        private void InitCompleted(bool verifyHash)
+        private void InitCompleted(bool verifyHash, bool optimizeReadSideCache)
         {
             var fileInfo = new FileInfo(_filename);
             if (!fileInfo.Exists)
@@ -244,7 +244,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 ReturnReaderWorkItem(reader);
             }
 
-            _readSide = _chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
+            _readSide = _chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this,optimizeReadSideCache) : new TFChunkReadSideUnscavenged(this);
             _readSide.Cache();
 
             if (verifyHash)
@@ -270,7 +270,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 SetAttributes(_filename, false);
                 CreateReaderStreams();
             }
-            _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
+            _readSide = chunkHeader.IsScavenged ? (IChunkReadSide) new TFChunkReadSideScavenged(this, false) : new TFChunkReadSideUnscavenged(this);
         }
 
         private void InitOngoing(int writePosition, bool checkSize)
@@ -716,6 +716,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         public bool ExistsAt(long logicalPosition)
         {
             return _readSide.ExistsAt(logicalPosition);
+        }
+
+        public void OptimizeExistsAt()
+        {
+            if(!ChunkHeader.IsScavenged) return;
+            ((TFChunkReadSideScavenged) _readSide).OptimizeExistsAt();
+        }
+
+        public void DeOptimizeExistsAt()
+        {
+            if(!ChunkHeader.IsScavenged) return;
+            ((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
         }
 
         public RecordReadResult TryReadAt(long logicalPosition)

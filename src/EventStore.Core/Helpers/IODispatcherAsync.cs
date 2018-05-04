@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.TimerService;
+using System.Threading;
 
 namespace EventStore.Core.Helpers
 {
@@ -53,11 +56,14 @@ namespace EventStore.Core.Helpers
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsForwardCompleted> handler)
+            Action<ClientMessage.ReadStreamEventsForwardCompleted> handler,
+            Action timeoutHandler)
         {
             return
                 steps =>
-                cancellationScope.Register(
+                {
+                    var corrId = Guid.NewGuid();
+                    cancellationScope.Register(corrId);
                     ioDispatcher.ReadForward(
                         streamId,
                         fromEventNumber,
@@ -69,7 +75,15 @@ namespace EventStore.Core.Helpers
                                 if (cancellationScope.Cancelled(response.CorrelationId)) return;
                                 handler(response);
                                 Run(steps);
-                            }));
+                            },
+                        () =>
+                            {
+                                if (cancellationScope.Cancelled(corrId)) return;
+                                timeoutHandler();
+                                Run(steps);
+                            },
+                        corrId);
+                };
         }
 
         public static Step BeginReadBackward(
@@ -80,11 +94,14 @@ namespace EventStore.Core.Helpers
             int maxCount,
             bool resolveLinks,
             IPrincipal principal,
-            Action<ClientMessage.ReadStreamEventsBackwardCompleted> handler)
+            Action<ClientMessage.ReadStreamEventsBackwardCompleted> handler,
+            Action timeoutHandler)
         {
             return
                 steps =>
-                cancellationScope.Register(
+                {
+                    var corrId = Guid.NewGuid();
+                    cancellationScope.Register(corrId);
                     ioDispatcher.ReadBackward(
                         streamId,
                         fromEventNumber,
@@ -96,7 +113,14 @@ namespace EventStore.Core.Helpers
                                 if (cancellationScope.Cancelled(response.CorrelationId)) return;
                                 handler(response);
                                 Run(steps);
-                            }));
+                            },
+                        () => {
+                            if (cancellationScope.Cancelled(corrId)) return;
+                            timeoutHandler();
+                            Run(steps);
+                        },
+                        corrId);
+            };
         }
 
         public static Step BeginWriteEvents(

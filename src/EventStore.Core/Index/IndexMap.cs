@@ -296,17 +296,29 @@ namespace EventStore.Core.Index
             int trial = 0;
             while (trial < 5)
             {
+                Action<Exception> errorHandler = ex =>
+                {
+                    Log.Error("Failed trial to replace indexmap {0} with {1}.", filename, tmpIndexMap);
+                    Log.Error("Exception: {0}", ex);
+                    trial += 1;
+                };
                 try
                 {
                     if (File.Exists(filename))
+                    {
+                        File.SetAttributes(filename, FileAttributes.Normal);
                         File.Delete(filename);
+                    }
                     File.Move(tmpIndexMap, filename);
                     break;
                 }
                 catch (IOException exc)
                 {
-                    Log.DebugException(exc, "Failed trial to replace indexmap.");
-                    trial += 1;
+                    errorHandler(exc);
+                }
+                catch (UnauthorizedAccessException exc)
+                {
+                    errorHandler(exc);
                 }
             }
         }

@@ -654,6 +654,16 @@
     <Compile Include="Services\Replication\CommitReplication\with_index_committer_service.cs" />
     <Compile Include="Services\Replication\CommitReplication\when_single_node_cluster_receives_commit_ack_for_multiple_prepares.cs" />
     <Compile Include="Services\Replication\CommitReplication\when_constructing_index_committer_service.cs" />
+    <Compile Include="DataStructures\bloom_filter_should.cs" />
+    <Compile Include="TransactionLog\Optimization\tfchunkreader_existsat_optimizer_should.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\with_read_io_dispatcher.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\async_read_stream_events_forward_with_cancelled_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_forward_with_successful_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_forward_with_timeout_on_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_backward_with_successful_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_backward_with_timeout_on_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\async_read_stream_events_backward_with_cancelled_read.cs" />
+    <Compile Include="Helpers\IODispatcherTests\IODispatcherTestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

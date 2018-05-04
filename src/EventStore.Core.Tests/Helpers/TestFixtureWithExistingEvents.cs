@@ -83,6 +83,9 @@ namespace EventStore.Core.Tests.Helpers
         private bool _readAllEnabled;
         private bool _noOtherStreams;
         private bool _readsTimeOut;
+
+        protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
+
         private static readonly char[] _linkToSeparator = new []{'@'};
 
         protected TFPos ExistingStreamMetadata(string streamId, string metadata)
@@ -170,6 +173,11 @@ namespace EventStore.Core.Tests.Helpers
             _allWritesQueueUp = true;
         }
 
+        protected void TimeOutReadToStreamOnce(string streamId)
+        {
+            _readsToTimeOutOnce.Add(streamId);
+        }
+
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
@@ -241,6 +249,12 @@ namespace EventStore.Core.Tests.Helpers
                 return;
             }
             if(_readsTimeOut) return;
+            if(_readsToTimeOutOnce.Contains(message.EventStreamId))
+            {
+                Console.WriteLine("[TEST] Timing out read backwards for {0}", message.EventStreamId);
+                _readsToTimeOutOnce.Remove(message.EventStreamId);
+                return;
+            }
             ProcessRead(message);
         }
 
@@ -299,6 +313,12 @@ namespace EventStore.Core.Tests.Helpers
         public void Handle(ClientMessage.ReadStreamEventsForward message)
         {
             if(_readsTimeOut) return;
+            if(_readsToTimeOutOnce.Contains(message.EventStreamId))
+            {
+                Console.WriteLine("[TEST] Timing out read forwards for {0}", message.EventStreamId);
+                _readsToTimeOutOnce.Remove(message.EventStreamId);
+                return;
+            }
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
             {

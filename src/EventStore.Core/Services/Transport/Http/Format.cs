@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Http
                 case ContentType.Atom:
                 case ContentType.AtomJson:
                 case ContentType.Html:
-                    return entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.RequestedUrl, embed, singleEntry: true));
+                    return entity.ResponseCodec.To(Convert.ToEntry(msg.Record, entity.ResponseUrl, embed, singleEntry: true));
                 default:
                     return AutoEventConverter.SmartFormat(msg.Record, entity.ResponseCodec);
             }
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg == null || msg.Result != ReadStreamResult.Success)
                 return String.Empty;
 
-            return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.RequestedUrl, embed, headOfStream));
+            return entity.ResponseCodec.To(Convert.ToStreamEventBackwardFeed(msg, entity.ResponseUrl, embed, headOfStream));
         }
 
         public static string GetStreamEventsForward(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg == null || msg.Result != ReadStreamResult.Success)
                 return String.Empty;
                 
-            return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.RequestedUrl, embed));
+            return entity.ResponseCodec.To(Convert.ToStreamEventForwardFeed(msg, entity.ResponseUrl, embed));
         }
 
         public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg == null || msg.Result != ReadAllResult.Success)
                 return String.Empty;
 
-            return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.RequestedUrl, embed));
+            return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
         }
 
         public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg == null || msg.Result != ReadAllResult.Success)
                 return String.Empty;
 
-            return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.RequestedUrl, embed)); 
+            return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg, entity.ResponseUrl, embed)); 
         }
 
         public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message)
@@ -127,7 +127,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg == null || msg.Result != ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Success)
                 return String.Empty;
 
-            return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.RequestedUrl, streamId, groupName, count, embed));
+            return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId, groupName, count, embed));
         }
 
         public static string GetDescriptionDocument(HttpResponseFormatterArgs entity, string streamId, string[] persistentSubscriptionStats)

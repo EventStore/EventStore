@@ -5,11 +5,11 @@ namespace EventStore.Common.Utils
 {
     public class HostName
     {
-        public static string Combine(Uri requestedUrl, string relativeUri, params object[] arg)
+        public static string Combine(Uri responseUrl, string relativeUri, params object[] arg)
         {
             try
             {
-                return CombineHostNameAndPath(requestedUrl, relativeUri, arg);
+                return CombineHostNameAndPath(responseUrl, relativeUri, arg);
             }
             catch (Exception e)
             {
@@ -18,13 +18,14 @@ namespace EventStore.Common.Utils
             }
         }
 
-        private static string CombineHostNameAndPath(Uri requestedUrl,
+        private static string CombineHostNameAndPath(Uri responseUrl,
                                                      string relativeUri,
                                                      object[] arg)
         {
             //TODO: encode???
             var path = string.Format(relativeUri, arg);
-            return new UriBuilder(requestedUrl.Scheme, requestedUrl.Host, requestedUrl.Port, path).Uri.AbsoluteUri;
+            if(path.Length > 0 && path[0] == '/') path = path.Substring(1);
+            return new UriBuilder(responseUrl.Scheme, responseUrl.Host, responseUrl.Port, responseUrl.LocalPath + path).Uri.AbsoluteUri;
         }
     }
 }

@@ -18,8 +18,10 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
         private long _curPos;
+        private bool _optimizeReadSideCache;
+        private readonly TFChunkReaderExistsAtOptimizer _existsAtOptimizer;
 
-        public TFChunkReader(TFChunkDb db, ICheckpoint writerCheckpoint, long initialPosition = 0)
+        public TFChunkReader(TFChunkDb db, ICheckpoint writerCheckpoint, long initialPosition = 0, bool optimizeReadSideCache = false)
         {
             Ensure.NotNull(db, "dbConfig");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -28,6 +30,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             _db = db;
             _writerCheckpoint = writerCheckpoint;
             _curPos = initialPosition;
+
+            _optimizeReadSideCache = optimizeReadSideCache;
+            if(_optimizeReadSideCache)
+                _existsAtOptimizer = TFChunkReaderExistsAtOptimizer.Instance;
         }
 
         public void Reposition(long position)
@@ -94,12 +100,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // we allow == writerChk, that means read the very last record
                 if (pos > writerChk)
                     throw new Exception(string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
-                if (pos <= 0) 
+                if (pos <= 0)
                     return SeqReadResult.Failure;
 
                 var chunk = _db.Manager.GetChunkFor(pos);
                 bool readLast = false;
-                if (pos == chunk.ChunkHeader.ChunkStartPosition) 
+                if (pos == chunk.ChunkHeader.ChunkStartPosition)
                 {
                     // we are exactly at the boundary of physical chunks
                     // so we switch to previous chunk and request TryReadLast
@@ -130,7 +136,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 // we are the beginning of chunk, so need to switch to previous one
-                // to do that we set cur position to the exact boundary position between current and previous chunk, 
+                // to do that we set cur position to the exact boundary position between current and previous chunk,
                 // this will be handled correctly on next iteration
                 _curPos = chunk.ChunkHeader.ChunkStartPosition;
             }
@@ -176,6 +182,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             try
             {
                 CountRead(chunk.IsCached);
+                if(_optimizeReadSideCache)
+                    _existsAtOptimizer.Optimize(chunk);
                 return chunk.ExistsAt(chunk.ChunkHeader.GetLocalLogPosition(position));
             }
             catch (FileBeingDeletedException)

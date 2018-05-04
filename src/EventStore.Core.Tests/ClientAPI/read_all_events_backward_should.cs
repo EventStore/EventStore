@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_when_got_int_max_value_as_maxcount()
         {
 
-            Assert.Throws<ArgumentException>(
+            Assert.ThrowsAsync<ArgumentException>(
                 () => _conn.ReadAllEventsBackwardAsync(Position.Start, int.MaxValue, resolveLinkTos: false));
         }
     }

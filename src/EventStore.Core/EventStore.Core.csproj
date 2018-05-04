@@ -430,6 +430,8 @@
     <Compile Include="Helpers\StreamVersionConverter.cs" />
     <Compile Include="Exceptions\MaybeCorruptIndexException.cs" />
     <Compile Include="Services\Storage\IndexCommitterService.cs" />
+    <Compile Include="DataStructures\BloomFilter.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkReaderExistsAtOptimizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

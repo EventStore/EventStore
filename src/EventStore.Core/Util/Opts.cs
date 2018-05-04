@@ -341,6 +341,9 @@ namespace EventStore.Core.Util
 
         public const string IndexBitnessVersionDescr = "Sets the bitness version for the indexes to use";
         public const byte IndexBitnessVersionDefault = EventStore.Core.Index.PTableVersions.IndexV4;
+        public const string OptimizeIndexMergeDescr =
+            "Makes index merges faster and reduces disk pressure during merges.";
+        public static readonly bool OptimizeIndexMergeDefault = false;
 		/*
 		 * Authentication Options
 		 */

@@ -200,6 +200,7 @@ namespace EventStore.ClusterNode
                         .WithIndexPath(options.Index)
                         .WithIndexVerification(options.SkipIndexVerify)
                         .WithIndexCacheDepth(options.IndexCacheDepth)
+                        .WithIndexMergeOptimization(options.OptimizeIndexMerge)
                         .WithSslTargetHost(options.SslTargetHost)
                         .RunProjections(options.RunProjections, options.ProjectionThreads)
                         .WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))

@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI
                         connectionSettings.MaxQueueSize, connectionSettings.MaxConcurrentItems,
                         connectionSettings.MaxRetries, connectionSettings.MaxReconnections,
                         connectionSettings.RequireMaster, connectionSettings.ReconnectionDelay,
-                        connectionSettings.OperationTimeout,
+                        connectionSettings.QueueTimeout, connectionSettings.OperationTimeout,
                         connectionSettings.OperationTimeoutCheckPeriod, credential, connectionSettings.UseSslConnection,
                         connectionSettings.TargetHost,
                         connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse,
@@ -100,12 +100,12 @@ namespace EventStore.ClientAPI
                         connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
                         connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
                         connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
-                        connectionSettings.PreferRandomNode);
+                        connectionSettings.NodePreference);
                 }
                 if (scheme == "discover")
                 {
                     var clusterSettings = new ClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts, uri.Port,
-                        connectionSettings.GossipTimeout, connectionSettings.PreferRandomNode);
+                        connectionSettings.GossipTimeout, connectionSettings.NodePreference);
                     Ensure.NotNull(connectionSettings, "connectionSettings");
                     Ensure.NotNull(clusterSettings, "clusterSettings");
 
@@ -115,7 +115,7 @@ namespace EventStore.ClientAPI
                         clusterSettings.ExternalGossipPort,
                         clusterSettings.GossipSeeds,
                         clusterSettings.GossipTimeout,
-                        clusterSettings.PreferRandomNode);
+                        clusterSettings.NodePreference);
 
                     return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
                         connectionName);
@@ -134,7 +134,7 @@ namespace EventStore.ClientAPI
                 var clusterSettings = new ClusterSettings(connectionSettings.GossipSeeds,
                     connectionSettings.MaxDiscoverAttempts,
                     connectionSettings.GossipTimeout,
-                    connectionSettings.PreferRandomNode);
+                    connectionSettings.NodePreference);
                 Ensure.NotNull(connectionSettings, "connectionSettings");
                 Ensure.NotNull(clusterSettings, "clusterSettings");
 
@@ -144,7 +144,7 @@ namespace EventStore.ClientAPI
                     clusterSettings.ExternalGossipPort,
                     clusterSettings.GossipSeeds,
                     clusterSettings.GossipTimeout,
-                    clusterSettings.PreferRandomNode);
+                    clusterSettings.NodePreference);
 
                 return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
                     connectionName);
@@ -226,9 +226,23 @@ namespace EventStore.ClientAPI
                                                                       clusterSettings.ExternalGossipPort,
                                                                       clusterSettings.GossipSeeds,
                                                                       clusterSettings.GossipTimeout,
-                                                                      clusterSettings.PreferRandomNode);
+                                                                      clusterSettings.NodePreference);
 
             return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer, connectionName);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="IEventStoreConnection"/> using specific <see cref="ConnectionSettings"/> and a custom-defined <see cref="IEndPointDiscoverer"/>
+        /// </summary>
+        /// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <param name="endPointDiscoverer">The custom-defined <see cref="IEndPointDiscoverer"/> to use for node discovery</param>
+        /// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
+        /// <returns>a new <see cref="IEventStoreConnection"/></returns>
+        public static IEventStoreConnection Create(ConnectionSettings connectionSettings, IEndPointDiscoverer endPointDiscoverer, string connectionName = null)
+        {
+            Ensure.NotNull(connectionSettings, "settings");
+            Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
+            return new EventStoreNodeConnection(connectionSettings, null, endPointDiscoverer, connectionName);
         }
     }
 }

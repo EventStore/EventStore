@@ -61,6 +61,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan ReconnectionDelay;
         /// <summary>
+        /// The amount of time a request for an operation is permitted to be queued awaiting transmission to the server.
+        /// </summary>
+        public readonly TimeSpan QueueTimeout;
+        /// <summary>
         /// The amount of time before an operation is considered to have timed out.
         /// </summary>
         public readonly TimeSpan OperationTimeout;
@@ -124,7 +128,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Whether to randomly choose a node that's alive from the known nodes. 
         /// </summary>
-        public readonly bool PreferRandomNode;
+        public readonly NodePreference NodePreference;
 
         /// <summary>
         /// The interval after which a client will time out during connection.
@@ -139,6 +143,7 @@ namespace EventStore.ClientAPI
                                     int maxReconnections,
                                     bool requireMaster,
                                     TimeSpan reconnectionDelay,
+                                    TimeSpan queueTimeout,
                                     TimeSpan operationTimeout,
                                     TimeSpan operationTimeoutCheckPeriod,
                                     UserCredentials defaultUserCredentials,
@@ -154,7 +159,7 @@ namespace EventStore.ClientAPI
                                     int maxDiscoverAttempts, 
                                     int externalGossipPort, 
                                     TimeSpan gossipTimeout,
-                                    bool preferRandomNode)
+                                    NodePreference nodePreference)
         {
             Ensure.NotNull(log, "log");
             Ensure.Positive(maxQueueSize, "maxQueueSize");
@@ -173,6 +178,7 @@ namespace EventStore.ClientAPI
             MaxReconnections = maxReconnections;
             RequireMaster = requireMaster;
             ReconnectionDelay = reconnectionDelay;
+            QueueTimeout = queueTimeout;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
             ClientConnectionTimeout = clientConnectionTimeout;
@@ -189,7 +195,7 @@ namespace EventStore.ClientAPI
             MaxDiscoverAttempts = maxDiscoverAttempts;
             ExternalGossipPort = externalGossipPort;
             GossipTimeout = gossipTimeout;
-            PreferRandomNode = preferRandomNode;
+            NodePreference = nodePreference;
         }
     }
 }

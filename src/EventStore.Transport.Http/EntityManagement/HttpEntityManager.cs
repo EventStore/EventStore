@@ -34,6 +34,7 @@ namespace EventStore.Transport.Http.EntityManagement
         private AsyncQueuedBufferWriter _asyncWriter;
         private readonly ICodec _requestCodec;
         private readonly ICodec _responseCodec;
+        private readonly Uri _responseUrl;
         private readonly Uri _requestedUrl;
         private readonly string _responseContentEncoding;
         private static readonly string[] SupportedCompressionAlgorithms = { CompressionAlgorithms.Gzip, CompressionAlgorithms.Deflate };
@@ -58,6 +59,7 @@ namespace EventStore.Transport.Http.EntityManagement
             _onRequestSatisfied = onRequestSatisfied;
             _requestCodec = requestCodec;
             _responseCodec = responseCodec;
+            _responseUrl = httpEntity.ResponseUrl;
             _requestedUrl = httpEntity.RequestedUrl;
             _responseContentEncoding = GetRequestedContentEncoding(httpEntity);
             _logHttpRequests = logHttpRequests;
@@ -70,6 +72,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public ICodec RequestCodec { get { return _requestCodec; } }
         public ICodec ResponseCodec { get { return _responseCodec; } }
+        public Uri ResponseUrl { get { return _responseUrl; } }
         public Uri RequestedUrl { get { return _requestedUrl; } }
         public IPrincipal User { get { return HttpEntity.User; } }
 

@@ -118,6 +118,10 @@ namespace EventStore.Projections.Core.Services.Management
                     false,
                     SystemAccount.Principal,
                     ReadForwardCompleted,
+                    () => {
+                        Log.Warn("Read forward of stream {0} timed out. Retrying", ProjectionNamesBuilder._projectionsMasterStream);
+                        ReadForward();
+                    },
                     _correlationId)
             );
             _publisher.Publish(TimerMessage.Schedule.Create(

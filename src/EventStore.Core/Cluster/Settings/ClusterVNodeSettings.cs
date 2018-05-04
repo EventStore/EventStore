@@ -67,6 +67,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool SkipIndexVerify;
         public readonly int IndexCacheDepth;
         public readonly byte IndexBitnessVersion;
+        public readonly bool OptimizeIndexMerge;
         public readonly int ChunkInitialReaderCount;
 
         public readonly bool BetterOrdering;
@@ -132,6 +133,7 @@ namespace EventStore.Core.Cluster.Settings
                                     bool skipIndexVerify = false,
                                     int indexCacheDepth = 16,
                                     byte indexBitnessVersion = 4,
+                                    bool optimizeIndexMerge = false,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
@@ -224,6 +226,7 @@ namespace EventStore.Core.Cluster.Settings
             SkipIndexVerify = skipIndexVerify;
             IndexCacheDepth = indexCacheDepth;
             IndexBitnessVersion = indexBitnessVersion;
+            OptimizeIndexMerge = optimizeIndexMerge;
             Index = index;
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
             BetterOrdering = betterOrdering;

@@ -6,7 +6,7 @@ This is the repository for the open source version of Event Store, which include
 
 ## Support
 
-Information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://geteventstore.com/support.
+Information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://eventstore.org/support.
 
 ## CI Status
 
@@ -16,13 +16,13 @@ Information on commercial support and options such as LDAP authentication can be
 |**Windows 8.1**|[![Build status](https://ci.appveyor.com/api/projects/status/rpg0xvt6facomw0b?svg=true)](https://ci.appveyor.com/project/EventStore/eventstore-aasj1)|
 
 ## Documentation
-Documentation for Event Store can be found [here](http://docs.geteventstore.com/)
+Documentation for Event Store can be found [here](https://eventstore.org/docs/)
 
 ## Community
 We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel [here](http://ddd-cqrs-es.herokuapp.com/).
 
 ## Release Packages
-The latest release packages are hosted in the downloads section on the [Event Store Website](https://geteventstore.com/downloads/)
+The latest release packages are hosted in the downloads section on the [Event Store Website](https://eventstore.org/downloads/)
 
 We also host native packages for Linux on [Package Cloud](https://packagecloud.io/EventStore/EventStore-OSS) and Windows packages can be installed via [Chocolatey](https://chocolatey.org/packages/eventstore-oss) (4.0.0 onwards only).
 
