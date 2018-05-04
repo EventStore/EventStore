@@ -5,6 +5,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Standard
 {
@@ -59,6 +60,10 @@ namespace EventStore.Projections.Core.Standard
             throw new NotImplementedException();
         }
 
+        class CorrId {
+            public string CorrelationId = "";
+        }
+
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
             out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
@@ -70,9 +75,15 @@ namespace EventStore.Projections.Core.Standard
                 return false;
             if (!data.IsJson) 
                 return false;
+            var metadata = JObject.Parse(data.Metadata);
             var indexedEventType = data.EventType;
-            var metadata = data.Metadata;
-            string correlationId = Guid.NewGuid().ToString(); //just to compile need to get from event
+            
+            string correlationId = metadata["$correlationId"].Value<string>();
+            Console.WriteLine("correlationId is " + metadata);
+            
+            if (correlationId == null) 
+                return false;
+            Console.WriteLine("correlationId is " + metadata);
             string positionStreamId = data.PositionStreamId;
             emittedEvents = new[]
             {
