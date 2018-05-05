@@ -64,21 +64,17 @@ namespace EventStore.Projections.Core.Standard
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
             out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
         {
-            Console.WriteLine("in ProcessEvent");
             newSharedState = null;
             emittedEvents = null;
             newState = null;
             if (data.EventStreamId != data.PositionStreamId)
                 return false;
-            Console.WriteLine("testing is json");
             if (!data.IsJson) 
                 return false;
-            Console.WriteLine("parsing json");
             var metadata = JObject.Parse(data.Metadata);
             var indexedEventType = data.EventType;
             
             string correlationId = metadata["$correlationId"].Value<string>();
-            Console.WriteLine("correlationId is " + correlationId == null ? "null" : correlationId);
             
             if (correlationId == null) 
                 return false;
