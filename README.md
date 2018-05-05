@@ -99,9 +99,11 @@ e.g.
 
 ## Contributing
 
-Development is on the branch aimed at the next release (usually prefixed with `release-v0.0.0`). The `master` branch always contains the code for the latest stable release.
-
+Development is done on the `master` branch.
 We attempt to do our best to ensure that the history remains clean and to do so, we generally ask contributors to squash their commits into a set or single logical commit.
+
+If you want to switch to a particular release, you can check out the tag for this particular version. For example:  
+`git checkout oss-v4.1.0`
 
 ## Known Issues
 
