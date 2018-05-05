@@ -60,10 +60,6 @@ namespace EventStore.Projections.Core.Standard
             throw new NotImplementedException();
         }
 
-        class CorrId {
-            public string CorrelationId = "";
-        }
-
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
             out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents)
@@ -82,10 +78,10 @@ namespace EventStore.Projections.Core.Standard
             var indexedEventType = data.EventType;
             
             string correlationId = metadata["$correlationId"].Value<string>();
-
+            Console.WriteLine("correlationId is " + correlationId == null ? "null" : correlationId);
+            
             if (correlationId == null) 
                 return false;
-            Console.WriteLine("correlationId is " + metadata);
             string positionStreamId = data.PositionStreamId;
             emittedEvents = new[]
             {
