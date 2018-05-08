@@ -62,6 +62,19 @@ namespace EventStore.ClientAPI
             Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
             OriginalPosition = null;
         }
+        
+        /// <summary>
+        /// Public constructor for ResolvedEvent (mainly to improve testability)
+        /// </summary>
+        /// <param name="evnt"></param>
+        /// <param name="link"></param>
+        /// <param name="originalPosition"></param>
+        public ResolvedEvent(RecordedEvent evnt, RecordedEvent link, Position? originalPosition)
+        {
+            Event = evnt;
+            Link = link;
+            OriginalPosition = originalPosition;
+        }
 
         Position? IResolvedEvent.OriginalPosition => OriginalPosition;
         RecordedEvent IResolvedEvent.OriginalEvent => OriginalEvent;

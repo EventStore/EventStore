@@ -78,5 +78,28 @@ namespace EventStore.ClientAPI
             LastEventNumber = lastEventNumber;
             IsEndOfStream = isEndOfStream;
         }
+
+        /// <summary>
+        /// Public constructor for StreamEventsSlice (mainly to improve testability)
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="stream"></param>
+        /// <param name="fromEventNumber"></param>
+        /// <param name="readDirection"></param>
+        /// <param name="events"></param>
+        /// <param name="nextEventNumber"></param>
+        /// <param name="lastEventNumber"></param>
+        /// <param name="isEndOfStream"></param>
+        public StreamEventsSlice(SliceReadStatus status, string stream, long fromEventNumber, ReadDirection readDirection, ResolvedEvent[] events, long nextEventNumber, long lastEventNumber, bool isEndOfStream)
+        {
+            Status = status;
+            Stream = stream;
+            FromEventNumber = fromEventNumber;
+            ReadDirection = readDirection;
+            Events = events;
+            NextEventNumber = nextEventNumber;
+            LastEventNumber = lastEventNumber;
+            IsEndOfStream = isEndOfStream;
+        }
     }
 }

@@ -40,5 +40,25 @@ namespace EventStore.ClientAPI
             EventNumber = eventNumber;
             Event = status == EventReadStatus.Success ? new ResolvedEvent(@event) : (ResolvedEvent?)null;
         }
+
+        /// <summary>
+        /// Public constructor for EventReadResult (mainly to improve testability)
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="stream"></param>
+        /// <param name="eventNumber"></param>
+        /// <param name="resolvedEvent"></param>
+        public EventReadResult(EventReadStatus status,
+            string stream,
+            long eventNumber,
+            ResolvedEvent resolvedEvent)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            Status = status;
+            Stream = stream;
+            EventNumber = eventNumber;
+            Event = resolvedEvent;
+        }
     }
 }

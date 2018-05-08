@@ -49,5 +49,20 @@ namespace EventStore.ClientAPI
                 }
             }
         }
+
+        /// <summary>
+        /// Public constructor for AllEventsSlice (mainly to improve testability)
+        /// </summary>
+        /// <param name="readDirection"></param>
+        /// <param name="fromPosition"></param>
+        /// <param name="nextPosition"></param>
+        /// <param name="events"></param>
+        public AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition, ResolvedEvent[] events)
+        {
+            ReadDirection = readDirection;
+            FromPosition = fromPosition;
+            NextPosition = nextPosition;
+            Events = events;
+        }
     }
 }

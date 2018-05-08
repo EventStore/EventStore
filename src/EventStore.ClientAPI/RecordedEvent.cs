@@ -86,15 +86,46 @@ namespace EventStore.ClientAPI
             EventNumber = systemRecord.EventNumber;
 
             EventType = systemRecord.EventType;
-            if (systemRecord.Created.HasValue) {
+            if (systemRecord.Created.HasValue)
+            {
                 Created = DateTime.FromBinary(systemRecord.Created.Value);
             }
-            if(systemRecord.CreatedEpoch.HasValue) {
+
+            if (systemRecord.CreatedEpoch.HasValue)
+            {
                 CreatedEpoch = systemRecord.CreatedEpoch.Value;
             }
+
             Data = systemRecord.Data ?? Empty.ByteArray;
             Metadata = systemRecord.Metadata ?? Empty.ByteArray;
             IsJson = systemRecord.DataContentType == 1;
+        }
+
+        
+        /// <summary>
+        /// Public constructor for RecordedEvent (mainly to improve testability)
+        /// </summary>
+        /// <param name="eventId"></param>
+        /// <param name="eventStreamId"></param>
+        /// <param name="eventNumber"></param>
+        /// <param name="eventType"></param>
+        /// <param name="metadata"></param>
+        /// <param name="data"></param>
+        /// <param name="isJson"></param>
+        /// <param name="created"></param>
+        /// <param name="createdEpoch"></param>
+        public RecordedEvent(Guid eventId, string eventStreamId, long eventNumber, string eventType, byte[] metadata,
+            byte[] data, bool isJson, DateTime created, long createdEpoch)
+        {
+            EventId = eventId;
+            EventStreamId = eventStreamId;
+            EventNumber = eventNumber;
+            EventType = eventType;
+            Metadata = metadata;
+            Data = data;
+            IsJson = isJson;
+            Created = created;
+            CreatedEpoch = createdEpoch;
         }
     }
 }
