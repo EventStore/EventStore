@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 namespace EventStore.ClientAPI.Projections
 {
     /// <summary>
-    /// API for executinmg queries in the Event Store through C# code. Communicates
+    /// API for executing queries in the Event Store through C# code. Communicates
     /// with the Event Store over the RESTful API.
     /// </summary>
     public class QueryManager

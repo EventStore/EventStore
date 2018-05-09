@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\clientapi\</OutputPath>
-    <DefineConstants>CLIENTAPI</DefineConstants>
+    <DefineConstants>CLIENTAPI;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapi\EventStore.ClientAPI.xml</DocumentationFile>
@@ -72,6 +72,7 @@
     <Compile Include="ConnectionString.cs" />
     <Compile Include="EventStorePersistentSubscription.cs" />
     <Compile Include="EventStorePersistentSubscriptionBase.cs" />
+    <Compile Include="Exceptions\OperationExpiredException.cs" />
     <Compile Include="Exceptions\UserCommandConflictException.cs" />
     <Compile Include="Exceptions\UserCommandFailedException.cs" />
     <Compile Include="IConnectToPersistentSubscriptions.cs" />
@@ -80,7 +81,7 @@
     <Compile Include="Internal\Empty.cs" />
     <Compile Include="Internal\EventStoreNodeConnection.cs" />
     <Compile Include="Internal\IEventStoreConnectionLogicHandler.cs" />
-    <Compile Include="Internal\NodeEndPoints.cs" />
+    <Compile Include="NodeEndPoints.cs" />
     <Compile Include="GossipSeed.cs" />
     <Compile Include="Internal\IPEndPointExtensions.cs" />
     <Compile Include="Internal\PersistentSubscriptionCreateResult.cs" />
@@ -144,7 +145,7 @@
     <Compile Include="EventReadResult.cs" />
     <Compile Include="CatchUpSubscriptionSettings.cs" />
     <Compile Include="Internal\EventStoreConnectionLogicHandler.cs" />
-    <Compile Include="Internal\IEndPointDiscoverer.cs" />
+    <Compile Include="IEndPointDiscoverer.cs" />
     <Compile Include="Internal\OperationsManager.cs" />
     <Compile Include="Internal\StaticEndPointDiscoverer.cs" />
     <Compile Include="Internal\SubscriptionsManager.cs" />

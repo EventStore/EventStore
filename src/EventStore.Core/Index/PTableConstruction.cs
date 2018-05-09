@@ -49,7 +49,7 @@ namespace EventStore.Core.Index
                     List<Midpoint> midpoints = new List<Midpoint>();
                     var requiredMidpointCount = GetRequiredMidpointCountCached(table.Count,table.Version,cacheDepth);
 
-                    var indexEntry = 0;
+                    long indexEntry = 0L;
                     foreach(var rec in records)
                     {
                         AppendRecordTo(bs, buffer, table.Version, rec, indexEntrySize);
@@ -134,7 +134,7 @@ namespace EventStore.Core.Index
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
                     var buffer = new byte[indexEntrySize];
-                    var indexEntry = 0;
+                    long indexEntry = 0L;
                     List<Midpoint> midpoints = new List<Midpoint>();
                     var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries,version,cacheDepth);
                     // WRITE INDEX ENTRIES
@@ -229,7 +229,7 @@ namespace EventStore.Core.Index
 
                     // WRITE INDEX ENTRIES
                     var buffer = new byte[indexEntrySize];
-                    var indexEntry = 0;
+                    long indexEntry = 0L;
                     List<Midpoint> midpoints = new List<Midpoint>();
                     var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries,version,cacheDepth);
                     var enum1 = enumerators[0];

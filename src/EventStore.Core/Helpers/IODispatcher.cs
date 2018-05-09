@@ -309,7 +309,7 @@ namespace EventStore.Core.Helpers
 
         private class PendingReads
         {
-            private readonly List<Guid> _pendingReads = new List<Guid>();
+            private readonly HashSet<Guid> _pendingReads = new HashSet<Guid>();
 
             public void Register(Guid id)
             {

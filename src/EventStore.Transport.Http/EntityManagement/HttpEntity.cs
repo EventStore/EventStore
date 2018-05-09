@@ -12,6 +12,7 @@ namespace EventStore.Transport.Http.EntityManagement
     {
         private readonly bool _logHttpRequests;
         public readonly Uri RequestedUrl;
+        public readonly Uri ResponseUrl;
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
@@ -24,14 +25,20 @@ namespace EventStore.Transport.Http.EntityManagement
 
             _logHttpRequests = logHttpRequests;
             RequestedUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort);
+            ResponseUrl = BuildRequestedUrl(request.Url, request.Headers, advertiseAsAddress, advertiseAsPort, true);
             Request = request;
             Response = response;
             User = user;
         }
 
-        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders, IPAddress advertiseAsAddress, int advertiseAsPort)
+        public static Uri BuildRequestedUrl(Uri requestUrl, NameValueCollection requestHeaders,
+                                            IPAddress advertiseAsAddress, int advertiseAsPort, bool overridePath = false)
         {
             var uriBuilder = new UriBuilder(requestUrl);
+            if (overridePath)
+            {
+                uriBuilder.Path = string.Empty;
+            }
 
             if(advertiseAsAddress != null)
             {
@@ -78,12 +85,14 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 uriBuilder.Path = forwardedPrefixHeaderValue + uriBuilder.Path;
             }
+            
             return uriBuilder.Uri;
         }
 
         private HttpEntity(IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = null;
+            ResponseUrl = null;
 
             Request = null;
             Response = null;
@@ -94,6 +103,7 @@ namespace EventStore.Transport.Http.EntityManagement
         private HttpEntity(HttpEntity httpEntity, IPrincipal user, bool logHttpRequests)
         {
             RequestedUrl = httpEntity.RequestedUrl;
+            ResponseUrl = httpEntity.ResponseUrl;
 
             Request = httpEntity.Request;
             Response = httpEntity.Response;
