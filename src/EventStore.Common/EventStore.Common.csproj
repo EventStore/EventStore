@@ -55,12 +55,15 @@
     </Reference>
     <Reference Include="Serilog.Settings.AppSettings">
       <HintPath>..\libs\Serilog.Settings.AppSettings.dll</HintPath>
+      <Private>True</Private>
     </Reference>
      <Reference Include="Serilog.Sinks.Console">
       <HintPath>..\libs\Serilog.Sinks.Console.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Serilog.Sinks.File">
       <HintPath>..\libs\Serilog.Sinks.File.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -103,6 +106,11 @@
     <Compile Include="Utils\VersionInfo.cs" />
     <Compile Include="Utils\IPEndpointConverter.cs" />
     <Compile Include="Utils\IPFinder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\libs\Serilog.Sinks.Console.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Log\log.config">
