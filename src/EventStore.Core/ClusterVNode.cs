@@ -495,14 +495,13 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
             // STORAGE SCAVENGER
+            var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(), TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
             var storageScavenger = new StorageScavenger(db,
-                                                        ioDispatcher,
                                                         tableIndex,
                                                         readIndex,
+                                                        scavengerLogManager,
                                                         vNodeSettings.AlwaysKeepScavenged,
-                                                        _nodeInfo.ExternalHttp.ToString(),
                                                         !vNodeSettings.DisableScavengeMerging,
-                                                        vNodeSettings.ScavengeHistoryMaxAge,
                                                         unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
