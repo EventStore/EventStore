@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
@@ -70,10 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
-            var bus = new InMemoryBus("Bus");
-            var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
-            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, ReadIndex, Guid.NewGuid(), "fakeNodeIp",
-                                            unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
+            var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex, unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }
 
