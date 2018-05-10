@@ -1,4 +1,5 @@
-﻿<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -310,7 +311,11 @@
     <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="StandardComponents.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\ITFChunkScavengerLog.cs" />
+    <Compile Include="TransactionLog\Chunks\ITFChunkScavengerLogManager.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDbTruncator.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkScavengerLog.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkScavengerLogManager.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />

@@ -13,11 +13,11 @@ using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 
 namespace EventStore.Core.Tests.Services.Storage
 {
@@ -35,8 +35,6 @@ namespace EventStore.Core.Tests.Services.Storage
         protected ICheckpoint WriterCheckpoint;
         protected ICheckpoint ChaserCheckpoint;
         protected ICheckpoint ReplicationCheckpoint;
-        protected IODispatcher IODispatcher;
-        protected InMemoryBus Bus;
 
         private TFChunkScavenger _scavenger;
         private bool _scavenge;
@@ -59,9 +57,6 @@ namespace EventStore.Core.Tests.Services.Storage
             WriterCheckpoint = new InMemoryCheckpoint(0);
             ChaserCheckpoint = new InMemoryCheckpoint(0);
             ReplicationCheckpoint = new InMemoryCheckpoint(-1);
-
-            Bus = new InMemoryBus("bus");
-            IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
 
             Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint, replicationCheckpoint: ReplicationCheckpoint));
 
@@ -103,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Storage
             {
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-                _scavenger = new TFChunkScavenger(Db, IODispatcher, TableIndex, ReadIndex, Guid.NewGuid(), "fakeNodeIp");
+                _scavenger = new TFChunkScavenger(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex);
                 _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
             }
         }
