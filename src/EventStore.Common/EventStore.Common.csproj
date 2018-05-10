@@ -111,6 +111,9 @@
     <None Include="..\libs\Serilog.Sinks.Console.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+     <None Include="..\libs\Serilog.Sinks.File.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Log\log.config">
