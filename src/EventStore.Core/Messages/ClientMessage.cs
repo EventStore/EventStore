@@ -1378,41 +1378,36 @@ namespace EventStore.Core.Messages
                 User = user;
             }
 
-            public enum ScavengeResult
-            {
-                Success,
-                InProgress,
-                Failed
-            }
+            
         }
-
-        public class ScavengeDatabaseCompleted: Message
+        
+        public class ScavengeDatabaseResponse : Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
-            public readonly ScavengeDatabase.ScavengeResult Result;
-            public readonly string Error;
-            public readonly TimeSpan TotalTime;
-            public readonly long TotalSpaceSaved;
+            public readonly ScavengeResponse Result;
+            public readonly string ScavengeId;
 
-            public ScavengeDatabaseCompleted(Guid correlationId,
-                                             ScavengeDatabase.ScavengeResult result,
-                                             string error,
-                                             TimeSpan totalTime,
-                                             long totalSpaceSaved)
+            public ScavengeDatabaseResponse(Guid correlationId,
+                ScavengeResponse result, string scavengeId)
             {
                 CorrelationId = correlationId;
                 Result = result;
-                Error = error;
-                TotalTime = totalTime;
-                TotalSpaceSaved = totalSpaceSaved;
+                ScavengeId = scavengeId;
             }
 
             public override string ToString()
             {
-                return String.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
+                return String.Format("Result: {0}, ScavengeId: {1}", Result, ScavengeId);
+            }
+
+            public enum ScavengeResponse
+            {
+                Started,
+                Unauthorized,
+                InProgress,
             }
         }
 

@@ -1,11 +1,12 @@
 ﻿using System;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 {
     public class FakeTFScavengerLog : ITFChunkScavengerLog
     {
+        public string ScavengeId { get; } = "FakeScavenge";
+
         public void ScavengeStarted()
         {
             
@@ -20,7 +21,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         {
         }
 
-        public void ScavengeCompleted(ClientMessage.ScavengeDatabase.ScavengeResult result, string error, long spaceSaved, TimeSpan elapsed)
+        public void ScavengeCompleted(ScavengeResult result, string error, long spaceSaved, TimeSpan elapsed)
         {
         }
     }
