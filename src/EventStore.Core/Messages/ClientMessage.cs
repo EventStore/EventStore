@@ -1387,11 +1387,11 @@ namespace EventStore.Core.Messages
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
-            public readonly ScavengeResponse Result;
+            public readonly ScavengeResult Result;
             public readonly string ScavengeId;
 
             public ScavengeDatabaseResponse(Guid correlationId,
-                ScavengeResponse result, string scavengeId)
+                ScavengeResult result, string scavengeId)
             {
                 CorrelationId = correlationId;
                 Result = result;
@@ -1403,7 +1403,7 @@ namespace EventStore.Core.Messages
                 return String.Format("Result: {0}, ScavengeId: {1}", Result, ScavengeId);
             }
 
-            public enum ScavengeResponse
+            public enum ScavengeResult
             {
                 Started,
                 Unauthorized,

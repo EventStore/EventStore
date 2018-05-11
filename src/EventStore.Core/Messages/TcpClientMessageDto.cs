@@ -1215,43 +1215,35 @@ namespace EventStore.Core.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"ScavengeDatabaseCompleted")]
-  public partial class ScavengeDatabaseCompleted
+  [Serializable, ProtoContract(Name=@"ScavengeDatabaseResponse")]
+  public partial class ScavengeDatabaseResponse
   {
     [ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly ScavengeDatabaseCompleted.ScavengeResult Result;
+    public readonly ScavengeDatabaseResponse.ScavengeResult Result;
   
-    [ProtoMember(2, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
-    public readonly string Error;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"total_time_ms", DataFormat = DataFormat.TwosComplement)]
-    public readonly int TotalTimeMs;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"total_space_saved", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TotalSpaceSaved;
+    [ProtoMember(2, IsRequired = false, Name=@"scavengeId", DataFormat = DataFormat.Default)]
+    public readonly string ScavengeId;
   
     [ProtoContract(Name=@"ScavengeResult")]
     public enum ScavengeResult
     {
             
-      [ProtoEnum(Name=@"Success", Value=0)]
-      Success = 0,
+      [ProtoEnum(Name=@"Started", Value=0)]
+      Started = 0,
             
       [ProtoEnum(Name=@"InProgress", Value=1)]
       InProgress = 1,
             
-      [ProtoEnum(Name=@"Failed", Value=2)]
-      Failed = 2
+      [ProtoEnum(Name=@"Unauthorized", Value=2)]
+      Unauthorized = 2
     }
   
-    private ScavengeDatabaseCompleted() {}
+    private ScavengeDatabaseResponse() {}
   
-    public ScavengeDatabaseCompleted(ScavengeDatabaseCompleted.ScavengeResult result, string error, int totalTimeMs, long totalSpaceSaved)
+    public ScavengeDatabaseResponse(ScavengeDatabaseResponse.ScavengeResult result, string scavengeId)
     {
         Result = result;
-        Error = error;
-        TotalTimeMs = totalTimeMs;
-        TotalSpaceSaved = totalSpaceSaved;
+        ScavengeId = scavengeId;
     }
   }
   

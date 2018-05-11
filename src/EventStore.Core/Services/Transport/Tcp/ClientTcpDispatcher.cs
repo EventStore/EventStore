@@ -606,23 +606,24 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapScavengeDatabaseResponse(ClientMessage.ScavengeDatabaseResponse msg)
         {
-            TcpClientMessageDto.ScavengeDatabaseCompleted.ScavengeResult result;
+            TcpClientMessageDto.ScavengeDatabaseResponse.ScavengeResult result;
             switch (msg.Result)
             {
-                case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Started:
-                    result = TcpClientMessageDto.ScavengeDatabaseCompleted.ScavengeResult.Success;
+                case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
+                    result = TcpClientMessageDto.ScavengeDatabaseResponse.ScavengeResult.Started;
                     break;
-                case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Unauthorized:
-                    result = TcpClientMessageDto.ScavengeDatabaseCompleted.ScavengeResult.Failed;
+                case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+                    result = TcpClientMessageDto.ScavengeDatabaseResponse.ScavengeResult.Unauthorized;
                     break;
-                case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.InProgress:
-                    result = TcpClientMessageDto.ScavengeDatabaseCompleted.ScavengeResult.InProgress;
+                case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
+                    result = TcpClientMessageDto.ScavengeDatabaseResponse.ScavengeResult.InProgress;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            var dto = new TcpClientMessageDto.ScavengeDatabaseCompleted(result, null, 0, 0);
-            return new TcpPackage(TcpCommand.ScavengeDatabaseCompleted, msg.CorrelationId, dto.Serialize());
+
+            var dto = new TcpClientMessageDto.ScavengeDatabaseResponse(result, msg.ScavengeId);
+            return new TcpPackage(TcpCommand.ScavengeDatabaseResponse, msg.CorrelationId, dto.Serialize());
         }
 
         private ClientMessage.NotHandled UnwrapNotHandled(TcpPackage package, IEnvelope envelope)
