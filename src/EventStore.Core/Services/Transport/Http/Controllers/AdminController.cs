@@ -11,12 +11,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class AdminController : CommunicationController
     {
+        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
 
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
-        public AdminController(IPublisher publisher) : base(publisher)
+        public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service)
@@ -41,16 +43,31 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
-            {
-                Log.Info("Request scavenging because /admin/scavenge request has been received.");
-                Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
-                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
-            }
-            else
-            {
-                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
-            }
+            Log.Info("Request scavenging because /admin/scavenge request has been received.");
+
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    return e.ResponseCodec.To(completed?.ScavengeId);
+                },
+                (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    switch (completed?.Result)
+                    {
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Started:
+                            return Configure.Ok(e.ResponseCodec.ContentType);
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.InProgress:
+                            return Configure.BadRequest();
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Unauthorized:
+                            return Configure.Unauthorized();
+                        default:
+                            return Configure.InternalServerError();
+                    }
+                }
+            );
+            
+            Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User));
         }
 
         private void LogReplyError(Exception exc)

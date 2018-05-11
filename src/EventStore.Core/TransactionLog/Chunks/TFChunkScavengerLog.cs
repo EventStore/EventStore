@@ -15,13 +15,13 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         private readonly string _streamName;
         private readonly IODispatcher _ioDispatcher;
-        private readonly Guid _scavengeId;
+        private readonly string _scavengeId;
         private readonly string _nodeId;
         private readonly int _retryAttempts;
         private readonly TimeSpan _scavengeHistoryMaxAge;
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
 
-        public TFChunkScavengerLog(IODispatcher ioDispatcher, Guid scavengeId, string nodeId, int retryAttempts, TimeSpan scavengeHistoryMaxAge)
+        public TFChunkScavengerLog(IODispatcher ioDispatcher, string scavengeId, string nodeId, int retryAttempts, TimeSpan scavengeHistoryMaxAge)
         {
             _ioDispatcher = ioDispatcher;
             _scavengeId = scavengeId;
@@ -31,6 +31,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             _streamName = string.Format("{0}-{1}", SystemStreams.ScavengesStream, scavengeId);
         }
+
+        public string ScavengeId => _scavengeId;
 
         public void ScavengeStarted()
         {
@@ -53,7 +55,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriteScavengeDetailEvent(_streamName, scavengeStartedEvent, _retryAttempts);
         }
 
-        public void ScavengeCompleted(ClientMessage.ScavengeDatabase.ScavengeResult result, string error, long spaceSaved, TimeSpan elapsed)
+        public void ScavengeCompleted(ScavengeResult result, string error, long spaceSaved, TimeSpan elapsed)
         {
             var scavengeCompletedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true, new Dictionary<string, object>{
                 {"scavengeId", _scavengeId},

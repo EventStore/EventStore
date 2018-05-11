@@ -310,7 +310,7 @@ namespace EventStore.Core
 
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
-            var adminController = new AdminController(_mainQueue);
+            var adminController = new AdminController(_mainQueue, _workersHandler);
             var pingController = new PingController();
             var histogramController = new HistogramController();
             var statController = new StatController(monitoringQueue, _workersHandler);
