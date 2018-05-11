@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 			using(var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, DefaultData.AdminCredentials))
 			{
 				conn.ConnectAsync().Wait();
-				var countdown = new CountdownEvent(3);
+				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();
 
 				conn.SubscribeToStreamFrom(SystemStreams.ScavengesStream, null, CatchUpSubscriptionSettings.Default,
@@ -69,13 +69,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 					Assert.Fail("Timeout expired while waiting for events.");
 				}
 			}
-		}
-
-		[Test]
-		public void should_create_scavenge_index_initialized_event()
-		{
-			var scavengeIndexInitialized = _result.FirstOrDefault(x=>x.Event.EventType == SystemEventTypes.ScavengeIndexInitialized);
-			Assert.IsNotNull(scavengeIndexInitialized);
 		}
 
 		[Test]
