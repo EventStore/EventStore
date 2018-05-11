@@ -11,6 +11,9 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
+
+    
+
     public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
@@ -49,11 +52,8 @@ namespace EventStore.Core.Services.Storage
         {
             if (message.User == null || (!message.User.IsInRole(SystemRoles.Admins) && !message.User.IsInRole(SystemRoles.Operations)))
             {
-                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId,
-                    ClientMessage.ScavengeDatabase.ScavengeResult.Failed,
-                    "Access denied.",
-                    TimeSpan.FromMilliseconds(0),
-                    0));
+                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
+                    ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Unauthorized, null));
             }
             else if (Interlocked.CompareExchange(ref _isScavengingRunning, 1, 0) == 0)
             {
@@ -61,11 +61,8 @@ namespace EventStore.Core.Services.Storage
             }
             else
             {
-                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId,
-                                                            ClientMessage.ScavengeDatabase.ScavengeResult.InProgress,
-                                                            "Scavenge already in progress.",
-                                                            TimeSpan.FromMilliseconds(0),
-                                                            0));
+                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
+                    ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.InProgress, null));
             }
         }
 
@@ -75,34 +72,32 @@ namespace EventStore.Core.Services.Storage
 
             var tfChunkScavengerLog = _logManager.CreateLog();
 
-            ClientMessage.ScavengeDatabase.ScavengeResult result;
+            ScavengeResult result = ScavengeResult.Success;
             string error = null;
             long spaceSaved = 0;
             try
             {
                 tfChunkScavengerLog.ScavengeStarted();
 
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Started, tfChunkScavengerLog.ScavengeId)
+                );
+                
                 var scavenger = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex, _readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
 
                 spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
-
-                result = ClientMessage.ScavengeDatabase.ScavengeResult.Success;
-
+                
             }
             catch (Exception exc)
             {
+                result = ScavengeResult.Failed;
                 Log.ErrorException(exc, "SCAVENGING: error while scavenging DB.");
-                result = ClientMessage.ScavengeDatabase.ScavengeResult.Failed;
                 error = string.Format("Error while scavenging DB: {0}.", exc.Message);
             }
 
             Interlocked.Exchange(ref _isScavengingRunning, 0);
 
             tfChunkScavengerLog.ScavengeCompleted(result, error, spaceSaved, sw.Elapsed);
-            
-            message.Envelope.ReplyWith(
-                new ClientMessage.ScavengeDatabaseCompleted(message.CorrelationId, result, error, sw.Elapsed, spaceSaved)
-            );
         }
 
     }

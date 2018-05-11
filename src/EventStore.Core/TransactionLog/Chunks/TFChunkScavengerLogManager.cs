@@ -40,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public ITFChunkScavengerLog CreateLog()
         {
-            return new TFChunkScavengerLog(_ioDispatcher, Guid.NewGuid(), _nodeEndpoint, MaxRetryCount, _scavengeHistoryMaxAge);
+            return new TFChunkScavengerLog(_ioDispatcher, Guid.NewGuid().ToString(), _nodeEndpoint, MaxRetryCount, _scavengeHistoryMaxAge);
         }
     }
 }
