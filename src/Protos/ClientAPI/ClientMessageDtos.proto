@@ -364,18 +364,17 @@ message NotHandled {
 message ScavengeDatabase {
 }
 
-message ScavengeDatabaseCompleted {
+message ScavengeDatabaseResponse {
 	
 	enum ScavengeResult {
-		Success = 0;
+		Started = 0;
 		InProgress = 1;
-		Failed = 2;
+		Unauthorized = 2;
 	}
 	
 	required ScavengeResult result = 1;
-	optional string error = 2;
-	required int32 total_time_ms = 3;
-	required int64 total_space_saved = 4;
+	optional string scavengeId = 2;
+	
 }
 
 message IdentifyClient {
