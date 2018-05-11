@@ -55,11 +55,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     var completed = message as ClientMessage.ScavengeDatabaseResponse;
                     switch (completed?.Result)
                     {
-                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Started:
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
                             return Configure.Ok(e.ResponseCodec.ContentType);
-                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.InProgress:
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
                             return Configure.BadRequest();
-                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Unauthorized:
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
                             return Configure.Unauthorized();
                         default:
                             return Configure.InternalServerError();

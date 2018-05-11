@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Storage
             if (message.User == null || (!message.User.IsInRole(SystemRoles.Admins) && !message.User.IsInRole(SystemRoles.Operations)))
             {
                 message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-                    ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Unauthorized, null));
+                    ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
             }
             else if (Interlocked.CompareExchange(ref _isScavengingRunning, 1, 0) == 0)
             {
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage
             else
             {
                 message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-                    ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.InProgress, null));
+                    ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress, null));
             }
         }
 
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Storage
                 tfChunkScavengerLog.ScavengeStarted();
 
                 message.Envelope.ReplyWith(
-                    new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResponse.Started, tfChunkScavengerLog.ScavengeId)
+                    new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started, tfChunkScavengerLog.ScavengeId)
                 );
                 
                 var scavenger = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex, _readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
