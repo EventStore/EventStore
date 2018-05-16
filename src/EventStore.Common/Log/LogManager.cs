@@ -91,9 +91,9 @@ namespace EventStore.Common.Log
                  .AppSettings(null,configFilePath)
                 //.WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(StatsMessage))
                 //.WriteTo.File("mystat.csv")    
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(Matching.FromSource<MonitoringService>())
-                    .WriteTo.File("mystat.csv"))             
+                //.WriteTo.Logger(lc => lc
+                    //.Filter.ByIncludingOnly(Matching.FromSource<MonitoringService>())
+                    //.WriteTo.File("mystat.csv"))             
                  .CreateLogger();
             }
             else

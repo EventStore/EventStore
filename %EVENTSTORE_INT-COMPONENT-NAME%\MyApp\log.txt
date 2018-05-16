@@ -1,0 +1,133 @@
+2018-05-16 16:04:18.845 +04:00 [INF] 
+ES VERSION:               0.0.0.0 (structuredLogging/d27fe221e4dc80c3581e26c502821d2a5d52b5e8, Wed, 16 May 2018 10:22:26 +0400)
+2018-05-16 16:04:18.865 +04:00 [INF] OS:                       "MacOS" (Unix 17.5.0.0)
+2018-05-16 16:04:18.869 +04:00 [INF] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit)
+2018-05-16 16:04:18.869 +04:00 [INF] GC:                       2 GENERATIONS
+2018-05-16 16:04:18.870 +04:00 [INF] LOGS:                     /Users/avish/log
+2018-05-16 16:04:18.878 +04:00 [INF] MODIFIED OPTIONS:
+
+	RUN PROJECTIONS:          all (Command Line)
+	DB:                       ../db (Command Line)
+	LOG:                      ../log (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT IP:                   127.0.0.1 (<DEFAULT>)
+	EXT IP:                   127.0.0.1 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+
+2018-05-16 16:04:18.885 +04:00 [INF] Quorum size set to 1
+2018-05-16 16:04:18.894 +04:00 [INF] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins
+2018-05-16 16:04:18.937 +04:00 [INF] INSTANCE ID:              "0578a251-0f74-4b7c-b3b6-085101b6f689"
+2018-05-16 16:04:18.938 +04:00 [INF] DATABASE:                 ../db
+2018-05-16 16:04:18.938 +04:00 [INF] WRITER CHECKPOINT:        160322347 (0x160322347)
+2018-05-16 16:04:18.938 +04:00 [INF] CHASER CHECKPOINT:        160322347 (0x160322347)
+2018-05-16 16:04:18.939 +04:00 [INF] EPOCH CHECKPOINT:         160046709 (0x160046709)
+2018-05-16 16:04:18.939 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 16:04:20.145 +04:00 [INF] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections
+2018-05-16 16:04:20.145 +04:00 [INF] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude
+2018-05-16 16:04:20.156 +04:00 [INF] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web
+2018-05-16 16:04:20.158 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM INIT...
+2018-05-16 16:04:20.161 +04:00 [INF] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 16:04:20.163 +04:00 [INF] TableIndex initialization...
+2018-05-16 16:04:20.168 +04:00 [INF] Starting HTTP server on [http://127.0.0.1:2113/,http://localhost:2113/]...
+2018-05-16 16:04:20.172 +04:00 [INF] ReadIndex building...
+2018-05-16 16:04:20.175 +04:00 [INF] HTTP server is up and listening on [http://127.0.0.1:2113/,http://localhost:2113/]
+2018-05-16 16:04:20.176 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageReader' initialized.
+2018-05-16 16:04:20.176 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageWriter' initialized.
+2018-05-16 16:04:22.342 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageChaser' initialized.
+2018-05-16 16:04:22.347 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM START...
+2018-05-16 16:04:22.348 +04:00 [INF] ========== [127.0.0.1:2112] IS UNKNOWN...
+2018-05-16 16:04:22.360 +04:00 [INF] ELECTIONS: (V=0) DONE. ELECTED MASTER = [127.0.0.1:2112,{0578a251-0f74-4b7c-b3b6-085101b6f689}](L=160305556,W=160322347,C=160322347,E121@160046709:{1fa8539b-b976-46a9-bfbf-7f99455cd426}). ME=[127.0.0.1:2112,{0578a251-0f74-4b7c-b3b6-085101b6f689}](L=160305556,W=160322347,C=160322347,E121@160046709:{1fa8539b-b976-46a9-bfbf-7f99455cd426}).
+2018-05-16 16:04:22.363 +04:00 [INF] ========== [127.0.0.1:2112] PRE-MASTER STATE, WAITING FOR CHASER TO CATCH UP...
+2018-05-16 16:04:22.365 +04:00 [INF] ========== [127.0.0.1:2112] IS MASTER... SPARTA!
+2018-05-16 16:04:22.516 +04:00 [WRN] PROJECTIONS: The following projection: A has a duplicate created event. Using projection Id 14
+2018-05-16 16:04:22.523 +04:00 [INF] ========== [127.0.0.1:2112] Sub System 'Projections' initialized.

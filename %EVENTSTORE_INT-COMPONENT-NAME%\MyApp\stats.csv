@@ -1,0 +1,535 @@
+2018-05-16 15:41:34.507 +04:00 [INF] 
+ES VERSION:               0.0.0.0 (structuredLogging/d27fe221e4dc80c3581e26c502821d2a5d52b5e8, Wed, 16 May 2018 10:22:26 +0400)
+2018-05-16 15:41:34.532 +04:00 [INF] OS:                       "MacOS" (Unix 17.5.0.0)
+2018-05-16 15:41:34.543 +04:00 [INF] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit)
+2018-05-16 15:41:34.544 +04:00 [INF] GC:                       2 GENERATIONS
+2018-05-16 15:41:34.544 +04:00 [INF] LOGS:                     /Users/avish/log
+2018-05-16 15:41:34.553 +04:00 [INF] MODIFIED OPTIONS:
+
+	RUN PROJECTIONS:          all (Command Line)
+	DB:                       ../db (Command Line)
+	LOG:                      ../log (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT IP:                   127.0.0.1 (<DEFAULT>)
+	EXT IP:                   127.0.0.1 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+
+2018-05-16 15:41:34.568 +04:00 [INF] Quorum size set to 1
+2018-05-16 15:41:34.578 +04:00 [INF] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins
+2018-05-16 15:41:34.630 +04:00 [INF] INSTANCE ID:              "3759b006-06e8-49de-8653-6b8fabe3aed5"
+2018-05-16 15:41:34.631 +04:00 [INF] DATABASE:                 ../db
+2018-05-16 15:41:34.631 +04:00 [INF] WRITER CHECKPOINT:        160006600 (0x160006600)
+2018-05-16 15:41:34.631 +04:00 [INF] CHASER CHECKPOINT:        160006600 (0x160006600)
+2018-05-16 15:41:34.632 +04:00 [INF] EPOCH CHECKPOINT:         159731044 (0x159731044)
+2018-05-16 15:41:34.632 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 15:41:36.274 +04:00 [INF] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections
+2018-05-16 15:41:36.274 +04:00 [INF] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude
+2018-05-16 15:41:36.283 +04:00 [INF] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web
+2018-05-16 15:41:36.285 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM INIT...
+2018-05-16 15:41:36.288 +04:00 [INF] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 15:41:36.289 +04:00 [INF] TableIndex initialization...
+2018-05-16 15:41:36.296 +04:00 [INF] Starting HTTP server on [http://127.0.0.1:2113/,http://localhost:2113/]...
+2018-05-16 15:41:36.300 +04:00 [INF] ReadIndex building...
+2018-05-16 15:41:36.305 +04:00 [INF] HTTP server is up and listening on [http://127.0.0.1:2113/,http://localhost:2113/]
+2018-05-16 15:41:36.307 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageReader' initialized.
+2018-05-16 15:41:36.307 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageWriter' initialized.
+2018-05-16 15:41:39.165 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageChaser' initialized.
+2018-05-16 15:41:39.172 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM START...
+2018-05-16 15:41:39.173 +04:00 [INF] ========== [127.0.0.1:2112] IS UNKNOWN...
+2018-05-16 15:41:39.188 +04:00 [INF] ELECTIONS: (V=0) DONE. ELECTED MASTER = [127.0.0.1:2112,{3759b006-06e8-49de-8653-6b8fabe3aed5}](L=159989783,W=160006600,C=160006600,E119@159731044:{db35aa62-1499-45c8-8b8d-816931895eac}). ME=[127.0.0.1:2112,{3759b006-06e8-49de-8653-6b8fabe3aed5}](L=159989783,W=160006600,C=160006600,E119@159731044:{db35aa62-1499-45c8-8b8d-816931895eac}).
+2018-05-16 15:41:39.191 +04:00 [INF] ========== [127.0.0.1:2112] PRE-MASTER STATE, WAITING FOR CHASER TO CATCH UP...
+2018-05-16 15:41:39.193 +04:00 [INF] ========== [127.0.0.1:2112] IS MASTER... SPARTA!
+2018-05-16 15:41:39.359 +04:00 [WRN] PROJECTIONS: The following projection: A has a duplicate created event. Using projection Id 14
+2018-05-16 15:41:39.368 +04:00 [INF] ========== [127.0.0.1:2112] Sub System 'Projections' initialized.
+2018-05-16 15:46:54.591 +04:00 [INF] 
+ES VERSION:               0.0.0.0 (structuredLogging/d27fe221e4dc80c3581e26c502821d2a5d52b5e8, Wed, 16 May 2018 10:22:26 +0400)
+2018-05-16 15:46:54.631 +04:00 [INF] OS:                       "MacOS" (Unix 17.5.0.0)
+2018-05-16 15:46:54.637 +04:00 [INF] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit)
+2018-05-16 15:46:54.637 +04:00 [INF] GC:                       2 GENERATIONS
+2018-05-16 15:46:54.638 +04:00 [INF] LOGS:                     /Users/avish/log
+2018-05-16 15:46:54.651 +04:00 [INF] MODIFIED OPTIONS:
+
+	RUN PROJECTIONS:          all (Command Line)
+	DB:                       ../db (Command Line)
+	LOG:                      ../log (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT IP:                   127.0.0.1 (<DEFAULT>)
+	EXT IP:                   127.0.0.1 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+
+2018-05-16 15:46:54.676 +04:00 [INF] Quorum size set to 1
+2018-05-16 15:46:54.715 +04:00 [INF] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins
+2018-05-16 15:46:54.795 +04:00 [INF] INSTANCE ID:              "242838fc-38ab-4be9-bc98-512be759762a"
+2018-05-16 15:46:54.797 +04:00 [INF] DATABASE:                 ../db
+2018-05-16 15:46:54.799 +04:00 [INF] WRITER CHECKPOINT:        160046709 (0x160046709)
+2018-05-16 15:46:54.801 +04:00 [INF] CHASER CHECKPOINT:        160046709 (0x160046709)
+2018-05-16 15:46:54.803 +04:00 [INF] EPOCH CHECKPOINT:         160006600 (0x160006600)
+2018-05-16 15:46:54.804 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 15:46:57.497 +04:00 [INF] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections
+2018-05-16 15:46:57.499 +04:00 [INF] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude
+2018-05-16 15:46:57.553 +04:00 [INF] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web
+2018-05-16 15:46:57.559 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM INIT...
+2018-05-16 15:46:57.563 +04:00 [INF] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 15:46:57.570 +04:00 [INF] TableIndex initialization...
+2018-05-16 15:46:57.583 +04:00 [INF] Starting HTTP server on [http://127.0.0.1:2113/,http://localhost:2113/]...
+2018-05-16 15:46:57.588 +04:00 [INF] ReadIndex building...
+2018-05-16 15:46:57.591 +04:00 [INF] HTTP server is up and listening on [http://127.0.0.1:2113/,http://localhost:2113/]
+2018-05-16 15:46:57.592 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageReader' initialized.
+2018-05-16 15:46:57.593 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageWriter' initialized.
+2018-05-16 15:52:01.002 +04:00 [INF] 
+ES VERSION:               0.0.0.0 (structuredLogging/d27fe221e4dc80c3581e26c502821d2a5d52b5e8, Wed, 16 May 2018 10:22:26 +0400)
+2018-05-16 15:52:01.027 +04:00 [INF] OS:                       "MacOS" (Unix 17.5.0.0)
+2018-05-16 15:52:01.030 +04:00 [INF] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit)
+2018-05-16 15:52:01.031 +04:00 [INF] GC:                       2 GENERATIONS
+2018-05-16 15:52:01.031 +04:00 [INF] LOGS:                     /Users/avish/log
+2018-05-16 15:52:01.039 +04:00 [INF] MODIFIED OPTIONS:
+
+	RUN PROJECTIONS:          all (Command Line)
+	DB:                       ../db (Command Line)
+	LOG:                      ../log (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT IP:                   127.0.0.1 (<DEFAULT>)
+	EXT IP:                   127.0.0.1 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+
+2018-05-16 15:52:01.055 +04:00 [INF] Quorum size set to 1
+2018-05-16 15:52:01.070 +04:00 [INF] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins
+2018-05-16 15:52:01.116 +04:00 [INF] INSTANCE ID:              "3345ff55-9023-45c3-92cb-f96cdc2fff6a"
+2018-05-16 15:52:01.116 +04:00 [INF] DATABASE:                 ../db
+2018-05-16 15:52:01.117 +04:00 [INF] WRITER CHECKPOINT:        160046709 (0x160046709)
+2018-05-16 15:52:01.117 +04:00 [INF] CHASER CHECKPOINT:        160046709 (0x160046709)
+2018-05-16 15:52:01.117 +04:00 [INF] EPOCH CHECKPOINT:         160006600 (0x160006600)
+2018-05-16 15:52:01.117 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 15:52:02.436 +04:00 [INF] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections
+2018-05-16 15:52:02.436 +04:00 [INF] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude
+2018-05-16 15:52:02.446 +04:00 [INF] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web
+2018-05-16 15:52:02.448 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM INIT...
+2018-05-16 15:52:02.451 +04:00 [INF] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 15:52:02.453 +04:00 [INF] TableIndex initialization...
+2018-05-16 15:52:02.457 +04:00 [INF] Starting HTTP server on [http://127.0.0.1:2113/,http://localhost:2113/]...
+2018-05-16 15:52:02.462 +04:00 [INF] ReadIndex building...
+2018-05-16 15:52:02.465 +04:00 [INF] HTTP server is up and listening on [http://127.0.0.1:2113/,http://localhost:2113/]
+2018-05-16 15:52:02.465 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageReader' initialized.
+2018-05-16 15:52:02.465 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageWriter' initialized.
+2018-05-16 15:52:06.549 +04:00 [INF] ========== [127.0.0.1:2112] Service 'StorageChaser' initialized.
+2018-05-16 15:52:06.558 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM START...
+2018-05-16 15:52:06.559 +04:00 [INF] ========== [127.0.0.1:2112] IS UNKNOWN...
+2018-05-16 15:52:06.588 +04:00 [INF] ELECTIONS: (V=0) DONE. ELECTED MASTER = [127.0.0.1:2112,{3345ff55-9023-45c3-92cb-f96cdc2fff6a}](L=160046209,W=160046709,C=160046709,E120@160006600:{50c957a8-d5b7-4902-a77c-d5b12d472d3f}). ME=[127.0.0.1:2112,{3345ff55-9023-45c3-92cb-f96cdc2fff6a}](L=160046209,W=160046709,C=160046709,E120@160006600:{50c957a8-d5b7-4902-a77c-d5b12d472d3f}).
+2018-05-16 15:52:06.591 +04:00 [INF] ========== [127.0.0.1:2112] PRE-MASTER STATE, WAITING FOR CHASER TO CATCH UP...
+2018-05-16 15:52:06.599 +04:00 [INF] ========== [127.0.0.1:2112] IS MASTER... SPARTA!
+2018-05-16 15:52:06.826 +04:00 [WRN] PROJECTIONS: The following projection: A has a duplicate created event. Using projection Id 14
+2018-05-16 15:52:06.857 +04:00 [INF] ========== [127.0.0.1:2112] Sub System 'Projections' initialized.
+2018-05-16 15:52:32.482 +04:00 [INF] 
+
+2018-05-16 15:52:32.482 +04:00 [INF] Time,proc-startTime,proc-id,proc-mem,proc-cpu,proc-cpuScaled,proc-threadsCount,proc-contentionsRate,proc-thrownExceptionsRate,sys-cpu,sys-freeMem,proc-gc-allocationSpeed,proc-gc-gen0ItemsCount,proc-gc-gen0Size,proc-gc-gen1ItemsCount,proc-gc-gen1Size,proc-gc-gen2ItemsCount,proc-gc-gen2Size,proc-gc-largeHeapSize,proc-gc-timeInGc,proc-gc-totalBytesInHeaps,proc-tcp-connections,proc-tcp-receivingSpeed,proc-tcp-sendingSpeed,proc-tcp-inSend,proc-tcp-measureTime,proc-tcp-pendingReceived,proc-tcp-pendingSend,proc-tcp-receivedBytesSinceLastRun,proc-tcp-receivedBytesTotal,proc-tcp-sentBytesSinceLastRun,proc-tcp-sentBytesTotal,es-checksum,es-checksumNonFlushed,sys-drive-/-availableBytes,sys-drive-/-totalBytes,sys-drive-/-usage,sys-drive-/-usedBytes,es-queue-Index Committer-queueName,es-queue-Index Committer-groupName,es-queue-Index Committer-avgItemsPerSecond,es-queue-Index Committer-avgProcessingTime,es-queue-Index Committer-currentIdleTime,es-queue-Index Committer-currentItemProcessingTime,es-queue-Index Committer-idleTimePercent,es-queue-Index Committer-length,es-queue-Index Committer-lengthCurrentTryPeak,es-queue-Index Committer-lengthLifetimePeak,es-queue-Index Committer-totalItemsProcessed,es-queue-Index Committer-inProgressMessage,es-queue-Index Committer-lastProcessedMessage,es-queue-MainQueue-queueName,es-queue-MainQueue-groupName,es-queue-MainQueue-avgItemsPerSecond,es-queue-MainQueue-avgProcessingTime,es-queue-MainQueue-currentIdleTime,es-queue-MainQueue-currentItemProcessingTime,es-queue-MainQueue-idleTimePercent,es-queue-MainQueue-length,es-queue-MainQueue-lengthCurrentTryPeak,es-queue-MainQueue-lengthLifetimePeak,es-queue-MainQueue-totalItemsProcessed,es-queue-MainQueue-inProgressMessage,es-queue-MainQueue-lastProcessedMessage,es-queue-MonitoringQueue-queueName,es-queue-MonitoringQueue-groupName,es-queue-MonitoringQueue-avgItemsPerSecond,es-queue-MonitoringQueue-avgProcessingTime,es-queue-MonitoringQueue-currentIdleTime,es-queue-MonitoringQueue-currentItemProcessingTime,es-queue-MonitoringQueue-idleTimePercent,es-queue-MonitoringQueue-length,es-queue-MonitoringQueue-lengthCurrentTryPeak,es-queue-MonitoringQueue-lengthLifetimePeak,es-queue-MonitoringQueue-totalItemsProcessed,es-queue-MonitoringQueue-inProgressMessage,es-queue-MonitoringQueue-lastProcessedMessage,es-queue-Projection Core #0-queueName,es-queue-Projection Core #0-groupName,es-queue-Projection Core #0-avgItemsPerSecond,es-queue-Projection Core #0-avgProcessingTime,es-queue-Projection Core #0-currentIdleTime,es-queue-Projection Core #0-currentItemProcessingTime,es-queue-Projection Core #0-idleTimePercent,es-queue-Projection Core #0-length,es-queue-Projection Core #0-lengthCurrentTryPeak,es-queue-Projection Core #0-lengthLifetimePeak,es-queue-Projection Core #0-totalItemsProcessed,es-queue-Projection Core #0-inProgressMessage,es-queue-Projection Core #0-lastProcessedMessage,es-queue-Projection Core #1-queueName,es-queue-Projection Core #1-groupName,es-queue-Projection Core #1-avgItemsPerSecond,es-queue-Projection Core #1-avgProcessingTime,es-queue-Projection Core #1-currentIdleTime,es-queue-Projection Core #1-currentItemProcessingTime,es-queue-Projection Core #1-idleTimePercent,es-queue-Projection Core #1-length,es-queue-Projection Core #1-lengthCurrentTryPeak,es-queue-Projection Core #1-lengthLifetimePeak,es-queue-Projection Core #1-totalItemsProcessed,es-queue-Projection Core #1-inProgressMessage,es-queue-Projection Core #1-lastProcessedMessage,es-queue-Projection Core #2-queueName,es-queue-Projection Core #2-groupName,es-queue-Projection Core #2-avgItemsPerSecond,es-queue-Projection Core #2-avgProcessingTime,es-queue-Projection Core #2-currentIdleTime,es-queue-Projection Core #2-currentItemProcessingTime,es-queue-Projection Core #2-idleTimePercent,es-queue-Projection Core #2-length,es-queue-Projection Core #2-lengthCurrentTryPeak,es-queue-Projection Core #2-lengthLifetimePeak,es-queue-Projection Core #2-totalItemsProcessed,es-queue-Projection Core #2-inProgressMessage,es-queue-Projection Core #2-lastProcessedMessage,es-queue-Projections Master-queueName,es-queue-Projections Master-groupName,es-queue-Projections Master-avgItemsPerSecond,es-queue-Projections Master-avgProcessingTime,es-queue-Projections Master-currentIdleTime,es-queue-Projections Master-currentItemProcessingTime,es-queue-Projections Master-idleTimePercent,es-queue-Projections Master-length,es-queue-Projections Master-lengthCurrentTryPeak,es-queue-Projections Master-lengthLifetimePeak,es-queue-Projections Master-totalItemsProcessed,es-queue-Projections Master-inProgressMessage,es-queue-Projections Master-lastProcessedMessage,es-queue-Storage Chaser-queueName,es-queue-Storage Chaser-groupName,es-queue-Storage Chaser-avgItemsPerSecond,es-queue-Storage Chaser-avgProcessingTime,es-queue-Storage Chaser-currentIdleTime,es-queue-Storage Chaser-currentItemProcessingTime,es-queue-Storage Chaser-idleTimePercent,es-queue-Storage Chaser-length,es-queue-Storage Chaser-lengthCurrentTryPeak,es-queue-Storage Chaser-lengthLifetimePeak,es-queue-Storage Chaser-totalItemsProcessed,es-queue-Storage Chaser-inProgressMessage,es-queue-Storage Chaser-lastProcessedMessage,es-queue-StorageReaderQueue #1-queueName,es-queue-StorageReaderQueue #1-groupName,es-queue-StorageReaderQueue #1-avgItemsPerSecond,es-queue-StorageReaderQueue #1-avgProcessingTime,es-queue-StorageReaderQueue #1-currentIdleTime,es-queue-StorageReaderQueue #1-currentItemProcessingTime,es-queue-StorageReaderQueue #1-idleTimePercent,es-queue-StorageReaderQueue #1-length,es-queue-StorageReaderQueue #1-lengthCurrentTryPeak,es-queue-StorageReaderQueue #1-lengthLifetimePeak,es-queue-StorageReaderQueue #1-totalItemsProcessed,es-queue-StorageReaderQueue #1-inProgressMessage,es-queue-StorageReaderQueue #1-lastProcessedMessage,es-queue-StorageReaderQueue #2-queueName,es-queue-StorageReaderQueue #2-groupName,es-queue-StorageReaderQueue #2-avgItemsPerSecond,es-queue-StorageReaderQueue #2-avgProcessingTime,es-queue-StorageReaderQueue #2-currentIdleTime,es-queue-StorageReaderQueue #2-currentItemProcessingTime,es-queue-StorageReaderQueue #2-idleTimePercent,es-queue-StorageReaderQueue #2-length,es-queue-StorageReaderQueue #2-lengthCurrentTryPeak,es-queue-StorageReaderQueue #2-lengthLifetimePeak,es-queue-StorageReaderQueue #2-totalItemsProcessed,es-queue-StorageReaderQueue #2-inProgressMessage,es-queue-StorageReaderQueue #2-lastProcessedMessage,es-queue-StorageReaderQueue #3-queueName,es-queue-StorageReaderQueue #3-groupName,es-queue-StorageReaderQueue #3-avgItemsPerSecond,es-queue-StorageReaderQueue #3-avgProcessingTime,es-queue-StorageReaderQueue #3-currentIdleTime,es-queue-StorageReaderQueue #3-currentItemProcessingTime,es-queue-StorageReaderQueue #3-idleTimePercent,es-queue-StorageReaderQueue #3-length,es-queue-StorageReaderQueue #3-lengthCurrentTryPeak,es-queue-StorageReaderQueue #3-lengthLifetimePeak,es-queue-StorageReaderQueue #3-totalItemsProcessed,es-queue-StorageReaderQueue #3-inProgressMessage,es-queue-StorageReaderQueue #3-lastProcessedMessage,es-queue-StorageReaderQueue #4-queueName,es-queue-StorageReaderQueue #4-groupName,es-queue-StorageReaderQueue #4-avgItemsPerSecond,es-queue-StorageReaderQueue #4-avgProcessingTime,es-queue-StorageReaderQueue #4-currentIdleTime,es-queue-StorageReaderQueue #4-currentItemProcessingTime,es-queue-StorageReaderQueue #4-idleTimePercent,es-queue-StorageReaderQueue #4-length,es-queue-StorageReaderQueue #4-lengthCurrentTryPeak,es-queue-StorageReaderQueue #4-lengthLifetimePeak,es-queue-StorageReaderQueue #4-totalItemsProcessed,es-queue-StorageReaderQueue #4-inProgressMessage,es-queue-StorageReaderQueue #4-lastProcessedMessage,es-queue-StorageWriterQueue-queueName,es-queue-StorageWriterQueue-groupName,es-queue-StorageWriterQueue-avgItemsPerSecond,es-queue-StorageWriterQueue-avgProcessingTime,es-queue-StorageWriterQueue-currentIdleTime,es-queue-StorageWriterQueue-currentItemProcessingTime,es-queue-StorageWriterQueue-idleTimePercent,es-queue-StorageWriterQueue-length,es-queue-StorageWriterQueue-lengthCurrentTryPeak,es-queue-StorageWriterQueue-lengthLifetimePeak,es-queue-StorageWriterQueue-totalItemsProcessed,es-queue-StorageWriterQueue-inProgressMessage,es-queue-StorageWriterQueue-lastProcessedMessage,es-queue-Subscriptions-queueName,es-queue-Subscriptions-groupName,es-queue-Subscriptions-avgItemsPerSecond,es-queue-Subscriptions-avgProcessingTime,es-queue-Subscriptions-currentIdleTime,es-queue-Subscriptions-currentItemProcessingTime,es-queue-Subscriptions-idleTimePercent,es-queue-Subscriptions-length,es-queue-Subscriptions-lengthCurrentTryPeak,es-queue-Subscriptions-lengthLifetimePeak,es-queue-Subscriptions-totalItemsProcessed,es-queue-Subscriptions-inProgressMessage,es-queue-Subscriptions-lastProcessedMessage,es-queue-Timer-queueName,es-queue-Timer-groupName,es-queue-Timer-avgItemsPerSecond,es-queue-Timer-avgProcessingTime,es-queue-Timer-currentIdleTime,es-queue-Timer-currentItemProcessingTime,es-queue-Timer-idleTimePercent,es-queue-Timer-length,es-queue-Timer-lengthCurrentTryPeak,es-queue-Timer-lengthLifetimePeak,es-queue-Timer-totalItemsProcessed,es-queue-Timer-inProgressMessage,es-queue-Timer-lastProcessedMessage,es-queue-Worker #1-queueName,es-queue-Worker #1-groupName,es-queue-Worker #1-avgItemsPerSecond,es-queue-Worker #1-avgProcessingTime,es-queue-Worker #1-currentIdleTime,es-queue-Worker #1-currentItemProcessingTime,es-queue-Worker #1-idleTimePercent,es-queue-Worker #1-length,es-queue-Worker #1-lengthCurrentTryPeak,es-queue-Worker #1-lengthLifetimePeak,es-queue-Worker #1-totalItemsProcessed,es-queue-Worker #1-inProgressMessage,es-queue-Worker #1-lastProcessedMessage,es-queue-Worker #2-queueName,es-queue-Worker #2-groupName,es-queue-Worker #2-avgItemsPerSecond,es-queue-Worker #2-avgProcessingTime,es-queue-Worker #2-currentIdleTime,es-queue-Worker #2-currentItemProcessingTime,es-queue-Worker #2-idleTimePercent,es-queue-Worker #2-length,es-queue-Worker #2-lengthCurrentTryPeak,es-queue-Worker #2-lengthLifetimePeak,es-queue-Worker #2-totalItemsProcessed,es-queue-Worker #2-inProgressMessage,es-queue-Worker #2-lastProcessedMessage,es-queue-Worker #3-queueName,es-queue-Worker #3-groupName,es-queue-Worker #3-avgItemsPerSecond,es-queue-Worker #3-avgProcessingTime,es-queue-Worker #3-currentIdleTime,es-queue-Worker #3-currentItemProcessingTime,es-queue-Worker #3-idleTimePercent,es-queue-Worker #3-length,es-queue-Worker #3-lengthCurrentTryPeak,es-queue-Worker #3-lengthLifetimePeak,es-queue-Worker #3-totalItemsProcessed,es-queue-Worker #3-inProgressMessage,es-queue-Worker #3-lastProcessedMessage,es-queue-Worker #4-queueName,es-queue-Worker #4-groupName,es-queue-Worker #4-avgItemsPerSecond,es-queue-Worker #4-avgProcessingTime,es-queue-Worker #4-currentIdleTime,es-queue-Worker #4-currentItemProcessingTime,es-queue-Worker #4-idleTimePercent,es-queue-Worker #4-length,es-queue-Worker #4-lengthCurrentTryPeak,es-queue-Worker #4-lengthLifetimePeak,es-queue-Worker #4-totalItemsProcessed,es-queue-Worker #4-inProgressMessage,es-queue-Worker #4-lastProcessedMessage,es-queue-Worker #5-queueName,es-queue-Worker #5-groupName,es-queue-Worker #5-avgItemsPerSecond,es-queue-Worker #5-avgProcessingTime,es-queue-Worker #5-currentIdleTime,es-queue-Worker #5-currentItemProcessingTime,es-queue-Worker #5-idleTimePercent,es-queue-Worker #5-length,es-queue-Worker #5-lengthCurrentTryPeak,es-queue-Worker #5-lengthLifetimePeak,es-queue-Worker #5-totalItemsProcessed,es-queue-Worker #5-inProgressMessage,es-queue-Worker #5-lastProcessedMessage,es-writer-lastFlushSize,es-writer-lastFlushDelayMs,es-writer-meanFlushSize,es-writer-meanFlushDelayMs,es-writer-maxFlushSize,es-writer-maxFlushDelayMs,es-writer-queuedFlushMessages,es-readIndex-cachedRecord,es-readIndex-notCachedRecord,es-readIndex-cachedStreamInfo,es-readIndex-notCachedStreamInfo,es-readIndex-cachedTransInfo,es-readIndex-notCachedTransInfo
+2018-05-16 15:52:32.484 +04:00 [INF] 2018-05-16T11:52:32.4844690Z,2018-05-16T11:52:00.0000000Z,4277,271261696,5.088987,1.272247,10,0.2298241,0,100,1444904960,0,28,0,8,0,0,0,0,0,0,0,0,0,0,00:00:04.3290400,0,0,0,0,0,0,160086818,160086818,189881155584,250685575168,24%,60804419584,Index Committer,,0,0,,0:00:00:29.4789758,0,0,0,0,42,<none>,CommitAck,MainQueue,,13,0.0454385964912281,0:00:00:00.2886200,,99.9404148877708,0,3,40842,47417,<none>,PollStream,MonitoringQueue,,0,3.8963,0:00:00:04.3390879,,99.8232755528896,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0,0:00:00:15.3767658,,100,0,0,21,841,<none>,IODispatcherDelayedMessage,Projection Core #1,Projection Core,0,0,0:00:00:15.3663094,,100,0,0,21,851,<none>,IODispatcherDelayedMessage,Projection Core #2,Projection Core,0,0,0:00:00:15.4192350,,100,0,0,21,847,<none>,IODispatcherDelayedMessage,Projections Master,,19,0.00787976190476191,0:00:00:00.0176723,,99.9845038315979,0,0,22,771,<none>,Schedule,Storage Chaser,,97,0.00883844339622642,0:00:00:00.0083615,,99.911124721901,0,0,0,2640,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.348633333333333,0:00:00:00.2889039,,99.9759367538755,0,0,1,127,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0599,0:00:00:01.1385750,,99.9972486001563,0,0,1,115,<none>,ReadStreamEventsBackward,StorageReaderQueue #3,StorageReaderQueue,0,0.09355,0:00:00:00.6811318,,99.9956980622163,0,0,1,118,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,1.9225,0:00:00:00.3037673,,99.8673346832062,0,0,2,137,<none>,ReadStreamEventsBackward,StorageWriterQueue,,0,0,0:00:00:25.3699219,,100,0,0,4,49,<none>,WritePrepares,Subscriptions,,1,0.26382,0:00:00:00.2874404,,99.9696655894646,0,0,6183,45787,<none>,PollStream,Timer,,30,0.0309402985074627,0:00:00:00.0051626,,99.9023506222982,9,9,402,1597,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.100225,0:00:00:00.2907936,,99.9815683841933,0,0,0,59,<none>,IncomingHttpRequestMessage,Worker #2,Workers,2,0.282072727272727,0:00:00:00.2891528,,99.9286085455155,0,0,0,63,<none>,AuthenticatedHttpRequestMessage,Worker #3,Workers,2,0.0469,0:00:00:00.6810735,,99.9892221522614,0,0,0,60,<none>,ReadStreamEventsForwardCompleted,Worker #4,Workers,2,0.0997888888888889,0:00:00:00.3098400,,99.9793277126459,0,0,0,63,<none>,IncomingHttpRequestMessage,Worker #5,Workers,2,0.158722222222222,0:00:00:00.3033400,,99.9671419682299,0,0,0,59,<none>,HttpSend,1194,0.1657,1246,0.911121875,5608,8.6439,0,46588,0,1043,139,0,0
+2018-05-16 15:53:02.515 +04:00 [INF] 2018-05-16T11:53:02.5150500Z,2018-05-16T11:52:00.0000000Z,4277,271400960,4.242136,1.060534,10,0.2664217,0,100,174612480,0,29,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0312010,0,0,0,0,0,0,160103567,160103567,190097670144,250685575168,24%,60587905024,Index Committer,,0,30033.7096,,0:00:00:59.5126858,0,0,0,0,43,<none>,CommitAck,MainQueue,,13,0.0296888888888889,0:00:00:00.5541760,,99.9591082837638,0,3,40842,47831,<none>,Schedule,MonitoringQueue,,0,0,0:00:00:34.3727753,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02195,0:00:00:30.0229729,,99.9991702650676,0,2,21,851,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.01991,0:00:00:30.0230507,,99.9993374107103,0,2,21,861,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02143,0:00:00:30.0229983,,99.9993054466084,0,2,21,857,<none>,EventReaderIdle,Projections Master,,18,0.00823754385964912,0:00:00:00.0672148,,99.9843625600632,0,0,22,1341,<none>,Schedule,Storage Chaser,,97,0.00966777170198223,0:00:00:00.0086324,,99.9045485323313,0,0,0,5566,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,1.04216,0:00:00:01.5573609,,99.9479461275033,0,0,1,142,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.917386666666667,0:00:00:00.5542298,,99.9541834565599,0,0,1,130,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.12095,0:00:00:02.5581882,,99.9943649953779,0,0,1,132,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0910428571428571,0:00:00:01.9732425,,99.995759429294,0,0,2,151,<none>,ReadStreamEventsBackward,StorageWriterQueue,,0,2.3059,0:00:00:30.0242063,,99.9923219567229,0,0,4,50,<none>,WritePrepares,Subscriptions,,1,0.060484375,0:00:00:00.6098271,,99.9935555713504,0,0,6183,45819,<none>,CheckPollTimeout,Timer,,31,0.0314684486373166,0:00:00:00.0100874,,99.897679588519,9,15,402,2551,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0467203703703704,0:00:00:00.5543341,,99.9916004340844,0,0,0,113,<none>,IODispatcherDelayedMessage,Worker #2,Workers,1,0.109059259259259,0:00:00:00.5542152,,99.9803890265224,0,0,0,117,<none>,ReadStreamEventsForwardCompleted,Worker #3,Workers,1,0.0720269230769231,0:00:00:00.6098336,,99.9875143569995,0,0,0,112,<none>,PurgeTimedOutRequests,Worker #4,Workers,1,0.0424339285714286,0:00:00:00.6098148,,99.9920832245055,0,0,0,119,<none>,PurgeTimedOutRequests,Worker #5,Workers,1,0.0430611111111111,0:00:00:00.6097995,,99.9922626896958,0,0,0,113,<none>,PurgeTimedOutRequests,16749,2.0657,1716,0.946109090909091,16749,8.6439,0,46697,0,1179,140,0,0
+2018-05-16 15:53:32.538 +04:00 [INF] 2018-05-16T11:53:32.5381900Z,2018-05-16T11:52:00.0000000Z,4277,271441920,3.983228,0.9958071,10,0.03330001,0,100,488714240,0,29,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0269560,0,0,0,0,0,0,160120366,160120366,190095249408,250685575168,24%,60590325760,Index Committer,,0,30024.6214,,0:00:01:29.5373077,0,0,0,0,44,<none>,CommitAck,MainQueue,,13,0.0242116625310174,0:00:00:00.4052305,,99.9675000052124,0,3,40842,48234,<none>,Schedule,MonitoringQueue,,0,0,0:00:01:04.3973923,,99.99999966694,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.01941,0:00:00:30.0172917,,99.9993541965721,0,2,21,861,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.019,0:00:00:30.0174203,,99.9993585263527,0,2,21,871,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.01361,0:00:00:30.0174038,,99.9995470383323,0,2,21,867,<none>,EventReaderIdle,Projections Master,,18,0.0141535087719298,0:00:00:00.0000278,,99.9730767555733,0,0,22,1911,<none>,Schedule,Storage Chaser,,98,0.00935905858449035,0:00:00:00.0069832,,99.9057922804765,0,0,0,8519,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.0952230769230769,0:00:00:00.4052609,,99.9958703875624,0,0,1,155,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0594545454545455,0:00:00:02.4161205,,99.9978264496156,0,0,1,141,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.074125,0:00:00:02.1446414,,99.9970410938278,0,0,1,144,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.053425,0:00:00:01.4057200,,99.9978657506891,0,0,2,163,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,0.7235,0:00:00:30.0194284,,99.9975906433109,0,0,4,51,<none>,WritePrepares,Subscriptions,,1,0.0210032258064516,0:00:00:00.4619574,,99.9978321118399,0,0,6183,45850,<none>,CheckPollTimeout,Timer,,31,0.0297335781741868,0:00:00:00.0000447,,99.9038975062694,8,15,402,3504,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0353255319148936,0:00:00:00.4620108,,99.9945148331448,0,0,0,160,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.043569387755102,0:00:00:00.4620053,,99.9928934965105,0,0,0,166,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0233313725490196,0:00:00:00.4054609,,99.9960822139297,0,0,0,163,<none>,IODispatcherDelayedMessage,Worker #4,Workers,1,0.0289208333333333,0:00:00:00.4052676,,99.9953727958806,0,0,0,167,<none>,ReadStreamEventsForwardCompleted,Worker #5,Workers,1,0.0399333333333333,0:00:00:00.4620015,,99.9936245633166,0,0,0,161,<none>,PurgeTimedOutRequests,16799,0.4255,2159,0.930797058823529,16799,8.6439,0,46701,0,1294,140,0,0
+2018-05-16 15:54:02.559 +04:00 [INF] 2018-05-16T11:54:02.5598060Z,2018-05-16T11:52:00.0000000Z,4277,271470592,4.236235,1.059059,10,0.0333079,0,100,500105216,0,30,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0238640,0,0,0,0,0,0,160137197,160137197,190026895360,250685575168,24%,60658679808,Index Committer,,0,30021.4091,,0:00:01:59.5587159,0,0,0,0,45,<none>,CommitAck,MainQueue,,13,0.0271195544554455,0:00:00:00.1658070,,99.9634460852391,0,3,40842,48638,<none>,ReadStreamEventsBackward,MonitoringQueue,,0,0,0:00:01:34.4188025,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02249,0:00:00:30.0138997,,99.9992515341551,0,2,21,871,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.0343,0:00:00:30.0139886,,99.9988588144299,0,2,21,881,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02528,0:00:00:30.0139214,,99.9991579342932,0,2,21,877,<none>,EventReaderIdle,Projections Master,,19,0.00894562937062937,0:00:00:00.0122580,,99.9829345135967,0,0,22,2483,<none>,Schedule,Storage Chaser,,97,0.00939151846785226,0:00:00:00.0012695,,99.9069584143244,0,0,0,11443,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.0996230769230769,0:00:00:00.1657797,,99.9956817490917,0,0,1,168,<none>,ReadStreamEventsBackward,StorageReaderQueue #2,StorageReaderQueue,0,0.0832,0:00:00:02.2521267,,99.9966760393541,0,0,1,153,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0731083333333333,0:00:00:01.2510314,,99.9970804173606,0,0,1,156,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.07605,0:00:00:00.2451397,,99.99696250152,0,0,2,175,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,2.1973,0:00:00:30.0161981,,99.9926808901202,0,0,4,52,<none>,WritePrepares,Subscriptions,,1,0.0209935483870968,0:00:00:00.3272449,,99.9978298820669,0,0,6183,45881,<none>,CheckPollTimeout,Timer,,31,0.0301033437826541,0:00:00:00.0011412,,99.9017191394465,9,15,402,4461,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0357156862745098,0:00:00:00.2451090,,99.9939363274208,0,0,0,211,<none>,ReadStreamEventsForwardCompleted,Worker #2,Workers,1,0.0284673469387755,0:00:00:00.1661875,,99.9953546485349,0,0,0,215,<none>,IncomingHttpRequestMessage,Worker #3,Workers,1,0.0298979591836735,0:00:00:00.1658676,,99.9951950957346,0,0,0,212,<none>,AuthenticatedHttpRequestMessage,Worker #4,Workers,1,0.0315083333333333,0:00:00:00.1656448,,99.9949602633755,0,0,0,215,<none>,HttpSend,Worker #5,Workers,1,0.109985714285714,0:00:00:00.2453099,,99.9820491443205,0,0,0,210,<none>,IODispatcherDelayedMessage,16831,1.9184,2578,0.959014285714286,16831,8.6439,0,46705,0,1410,140,0,0
+2018-05-16 15:54:32.585 +04:00 [INF] 2018-05-16T11:54:32.5856050Z,2018-05-16T11:52:00.0000000Z,4277,271491072,4.378144,1.094536,10,0.2331443,0,100,496619520,0,30,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0251200,0,0,0,0,0,0,160154068,160154068,190032879616,250685575168,24%,60652695552,Index Committer,,0,30025.3039,,0:00:02:29.5840198,0,0,0,0,46,<none>,CommitAck,MainQueue,,13,0.0273789081885856,0:00:00:00.1035623,,99.9632483323849,0,3,40842,49041,<none>,Schedule,MonitoringQueue,,0,0,0:00:02:04.4441065,,99.9999996669476,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.0324,0:00:00:30.0189832,,99.9989215762703,0,2,21,881,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.03003,0:00:00:30.0189953,,99.9989988444347,0,2,21,891,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02523,0:00:00:30.0189935,,99.9991447213905,0,2,21,887,<none>,EventReaderIdle,Projections Master,,19,0.00937456445993031,0:00:00:00.0160391,,99.9820461433001,0,0,22,3057,<none>,Schedule,Storage Chaser,,96,0.0101027624309392,0:00:00:00.0002841,,99.9008382963421,0,0,0,14339,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.1098,0:00:00:02.1345491,,99.995605372934,0,0,1,180,<none>,ReadStreamEventsBackward,StorageReaderQueue #2,StorageReaderQueue,0,0.0877166666666667,0:00:00:02.1070892,,99.9964986196142,0,0,1,165,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.10175,0:00:00:01.1045642,,99.9959344287808,0,0,1,168,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0817166666666667,0:00:00:00.1036331,,99.9967377512936,0,0,2,187,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,2.4574,0:00:00:30.0202915,,99.9918162360654,0,0,4,53,<none>,WritePrepares,Subscriptions,,1,0.0216612903225806,0:00:00:00.1808635,,99.9977658844095,0,0,6183,45912,<none>,CheckPollTimeout,Timer,,31,0.032221503131524,0:00:00:00.0036149,,99.8948423639779,9,15,402,5419,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0412244897959184,0:00:00:00.1812882,,99.9933219660324,0,0,0,260,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.030936,0:00:00:00.1812663,,99.9948490113882,0,0,0,265,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0254108695652174,0:00:00:00.1812752,,99.9961132783461,0,0,0,258,<none>,PurgeTimedOutRequests,Worker #4,Workers,1,0.0400755102040816,0:00:00:00.1037492,,99.9934555200289,0,0,0,264,<none>,IODispatcherDelayedMessage,Worker #5,Workers,1,0.0414571428571429,0:00:00:00.1036194,,99.9932343732022,0,0,0,259,<none>,ReadStreamEventsForwardCompleted,16871,2.2539,2975,0.994983333333333,16871,8.6439,0,46709,0,1525,140,0,0
+2018-05-16 15:55:02.608 +04:00 [INF] 2018-05-16T11:55:02.6083100Z,2018-05-16T11:52:00.0000000Z,4277,271519744,4.238957,1.059739,10,0.1665329,0,100,230420480,0,30,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0234870,0,0,0,0,0,0,160170932,160170932,190030315520,250685575168,24%,60655259648,Index Committer,,0,30022.84,,0:00:02:59.6068597,0,0,0,0,47,<none>,CommitAck,MainQueue,,13,0.0208952853598015,0:00:00:00.0314376,,99.9719560172051,0,3,40842,49444,<none>,Schedule,MonitoringQueue,,0,0,0:00:02:34.4669458,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02137,0:00:00:30.0163681,,99.9992798815739,0,2,21,891,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.02631,0:00:00:30.0163677,,99.9991170055688,0,2,21,901,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.01906,0:00:00:30.0163602,,99.9993654830662,0,2,21,897,<none>,EventReaderIdle,Projections Master,,18,0.00850774647887324,0:00:00:00.0879499,,99.9838476304015,0,0,22,3625,<none>,Schedule,Storage Chaser,,97,0.00959743939911233,0:00:00:00.0008902,,99.9040836899915,0,0,0,17268,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.118107692307692,0:00:00:02.9694524,,99.9948815634518,0,0,1,193,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0834833333333333,0:00:00:01.9606188,,99.9966642062843,0,0,1,177,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0642,0:00:00:01.3550422,,99.9974356189898,0,0,1,180,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.0750833333333333,0:00:00:00.9520894,,99.9970006168237,0,0,2,199,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,1.7881,0:00:00:30.0183806,,99.9940442009753,0,0,4,54,<none>,WritePrepares,Subscriptions,,1,0.020258064516129,0:00:00:00.0427248,,99.9979082591508,0,0,6183,45943,<none>,CheckPollTimeout,Timer,,31,0.029964,0:00:00:00.0080918,,99.9025378665381,9,15,402,6369,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0438490196078431,0:00:00:00.0428018,,99.9925540021452,0,0,0,311,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0434862745098039,0:00:00:00.0427738,,99.9925709891878,0,0,0,316,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0267958333333333,0:00:00:00.0427376,,99.995721590572,0,0,0,306,<none>,PurgeTimedOutRequests,Worker #4,Workers,1,0.0273061224489796,0:00:00:00.0427943,,99.9955407282512,0,0,0,313,<none>,PurgeTimedOutRequests,Worker #5,Workers,1,0.0397333333333333,0:00:00:00.0427759,,99.9936505006675,0,0,0,307,<none>,PurgeTimedOutRequests,16864,1.5928,3351,1.01114054054054,16871,8.6439,0,46713,0,1639,140,0,0
+2018-05-16 15:55:32.629 +04:00 [INF] 2018-05-16T11:55:32.6297920Z,2018-05-16T11:52:00.0000000Z,4277,271552512,4.67137,1.167842,10,0.2331725,0,100,296124416,0,31,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0211550,0,0,0,0,0,0,160187712,160187712,190030020608,250685575168,24%,60655554560,Index Committer,,0,30021.1693,,0:00:03:29.6280292,0,0,0,0,48,<none>,CommitAck,MainQueue,,13,0.0287743073047859,0:00:00:00.7971887,,99.9619754987827,0,4,40842,49841,<none>,Schedule,MonitoringQueue,,0,0,0:00:03:04.4881158,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02881,0:00:00:30.0163806,,99.9990416762475,0,2,21,901,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.03365,0:00:00:30.0163637,,99.9988694644366,0,2,21,911,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02811,0:00:00:30.0164144,,99.9990636607372,0,2,21,907,<none>,EventReaderIdle,Projections Master,,19,0.00913554006968641,0:00:00:00.0187548,,99.9824763657278,0,0,22,4199,<none>,Schedule,Storage Chaser,,95,0.0102471855455177,0:00:00:00.0065954,,99.9005188748076,0,0,0,20146,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.105442857142857,0:00:00:01.8082873,,99.9950841360213,0,0,1,207,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0630615384615385,0:00:00:01.2460892,,99.9972715922586,0,0,1,190,<none>,ReadStreamEventsBackward,StorageReaderQueue #3,StorageReaderQueue,0,0.0675307692307692,0:00:00:00.8073796,,99.9970790614718,0,0,1,193,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0604916666666667,0:00:00:02.8208499,,99.9975827060294,0,0,2,211,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,0.9631,0:00:00:30.0176765,,99.9967922635606,0,0,4,55,<none>,WritePrepares,Subscriptions,,0,0.0316533333333333,0:00:00:00.8834604,,99.9968785360464,0,0,6183,45973,<none>,CheckPollTimeout,Timer,,31,0.0307027426160338,0:00:00:00.0065701,,99.9008186559657,9,15,402,7317,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0353591836734694,0:00:00:00.8835022,,99.9942280730564,0,0,0,360,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0442074074074074,0:00:00:00.8834670,,99.9920542737009,0,0,0,370,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0344469387755102,0:00:00:00.8075451,,99.9943822975587,0,0,0,355,<none>,IODispatcherDelayedMessage,Worker #4,Workers,1,0.028836170212766,0:00:00:00.8073552,,99.9954851859688,0,0,0,360,<none>,ReadStreamEventsForwardCompleted,Worker #5,Workers,1,0.0403274509803922,0:00:00:00.8834826,,99.9931531649166,0,0,0,358,<none>,PurgeTimedOutRequests,16780,0.7578,3704,1.00447368421053,16871,8.6439,0,46717,0,1758,140,0,0
+2018-05-16 15:56:02.655 +04:00 [INF] 2018-05-16T11:56:02.6549790Z,2018-05-16T11:52:00.0000000Z,4277,271572992,3.872394,0.9680986,10,0.1332252,0,100,282562560,0,31,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0243580,0,0,0,0,0,0,160204573,160204573,189903192064,250685575168,24%,60782383104,Index Committer,,0,30024.7644,,0:00:03:59.6527935,0,0,0,0,49,<none>,CommitAck,MainQueue,,13,0.0280497524752475,0:00:00:00.1410231,,99.9622624865312,0,4,40842,50245,<none>,ReadStreamEventsBackward,MonitoringQueue,,0,0,0:00:03:34.5128831,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.03546,0:00:00:30.0176875,,99.9988093163617,0,2,21,911,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.02827,0:00:00:30.0176411,,99.9990594431966,0,2,21,921,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02344,0:00:00:30.0178745,,99.9992189781632,0,2,21,917,<none>,EventReaderIdle,Projections Master,,18,0.00871245614035088,0:00:00:00.0343783,,99.9834390067518,0,0,22,4769,<none>,Schedule,Storage Chaser,,97,0.00924653397391901,0:00:00:00.0015175,,99.908686384564,0,0,0,23060,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.109992307692308,0:00:00:01.6617460,,99.9950710691446,0,0,1,220,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.06325,0:00:00:00.6610548,,99.9974744183693,0,0,1,202,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0742083333333333,0:00:00:00.1409975,,99.9970337821736,0,0,1,205,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.0809833333333333,0:00:00:02.5087126,,99.9967623396251,0,0,2,223,<none>,ReadStreamEventsBackward,StorageWriterQueue,,0,2.2622,0:00:00:30.0197405,,99.9924652206636,0,0,4,56,<none>,WritePrepares,Subscriptions,,1,0.0304290322580645,0:00:00:00.7197811,,99.9968602588893,0,0,6183,46004,<none>,CheckPollTimeout,Timer,,31,0.0302052410901468,0:00:00:00.0020935,,99.90251948219,9,15,402,8271,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.03018,0:00:00:00.1408816,,99.9949761478933,0,0,0,410,<none>,HttpSend,Worker #2,Workers,1,0.042676,0:00:00:00.1413219,,99.9928932010145,0,0,0,420,<none>,IncomingHttpRequestMessage,Worker #3,Workers,1,0.05064375,0:00:00:00.1410852,,99.9919113450646,0,0,0,403,<none>,AuthenticatedHttpRequestMessage,Worker #4,Workers,1,0.032068,0:00:00:00.7408863,,99.9946527488972,0,0,0,410,<none>,PurgeTimedOutRequests,Worker #5,Workers,1,0.030275,0:00:00:00.6611615,,99.9951596636873,0,0,0,406,<none>,IODispatcherDelayedMessage,16861,2.0588,4041,1.03150769230769,16871,8.6439,0,46721,0,1874,140,0,0
+2018-05-16 15:56:32.684 +04:00 [INF] 2018-05-16T11:56:32.6848520Z,2018-05-16T11:52:00.0000000Z,4277,271593472,3.579101,0.8947753,10,0.2331326,0,100,148029440,0,31,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0301770,0,0,0,0,0,0,160221390,160221390,189901135872,250685575168,24%,60784439296,Index Committer,,0,30029.7716,,0:00:04:29.6825651,0,0,0,0,50,<none>,CommitAck,MainQueue,,13,0.029514603960396,0:00:00:00.2894225,,99.9602241382431,0,3,40842,50649,<none>,ReadStreamEventsBackward,MonitoringQueue,,0,0,0:00:04:04.5426552,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02489,0:00:00:30.0238704,,99.9991714888977,0,2,21,921,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.01394,0:00:00:30.0238100,,99.9995367930277,0,2,21,931,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02126,0:00:00:30.0238486,,99.999286374873,0,2,21,927,<none>,EventReaderIdle,Projections Master,,18,0.0079680701754386,0:00:00:00.0122805,,99.9848560290787,0,0,22,5339,<none>,Schedule,Storage Chaser,,97,0.00906958149030282,0:00:00:00.0044854,,99.9097192630756,0,0,0,25999,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.107630769230769,0:00:00:01.5214376,,99.9953339639852,0,0,1,233,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0703833333333333,0:00:00:00.5153704,,99.9971907879089,0,0,1,214,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0545833333333333,0:00:00:00.2894111,,99.9978201633063,0,0,1,217,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.0562333333333333,0:00:00:02.5295602,,99.9977528967369,0,0,2,235,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,0.8713,0:00:00:30.0257519,,99.9970988795071,0,0,4,57,<none>,WritePrepares,Subscriptions,,1,0.0215225806451613,0:00:00:00.5725266,,99.9977815352705,0,0,6183,46035,<none>,CheckPollTimeout,Timer,,31,0.0288165618448637,0:00:00:00.0003645,,99.9069160571342,9,15,402,9225,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0335764705882353,0:00:00:00.2897060,,99.9943066508767,0,0,0,461,<none>,IncomingHttpRequestMessage,Worker #2,Workers,1,0.0373862745098039,0:00:00:00.2894763,,99.9936556303951,0,0,0,471,<none>,AuthenticatedHttpRequestMessage,Worker #3,Workers,1,0.0294166666666667,0:00:00:00.2892405,,99.9953039943381,0,0,0,451,<none>,HttpSend,Worker #4,Workers,1,0.0327244897959184,0:00:00:00.5157353,,99.9946989276629,0,0,0,459,<none>,IODispatcherDelayedMessage,Worker #5,Workers,1,0.0283191489361702,0:00:00:00.5153229,,99.9955677320933,0,0,0,453,<none>,ReadStreamEventsForwardCompleted,16817,0.3391,4361,1.0141975,16871,8.6439,0,46725,0,1990,140,0,0
+2018-05-16 15:57:02.715 +04:00 [INF] 2018-05-16T11:57:02.7103400Z,2018-05-16T11:52:00.0000000Z,4277,271618048,2.202399,0.5505997,10,0.1332155,0,100,186253312,0,31,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0231790,0,0,0,0,0,0,160238234,160238234,189901115392,250685575168,24%,60784459776,Index Committer,,0,30025.1481,,0:00:04:59.7077133,0,0,0,0,51,<none>,CommitAck,MainQueue,,13,0.0178280397022333,0:00:00:00.3537105,,99.9760264296581,0,3,40842,51052,<none>,Schedule,MonitoringQueue,,0,0,0:00:04:34.5678001,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02559,0:00:00:30.0184216,,99.999140387134,0,3,21,931,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.01707,0:00:00:30.0183884,,99.999431809547,0,3,21,941,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.01785,0:00:00:30.0183392,,99.9993988371759,0,2,21,937,<none>,EventReaderIdle,Projections Master,,19,0.00671903114186851,0:00:00:00.0232489,,99.9870431923043,0,0,22,5917,<none>,Schedule,Storage Chaser,,105,0.00634194673430564,0:00:00:00.0092885,,99.9317128964947,0,0,0,29153,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.113607692307692,0:00:00:01.3632896,,99.995076126567,0,0,1,246,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.064775,0:00:00:00.3537594,,99.9974128348663,0,0,1,226,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0476181818181818,0:00:00:02.4364150,,99.9982564611727,0,0,1,228,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.0604666666666667,0:00:00:02.3712320,,99.9975836916297,0,0,2,247,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,1.2353,0:00:00:30.0202328,,99.9958851145292,0,0,4,58,<none>,WritePrepares,Subscriptions,,1,0.0191838709677419,0:00:00:00.4492003,,99.9980443052976,0,0,6183,46066,<none>,CheckPollTimeout,Timer,,32,0.0222047817047817,0:00:00:00.0002687,,99.9280003261268,9,15,402,10187,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0274042553191489,0:00:00:00.5034106,,99.9957302441243,0,0,0,508,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.040158,0:00:00:00.5033293,,99.9933169327412,0,0,0,521,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0376833333333333,0:00:00:00.3538681,,99.9939793776516,0,0,0,499,<none>,IODispatcherDelayedMessage,Worker #4,Workers,1,0.0223265306122449,0:00:00:00.3537494,,99.9963517236668,0,0,0,508,<none>,ReadStreamEventsForwardCompleted,Worker #5,Workers,1,0.0312714285714286,0:00:00:00.5033292,,99.994894944312,0,0,0,502,<none>,PurgeTimedOutRequests,16844,0.6249,4665,1.00470243902439,16871,8.6439,0,46729,0,2105,140,0,0
+2018-05-16 15:57:32.738 +04:00 [INF] 2018-05-16T11:57:32.7385560Z,2018-05-16T11:52:00.0000000Z,4277,271642624,2.138342,0.5345856,10,0.1332001,0,100,229552128,0,32,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0299990,0,0,0,0,0,0,160255060,160255060,189901099008,250685575168,24%,60784476160,Index Committer,,0,30027.8269,,0:00:05:29.7355415,0,0,0,0,52,<none>,CommitAck,MainQueue,,13,0.0193195544554455,0:00:00:00.2212309,,99.9740134392467,0,3,40842,51456,<none>,Schedule,MonitoringQueue,,0,0,0:00:05:04.5956306,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02576,0:00:00:30.0158727,,99.9991311393811,0,2,21,941,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.02226,0:00:00:30.0158360,,99.9992593537741,0,2,21,951,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02187,0:00:00:30.0156850,,99.9992723417346,0,2,21,947,<none>,EventReaderIdle,Projections Master,,19,0.0066372852233677,0:00:00:00.0249958,,99.9871036313157,0,0,22,6499,<none>,Schedule,Storage Chaser,,106,0.00601624253848571,0:00:00:00.0001906,,99.9357263040866,0,0,0,32336,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.0721461538461538,0:00:00:00.4772777,,99.9968685722037,0,0,1,259,<none>,ReadStreamEventsBackward,StorageReaderQueue #2,StorageReaderQueue,0,0.0551416666666667,0:00:00:00.2212757,,99.9977983761394,0,0,1,238,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.061625,0:00:00:02.2357557,,99.9975392832089,0,0,1,240,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0530333333333333,0:00:00:01.2308637,,99.9978819652397,0,0,2,259,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,1.9704,0:00:00:30.0177197,,99.9934380885352,0,0,4,59,<none>,WritePrepares,Subscriptions,,1,0.0169483870967742,0:00:00:00.3342262,,99.9982592818095,0,0,6183,46097,<none>,CheckPollTimeout,Timer,,32,0.020403933747412,0:00:00:00.0016216,,99.9338377231047,9,15,402,11153,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.039030612244898,0:00:00:00.3767371,,99.9936811963827,0,0,0,557,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0310041666666667,0:00:00:00.2214010,,99.9950445980184,0,0,0,569,<none>,IODispatcherDelayedMessage,Worker #3,Workers,1,0.023646,0:00:00:00.2212649,,99.9960683148249,0,0,0,549,<none>,ReadStreamEventsForwardCompleted,Worker #4,Workers,1,0.031736,0:00:00:00.3767350,,99.9947132383379,0,0,0,558,<none>,PurgeTimedOutRequests,Worker #5,Workers,1,0.0264632653061224,0:00:00:00.3766047,,99.9956806741228,0,0,0,551,<none>,PurgeTimedOutRequests,16826,1.6937,4955,1.02110714285714,16871,8.6439,0,46733,0,2221,140,0,0
+2018-05-16 15:58:02.766 +04:00 [INF] 2018-05-16T11:58:02.7662700Z,2018-05-16T11:52:00.0000000Z,4277,271663104,3.108257,0.7770641,10,0.09992497,0,100,15679488,0,32,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0257300,0,0,0,0,0,0,160271903,160271903,189903007744,250685575168,24%,60782567424,Index Committer,,0,30027.4767,,0:00:05:59.7630169,0,0,0,0,53,<none>,CommitAck,MainQueue,,13,0.0218183622828784,0:00:00:00.1021379,,99.9706955049931,0,3,40842,51859,<none>,Schedule,MonitoringQueue,,0,0,0:00:05:34.6231048,,99.9999996669717,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.04058,0:00:00:30.0202109,,99.9986425764573,0,2,21,951,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.03892,0:00:00:30.0201681,,99.9987035206491,0,2,21,961,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.03623,0:00:00:30.0202446,,99.9987924392054,0,2,21,957,<none>,EventReaderIdle,Projections Master,,18,0.0077359649122807,0:00:00:00.1025675,,99.9853034589943,0,0,22,7069,<none>,Schedule,Storage Chaser,,101,0.00822944279591164,0:00:00:00.0002609,,99.9156062782058,0,0,0,35369,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.127723076923077,0:00:00:00.1022632,,99.9944640692149,0,0,1,272,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0606272727272727,0:00:00:02.1189906,,99.9977796997956,0,0,1,249,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.063025,0:00:00:01.6005516,,99.9974826384729,0,0,1,252,<none>,ReadStreamEventsBackward,StorageReaderQueue #4,StorageReaderQueue,0,0.0616333333333333,0:00:00:01.1114874,,99.9975389202856,0,0,2,271,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,2.0808,0:00:00:30.0222733,,99.9930706793438,0,0,4,60,<none>,WritePrepares,Subscriptions,,1,0.0156806451612903,0:00:00:00.1903344,,99.9983838135446,0,0,6183,46128,<none>,CheckPollTimeout,Timer,,31,0.0266317610062893,0:00:00:00.0056640,,99.9137709745775,9,15,402,12107,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0357375,0:00:00:00.2261664,,99.994286566077,0,0,0,605,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0369,0:00:00:00.2261348,,99.9941007363116,0,0,0,617,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0242765957446809,0:00:00:00.2261647,,99.996205142263,0,0,0,596,<none>,PurgeTimedOutRequests,Worker #4,Workers,1,0.029630612244898,0:00:00:00.1025069,,99.9951607654592,0,0,0,607,<none>,IODispatcherDelayedMessage,Worker #5,Workers,1,0.0298509803921569,0:00:00:00.1022168,,99.9949346391951,0,0,0,602,<none>,ReadStreamEventsForwardCompleted,16843,1.8159,5231,1.03959069767442,16871,8.6439,0,46737,0,2336,140,0,0
+2018-05-16 15:58:32.799 +04:00 [INF] 2018-05-16T11:58:32.7991710Z,2018-05-16T11:52:00.0000000Z,4277,271671296,3.875149,0.9687874,10,0.2331001,0,100,108744704,0,32,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0338070,0,0,0,0,0,0,160288718,160288718,189902888960,250685575168,24%,60782686208,Index Committer,,0,30032.4393,,0:00:06:29.7954560,0,0,0,0,54,<none>,CommitAck,MainQueue,,13,0.0214850746268657,0:00:00:00.0833511,,99.971294372059,0,4,40842,52261,<none>,Schedule,MonitoringQueue,,0,0,0:00:06:04.6555425,,99.9999996670267,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.02421,0:00:00:30.0266637,,99.9991938716209,0,2,21,961,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.02142,0:00:00:30.0266692,,99.9992871041472,0,2,21,971,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.02667,0:00:00:30.0267008,,99.9991122931545,0,2,21,967,<none>,EventReaderIdle,Projections Master,,18,0.00818982456140351,0:00:00:00.0147179,,99.9844208441833,0,0,22,7639,<none>,Schedule,Storage Chaser,,97,0.00906526925698705,0:00:00:00.0034676,,99.9097662271211,0,0,0,38303,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.119633333333333,0:00:00:02.9831417,,99.9952161722427,0,0,1,284,<none>,ReadStreamEventsForward,StorageReaderQueue #2,StorageReaderQueue,0,0.0738083333333333,0:00:00:01.9754886,,99.9970548509324,0,0,1,261,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.06915,0:00:00:00.9652895,,99.9972396511374,0,0,1,264,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0633333333333333,0:00:00:00.6802548,,99.9974694027231,0,0,2,283,<none>,ReadStreamEventsBackward,StorageWriterQueue,,0,1.2666,0:00:00:30.0277011,,99.9957822267684,0,0,4,61,<none>,WritePrepares,Subscriptions,,1,0.0214516129032258,0:00:00:00.0833885,,99.9977857271984,0,0,6183,46159,<none>,CheckPollTimeout,Timer,,31,0.0308590336134454,0:00:00:00.0045666,,99.9000693680065,9,15,402,13059,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0257395833333333,0:00:00:00.0834130,,99.9958874460547,0,0,0,653,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0424204081632653,0:00:00:00.0833894,,99.9930788157103,0,0,0,666,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0448142857142857,0:00:00:00.0833748,,99.9926935654825,0,0,0,645,<none>,PurgeTimedOutRequests,Worker #4,Workers,1,0.0507204081632653,0:00:00:00.0834070,,99.9917219491524,0,0,0,656,<none>,PurgeTimedOutRequests,Worker #5,Workers,1,0.0350428571428571,0:00:00:00.0834052,,99.9942515478125,0,0,0,651,<none>,PurgeTimedOutRequests,16815,0.663,5495,1.03103181818182,16871,8.6439,0,46741,0,2449,140,0,0
+2018-05-16 15:59:02.824 +04:00 [INF] 2018-05-16T11:59:02.8244080Z,2018-05-16T11:52:00.0000000Z,4277,271691776,4.079396,1.019849,10,0.3662702,0,100,325582848,0,33,0,8,0,0,0,0,0,0,0,0,0,0,00:00:30.0260450,0,0,0,0,0,0,160305556,160305556,189902876672,250685575168,24%,60782698496,Index Committer,,0,30025.6784,,0:00:06:59.8211345,0,0,0,0,55,<none>,CommitAck,MainQueue,,13,0.0233389312977099,0:00:00:00.7847277,,99.9694584754531,0,4,40842,52654,<none>,Schedule,MonitoringQueue,,0,0,0:00:06:34.6812212,,100,0,0,0,15,<none>,GetFreshTcpConnectionStats,Projection Core #0,Projection Core,0,0.03161,0:00:00:30.0172071,,99.9989469014138,0,2,21,971,<none>,EventReaderIdle,Projection Core #1,Projection Core,0,0.03687,0:00:00:30.0172042,,99.9987720510629,0,2,21,981,<none>,EventReaderIdle,Projection Core #2,Projection Core,0,0.03173,0:00:00:30.0172364,,99.9989299159456,0,2,21,977,<none>,EventReaderIdle,Projections Master,,18,0.00845669014084507,0:00:00:00.0665413,,99.9839567323419,0,0,22,8207,<none>,Schedule,Storage Chaser,,97,0.00968151950718686,0:00:00:00.0003956,,99.9041230665004,0,0,0,41225,<none>,ChaserCheckpointFlush,StorageReaderQueue #1,StorageReaderQueue,0,0.0935307692307692,0:00:00:02.4725257,,99.9958342323555,0,0,1,297,<none>,ReadStreamEventsBackward,StorageReaderQueue #2,StorageReaderQueue,0,0.0717833333333333,0:00:00:01.8067463,,99.9971334536013,0,0,1,273,<none>,ReadStreamEventsForward,StorageReaderQueue #3,StorageReaderQueue,0,0.0688,0:00:00:00.7949604,,99.9972533509485,0,0,1,276,<none>,ReadStreamEventsForward,StorageReaderQueue #4,StorageReaderQueue,0,0.0553909090909091,0:00:00:02.8174214,,99.997972069107,0,0,2,294,<none>,ReadStreamEventsForward,StorageWriterQueue,,0,2.2989,0:00:00:30.0198588,,99.9923438857422,0,0,4,62,<none>,WritePrepares,Subscriptions,,0,0.0267133333333333,0:00:00:00.9120790,,99.9972969801183,0,0,6183,46189,<none>,CheckPollTimeout,Timer,,31,0.0284762208067941,0:00:00:00.0091709,,99.9082831655766,9,15,402,14001,<none>,ExecuteScheduledTasks,Worker #1,Workers,1,0.0248829787234043,0:00:00:00.9121870,,99.9961030022499,0,0,0,700,<none>,PurgeTimedOutRequests,Worker #2,Workers,1,0.0337702127659575,0:00:00:00.9121292,,99.9947175214847,0,0,0,713,<none>,PurgeTimedOutRequests,Worker #3,Workers,1,0.0314081632653061,0:00:00:00.7951547,,99.9948827134236,0,0,0,694,<none>,IODispatcherDelayedMessage,Worker #4,Workers,1,0.120066,0:00:00:00.7949329,,99.9800051144224,0,0,0,706,<none>,ReadStreamEventsForwardCompleted,Worker #5,Workers,1,0.0313844444444444,0:00:00:00.9121635,,99.9952983576414,0,0,0,696,<none>,PurgeTimedOutRequests,16838,0.6764,5747,1.02315111111111,16871,8.6439,0,46745,0,2564,140,0,0
+   160288718 (0x160288718)
+2018-05-16 15:58:25.357 +04:00 [INF] CHASER CHECKPOINT:        160288718 (0x160288718)
+2018-05-16 15:58:25.357 +04:00 [INF] EPOCH CHECKPOINT:         160046709 (0x160046709)
+2018-05-16 15:58:25.357 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 15:58:41.872 +04:00 [INF] 
+ES VERSION:               0.0.0.0 (structuredLogging/d27fe221e4dc80c3581e26c502821d2a5d52b5e8, Wed, 16 May 2018 10:22:26 +0400)
+2018-05-16 15:58:41.918 +04:00 [INF] OS:                       "MacOS" (Unix 17.5.0.0)
+2018-05-16 15:58:41.923 +04:00 [INF] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit)
+2018-05-16 15:58:41.924 +04:00 [INF] GC:                       2 GENERATIONS
+2018-05-16 15:58:41.924 +04:00 [INF] LOGS:                     /Users/avish/logs/
+2018-05-16 15:58:41.941 +04:00 [INF] MODIFIED OPTIONS:
+
+	DB:                       .././db/ (Command Line)
+	LOG:                      .././logs/ (Command Line)
+	RUN PROJECTIONS:          All (Command Line)
+	INT IP:                   127.0.0.1 (Command Line)
+	EXT IP:                   127.0.0.1 (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+
+2018-05-16 15:58:41.949 +04:00 [INF] Quorum size set to 1
+2018-05-16 15:58:41.961 +04:00 [INF] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins
+2018-05-16 15:58:42.019 +04:00 [INF] INSTANCE ID:              "f4b37259-09a1-4703-8b78-7875115c1fab"
+2018-05-16 15:58:42.020 +04:00 [INF] DATABASE:                 .././db/
+2018-05-16 15:58:42.021 +04:00 [INF] WRITER CHECKPOINT:        160305556 (0x160305556)
+2018-05-16 15:58:42.021 +04:00 [INF] CHASER CHECKPOINT:        160305556 (0x160305556)
+2018-05-16 15:58:42.021 +04:00 [INF] EPOCH CHECKPOINT:         160046709 (0x160046709)
+2018-05-16 15:58:42.021 +04:00 [INF] TRUNCATE CHECKPOINT:      -1 (0x-1)
+2018-05-16 15:59:09.000 +04:00 [INF] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections
+2018-05-16 15:59:09.001 +04:00 [INF] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude
+2018-05-16 15:59:09.018 +04:00 [INF] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web
+2018-05-16 15:59:09.020 +04:00 [INF] ========== [127.0.0.1:2112] SYSTEM INIT...
+2018-05-16 15:59:09.025 +04:00 [INF] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 15:59:09.027 +04:00 [INF] TableIndex initialization...
+2018-05-16 15:59:09.031 +04:00 [INF] Failed to listen on TCP endpoint: 127.0.0.1:1113.
+2018-05-16 15:59:09.034 +04:00 [ERR] Exiting with exit code: 1.
+Exit reason: Address already in use
