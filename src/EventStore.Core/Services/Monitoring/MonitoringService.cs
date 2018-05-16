@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Monitoring
                                      IHandle<MonitoringMessage.GetFreshStats>,
                                      IHandle<MonitoringMessage.GetFreshTcpConnectionStats>
     {
-        private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
+        private static readonly ILogger RegularLog = LogManager.GetLogger("MonitoringService"); //LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
 
         private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Monitoring
 
                     if ((_statsStorage & StatsStorage.Csv) != 0)
                         SaveStatsToCsvFile(rawStats);
-
+                        
                     if ((_statsStorage & StatsStorage.Stream) != 0)
                     {
                         if (_statsStreamCreated)

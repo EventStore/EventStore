@@ -1,0 +1,36 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "mono",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/clusternode/EventStore.ClusterNode.exe",
+            "cwd": "${workspaceRoot}",
+            "args": [
+                "--db=.././db/",
+                "--log=.././logs/",
+                "--run-projections=All",
+                "--int-ip=127.0.0.1",
+                "--ext-ip=127.0.0.1"/*,
+                "--int-tcp-port=2120",
+                "--ext-tcp-port=2121",
+                "--int-http-port=2122",
+                "--ext-http-port=2123",
+                "--cluster-size=3",
+                "--discover-via-dns=false",
+                "--gossip-seed=127.0.0.1:2112,127.0.0.1:2132"*/
+            ]
+        },
+        {
+            "name": "Attach",
+            "type": "mono",
+            "request": "attach",
+            "address": "localhost",
+            "port": 55555
+        }
+    ]
+}

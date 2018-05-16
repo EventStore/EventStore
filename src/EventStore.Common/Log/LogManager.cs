@@ -3,6 +3,9 @@ using System.Linq;
 using System.IO;
 using EventStore.Common.Utils;
 using Serilog;
+using Serilog.Events;
+using Serilog.Filters;
+
 
 namespace EventStore.Common.Log
 {
@@ -34,10 +37,12 @@ namespace EventStore.Common.Log
 
         static LogManager()
         {
+            /* 
             var conf = NLog.Config.ConfigurationItemFactory.Default;
             conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
             conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
             conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
+            */
         }
 
         public static ILogger GetLoggerFor(Type type)
@@ -55,6 +60,13 @@ namespace EventStore.Common.Log
         public static ILogger GetLogger(string logName)
         {
             return new LazyLogger(() => _logFactory(logName));
+        }
+
+       private static bool StatsMessage(LogEvent le)
+        {
+            return le.Properties.ContainsKey("[stat]"); //&&
+                //le.Properties["data"].ToString().Length > 10;
+        
         }
 
         public static void Init(string componentName, string logsDirectory, string configurationDirectory)
@@ -77,6 +89,11 @@ namespace EventStore.Common.Log
                  new Serilog.LoggerConfiguration()
                  .ReadFrom
                  .AppSettings(null,configFilePath)
+                //.WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(StatsMessage))
+                //.WriteTo.File("mystat.csv")    
+                .WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(Matching.FromSource<MonitoringService>())
+                    .WriteTo.File("mystat.csv"))             
                  .CreateLogger();
             }
             else

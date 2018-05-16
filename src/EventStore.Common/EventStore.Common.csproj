@@ -65,6 +65,10 @@
       <HintPath>..\libs\Serilog.Sinks.File.dll</HintPath>
       <Private>True</Private>
     </Reference>
+     <Reference Include="Serilog.Filters.Expressions">
+      <HintPath>..\libs\Serilog.Filters.Expressions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -112,6 +116,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
      <None Include="..\libs\Serilog.Sinks.File.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Filters.Expressions.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
