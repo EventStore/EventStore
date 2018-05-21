@@ -25,6 +25,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
             service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+            service.RegisterAction(new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs, SupportedCodecs), OnStopScavenge);
         }
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
@@ -68,6 +69,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             );
             
             Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User));
+        }
+
+        private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            var scavengeId = match.BoundVariables["scavengeId"];
+
+            Log.Info("Stopping scavenge because /admin/scavenge/{0} DELETE request has been received.", scavengeId);
+
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    return e.ResponseCodec.To(completed?.ScavengeId);
+                },
+                (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    switch (completed?.Result)
+                    {
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
+                            return Configure.Ok(e.ResponseCodec.ContentType);
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+                            return Configure.Unauthorized();
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId:
+                            return Configure.NotFound();
+                        default:
+                            return Configure.InternalServerError();
+                    }
+                }
+            );
+
+            Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
         }
 
         private void LogReplyError(Exception exc)
