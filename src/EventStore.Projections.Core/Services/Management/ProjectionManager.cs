@@ -807,6 +807,10 @@ namespace EventStore.Projections.Core.Services.Management
                 String.Join(", ", registeredProjections
                     .Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized)
                     .Select(x => x.Key)));
+
+            //create any missing system projections
+            CreateSystemProjections(registeredProjections.Select(x => x.Key).ToList());
+
             foreach (var projectionRegistration in registeredProjections.Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized))
             {
                 int queueIndex = GetNextWorkerIndex();
@@ -862,24 +866,37 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void CreateSystemProjections()
         {
+            CreateSystemProjections(new List<String>());
+        }
+
+        private void CreateSystemProjections(List<String> existingSystemProjections){
             if (_initializeSystemProjections)
             {
+                if(!existingSystemProjections.Contains(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection))
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection,
                     typeof(IndexStreams),
                     "");
+
+                if(!existingSystemProjections.Contains(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection))
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
                     typeof(CategorizeStreamByPath),
                     "first\r\n-");
+
+                if(!existingSystemProjections.Contains(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection))
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                     typeof(CategorizeEventsByStreamPath),
                     "first\r\n-");
+
+                if(!existingSystemProjections.Contains(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection))
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection,
                     typeof(IndexEventsByEventType),
                     "");
+
+                if(!existingSystemProjections.Contains(ProjectionNamesBuilder.StandardProjections.EventByCorrIdStandardProjection))
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.EventByCorrIdStandardProjection,
                     typeof(ByCorrelationId),

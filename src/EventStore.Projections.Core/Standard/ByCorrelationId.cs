@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -18,11 +19,6 @@ namespace EventStore.Projections.Core.Standard
         {
             if (!string.IsNullOrWhiteSpace(source))
                 throw new InvalidOperationException("Empty source expected");
-            if (logger != null)
-            {
-//                logger("Index events by event type projection handler has been initialized");
-            }
-            // we will need to declare event types we are interested in
             _corrIdStreamPrefix = "$bc-";
             _corrIdCheckpointStream = "$bc";
         }
@@ -31,6 +27,7 @@ namespace EventStore.Projections.Core.Standard
         {
             builder.FromAll();
             builder.AllEvents();
+            builder.SetIncludeLinks();
         }
 
         public void Load(string state)
@@ -69,22 +66,37 @@ namespace EventStore.Projections.Core.Standard
             newState = null;
             if (data.EventStreamId != data.PositionStreamId)
                 return false;
-            if (!data.IsJson) 
+            if(!data.IsJson)
                 return false;
-            var metadata = JObject.Parse(data.Metadata);
-            var indexedEventType = data.EventType;
-            
+
+            JObject metadata = null;
+
+            try{
+                metadata = JObject.Parse(data.Metadata);
+            }
+            catch(JsonReaderException){
+                return false;
+            }
+
+            if(metadata["$correlationId"] == null)
+                return false;
+
             string correlationId = metadata["$correlationId"].Value<string>();
-            
-            if (correlationId == null) 
+            if (correlationId == null)
                 return false;
-            string positionStreamId = data.PositionStreamId;
+
+            string linkTarget;
+            if (data.EventType == SystemEventTypes.LinkTo)
+                linkTarget = data.Data;
+            else
+                linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
+
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
                         _corrIdStreamPrefix + correlationId, Guid.NewGuid(), "$>", false,
-                        data.EventSequenceNumber + "@" + positionStreamId,
+                        linkTarget,
                         null, eventPosition, expectedTag: null))
             };
 

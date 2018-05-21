@@ -102,7 +102,8 @@ namespace EventStore.Projections.Core
             "$by_category",
             "$stream_by_category",
             "$streams",
-            "$by_event_type"
+            "$by_event_type",
+            "$by_correlation_id"
         };
 
         public void Handle(CoreProjectionStatusMessage.Stopped message)
