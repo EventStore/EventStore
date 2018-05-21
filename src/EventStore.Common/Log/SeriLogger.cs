@@ -68,7 +68,7 @@ namespace EventStore.Common.Log
 
         public void Trace(string format, params object[] args)
         {
-            _logger.Debug(format, args);
+            _logger.Verbose(format, args);
         }
 
         public void FatalException(Exception exc, string format, params object[] args)
@@ -93,7 +93,7 @@ namespace EventStore.Common.Log
 
         public void TraceException(Exception exc, string format, params object[] args)
         {
-            _logger.Debug(exc, format, args);
+            _logger.Verbose(exc, format, args);
         }
 
         public static void FlushLog(TimeSpan? maxTimeToWait = null)

@@ -3,8 +3,6 @@ using System.Linq;
 using System.IO;
 using EventStore.Common.Utils;
 using Serilog;
-using Serilog.Events;
-using Serilog.Filters;
 
 
 namespace EventStore.Common.Log
@@ -14,7 +12,7 @@ namespace EventStore.Common.Log
         public static string LogsDirectory
         {
             get
-            { // Checks if Logs Directory is initialized
+            { 
                 if (!_initialized)
                     throw new InvalidOperationException("Init method must be called");
                 return _logsDirectory;
@@ -24,7 +22,7 @@ namespace EventStore.Common.Log
         public static bool Initialized
         {
             get
-            { // return initialized or not
+            {
                 return _initialized;
             }
         }
@@ -47,8 +45,6 @@ namespace EventStore.Common.Log
 
         public static ILogger GetLoggerFor(Type type)
         {
-            //MessageHierarchy
-            //LogManager.GetLoggerFor(typeof(PerfUtils))
             return GetLogger(type.Name);
         }
 
@@ -60,13 +56,6 @@ namespace EventStore.Common.Log
         public static ILogger GetLogger(string logName)
         {
             return new LazyLogger(() => _logFactory(logName));
-        }
-
-       private static bool StatsMessage(LogEvent le)
-        {
-            return le.Properties.ContainsKey("[stat]"); //&&
-                //le.Properties["data"].ToString().Length > 10;
-        
         }
 
         public static void Init(string componentName, string logsDirectory, string configurationDirectory)
@@ -84,7 +73,6 @@ namespace EventStore.Common.Log
             var configFilePath = potentialSeriLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
-                //NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
                  Serilog.Log.Logger = 
                  new Serilog.LoggerConfiguration()
                  .ReadFrom
