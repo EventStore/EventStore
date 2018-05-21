@@ -63,9 +63,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault, _dbResult.Db.Config.ReplicationCheckpoint);
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
-            //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
             var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex, unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
-            scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
+            scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
         }
 
         public override void TestFixtureTearDown()
