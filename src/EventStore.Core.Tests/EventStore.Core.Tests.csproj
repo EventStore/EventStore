@@ -515,8 +515,16 @@
     <Compile Include="SpecificationWithFile.cs" />
     <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Scavenging\Helpers\FakeTFScavengerLog.cs" />
+    <Compile Include="TransactionLog\Scavenging\Helpers\ScavengeLifeCycleScenario.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_stream_with_start_from_specified.cs" />
     <Compile Include="TransactionLog\Scavenging\scavenged_chunk.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_after_chunck_scavenged.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_after_completed.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_after_started.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_before_started.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_succeeds_without_error.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_throws_exception_on_completed.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_throws_exception_processing_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_completed_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_into_the_middle_of_ongoing_chunk.cs" />
     <Compile Include="TransactionLog\Truncation\when_truncating_to_the_very_beginning_of_db.cs" />

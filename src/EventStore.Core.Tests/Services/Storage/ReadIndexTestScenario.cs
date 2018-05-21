@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Services.Storage
                 if (_completeLastChunkOnScavenge)
                     Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
                 _scavenger = new TFChunkScavenger(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex);
-                _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
+                _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks).Wait();
             }
         }
 

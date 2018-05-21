@@ -1,23 +1,20 @@
 using System;
-using System.Diagnostics;
+using System.Security.Principal;
 using System.Threading;
-using EventStore.Common.Log;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Index;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
 
-    
-
-    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<UserManagementMessage.UserManagementServiceInitialized>
+    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<ClientMessage.StopDatabaseScavenge>, IHandle<UserManagementMessage.UserManagementServiceInitialized>
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
-
         private readonly TFChunkDb _db;
         private readonly ITableIndex _tableIndex;
         private readonly IReadIndex _readIndex;
@@ -25,7 +22,10 @@ namespace EventStore.Core.Services.Storage
         private readonly bool _mergeChunks;
         private readonly bool _unsafeIgnoreHardDeletes;
         private readonly ITFChunkScavengerLogManager _logManager;
-        private int _isScavengingRunning;
+        private readonly object _lock = new object();
+
+        private TFChunkScavenger _currentScavenge;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public StorageScavenger(TFChunkDb db, ITableIndex tableIndex, IReadIndex readIndex, ITFChunkScavengerLogManager logManager, bool alwaysKeepScavenged, bool mergeChunks, bool unsafeIgnoreHardDeletes)
         {
@@ -50,55 +50,74 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(ClientMessage.ScavengeDatabase message)
         {
-            if (message.User == null || (!message.User.IsInRole(SystemRoles.Admins) && !message.User.IsInRole(SystemRoles.Operations)))
+            if (IsAllowed(message.User, message.CorrelationId, message.Envelope))
             {
-                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-                    ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
-            }
-            else if (Interlocked.CompareExchange(ref _isScavengingRunning, 1, 0) == 0)
-            {
-                ThreadPool.QueueUserWorkItem(_ => Scavenge(message));
-            }
-            else
-            {
-                message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-                    ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress, null));
+                lock (_lock)
+                {
+                    if (_currentScavenge != null)
+                    {
+                        message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
+                            ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress, _currentScavenge.ScavengeId));
+                    }
+                    else
+                    {
+                        var tfChunkScavengerLog = _logManager.CreateLog();
+
+                        _cancellationTokenSource = new CancellationTokenSource();                        
+                        var newScavenge = _currentScavenge = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex, _readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
+                        var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks, _cancellationTokenSource.Token);
+
+                        HandleCleanupWhenFinished(newScavengeTask, newScavenge);
+
+                        message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started, tfChunkScavengerLog.ScavengeId));
+                    }
+                }
             }
         }
 
-        private void Scavenge(ClientMessage.ScavengeDatabase message)
+        public void Handle(ClientMessage.StopDatabaseScavenge message)
         {
-            var sw = Stopwatch.StartNew();
+            if (IsAllowed(message.User, message.CorrelationId, message.Envelope))
+            {                
+                lock (_lock)
+                {
+                    if (_currentScavenge != null && _currentScavenge.ScavengeId == message.ScavengeId)
+                    {
+                        _cancellationTokenSource.Cancel();
 
-            var tfChunkScavengerLog = _logManager.CreateLog();
-
-            ScavengeResult result = ScavengeResult.Success;
-            string error = null;
-            long spaceSaved = 0;
-            try
-            {
-                tfChunkScavengerLog.ScavengeStarted();
-
-                message.Envelope.ReplyWith(
-                    new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started, tfChunkScavengerLog.ScavengeId)
-                );
-                
-                var scavenger = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex, _readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
-
-                spaceSaved = scavenger.Scavenge(_alwaysKeepScavenged, _mergeChunks);
-                
+                        message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped, _currentScavenge.ScavengeId));
+                    }
+                    else
+                    {
+                        message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId, _currentScavenge?.ScavengeId));
+                    }
+                }
             }
-            catch (Exception exc)
-            {
-                result = ScavengeResult.Failed;
-                Log.ErrorException(exc, "SCAVENGING: error while scavenging DB.");
-                error = string.Format("Error while scavenging DB: {0}.", exc.Message);
-            }
-
-            Interlocked.Exchange(ref _isScavengingRunning, 0);
-
-            tfChunkScavengerLog.ScavengeCompleted(result, error, spaceSaved, sw.Elapsed);
         }
 
+        private async void HandleCleanupWhenFinished(Task newScavengeTask, TFChunkScavenger newScavenge)
+        {
+            // Clean up the reference to the TfChunkScavenger once it's finished.
+            await newScavengeTask;
+
+            lock (_lock)
+            {
+                if (newScavenge == _currentScavenge)
+                {
+                    _currentScavenge = null;
+                }
+            }
+        }
+
+        private bool IsAllowed(IPrincipal user, Guid correlationId, IEnvelope envelope)
+        {
+            if (user == null || (!user.IsInRole(SystemRoles.Admins) && !user.IsInRole(SystemRoles.Operations)))
+            {
+                envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
+                return false;
+            }
+
+            return true;
+        }
     }
 }

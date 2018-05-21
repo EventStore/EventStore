@@ -106,6 +106,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.SystemStart>().Do(Handle)
                     .When<SystemMessage.ServiceInitialized>().Do(Handle)
                     .When<ClientMessage.ScavengeDatabase>().Ignore()
+                    .When<ClientMessage.StopDatabaseScavenge>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
 
                 .InState(VNodeState.Unknown)

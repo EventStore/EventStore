@@ -1377,8 +1377,26 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 User = user;
             }
+        }
+        
+        public class StopDatabaseScavenge : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-            
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly IPrincipal User;
+            public readonly string ScavengeId;
+
+            public StopDatabaseScavenge(IEnvelope envelope, Guid correlationId, IPrincipal user, string scavengeId)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                User = user;
+                ScavengeId = scavengeId;
+            }
         }
         
         public class ScavengeDatabaseResponse : Message
@@ -1407,7 +1425,9 @@ namespace EventStore.Core.Messages
             {
                 Started,
                 Unauthorized,
-                InProgress,
+                InProgress,                
+                Stopped,
+                InvalidScavengeId
             }
         }
 
