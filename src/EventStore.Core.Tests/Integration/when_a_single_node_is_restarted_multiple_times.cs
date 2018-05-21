@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Integration
     {
         private List<Guid> _epochIds = new List<Guid>();
         private const int _numberOfNodeStarts = 5;
-        private ManualResetEventSlim _event = new ManualResetEventSlim(false);
+        private readonly AutoResetEvent _waitForStart = new AutoResetEvent(false);
 
         protected override void BeforeNodeStarts()
         {
@@ -25,22 +25,22 @@ namespace EventStore.Core.Tests.Integration
         {
             for (int i = 0; i < _numberOfNodeStarts - 1; i++)
             {
-                _event.Wait(TimeSpan.FromSeconds(5));
+                _waitForStart.WaitOne(5000);
                 ShutdownNode();
-                _event.Reset();
                 StartNode();
             }
 
+            _waitForStart.WaitOne(5000);
             base.Given();
         }
 
         private void Handle(SystemMessage.EpochWritten msg)
         {
             _epochIds.Add(msg.Epoch.EpochId);
-            _event.Set();
+            _waitForStart.Set();
         }
 
-        [Test, Ignore("Flaky test - sometimes returns 4 instead of 5")]
+        [Test]
         public void should_be_a_different_epoch_for_every_startup()
         {
             Assert.AreEqual(_numberOfNodeStarts, _epochIds.Distinct().Count());
