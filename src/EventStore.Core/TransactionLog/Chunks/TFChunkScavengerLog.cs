@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -20,6 +21,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly int _retryAttempts;
         private readonly TimeSpan _scavengeHistoryMaxAge;
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
+        private long _spaceSaved;
 
         public TFChunkScavengerLog(IODispatcher ioDispatcher, string scavengeId, string nodeId, int retryAttempts, TimeSpan scavengeHistoryMaxAge)
         {
@@ -55,7 +57,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriteScavengeDetailEvent(_streamName, scavengeStartedEvent, _retryAttempts);
         }
 
-        public void ScavengeCompleted(ScavengeResult result, string error, long spaceSaved, TimeSpan elapsed)
+        public void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed)
         {
             var scavengeCompletedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true, new Dictionary<string, object>{
                 {"scavengeId", _scavengeId},
@@ -63,13 +65,14 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {"result", result},
                 {"error", error},
                 {"timeTaken", elapsed},
-                {"spaceSaved", spaceSaved}
+                {"spaceSaved", _spaceSaved}
             }.ToJsonBytes(), null);
             WriteScavengeDetailEvent(_streamName, scavengeCompletedEvent, _retryAttempts);
         }
 
         public void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved)
         {
+            Interlocked.Add(ref _spaceSaved, spaceSaved);
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true, new Dictionary<string, object>{
                 {"scavengeId", _scavengeId},
                 {"chunkStartNumber", chunkStartNumber},
@@ -84,7 +87,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
         }
 
-        public void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved, string errorMessage)
+        public void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage)
         {
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true, new Dictionary<string, object>{
                 {"scavengeId", _scavengeId},
@@ -92,7 +95,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {"chunkEndNumber", chunkEndNumber},
                 {"timeTaken", elapsed},
                 {"wasScavenged", false},
-                {"spaceSaved", spaceSaved},
+                {"spaceSaved", 0},
                 {"nodeEndpoint", _nodeId},
                 {"errorMessage", errorMessage}
             }.ToJsonBytes(), null);
