@@ -489,7 +489,7 @@ namespace EventStore.Core
 			// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             _mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
-            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(storageScavenger);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
 
