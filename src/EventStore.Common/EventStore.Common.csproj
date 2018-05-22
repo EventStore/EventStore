@@ -69,6 +69,10 @@
       <HintPath>..\libs\Serilog.Enrichers.Thread.dll</HintPath>
       <Private>True</Private>
     </Reference>
+   <Reference Include="Serilog.Enrichers.Environment">
+      <HintPath>..\libs\Serilog.Enrichers.Environment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Serilog.Sinks.File">
       <HintPath>..\libs\Serilog.Sinks.File.dll</HintPath>
       <Private>True</Private>
@@ -133,6 +137,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\libs\Serilog.Enrichers.Thread.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Enrichers.Environment.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
