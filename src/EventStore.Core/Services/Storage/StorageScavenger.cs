@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -13,7 +14,7 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Services.Storage
 {
 
-    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<ClientMessage.StopDatabaseScavenge>, IHandle<UserManagementMessage.UserManagementServiceInitialized>
+    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<ClientMessage.StopDatabaseScavenge>, IHandle<SystemMessage.StateChangeMessage>
     {
         private readonly TFChunkDb _db;
         private readonly ITableIndex _tableIndex;
@@ -43,9 +44,12 @@ namespace EventStore.Core.Services.Storage
             _logManager = logManager;
         }
 
-        public void Handle(UserManagementMessage.UserManagementServiceInitialized message)
+        public void Handle(SystemMessage.StateChangeMessage message)
         {
-            _logManager.Initialise();
+            if (message.State == VNodeState.Master || message.State == VNodeState.Slave)
+            {
+                _logManager.Initialise();
+            }
         }
 
         public void Handle(ClientMessage.ScavengeDatabase message)
