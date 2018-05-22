@@ -11,6 +11,10 @@ namespace EventStore.Core.TransactionLog.Chunks
         void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
 
         void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
+        
+        void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
+        
+        void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage);
 
         void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed);
     }

@@ -42,6 +42,20 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         }
 
+        public void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved)
+        {
+            var scavengedLog = new ScavengedLog(chunkStartNumber, chunkEndNumber, true, "");
+            Scavenged.Add(scavengedLog);
+            ChunkScavenged?.Invoke(this, scavengedLog);
+        }
+
+        public void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage)
+        {
+            var scavengedLog = new ScavengedLog(chunkStartNumber, chunkEndNumber, false, "");
+            Scavenged.Add(scavengedLog);
+            ChunkScavenged?.Invoke(this, scavengedLog);
+        }
+
         public void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed)
         {
             Completed = true;

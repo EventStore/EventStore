@@ -103,6 +103,40 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
         }
 
+        public void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved)
+        {
+            Interlocked.Add(ref _spaceSaved, spaceSaved);
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeMergeCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"chunkStartNumber", chunkStartNumber},
+                {"chunkEndNumber", chunkEndNumber},
+                {"timeTaken", elapsed},
+                {"spaceSaved", spaceSaved},
+                {"wasMerged", true},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", ""}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+        public void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage)
+        {
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeMergeCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"chunkStartNumber", chunkStartNumber},
+                {"chunkEndNumber", chunkEndNumber},
+                {"timeTaken", elapsed},
+                {"spaceSaved", 0},
+                {"wasMerged", false},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", errorMessage}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+
         private void WriteScavengeChunkCompletedEvent(string streamId, Event eventToWrite, int retryCount)
         {
             _ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal, m => WriteScavengeChunkCompletedEventCompleted(m, streamId, eventToWrite, retryCount));
