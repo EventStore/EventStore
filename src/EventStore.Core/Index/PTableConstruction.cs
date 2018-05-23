@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using EventStore.Common.Options;
+using System.Threading;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Index
@@ -107,83 +107,93 @@ namespace EventStore.Core.Index
             var watch = Stopwatch.StartNew();
 
             var enumerators = tables.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
-
-            for (int i = 0; i < enumerators.Count; i++)
+            try
             {
-                if (!enumerators[i].MoveNext())
+                for (int i = 0; i < enumerators.Count; i++)
                 {
-                    enumerators[i].Dispose();
-                    enumerators.RemoveAt(i);
-                    i--;
-                }
-            }
-
-            long dumpedEntryCount = 0;
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
-                                          DefaultSequentialBufferSize, FileOptions.SequentialScan))
-            {
-                f.SetLength(fileSizeUpToIndexEntries);
-                f.Seek(0, SeekOrigin.Begin);
-
-                using (var md5 = MD5.Create())
-                using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
-                {
-                    // WRITE HEADER
-                    var headerBytes = new PTableHeader(version).AsByteArray();
-                    cs.Write(headerBytes, 0, headerBytes.Length);
-
-                    var buffer = new byte[indexEntrySize];
-                    long indexEntry = 0L;
-                    List<Midpoint> midpoints = new List<Midpoint>();
-                    var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries,version,cacheDepth);
-                    // WRITE INDEX ENTRIES
-                    while (enumerators.Count > 0)
+                    if (!enumerators[i].MoveNext())
                     {
-                        var idx = GetMaxOf(enumerators);
-                        var current = enumerators[idx].Current;
-                        if(existsAt(current))
+                        enumerators[i].Dispose();
+                        enumerators.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                long dumpedEntryCount = 0;
+                using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+                                              DefaultSequentialBufferSize, FileOptions.SequentialScan))
+                {
+                    f.SetLength(fileSizeUpToIndexEntries);
+                    f.Seek(0, SeekOrigin.Begin);
+
+                    using (var md5 = MD5.Create())
+                    using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
+                    using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
+                    {
+                        // WRITE HEADER
+                        var headerBytes = new PTableHeader(version).AsByteArray();
+                        cs.Write(headerBytes, 0, headerBytes.Length);
+
+                        var buffer = new byte[indexEntrySize];
+                        long indexEntry = 0L;
+                        List<Midpoint> midpoints = new List<Midpoint>();
+                        var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
+                        // WRITE INDEX ENTRIES
+                        while (enumerators.Count > 0)
                         {
+                            var idx = GetMaxOf(enumerators);
+                            var current = enumerators[idx].Current;
                             AppendRecordTo(bs, buffer, version, current, indexEntrySize);
-                            if(version >= PTableVersions.IndexV4 && IsMidpointIndex(indexEntry,numIndexEntries,requiredMidpointCount)){
-                                midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream,current.Version),indexEntry));
+                            if (version >= PTableVersions.IndexV4 && IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount))
+                            {
+                                midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),indexEntry));
                             }
                             indexEntry++;
-                            dumpedEntryCount += 1;
+                            dumpedEntryCount++;
+
+                            if (!enumerators[idx].MoveNext())
+                            {
+                                enumerators[idx].Dispose();
+                                enumerators.RemoveAt(idx);
+                            }
                         }
-                        if (!enumerators[idx].MoveNext())
+
+                        //WRITE MIDPOINTS
+                        if (version >= PTableVersions.IndexV4)
                         {
-                            enumerators[idx].Dispose();
-                            enumerators.RemoveAt(idx);
+                            if (dumpedEntryCount != numIndexEntries)
+                            {
+                                //if index entries have been removed, compute the midpoints again
+                                numIndexEntries = dumpedEntryCount;
+                                requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
+                                midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries, requiredMidpointCount, midpoints);
+                            }
+                            WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, dumpedEntryCount, numIndexEntries, requiredMidpointCount, midpoints);
                         }
+
+                        bs.Flush();
+                        cs.FlushFinalBlock();
+
+                        f.FlushToDisk();
+                        f.SetLength(f.Position + MD5Size);
+
+                        // WRITE MD5
+                        var hash = md5.Hash;
+                        f.Write(hash, 0, hash.Length);
+                        f.FlushToDisk();
                     }
-
-                    //WRITE MIDPOINTS
-                    if(version >= PTableVersions.IndexV4){
-                        if(dumpedEntryCount!=numIndexEntries){
-                            //if index entries have been removed, compute the midpoints again
-                            numIndexEntries = dumpedEntryCount;
-                            requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
-                            midpoints = ComputeMidpoints(bs,f,version,indexEntrySize,numIndexEntries, requiredMidpointCount,midpoints);
-                        }
-                        WriteMidpointsTo(bs,f,version,indexEntrySize,buffer,dumpedEntryCount,numIndexEntries,requiredMidpointCount,midpoints);
-                    }
-
-                    bs.Flush();
-                    cs.FlushFinalBlock();
-
-                    f.FlushToDisk();
-                    f.SetLength(f.Position + MD5Size);
-
-                    // WRITE MD5
-                    var hash = md5.Hash;
-                    f.Write(hash, 0, hash.Length);
-                    f.FlushToDisk();
+                }
+                Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
+                          watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
+                return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth, skipIndexVerify: skipIndexVerify);
+            }
+            finally
+            {
+                foreach (var enumerableTable in enumerators)
+                {
+                    enumerableTable.Dispose();
                 }
             }
-            Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
-                      watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
-            return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth, skipIndexVerify: skipIndexVerify);
         }
 
         private static int GetIndexEntrySize(byte version)
@@ -212,83 +222,216 @@ namespace EventStore.Core.Index
 
             var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
             var enumerators = tables.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
-            long dumpedEntryCount = 0;
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
-                                          DefaultSequentialBufferSize, FileOptions.SequentialScan))
+            try
             {
-                f.SetLength(fileSizeUpToIndexEntries);
-                f.Seek(0, SeekOrigin.Begin);
-
-                using (var md5 = MD5.Create())
-                using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
+                long dumpedEntryCount = 0;
+                using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+                                              DefaultSequentialBufferSize, FileOptions.SequentialScan))
                 {
-                    // WRITE HEADER
-                    var headerBytes = new PTableHeader(version).AsByteArray();
-                    cs.Write(headerBytes, 0, headerBytes.Length);
+                    f.SetLength(fileSizeUpToIndexEntries);
+                    f.Seek(0, SeekOrigin.Begin);
 
-                    // WRITE INDEX ENTRIES
-                    var buffer = new byte[indexEntrySize];
-                    long indexEntry = 0L;
-                    List<Midpoint> midpoints = new List<Midpoint>();
-                    var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries,version,cacheDepth);
-                    var enum1 = enumerators[0];
-                    var enum2 = enumerators[1];
-                    bool available1 = enum1.MoveNext();
-                    bool available2 = enum2.MoveNext();
-                    IndexEntry current;
-                    while (available1 || available2)
+                    using (var md5 = MD5.Create())
+                    using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
+                    using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
                     {
-                        var entry1 = new IndexEntry(enum1.Current.Stream, enum1.Current.Version, enum1.Current.Position);
-                        var entry2 = new IndexEntry(enum2.Current.Stream, enum2.Current.Version, enum2.Current.Position);
+                        // WRITE HEADER
+                        var headerBytes = new PTableHeader(version).AsByteArray();
+                        cs.Write(headerBytes, 0, headerBytes.Length);
 
-                        if (available1 && (!available2 || entry1.CompareTo(entry2) > 0))
+                        // WRITE INDEX ENTRIES
+                        var buffer = new byte[indexEntrySize];
+                        long indexEntry = 0L;
+                        List<Midpoint> midpoints = new List<Midpoint>();
+                        var requiredMidpointCount = GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
+                        var enum1 = enumerators[0];
+                        var enum2 = enumerators[1];
+                        bool available1 = enum1.MoveNext();
+                        bool available2 = enum2.MoveNext();
+                        IndexEntry current;
+                        while (available1 || available2)
                         {
-                            current = entry1;
-                            available1 = enum1.MoveNext();
-                        }
-                        else
-                        {
-                            current = entry2;
-                            available2 = enum2.MoveNext();
-                        }
+                            var entry1 = new IndexEntry(enum1.Current.Stream, enum1.Current.Version, enum1.Current.Position);
+                            var entry2 = new IndexEntry(enum2.Current.Stream, enum2.Current.Version, enum2.Current.Position);
 
-                        if (existsAt(current))
-                        {
+                            if (available1 && (!available2 || entry1.CompareTo(entry2) > 0))
+                            {
+                                current = entry1;
+                                available1 = enum1.MoveNext();
+                            }
+                            else
+                            {
+                                current = entry2;
+                                available2 = enum2.MoveNext();
+                            }
+
                             AppendRecordTo(bs, buffer, version, current, indexEntrySize);
-                            if(version >= PTableVersions.IndexV4 && IsMidpointIndex(indexEntry,numIndexEntries,requiredMidpointCount)){
-                                midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream,current.Version),indexEntry));
+                            if (version >= PTableVersions.IndexV4 && IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount))
+                            {
+                                midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version), indexEntry));
                             }
                             indexEntry++;
-                            dumpedEntryCount += 1;
+                            dumpedEntryCount++;
                         }
-                    }
 
-                    //WRITE MIDPOINTS
-                    if(version >= PTableVersions.IndexV4){
-                        if(dumpedEntryCount!=numIndexEntries){
-                            //if index entries have been removed, compute the midpoints again
-                            numIndexEntries = dumpedEntryCount;
-                            requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
-                            midpoints = ComputeMidpoints(bs,f,version,indexEntrySize,numIndexEntries, requiredMidpointCount,midpoints);
+                        //WRITE MIDPOINTS
+                        if (version >= PTableVersions.IndexV4)
+                        {
+                            if (dumpedEntryCount != numIndexEntries)
+                            {
+                                //if index entries have been removed, compute the midpoints again
+                                numIndexEntries = dumpedEntryCount;
+                                requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
+                                midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries, requiredMidpointCount, midpoints);
+                            }
+                            WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, dumpedEntryCount, numIndexEntries, requiredMidpointCount, midpoints);
                         }
-                        WriteMidpointsTo(bs,f,version,indexEntrySize,buffer,dumpedEntryCount,numIndexEntries,requiredMidpointCount,midpoints);
+
+                        bs.Flush();
+                        cs.FlushFinalBlock();
+
+                        f.SetLength(f.Position + MD5Size);
+
+                        // WRITE MD5
+                        var hash = md5.Hash;
+                        f.Write(hash, 0, hash.Length);
+                        f.FlushToDisk();
                     }
-
-                    bs.Flush();
-                    cs.FlushFinalBlock();
-
-                    f.SetLength(f.Position + MD5Size);
-
-                    // WRITE MD5
-                    var hash = md5.Hash;
-                    f.Write(hash, 0, hash.Length);
-                    f.FlushToDisk();
+                }
+                Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
+                          watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
+                return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth, skipIndexVerify: skipIndexVerify);
+            }
+            finally
+            {
+                foreach (var enumerator in enumerators)
+                {
+                    enumerator.Dispose();
                 }
             }
-            Log.Trace("PTables merge finished in {0} ([{1}] entries merged into {2}).",
-                      watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
-            return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth, skipIndexVerify: skipIndexVerify);
+            
+        }
+
+        public static PTable Scavenged(PTable table, string outputFile, Func<string, ulong, ulong> upgradeHash,
+            Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, byte version, out long spaceSaved,
+            int cacheDepth = 16, bool skipIndexVerify = false, CancellationToken ct = default(CancellationToken))
+        {
+            Ensure.NotNull(table, "table");
+            Ensure.NotNullOrEmpty(outputFile, "outputFile");
+            Ensure.Nonnegative(cacheDepth, "cacheDepth");
+
+            var indexEntrySize = GetIndexEntrySize(version);
+            var numIndexEntries = table.Count;
+
+            var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
+
+            Log.Trace("PTables scavenge started with {0} entries.", numIndexEntries);
+            var watch = Stopwatch.StartNew();
+            long keptCount = 0L;
+            long droppedCount;
+
+            try
+            {
+                using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+                    DefaultSequentialBufferSize, FileOptions.SequentialScan))
+                {
+                    f.SetLength(fileSizeUpToIndexEntries);
+                    f.Seek(0, SeekOrigin.Begin);
+
+                    using (var md5 = MD5.Create())
+                    using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
+                    using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize))
+                    {
+                        // WRITE HEADER
+                        var headerBytes = new PTableHeader(version).AsByteArray();
+                        cs.Write(headerBytes, 0, headerBytes.Length);
+
+                        // WRITE SCAVENGED INDEX ENTRIES
+                        var buffer = new byte[indexEntrySize];
+                        using (var enumerator = new EnumerableTable(version, table, upgradeHash, existsAt, readRecord))
+                        {
+                            while (enumerator.MoveNext())
+                            {
+                                ct.ThrowIfCancellationRequested();
+                                if (existsAt(enumerator.Current))
+                                {
+                                    AppendRecordTo(bs, buffer, version, enumerator.Current, indexEntrySize);
+                                    keptCount++;
+                                }
+                            }
+                        }
+
+                        // We calculate this as the EnumerableTable can silently drop entries too.
+                        droppedCount = numIndexEntries - keptCount;
+
+                        var forceKeep = version > table.Version;
+
+                        if (droppedCount == 0 && !forceKeep)
+                        {
+                            Log.Trace(
+                                "PTable scavenge finished in {0}. No entries removed so not keeping scavenged table.",
+                                watch.Elapsed);
+
+                            try
+                            {
+                                bs.Close();
+                                File.Delete(outputFile);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.ErrorException(ex, "Unable to delete unwanted scavenged PTable: {0}", outputFile);
+                            }
+
+                            spaceSaved = 0;
+                            return null;
+                        }
+
+                        if (droppedCount == 0 && forceKeep)
+                        {
+                            Log.Trace("Keeping scavenged index even though it isn't smaller; version upgraded.");
+                        }
+
+                        //CALCULATE AND WRITE MIDPOINTS
+                        if (version >= PTableVersions.IndexV4)
+                        {
+                            var requiredMidpointCount = GetRequiredMidpointCount(keptCount, version, cacheDepth);
+                            var midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, keptCount, requiredMidpointCount, new List<Midpoint>(), ct);
+                            WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, keptCount, keptCount, requiredMidpointCount, midpoints);
+                        }
+
+                        bs.Flush();
+                        cs.FlushFinalBlock();
+
+                        f.FlushToDisk();
+                        f.SetLength(f.Position + MD5Size);
+
+                        // WRITE MD5
+                        var hash = md5.Hash;
+                        f.Write(hash, 0, hash.Length);
+                        f.FlushToDisk();
+                    }
+                }
+
+                Log.Trace("PTable scavenge finished in {0} ({1} entries removed, {2} remaining).", watch.Elapsed,
+                    droppedCount, keptCount);
+                var scavengedTable = new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth,
+                    skipIndexVerify: skipIndexVerify);
+                spaceSaved = table._size - scavengedTable._size;
+                return scavengedTable;
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    File.Delete(outputFile);
+                }
+                catch (Exception ex)
+                {
+                    Log.ErrorException(ex, "Unable to delete unwanted scavenged PTable: {0}", outputFile);
+                }
+                throw;
+            }
+            
         }
 
         private static int GetMaxOf(List<EnumerableTable> enumerators)
@@ -324,7 +467,7 @@ namespace EventStore.Core.Index
             stream.Write(buffer, 0, indexEntrySize);
         }
 
-        private static List<Midpoint> ComputeMidpoints(BufferedStream bs, FileStream fs, byte version, int indexEntrySize, long numIndexEntries, long requiredMidpointCount,List<Midpoint> midpoints){
+        private static List<Midpoint> ComputeMidpoints(BufferedStream bs, FileStream fs, byte version, int indexEntrySize, long numIndexEntries, long requiredMidpointCount,List<Midpoint> midpoints, CancellationToken ct =  default(CancellationToken)){
             int indexKeySize;
             if(version == PTableVersions.IndexV4)
                 indexKeySize = IndexKeyV4Size;
@@ -341,6 +484,9 @@ namespace EventStore.Core.Index
             IndexEntryKey previousKey = new IndexEntryKey(0,0);
 
             for(int k=0;k<requiredMidpointCount;k++){
+
+                ct.ThrowIfCancellationRequested();
+
                 long index = GetMidpointIndex(k,numIndexEntries,requiredMidpointCount);
                 if(index == previousIndex){
                     midpoints.Add(new Midpoint(previousKey, previousIndex));
@@ -469,11 +615,6 @@ namespace EventStore.Core.Index
                 {
                     _enumerator = _ptable.IterateAllInOrder().GetEnumerator();
                 }
-            }
-
-            public IEnumerator<IndexEntry> GetEnumerator()
-            {
-                return _enumerator;
             }
 
             public void Dispose()

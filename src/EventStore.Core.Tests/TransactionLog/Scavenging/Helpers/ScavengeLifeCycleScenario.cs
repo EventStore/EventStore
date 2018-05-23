@@ -12,6 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         private DbResult _dbResult;
         protected TFChunkScavenger TfChunkScavenger;
         protected FakeTFScavengerLog Log;
+        protected FakeTableIndex FakeTableIndex;
 
         public override void TestFixtureSetUp()
         {
@@ -31,7 +32,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _dbResult.Db.Config.ChaserCheckpoint.Flush();
 
             Log = new FakeTFScavengerLog();
-            TfChunkScavenger = new TFChunkScavenger(_dbResult.Db, Log, new FakeTableIndex(), new FakeReadIndex(_ => false));
+            FakeTableIndex = new FakeTableIndex();
+            TfChunkScavenger = new TFChunkScavenger(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex(_ => false));
 
             When();
         }

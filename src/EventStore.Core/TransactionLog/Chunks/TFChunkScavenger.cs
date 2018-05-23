@@ -93,6 +93,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                     _scavengerLog.ScavengeStarted();
 
                     ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
+
+                    _tableIndex.Scavenge(_scavengerLog, ct);
                 }
                 catch (OperationCanceledException)
                 {

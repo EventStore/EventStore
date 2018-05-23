@@ -41,5 +41,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             Assert.That(Log.Scavenged[2].ChunkStart, Is.EqualTo(0));
             Assert.That(Log.Scavenged[2].ChunkEnd, Is.EqualTo(1));
         }
+
+        [Test]
+        public void calls_scavenge_on_the_table_index()
+        {
+            Assert.That(FakeTableIndex.ScavengeCount, Is.EqualTo(1));
+        }
     }
 }

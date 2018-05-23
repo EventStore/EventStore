@@ -6,13 +6,11 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture(PTableVersions.IndexV1,false)]
-    [TestFixture(PTableVersions.IndexV1,true)]
     [TestFixture(PTableVersions.IndexV2,false)]
     [TestFixture(PTableVersions.IndexV2,true)]
     [TestFixture(PTableVersions.IndexV3,false)]
     [TestFixture(PTableVersions.IndexV3,true)]
-    public class when_merging_ptables_with_entries_to_nonexisting_record: SpecificationWithDirectoryPerTestFixture
+    public class when_merging_ptables_with_entries_to_nonexisting_record_in_newer_index_versions: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
@@ -21,7 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
 
         private bool _skipIndexVerify;
 
-        public when_merging_ptables_with_entries_to_nonexisting_record(byte version, bool skipIndexVerify){
+        public when_merging_ptables_with_entries_to_nonexisting_record_in_newer_index_versions(byte version, bool skipIndexVerify){
             _ptableVersion = version;
             _skipIndexVerify = skipIndexVerify;
         }
@@ -57,9 +55,9 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
 
         [Test]
-        public void there_are_only_twenty_entries_left()
+        public void all_entries_are_left()
         {
-            Assert.AreEqual(20, _newtable.Count);
+            Assert.AreEqual(40, _newtable.Count);
         }
 
         [Test]
@@ -82,13 +80,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 for (int j = 0; j < 10; j++)
                 {
                     long position;
-                    if ((i*10 + j)%2 == 0)
-                    {
-                        Assert.IsTrue(_newtable.TryGetOneValue((ulong)(0x010100000000 << i), j, out position));
-                        Assert.AreEqual(i*10+j, position);
-                    }
-                    else
-                        Assert.IsFalse(_newtable.TryGetOneValue((ulong)(0x010100000000 << i), j, out position));
+                    Assert.IsTrue(_newtable.TryGetOneValue((ulong)(0x010100000000 << i), j, out position));
+                    Assert.AreEqual(i*10+j, position);
                 }
             }
         }       

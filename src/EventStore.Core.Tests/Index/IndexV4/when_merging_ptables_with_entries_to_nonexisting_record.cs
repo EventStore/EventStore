@@ -5,7 +5,7 @@ namespace EventStore.Core.Tests.Index.IndexV4
 {
     [TestFixture(PTableVersions.IndexV4,false)]
     [TestFixture(PTableVersions.IndexV4,true)]
-    public class when_merging_ptables_with_entries_to_nonexisting_record: IndexV1.when_merging_ptables_with_entries_to_nonexisting_record
+    public class when_merging_ptables_with_entries_to_nonexisting_record: IndexV1.when_merging_ptables_with_entries_to_nonexisting_record_in_newer_index_versions
     {
         public when_merging_ptables_with_entries_to_nonexisting_record(byte version, bool skipIndexVerify):base(version,skipIndexVerify)
         {

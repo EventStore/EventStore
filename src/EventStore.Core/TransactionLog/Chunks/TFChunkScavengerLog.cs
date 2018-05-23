@@ -137,6 +137,44 @@ namespace EventStore.Core.TransactionLog.Chunks
         }
 
 
+        public void IndexTableScavenged(int level, int index, TimeSpan elapsed, long entriesDeleted, long entriesKept,
+            long spaceSaved)
+        {
+            Interlocked.Add(ref _spaceSaved, spaceSaved);
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"level", level},
+                {"index", index},
+                {"timeTaken", elapsed},
+                {"entriesDeleted", entriesDeleted},
+                {"entriesKept", entriesKept},
+                {"spaceSaved", spaceSaved},
+                {"wasScavenged", true},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", ""}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+        public void IndexTableNotScavenged(int level, int index, TimeSpan elapsed, long entriesKept, string errorMessage)
+        {
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"level", level},
+                {"index", index},
+                {"timeTaken", elapsed},
+                {"entriesDeleted", 0},
+                {"entriesKept", entriesKept},
+                {"spaceSaved", 0},
+                {"wasScavenged", false},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", errorMessage}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
         private void WriteScavengeChunkCompletedEvent(string streamId, Event eventToWrite, int retryCount)
         {
             _ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal, m => WriteScavengeChunkCompletedEventCompleted(m, streamId, eventToWrite, retryCount));
@@ -204,5 +242,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 WriteScavengeIndexEvent(linkToIndexEvent, _retryAttempts);
             }
         }
+
     }
 }
