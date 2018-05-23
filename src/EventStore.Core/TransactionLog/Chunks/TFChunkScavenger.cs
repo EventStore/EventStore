@@ -30,6 +30,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly bool _unsafeIgnoreHardDeletes;
         private readonly int _threads;
         private const int MaxRetryCount = 5;
+        internal const int MaxThreadCount = 4;
 
         public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex tableIndex, IReadIndex readIndex, long? maxChunkDataSize = null,
             bool unsafeIgnoreHardDeletes = false, int threads = 1)
@@ -38,6 +39,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(scavengerLog, "scavengerLog");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(readIndex, "readIndex");
+            Ensure.Positive(threads, "threads");
+
+            if (threads > MaxThreadCount)
+            {
+                Log.Warn("{0} scavenging threads not allowed.  Max threads allowed for scavenging is {1}. Capping.", threads, MaxThreadCount);
+                threads = MaxThreadCount;
+            }
 
             _db = db;
             _scavengerLog = scavengerLog;
@@ -127,7 +135,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct},
                 () =>
                 {
-                    Log.Trace("SCAVENGING: Allocating {0} spaces in thread local cache {1}.", initialSizeOfThreadLocalCache, Thread.CurrentThread.ManagedThreadId);
+                    Log.Trace("SCAVENGING: Allocating {0} spaces in thread local cache {1}.", initialSizeOfThreadLocalCache,
+                        Thread.CurrentThread.ManagedThreadId);
                     return new ThreadLocalScavengeCache(initialSizeOfThreadLocalCache);
                 },
                 (chunk, pls, cache) =>
@@ -191,27 +200,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             Log.Trace("SCAVENGING: total time taken: {0}.", totalSw.Elapsed);
         }
 
-        private bool ShouldKeep(RecordReadResult result, Dictionary<long, CommitInfo> commits, long chunkStartPos, long chunkEndPos)
-        {
-            switch (result.LogRecord.RecordType)
-            {
-                case LogRecordType.Prepare:
-                    var prepare = (PrepareLogRecord) result.LogRecord;
-                    if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
-                        return true;
-                    break;
-                case LogRecordType.Commit:
-                    var commit = (CommitLogRecord) result.LogRecord;
-                    if (ShouldKeepCommit(commit, commits))
-                        return true;
-                    break;
-                case LogRecordType.System:
-                    return true;
-            }
-
-            return false;
-        }
-
         private void ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk, ThreadLocalScavengeCache threadLocalCache, CancellationToken ct)
         {
             if (oldChunk == null) throw new ArgumentNullException("oldChunk");
@@ -264,19 +252,23 @@ namespace EventStore.Core.TransactionLog.Chunks
                         }
                     });
 
-
                 long newSize = 0;
-                BitArray filteredIndexes = threadLocalCache.BitArray;
                 int filteredCount = 0;
 
                 for (int i = 0; i < threadLocalCache.Records.Count; i++)
                 {
-                    if (ShouldKeep(threadLocalCache.Records[i], threadLocalCache.Commits, chunkStartPos, chunkEndPos))
-                    {
-                        newSize += threadLocalCache.Records[i].RecordLength + 2 * sizeof(int);
+                    ct.ThrowIfCancellationRequested();
 
+                    var recordReadResult = threadLocalCache.Records[i];
+                    if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos))
+                    {
+                        newSize += recordReadResult.RecordLength + 2 * sizeof(int);
                         filteredCount++;
-                        filteredIndexes[i] = true;
+                    }
+                    else
+                    {
+                        // We don't need this record any more.
+                        threadLocalCache.Records[i] = default(CandidateRecord);
                     }
                 }
 
@@ -307,8 +299,14 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                     for (int i = 0; i < threadLocalCache.Records.Count; i++)
                     {
-                        if (filteredIndexes[i])
-                            positionMapping.Add(WriteRecord(newChunk, threadLocalCache.Records[i].LogRecord));
+                        ct.ThrowIfCancellationRequested();
+
+                        // Since we replaced the ones we don't want with `default`, the success flag will only be true on the ones we want to keep.
+                        var recordReadResult = threadLocalCache.Records[i];
+                        
+                        // Check log record, if not present then assume we can skip. 
+                        if (recordReadResult.LogRecord != null)
+                            positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
                     }
 
                     newChunk.CompleteScavenge(positionMapping);
@@ -486,7 +484,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-
         private void DeleteTempChunk(string tmpChunkPath, int retries)
         {
             try
@@ -510,11 +507,44 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        private bool ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos, long chunkEndPos)
+        {
+            switch (result.LogRecord.RecordType)
+            {
+                case LogRecordType.Prepare:
+                    var prepare = (PrepareLogRecord) result.LogRecord;
+                    if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+                        return true;
+                    break;
+                case LogRecordType.Commit:
+                    var commit = (CommitLogRecord) result.LogRecord;
+                    if (ShouldKeepCommit(commit, commits))
+                        return true;
+                    break;
+                case LogRecordType.System:
+                    return true;
+            }
+
+            return false;
+        }
+        
+        private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)
+        {
+            CommitInfo commitInfo;
+            if (!commits.TryGetValue(commit.TransactionPosition, out commitInfo))
+            {
+                // This should never happen given that we populate `commits` from the commit records.
+                return true;
+            }
+
+            return commitInfo.KeepCommit != false;
+        }
+        
         private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart, long chunkEnd)
         {
             CommitInfo commitInfo;
-            bool isCommitted = commits.TryGetValue(prepare.TransactionPosition, out commitInfo)
-                               || prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted);
+            bool hasSeenCommit = commits.TryGetValue(prepare.TransactionPosition, out commitInfo);
+            bool isCommitted = hasSeenCommit || prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted);
 
             if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete))
             {
@@ -619,7 +649,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, long eventNumber)
         {
             var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
-            if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition) return false;
+            if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition)
+                return false;
+
             return true;
         }
 
@@ -653,21 +685,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             return allInChunk;
         }
 
-        private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)
-        {
-            CommitInfo commitInfo;
-            if (commits.TryGetValue(commit.TransactionPosition, out commitInfo))
-                return commitInfo.KeepCommit != false;
-            return true;
-        }
-
         private void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
-            Action<RecordReadResult> process)
+            Action<CandidateRecord> process)
         {
             var result = chunk.TryReadFirst();
             while (result.Success)
             {
-                process(result);
+                process(new CandidateRecord(result.LogRecord, result.RecordLength));
 
                 ct.ThrowIfCancellationRequested();
 
@@ -695,7 +719,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             public readonly long EventNumber;
 
-            //public string StreamId;
             public bool? KeepCommit;
 
             public CommitInfo(CommitLogRecord commitRecord)
@@ -708,48 +731,45 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return string.Format("EventNumber: {0}, KeepCommit: {1}", EventNumber, KeepCommit);
             }
         }
-        
+
+        struct CandidateRecord
+        {
+            public readonly LogRecord LogRecord;
+            public readonly int RecordLength;
+
+            public CandidateRecord(LogRecord logRecord, int recordLength)
+            {
+                LogRecord = logRecord;
+                RecordLength = recordLength;
+            }
+        }
+
         class ThreadLocalScavengeCache
         {
             private readonly Dictionary<long, CommitInfo> _commits;
-            private readonly List<RecordReadResult> _records;
-            private readonly BitArray _shouldKeep;
-
-            public BitArray BitArray
-            {
-                get
-                {
-                    if (_shouldKeep.Length < Records.Count)
-                    {
-                        _shouldKeep.Length = Records.Count;
-                    }
-
-                    return _shouldKeep;
-                }
-            }
+            private readonly List<CandidateRecord> _records;
 
             public Dictionary<long, CommitInfo> Commits
             {
                 get { return _commits; }
             }
 
-            public List<RecordReadResult> Records
+            public List<CandidateRecord> Records
             {
                 get { return _records; }
             }
 
             public ThreadLocalScavengeCache(int records)
             {
-                _commits = new Dictionary<long, CommitInfo>(records / 2);
-                _records = new List<RecordReadResult>(records);
-                _shouldKeep = new BitArray(records);
+                // assume max quarter records are commits.
+                _commits = new Dictionary<long, CommitInfo>(records / 4);
+                _records = new List<CandidateRecord>(records);
             }
 
             public void Reset()
             {
                 Commits.Clear();
                 Records.Clear();
-                BitArray.SetAll(false);
             }
         }
     }
