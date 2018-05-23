@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
         protected override void When()
         {
             var cancellationTokenSource = new CancellationTokenSource();
-            TfChunkScavenger.Scavenge(true, true, cancellationTokenSource.Token).Wait();
+            TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token).Wait();
         }
 
         [Test]

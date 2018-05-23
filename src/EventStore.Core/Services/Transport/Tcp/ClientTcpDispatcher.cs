@@ -601,7 +601,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private ClientMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope, IPrincipal user)
         {
-            return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user);
+            return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user, 0);
         }
 
         private TcpPackage WrapScavengeDatabaseResponse(ClientMessage.ScavengeDatabaseResponse msg)

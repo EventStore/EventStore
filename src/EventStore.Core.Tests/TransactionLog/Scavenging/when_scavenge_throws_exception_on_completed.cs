@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             {
                 throw new Exception("Expected exception.");
             };
-            TfChunkScavenger.Scavenge(true, true, cancellationTokenSource.Token).Wait();
+            TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token).Wait();
         }
 
         [Test]

@@ -1369,13 +1369,15 @@ namespace EventStore.Core.Messages
             public readonly IEnvelope Envelope;
             public readonly Guid CorrelationId;
             public readonly IPrincipal User;
+            public readonly int StartFromChunk;
 
-            public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user)
+            public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user, int startFromChunk)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Envelope = envelope;
                 CorrelationId = correlationId;
                 User = user;
+                StartFromChunk = startFromChunk;
             }
         }
         
