@@ -522,6 +522,7 @@
     <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_after_completed.cs" />
     <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_after_started.cs" />
     <Compile Include="TransactionLog\Scavenging\when_scavenge_cancelled_before_started.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_scavenge_from_chunk_number.cs" />
     <Compile Include="TransactionLog\Scavenging\when_scavenge_succeeds_without_error.cs" />
     <Compile Include="TransactionLog\Scavenging\when_scavenge_throws_exception_on_completed.cs" />
     <Compile Include="TransactionLog\Scavenging\when_scavenge_throws_exception_processing_chunk.cs" />

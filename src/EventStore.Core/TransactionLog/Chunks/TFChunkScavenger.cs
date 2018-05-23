@@ -46,8 +46,10 @@ namespace EventStore.Core.TransactionLog.Chunks
         
         public string ScavengeId => _scavengerLog.ScavengeId;
 
-        public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, CancellationToken ct = default(CancellationToken))
+        public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0, CancellationToken ct = default(CancellationToken))
         {
+            Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));
+
             // Note we aren't passing the CancellationToken to the task on purpose so awaiters
             // don't have to handle Exceptions and can wait for the actual completion of the task.
             return Task.Factory.StartNew(() =>
@@ -59,8 +61,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 try
                 {
                     _scavengerLog.ScavengeStarted();
-                    
-                    ScavengeInternal(alwaysKeepScavenged, mergeChunks, ct);
+
+                    ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -87,16 +89,17 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             }, TaskCreationOptions.LongRunning);
         }
-
-        private void ScavengeInternal(bool alwaysKeepScavenged, bool mergeChunks, CancellationToken ct)
+        private void ScavengeInternal(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, CancellationToken ct)
         {
             var totalSw = Stopwatch.StartNew();
             var sw = Stopwatch.StartNew();
-            
+
+            long startFromPosition = _db.Config.ChunkSize * (long) startFromChunk;
+
             Log.Trace("SCAVENGING: started scavenging of DB. Chunks count at start: {0}. Options: alwaysKeepScavenged = {1}, mergeChunks = {2}",
                       _db.Manager.ChunksCount, alwaysKeepScavenged, mergeChunks);
 
-            for (long scavengePos = 0; scavengePos < _db.Config.ChaserCheckpoint.Read(); )
+            for (long scavengePos = startFromPosition; scavengePos < _db.Config.ChaserCheckpoint.Read();)
             {
                 ct.ThrowIfCancellationRequested();
 
@@ -126,7 +129,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                     var chunks = new List<TFChunk.TFChunk>();
                     long totalDataSize = 0;
-                    for (long scavengePos = 0; scavengePos < _db.Config.ChaserCheckpoint.Read();)
+                    for (long scavengePos = startFromPosition; scavengePos < _db.Config.ChaserCheckpoint.Read();)
                     {
                         ct.ThrowIfCancellationRequested();
 
