@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
 			_node.Start();
 
-			var scavengeMessage = new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal, 0);
+			var scavengeMessage = new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal, 0, 1);
 			_node.Node.MainQueue.Publish(scavengeMessage);
 
 			When();

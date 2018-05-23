@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service)
         {
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
-            service.RegisterAction(new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+            service.RegisterAction(new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
             service.RegisterAction(new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs, SupportedCodecs), OnStopScavenge);
         }
 
@@ -54,9 +54,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     SendBadRequest(entity, "startFromChunk must be a positive integer");
                     return;
                 }
+            } 
+            
+            int threads = 1;
+
+            var threadsVariable = match.BoundVariables["threads"];
+            if (threadsVariable != null)
+            {
+                if (!int.TryParse(threadsVariable, out threads) || threads < 1)
+                {
+                    SendBadRequest(entity, "threads must be a 1 or above");
+                    return;
+                }
             }
 
-            Log.Info("Request scavenging because /admin/scavenge?startFromChunk={0} request has been received.", startFromChunk);
+            Log.Info("Request scavenging because /admin/scavenge?startFromChunk={0}&threads={1} request has been received.", startFromChunk, threads);
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
                 {
@@ -80,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 }
             );
 
-            Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User, startFromChunk));
+            Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User, startFromChunk, threads));
         }
 
         private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match)
