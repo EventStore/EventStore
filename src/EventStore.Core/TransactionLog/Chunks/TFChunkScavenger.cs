@@ -117,12 +117,26 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             Log.Trace("SCAVENGING: started scavenging of DB. Chunks count at start: {0}. Options: alwaysKeepScavenged = {1}, mergeChunks = {2}",
                 _db.Manager.ChunksCount, alwaysKeepScavenged, mergeChunks);
-            
+
             // Initial scavenge pass
             var chunksToScavenge = GetAllChunks(startFromChunk);
 
+            const int initialSizeOfThreadLocalCache = 1024 * 64; // 64k records
+
             Parallel.ForEach(chunksToScavenge,
-                new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct}, (chunk, pls) => ScavengeChunk(alwaysKeepScavenged, chunk, ct));
+                new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct},
+                () =>
+                {
+                    Log.Trace("SCAVENGING: Allocating {0} spaces in thread local cache {1}.", initialSizeOfThreadLocalCache, Thread.CurrentThread.ManagedThreadId);
+                    return new ThreadLocalScavengeCache(initialSizeOfThreadLocalCache);
+                },
+                (chunk, pls, cache) =>
+                {
+                    ScavengeChunk(alwaysKeepScavenged, chunk, cache, ct);
+                    cache.Reset(); // reset thread local cache before next iteration.
+                    return cache;
+                },
+                cache => { });
 
             Log.Trace("SCAVENGING: initial pass completed in {0}.", sw.Elapsed);
 
@@ -198,7 +212,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return false;
         }
 
-        private void ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk, CancellationToken ct)
+        private void ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk, ThreadLocalScavengeCache threadLocalCache, CancellationToken ct)
         {
             if (oldChunk == null) throw new ArgumentNullException("oldChunk");
 
@@ -237,39 +251,36 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             try
             {
-                var commits = new Dictionary<long, CommitInfo>();
-
-                int count = TraverseChunkBasic(oldChunk, ct,
-                    (result, i) =>
+                TraverseChunkBasic(oldChunk, ct,
+                    result =>
                     {
-                        ct.ThrowIfCancellationRequested();
+                        threadLocalCache.Records.Add(result);
 
                         if (result.LogRecord.RecordType == LogRecordType.Commit)
                         {
                             var commit = (CommitLogRecord) result.LogRecord;
                             if (commit.TransactionPosition >= chunkStartPos)
-                                commits.Add(commit.TransactionPosition, new CommitInfo(commit));
+                                threadLocalCache.Commits.Add(commit.TransactionPosition, new CommitInfo(commit));
                         }
                     });
 
 
                 long newSize = 0;
-                BitArray filteredIndexes = new BitArray(count);
+                BitArray filteredIndexes = threadLocalCache.BitArray;
                 int filteredCount = 0;
 
-                TraverseChunkBasic(oldChunk, ct,
-                    (result, i) =>
+                for (int i = 0; i < threadLocalCache.Records.Count; i++)
+                {
+                    if (ShouldKeep(threadLocalCache.Records[i], threadLocalCache.Commits, chunkStartPos, chunkEndPos))
                     {
-                        if (ShouldKeep(result, commits, chunkStartPos, chunkEndPos))
-                        {
-                            newSize += result.RecordLength + 2 * sizeof(int);
+                        newSize += threadLocalCache.Records[i].RecordLength + 2 * sizeof(int);
 
-                            filteredCount++;
-                            filteredIndexes[i] = true;
-                        }
-                    });
+                        filteredCount++;
+                        filteredIndexes[i] = true;
+                    }
+                }
 
-                Log.Trace("Scavenging {0} traversed {1} including {2}.", oldChunkName, count, filteredCount);
+                Log.Trace("Scavenging {0} traversed {1} including {2}.", oldChunkName, threadLocalCache.Records.Count, filteredCount);
 
                 newSize += filteredCount * PosMap.FullSize + ChunkHeader.Size + ChunkFooter.Size;
                 if (newChunk.ChunkHeader.Version >= (byte) TFChunk.TFChunk.ChunkVersions.Aligned)
@@ -294,12 +305,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     var positionMapping = new List<PosMap>(filteredCount);
 
-                    TraverseChunkBasic(oldChunk, ct,
-                        (result, i) =>
-                        {                            
-                            if (filteredIndexes[i])
-                                positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
-                        });
+                    for (int i = 0; i < threadLocalCache.Records.Count; i++)
+                    {
+                        if (filteredIndexes[i])
+                            positionMapping.Add(WriteRecord(newChunk, threadLocalCache.Records[i].LogRecord));
+                    }
 
                     newChunk.CompleteScavenge(positionMapping);
 
@@ -409,10 +419,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunkBasic(oldChunk, ct,
-                        (result, i) =>
-                        {
-                            positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
-                        });
+                        result => positionMapping.Add(WriteRecord(newChunk, result.LogRecord)));
                 }
 
                 newChunk.CompleteScavenge(positionMapping);
@@ -654,21 +661,18 @@ namespace EventStore.Core.TransactionLog.Chunks
             return true;
         }
 
-        private int TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
-            Action<RecordReadResult, int> process)
+        private void TraverseChunkBasic(TFChunk.TFChunk chunk, CancellationToken ct,
+            Action<RecordReadResult> process)
         {
-            int i = 0;
             var result = chunk.TryReadFirst();
             while (result.Success)
             {
-                process(result, i++);
+                process(result);
 
                 ct.ThrowIfCancellationRequested();
 
                 result = chunk.TryReadClosestForward(result.NextPosition);
             }
-
-            return i;
         }
 
         private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record)
@@ -702,6 +706,50 @@ namespace EventStore.Core.TransactionLog.Chunks
             public override string ToString()
             {
                 return string.Format("EventNumber: {0}, KeepCommit: {1}", EventNumber, KeepCommit);
+            }
+        }
+        
+        class ThreadLocalScavengeCache
+        {
+            private readonly Dictionary<long, CommitInfo> _commits;
+            private readonly List<RecordReadResult> _records;
+            private readonly BitArray _shouldKeep;
+
+            public BitArray BitArray
+            {
+                get
+                {
+                    if (_shouldKeep.Length < Records.Count)
+                    {
+                        _shouldKeep.Length = Records.Count;
+                    }
+
+                    return _shouldKeep;
+                }
+            }
+
+            public Dictionary<long, CommitInfo> Commits
+            {
+                get { return _commits; }
+            }
+
+            public List<RecordReadResult> Records
+            {
+                get { return _records; }
+            }
+
+            public ThreadLocalScavengeCache(int records)
+            {
+                _commits = new Dictionary<long, CommitInfo>(records / 2);
+                _records = new List<RecordReadResult>(records);
+                _shouldKeep = new BitArray(records);
+            }
+
+            public void Reset()
+            {
+                Commits.Clear();
+                Records.Clear();
+                BitArray.SetAll(false);
             }
         }
     }
