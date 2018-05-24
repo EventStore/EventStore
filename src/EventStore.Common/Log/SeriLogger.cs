@@ -25,13 +25,15 @@ namespace EventStore.Common.Log
     public class SeriLogger : ILogger
     {
         private readonly Serilog.ILogger _logger;
+        //private string _name;
         //private readonly ILogger _slogger;
 
         public SeriLogger(string name)
         {
             //_logger = NLog.LogManager.GetLogger(name);
             //_logger = Serilog.Configuration.GetLogger(name);
-           _logger = Serilog.Log.ForContext(name, false);
+           //_logger = Serilog.Log.ForContext(this.GetType());
+           _logger = Serilog.Log.ForContext(name, null);
 
         }
 
@@ -42,7 +44,7 @@ namespace EventStore.Common.Log
 
         public void Fatal(string format, params object[] args)
         {
-            _logger.Fatal(format, args);
+            _logger.ForContext<SeriLogger>().Fatal(format, args);
         }
 
         public void Error(string format, params object[] args)
