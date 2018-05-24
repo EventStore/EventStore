@@ -129,6 +129,7 @@ namespace EventStore.Core
         protected byte _indexBitnessVersion;
         protected bool _alwaysKeepScavenged;
         protected bool _skipIndexScanOnReads;
+        private bool _reduceFileCachePressure;
 
         private bool _gossipOnSingleNode;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -218,6 +219,7 @@ namespace EventStore.Core
             _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
+            _reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -1213,6 +1215,17 @@ namespace EventStore.Core
             return this;
         }
 
+        /// <summary>
+        /// Reduce file cache pressure by opening the DB chunks without RandomAccess hint.
+        /// </summary>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder ReduceFileCachePressure()
+        {
+            _reduceFileCachePressure = true;
+
+            return this;
+        }
+
         private void EnsureHttpPrefixes()
         {
             if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
@@ -1338,7 +1351,8 @@ namespace EventStore.Core
                                        _unbuffered,
                                        _writethrough,
                                        _chunkInitialReaderCount,
-                                       _optimizeIndexMerge?true:false,
+                                       _optimizeIndexMerge,
+                                       _reduceFileCachePressure,
                                        _log);
             FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1452,6 +1466,7 @@ namespace EventStore.Core
                                                       bool writethrough,
                                                       int chunkInitialReaderCount,
                                                       bool optimizeReadSideCache,
+                                                      bool reduceFileCachePressure,
                                                       ILogger log)
         {
             ICheckpoint writerChk;
@@ -1525,7 +1540,8 @@ namespace EventStore.Core
                                                  inMemDb,
                                                  unbuffered,
                                                  writethrough,
-                                                 optimizeReadSideCache);
+                                                 optimizeReadSideCache,
+                                                 reduceFileCachePressure);
 
             return nodeConfig;
         }

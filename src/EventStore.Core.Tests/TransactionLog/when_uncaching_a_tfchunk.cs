@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
             _chunk.Complete();
-            _uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false, initialReaderCount: 5);
+            _uncachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false, initialReaderCount: 5, reduceFileCachePressure: false);
             _uncachedChunk.CacheInMemory();
             _uncachedChunk.UnCacheFromMemory();
         }
