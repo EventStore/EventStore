@@ -232,6 +232,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.SkipIndexScanOnReadsDescr, Opts.AppGroup)]
         public bool SkipIndexScanOnReads { get; set; }
 
+        [ArgDescription(Opts.ReduceFileCachePressureDescr, Opts.DbGroup)]
+        public bool ReduceFileCachePressure { get; set; }
+
         public ClusterNodeOptions()
         {
             Config = "";
@@ -345,6 +348,7 @@ namespace EventStore.ClusterNode
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
 
             SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
+            ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
             ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;

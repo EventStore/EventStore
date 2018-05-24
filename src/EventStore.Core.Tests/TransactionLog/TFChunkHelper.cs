@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             return TFChunk.CreateNew(fileName, chunkSize, 0, 0, 
                                      isScavenged: isScavenged, inMem: false, unbuffered: false, 
-                                     writethrough: false, initialReaderCount: 5);
+                                     writethrough: false, initialReaderCount: 5, reduceFileCachePressure: false);
         }
     }
 }

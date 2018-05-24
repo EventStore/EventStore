@@ -160,7 +160,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                      inMem: _db.Config.InMemDb,
                                                      unbuffered: _db.Config.Unbuffered,
                                                      writethrough: _db.Config.WriteThrough,
-                                                     initialReaderCount: _db.Config.InitialReaderCount);
+                                                     initialReaderCount: _db.Config.InitialReaderCount,
+                                                     reduceFileCachePressure: _db.Config.ReduceFileCachePressure);
             }
             catch (IOException exc)
             {
