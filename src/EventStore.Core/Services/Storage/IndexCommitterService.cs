@@ -41,12 +41,17 @@ namespace EventStore.Core.Services.Storage
 
         public string Name { get { return _queueStats.Name; } }
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Index Committer");
-
         private readonly ConcurrentQueue<StorageMessage.CommitAck> _replicatedQueue = new ConcurrentQueue<StorageMessage.CommitAck>();
         private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions =
                             new ConcurrentDictionary<long, PendingTransaction>();
 
         private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
+#if MONO
+        private readonly AutoResetEvent _addMsgSignal = new AutoResetEvent(false);
+#else
+        private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim();
+#endif
+        private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
 
         public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount)
         {
@@ -87,16 +92,25 @@ namespace EventStore.Core.Services.Storage
                 StorageMessage.CommitAck replicatedMessage;
                 while(!_stop)
                 {
-                    _queueStats.EnterBusy();
+                    _addMsgSignal.Reset();
                     if (_replicatedQueue.TryDequeue(out replicatedMessage))
                     {
+                        _queueStats.EnterBusy();
+#if DEBUG
+                        _queueStats.Dequeued(replicatedMessage);
+#endif
                         _queueStats.ProcessingStarted(replicatedMessage.GetType(), 0);
                         ProcessCommitReplicated(replicatedMessage);
                         _queueStats.ProcessingEnded(1);
                     }
                     else
                     {
-                        Thread.Sleep(1);
+                        _queueStats.EnterIdle();
+#if MONO
+                        _addMsgSignal.WaitOne(_waitTimeoutMs);
+#else
+                        _addMsgSignal.Wait(_waitTimeoutMs);
+#endif
                     }
                 }
             }
@@ -136,9 +150,9 @@ namespace EventStore.Core.Services.Storage
                 }
             }
             lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
-            
+
             _replicationCheckpoint.Write(message.LogPosition);
-            _publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition, 
+            _publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition,
                 message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
         }
 
@@ -220,6 +234,10 @@ namespace EventStore.Core.Services.Storage
             if(_state != VNodeState.Master || _commitCount == 1)
             {
                 _replicatedQueue.Enqueue(message);
+#if DEBUG
+                _queueStats.Enqueued();
+#endif
+                _addMsgSignal.Set();
                 return;
             }
 
@@ -246,6 +264,10 @@ namespace EventStore.Core.Services.Storage
         private void CommitReplicated(StorageMessage.CommitAck message)
         {
             _replicatedQueue.Enqueue(message);
+#if DEBUG
+            _queueStats.Enqueued();
+#endif
+            _addMsgSignal.Set();
         }
 
         public QueueStats GetStatistics()
