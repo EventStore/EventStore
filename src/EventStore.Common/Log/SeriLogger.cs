@@ -44,7 +44,7 @@ namespace EventStore.Common.Log
 
         public void Fatal(string format, params object[] args)
         {
-            _logger.ForContext<SeriLogger>().Fatal(format, args);
+            _logger.Fatal(format, args);
         }
 
         public void Error(string format, params object[] args)

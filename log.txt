@@ -2775,3 +2775,322 @@ DEFAULT OPTIONS:
  PID:[1100:23 2018.05.24 19:51:25.267 DEBUG] [<s:] PROJECTIONS: Response received: 28199@$stopped >
  PID:[1100:23 2018.05.24 19:51:25.268 DEBUG] [<s:] PROJECTIONS: Response received: 28204@$stopped >
  PID:[1100:23 2018.05.24 19:51:25.273 DEBUG] [<s:] PROJECTIONS: Response received: 28207@$stopped >
+ PID:[1477:1 2018.05.25 10:51:52.665 INFORMATION] [<s:] 
+ES VERSION:               0.0.0.0 (structuredLogging/b29fff2e31f2228b8777d878f6bb682af5c3270c, Thu, 24 May 2018 19:56:14 +0400) >
+ PID:[1477:1 2018.05.25 10:51:52.688 INFORMATION] [<s:] OS:                       "MacOS" (Unix 17.5.0.0) >
+ PID:[1477:1 2018.05.25 10:51:52.691 INFORMATION] [<s:] RUNTIME:                  4.6.2 (mono-4.6.0-branch/ac9e222 Wed Dec 14 17:11:21 EST 2016) (64-bit) >
+ PID:[1477:1 2018.05.25 10:51:52.692 INFORMATION] [<s:] GC:                       2 GENERATIONS >
+ PID:[1477:1 2018.05.25 10:51:52.692 INFORMATION] [<s:] LOGS:                     /Users/avish/log >
+ PID:[1477:1 2018.05.25 10:51:52.701 INFORMATION] [<s:] MODIFIED OPTIONS:
+
+	RUN PROJECTIONS:          all (Command Line)
+	DB:                       ../db (Command Line)
+	LOG:                      ../log (Command Line)
+
+DEFAULT OPTIONS:
+
+	HELP:                     False (<DEFAULT>)
+	VERSION:                  False (<DEFAULT>)
+	CONFIG:                   <empty> (<DEFAULT>)
+	DEFINES:                  <empty> (<DEFAULT>)
+	WHAT IF:                  False (<DEFAULT>)
+	START STANDARD PROJECTIONS: False (<DEFAULT>)
+	DISABLE HTTP CACHING:     False (<DEFAULT>)
+	MONO MIN THREADPOOL SIZE: 10 (<DEFAULT>)
+	INT IP:                   127.0.0.1 (<DEFAULT>)
+	EXT IP:                   127.0.0.1 (<DEFAULT>)
+	INT HTTP PORT:            2112 (<DEFAULT>)
+	EXT HTTP PORT:            2113 (<DEFAULT>)
+	INT TCP PORT:             1112 (<DEFAULT>)
+	INT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT TCP PORT:             1113 (<DEFAULT>)
+	EXT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT SECURE TCP PORT:      0 (<DEFAULT>)
+	EXT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	EXT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	EXT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT IP ADVERTISE AS:      <empty> (<DEFAULT>)
+	INT SECURE TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT HTTP PORT ADVERTISE AS: 0 (<DEFAULT>)
+	INT TCP HEARTBEAT TIMEOUT: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
+	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
+	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
+	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
+	FORCE:                    False (<DEFAULT>)
+	CLUSTER SIZE:             1 (<DEFAULT>)
+	NODE PRIORITY:            0 (<DEFAULT>)
+	MIN FLUSH DELAY MS:       2 (<DEFAULT>)
+	COMMIT COUNT:             -1 (<DEFAULT>)
+	PREPARE COUNT:            -1 (<DEFAULT>)
+	ADMIN ON EXT:             True (<DEFAULT>)
+	STATS ON EXT:             True (<DEFAULT>)
+	GOSSIP ON EXT:            True (<DEFAULT>)
+	DISABLE SCAVENGE MERGING: False (<DEFAULT>)
+	SCAVENGE HISTORY MAX AGE: 30 (<DEFAULT>)
+	DISCOVER VIA DNS:         True (<DEFAULT>)
+	CLUSTER DNS:              fake.dns (<DEFAULT>)
+	CLUSTER GOSSIP PORT:      30777 (<DEFAULT>)
+	GOSSIP SEED:              <empty> (<DEFAULT>)
+	STATS PERIOD SEC:         30 (<DEFAULT>)
+	CACHED CHUNKS:            -1 (<DEFAULT>)
+	READER THREADS COUNT:     4 (<DEFAULT>)
+	CHUNKS CACHE SIZE:        536871424 (<DEFAULT>)
+	MAX MEM TABLE SIZE:       1000000 (<DEFAULT>)
+	HASH COLLISION READ LIMIT: 100 (<DEFAULT>)
+	INDEX:                    <empty> (<DEFAULT>)
+	MEM DB:                   False (<DEFAULT>)
+	SKIP DB VERIFY:           False (<DEFAULT>)
+	WRITE THROUGH:            False (<DEFAULT>)
+	UNBUFFERED:               False (<DEFAULT>)
+	CHUNK INITIAL READER COUNT: 5 (<DEFAULT>)
+	PROJECTION THREADS:       3 (<DEFAULT>)
+	WORKER THREADS:           5 (<DEFAULT>)
+	PROJECTIONS QUERY EXPIRY: 0 (<DEFAULT>)
+	INT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	EXT HTTP PREFIXES:        <empty> (<DEFAULT>)
+	ENABLE TRUSTED AUTH:      False (<DEFAULT>)
+	ADD INTERFACE PREFIXES:   True (<DEFAULT>)
+	CERTIFICATE STORE LOCATION: <empty> (<DEFAULT>)
+	CERTIFICATE STORE NAME:   <empty> (<DEFAULT>)
+	CERTIFICATE SUBJECT NAME: <empty> (<DEFAULT>)
+	CERTIFICATE THUMBPRINT:   <empty> (<DEFAULT>)
+	CERTIFICATE FILE:         <empty> (<DEFAULT>)
+	CERTIFICATE PASSWORD:     <empty> (<DEFAULT>)
+	USE INTERNAL SSL:         False (<DEFAULT>)
+	DISABLE INSECURE TCP:     False (<DEFAULT>)
+	SSL TARGET HOST:          n/a (<DEFAULT>)
+	SSL VALIDATE SERVER:      True (<DEFAULT>)
+	AUTHENTICATION TYPE:      internal (<DEFAULT>)
+	AUTHENTICATION CONFIG:    <empty> (<DEFAULT>)
+	PREPARE TIMEOUT MS:       2000 (<DEFAULT>)
+	COMMIT TIMEOUT MS:        2000 (<DEFAULT>)
+	UNSAFE DISABLE FLUSH TO DISK: False (<DEFAULT>)
+	BETTER ORDERING:          False (<DEFAULT>)
+	UNSAFE IGNORE HARD DELETE: False (<DEFAULT>)
+	SKIP INDEX VERIFY:        False (<DEFAULT>)
+	INDEX CACHE DEPTH:        16 (<DEFAULT>)
+	OPTIMIZE INDEX MERGE:     False (<DEFAULT>)
+	GOSSIP INTERVAL MS:       1000 (<DEFAULT>)
+	GOSSIP ALLOWED DIFFERENCE MS: 60000 (<DEFAULT>)
+	GOSSIP TIMEOUT MS:        500 (<DEFAULT>)
+	ENABLE HISTOGRAMS:        False (<DEFAULT>)
+	LOG HTTP REQUESTS:        False (<DEFAULT>)
+	ALWAYS KEEP SCAVENGED:    False (<DEFAULT>)
+	SKIP INDEX SCAN ON READS: False (<DEFAULT>)
+ >
+ PID:[1477:1 2018.05.25 10:51:52.731 INFORMATION] [<s:] Quorum size set to 1 >
+ PID:[1477:1 2018.05.25 10:51:52.745 INFORMATION] [<s:] Cannot find plugins path: /Users/avish/EventStore/bin/clusternode/plugins >
+ PID:[1477:1 2018.05.25 10:51:52.787 INFORMATION] [<s:] INSTANCE ID:              "0de74638-b176-45dc-9330-fa11d712c0ce" >
+ PID:[1477:1 2018.05.25 10:51:52.787 INFORMATION] [<s:] DATABASE:                 ../db >
+ PID:[1477:1 2018.05.25 10:51:52.788 INFORMATION] [<s:] WRITER CHECKPOINT:        181426704 (0x181426704) >
+ PID:[1477:1 2018.05.25 10:51:52.788 INFORMATION] [<s:] CHASER CHECKPOINT:        181426704 (0x181426704) >
+ PID:[1477:1 2018.05.25 10:51:52.788 INFORMATION] [<s:] EPOCH CHECKPOINT:         180629808 (0x180629808) >
+ PID:[1477:1 2018.05.25 10:51:52.789 INFORMATION] [<s:] TRUNCATE CHECKPOINT:      -1 (0x-1) >
+ PID:[1477:1 2018.05.25 10:51:52.961 VERBOSE] [<s:] MessageHierarchy initialization took "00:00:00.1551909". >
+ PID:[1477:1 2018.05.25 10:51:54.073 VERBOSE] [<s:] Opened ongoing ../db/chunk-000000.000000 as version 3 >
+ PID:[1477:1 2018.05.25 10:51:54.243 VERBOSE] [<s:] CACHED TFChunk #0-0 (chunk-000000.000000) in "00:00:00.1642230". >
+ PID:[1477:1 2018.05.25 10:51:54.435 INFORMATION] [<s:] Starting MiniWeb for /web/es/js/projections ==> /Users/avish/EventStore/bin/clusternode/projections >
+ PID:[1477:1 2018.05.25 10:51:54.437 INFORMATION] [<s:] Starting MiniWeb for /web/es/js/projections/v8/Prelude ==> /Users/avish/EventStore/bin/clusternode/Prelude >
+ PID:[1477:1 2018.05.25 10:51:54.441 VERBOSE] [<s:] Binding MiniWeb to /web/es/js/projections/{*remaining_path} >
+ PID:[1477:1 2018.05.25 10:51:54.442 VERBOSE] [<s:] Binding MiniWeb to /web/es/js/projections/v8/Prelude/{*remaining_path} >
+ PID:[1477:1 2018.05.25 10:51:54.451 INFORMATION] [<s:] Starting MiniWeb for /web ==> /Users/avish/EventStore/bin/clusternode/clusternode-web >
+ PID:[1477:1 2018.05.25 10:51:54.451 VERBOSE] [<s:] Binding MiniWeb to /web/{*remaining_path} >
+ PID:[1477:9 2018.05.25 10:51:54.453 INFORMATION] [<s:] ========== [127.0.0.1:2112] SYSTEM INIT... >
+ PID:[1477:9 2018.05.25 10:51:54.456 INFORMATION] [<s:] Starting Normal TCP listening on TCP endpoint: 127.0.0.1:1113. >
+ PID:[1477:10 2018.05.25 10:51:54.458 INFORMATION] [<s:] TableIndex initialization... >
+ PID:[1477:9 2018.05.25 10:51:54.462 INFORMATION] [<s:] Starting HTTP server on [http://127.0.0.1:2113/,http://localhost:2113/]... >
+ PID:[1477:10 2018.05.25 10:51:54.465 INFORMATION] [<s:] ReadIndex building... >
+ PID:[1477:9 2018.05.25 10:51:54.467 INFORMATION] [<s:] HTTP server is up and listening on [http://127.0.0.1:2113/,http://localhost:2113/] >
+ PID:[1477:9 2018.05.25 10:51:54.468 INFORMATION] [<s:] ========== [127.0.0.1:2112] Service 'StorageReader' initialized. >
+ PID:[1477:9 2018.05.25 10:51:54.468 INFORMATION] [<s:] ========== [127.0.0.1:2112] Service 'StorageWriter' initialized. >
+ PID:[1477:10 2018.05.25 10:51:55.343 DEBUG] [<s:] ReadIndex rebuilding done: total processed 54248 records, time elapsed: "00:00:00.8773120". >
+ PID:[1477:9 2018.05.25 10:51:59.227 INFORMATION] [<s:] ========== [127.0.0.1:2112] Service 'StorageChaser' initialized. >
+ PID:[1477:9 2018.05.25 10:51:59.231 INFORMATION] [<s:] ========== [127.0.0.1:2112] SYSTEM START... >
+ PID:[1477:9 2018.05.25 10:51:59.234 INFORMATION] [<s:] ========== [127.0.0.1:2112] IS UNKNOWN... >
+ PID:[1477:16 2018.05.25 10:51:59.236 DEBUG] [<s:] Subscriptions received state change to Unknown stopping listening. >
+ PID:[1477:9 2018.05.25 10:51:59.236 DEBUG] [<s:] ELECTIONS: STARTING ELECTIONS. >
+ PID:[1477:9 2018.05.25 10:51:59.237 DEBUG] [<s:] ELECTIONS: (V=0) SHIFT TO LEADER ELECTION. >
+ PID:[1477:9 2018.05.25 10:51:59.238 DEBUG] [<s:] ELECTIONS: (V=0) VIEWCHANGE FROM [127.0.0.1:2112, "0de74638-b176-45dc-9330-fa11d712c0ce"]. >
+ PID:[1477:9 2018.05.25 10:51:59.239 DEBUG] [<s:] ELECTIONS: (V=0) MAJORITY OF VIEWCHANGE. >
+ PID:[1477:9 2018.05.25 10:51:59.239 DEBUG] [<s:] ELECTIONS: (V=0) SHIFT TO PREPARE PHASE. >
+ PID:[1477:9 2018.05.25 10:51:59.240 DEBUG] [<s:] ELECTIONS: (V=0) PREPARE_OK FROM [127.0.0.1:2112,{0de74638-b176-45dc-9330-fa11d712c0ce}](L=181409903,W=181426704,C=181426704,E203@180629808:{55ec9a2c-95d9-4fa0-8671-4dcf74ca2bea}). >
+ PID:[1477:9 2018.05.25 10:51:59.242 DEBUG] [<s:] ELECTIONS: (V=0) SHIFT TO REG_LEADER. >
+ PID:[1477:9 2018.05.25 10:51:59.249 DEBUG] [<s:] ELECTIONS: (V=0) SENDING PROPOSAL CANDIDATE: [127.0.0.1:2112,{0de74638-b176-45dc-9330-fa11d712c0ce}](L=181409903,W=181426704,C=181426704,E203@180629808:{55ec9a2c-95d9-4fa0-8671-4dcf74ca2bea}), ME: [127.0.0.1:2112,{0de74638-b176-45dc-9330-fa11d712c0ce}](L=181409903,W=181426704,C=181426704,E203@180629808:{55ec9a2c-95d9-4fa0-8671-4dcf74ca2bea}). >
+ PID:[1477:9 2018.05.25 10:51:59.250 DEBUG] [<s:] ELECTIONS: (V=0) ACCEPT FROM [127.0.0.1:2112,"0de74638-b176-45dc-9330-fa11d712c0ce"] M=[127.0.0.1:2112,"0de74638-b176-45dc-9330-fa11d712c0ce"]). >
+ PID:[1477:9 2018.05.25 10:51:59.250 INFORMATION] [<s:] ELECTIONS: (V=0) DONE. ELECTED MASTER = [127.0.0.1:2112,{0de74638-b176-45dc-9330-fa11d712c0ce}](L=181409903,W=181426704,C=181426704,E203@180629808:{55ec9a2c-95d9-4fa0-8671-4dcf74ca2bea}). ME=[127.0.0.1:2112,{0de74638-b176-45dc-9330-fa11d712c0ce}](L=181409903,W=181426704,C=181426704,E203@180629808:{55ec9a2c-95d9-4fa0-8671-4dcf74ca2bea}). >
+ PID:[1477:9 2018.05.25 10:51:59.283 INFORMATION] [<s:] ========== [127.0.0.1:2112] PRE-MASTER STATE, WAITING FOR CHASER TO CATCH UP... >
+ PID:[1477:6 2018.05.25 10:51:59.283 DEBUG] [<s:] Subscriptions received state change to PreMaster stopping listening. >
+ PID:[1477:9 2018.05.25 10:51:59.285 INFORMATION] [<s:] ========== [127.0.0.1:2112] IS MASTER... SPARTA! >
+ PID:[1477:18 2018.05.25 10:51:59.288 DEBUG] [<s:] Subscriptions Became Master so now handling subscriptions >
+ PID:[1477:7 2018.05.25 10:51:59.344 DEBUG] [<s:] === Writing E204@181426704:"9f2c55c9-2284-4c3e-9a4b-4f334f91a9c3" (previous epoch at 180629808). >
+ PID:[1477:7 2018.05.25 10:51:59.348 DEBUG] [<s:] === Update Last Epoch E204@181426704:"9f2c55c9-2284-4c3e-9a4b-4f334f91a9c3" (previous epoch at 180629808). >
+ PID:[1477:23 2018.05.25 10:51:59.352 DEBUG] [<s:] PROJECTIONS: Starting Projections Core Coordinator. (Node State : "Master") >
+ PID:[1477:23 2018.05.25 10:51:59.354 DEBUG] [<s:] PROJECTIONS: Starting Projections Manager. (Node State : "Master") >
+ PID:[1477:23 2018.05.25 10:51:59.362 DEBUG] [<s:] PROJECTIONS: Starting Projection Manager Response Reader (reads from $projections-$master) >
+ PID:[1477:17 2018.05.25 10:51:59.364 VERBOSE] [<s:] Created stats stream '$stats-127.0.0.1:2113', code = "WrongExpectedVersion" >
+ PID:[1477:26 2018.05.25 10:51:59.370 DEBUG] [<s:] PROJECTIONS: Starting Projection Core Reader (reads from $projections-$f9709e13d99f44b98a90ea1a3b42b644) >
+ PID:[1477:24 2018.05.25 10:51:59.370 DEBUG] [<s:] PROJECTIONS: Starting Projection Core Reader (reads from $projections-$4839b8ec13704414aaf42e87135cd845) >
+ PID:[1477:25 2018.05.25 10:51:59.371 DEBUG] [<s:] PROJECTIONS: Starting Projection Core Reader (reads from $projections-$7cb5a438359a4fb3ae60f4f6081ba145) >
+ PID:[1477:23 2018.05.25 10:51:59.397 DEBUG] [<s:] PROJECTIONS: Resetting Worker Writer >
+ PID:[1477:24 2018.05.25 10:51:59.400 DEBUG] [<s:] PROJECTIONS: Resetting Master Writer >
+ PID:[1477:26 2018.05.25 10:51:59.400 DEBUG] [<s:] PROJECTIONS: Resetting Master Writer >
+ PID:[1477:25 2018.05.25 10:51:59.400 DEBUG] [<s:] PROJECTIONS: Resetting Master Writer >
+ PID:[1477:23 2018.05.25 10:51:59.401 DEBUG] [<s:] PROJECTIONS: SubComponent Started: EventReaderCoreService >
+ PID:[1477:23 2018.05.25 10:51:59.401 DEBUG] [<s:] PROJECTIONS: SubComponent Started: EventReaderCoreService >
+ PID:[1477:23 2018.05.25 10:51:59.402 DEBUG] [<s:] PROJECTIONS: SubComponent Started: EventReaderCoreService >
+ PID:[1477:23 2018.05.25 10:51:59.433 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreService >
+ PID:[1477:23 2018.05.25 10:51:59.434 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreService >
+ PID:[1477:23 2018.05.25 10:51:59.434 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreService >
+ PID:[1477:24 2018.05.25 10:51:59.446 DEBUG] [<s:] PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-$4839b8ec13704414aaf42e87135cd845) >
+ PID:[1477:26 2018.05.25 10:51:59.446 DEBUG] [<s:] PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-$f9709e13d99f44b98a90ea1a3b42b644) >
+ PID:[1477:25 2018.05.25 10:51:59.446 DEBUG] [<s:] PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-$7cb5a438359a4fb3ae60f4f6081ba145) >
+ PID:[1477:23 2018.05.25 10:51:59.448 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreServiceCommandReader >
+ PID:[1477:23 2018.05.25 10:51:59.449 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreServiceCommandReader >
+ PID:[1477:24 2018.05.25 10:51:59.452 DEBUG] [<s:] PROJECTIONS: Starting read $projections-$control-9f2c55c9-2284-4c3e-9a4b-4f334f91a9c3 >
+ PID:[1477:26 2018.05.25 10:51:59.453 DEBUG] [<s:] PROJECTIONS: Starting read $projections-$control-9f2c55c9-2284-4c3e-9a4b-4f334f91a9c3 >
+ PID:[1477:25 2018.05.25 10:51:59.453 DEBUG] [<s:] PROJECTIONS: Starting read $projections-$control-9f2c55c9-2284-4c3e-9a4b-4f334f91a9c3 >
+ PID:[1477:23 2018.05.25 10:51:59.489 DEBUG] [<s:] PROJECTIONS: SubComponent Started: ProjectionCoreServiceCommandReader >
+ PID:[1477:23 2018.05.25 10:51:59.492 DEBUG] [<s:] PROJECTIONS: Finished Starting Projection Manager Response Reader (reads from $projections-$master) >
+ PID:[1477:23 2018.05.25 10:51:59.506 DEBUG] [<s:] PROJECTIONS: Response received: 28273@$response-reader-starting >
+ PID:[1477:23 2018.05.25 10:51:59.508 DEBUG] [<s:] PROJECTIONS: Response received: 28274@$projection-worker-started >
+ PID:[1477:23 2018.05.25 10:51:59.512 DEBUG] [<s:] PROJECTIONS: Response received: 28275@$projection-worker-started >
+ PID:[1477:23 2018.05.25 10:51:59.513 DEBUG] [<s:] PROJECTIONS: Response received: 28276@$projection-worker-started >
+ PID:[1477:23 2018.05.25 10:51:59.515 DEBUG] [<s:] PROJECTIONS: Reading Existing Projections from $projections-$all >
+ PID:[1477:23 2018.05.25 10:51:59.518 WARNING] [<s:] PROJECTIONS: The following projection: A has a duplicate created event. Using projection Id 14 >
+ PID:[1477:23 2018.05.25 10:51:59.522 DEBUG] [<s:] PROJECTIONS: Found the following projections. $stream_by_category, $streams, $by_category, $by_event_type, xbox-one-s-counter, shopping-cart-item-counter, A, Projection A, Xstream, debugGreetings >
+ PID:[1477:23 2018.05.25 10:51:59.556 DEBUG] [<s:] Adding projection "0b5a4ad9-cfea-47a5-b43e-c341faba1805"@$stream_by_category to list >
+ PID:[1477:23 2018.05.25 10:51:59.558 DEBUG] [<s:] Adding projection "63bb9768-6baf-454c-8c12-f1d195c24936"@$streams to list >
+ PID:[1477:23 2018.05.25 10:51:59.558 DEBUG] [<s:] Adding projection "1214b727-247c-4825-8217-ea3ad5291f75"@$by_category to list >
+ PID:[1477:23 2018.05.25 10:51:59.560 DEBUG] [<s:] Adding projection "3739ac5b-0ebc-4e5b-9202-c833e6486b07"@$by_event_type to list >
+ PID:[1477:23 2018.05.25 10:51:59.561 DEBUG] [<s:] Adding projection "eaf54326-255c-4772-b305-a7feba054a40"@xbox-one-s-counter to list >
+ PID:[1477:23 2018.05.25 10:51:59.561 DEBUG] [<s:] Adding projection "c9ab12f9-6e29-4fd7-99d9-378c889fb046"@shopping-cart-item-counter to list >
+ PID:[1477:23 2018.05.25 10:51:59.562 DEBUG] [<s:] Adding projection "93c974e8-27e7-4e2f-8fa7-9c1ac20ebdf9"@A to list >
+ PID:[1477:23 2018.05.25 10:51:59.562 DEBUG] [<s:] Adding projection "23fad129-8054-4195-be91-8ff1769d78ae"@Projection A to list >
+ PID:[1477:23 2018.05.25 10:51:59.563 DEBUG] [<s:] Adding projection "768eb4a2-8d5e-4294-9a8a-a246cb7b9dbe"@Xstream to list >
+ PID:[1477:23 2018.05.25 10:51:59.564 DEBUG] [<s:] Adding projection "bd67d882-3514-49d7-8adf-010d7c12e731"@debugGreetings to list >
+ PID:[1477:23 2018.05.25 10:51:59.565 VERBOSE] [<s:] SLOW BUS MSG [manager input bus]: ReadStreamEventsForwardCompleted - 49ms. Handler: ProjectionManager. >
+ PID:[1477:9 2018.05.25 10:51:59.565 INFORMATION] [<s:] ========== [127.0.0.1:2112] Sub System 'Projections' initialized. >
+ PID:[1477:23 2018.05.25 10:51:59.566 VERBOSE] [<s:] SLOW QUEUE MSG [Projections Master]: ReadStreamEventsForwardCompleted - 49ms. Q: 0/22. >
+ PID:[1477:23 2018.05.25 10:51:59.595 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: false >
+ PID:[1477:23 2018.05.25 10:51:59.613 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: false >
+ PID:[1477:23 2018.05.25 10:51:59.613 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: false >
+ PID:[1477:23 2018.05.25 10:51:59.614 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.615 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.616 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.616 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.617 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.617 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.617 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $create-prepared to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.619 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $create-prepared >
+ PID:[1477:24 2018.05.25 10:51:59.619 DEBUG] [<s:] PROJECTIONS: Command received: 0@$create-prepared >
+ PID:[1477:25 2018.05.25 10:51:59.620 DEBUG] [<s:] PROJECTIONS: Command received: 0@$create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.620 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $create-prepared >
+ PID:[1477:26 2018.05.25 10:51:59.620 DEBUG] [<s:] PROJECTIONS: Command received: 0@$create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.621 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.622 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.622 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.622 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.624 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.625 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.626 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $create-prepared >
+ PID:[1477:23 2018.05.25 10:51:59.627 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $create-prepared >
+ PID:[1477:24 2018.05.25 10:51:59.706 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.706 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.706 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.707 DEBUG] [<s:] PROJECTIONS: Command received: 1@$create-prepared >
+ PID:[1477:26 2018.05.25 10:51:59.707 DEBUG] [<s:] PROJECTIONS: Command received: 1@$create-prepared >
+ PID:[1477:25 2018.05.25 10:51:59.707 DEBUG] [<s:] PROJECTIONS: Command received: 1@$create-prepared >
+ PID:[1477:24 2018.05.25 10:51:59.709 DEBUG] [<s:] PROJECTIONS: Command received: 2@$create-prepared >
+ PID:[1477:26 2018.05.25 10:51:59.711 DEBUG] [<s:] PROJECTIONS: Command received: 2@$create-prepared >
+ PID:[1477:24 2018.05.25 10:51:59.711 DEBUG] [<s:] PROJECTIONS: Command received: 3@$create-prepared >
+ PID:[1477:25 2018.05.25 10:51:59.711 DEBUG] [<s:] PROJECTIONS: Command received: 2@$create-prepared >
+ PID:[1477:24 2018.05.25 10:51:59.725 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.725 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.725 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.726 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.727 DEBUG] [<s:] PROJECTIONS: Response received: 28280@$prepared >
+ PID:[1477:25 2018.05.25 10:51:59.757 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.757 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.759 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $prepared to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.759 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:26 2018.05.25 10:51:59.759 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.761 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: false >
+ PID:[1477:25 2018.05.25 10:51:59.762 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:25 2018.05.25 10:51:59.763 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:24 2018.05.25 10:51:59.763 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.763 DEBUG] [<s:] PROJECTIONS: Response received: 28281@$prepared >
+ PID:[1477:23 2018.05.25 10:51:59.764 DEBUG] [<s:] PROJECTIONS: Response received: 28282@$prepared >
+ PID:[1477:23 2018.05.25 10:51:59.765 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: false >
+ PID:[1477:23 2018.05.25 10:51:59.766 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: false >
+ PID:[1477:26 2018.05.25 10:51:59.766 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.766 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $load-stopped >
+ PID:[1477:26 2018.05.25 10:51:59.767 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:24 2018.05.25 10:51:59.767 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.768 DEBUG] [<s:] PROJECTIONS: Response received: 28284@$prepared >
+ PID:[1477:26 2018.05.25 10:51:59.768 DEBUG] [<s:] PROJECTIONS: Command received: 3@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.768 DEBUG] [<s:] PROJECTIONS: Response received: 28286@$prepared >
+ PID:[1477:25 2018.05.25 10:51:59.769 DEBUG] [<s:] PROJECTIONS: Command received: 3@$load-stopped >
+ PID:[1477:24 2018.05.25 10:51:59.769 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.769 DEBUG] [<s:] PROJECTIONS: Response received: 28288@$prepared >
+ PID:[1477:24 2018.05.25 10:51:59.769 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $prepared >
+ PID:[1477:23 2018.05.25 10:51:59.770 DEBUG] [<s:] PROJECTIONS: Response received: 28290@$prepared >
+ PID:[1477:24 2018.05.25 10:51:59.771 DEBUG] [<s:] PROJECTIONS: Command received: 4@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.771 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.773 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.775 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.776 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$7cb5a438-359a-4fb3-ae60-f4f6081ba145. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.779 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: false >
+ PID:[1477:23 2018.05.25 10:51:59.780 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$f9709e13-d99f-44b9-8a90-ea1a3b42b644. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.781 DEBUG] [<s:] PROJECTIONS: Response received: 28292@$prepared >
+ PID:[1477:23 2018.05.25 10:51:59.782 DEBUG] [<s:] PROJECTIONS: Response received: 28294@$prepared >
+ PID:[1477:23 2018.05.25 10:51:59.783 DEBUG] [<s:] PROJECTIONS: Response received: 28296@$prepared >
+ PID:[1477:23 2018.05.25 10:51:59.784 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.784 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $load-stopped >
+ PID:[1477:25 2018.05.25 10:51:59.821 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.821 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.821 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.831 DEBUG] [<s:] PROJECTIONS: Command received: 4@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.831 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: false >
+ PID:[1477:26 2018.05.25 10:51:59.831 DEBUG] [<s:] PROJECTIONS: Command received: 4@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.833 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.833 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $load-stopped to $projections-$4839b8ec-1370-4414-aaf4-2e87135cd845. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.834 DEBUG] [<s:] PROJECTIONS: Command received: 5@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.834 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$7cb5a438359a4fb3ae60f4f6081ba145: $load-stopped >
+ PID:[1477:24 2018.05.25 10:51:59.835 DEBUG] [<s:] PROJECTIONS: Command received: 5@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.835 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$f9709e13d99f44b98a90ea1a3b42b644: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.836 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.837 DEBUG] [<s:] PROJECTIONS: Response received: 28303@$stopped >
+ PID:[1477:24 2018.05.25 10:51:59.837 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:25 2018.05.25 10:51:59.838 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:25 2018.05.25 10:51:59.838 DEBUG] [<s:] PROJECTIONS: Command received: 5@$load-stopped >
+ PID:[1477:24 2018.05.25 10:51:59.848 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.849 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.850 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$4839b8ec13704414aaf42e87135cd845: $load-stopped >
+ PID:[1477:24 2018.05.25 10:51:59.851 DEBUG] [<s:] PROJECTIONS: Command received: 6@$load-stopped >
+ PID:[1477:26 2018.05.25 10:51:59.851 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:24 2018.05.25 10:51:59.851 DEBUG] [<s:] PROJECTIONS: Command received: 7@$load-stopped >
+ PID:[1477:23 2018.05.25 10:51:59.852 DEBUG] [<s:] PROJECTIONS: Response received: 28305@$stopped >
+ PID:[1477:25 2018.05.25 10:51:59.861 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:26 2018.05.25 10:51:59.888 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:23 2018.05.25 10:51:59.888 DEBUG] [<s:] PROJECTIONS: Response received: 28307@$stopped >
+ PID:[1477:25 2018.05.25 10:51:59.889 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.889 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.891 DEBUG] [<s:] PROJECTIONS: Response received: 28313@$stopped >
+ PID:[1477:24 2018.05.25 10:51:59.891 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:25 2018.05.25 10:51:59.892 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.893 DEBUG] [<s:] PROJECTIONS: Response received: 28317@$stopped >
+ PID:[1477:24 2018.05.25 10:51:59.893 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.895 DEBUG] [<s:] PROJECTIONS: Response received: 28320@$stopped >
+ PID:[1477:26 2018.05.25 10:51:59.895 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.896 DEBUG] [<s:] PROJECTIONS: Scheduling the writing of $stopped to $projections-$master. Current status of Writer: Busy: true >
+ PID:[1477:24 2018.05.25 10:51:59.898 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:26 2018.05.25 10:51:59.899 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.899 DEBUG] [<s:] PROJECTIONS: Response received: 28325@$stopped >
+ PID:[1477:24 2018.05.25 10:51:59.900 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.900 DEBUG] [<s:] PROJECTIONS: Response received: 28329@$stopped >
+ PID:[1477:26 2018.05.25 10:51:59.901 DEBUG] [<s:] PROJECTIONS: Finished writing events to $projections-$master: $stopped >
+ PID:[1477:23 2018.05.25 10:51:59.901 DEBUG] [<s:] PROJECTIONS: Response received: 28332@$stopped >
+ PID:[1477:23 2018.05.25 10:51:59.902 DEBUG] [<s:] PROJECTIONS: Response received: 28335@$stopped >
