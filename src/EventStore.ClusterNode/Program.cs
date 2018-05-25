@@ -281,6 +281,8 @@ namespace EventStore.ClusterNode
                 builder.EnableWriteThrough();
             if (options.SkipIndexScanOnReads)
                 builder.SkipIndexScanOnReads();
+            if (options.ReduceFileCachePressure)
+                builder.ReduceFileCachePressure();
 
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
