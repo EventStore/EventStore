@@ -168,6 +168,9 @@ namespace EventStore.Core.Util
 
         public const string ReduceFileCachePressureDescr = "Change the way the DB files are opened to reduce their stickiness in the system file cache.";
         public static readonly bool ReduceFileCachePressureDefault = false;
+	    
+	    public const string InitializationThreadsDescr = "Number of threads to be used to initialize the database. Will be capped at host processor count.";
+	    public static readonly int InitializationThreadsDefault = 1;
 
         //Loading certificates from files
         public const string CertificateFileDescr = "The path to certificate file.";

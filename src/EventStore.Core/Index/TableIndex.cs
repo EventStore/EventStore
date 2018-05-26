@@ -30,6 +30,7 @@ namespace EventStore.Core.Index
         private readonly bool _inMem;
         private readonly bool _skipIndexVerify;
         private readonly int _indexCacheDepth;
+        private readonly int _initializationThreads;
         private readonly byte _ptableVersion;
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
@@ -63,17 +64,21 @@ namespace EventStore.Core.Index
                           bool additionalReclaim = false,
                           bool inMem = false,
                           bool skipIndexVerify = false,
-                          int indexCacheDepth = 16)
+                          int indexCacheDepth = 16,
+                          int initializationThreads = 1)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
             Ensure.NotNull(lowHasher, "lowHasher");
             Ensure.NotNull(highHasher, "highHasher");
             Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
+            Ensure.Positive(initializationThreads, "initializationThreads");
+            
             if (maxTablesPerLevel <= 1)
                 throw new ArgumentOutOfRangeException("maxTablesPerLevel");
 
             if(indexCacheDepth > 28 || indexCacheDepth < 8) throw new ArgumentOutOfRangeException("indexCacheDepth");
+            
             _directory = directory;
             _memTableFactory = memTableFactory;
             _tfReaderFactory = tfReaderFactory;
@@ -84,6 +89,7 @@ namespace EventStore.Core.Index
             _inMem = inMem;
             _skipIndexVerify = ShouldForceIndexVerify() ? false: skipIndexVerify;
             _indexCacheDepth = indexCacheDepth;
+            _initializationThreads = initializationThreads;
             _ptableVersion = ptableVersion;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
 
@@ -120,7 +126,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify);
+                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify, threads: _initializationThreads);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -137,7 +143,7 @@ namespace EventStore.Core.Index
                 DumpAndCopyIndex();
                 File.Delete(indexmapFile);
                 DeleteForceIndexVerifyFile();
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify);
+                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify, threads: _initializationThreads);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;

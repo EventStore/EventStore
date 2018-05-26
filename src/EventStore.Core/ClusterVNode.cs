@@ -162,7 +162,7 @@ namespace EventStore.Core
             }
 
             // STORAGE SUBSYSTEM
-            db.Open(vNodeSettings.VerifyDbHash);
+            db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
             var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
@@ -177,7 +177,8 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,
                                             skipIndexVerify: vNodeSettings.SkipIndexVerify,
-                                            indexCacheDepth: vNodeSettings.IndexCacheDepth);
+                                            indexCacheDepth: vNodeSettings.IndexCacheDepth,
+                                            initializationThreads: vNodeSettings.InitializationThreads);
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
