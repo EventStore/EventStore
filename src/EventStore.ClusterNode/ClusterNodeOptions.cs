@@ -234,6 +234,9 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.ReduceFileCachePressureDescr, Opts.DbGroup)]
         public bool ReduceFileCachePressure { get; set; }
+        
+        [ArgDescription(Opts.InitializationThreadsDescr, Opts.DbGroup)]
+        public int InitializationThreads { get; set; }
 
         public ClusterNodeOptions()
         {
@@ -349,6 +352,7 @@ namespace EventStore.ClusterNode
 
             SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
             ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
+            InitializationThreads = Opts.InitializationThreadsDefault;
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
             ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
