@@ -1,26 +1,23 @@
 using System;
-using System.Linq;
-using System.Threading;
-using EventStore.Common.Utils;
-using Serilog;
-using Serilog.Core;
 
 namespace EventStore.Common.Log
 {
-    public static class SeriLoggerHelperMethods
-    {
-        //[ConditionMethod("is-dot-net")]
-        public static bool IsDotNet()
+    /* 
+        public static class SeriLoggerHelperMethods
         {
-            return !Runtime.IsMono;
-        }
+            //[ConditionMethod("is-dot-net")]
+            public static bool IsDotNet()
+            {
+                return !Runtime.IsMono;
+            }
 
-        //[ConditionMethod("is-mono")]
-        public static bool IsMono()
-        {
-            return Runtime.IsMono;
+            //[ConditionMethod("is-mono")]
+            public static bool IsMono()
+            {
+                return Runtime.IsMono;
+            }
         }
-    }
+     */
 
     public class SeriLogger : ILogger
     {
@@ -49,7 +46,6 @@ namespace EventStore.Common.Log
 
         public void Error(string format, params object[] args)
         {
-            //Serilog.Log.Error(format, args);
             _logger.Error(format, args);
         }
 

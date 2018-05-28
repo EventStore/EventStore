@@ -1,4 +1,5 @@
-﻿using System;
+﻿/* 
+using System;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -106,3 +107,4 @@ namespace EventStore.Common.Log
         }
     }
 }
+*/

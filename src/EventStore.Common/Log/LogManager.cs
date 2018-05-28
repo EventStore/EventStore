@@ -33,15 +33,15 @@ namespace EventStore.Common.Log
         private static Func<string, ILogger> _logFactory = x => new SeriLogger(x);
         internal static string _logsDirectory;
 
-        static LogManager()
-        {
+        //static LogManager()
+        //{
             /* 
             var conf = NLog.Config.ConfigurationItemFactory.Default;
             conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
             conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
             conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
             */
-        }
+        //}
 
         public static ILogger GetLoggerFor(Type type)
         {
@@ -65,8 +65,6 @@ namespace EventStore.Common.Log
                 throw new InvalidOperationException("Cannot initialize twice");
 
             var potentialSeriLogConfigurationFilePaths = new []{
-                //etc/eventstore"+"App.config
-                //
                 Path.Combine(Locations.ApplicationDirectory, EVENTSTORE_LOG_FILENAME),
                 Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
@@ -76,20 +74,14 @@ namespace EventStore.Common.Log
                  Serilog.Log.Logger = 
                  new Serilog.LoggerConfiguration()
                  .ReadFrom
-                 .AppSettings(null,configFilePath)
-                //.WriteTo.Logger(lc => lc.Filter.ByIncludingOnly(StatsMessage))
-                //.WriteTo.File("mystat.csv")    
-                //.WriteTo.Logger(lc => lc
-                    //.Filter.ByIncludingOnly(Matching.FromSource<MonitoringService>())
-                    //.WriteTo.File("mystat.csv"))             
+                 .AppSettings(null,configFilePath)         
                  .CreateLogger();
             }
             else
-            {                                           //App.Config , ,
+            {                                    
                 Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to defaults.",
                         EVENTSTORE_LOG_FILENAME,
                         String.Join(",\n", potentialSeriLogConfigurationFilePaths));
-                //SetDefaultLog();
             }
 
             _initialized = true;

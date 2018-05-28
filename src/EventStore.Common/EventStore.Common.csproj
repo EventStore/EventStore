@@ -81,6 +81,18 @@
       <HintPath>..\libs\Serilog.Filters.Expressions.dll</HintPath>
       <Private>True</Private>
     </Reference>
+     <Reference Include="Serilog.Sinks.RollingFile">
+      <HintPath>..\libs\Serilog.Sinks.RollingFile.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Formatting.Compact">
+      <HintPath>..\libs\Serilog.Formatting.Compact.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Superpower">
+      <HintPath>..\libs\Superpower.dll</HintPath>
+    <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -140,6 +152,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\libs\Serilog.Enrichers.Environment.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Sinks.RollingFile.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+      <None Include="..\libs\Serilog.Formatting.Compact.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+     <None Include="..\libs\Superpower.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

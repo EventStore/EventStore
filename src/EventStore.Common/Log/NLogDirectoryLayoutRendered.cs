@@ -1,3 +1,4 @@
+/* 
 using System.Text;
 using NLog;
 using NLog.LayoutRenderers;
@@ -13,3 +14,4 @@ namespace EventStore.Common.Log
         }
     }
 }
+*/
