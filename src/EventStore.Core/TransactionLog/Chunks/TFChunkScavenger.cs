@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Services;
@@ -129,23 +130,24 @@ namespace EventStore.Core.TransactionLog.Chunks
             // Initial scavenge pass
             var chunksToScavenge = GetAllChunks(startFromChunk);
 
-            const int initialSizeOfThreadLocalCache = 1024 * 64; // 64k records
-
-            Parallel.ForEach(chunksToScavenge,
-                new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct},
-                () =>
-                {
-                    Log.Trace("SCAVENGING: Allocating {0} spaces in thread local cache {1}.", initialSizeOfThreadLocalCache,
-                        Thread.CurrentThread.ManagedThreadId);
-                    return new ThreadLocalScavengeCache(initialSizeOfThreadLocalCache);
-                },
-                (chunk, pls, cache) =>
-                {
-                    ScavengeChunk(alwaysKeepScavenged, chunk, cache, ct);
-                    cache.Reset(); // reset thread local cache before next iteration.
-                    return cache;
-                },
-                cache => { });
+            using (var scavengeCacheObjectPool = CreateThreadLocalScavengeCachePool(_threads))
+            {
+                Parallel.ForEach(chunksToScavenge,
+                    new ParallelOptions {MaxDegreeOfParallelism = _threads, CancellationToken = ct},
+                    (chunk, pls) =>
+                    {
+                        var cache = scavengeCacheObjectPool.Get();
+                        try
+                        {
+                            ScavengeChunk(alwaysKeepScavenged, chunk, cache, ct);
+                        }
+                        finally
+                        {
+                            cache.Reset(); // reset thread local cache before next iteration.
+                            scavengeCacheObjectPool.Return(cache);
+                        }
+                    });
+            }
 
             Log.Trace("SCAVENGING: initial pass completed in {0}.", sw.Elapsed);
 
@@ -527,7 +529,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             return false;
         }
-        
+
         private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)
         {
             CommitInfo commitInfo;
@@ -539,7 +541,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             return commitInfo.KeepCommit != false;
         }
-        
+
         private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart, long chunkEnd)
         {
             CommitInfo commitInfo;
@@ -742,6 +744,24 @@ namespace EventStore.Core.TransactionLog.Chunks
                 LogRecord = logRecord;
                 RecordLength = recordLength;
             }
+        }
+
+        private ObjectPool<ThreadLocalScavengeCache> CreateThreadLocalScavengeCachePool(int threads)
+        {
+            const int initialSizeOfThreadLocalCache = 1024 * 64; // 64k records
+
+            return new ObjectPool<ThreadLocalScavengeCache>(
+                ScavengeId,
+                0,
+                threads,
+                () =>
+                {
+                    Log.Trace("SCAVENGING: Allocating {0} spaces in thread local cache {1}.", initialSizeOfThreadLocalCache,
+                        Thread.CurrentThread.ManagedThreadId);
+                    return new ThreadLocalScavengeCache(initialSizeOfThreadLocalCache);
+                },
+                cache => { },
+                pool => { });
         }
 
         class ThreadLocalScavengeCache
