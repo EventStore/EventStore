@@ -12,7 +12,7 @@ namespace EventStore.Common.Log
         public static string LogsDirectory
         {
             get
-            { 
+            {
                 if (!_initialized)
                     throw new InvalidOperationException("Init method must be called");
                 return _logsDirectory;
@@ -26,7 +26,7 @@ namespace EventStore.Common.Log
                 return _initialized;
             }
         }
-        
+
         private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
@@ -35,7 +35,7 @@ namespace EventStore.Common.Log
 
         //static LogManager()
         //{
-            /* 
+            /*
             var conf = NLog.Config.ConfigurationItemFactory.Default;
             conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
             conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
@@ -68,17 +68,22 @@ namespace EventStore.Common.Log
                 Path.Combine(Locations.ApplicationDirectory, EVENTSTORE_LOG_FILENAME),
                 Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
+
+             Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
+
             var configFilePath = potentialSeriLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
-                 Serilog.Log.Logger = 
+                 Serilog.Log.Logger =
                  new Serilog.LoggerConfiguration()
-                 .ReadFrom
-                 .AppSettings(null,configFilePath)         
+                 .Enrich.WithProperty("logsdir",_logsDirectory,false)
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("std",configFilePath))
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("stats",configFilePath))
                  .CreateLogger();
             }
             else
-            {                                    
+            {
                 Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to defaults.",
                         EVENTSTORE_LOG_FILENAME,
                         String.Join(",\n", potentialSeriLogConfigurationFilePaths));
@@ -98,7 +103,7 @@ namespace EventStore.Common.Log
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
         }
-/* 
+/*
         private static void SetDefaultLog()
         {
             NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();

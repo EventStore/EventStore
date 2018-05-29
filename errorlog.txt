@@ -1,0 +1,156 @@
+PID:[4284:1 2018.05.29 11:27:13.151 ERROR]  Error Test >
+PID:[4284:1 2018.05.29 11:27:13.152 FATAL]  Fatal Test >
+PID:[4968:1 2018.05.29 12:13:38.915 ERROR]  Error Test 
+PID:[4968:1 2018.05.29 12:13:38.919 FATAL]  Fatal Test 
+PID:[5251:1 2018.05.29 12:19:52.724 ERROR]  Error Test 
+PID:[5251:1 2018.05.29 12:19:52.725 FATAL]  Fatal Test 
+PID:[6320:1 2018.05.29 12:31:30.189 ERROR]  Error Test 
+PID:[6320:1 2018.05.29 12:31:30.193 FATAL]  Fatal Test 
+PID:[6713:1 2018.05.29 12:40:11.523 ERROR] ProgramBase`1 Error Test 
+PID:[6713:1 2018.05.29 12:40:11.527 FATAL] ProgramBase`1 Fatal Test 
+[PID:6977:1 2018.05.29 12:44:19.183 ERROR ProgramBase`1] Error Test 
+[PID:6977:1 2018.05.29 12:44:19.184 FATAL ProgramBase`1] Fatal Test 
+[PID:7180:1 2018.05.29 12:48:38.800 ERROR ProgramBase`1] Error Test 
+[PID:7180:1 2018.05.29 12:48:38.803 FATAL ProgramBase`1] Fatal Test 
+[PID:7379:1 2018.05.29 12:51:53.906 ERROR ProgramBase`1] Error Test 
+[PID:7379:1 2018.05.29 12:51:53.909 FATAL ProgramBase`1] Fatal Test 
+[PID:7649:1 2018.05.29 13:03:55.677 ERROR ProgramBase`1] Error Test 
+[PID:7649:1 2018.05.29 13:03:55.678 FATAL ProgramBase`1] Fatal Test 
+[PID:7861:1 2018.05.29 13:05:00.159 ERROR ProgramBase`1] Error Test 
+[PID:7861:1 2018.05.29 13:05:00.160 FATAL ProgramBase`1] Fatal Test 
+[PID:7861:7 2018.05.29 13:05:02.947 FATAL StorageWriterService] Unexpected error in StorageWriterService. Terminating the process... 
+Newtonsoft.Json.JsonSerializationException: Error getting value from 'EpochPosition' on 'EventStore.Core.TransactionLog.LogRecords.EpochRecord+EpochRecordDto'. ---> System.InvalidOperationException
+  at (wrapper managed-to-native) System.Reflection.Emit.DynamicMethod:create_dynamic_method (System.Reflection.Emit.DynamicMethod,System.Reflection.Emit.DynamicMethod)
+  at System.Reflection.Emit.DynamicMethod.CreateDynMethod () [0x000c5] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Reflection.Emit.DynamicMethod.CreateDelegate (System.Type delegateType) [0x00029] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at Newtonsoft.Json.Utilities.DynamicReflectionDelegateFactory.CreateGet[T] (System.Reflection.PropertyInfo propertyInfo) [0x0004a] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Utilities.ReflectionDelegateFactory.CreateGet[T] (System.Reflection.MemberInfo memberInfo) [0x00010] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DynamicValueProvider.GetValue (System.Object target) [0x00008] in <75bddf4f64454860a3770625955e62a6>:0 
+   --- End of inner exception stack trace ---
+  at Newtonsoft.Json.Serialization.DynamicValueProvider.GetValue (System.Object target) [0x00054] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalWriter.CalculatePropertyValues (Newtonsoft.Json.JsonWriter writer, System.Object value, Newtonsoft.Json.Serialization.JsonContainerContract contract, Newtonsoft.Json.Serialization.JsonProperty member, Newtonsoft.Json.Serialization.JsonProperty property, Newtonsoft.Json.Serialization.JsonContract& memberContract, System.Object& memberValue) [0x00066] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalWriter.SerializeObject (Newtonsoft.Json.JsonWriter writer, System.Object value, Newtonsoft.Json.Serialization.JsonObjectContract contract, Newtonsoft.Json.Serialization.JsonProperty member, Newtonsoft.Json.Serialization.JsonContainerContract collectionContract, Newtonsoft.Json.Serialization.JsonProperty containerProperty) [0x0003c] in <75bddf4f64454860a3770625955e62a6>:0 
+[PID:7861:7 2018.05.29 13:05:02.951 ERROR Application] Exiting with exit code: 1.
+Exit reason: Unexpected error in StorageWriterService: Error getting value from 'EpochPosition' on 'EventStore.Core.TransactionLog.LogRecords.EpochRecord+EpochRecordDto'. 
+[PID:7886:1 2018.05.29 13:05:05.196 ERROR ProgramBase`1] Error Test 
+[PID:7886:1 2018.05.29 13:05:05.197 FATAL ProgramBase`1] Fatal Test 
+[PID:7886:1 2018.05.29 13:05:06.512 FATAL ProgramBase`1] Unhandled exception while starting application: 
+System.InvalidOperationException
+  at (wrapper managed-to-native) System.Reflection.Emit.DynamicMethod:create_dynamic_method (System.Reflection.Emit.DynamicMethod,System.Reflection.Emit.DynamicMethod)
+  at System.Reflection.Emit.DynamicMethod.CreateDynMethod () [0x000c5] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Reflection.Emit.DynamicMethod.CreateDelegate (System.Type delegateType) [0x00029] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at Newtonsoft.Json.Utilities.DynamicReflectionDelegateFactory.CreateDefaultConstructor[T] (System.Type type) [0x0003c] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.GetDefaultCreator (System.Type createdType) [0x00005] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.InitializeContract (Newtonsoft.Json.Serialization.JsonContract contract) [0x0008b] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.CreateObjectContract (System.Type objectType) [0x00007] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.CreateContract (System.Type objectType) [0x000f9] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.ResolveContract (System.Type type) [0x00037] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.GetContractSafe (System.Type type) [0x0000b] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize (Newtonsoft.Json.JsonReader reader, System.Type objectType, System.Boolean checkAdditionalContent) [0x0000e] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonSerializer.DeserializeInternal (Newtonsoft.Json.JsonReader reader, System.Type objectType) [0x001e7] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonSerializer.Deserialize (Newtonsoft.Json.JsonReader reader, System.Type objectType) [0x00000] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonConvert.DeserializeObject (System.String value, System.Type type, Newtonsoft.Json.JsonSerializerSettings settings) [0x0002d] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonConvert.DeserializeObject[T] (System.String value, Newtonsoft.Json.JsonSerializerSettings settings) [0x00000] in <75bddf4f64454860a3770625955e62a6>:0 
+  at EventStore.Common.Utils.Json.ParseJson[T] (System.Byte[] json) [0x0000b] in <d7f4492e9f7b4657b969c8674a40d41f>:0 
+  at EventStore.Core.TransactionLog.LogRecords.SystemLogRecord.GetEpochRecord () [0x00040] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.Storage.EpochManager.EpochManager.ReadEpochs (System.Int32 maxEpochCount) [0x0012b] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.Storage.EpochManager.EpochManager.Init () [0x00000] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.ClusterVNode..ctor (EventStore.Core.TransactionLog.Chunks.TFChunkDb db, EventStore.Core.Cluster.Settings.ClusterVNodeSettings vNodeSettings, EventStore.Core.Services.Gossip.IGossipSeedSource gossipSeedSource, EventStore.Core.Services.Transport.Http.Controllers.InfoController infoController, EventStore.Core.ISubsystem[] subsystems) [0x00543] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.VNodeBuilder.Build (EventStore.Common.Options.IOptions options, EventStore.Core.Services.PersistentSubscription.ConsumerStrategy.IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies) [0x00397] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.ClusterNode.Program.BuildNode (EventStore.ClusterNode.ClusterNodeOptions options) [0x007b2] in <eff77f10e75642c4aa681bea113a9ac4>:0 
+  at EventStore.ClusterNode.Program.Create (EventStore.ClusterNode.ClusterNodeOptions opts) [0x000cc] in <eff77f10e75642c4aa681bea113a9ac4>:0 
+  at EventStore.Core.ProgramBase`1[TOptions].Run (System.String[] args) [0x000be] in <27db127369c34c16b9162d9f5c5521ec>:0 
+[PID:7886:1 2018.05.29 13:05:06.515 FATAL ProgramBase`1]  
+System.InvalidOperationException
+  at (wrapper managed-to-native) System.Reflection.Emit.DynamicMethod:create_dynamic_method (System.Reflection.Emit.DynamicMethod,System.Reflection.Emit.DynamicMethod)
+  at System.Reflection.Emit.DynamicMethod.CreateDynMethod () [0x000c5] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Reflection.Emit.DynamicMethod.CreateDelegate (System.Type delegateType) [0x00029] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at Newtonsoft.Json.Utilities.DynamicReflectionDelegateFactory.CreateDefaultConstructor[T] (System.Type type) [0x0003c] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.GetDefaultCreator (System.Type createdType) [0x00005] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.InitializeContract (Newtonsoft.Json.Serialization.JsonContract contract) [0x0008b] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.CreateObjectContract (System.Type objectType) [0x00007] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.CreateContract (System.Type objectType) [0x000f9] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DefaultContractResolver.ResolveContract (System.Type type) [0x00037] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.GetContractSafe (System.Type type) [0x0000b] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize (Newtonsoft.Json.JsonReader reader, System.Type objectType, System.Boolean checkAdditionalContent) [0x0000e] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonSerializer.DeserializeInternal (Newtonsoft.Json.JsonReader reader, System.Type objectType) [0x001e7] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonSerializer.Deserialize (Newtonsoft.Json.JsonReader reader, System.Type objectType) [0x00000] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonConvert.DeserializeObject (System.String value, System.Type type, Newtonsoft.Json.JsonSerializerSettings settings) [0x0002d] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.JsonConvert.DeserializeObject[T] (System.String value, Newtonsoft.Json.JsonSerializerSettings settings) [0x00000] in <75bddf4f64454860a3770625955e62a6>:0 
+  at EventStore.Common.Utils.Json.ParseJson[T] (System.Byte[] json) [0x0000b] in <d7f4492e9f7b4657b969c8674a40d41f>:0 
+  at EventStore.Core.TransactionLog.LogRecords.SystemLogRecord.GetEpochRecord () [0x00040] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.Storage.EpochManager.EpochManager.ReadEpochs (System.Int32 maxEpochCount) [0x0012b] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.Storage.EpochManager.EpochManager.Init () [0x00000] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.ClusterVNode..ctor (EventStore.Core.TransactionLog.Chunks.TFChunkDb db, EventStore.Core.Cluster.Settings.ClusterVNodeSettings vNodeSettings, EventStore.Core.Services.Gossip.IGossipSeedSource gossipSeedSource, EventStore.Core.Services.Transport.Http.Controllers.InfoController infoController, EventStore.Core.ISubsystem[] subsystems) [0x00543] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.VNodeBuilder.Build (EventStore.Common.Options.IOptions options, EventStore.Core.Services.PersistentSubscription.ConsumerStrategy.IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies) [0x00397] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.ClusterNode.Program.BuildNode (EventStore.ClusterNode.ClusterNodeOptions options) [0x007b2] in <eff77f10e75642c4aa681bea113a9ac4>:0 
+  at EventStore.ClusterNode.Program.Create (EventStore.ClusterNode.ClusterNodeOptions opts) [0x000cc] in <eff77f10e75642c4aa681bea113a9ac4>:0 
+  at EventStore.Core.ProgramBase`1[TOptions].Run (System.String[] args) [0x000be] in <27db127369c34c16b9162d9f5c5521ec>:0 
+[PID:8077:1 2018.05.29 13:05:45.244 ERROR ProgramBase`1] Error Test 
+[PID:8077:1 2018.05.29 13:05:45.246 FATAL ProgramBase`1] Fatal Test 
+[PID:8310:1 2018.05.29 13:06:50.905 ERROR ProgramBase`1] Error Test 
+[PID:8310:1 2018.05.29 13:06:50.906 FATAL ProgramBase`1] Fatal Test 
+[PID:8547:1 2018.05.29 13:07:44.131 ERROR ProgramBase`1] Error Test 
+[PID:8547:1 2018.05.29 13:07:44.132 FATAL ProgramBase`1] Fatal Test 
+[PID:8765:1 2018.05.29 13:08:53.301 ERROR ProgramBase`1] Error Test 
+[PID:8765:1 2018.05.29 13:08:53.302 FATAL ProgramBase`1] Fatal Test 
+[PID:9030:1 2018.05.29 13:22:00.978 ERROR ProgramBase`1] Error Test 
+[PID:9030:1 2018.05.29 13:22:00.979 FATAL ProgramBase`1] Fatal Test 
+[PID:9030:7 2018.05.29 13:22:06.128 FATAL StorageWriterService] Unexpected error in StorageWriterService. Terminating the process... 
+Newtonsoft.Json.JsonSerializationException: Error getting value from 'EpochPosition' on 'EventStore.Core.TransactionLog.LogRecords.EpochRecord+EpochRecordDto'. ---> System.InvalidOperationException
+  at (wrapper managed-to-native) System.Reflection.Emit.DynamicMethod:create_dynamic_method (System.Reflection.Emit.DynamicMethod,System.Reflection.Emit.DynamicMethod)
+  at System.Reflection.Emit.DynamicMethod.CreateDynMethod () [0x000c5] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Reflection.Emit.DynamicMethod.CreateDelegate (System.Type delegateType) [0x00029] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at Newtonsoft.Json.Utilities.DynamicReflectionDelegateFactory.CreateGet[T] (System.Reflection.PropertyInfo propertyInfo) [0x0004a] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Utilities.ReflectionDelegateFactory.CreateGet[T] (System.Reflection.MemberInfo memberInfo) [0x00010] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.DynamicValueProvider.GetValue (System.Object target) [0x00008] in <75bddf4f64454860a3770625955e62a6>:0 
+   --- End of inner exception stack trace ---
+  at Newtonsoft.Json.Serialization.DynamicValueProvider.GetValue (System.Object target) [0x00054] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalWriter.CalculatePropertyValues (Newtonsoft.Json.JsonWriter writer, System.Object value, Newtonsoft.Json.Serialization.JsonContainerContract contract, Newtonsoft.Json.Serialization.JsonProperty member, Newtonsoft.Json.Serialization.JsonProperty property, Newtonsoft.Json.Serialization.JsonContract& memberContract, System.Object& memberValue) [0x00066] in <75bddf4f64454860a3770625955e62a6>:0 
+  at Newtonsoft.Json.Serialization.JsonSerializerInternalWriter.SerializeObject (Newtonsoft.Json.JsonWriter writer, System.Object value, Newtonsoft.Json.Serialization.JsonObjectContract contract, Newtonsoft.Json.Serialization.JsonProperty member, Newtonsoft.Json.Serialization.JsonContainerContract collectionContract, Newtonsoft.Json.Serialization.JsonProperty containerProperty) [0x0003c] in <75bddf4f64454860a3770625955e62a6>:0 
+[PID:9030:7 2018.05.29 13:22:06.143 ERROR Application] Exiting with exit code: 1.
+Exit reason: Unexpected error in StorageWriterService: Error getting value from 'EpochPosition' on 'EventStore.Core.TransactionLog.LogRecords.EpochRecord+EpochRecordDto'. 
+[PID:9265:1 2018.05.29 13:23:08.909 ERROR ProgramBase`1] Error Test 
+[PID:9265:1 2018.05.29 13:23:08.911 FATAL ProgramBase`1] Fatal Test 
+[PID:9503:1 2018.05.29 13:25:45.828 ERROR ProgramBase`1] Error Test 
+[PID:9503:1 2018.05.29 13:25:45.830 FATAL ProgramBase`1] Fatal Test 
+[PID:9854:1 2018.05.29 13:51:02.605 ERROR ProgramBase`1] Error Test 
+[PID:9854:1 2018.05.29 13:51:02.606 FATAL ProgramBase`1] Fatal Test 
+[PID:10105:1 2018.05.29 13:57:10.343 ERROR ProgramBase`1] Error Test 
+[PID:10105:1 2018.05.29 13:57:10.347 FATAL ProgramBase`1] Fatal Test 
+[PID:10284:1 2018.05.29 13:59:47.633 ERROR ProgramBase`1] Error Test 
+[PID:10284:1 2018.05.29 13:59:47.637 FATAL ProgramBase`1] Fatal Test 
+[PID:10495:1 2018.05.29 14:02:43.451 ERROR ProgramBase`1] Error Test 
+[PID:10495:1 2018.05.29 14:02:43.455 FATAL ProgramBase`1] Fatal Test 
+[PID:10761:1 2018.05.29 14:09:53.354 ERROR ProgramBase`1] Error Test 
+[PID:10761:1 2018.05.29 14:09:53.362 FATAL ProgramBase`1] Fatal Test 
+[PID:10761:9 2018.05.29 14:09:54.935 ERROR QueuedHandlerAutoReset] Error while processing message EventStore.Core.Messages.SystemMessage+SystemInit in queued handler 'MainQueue'. 
+System.SystemException: Thread creation failed.
+  at System.Threading.Thread.StartInternal (System.Security.Principal.IPrincipal principal, System.Threading.StackCrawlMark& stackMark) [0x00035] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Threading.Thread.Start (System.Threading.StackCrawlMark& stackMark) [0x0002d] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at System.Threading.Thread.Start () [0x00002] in <8f2c484307284b51944a1a13a14c0266>:0 
+  at EventStore.Core.Services.Storage.StorageChaser.Handle (EventStore.Core.Messages.SystemMessage+SystemInit message) [0x00034] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Bus.MessageHandler`1[T].TryHandle (EventStore.Core.Messaging.Message message) [0x00017] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Bus.InMemoryBus.Publish (EventStore.Core.Messaging.Message message) [0x00036] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.VNode.ClusterVNodeController.Handle (EventStore.Core.Messages.SystemMessage+SystemInit message) [0x00023] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.VNode.VNodeFSMHandling`1+<Do>c__AnonStorey1[TMessage].<>m__1 (EventStore.Core.Data.VNodeState s, EventStore.Core.Messaging.Message m) [0x00000] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.VNode.VNodeFSM.TryHandle (EventStore.Core.Data.VNodeState state, System.Action`2[EventStore.Core.Data.VNodeState,EventStore.Core.Messaging.Message][] handlers, EventStore.Core.Messaging.Message message, System.Int32 msgTypeId) [0x0000a] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.VNode.VNodeFSM.Handle (EventStore.Core.Messaging.Message message) [0x0002c] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Services.VNode.ClusterVNodeController.EventStore.Core.Bus.IHandle<EventStore.Core.Messaging.Message>.Handle (EventStore.Core.Messaging.Message message) [0x00000] in <27db127369c34c16b9162d9f5c5521ec>:0 
+  at EventStore.Core.Bus.QueuedHandlerAutoReset.ReadFromQueue (System.Object o) [0x00093] in <27db127369c34c16b9162d9f5c5521ec>:0 
+[PID:10931:1 2018.05.29 14:10:16.474 ERROR ProgramBase`1] Error Test 
+[PID:10931:1 2018.05.29 14:10:16.475 FATAL ProgramBase`1] Fatal Test 
+[PID:11173:1 2018.05.29 14:21:04.619 ERROR ProgramBase`1] Error Test 
+[PID:11173:1 2018.05.29 14:21:04.621 FATAL ProgramBase`1] Fatal Test 
+[PID:11634:1 2018.05.29 14:40:17.297 ERROR ProgramBase`1] Error Test 
+[PID:11634:1 2018.05.29 14:40:17.298 FATAL ProgramBase`1] Fatal Test 
+[PID:11706:1 2018.05.29 14:54:29.293 ERROR ProgramBase`1] Error Test 
+[PID:11706:1 2018.05.29 14:54:29.294 FATAL ProgramBase`1] Fatal Test 
+[PID:12100:1 2018.05.29 15:03:57.024 ERROR ProgramBase`1] Error Test 
+[PID:12100:1 2018.05.29 15:03:57.025 FATAL ProgramBase`1] Fatal Test 
+[PID:12552:1 2018.05.29 15:36:12.096 ERROR ProgramBase`1] Error Test 
+[PID:12552:1 2018.05.29 15:36:12.097 FATAL ProgramBase`1] Fatal Test 
+[PID:13107:1 2018.05.29 16:10:03.482 ERROR ProgramBase`1] Error Test 
+[PID:13107:1 2018.05.29 16:10:03.492 FATAL ProgramBase`1] Fatal Test 
+[PID:13282:1 2018.05.29 16:11:33.367 ERROR ProgramBase`1] Error Test 
+[PID:13282:1 2018.05.29 16:11:33.368 FATAL ProgramBase`1] Fatal Test 

@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Monitoring
                                      IHandle<MonitoringMessage.GetFreshStats>,
                                      IHandle<MonitoringMessage.GetFreshTcpConnectionStats>
     {
-       // private static readonly ILogger RegularLog = LogManager.GetLogger("MonitoringService"); //LogManager.GetLogger("REGULAR-STATS-LOGGER");
+        private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
 
         private static readonly string StreamMetadata = string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
@@ -91,6 +91,7 @@ namespace EventStore.Core.Services.Monitoring
             _tcpEndpoint = tcpEndpoint;
             _tcpSecureEndpoint = tcpSecureEndpoint;
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+            RegularLog.Info("Testing stats");
         }
 
         public void Handle(SystemMessage.SystemInit message)
@@ -153,12 +154,12 @@ namespace EventStore.Core.Services.Monitoring
             if (header != _lastWrittenCsvHeader)
             {
                 _lastWrittenCsvHeader = header;
-                //RegularLog.Info(Environment.NewLine);
-                //RegularLog.Info(header);
+                RegularLog.Info(Environment.NewLine);
+                RegularLog.Info(header);
             }
 
-            //var line = StatsCsvEncoder.GetLine(rawStats);
-            //RegularLog.Info(line);
+            var line = StatsCsvEncoder.GetLine(rawStats);
+            RegularLog.Info(line);
         }
 
         private void SaveStatsToStream(Dictionary<string, object> rawStats)
