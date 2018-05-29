@@ -154,3 +154,39 @@ System.SystemException: Thread creation failed.
 [PID:13107:1 2018.05.29 16:10:03.492 FATAL ProgramBase`1] Fatal Test 
 [PID:13282:1 2018.05.29 16:11:33.367 ERROR ProgramBase`1] Error Test 
 [PID:13282:1 2018.05.29 16:11:33.368 FATAL ProgramBase`1] Fatal Test 
+[PID:1087:1 2018.05.29 22:16:54.120 ERROR ProgramBase`1] Error Test 
+[PID:1087:1 2018.05.29 22:16:54.122 FATAL ProgramBase`1] Fatal Test 
+[PID:1286:1 2018.05.29 22:19:18.754 ERROR ProgramBase`1] Error Test 
+[PID:1286:1 2018.05.29 22:19:18.755 FATAL ProgramBase`1] Fatal Test 
+[PID:1515:1 2018.05.29 22:26:22.683 ERROR ProgramBase`1] Error Test 
+[PID:1515:1 2018.05.29 22:26:22.684 FATAL ProgramBase`1] Fatal Test 
+[PID:1888:1 2018.05.29 22:37:26.180 ERROR ProgramBase`1] Error Test 
+[PID:1888:1 2018.05.29 22:37:26.184 FATAL ProgramBase`1] Fatal Test 
+[PID:1901:1 2018.05.29 22:41:18.615 ERROR ProgramBase`1] Error Test 
+[PID:1901:1 2018.05.29 22:41:18.616 FATAL ProgramBase`1] Fatal Test 
+[PID:2103:1 2018.05.29 22:44:29.499 ERROR ProgramBase`1] Error Test 
+[PID:2103:1 2018.05.29 22:44:29.500 FATAL ProgramBase`1] Fatal Test 
+[PID:2147:1 2018.05.29 22:46:12.071 ERROR ProgramBase`1] Error Test 
+[PID:2147:1 2018.05.29 22:46:12.072 FATAL ProgramBase`1] Fatal Test 
+[PID:2147:8 2018.05.29 22:47:09.041 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [StorageWriterQueue]: BecomeMaster - 14672ms. Q: 0/1. 
+[PID:2147:10 2018.05.29 22:47:09.048 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [MainBus]: UserManagementServiceInitialized - 14608ms. Handler: StorageScavenger. 
+[PID:2147:10 2018.05.29 22:47:09.051 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [MainQueue]: UserManagementServiceInitialized - 14617ms. Q: 0/11. 
+[PID:2177:1 2018.05.29 22:49:15.882 ERROR ProgramBase`1] Error Test 
+[PID:2177:1 2018.05.29 22:49:15.883 FATAL ProgramBase`1] Fatal Test 
+[PID:2227:1 2018.05.29 22:49:35.030 ERROR ProgramBase`1] Error Test 
+[PID:2227:1 2018.05.29 22:49:35.032 FATAL ProgramBase`1] Fatal Test 
+[PID:2288:1 2018.05.29 22:50:27.500 ERROR ProgramBase`1] Error Test 
+[PID:2288:1 2018.05.29 22:50:27.501 FATAL ProgramBase`1] Fatal Test 
+[PID:2288:10 2018.05.29 22:51:36.444 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [MainBus]: SendViewChangeProof - 20038ms. Handler: ElectionsService. 
+[PID:2288:28 2018.05.29 22:51:36.444 ERROR QueuedHandlerThreadPool] ---!!! VERY SLOW QUEUE MSG [MonitoringQueue]: WriteEventsCompleted - 20039ms. Q: 0/0. 
+[PID:2288:10 2018.05.29 22:51:36.444 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [MainQueue]: SendViewChangeProof - 20039ms. Q: 1/8. 
+[PID:2288:31 2018.05.29 22:51:36.445 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [manager input bus]: EpochWritten - 20039ms. Handler: ProjectionManager. 
+[PID:2288:31 2018.05.29 22:51:36.445 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [Projections Master]: EpochWritten - 24066ms. Q: 0/3. 
+[PID:2288:10 2018.05.29 22:51:46.182 ERROR StorageScavenger] Failed to write the $maxAge of 30 days metadata for the $scavenges stream. Reason: "CommitTimeout" 
+[PID:2288:10 2018.05.29 22:51:46.186 ERROR StorageScavenger] Failed to write the $scavengeIndexInitialized event to the $scavenges stream. Reason: "CommitTimeout" 
+[PID:2288:34 2018.05.29 22:51:46.190 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [bus]: StartReader - 29783ms. Handler: EventReaderCoreService. 
+[PID:2288:34 2018.05.29 22:51:46.190 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [Projection Core #2]: StartReader - 29785ms. Q: 1/4. 
+[PID:2288:32 2018.05.29 22:51:46.191 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [bus]: StartReader - 29785ms. Handler: EventReaderCoreService. 
+[PID:2288:33 2018.05.29 22:51:46.191 ERROR InMemoryBus] ---!!! VERY SLOW BUS MSG [bus]: StartReader - 29785ms. Handler: EventReaderCoreService. 
+[PID:2288:32 2018.05.29 22:51:46.191 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [Projection Core #0]: StartReader - 29786ms. Q: 0/4. 
+[PID:2288:33 2018.05.29 22:51:46.192 ERROR QueuedHandlerAutoReset] ---!!! VERY SLOW QUEUE MSG [Projection Core #1]: StartReader - 29786ms. Q: 1/4. 

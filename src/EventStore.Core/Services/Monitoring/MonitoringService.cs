@@ -91,7 +91,6 @@ namespace EventStore.Core.Services.Monitoring
             _tcpEndpoint = tcpEndpoint;
             _tcpSecureEndpoint = tcpSecureEndpoint;
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
-            RegularLog.Info("Testing stats");
         }
 
         public void Handle(SystemMessage.SystemInit message)
