@@ -33,16 +33,6 @@ namespace EventStore.Common.Log
         private static Func<string, ILogger> _logFactory = x => new SeriLogger(x);
         internal static string _logsDirectory;
 
-        //static LogManager()
-        //{
-            /*
-            var conf = NLog.Config.ConfigurationItemFactory.Default;
-            conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
-            conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
-            conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
-            */
-        //}
-
         public static ILogger GetLoggerFor(Type type)
         {
             return GetLogger(type.Name);
@@ -76,6 +66,7 @@ namespace EventStore.Common.Log
             {
                  Serilog.Log.Logger =
                  new Serilog.LoggerConfiguration()
+                 .MinimumLevel.Verbose()
                  .Enrich.WithProperty("logsdir",_logsDirectory,false)
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("std",configFilePath))
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
@@ -92,7 +83,6 @@ namespace EventStore.Common.Log
             _initialized = true;
 
             _logsDirectory = logsDirectory;
-            Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var exc = e.ExceptionObject as Exception;
@@ -103,34 +93,11 @@ namespace EventStore.Common.Log
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
         }
-/*
-        private static void SetDefaultLog()
-        {
-            NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
-           // var logger = new LoggerConfiguration();
-
-            NLog.LogManager.Configuration.LoggingRules.Add(new NLog.Config.LoggingRule("*", NLog.LogLevel.Trace,
-                new NLog.Targets.ColoredConsoleTarget
-                {
-                    UseDefaultRowHighlightingRules = true,
-                    RowHighlightingRules =
-                    {
-                        new NLog.Targets.ConsoleRowHighlightingRule
-                        {
-                            ForegroundColor = NLog.Targets.ConsoleOutputColor.Green,
-                            Condition = "level == LogLevel.Info"
-                        }
-                    }
-                }));
-            NLog.LogManager.ReconfigExistingLoggers();
-        }
-*/
         public static void Finish()
         {
             try
             {
                 GlobalLogger.Flush();
-                NLog.LogManager.Configuration = null;
             }
             catch (Exception exc)
             {

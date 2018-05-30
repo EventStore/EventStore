@@ -47,9 +47,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NLog">
-      <HintPath>..\libs\NLog.dll</HintPath>
-    </Reference>
     <Reference Include="Serilog">
       <HintPath>..\libs\Serilog.dll</HintPath>
     </Reference>
@@ -103,8 +100,6 @@
     <Compile Include="Log\LazyLogger.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
-    <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
-    <Compile Include="Log\NLogger.cs" />
     <Compile Include="Log\Serilogger.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
