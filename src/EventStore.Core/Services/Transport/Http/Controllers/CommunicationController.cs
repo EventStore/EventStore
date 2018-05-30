@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             return new RequestParams(done: true);
         }
 
-        protected void Register(IHttpService service, string uriTemplate, string httpMethod, 
+        protected void Register(IHttpService service, string uriTemplate, string httpMethod,
                                 Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs)
         {
             service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs), handler);
@@ -82,9 +82,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected static string MakeUrl(HttpEntityManager http, string path)
         {
-            var builder = new UriBuilder(http.ResponseUrl);
             if(path.Length > 0 && path[0] == '/') path = path.Substring(1);
-            builder.Path = builder.Path + path;
+            var hostUri = http.ResponseUrl;
+            var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path);
             return builder.Uri.AbsoluteUri;
         }
     }
