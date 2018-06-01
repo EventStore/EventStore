@@ -86,6 +86,10 @@
       <HintPath>..\libs\Serilog.Formatting.Compact.dll</HintPath>
       <Private>True</Private>
     </Reference>
+     <Reference Include="Serilog.Sinks.Async">
+      <HintPath>..\libs\Serilog.Sinks.Async.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Superpower">
       <HintPath>..\libs\Superpower.dll</HintPath>
     <Private>True</Private>
@@ -156,6 +160,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
      <None Include="..\libs\Superpower.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+     <None Include="..\libs\Serilog.Sinks.Async.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

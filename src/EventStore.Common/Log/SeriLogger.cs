@@ -7,10 +7,13 @@ namespace EventStore.Common.Log
     {
         private readonly Serilog.ILogger _logger;
         private string _name;
+
         public SeriLogger(string name)
         {
            _logger = Serilog.Log.ForContext(name, null);
-           _name = name;
+              _name = name;
+           if (name.Length > 20)
+              _name = name.Substring(0, 20);
         }
 
         public void Flush(TimeSpan? maxTimeToWait = null)

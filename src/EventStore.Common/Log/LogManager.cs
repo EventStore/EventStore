@@ -59,7 +59,10 @@ namespace EventStore.Common.Log
                 Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
 
-             Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
+             _logsDirectory = logsDirectory;
+            
+            Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("logsdir", _logsDirectory, EnvironmentVariableTarget.Process);
 
             var configFilePath = potentialSeriLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
@@ -67,7 +70,6 @@ namespace EventStore.Common.Log
                  Serilog.Log.Logger =
                  new Serilog.LoggerConfiguration()
                  .MinimumLevel.Verbose()
-                 .Enrich.WithProperty("logsdir",_logsDirectory,false)
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("std",configFilePath))
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("stats",configFilePath))
@@ -82,7 +84,7 @@ namespace EventStore.Common.Log
 
             _initialized = true;
 
-            _logsDirectory = logsDirectory;
+
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var exc = e.ExceptionObject as Exception;
