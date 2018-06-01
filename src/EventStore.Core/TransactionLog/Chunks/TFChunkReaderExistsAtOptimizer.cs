@@ -10,16 +10,18 @@ namespace EventStore.Core.TransactionLog.Chunks
         public static TFChunkReaderExistsAtOptimizer Instance {
             get
             {
+                // we don't want two of these things so lock to make sure...
                 if (_instance == null)
-                {
-                    _instance = new TFChunkReaderExistsAtOptimizer(MaxBloomFiltersCached);
-                }
+                    lock (typeof(TFChunkReaderExistsAtOptimizer))
+                        if (_instance == null)
+                            _instance = new TFChunkReaderExistsAtOptimizer(MaxBloomFiltersCached);
+
                 return _instance;
             }
         }
 
         //Least-Recently-Used cache to keep track of scavenged TFChunks that have cached bloom filters
-        private LRUCache<string, TFChunk.TFChunk> _cache;
+        private readonly ILRUCache<string, TFChunk.TFChunk> _cache;
         private const int MaxBloomFiltersCached = 10000; //around 5GB RAM max if we consider 200,000 log positions/chunk and 20 bits/log position
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkReaderExistsAtOptimizer>();
 
@@ -54,6 +56,11 @@ namespace EventStore.Core.TransactionLog.Chunks
         public bool IsOptimized(TFChunk.TFChunk chunk){
             TFChunk.TFChunk value;
             return _cache.TryGet(chunk.FileName, out value);
+        }
+
+        public void DeOptimizeAll()
+        {
+            _cache.Clear();
         }
     }
 }

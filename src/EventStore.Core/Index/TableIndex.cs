@@ -11,6 +11,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Index
 {
@@ -364,6 +365,9 @@ namespace EventStore.Core.Index
             }
             finally
             {
+                // Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
+                TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
+                
                 lock (_awaitingTablesLock)
                 {
                     _backgroundRunning = false;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
@@ -92,8 +93,24 @@ namespace EventStore.Core.DataStructures
                 {
                     _orderList.Remove(node);
                     _items.Remove(key);
-                    if(_onRemove != null) _onRemove(node.Value.Value);
+                    if (_onRemove != null) _onRemove(node.Value.Value);
 
+                    ReturnNode(node);
+                }
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                while (_orderList.Count > 0)
+                {
+                    var node = _orderList.First;
+                    _orderList.RemoveFirst();
+                    _items.Remove(node.Value.Key);
+                    if (_onRemove != null) _onRemove(node.Value.Value);
+                    
                     ReturnNode(node);
                 }
             }
