@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Monitoring
 
                     if ((_statsStorage & StatsStorage.Csv) != 0)
                         SaveStatsToCsvFile(rawStats);
-                        
+
                     if ((_statsStorage & StatsStorage.Stream) != 0)
                     {
                         if (_statsStreamCreated)
@@ -166,7 +166,7 @@ namespace EventStore.Core.Services.Monitoring
             var data = rawStats.ToJsonBytes();
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
             var corrId = Guid.NewGuid();
-            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream, 
+            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream,
                                                     ExpectedVersion.Any, new[]{evnt}, SystemAccount.Principal);
             _mainBus.Publish(msg);
         }
@@ -203,7 +203,7 @@ namespace EventStore.Core.Services.Monitoring
             {
                 // ok, no problem if already disposed
             }
-            
+
         }
 
         public void Handle(SystemMessage.BecomeShutdown message)
