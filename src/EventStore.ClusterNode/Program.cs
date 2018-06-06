@@ -124,7 +124,7 @@ namespace EventStore.ClusterNode
                 _node.ExternalHttpService.SetupController(new ClusterWebUiController(_node.MainQueue, enabledNodeSubsystems));
             }
         }
-        
+
         private static int GetQuorumSize(int clusterSize)
         {
             if (clusterSize == 1) return 1;
@@ -144,7 +144,7 @@ namespace EventStore.ClusterNode
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
-            
+
             Log.Info("Quorum size set to " + prepareCount);
             if(options.DisableInsecureTCP)
             {

@@ -11,14 +11,15 @@ namespace EventStore.Common.Log
         public SeriLogger(string name)
         {
            _logger = Serilog.Log.ForContext(name, null);
-              _name = name;
-           if (name.Length > 20)
-              _name = name.Substring(0, 20);
+             _name = name;
+          if (name.Length > 20)
+             _name = name.Substring(0, 20);
+          else if(name.Length < 20) 
+             _name = name + new String(' ', 20 - name.Length);  
         }
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
-            FlushLog(maxTimeToWait);
         }
 
         public void Fatal(string format, params object[] args)
@@ -111,7 +112,6 @@ namespace EventStore.Common.Log
 
         public static void FlushLog(TimeSpan? maxTimeToWait = null)
         {
-             Serilog.Log.CloseAndFlush();
         }
     }
 }

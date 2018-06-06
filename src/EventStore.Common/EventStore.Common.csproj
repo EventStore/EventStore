@@ -104,7 +104,7 @@
     <Compile Include="Log\LazyLogger.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
-    <Compile Include="Log\Serilogger.cs" />
+    <Compile Include="Log\SeriLogger.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />

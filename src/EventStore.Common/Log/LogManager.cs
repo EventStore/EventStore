@@ -60,7 +60,7 @@ namespace EventStore.Common.Log
             }.Distinct();
 
              _logsDirectory = logsDirectory;
-            
+
             Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
             Environment.SetEnvironmentVariable("logsdir", _logsDirectory, EnvironmentVariableTarget.Process);
 
@@ -74,6 +74,7 @@ namespace EventStore.Common.Log
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("stats",configFilePath))
                  .CreateLogger();
+                 //Serilog.Debugging.SelfLog.Enable(Console.Error);
             }
             else
             {
@@ -83,8 +84,6 @@ namespace EventStore.Common.Log
             }
 
             _initialized = true;
-
-
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var exc = e.ExceptionObject as Exception;
