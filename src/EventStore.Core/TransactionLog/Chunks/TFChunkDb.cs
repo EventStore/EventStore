@@ -122,7 +122,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (verifyHash && lastChunkNum > 0)
             {
                 var preLastChunk = Manager.GetChunk(lastChunkNum - 1);
-                var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber - 1;
+                var lastBgChunkNum = preLastChunk.ChunkHeader.ChunkStartNumber;
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
                     for (int chunkNum = lastBgChunkNum; chunkNum >= 0; )
@@ -143,8 +143,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         {
                             var msg = string.Format("Verification of chunk {0} failed, terminating server...", chunk);
                             Log.FatalException(exc, msg);
-                            Application.Exit(ExitCode.Error, msg);
-                            return;
+                            throw new CorruptDatabaseException(msg, exc);
                         }
                         chunkNum = chunk.ChunkHeader.ChunkStartNumber - 1;
                     }
