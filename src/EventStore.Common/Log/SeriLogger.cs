@@ -14,8 +14,6 @@ namespace EventStore.Common.Log
              _name = name;
           if (name.Length > 20)
              _name = name.Substring(0, 20);
-          else if(name.Length < 20) 
-             _name = name + new String(' ', 20 - name.Length);  
         }
 
         public void Flush(TimeSpan? maxTimeToWait = null)

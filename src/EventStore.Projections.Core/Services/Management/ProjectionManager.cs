@@ -802,7 +802,7 @@ namespace EventStore.Projections.Core.Services.Management
                     Guid.NewGuid());
                 return;
             }
-            _logger.Debug("PROJECTIONS: Found the following projections. {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
+            _logger.Debug("PROJECTIONS: Found the following projections in {0}: {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
                 String.Join(", ", registeredProjections
                     .Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized)
                     .Select(x => x.Key)));

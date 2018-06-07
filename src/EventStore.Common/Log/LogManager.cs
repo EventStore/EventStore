@@ -74,7 +74,7 @@ namespace EventStore.Common.Log
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
                  .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("stats",configFilePath))
                  .CreateLogger();
-                 //Serilog.Debugging.SelfLog.Enable(Console.Error);
+                 Serilog.Debugging.SelfLog.Enable(Console.Error);
             }
             else
             {
