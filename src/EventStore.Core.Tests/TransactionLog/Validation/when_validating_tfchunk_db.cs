@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Threading;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -438,6 +440,56 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
                 Assert.IsTrue(File.Exists(GetFilePathFor("bla")));
                 Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
             }
+        }
+         [Test]
+        public void when_prelast_chunk_corrupted_throw_hash_validation_exception()
+        {
+            var config = TFChunkHelper.CreateDbConfig(PathName, 15000);
+            using (var db = new TFChunkDb(config))
+            {
+                byte[] contents = new byte[config.ChunkSize];
+                for(var i=0; i< config.ChunkSize;i++){
+                    contents[i] = 0;
+                }
+                /*
+                Create a completed chunk and an ongoing chunk
+                 */
+                DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"),
+                actualDataSize: config.ChunkSize,
+                contents: contents);
+                DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+                /**
+                Corrupt the prelast completed chunk by modifying bytes of its content
+                 */
+                using (Stream stream = File.Open(GetFilePathFor("chunk-000000.000000"), FileMode.Open))
+                {
+                    var data = new byte[3];
+                    data[0] = 1;
+                    data[1] = 2;
+                    data[2] = 3;
+                    stream.Position = ChunkHeader.Size + 15; //arbitrary choice of position to modify
+                    stream.Write(data, 0, data.Length);
+                }
+                /**
+                Exception being thrown in another thread, using the output to check for the exception
+                 */
+                var output="";
+                using (StringWriter sw = new StringWriter())
+                {
+                    Console.SetOut(sw);
+                    db.Open(verifyHash: true);
+                    //arbitrary wait
+                    Thread.Sleep(2000);
+                    output = sw.ToString();
+                }
+                var standardOutput = new StreamWriter(Console.OpenStandardOutput());
+                standardOutput.AutoFlush = true;
+                Console.SetOut(standardOutput);
+                Console.WriteLine(output);
+                Assert.IsTrue(output.Contains("EXCEPTION(S) OCCURRED:"));
+                Assert.IsTrue(output.Contains("EventStore.Core.Exceptions.HashValidationException"));
+            }
+            
         }
     }
 }
