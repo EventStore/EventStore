@@ -20,6 +20,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly bool WriteThrough;
         public readonly int InitialReaderCount;
         public readonly bool OptimizeReadSideCache;
+        public readonly bool ReduceFileCachePressure;
 
         public TFChunkDbConfig(string path, 
                                IFileNamingStrategy fileNamingStrategy, 
@@ -34,7 +35,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                bool inMemDb = false,
                                bool unbuffered = false,
                                bool writethrough = false,
-                               bool optimizeReadSideCache = false)
+                               bool optimizeReadSideCache = false,
+                               bool reduceFileCachePressure = false)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
@@ -61,6 +63,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriteThrough = writethrough;
             InitialReaderCount = initialReaderCount;
             OptimizeReadSideCache = optimizeReadSideCache;
+            ReduceFileCachePressure = reduceFileCachePressure;
         }
     }
 }
