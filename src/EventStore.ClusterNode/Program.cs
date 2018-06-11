@@ -144,6 +144,7 @@ namespace EventStore.ClusterNode
 
             var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
             var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
+
             Log.Info("Quorum size set to " + prepareCount);
             if(options.DisableInsecureTCP)
             {

@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<CoreProjectionStatusMessage.StatisticsReport>,
             IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
             IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
-            IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>, 
+            IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>,
             IHandle<ProjectionManagementMessage.ReaderReady>
 
     {
@@ -603,7 +603,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private VNodeState _currentState = VNodeState.Unknown;
         private bool _systemIsReady = false;
-        private bool _ready = false;        
+        private bool _ready = false;
         private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
@@ -615,21 +615,21 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _currentState = message.State;
             if(_currentState != VNodeState.Master)
-                _ready = false;            
-            
+                _ready = false;
+
             StartWhenConditionsAreMet();
         }
 
         public void Handle(SystemMessage.EpochWritten message)
         {
             if(_ready) return;
-            
+
             if(_currentState == VNodeState.Master){
                 _epochId = message.Epoch.EpochId;
                 _ready = true;
             }
 
-            StartWhenConditionsAreMet(); 
+            StartWhenConditionsAreMet();
         }
 
         private void StartWhenConditionsAreMet()
@@ -802,7 +802,7 @@ namespace EventStore.Projections.Core.Services.Management
                     Guid.NewGuid());
                 return;
             }
-            _logger.Debug("PROJECTIONS: Found the following projections. {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
+            _logger.Debug("PROJECTIONS: Found the following projections in {0}: {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream,
                 String.Join(", ", registeredProjections
                     .Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized)
                     .Select(x => x.Key)));

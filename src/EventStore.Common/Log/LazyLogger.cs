@@ -15,7 +15,7 @@ namespace EventStore.Common.Log
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
-            _logger.Value.Flush(maxTimeToWait);
+            //_logger.Value.Flush(maxTimeToWait);
         }
 
         public void Fatal(string format, params object[] args)

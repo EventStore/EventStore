@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.IO;
 using EventStore.Common.Utils;
+using Serilog;
+
 
 namespace EventStore.Common.Log
 {
@@ -19,7 +21,7 @@ namespace EventStore.Common.Log
 
         public static bool Initialized
         {
-            get 
+            get
             {
                 return _initialized;
             }
@@ -28,16 +30,8 @@ namespace EventStore.Common.Log
         private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
-        private static Func<string, ILogger> _logFactory = x => new NLogger(x);
+        private static Func<string, ILogger> _logFactory = x => new SeriLogger(x);
         internal static string _logsDirectory;
-
-        static LogManager()
-        {
-            var conf = NLog.Config.ConfigurationItemFactory.Default;
-            conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
-            conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
-            conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
-        }
 
         public static ILogger GetLoggerFor(Type type)
         {
@@ -60,27 +54,36 @@ namespace EventStore.Common.Log
             if (_initialized)
                 throw new InvalidOperationException("Cannot initialize twice");
 
-            var potentialNLogConfigurationFilePaths = new []{
+            var potentialSeriLogConfigurationFilePaths = new []{
                 Path.Combine(Locations.ApplicationDirectory, EVENTSTORE_LOG_FILENAME),
                 Path.Combine(configurationDirectory, EVENTSTORE_LOG_FILENAME)
             }.Distinct();
-            var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
+
+             _logsDirectory = logsDirectory;
+
+            Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("logsdir", _logsDirectory, EnvironmentVariableTarget.Process);
+
+            var configFilePath = potentialSeriLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
-                NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
+                 Serilog.Log.Logger =
+                 new Serilog.LoggerConfiguration()
+                 .MinimumLevel.Verbose()
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("std",configFilePath))
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("error",configFilePath))
+                 .WriteTo.Logger( lc => lc.ReadFrom.AppSettings("stats",configFilePath))
+                 .CreateLogger();
+                 Serilog.Debugging.SelfLog.Enable(Console.Error);
             }
             else
             {
                 Console.Error.WriteLine("Event Store's Logging ({0}) configuration file was not found in:\n{1}.\nFalling back to defaults.",
                         EVENTSTORE_LOG_FILENAME,
-                        String.Join(",\n", potentialNLogConfigurationFilePaths));
-                SetDefaultLog();
+                        String.Join(",\n", potentialSeriLogConfigurationFilePaths));
             }
 
             _initialized = true;
-
-            _logsDirectory = logsDirectory;
-            Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var exc = e.ExceptionObject as Exception;
@@ -91,32 +94,11 @@ namespace EventStore.Common.Log
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
         }
-
-        private static void SetDefaultLog()
-        {
-            NLog.LogManager.Configuration = new NLog.Config.LoggingConfiguration();
-            NLog.LogManager.Configuration.LoggingRules.Add(new NLog.Config.LoggingRule("*", NLog.LogLevel.Trace,
-                new NLog.Targets.ColoredConsoleTarget
-                {
-                    UseDefaultRowHighlightingRules = true,
-                    RowHighlightingRules =
-                    {
-                        new NLog.Targets.ConsoleRowHighlightingRule
-                        {
-                            ForegroundColor = NLog.Targets.ConsoleOutputColor.Green,
-                            Condition = "level == LogLevel.Info"
-                        }
-                    }
-                }));
-            NLog.LogManager.ReconfigExistingLoggers();
-        }
-
         public static void Finish()
         {
             try
             {
                 GlobalLogger.Flush();
-                NLog.LogManager.Configuration = null;
             }
             catch (Exception exc)
             {

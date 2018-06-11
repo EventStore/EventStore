@@ -134,6 +134,7 @@ mkbundle -c \
     HdrHistogram.NET.dll \
     Newtonsoft.Json.dll \
     NLog.dll \
+    Serilog.dll \
     protobuf-net.dll \
     Mono.Security.dll \
     --static --deps \

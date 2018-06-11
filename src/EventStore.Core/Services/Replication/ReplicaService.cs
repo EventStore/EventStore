@@ -187,9 +187,9 @@ namespace EventStore.Core.Services.Replication
             var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
             var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
             
-            Log.Info("Subscribing at LogPosition: {0} (0x{0:X}) to MASTER [{1}, {2:B}] as replica with SubscriptionId: {3:B}, "
-                     + "ConnectionId: {4:B}, LocalEndPoint: [{5}], Epochs:\n{6}...\n.",
-                      logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
+            Log.Info("Subscribing at LogPosition: {0} (0x{1:X}) to MASTER [{2}, {3:B}] as replica with SubscriptionId: {4:B}, "
+                     + "ConnectionId: {5:B}, LocalEndPoint: [{6}], Epochs:\n{7}...\n.",
+                      logPosition, logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
                       _connection.ConnectionId, _connection.LocalEndPoint, string.Join("\n", epochs.Select(x => x.AsString())));
 
             var chunk = _db.Manager.GetChunkFor(logPosition);

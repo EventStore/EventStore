@@ -1426,10 +1426,10 @@ namespace EventStore.Core
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
             _log.Info("{0,-25} {1}", "DATABASE:", _db.Config.Path);
-            _log.Info("{0,-25} {1} (0x{1:X})", "WRITER CHECKPOINT:", _db.Config.WriterCheckpoint.Read());
-            _log.Info("{0,-25} {1} (0x{1:X})", "CHASER CHECKPOINT:", _db.Config.ChaserCheckpoint.Read());
-            _log.Info("{0,-25} {1} (0x{1:X})", "EPOCH CHECKPOINT:", _db.Config.EpochCheckpoint.Read());
-            _log.Info("{0,-25} {1} (0x{1:X})", "TRUNCATE CHECKPOINT:", _db.Config.TruncateCheckpoint.Read());
+            _log.Info("{0,-25} 0x{1,-16:X}", "WRITER CHECKPOINT:", _db.Config.WriterCheckpoint.Read());
+            _log.Info("{0,-25} 0x{1,-16:X}", "CHASER CHECKPOINT:", _db.Config.ChaserCheckpoint.Read());
+            _log.Info("{0,-25} 0x{1,-16:X}", "EPOCH CHECKPOINT:", _db.Config.EpochCheckpoint.Read());
+            _log.Info("{0,-25} 0x{1,-16:X}", "TRUNCATE CHECKPOINT:", _db.Config.TruncateCheckpoint.Read());
 
             return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
         }

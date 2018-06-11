@@ -47,8 +47,52 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NLog">
-      <HintPath>..\libs\NLog.dll</HintPath>
+    <Reference Include="Serilog">
+      <HintPath>..\libs\Serilog.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Settings.AppSettings">
+      <HintPath>..\libs\Serilog.Settings.AppSettings.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Sinks.Console">
+      <HintPath>..\libs\Serilog.Sinks.Console.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+   <Reference Include="Serilog.Enrichers.Process">
+      <HintPath>..\libs\Serilog.Enrichers.Process.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog.Enrichers.Thread">
+      <HintPath>..\libs\Serilog.Enrichers.Thread.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+   <Reference Include="Serilog.Enrichers.Environment">
+      <HintPath>..\libs\Serilog.Enrichers.Environment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog.Sinks.File">
+      <HintPath>..\libs\Serilog.Sinks.File.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Filters.Expressions">
+      <HintPath>..\libs\Serilog.Filters.Expressions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Sinks.RollingFile">
+      <HintPath>..\libs\Serilog.Sinks.RollingFile.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Formatting.Compact">
+      <HintPath>..\libs\Serilog.Formatting.Compact.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+     <Reference Include="Serilog.Sinks.Async">
+      <HintPath>..\libs\Serilog.Sinks.Async.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Superpower">
+      <HintPath>..\libs\Superpower.dll</HintPath>
+    <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,8 +104,7 @@
     <Compile Include="Log\LazyLogger.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
-    <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
-    <Compile Include="Log\NLogger.cs" />
+    <Compile Include="Log\SeriLogger.cs" />
     <Compile Include="Properties\JetbrainsAnnotations.cs" />
     <Compile Include="Options\EventStoreOptions.cs" />
     <Compile Include="Options\IOptions.cs" />
@@ -90,6 +133,38 @@
     <Compile Include="Utils\VersionInfo.cs" />
     <Compile Include="Utils\IPEndpointConverter.cs" />
     <Compile Include="Utils\IPFinder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\libs\Serilog.Sinks.Console.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+     <None Include="..\libs\Serilog.Sinks.File.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Filters.Expressions.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Enrichers.Process.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Enrichers.Thread.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Enrichers.Environment.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\libs\Serilog.Sinks.RollingFile.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+      <None Include="..\libs\Serilog.Formatting.Compact.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+     <None Include="..\libs\Superpower.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+     <None Include="..\libs\Serilog.Sinks.Async.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Log\log.config">

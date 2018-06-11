@@ -174,8 +174,8 @@ namespace EventStore.Core.Services.Replication
             try
             {
                 var epochs = lastEpochs ?? new Epoch[0];
-                Log.Info("SUBSCRIBE REQUEST from [{0},C:{1:B},S:{2:B},{3}(0x{3:X}),{4}]...",
-                         replica.ReplicaEndPoint, replica.ConnectionId, replica.SubscriptionId, logPosition,
+                Log.Info("SUBSCRIBE REQUEST from [{0},C:{1:B},S:{2:B},{3}(0x{4:X}),{5}]...",
+                         replica.ReplicaEndPoint, replica.ConnectionId, replica.SubscriptionId, logPosition, logPosition,
                          string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch) x))));
 
                 var epochCorrectedLogPos = GetValidLogPosition(logPosition, epochs, replica.ReplicaEndPoint, replica.SubscriptionId);
@@ -200,9 +200,9 @@ namespace EventStore.Core.Services.Replication
                 {
                     // slave has some data, but doesn't have any epoch
                     // for now we'll just report error and close connection
-                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
+                    var msg = string.Format("Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{4:X}), but does not have epochs.",
                                             replicaEndPoint, subscriptionId,
-                                            string.Join(", ", epochs.Select(x => x.AsString())), logPosition);
+                                            string.Join(", ", epochs.Select(x => x.AsString())), logPosition , logPosition);
                     Log.Info(msg);
                     throw new Exception(msg);
                 }
@@ -224,8 +224,8 @@ namespace EventStore.Core.Services.Replication
             }
             if (commonEpoch == null)
             {
-                Log.Error("No common epoch found for replica [{0},S{1},{2}(0x{2:X}),{3}]. Subscribing at 0. Master LogPosition: {4} (0x{4:X}), known epochs: {5}.",
-                          replicaEndPoint, subscriptionId, logPosition,
+                Log.Error("No common epoch found for replica [{0},S{1},{2}(0x{3:X}),{4}]. Subscribing at 0. Master LogPosition: {4} (0x{4:X}), known epochs: {5}.",
+                          replicaEndPoint, subscriptionId, logPosition, logPosition,
                           string.Join(", ", epochs.Select(x => x.AsString())),
                           masterCheckpoint, string.Join(", ", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())));
                 return 0;
@@ -244,13 +244,13 @@ namespace EventStore.Core.Services.Replication
             }
             if (nextEpoch == null)
             {
-                var msg = string.Format("Replica [{0},S:{1},{2}(0x{2:X}),epochs:\n{3}]\n provided epochs which are not in "
-                                        + "EpochManager (possibly too old, known epochs:\n{4}).\nMaster LogPosition: {5} (0x{5:X}). "
+                var msg = string.Format("Replica [{0},S:{1},{2}(0x{3:X}),epochs:\n{4}]\n provided epochs which are not in "
+                                        + "EpochManager (possibly too old, known epochs:\n{5}).\nMaster LogPosition: {6} (0x{7:X}). "
                                         + "We do not support this case as of now.\n"
-                                        + "CommonEpoch: {6}, AfterCommonEpoch: {7}",
-                                        replicaEndPoint, subscriptionId, logPosition,
+                                        + "CommonEpoch: {8}, AfterCommonEpoch: {9}",
+                                        replicaEndPoint, subscriptionId, logPosition,logPosition,
                                         string.Join("\n", epochs.Select(x => x.AsString())),
-                                        string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())), masterCheckpoint,
+                                        string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())), masterCheckpoint, masterCheckpoint,
                                         commonEpoch.AsString(), afterCommonEpoch == null ? "<none>" : afterCommonEpoch.AsString());
                 Log.Error(msg);
                 throw new Exception(msg);
@@ -280,12 +280,12 @@ namespace EventStore.Core.Services.Replication
                     var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
                     if (verbose)
                     {
-                        Log.Info("Subscribed replica [{0}, S:{1}] for raw send at {2} (0x{2:X}) (requested {3} (0x{3:X})).", 
-                                 sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, logPosition);
+                        Log.Info("Subscribed replica [{0}, S:{1}] for raw send at {2} (0x{3:X}) (requested {4} (0x{5:X})).", 
+                                 sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos, logPosition, logPosition);
                         if (chunkStartPos != logPosition)
                         {
-                            Log.Info("Forcing replica [{0}, S:{1}] to recreate chunk from position {2} (0x{2:X})...",
-                                     sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos);
+                            Log.Info("Forcing replica [{0}, S:{1}] to recreate chunk from position {2} (0x{3:X})...",
+                                     sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos);
                         }
                     }
 
@@ -303,7 +303,7 @@ namespace EventStore.Core.Services.Replication
                 else
                 {
                     if (verbose)
-                        Log.Info("Subscribed replica [{0},S:{1}] for data send at {2} (0x{2:X}).", sub.ReplicaEndPoint, sub.SubscriptionId, logPosition);
+                        Log.Info("Subscribed replica [{0},S:{1}] for data send at {2} (0x{3:X}).", sub.ReplicaEndPoint, sub.SubscriptionId, logPosition, logPosition);
 
                     sub.LogPosition = logPosition;
                     sub.RawSend = false;

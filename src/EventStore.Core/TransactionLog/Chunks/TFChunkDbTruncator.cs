@@ -95,26 +95,29 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             if (_config.EpochCheckpoint.Read() >= truncateChk)
             {
-                Log.Info("Truncating epoch from {0} (0x{0:X}) to {1} (0x{1:X}).", _config.EpochCheckpoint.Read(), -1);
+                var EpochCheckpoint = _config.EpochCheckpoint.Read();
+                Log.Info("Truncating epoch from {0} (0x{1:X}) to {2} (0x{3:X}).", EpochCheckpoint, EpochCheckpoint, -1 , -1);
                 _config.EpochCheckpoint.Write(-1);
                 _config.EpochCheckpoint.Flush();
             }
 
             if (_config.ChaserCheckpoint.Read() > truncateChk)
-            {
-                Log.Info("Truncating chaser from {0} (0x{0:X}) to {1} (0x{1:X}).", _config.ChaserCheckpoint.Read(), truncateChk);
+            { 
+                var ChaserCheckpoint =  _config.ChaserCheckpoint.Read();
+                Log.Info("Truncating chaser from {0} (0x{1:X}) to {2} (0x{3:X}).", ChaserCheckpoint, ChaserCheckpoint, truncateChk, truncateChk);
                 _config.ChaserCheckpoint.Write(truncateChk);
                 _config.ChaserCheckpoint.Flush();
             }
 
             if (_config.WriterCheckpoint.Read() > truncateChk)
             {
-                Log.Info("Truncating writer from {0} (0x{0:X}) to {1} (0x{1:X}).", _config.WriterCheckpoint.Read(), truncateChk);
+                var WriterCheckpoint = _config.WriterCheckpoint.Read();
+                Log.Info("Truncating writer from {0} (0x{1:X}) to {2} (0x{3:X}).", WriterCheckpoint, WriterCheckpoint,truncateChk, truncateChk);
                 _config.WriterCheckpoint.Write(truncateChk);
                 _config.WriterCheckpoint.Flush();
             }
 
-            Log.Info("Resetting TruncateCheckpoint to {0} (0x{0:X}).", -1);
+            Log.Info("Resetting TruncateCheckpoint to {0} (0x{1:X}).", -1, -1);
             _config.TruncateCheckpoint.Write(-1);
             _config.TruncateCheckpoint.Flush();
         }
