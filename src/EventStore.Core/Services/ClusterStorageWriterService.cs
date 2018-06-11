@@ -83,8 +83,8 @@ namespace EventStore.Core.Services
             _subscriptionId = message.SubscriptionId;
             _ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
 
-            Log.Info("=== SUBSCRIBED to [{0},{1:B}] at {2} (0x{2:X}). SubscriptionId: {3:B}.",
-                     message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, message.SubscriptionId);
+            Log.Info("=== SUBSCRIBED to [{0},{1:B}] at {2} (0x{3:X}). SubscriptionId: {4:B}.",
+                     message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, message.SubscriptionPosition, message.SubscriptionId);
 
             var writerCheck = Db.Config.WriterCheckpoint.ReadNonFlushed();
             if (message.SubscriptionPosition > writerCheck)
@@ -95,14 +95,14 @@ namespace EventStore.Core.Services
             
             if (message.SubscriptionPosition < writerCheck)
             {
-                Log.Info("Master [{0},{1:B}] subscribed us at {2} (0x{2:X}), which is less than our writer checkpoint {3} (0x{3:X}). TRUNCATION IS NEEDED.",
-                         message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, writerCheck);
+                Log.Info("Master [{0},{1:B}] subscribed us at {2} (0x{3:X}), which is less than our writer checkpoint {4} (0x{5:X}). TRUNCATION IS NEEDED.",
+                         message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,message.SubscriptionPosition, writerCheck, writerCheck);
 
                 var lastCommitPosition = _getLastCommitPosition();
                 if (message.SubscriptionPosition > lastCommitPosition)
                     Log.Info("ONLINE TRUNCATION IS NEEDED. NOT IMPLEMENTED. OFFLINE TRUNCATION WILL BE PERFORMED. SHUTTING DOWN NODE.");
                 else
-                    Log.Info("OFFLINE TRUNCATION IS NEEDED (SubscribedAt {0} (0x{0:X}) <= LastCommitPosition {1} (0x{1:X})). SHUTTING DOWN NODE.", message.SubscriptionPosition, lastCommitPosition);
+                    Log.Info("OFFLINE TRUNCATION IS NEEDED (SubscribedAt {0} (0x{1:X}) <= LastCommitPosition {2} (0x{3:X})). SHUTTING DOWN NODE.", message.SubscriptionPosition, message.SubscriptionPosition, lastCommitPosition, lastCommitPosition);
 
                 EpochRecord lastEpoch = EpochManager.GetLastEpoch();
                 if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch, lastCommitPosition))
@@ -172,8 +172,8 @@ namespace EventStore.Core.Services
             }
             if (_activeChunk.RawWriterPosition != message.RawPosition)
             {
-                Log.Error("Received RawChunkBulk at raw pos {0} (0x{0:X}) while current writer raw pos is {1} (0x{1:X}).",
-                          message.RawPosition, _activeChunk.RawWriterPosition);
+                Log.Error("Received RawChunkBulk at raw pos {0} (0x{1:X}) while current writer raw pos is {2} (0x{3:X}).",
+                          message.RawPosition, message.RawPosition, _activeChunk.RawWriterPosition, _activeChunk.RawWriterPosition);
                 return;
             }
 
@@ -220,8 +220,8 @@ namespace EventStore.Core.Services
 
                 if (_subscriptionPos != message.SubscriptionPosition)
                 {
-                    Log.Error("Received DataChunkBulk at SubscriptionPosition {0} (0x{0:X}) while current SubscriptionPosition is {1} (0x{1:X}).",
-                              message.SubscriptionPosition, _subscriptionPos);
+                    Log.Error("Received DataChunkBulk at SubscriptionPosition {0} (0x{1:X}) while current SubscriptionPosition is {2} (0x{3:X}).",
+                              message.SubscriptionPosition, message.SubscriptionPosition,  _subscriptionPos, _subscriptionPos);
                     return;
                 }
 
