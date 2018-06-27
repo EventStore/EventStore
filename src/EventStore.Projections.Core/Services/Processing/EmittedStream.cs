@@ -246,7 +246,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (_logger != null)
             {
-                _logger.Info("Failed to write events to stream {0}. Error: {1}",
+                _logger.Info("Failed to write events to stream {stream}. Error: {e}",
                              _streamId,
                              Enum.GetName(typeof (OperationResult), message.Result));
             }
@@ -505,7 +505,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (_logger != null)
             {
-                _logger.Info("Failed to write events to stream {0}. Error: {1}",
+                _logger.Info("Failed to write events to stream {stream}. Error: {e}",
                              _metadataStreamId,
                              Enum.GetName(typeof(OperationResult), message.Result));
             }

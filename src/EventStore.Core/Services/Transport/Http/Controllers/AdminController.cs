@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 }
             }
 
-            Log.Info("Request scavenging because /admin/scavenge?startFromChunk={0}&threads={1} request has been received.", startFromChunk, threads);
+            Log.Info("Request scavenging because /admin/scavenge?startFromChunk={chunkStartNumber}&threads={numThreads} request has been received.", startFromChunk, threads);
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
                 {
@@ -99,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var scavengeId = match.BoundVariables["scavengeId"];
 
-            Log.Info("Stopping scavenge because /admin/scavenge/{0} DELETE request has been received.", scavengeId);
+            Log.Info("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.", scavengeId);
 
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
                 {
@@ -128,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void LogReplyError(Exception exc)
         {
-            Log.Debug("Error while closing HTTP connection (admin controller): {0}.", exc.Message);
+            Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;

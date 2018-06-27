@@ -168,7 +168,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 while(p < 1.0){
                     try{
                         bf = new BloomFilter(mapCount, p);
-                        //Log.Debug("Created bloom filter with {0} bits and {1} hash functions for chunk {2} with map count: {3}", bf.NumBits, bf.NumHashFunctions, Chunk.FileName, mapCount);
+                        //Log.Debug("Created bloom filter with {numBits} bits and {numHashFunctions} hash functions for chunk {chunk} with map count: {mapCount}", bf.NumBits, bf.NumHashFunctions, Chunk.FileName, mapCount);
                         break;
                     }
                     catch(ArgumentOutOfRangeException){
@@ -177,7 +177,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
 
                 if(bf == null){
-                    Log.Warn(String.Format("Could not create bloom filter for chunk: {0}, map count: {1}",Chunk.FileName, mapCount));
+                    Log.Warn("Could not create bloom filter for chunk: {chunk}, map count: {mapCount}",Chunk.FileName, mapCount);
                     return null;
                 }
 
@@ -190,7 +190,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                         bf.Add(posMap.LogPos);
                     }
 
-                    //Log.Debug("{0} items added to bloom filter for chunk {1}", mapCount, Chunk.FileName);
+                    //Log.Debug("{mapCount} items added to bloom filter for chunk {chunk}", mapCount, Chunk.FileName);
                     return bf;
                 }
                 catch (FileBeingDeletedException)

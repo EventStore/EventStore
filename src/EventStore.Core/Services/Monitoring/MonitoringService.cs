@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -21,8 +21,8 @@ namespace EventStore.Core.Services.Monitoring
     {
         None = 0x0,       // only for tests
         Stream = 0x1,
-        Csv = 0x2,
-        StreamAndCsv = Stream | Csv
+        File = 0x2,
+        StreamAndFile = Stream | File
     }
 
     public class MonitoringService : IHandle<SystemMessage.SystemInit>,
@@ -114,8 +114,8 @@ namespace EventStore.Core.Services.Monitoring
                 {
                     var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
 
-                    if ((_statsStorage & StatsStorage.Csv) != 0)
-                        SaveStatsToCsvFile(rawStats);
+                    if ((_statsStorage & StatsStorage.File) != 0)
+                        SaveStatsToFile(LogManager.StructuredLog?StatsContainer.Group(rawStats):rawStats);
 
                     if ((_statsStorage & StatsStorage.Stream) != 0)
                     {
@@ -147,18 +147,25 @@ namespace EventStore.Core.Services.Monitoring
             return statsContainer;
         }
 
-        private void SaveStatsToCsvFile(Dictionary<string, object> rawStats)
+        private void SaveStatsToFile(Dictionary<string, object> rawStats)
         {
-            var header = StatsCsvEncoder.GetHeader(rawStats);
-            if (header != _lastWrittenCsvHeader)
+            if(LogManager.StructuredLog)
             {
-                _lastWrittenCsvHeader = header;
-                RegularLog.Info(Environment.NewLine);
-                RegularLog.Info(header);
+                 RegularLog.Info("{@stats}",rawStats);
             }
+            else
+            {
+                var header = StatsCsvEncoder.GetHeader(rawStats);
+                if (header != _lastWrittenCsvHeader)
+                {
+                  _lastWrittenCsvHeader = header;
+                  RegularLog.Info(Environment.NewLine);
+                  RegularLog.Info(header);
+                }
 
-            var line = StatsCsvEncoder.GetLine(rawStats);
-            RegularLog.Info(line);
+                var line = StatsCsvEncoder.GetLine(rawStats);
+                RegularLog.Info(line);
+            }
         }
 
         private void SaveStatsToStream(Dictionary<string, object> rawStats)
@@ -166,7 +173,7 @@ namespace EventStore.Core.Services.Monitoring
             var data = rawStats.ToJsonBytes();
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
             var corrId = Guid.NewGuid();
-            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream, 
+            var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream,
                                                     ExpectedVersion.Any, new[]{evnt}, SystemAccount.Principal);
             _mainBus.Publish(msg);
         }
@@ -203,7 +210,7 @@ namespace EventStore.Core.Services.Monitoring
             {
                 // ok, no problem if already disposed
             }
-            
+
         }
 
         public void Handle(SystemMessage.BecomeShutdown message)
@@ -232,7 +239,7 @@ namespace EventStore.Core.Services.Monitoring
                 case OperationResult.Success:
                 case OperationResult.WrongExpectedVersion: // already created
                 {
-                    Log.Trace("Created stats stream '{0}', code = {1}", _nodeStatsStream, message.Result);
+                    Log.Trace("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
                     _statsStreamCreated = true;
                     break;
                 }
@@ -240,7 +247,7 @@ namespace EventStore.Core.Services.Monitoring
                 case OperationResult.CommitTimeout:
                 case OperationResult.ForwardTimeout:
                 {
-                    Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.Result, message.Message);
+                    Log.Debug("Failed to create stats stream '{stream}'. Reason : {e}({message}). Retrying...", _nodeStatsStream, message.Result, message.Message);
                     SetStatsStreamMetadata();
                     break;
                 }
@@ -252,7 +259,7 @@ namespace EventStore.Core.Services.Monitoring
                 case OperationResult.StreamDeleted:
                 case OperationResult.InvalidTransaction: // should not happen at all
                 {
-                    Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({0}).", message.Result);
+                    Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({e}).", message.Result);
                     break;
                 }
                 default:

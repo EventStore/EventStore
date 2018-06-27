@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -20,6 +20,12 @@ namespace EventStore.Common.Log
         {
             return Runtime.IsMono;
         }
+
+        [ConditionMethod("is-structured")]
+        public static bool IsStructured()
+        {
+            return LogManager.StructuredLog;
+        }
     }
 
     public class NLogger : ILogger
@@ -38,7 +44,7 @@ namespace EventStore.Common.Log
 
         public void Fatal(string format, params object[] args)
         {
-            _logger.Fatal(format, args);
+            _logger.Fatal(format, args); 
         }
 
         public void Error(string format, params object[] args)
@@ -53,7 +59,7 @@ namespace EventStore.Common.Log
 
         public void Debug(string format, params object[] args)
         {
-            _logger.Debug(format, args);
+            _logger.Debug(format, args); 
         }
 
         public void Warn(string format, params object[] args)

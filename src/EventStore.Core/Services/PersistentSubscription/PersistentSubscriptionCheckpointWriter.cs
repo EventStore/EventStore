@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             }
             else
             {
-                Log.Debug("Error writing checkpoint for {0}: {1}", _subscriptionStateStream, msg.Result);
+                Log.Debug("Error writing checkpoint for {stream}: {e}", _subscriptionStateStream, msg.Result);
                 _version = ExpectedVersion.Any;
             }
         }

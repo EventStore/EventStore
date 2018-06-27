@@ -121,7 +121,7 @@ namespace EventStore.ClientAPI.Embedded
                     }
                     catch (Exception exc)
                     {
-                        _log.Error(exc, "Exception during executing user callback: {0}.", exc.Message);
+                        _log.Error(exc, "Exception during executing user callback: {e}.", exc.Message);
                     }
                 }
 

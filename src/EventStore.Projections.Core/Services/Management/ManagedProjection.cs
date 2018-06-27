@@ -558,7 +558,7 @@ namespace EventStore.Projections.Core.Services.Management
                     // NOTE: workaround for stop not working on creating state (just ignore them)
                     return;
                 }
-                _logger.Warn("Transient projection {0} has expired and will be deleted. Last accessed at {1}", _name, _lastAccessed);
+                _logger.Warn("Transient projection {projection} has expired and will be deleted. Last accessed at {lastAccessed}", _name, _lastAccessed);
                 Handle(
                     new ProjectionManagementMessage.Command.Delete(
                         new NoopEnvelope(),
@@ -676,7 +676,7 @@ namespace EventStore.Projections.Core.Services.Management
             SetState(ManagedProjectionState.Creating);
 
             _logger.Trace(
-                "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
+                "Projection manager did not find any projection configuration records in the {stream} stream.  Projection stays in CREATING state",
                 completed.EventStreamId);
         }
 
@@ -771,11 +771,11 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (!_writing)
             {
-                _logger.Error("Projection definition write completed in non writing state. ({0})", _name);
+                _logger.Error("Projection definition write completed in non writing state. ({projection})", _name);
             }
             if (message.Result == OperationResult.Success)
             {
-                _logger.Info("'{0}' projection source has been written", _name);
+                _logger.Info("'{projection}' projection source has been written", _name);
                 _pendingWritePersistedState = false;
                 var writtenEventNumber = message.FirstEventNumber;
                 if (writtenEventNumber != (PersistedProjectionState.Version ?? writtenEventNumber))
@@ -785,7 +785,7 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
             _logger.Info(
-                "Projection '{0}' source has not been written to {1}. Error: {2}",
+                "Projection '{projection}' source has not been written to {stream}. Error: {e}",
                 _name,
                 eventStreamId,
                 Enum.GetName(typeof (OperationResult), message.Result));
@@ -793,7 +793,7 @@ namespace EventStore.Projections.Core.Services.Management
                 || message.Result == OperationResult.PrepareTimeout
                 || message.Result == OperationResult.WrongExpectedVersion)
             {
-                _logger.Info("Retrying write projection source for {0}", _name);
+                _logger.Info("Retrying write projection source for {projection}", _name);
                 WritePersistedState(eventToRetry);
             }
             else
@@ -819,12 +819,12 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (message.Result == OperationResult.Success || message.Result == OperationResult.StreamDeleted)
             {
-                _logger.Info("PROJECTIONS: Projection Stream '{0}' deleted", streamId);
+                _logger.Info("PROJECTIONS: Projection Stream '{stream}' deleted", streamId);
                 completed();
                 return;
             }
             _logger.Info(
-                "PROJECTIONS: Projection stream '{0}' could not be deleted. Error: {1}",
+                "PROJECTIONS: Projection stream '{stream}' could not be deleted. Error: {e}",
                 streamId,
                 Enum.GetName(typeof (OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout ||
@@ -989,7 +989,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Fault(string reason)
         {
-            _logger.Error("The '{0}' projection faulted due to '{1}'", _name, reason);
+            _logger.Error("The '{projection}' projection faulted due to '{e}'", _name, reason);
             SetState(ManagedProjectionState.Faulted);
             _faultedReason = reason;
         }

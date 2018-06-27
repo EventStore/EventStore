@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Log;
@@ -552,7 +552,7 @@ namespace EventStore.Core.Services.UserManagement
                                                         }
                                                         else
                                                         {
-                                                            _log.Error(string.Format("unable to add 'admin' to $users. {0}", x.Result));
+                                                            _log.Error("unable to add 'admin' to $users. {e}", x.Result);
                                                         }
                                                         NotifyInitialized();
                                                     });
@@ -598,7 +598,7 @@ namespace EventStore.Core.Services.UserManagement
                                         switch (completed.Result)
                                         {
                                             case OperationResult.Success:
-                                                _log.Info("'ops' user account has been created.");
+                                                _log.Info("'ops' user account has been created."); 
                                                 WriteUsersStreamEvent("ops", x =>
                                                     {
                                                         if (x.Result == OperationResult.Success)
@@ -607,7 +607,7 @@ namespace EventStore.Core.Services.UserManagement
                                                         }
                                                         else
                                                         {
-                                                            _log.Error(string.Format("unable to add 'ops' to $users. {0}", x.Result));
+                                                            _log.Error("unable to add 'ops' to $users. {e}", x.Result);
                                                         }
                                                         NotifyInitialized();
                                                     });

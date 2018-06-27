@@ -95,10 +95,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     PrepareLogRecord prepare = GetPrepare(reader, transactionPosition);
                     if (prepare == null)
                     {
-                        var message = string.Format("Could not read first prepare of to-be-committed transaction. "
+
+                        Log.Error("Could not read first prepare of to-be-committed transaction. "
+                                                    + "Transaction pos: {transactionPosition}, commit pos: {commitPosition}.",
+                                                    transactionPosition, commitPosition);
+                        var message = String.Format("Could not read first prepare of to-be-committed transaction. "
                                                     + "Transaction pos: {0}, commit pos: {1}.",
                                                     transactionPosition, commitPosition);
-                        Log.Error(message);
                         throw new InvalidOperationException(message);
                     }
                     streamId = prepare.EventStreamId;

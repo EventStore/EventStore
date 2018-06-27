@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -76,8 +76,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         (int)stopWatch.Elapsed.TotalMinutes,
                                         _executionPeriod.TotalMinutes,
                                         GetType().Name);
-                Log.Info(msg);
-                Log.Info("##teamcity[message '{0}']", msg);
+                Log.Info("=================== Start run #{runIndex}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
+                                        runIndex,
+                                        (int)stopWatch.Elapsed.TotalMinutes,
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
+                Log.Info("##teamcity[message '{message}']", msg);
 
                 InnerRun(runIndex);
                 runIndex += 1;
@@ -166,7 +170,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 WaitAndCheckIfIsFaulted(projectionName);
 
-                Log.Debug(string.Format("Done iteration {0}", runIndex));
+                Log.Debug("Done iteration {runIndex}", runIndex);
             }
             finally
             {
@@ -176,13 +180,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, EventData> createEvent)
         {
-            Log.Info("Starting to write {0} events in tran {1}", eventCount, transaction.TransactionId);
+            Log.Info("Starting to write {eventCount} events in transaction {transactionId}", eventCount, transaction.TransactionId);
 
             var resSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for transaction {0} failed.", transaction.TransactionId);
+                Log.Info("WriteEventsInTransactionalWay for transaction {transactionId} failed.", transaction.TransactionId);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -215,7 +219,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for tran {0} failed", transaction.TransactionId);
+                Log.Info("WriteEventsInTransactionalWay for transaction {transactionId} failed", transaction.TransactionId);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -223,7 +227,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
             commitTask.ContinueWith(t =>
             {
-                Log.Info("Committed tran {0}", transaction.TransactionId);
+                Log.Info("Committed transaction {transactionId}", transaction.TransactionId);
                 resSource.SetResult(null);
             }, TaskContinuationOptions.OnlyOnRanToCompletion);
 

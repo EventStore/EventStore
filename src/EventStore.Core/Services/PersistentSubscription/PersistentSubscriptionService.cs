@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             _state = message.State;
 
             if (message.State == VNodeState.Master) return;
-            Log.Debug("Persistent subscriptions received state change to {0}. Stopping listening", _state);
+            Log.Debug("Persistent subscriptions received state change to {state}. Stopping listening", _state);
             ShutdownSubscriptions();
             Stop();
         }
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started) return;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            Log.Debug("Creating persistent subscription {0}", key);
+            Log.Debug("Creating persistent subscription {subscriptionKey}", key);
             //TODO revisit for permissions. maybe make admin only?
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                                     ToTimeout(message.MessageTimeoutMilliseconds)
                                     );
 
-            Log.Debug("New persistent subscription {0}", key);
+            Log.Debug("New persistent subscription {subscriptionKey}", key);
             _config.Updated = DateTime.Now;
             _config.UpdatedBy = message.User.Identity.Name;
             _config.Entries.Add(new PersistentSubscriptionEntry
@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started) return;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            Log.Debug("Updating persistent subscription {0}", key);
+            Log.Debug("Updating persistent subscription {subscriptionKey}", key);
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
@@ -340,7 +340,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             if (!_started) return;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            Log.Debug("Deleting persistent subscription {0}", key);
+            Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
@@ -413,7 +413,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public void Handle(TcpMessage.ConnectionClosed message)
         {
             //TODO CC make a map for this
-            Log.Debug("Persistent subscription lost connection from {0}", message.Connection.RemoteEndPoint);
+            Log.Debug("Persistent subscription lost connection from {remoteEndPoint}", message.Connection.RemoteEndPoint);
             if (_subscriptionsById == null) return; //havn't built yet.
             foreach (var subscription in _subscriptionsById.Values)
             {
@@ -451,7 +451,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId, SubscriptionDropReason.SubscriberMaxCountReached));
                 return;
             }
-            Log.Debug("New connection to persistent subscription {0} by {1}", key, message.ConnectionId);
+            Log.Debug("New connection to persistent subscription {subscriptionKey} by {connectionId}", key, message.ConnectionId);
             var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
             var lastCommitPos = _readIndex.LastCommitPosition;
             var subscribedMessage = new ClientMessage.PersistentSubscriptionConfirmation(key, message.CorrelationId, lastCommitPos, lastEventNumber);
@@ -504,7 +504,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 }
                 catch (Exception exc)
                 {
-                    Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
+                    Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}", eventRecord.ToString());
                 }
 
                 return ResolvedEvent.ForFailedResolvedLink(eventRecord, ReadEventResult.Error, commitPosition);
@@ -581,7 +581,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             PersistentSubscription subscription;
             var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-            Log.Debug("Replaying parked messages for persistent subscription {0}", key);
+            Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey}", key);
             var streamAccess = _readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
             if (!streamAccess.Granted)
@@ -652,7 +652,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                         {
                             if (!_consumerStrategyRegistry.ValidateStrategy(entry.NamedConsumerStrategy))
                             {
-                                Log.Error("A persistent subscription exists with an invalid consumer strategy '{0}'. Ignoring it.", entry.NamedConsumerStrategy);
+                                Log.Error("A persistent subscription exists with an invalid consumer strategy '{strategy}'. Ignoring it.", entry.NamedConsumerStrategy);
                                 continue;
                             }
 
@@ -676,7 +676,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("There was an error loading configuration from storage.", ex);
+                        Log.ErrorException(ex, "There was an error loading configuration from storage.");
                     }
                     break;
                 case ReadStreamResult.NoStream:

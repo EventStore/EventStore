@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                             break;
                         default:
                             Log.Error(
-                                "An error occured reading the last event in the parked message stream {0} due to {1}.",
+                                "An error occured reading the last event in the parked message stream {stream} due to {e}.",
                                 _parkedStreamId, comp.Result);
                             Log.Error("Messages were not removed on retry");
                             break;
@@ -107,7 +107,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                             //nothing
                             break;
                         default:
-                            Log.Error("An error occured truncating the parked message stream {0} due to {1}.",
+                            Log.Error("An error occured truncating the parked message stream {stream} due to {e}.",
                                 _parkedStreamId, msg.Result);
                             Log.Error("Messages were not removed on retry");
                             break;

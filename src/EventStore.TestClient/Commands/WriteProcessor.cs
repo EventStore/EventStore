@@ -47,7 +47,7 @@ namespace EventStore.TestClient.Commands
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}, L{1}]: Writing...", conn.RemoteEndPoint, conn.LocalEndPoint);
+                    context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint, conn.LocalEndPoint);
                     var writeDto = new TcpClientMessageDto.WriteEvents(
                         eventStreamId,
                         expectedVersion,
@@ -72,7 +72,7 @@ namespace EventStore.TestClient.Commands
                 handlePackage: (conn, pkg) =>
                 {
                     sw.Stop();
-                    context.Log.Info("Write request took: {0}.", sw.Elapsed);
+                    context.Log.Info("Write request took: {elapsed}.", sw.Elapsed);
 
                     if (pkg.Command != TcpCommand.WriteEventsCompleted)
                     {
@@ -89,7 +89,7 @@ namespace EventStore.TestClient.Commands
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0} ({1}).", dto.Message, dto.Result);
+                        context.Log.Info("Error while writing: {message} ({e}).", dto.Message, dto.Result);
                         context.Fail();
                     }
 

@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionEstablished(ITcpConnection connection)
         {
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", ConnectionName, ConnectionId, connection.RemoteEndPoint);
+            Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.", ConnectionName, ConnectionId, connection.RemoteEndPoint);
 
             ScheduleHeartbeat(0);
 
@@ -175,7 +175,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void OnConnectionFailed(ITcpConnection connection, SocketError socketError)
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
+            Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] failed: {e}.", ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
             if (_connectionClosed != null)
                 _connectionClosed(this, socketError);
         }
@@ -183,7 +183,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
             if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-            Log.Info("Connection '{0}{1}' [{2}, {3:B}] closed: {4}.", 
+            Log.Info("Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] closed: {e}.", 
                      ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, connection.RemoteEndPoint, ConnectionId, socketError);
             if (_connectionClosed != null)
                 _connectionClosed(this, socketError);
@@ -257,7 +257,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     try 
                     {
                         var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope, null, null, null, this, _version);
-                        Log.Info("Connection '{0}' ({1:B}) identified by client. Client connection name: '{2}', Client version: {3}.",
+                        Log.Info("Connection '{connectionName}' ({connectionId:B}) identified by client. Client connection name: '{clientConnectionName}', Client version: {clientVersion}.",
                             ConnectionName, ConnectionId, message.ConnectionName, (ClientVersion)message.Version);
                         _version = (byte)message.Version;
                         _clientConnectionName = message.ConnectionName;
@@ -266,7 +266,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     }
                     catch (Exception ex)
                     {
-                        Log.Error("Error identifying client: {0}", ex);
+                        Log.Error("Error identifying client: {e}", ex);
                     }
                     break;
                 }
@@ -274,11 +274,9 @@ namespace EventStore.Core.Services.Transport.Tcp
                 {
                     var reason = string.Empty;
                     Helper.EatException(() => reason = Helper.UTF8NoBom.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
-                    var exitMessage = 
-                        string.Format("Bad request received from '{0}{1}' [{2}, L{3}, {4:B}], will stop server. CorrelationId: {5:B}, Error: {6}.",
+                    Log.Error("Bad request received from '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}], will stop server. CorrelationId: {correlationId:B}, Error: {e}.",
                                       ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, 
                                       LocalEndPoint, ConnectionId, package.CorrelationId, reason.IsEmptyString() ? "<reason missing>" : reason);
-                    Log.Error(exitMessage);
                     break;
                 }
                 case TcpCommand.Authenticate:
@@ -359,7 +357,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Ensure.NotNull(message, "message");
 
             SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Helper.UTF8NoBom.GetBytes(message)), checkQueueSize: false);
-            Log.Error("Closing connection '{0}{1}' [{2}, L{3}, {4:B}] due to error. Reason: {5}",
+            Log.Error("Closing connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}] due to error. Reason: {e}",
                       ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId, message);
             _connection.Close(message);
         }
@@ -373,7 +371,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void Stop(string reason = null)
         {
-            Log.Trace("Closing connection '{0}{1}' [{2}, L{3}, {4:B}] cleanly.{5}",
+            Log.Trace("Closing connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}] cleanly.{reason}",
                       ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName, RemoteEndPoint, LocalEndPoint, ConnectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close(reason);

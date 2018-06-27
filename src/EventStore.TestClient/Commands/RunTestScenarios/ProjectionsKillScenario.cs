@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -102,7 +102,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
 
             var task = Task.Factory.ContinueWhenAll(new[] { w1, w2, w3 }, Task.WaitAll);
-            return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
+            return task.ContinueWith(x => Log.Info("Data written for iteration {iteration}.", GetIterationCode()));
         }
 
         protected string CreateCountItem()

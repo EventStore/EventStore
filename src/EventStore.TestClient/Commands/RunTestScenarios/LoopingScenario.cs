@@ -52,8 +52,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         (int)stopWatch.Elapsed.TotalMinutes,
                                         _executionPeriod.TotalMinutes,
                                         GetType().Name);
-                Log.Info(msg);
-                Log.Info("##teamcity[message '{0}']", msg);
+                Log.Info("=================== Start run #{runIndex}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
+                                        runIndex,
+                                        (int)stopWatch.Elapsed.TotalMinutes,
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
+                Log.Info("##teamcity[message '{message}']", msg);
 
                 SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
                 InnerRun(runIndex);
@@ -155,7 +159,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 while (!_stopParalleWrites)
                 {
                     
-                    Log.Debug("Start RunParallelWrites #{0} for runIndex {1}", index, runIndex);
+                    Log.Debug("Start RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
 
                     var parallelStreams = Enumerable.Range(0, 2)
                             .Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
@@ -167,14 +171,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     var wr = Write(WriteMode.SingleEventAtTime, parallelStreams, EventsPerStream);
                     wr.Wait();
 
-                    Log.Debug("Wrote RunParallelWrites #{0} for runIndex {1}", index, runIndex);
+                    Log.Debug("Wrote RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
 
                     var rd1 = Read(parallelStreams, 0, EventsPerStream / 6);
                     var rd2 = Read(parallelStreams, EventsPerStream / 3, EventsPerStream / 6);
                     var rd3 = Read(parallelStreams, EventsPerStream - EventsPerStream / 10, EventsPerStream / 10);
                     Task.WaitAll(rd1, rd2, rd3);
 
-                    Log.Debug("Done RunParallelWrites #{0} for runIndex {1}", index, runIndex);
+                    Log.Debug("Done RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
 
                     index += 1;
                 }

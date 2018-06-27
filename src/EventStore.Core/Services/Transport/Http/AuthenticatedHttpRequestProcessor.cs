@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Http
                     {
                         req = _pending.DeleteMin();
                         req.Item2.ReplyStatus(HttpStatusCode.RequestTimeout, "Server was unable to handle request in time",
-                                              e => Log.Debug("Error occurred while closing timed out connection (HTTP service core): {0}.", e.Message));
+                                              e => Log.Debug("Error occurred while closing timed out connection (HTTP service core): {e}.", e.Message));
                     }
                     else 
                         break;
@@ -116,14 +116,14 @@ namespace EventStore.Core.Services.Transport.Http
                 }
                 catch (Exception exc)
                 {
-                    Log.ErrorException(exc, "Error while handling HTTP request '{0}'.", request.Url);
+                    Log.ErrorException(exc, "Error while handling HTTP request '{url}'.", request.Url);
                     InternalServerError(httpEntity);
                 }
                 
             }
             catch (Exception exc)
             {
-                Log.ErrorException(exc, "Unhandled exception while processing HTTP request at [{0}].",
+                Log.ErrorException(exc, "Unhandled exception while processing HTTP request at [{listenPrefixes}].",
                                    string.Join(", ", httpService.ListenPrefixes));
                 InternalServerError(httpEntity);
             }
@@ -147,42 +147,42 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
             entity.ReplyStatus(HttpStatusCode.OK, "OK",
-                               e => Log.Debug("Error while closing HTTP connection (http service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (http service core): {e}.", e.Message));
         }
 
         private void MethodNotAllowed(HttpEntity httpEntity, string[] allowed)
         {
             var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
             entity.ReplyStatus(HttpStatusCode.MethodNotAllowed, "Method Not Allowed",
-                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
         }
 
         private void NotFound(HttpEntity httpEntity)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.NotFound, "Not Found",
-                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
         }
 
         private void InternalServerError(HttpEntity httpEntity)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error",
-                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
         }
 
         private void BadCodec(HttpEntity httpEntity, string reason)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.NotAcceptable, reason,
-                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
         }
 
         private void BadContentType(HttpEntity httpEntity, string reason)
         {
             var entity = httpEntity.CreateManager();
             entity.ReplyStatus(HttpStatusCode.UnsupportedMediaType, reason,
-                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {0}.", e.Message));
+                               e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
         }
 
         private ICodec SelectRequestCodec(string method, string contentType, ICodec[] supportedCodecs)

@@ -85,7 +85,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             _connections = new IEventStoreConnection[connections];
 
-            Log.Info("Projection manager points to {0}.", _nodeConnection);
+            Log.Info("Projection manager points to {nodeConnection}.", _nodeConnection);
             _projectionsManager = new ProjectionsManager(new ConsoleLogger(), new IPEndPoint(_nodeConnection.IpAddress, _nodeConnection.HttpPort), TimeSpan.FromMilliseconds(5000));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
@@ -139,11 +139,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         .FailOnNoServerResponse(),
                     new Uri(string.Format("tcp://{0}:{1}", _nodeConnection.IpAddress, _nodeConnection.TcpPort)),
                     string.Format("ESConn-{0}", i));
-                _connections[i].Closed += (s, e) => Log.Debug("[SCENARIO] {0} closed.", e.Connection.ConnectionName);
-                _connections[i].Connected += (s, e) => Log.Debug("[SCENARIO] {0} connected to [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
-                _connections[i].Disconnected += (s, e) => Log.Debug("[SCENARIO] {0} disconnected from [{1}].", e.Connection.ConnectionName, e.RemoteEndPoint);
-                _connections[i].Reconnecting += (s, e) => Log.Debug("[SCENARIO] {0} reconnecting.", e.Connection.ConnectionName);
-                _connections[i].ErrorOccurred += (s, e) => Log.DebugException(e.Exception, "[SCENARIO] {0} error occurred.", e.Connection.ConnectionName);
+                _connections[i].Closed += (s, e) => Log.Debug("[SCENARIO] {connection} closed.", e.Connection.ConnectionName);
+                _connections[i].Connected += (s, e) => Log.Debug("[SCENARIO] {connection} connected to [{remoteEndPoint}].", e.Connection.ConnectionName, e.RemoteEndPoint);
+                _connections[i].Disconnected += (s, e) => Log.Debug("[SCENARIO] {connection} disconnected from [{remoteEndPoint}].", e.Connection.ConnectionName, e.RemoteEndPoint);
+                _connections[i].Reconnecting += (s, e) => Log.Debug("[SCENARIO] {connection} reconnecting.", e.Connection.ConnectionName);
+                _connections[i].ErrorOccurred += (s, e) => Log.DebugException(e.Exception, "[SCENARIO] {connection} error occurred.", e.Connection.ConnectionName);
                 _connections[i].ConnectAsync().Wait();
             } 
             RunInternal();   
@@ -164,18 +164,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (_dbPath != null)
                 {
-                    Log.Info("Deleting {0}...", _dbPath);
+                    Log.Info("Deleting {dbPath}...", _dbPath);
                     Directory.Delete(_dbPath, true);
-                    Log.Info("Deleted {0}", _dbPath);
+                    Log.Info("Deleted {dbPath}", _dbPath);
                 }
             }
             catch (IOException ex)
             {
-                Log.ErrorException(ex, "Failed to delete dir {0}, IOException was raised", _dbPath);
+                Log.ErrorException(ex, "Failed to delete dir {dbPath}, IOException was raised", _dbPath);
             }
             catch (UnauthorizedAccessException ex)
             {
-                Log.ErrorException(ex, "Failed to delete dir {0}, UnauthorizedAccessException was raised", _dbPath);
+                Log.ErrorException(ex, "Failed to delete dir {dbPath}, UnauthorizedAccessException was raised", _dbPath);
             }
         }
 
@@ -196,7 +196,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected Task Write(WriteMode mode, string[] streams, int eventsPerStream, Func<int, EventData> createEvent)
         {
-            Log.Info("Writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
+            Log.Info("Writing. Mode : {mode,-15} Streams : {streamsLength,-10} Events per stream : {eventsPerStream,-10}",
                      mode,
                      streams.Length,
                      eventsPerStream);
@@ -215,7 +215,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return Task.Factory.ContinueWhenAll(tasks.ToArray(), tsks =>
             {
                 Task.WaitAll(tsks);
-                Log.Info("Finished writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
+                Log.Info("Finished writing. Mode : {mode,-15} Streams : {streamsLength,-10} Events per stream : {eventsPerStream,-10}",
                          mode,
                          streams.Length,
                          eventsPerStream);
@@ -231,9 +231,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             foreach (var stream in streams)
             {
                 var s = stream;
-                Log.Info("Deleting stream {0}...", stream);
+                Log.Info("Deleting stream {stream}...", stream);
                 var task = store.DeleteStreamAsync(stream, (EventsPerStream - 1), hardDelete: true)
-                                .ContinueWith(x => Log.Info("Stream {0} successfully deleted", s));
+                                .ContinueWith(x => Log.Info("Stream {stream} successfully deleted", s));
 
                 tasks.Add(task);
             }
@@ -275,7 +275,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 Debugger.Break();
                 throw new Exception("Streams shouldn't be empty.");
             }
-            Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
+            Log.Info("Reading [{streams}]\nfrom {from,-10} count {count,-10}", string.Join(",", streams),from , count);
 
             var tasks = new List<Task>();
 
@@ -288,7 +288,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return Task.Factory.ContinueWhenAll(tasks.ToArray(), tsks =>
             {
                 Task.WaitAll(tsks);
-                Log.Info("Done reading [{0}]", string.Join(",", streams));
+                Log.Info("Done reading [{streams}]", string.Join(",", streams));
             });
         }
 
@@ -318,7 +318,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             string pathToMono;
             if (TryGetPathToMono(out pathToMono))
             {
-                Log.Info("Mono at {0} will be used.", pathToMono);
+                Log.Info("Mono at {pathToMono} will be used.", pathToMono);
                 fileName = pathToMono;
                 argumentsHead = string.Format("--debug --gc=sgen {0}", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
             }
@@ -335,7 +335,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                           _nodeConnection.HttpPort,
                                           _dbPath);
 
-            Log.Info("Starting [{0} {1}]...", fileName, arguments);
+            Log.Info("Starting [{fileName} {arguments}]...", fileName, arguments);
 
             var startInfo = new ProcessStartInfo(fileName, arguments);
 
@@ -351,10 +351,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             _startedNodesProcIds.Add(nodeProcess.Id);
 
-            Log.Info("Started node with process id {0}", nodeProcess.Id);
+            Log.Info("Started node with process id {id}", nodeProcess.Id);
 
             Thread.Sleep(StartupWaitInterval);
-            Log.Info("Started [{0} {1}]", fileName, arguments);
+            Log.Info("Started [{fileName} {arguments}]", fileName, arguments);
 
             return nodeProcess.Id;
         }
@@ -388,7 +388,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private void KillStartedNode(int processId)
         {
-            Log.Info("Killing {0}...", processId);
+            Log.Info("Killing {processId}...", processId);
 
             Process process;
             if (TryGetProcessById(processId, out process))
@@ -409,7 +409,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     PortsHelper.ReturnPort(_nodeConnection.TcpPort);
                     PortsHelper.ReturnPort(_nodeConnection.HttpPort);
 
-                    Log.Info("Killed process {0}, wait a bit.", processId);
+                    Log.Info("Killed process {processId}, wait a bit.", processId);
                     Thread.Sleep(1000); // wait for system to release port used by HttpListener.
                 }
                 else
@@ -417,14 +417,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     Process temp;
                     if (TryGetProcessById(processId, out temp))
                         Log.Error(
-                            "Process {0} did not report about exit in time and is still present in processes list.",
+                            "Process {processId} did not report about exit in time and is still present in processes list.",
                             processId);
                     else
-                        Log.Info("Process {0} did not report about exit in time but is not found again.", processId);
+                        Log.Info("Process {processId} did not report about exit in time but is not found again.", processId);
                 }
             }
             else
-                Log.Error("Process {0} was not found to be killed.", processId);
+                Log.Error("Process {processId} was not found to be killed.", processId);
         }
 
         public void Dispose()
@@ -451,7 +451,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             }
             catch (Exception ex)
             {
-                Log.Error("Failed to kill started nodes: {0}.", ex.Message);
+                Log.Error("Failed to kill started nodes: {e}.", ex.Message);
             }
         }
 
@@ -467,13 +467,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var resSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            Log.Info("Starting to write {0} events to [{1}]", events, stream);
+            Log.Info("Starting to write {events} events to [{stream}]", events, stream);
             var store = GetConnection();
             int eventVersion = 0;
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteSingleEventAtTime for stream {0} failed.", stream);
+                Log.Info("WriteSingleEventAtTime for stream {stream} failed.", stream);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -482,7 +482,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (eventVersion == events)
                 {
-                    Log.Info("Wrote {0} events to [{1}]", events, stream);
+                    Log.Info("Wrote {events} events to [{stream}]", events, stream);
                     resSource.SetResult(null);
                     return;
                 }
@@ -505,7 +505,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private Task WriteBucketOfEventsAtTime(string stream, int eventCount, Func<int, EventData> createEvent)
         {
             const int bucketSize = 25;
-            Log.Info("Starting to write {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
+            Log.Info("Starting to write {eventCount} events to [{stream}] ({bucketSize} events at once)", eventCount, stream, bucketSize);
 
             var resSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var store = GetConnection();
@@ -513,7 +513,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteBucketOfEventsAtTime for stream {0} failed.", stream);
+                Log.Info("WriteBucketOfEventsAtTime for stream {stream} failed.", stream);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -522,7 +522,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (writtenCount == eventCount)
                 {
-                    Log.Info("Wrote {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
+                    Log.Info("Wrote {eventCount} events to [{stream}] ({bucketSize} events at once)", eventCount, stream, bucketSize);
                     resSource.SetResult(null);
                     return;
                 }
@@ -547,14 +547,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         
         private Task WriteEventsInTransactionalWay(string stream, int eventCount, Func<int, EventData> createEvent)
         {
-            Log.Info("Starting to write {0} events to [{1}] (in single transaction)", eventCount, stream);
+            Log.Info("Starting to write {eventCount} events to [{stream}] (in single transaction)", eventCount, stream);
 
             var resSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var store = GetConnection();
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for stream {0} failed.", stream);
+                Log.Info("WriteEventsInTransactionalWay for stream {stream} failed.", stream);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -570,7 +570,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                     commitTask.ContinueWith(t =>
                     {
-                        Log.Info("Wrote {0} events to [{1}] (in single transaction)", eventCount, stream);
+                        Log.Info("Wrote {eventCount} events to [{stream}] (in single transaction)", eventCount, stream);
                         resSource.SetResult(null);
                     }, TaskContinuationOptions.OnlyOnRanToCompletion);
                     return;
@@ -597,13 +597,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private Task ReadStream(string stream, int from, int count)
         {
-            Log.Info("Reading [{0}] from {1,-10} count {2,-10}", stream, from, count);
+            Log.Info("Reading [{stream}] from {from,-10} count {count,-10}", stream, from, count);
             var resSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var store = GetConnection();
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("ReadStream for stream {0} failed.", stream);
+                Log.Info("ReadStream for stream {stream} failed.", stream);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -641,12 +641,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                         TestEvent.VerifyIfMatched(evnt);
                     }
-                    Log.Info("Done reading [{0}] from {1,-10} count {2,-10}", stream, from, count);
+                    Log.Info("Done reading [{stream}] from {from,-10} count {count,-10}", stream, from, count);
                     resSource.SetResult(null);
                 }
                 catch (Exception exc)
                 {
-                    Log.Info("ReadStream for stream {0} failed.", stream);
+                    Log.Info("ReadStream for stream {stream} failed.", stream);
                     resSource.SetException(exc);
                 }
             }, TaskContinuationOptions.OnlyOnRanToCompletion);

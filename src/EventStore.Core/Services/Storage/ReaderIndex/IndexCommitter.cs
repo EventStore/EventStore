@@ -116,12 +116,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     processed += 1;
                     if (DateTime.UtcNow - lastTime > reportPeriod || processed % 100000 == 0)
                     {
-                        Log.Debug("ReadIndex Rebuilding: processed {0} records ({1:0.0}%).",
+                        Log.Debug("ReadIndex Rebuilding: processed {processed} records ({resultPosition:0.0}%).",
                                   processed, (result.RecordPostPosition - startPosition) * 100.0 / (buildToPosition - startPosition));
                         lastTime = DateTime.UtcNow;
                     }
                 }
-                Log.Debug("ReadIndex rebuilding done: total processed {0} records, time elapsed: {1}.", processed, DateTime.UtcNow - startTime);
+                Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.", processed, DateTime.UtcNow - startTime);
                 _bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
                 _backend.SetSystemSettings(GetSystemSettings());
             }

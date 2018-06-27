@@ -37,7 +37,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 countProjections.Add(CreateCountItem());
                 bankProjections.Add(CreateSumCheckForBankAccount0());
 
-                Log.Info("Created {0} and {1}", bankProjections[bankProjections.Count - 1], 
+                Log.Info("Created {bankProjections} and {countProjections}", bankProjections[bankProjections.Count - 1], 
                                                 countProjections[countProjections.Count - 1]);
 
             }
@@ -55,7 +55,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             int count = 10;
             while (count > 0)
             {
-                Log.Info("Stop and start projection, remaining iterations {0}, waiting for data to be written.", count);
+                Log.Info("Stop and start projection, remaining iterations {count}, waiting for data to be written.", count);
 
                 StartOrStopProjection(countProjections, false);
                 StartOrStopProjection(bankProjections, false);
@@ -78,7 +78,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     break;
 
                 var sleepTimeSeconds = 10 + Streams * EventsPerStream / 1000.0;
-                Log.Info("Sleep 1 for {0} seconds, remaining count {1}", sleepTimeSeconds, count);
+                Log.Info("Sleep 1 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
                 Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
             }
 
@@ -88,7 +88,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             success = false;
             while (!success && count > 0)
             {
-                Log.Info("Wait until projections are computed, remaining iterations {0}", count);
+                Log.Info("Wait until projections are computed, remaining iterations {count}", count);
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
@@ -100,7 +100,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     break;
 
                 var sleepTimeSeconds = 10 + (Streams * EventsPerStream) / 500;
-                Log.Info("Sleep 2 for {0} seconds, remaining count {1}", sleepTimeSeconds, count);
+                Log.Info("Sleep 2 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
                 Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
 
                 count -= 1;
@@ -132,7 +132,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 var retry = 0;
 
                 int shortWait = 50 + _random.Next(100);
-                Log.Debug("Wait for {0}ms before next enable/disable projection", shortWait);
+                Log.Debug("Wait for {waitTime}ms before next enable/disable projection", shortWait);
                 Thread.Sleep(shortWait);
                 
                 while (retry <= retriesNumber)
@@ -146,14 +146,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                             if (!isRunning)
                                 manager.EnableAsync(projection, AdminCredentials).Wait();
                             else 
-                                Log.Info("Projection '{0}' is already running and will not be enabled.", projection);
+                                Log.Info("Projection '{projection}' is already running and will not be enabled.", projection);
                         }
                         else
                         {
                             if (isRunning)
                                 manager.DisableAsync(projection, AdminCredentials).Wait();
                             else
-                                Log.Info("Projection '{0}' is already not running and will not be disabled again.", projection);
+                                Log.Info("Projection '{projection}' is already not running and will not be disabled again.", projection);
                         }
 
                         break;
@@ -162,7 +162,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     {
                         var waitForMs = 5000 + (retry * (3000 + _random.Next(2000)));
 
-                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}; isRunning:{1}) projection {2}, retry #{3}, wait {4}ms", 
+                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{enable}; isRunning:{isRunning}) projection {projection}, retry #{retry}, wait {waitTime}ms",
                                               enable, 
                                               isRunning,
                                               projection,

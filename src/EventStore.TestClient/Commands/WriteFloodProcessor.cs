@@ -127,7 +127,7 @@ namespace EventStore.TestClient.Commands
                         {
                             var elapsed = sw2.Elapsed;
                             sw2.Restart();
-                            context.Log.Trace("\nDONE TOTAL {0} WRITES IN {1} ({2:0.0}/s) [S:{3}, F:{4} (WEV:{5}, P:{6}, C:{7}, F:{8}, D:{9})].",
+                            context.Log.Trace("\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
                                               localAll, elapsed, 1000.0*100000/elapsed.TotalMilliseconds,
                                               succ, fail,
                                               wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
@@ -180,12 +180,12 @@ namespace EventStore.TestClient.Commands
             sw.Stop();
             clients.ForEach(client => client.Close());
 
-            context.Log.Info("Completed. Successes: {0}, failures: {1} (WRONG VERSION: {2}, P: {3}, C: {4}, F: {5}, D: {6})",
+            context.Log.Info("Completed. Successes: {success}, failures: {failures} (WRONG VERSION: {wrongExpectedVersion}, P: {prepareTimeout}, C: {commitTimeout}, F: {forwardTimeout}, D: {streamDeleted})",
                              succ, fail,
                              wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
 
             var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
+            context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
 
             PerfUtils.LogData(
                 Keyword,

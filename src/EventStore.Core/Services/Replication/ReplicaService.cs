@@ -175,7 +175,7 @@ namespace EventStore.Core.Services.Replication
         {
             Ensure.NotNull(master, "master");
             if (useSsl && master.InternalSecureTcp == null)
-                Log.Error("Internal secure connections are required, but no internal secure TCP end point is specified for master [{0}]!", master);
+                Log.Error("Internal secure connections are required, but no internal secure TCP end point is specified for master [{master}]!", master);
             return useSsl ? master.InternalSecureTcp ?? master.InternalTcp : master.InternalTcp;
         }
 
@@ -187,9 +187,9 @@ namespace EventStore.Core.Services.Replication
             var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
             var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
             
-            Log.Info("Subscribing at LogPosition: {0} (0x{0:X}) to MASTER [{1}, {2:B}] as replica with SubscriptionId: {3:B}, "
-                     + "ConnectionId: {4:B}, LocalEndPoint: [{5}], Epochs:\n{6}...\n.",
-                      logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
+            Log.Info("Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to MASTER [{remoteEndPoint}, {masterId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
+                     + "ConnectionId: {connectionId:B}, LocalEndPoint: [{localEndPoint}], Epochs:\n{epochs}...\n.",
+                      logPosition, logPosition , _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
                       _connection.ConnectionId, _connection.LocalEndPoint, string.Join("\n", epochs.Select(x => x.AsString())));
 
             var chunk = _db.Manager.GetChunkFor(logPosition);

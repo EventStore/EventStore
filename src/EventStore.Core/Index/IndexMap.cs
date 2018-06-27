@@ -364,8 +364,8 @@ namespace EventStore.Core.Index
             {
                 Action<Exception> errorHandler = ex =>
                 {
-                    Log.Error("Failed trial to replace indexmap {0} with {1}.", filename, tmpIndexMap);
-                    Log.Error("Exception: {0}", ex);
+                    Log.Error("Failed trial to replace indexmap {indexMap} with {tmpIndexMap}.", filename, tmpIndexMap);
+                    Log.Error("Exception: {e}", ex);
                     trial += 1;
                 };
                 try

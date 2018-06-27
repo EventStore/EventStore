@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Management
                     SystemAccount.Principal,
                     ReadForwardCompleted,
                     () => {
-                        Log.Warn("Read forward of stream {0} timed out. Retrying", ProjectionNamesBuilder._projectionsMasterStream);
+                        Log.Warn("Read forward of stream {stream} timed out. Retrying", ProjectionNamesBuilder._projectionsMasterStream);
                         ReadForward();
                     },
                     _correlationId)
@@ -157,7 +157,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
             {
-                Log.Error("Failed reading stream {0}. Read result: {1}, Error: '{2}'", ProjectionNamesBuilder._projectionsMasterStream, completed.Result, completed.Error);
+                Log.Error("Failed reading stream {stream}. Read result: {readResult}, Error: '{e}'", ProjectionNamesBuilder._projectionsMasterStream, completed.Result, completed.Error);
                 ReadForward();
             }
         }
@@ -165,7 +165,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Internal.ReadTimeout timeout)
         {
             if (timeout.CorrelationId != _correlationId) return;
-            Log.Debug("Read forward of stream {0} timed out. Retrying", ProjectionNamesBuilder._projectionsMasterStream);
+            Log.Debug("Read forward of stream {stream} timed out. Retrying", ProjectionNamesBuilder._projectionsMasterStream);
             ReadForward();
         }
 
@@ -187,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: PROJECTIONS: Remove before release
             if (!Logging.FilteredMessages.Contains(x => x == command))
             {
-                Log.Debug("PROJECTIONS: Response received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
+                Log.Debug("PROJECTIONS: Response received: {eventNumber}@{command}", resolvedEvent.OriginalEventNumber, command);
             }
             switch (command)
             {

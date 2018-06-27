@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
             }
             catch (Exception exc)
             {
-                Log.Debug("Getting disk IO error: {0}.", exc.Message);
+                Log.Debug("Getting disk IO error: {e}.", exc.Message);
                 return null;
             }
         }

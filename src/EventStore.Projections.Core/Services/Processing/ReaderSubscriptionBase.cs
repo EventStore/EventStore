@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
 /*
                 _logger.Trace(
-                    "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",
+                    "Skipping replayed event {positionSequenceNumber}@{positionStreamId} at position {position}. the last processed event checkpoint tag is: {lastTag}",
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
 */
                 return;
@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_eofReached)
                 throw new InvalidOperationException("Onetime projection has already reached the eof position");
-//            _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
+//            _logger.Trace("Creating an event distribution point at '{lastTag}'", _positionTracker.LastTag);
             return _readerStrategy.CreatePausedEventReader(
                 eventReaderId, publisher, ioDispatcher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
         }

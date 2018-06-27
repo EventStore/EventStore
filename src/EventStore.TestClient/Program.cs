@@ -27,6 +27,10 @@ namespace EventStore.TestClient
         {
             return "client";
         }
+        protected override bool GetIsStructuredLog(ClientOptions options)
+        {
+            return false;
+        }
 
         protected override void Create(ClientOptions options)
         {

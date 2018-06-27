@@ -5,6 +5,9 @@ using System.Runtime.InteropServices;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests
@@ -18,7 +21,15 @@ namespace EventStore.Core.Tests
             System.Net.ServicePointManager.DefaultConnectionLimit = 1000;
             Console.WriteLine("Initializing tests (setting console loggers)...");
             SetUpDebugListeners();
-            LogManager.SetLogFactory(x => new ConsoleLogger());
+            
+            ConfigurationItemFactory.Default.ValueFormatter = new ESValueFormatter(false);
+            ConsoleTarget consoleTarget = new ConsoleTarget("testconsole");
+            var config = new NLog.Config.LoggingConfiguration();        
+            config.AddRule(LogLevel.Trace, LogLevel.Fatal, consoleTarget);
+            consoleTarget.Layout = "[${processid:padCharacter=0:padding=5},${threadid:padCharacter=0:padding=2},${date:universalTime=true:format=HH\\:mm\\:ss\\.fff},${level:padding=-5:uppercase=true}] ${message}${onexception:${newline}${literal:text=EXCEPTION OCCURRED}${newline}${exception:format=message}}";
+            NLog.LogManager.Configuration = config;
+            EventStore.Common.Log.LogManager.SetLogFactory(x => new NLogger(x));
+
             Application.AddDefines(new[] { Application.AdditionalCommitChecks });
             LogEnvironmentInfo();
 
@@ -34,7 +45,7 @@ namespace EventStore.Core.Tests
 
         private void LogEnvironmentInfo()
         {
-            var log = LogManager.GetLoggerFor<TestsInitFixture>();
+            var log = EventStore.Common.Log.LogManager.GetLoggerFor<TestsInitFixture>();
 
             log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
                      + "{5,-25} {6} ({7})\n"
@@ -60,7 +71,7 @@ namespace EventStore.Core.Tests
                                     MiniNode.RunCount);
 
             Console.WriteLine(msg);
-            LogManager.Finish();
+            EventStore.Common.Log.LogManager.Finish();
         }
     }
 

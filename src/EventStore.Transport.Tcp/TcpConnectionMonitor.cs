@@ -86,14 +86,14 @@ namespace EventStore.Transport.Tcp
 
             if (Application.IsDefined(Application.DumpStatistics))
             {
-                Log.Trace("\n# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
-                          "In Send: {4}  Pending Received: {5} Measure Time: {6}",
+                Log.Trace("\n# Total connections: {connections,3}. Out: {sendingSpeed:0.00}b/s  In: {receivingSpeed:0.00}b/s  Pending Send: {pendingSend}  " +
+                          "In Send: {inSend}  Pending Received: {pendingReceived} Measure Time: {measureTime}",
                           stats.Connections,
                           stats.SendingSpeed,
                           stats.ReceivingSpeed,
                           stats.PendingSend,
                           stats.InSend,
-                          stats.PendingSend,
+                          stats.PendingReceived,
                           stats.MeasureTime);
             }
             return stats;
@@ -107,7 +107,7 @@ namespace EventStore.Transport.Tcp
 
             if (connection.IsFaulted)
             {
-                Log.Info("# {0} is faulted", connection);
+                Log.Info("# {connection} is faulted", connection);
                 return;
             }
 
@@ -153,7 +153,7 @@ namespace EventStore.Transport.Tcp
 
             if (missingReceiveCallback && connectionData.LastMissingReceiveCallBack)
             {
-                Log.Error("# {0} {1}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
+                Log.Error("# {connection} {sinceLastReceive}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
                           connection, sinceLastReceive);
             }
             connectionData.LastMissingReceiveCallBack = missingReceiveCallback;
@@ -174,7 +174,7 @@ namespace EventStore.Transport.Tcp
             {
                 // _anySendBlockedOnLastRun = true;
                 Log.Error(
-                    "# {0} {1}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {2}",
+                    "# {connection} {sinceLastSend}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {inSendBytes}",
                     connection, sinceLastSend, inSendBytes);
             }
             connectionData.LastMissingSendCallBack = missingSendCallback;
@@ -185,7 +185,7 @@ namespace EventStore.Transport.Tcp
             int pendingSendBytes = connection.PendingSendBytes;
             if (pendingSendBytes > 128 * 1024)
             {
-                Log.Info("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
+                Log.Info("# {connection} {pendingSendKiloBytes}kb pending send", connection, pendingSendBytes / 1024);
             }
         }
 
@@ -194,7 +194,7 @@ namespace EventStore.Transport.Tcp
             int pendingReceivedBytes = connection.PendingReceivedBytes;
             if (pendingReceivedBytes > 128 * 1024)
             {
-                Log.Info("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);
+                Log.Info("# {connection} {pendingReceivedKiloBytes}kb are not dispatched", connection, pendingReceivedBytes / 1024);
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
@@ -105,9 +105,9 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
         private static void LogExpected(object generated, object actual, string reason)
         {
-            Log.Info("Expected: {0}\n" +
-                     "  Actual: {1}\n" +
-                     " Details: {2}",
+            Log.Info("Expected: {expected}\n" +
+                     "  Actual: {actual}\n" +
+                     " Details: {reason}",
                      generated.ToString(),
                      (actual == null ? "<null>" : actual.ToString()),
                      reason

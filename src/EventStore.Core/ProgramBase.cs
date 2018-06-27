@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -23,6 +23,7 @@ namespace EventStore.Core
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
 
         protected abstract string GetLogsDirectory(TOptions options);
+        protected abstract bool GetIsStructuredLog(TOptions options);
         protected abstract string GetComponentName(TOptions options);
 
         protected abstract void Create(TOptions options);
@@ -84,7 +85,7 @@ namespace EventStore.Core
                 if(LogManager.Initialized)
                 {
                     Log.FatalException(ex, msg);
-                    Log.FatalException(ex, "{0}", FormatExceptionMessage(ex));
+                    Log.FatalException(ex, "{e}", FormatExceptionMessage(ex));
                 }
                 else
                 {
@@ -141,14 +142,19 @@ namespace EventStore.Core
             Console.Title = string.Format("{0}, {1}", projName, componentName);
 
             string logsDirectory = Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
-            LogManager.Init(componentName, logsDirectory, Locations.DefaultConfigurationDirectory);
+            bool structuredLog = GetIsStructuredLog(options);
+            
+            LogManager.Init(componentName, logsDirectory, structuredLog, Locations.DefaultConfigurationDirectory);
 
-            Log.Info("\n{0,-25} {1} ({2}/{3}, {4})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
-            Log.Info("{0,-25} {1} ({2})", "OS:", OS.OsFlavor, Environment.OSVersion);
-            Log.Info("{0,-25} {1} ({2}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
-            Log.Info("{0,-25} {1}", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
-            Log.Info("{0,-25} {1}", "LOGS:", LogManager.LogsDirectory);
-            Log.Info("{0}", EventStoreOptions.DumpOptions());
+            Log.Info("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+            Log.Info("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor, Environment.OSVersion);
+            Log.Info("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
+            Log.Info("{description,-25} {maxGeneration}", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+            Log.Info("{description,-25} {logsDirectory}", "LOGS:", LogManager.LogsDirectory);
+            if(!structuredLog)
+                Log.Info("{esOptions}", EventStoreOptions.DumpOptions());
+            else
+                Log.Info("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");

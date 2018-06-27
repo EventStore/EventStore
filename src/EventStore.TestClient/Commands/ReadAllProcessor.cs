@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Text;
 using EventStore.Common.Utils;
@@ -60,7 +60,7 @@ namespace EventStore.TestClient.Commands
                 context,
                 connectionEstablished: conn =>
                 {
-                    context.Log.Info("[{0}, L{1}]: Reading all {2}...", conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
+                    context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...", conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
                     var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster);
                     var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
@@ -79,7 +79,7 @@ namespace EventStore.TestClient.Commands
                     if (dto.Events.IsEmpty())
                     {
                         sw.Stop();
-                        context.Log.Info("=== Reading ALL {2} completed in {0}. Total read: {1}", sw.Elapsed, total, forward ? "FORWARD" : "BACKWARD");
+                        context.Log.Info("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}", forward ? "FORWARD" : "BACKWARD", sw.Elapsed, total);
                         context.Success();
                         conn.Close();
                         return;
@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands
                                         evnt.EventType);
                         total += 1;
                     }
-                    context.Log.Info("Next {0} events read:\n{1}", dto.Events.Length, sb.ToString());
+                    context.Log.Info("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
 
                     var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition, 10, resolveLinkTos, requireMaster);
                     var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();

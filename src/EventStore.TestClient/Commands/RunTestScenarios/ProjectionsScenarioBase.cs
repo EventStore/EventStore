@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 rawState = null;
             }
 
-            Log.Info("Raw {0} stats: {1}", projectionName, rawState);
+            Log.Info("Raw {projection} stats: {rawState}", projectionName, rawState);
 
             if (string.IsNullOrEmpty(rawState))
                 return null;
@@ -119,7 +119,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var rawState = GetProjectionStateSafe(projectionName);
 
-            Log.Info("Raw {0} state: {1}", projectionName, rawState);
+            Log.Info("Raw {projection} state: {rawState}", projectionName, rawState);
 
             if (string.IsNullOrEmpty(rawState))
                 return null;
@@ -161,12 +161,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     if (!isRunning)
                     {
-                        Log.Debug(string.Format("Enable *{0}* projection", byCategoryProjection));
+                        Log.Debug("Enable *{projection}* projection", byCategoryProjection);
                         GetProjectionsManager().EnableAsync(byCategoryProjection, AdminCredentials).Wait();
                     }
                     else
                     {
-                        Log.Debug(string.Format("Already enabled *{0}* projection", byCategoryProjection));
+                        Log.Debug("Already enabled *{projection}* projection", byCategoryProjection);
                     }
 
                     exception = null;
@@ -175,7 +175,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 catch (Exception ex)
                 {
                     exception = new ApplicationException("Failed to enable by_category.", ex);
-                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{0}.", retryCount);
+                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{retryCount}.", retryCount);
                 }
                 retryCount += 1;
             }

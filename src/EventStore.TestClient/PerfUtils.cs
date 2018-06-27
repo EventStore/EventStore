@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using EventStore.Common.Log;
 
 namespace EventStore.TestClient
@@ -53,10 +53,10 @@ namespace EventStore.TestClient
         {
             if (value < 0)
             {
-                Log.Error("Value is {0}, however TeamCity requires Value as a positive (non negative) integer.", value);
+                Log.Error("Value is {value}, however TeamCity requires Value as a positive (non negative) integer.", value);
                 return;
             }
-            Log.Debug("\n##teamcity[buildStatisticValue key='{0}' value='{1}']", key, value);
+            Log.Debug("\n##teamcity[buildStatisticValue key='{key}' value='{value}']", key, value);
         }
 
         public class NameValue
