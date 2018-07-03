@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.UserManagement
                 return;
             } 
             ReadUpdateWriteReply(
-                message, data => data.SetFullName(message.FullName).SetGroups(message.Groups), resetPasswordCache: false);
+                message, data => data.SetFullName(message.FullName).SetGroups(message.Groups), resetPasswordCache: true);
         }
 
         public void Handle(UserManagementMessage.Enable message)
