@@ -69,6 +69,10 @@
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
       <Name>EventStore.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EventStore.Plugins\EventStore.Plugins.csproj">
+      <Project>{f853ad1d-d328-4169-9a85-94d500844aff}</Project>
+      <Name>EventStore.Plugins</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
       <Project>{03E02082-E179-4730-81FF-CE914749D6E3}</Project>
       <Name>EventStore.Projections.Core</Name>

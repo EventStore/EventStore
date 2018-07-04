@@ -19,6 +19,7 @@ using EventStore.Core.Util;
 using System.Net.NetworkInformation;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Plugins;
 
 namespace EventStore.ClusterNode
 {
@@ -308,8 +309,31 @@ namespace EventStore.ClusterNode
             var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
             var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
             builder.WithAuthenticationProvider(authenticationProviderFactory);
+            var pluginFactory = GetServiceFactory(plugInContainer);
+            builder.WithPlugins(pluginFactory);
 
             return builder.Build(options, consumerStrategyFactories);
+        }
+
+        private static IEventStoreServiceFactory GetServiceFactory(CompositionContainer plugInContainer)
+        {
+            var allPlugins = plugInContainer.GetExports<IEventStorePlugin>();
+
+            foreach (var potentialPlugin in allPlugins)
+            {
+                try
+                {
+                    var plugin = potentialPlugin.Value;
+                    Log.Info("Loaded EventStore strategy plugin: {0} version {1}.", plugin.Name, plugin.Version);
+                    return plugin.GetStrategyFactory();
+                }
+                catch (CompositionException ex)
+                {
+                    Log.ErrorException(ex, "Error loading EventStore strategy plugin.");
+                }
+            }
+
+            return null;
         }
 
         private static IPersistentSubscriptionConsumerStrategyFactory[] GetPlugInConsumerStrategyFactories(CompositionContainer plugInContainer)
@@ -373,12 +397,18 @@ namespace EventStore.ClusterNode
         {
             var catalog = new AggregateCatalog();
 
-            catalog.Catalogs.Add(new AssemblyCatalog(typeof (Program).Assembly));
+            catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
 
             if (Directory.Exists(Locations.PluginsDirectory))
             {
                 Log.Info("Plugins path: {0}", Locations.PluginsDirectory);
                 catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
+                // iterate over all directories in .\Plugins dir and add all *Plugin dirs to catalogs
+                foreach (var path in Directory.EnumerateDirectories(Locations.PluginsDirectory, "*Plugin", SearchOption.TopDirectoryOnly))
+                {
+                    Log.Info("Plugin found: {0}", path);
+                    catalog.Catalogs.Add(new DirectoryCatalog(path));
+                }
             }
             else
             {
