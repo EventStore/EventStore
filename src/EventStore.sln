@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClusterNode", "E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI.Embedded", "EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj", "{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Plugins", "EventStore.Plugins\EventStore.Plugins.csproj", "{F853AD1D-D328-4169-9A85-94D500844AFF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,9 +95,16 @@ Global
 		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F853AD1D-D328-4169-9A85-94D500844AFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F853AD1D-D328-4169-9A85-94D500844AFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F853AD1D-D328-4169-9A85-94D500844AFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F853AD1D-D328-4169-9A85-94D500844AFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {82FD2617-028D-489D-9445-7A177787FEB1}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = EventStore.MultiNode\EventStore.MultiNode.csproj

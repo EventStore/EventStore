@@ -18,6 +18,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
+using EventStore.Plugins;
 
 namespace EventStore.Core
 {
@@ -130,6 +131,7 @@ namespace EventStore.Core
         protected bool _alwaysKeepScavenged;
         protected bool _skipIndexScanOnReads;
         private bool _reduceFileCachePressure;
+        protected IEventStoreServiceFactory _pluginsServiceFactory;
 
         private bool _gossipOnSingleNode;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -220,6 +222,12 @@ namespace EventStore.Core
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
             _reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
+        }
+
+        public VNodeBuilder WithPlugins(IEventStoreServiceFactory pluginsServiceFactory)
+        {
+            _pluginsServiceFactory = pluginsServiceFactory;
+            return this;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -1421,7 +1429,9 @@ namespace EventStore.Core
                     _readerThreadsCount,
                     _alwaysKeepScavenged,
                     _gossipOnSingleNode,
-                    _skipIndexScanOnReads);
+                    _skipIndexScanOnReads,
+                    _reduceFileCachePressure,
+                    _pluginsServiceFactory);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

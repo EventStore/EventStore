@@ -232,6 +232,7 @@
     <Compile Include="Services\PersistentSubscription\RetryableMessage.cs" />
     <Compile Include="Services\PersistentSubscription\SequencedEvent.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
+    <Compile Include="Services\Plugins\PluginsHostService.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
     <Compile Include="Services\Replication\ReplicaService.cs" />
     <Compile Include="Services\RequestForwardingService.cs" />
@@ -441,6 +442,10 @@
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Plugins\EventStore.Plugins.csproj">
+      <Project>{f853ad1d-d328-4169-9a85-94d500844aff}</Project>
+      <Name>EventStore.Plugins</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
       <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>

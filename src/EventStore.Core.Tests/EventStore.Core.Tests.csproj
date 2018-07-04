@@ -682,6 +682,10 @@
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
       <Name>EventStore.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EventStore.Plugins\EventStore.Plugins.csproj">
+      <Project>{f853ad1d-d328-4169-9a85-94d500844aff}</Project>
+      <Name>EventStore.Plugins</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
       <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
       <Name>EventStore.Transport.Http</Name>
@@ -715,6 +719,9 @@
     <None Include="Resources\es-tile.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
