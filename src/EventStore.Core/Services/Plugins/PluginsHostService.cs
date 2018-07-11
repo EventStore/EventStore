@@ -9,7 +9,7 @@ using EventStore.Plugins;
 
 namespace EventStore.Core.Services.Plugins
 {
-    public class PluginsHostService : IHandle<SystemMessage.StateChangeMessage>
+    public class PluginsHostService : IHandle<SystemMessage.StateChangeMessage>, IPluginPublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsHostService>();
         private readonly IEventStoreServiceFactory _serviceFactory;
@@ -41,9 +41,17 @@ namespace EventStore.Core.Services.Plugins
                 return;
             _eventStoreServices = _serviceFactory.Create();
             foreach (var service in _eventStoreServices)
-            {
-                service.Start();
-            }
+                if (service.AutoStart)
+                    service.Start();
+        }
+
+        public bool TryPublish(IDictionary<string, dynamic> request)
+        {
+            var result = false;
+            foreach (var service in _eventStoreServices)
+                if (service.Try(request))
+                    result = true;
+            return result;
         }
     }
 }

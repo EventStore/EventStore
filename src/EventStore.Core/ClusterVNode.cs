@@ -320,6 +320,11 @@ namespace EventStore.Core
             var persistentSubscriptionController = new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
 
+            // Plugins 
+            var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory);
+            _mainBus.Subscribe(pluginsHostService);
+            var geoReplicaController = new GeoReplicaController(_mainQueue, pluginsHostService);
+
             // HTTP SENDERS
             gossipController.SubscribeSenders(httpPipe);
             electController.SubscribeSenders(httpPipe);
@@ -339,6 +344,7 @@ namespace EventStore.Core
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
             _externalHttpService.SetupController(histogramController);
+            _externalHttpService.SetupController(geoReplicaController);
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
@@ -453,10 +459,6 @@ namespace EventStore.Core
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
             _mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
-
-            // Plugins 
-            var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory);
-            _mainBus.Subscribe(pluginsHostService);
 
             //TODO CC can have multiple threads working on subscription if partition
             var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus, vNodeSettings.AdditionalConsumerStrategies);
