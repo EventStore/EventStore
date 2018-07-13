@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Plugins
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsHostService>();
         private readonly IEventStoreServiceFactory _serviceFactory;
-        private IList<IEventStoreService> _eventStoreServices;
+        private IList<IEventStoreService> _eventStoreServices = new List<IEventStoreService>();
 
         public PluginsHostService(IEventStoreServiceFactory factory)
         {

@@ -23,22 +23,31 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterAction(new ControllerAction("/georeplica/dispatcher/{name}/start", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStart);
-            service.RegisterAction(new ControllerAction("/georeplica/dispatcher/{name}/stop", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStop);
+            service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/start", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStart);
+            service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/stop", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStop);
+            // TODO implement get status
         }
 
         private void OnPostGeoReplicaStart(HttpEntityManager entity, UriTemplateMatch match)
         {
             if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
-                var name = match.BoundVariables["name"];
-                Log.Info("Request start GeoReplica because Start command has been received.");
-                ProcessRequest(entity, new Dictionary<string, dynamic>
+                var serviceType = match.BoundVariables["servicetype"];
+                if (serviceType.Equals("dispatcher") || serviceType.Equals("receiver"))
                 {
-                    {"Name", name},
-                    {"ServiceType", "Dispatcher"},
-                    {"Action", "Start"}
-                });
+                    var name = match.BoundVariables["name"];
+                    Log.Info("Request start GeoReplica because Start command has been received.");
+                    ProcessRequest(entity, new Dictionary<string, dynamic>
+                    {
+                        {"Name", name},
+                        {"ServiceType", serviceType},
+                        {"Action", "Start"}
+                    });
+                }
+                else
+                {
+                    entity.ReplyStatus(HttpStatusCode.BadRequest, "servicetype must be 'dispatcher' or 'receiver'", LogReplyError);
+                }
             }
             else
             {
@@ -50,15 +59,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
-                var name = match.BoundVariables["name"];
-                Log.Info("Request stop GeoReplica because Stop request has been received.");
-                ProcessRequest(entity,
-                    new Dictionary<string, dynamic>
-                    {
-                        {"Name", name},
-                        {"ServiceType", "Dispatcher"},
-                        {"Action", "Stop"}
-                    });
+                var serviceType = match.BoundVariables["servicetype"];
+                if (serviceType.Equals("dispatcher") || serviceType.Equals("receiver"))
+                {
+                    var name = match.BoundVariables["name"];
+                    Log.Info("Request stop GeoReplica because Stop request has been received.");
+                    ProcessRequest(entity,
+                        new Dictionary<string, dynamic>
+                        {
+                            {"Name", name},
+                            {"ServiceType", serviceType},
+                            {"Action", "Stop"}
+                        });
+                }
+                else
+                {
+                    entity.ReplyStatus(HttpStatusCode.BadRequest, "servicetype must be 'dispatcher' or 'receiver'", LogReplyError);
+                }
             }
             else
             {
