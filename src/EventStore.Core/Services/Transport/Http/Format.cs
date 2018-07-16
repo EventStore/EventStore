@@ -89,6 +89,14 @@ namespace EventStore.Core.Services.Transport.Http
             return entity.ResponseCodec.To(completed.Stats);
         }
 
+        public static string GetPluginStatsCompleted(HttpResponseFormatterArgs entity, Message message)
+        {
+            if (!(message is PluginMessage.GetStatsCompleted completed) || !string.IsNullOrEmpty(completed.ErrorString))
+                return string.Empty;
+
+            return entity.ResponseCodec.To(completed.Stats);
+        }
+
         public static string GetReplicationStatsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             if (message.GetType() != typeof(ReplicationMessage.GetReplicationStatsCompleted))

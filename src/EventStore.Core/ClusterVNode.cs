@@ -322,8 +322,9 @@ namespace EventStore.Core
 
             // Plugins 
             var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory);
-            _mainBus.Subscribe(pluginsHostService);
-            var geoReplicaController = new GeoReplicaController(_mainQueue, pluginsHostService);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(pluginsHostService);
+            _mainBus.Subscribe<PluginMessage.GetStats>(pluginsHostService);
+            var geoReplicaController = new GeoReplicaController(_mainQueue, _workersHandler, pluginsHostService);
 
             // HTTP SENDERS
             gossipController.SubscribeSenders(httpPipe);

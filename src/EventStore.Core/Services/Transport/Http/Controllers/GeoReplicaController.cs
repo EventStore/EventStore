@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.Plugins;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -11,13 +13,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class GeoReplicaController : CommunicationController
     {
+        private readonly IPublisher _networkSendQueue;
         private readonly IPluginPublisher _pluginPublisher;
         private static readonly ILogger Log = LogManager.GetLoggerFor<GeoReplicaController>();
 
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
-        public GeoReplicaController(IPublisher publisher, IPluginPublisher pluginPublisher) : base(publisher)
+        public GeoReplicaController(IPublisher publisher, IPublisher networkSendQueue, IPluginPublisher pluginPublisher) : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
             _pluginPublisher = pluginPublisher;
         }
 
@@ -25,7 +29,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/start", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStart);
             service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/stop", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStop);
-            // TODO implement get status
+            service.RegisterAction(new ControllerAction("/georeplica", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetStats);
+        }
+
+        private void OnGetStats(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            var sendToHttpEnvelope = new SendToHttpEnvelope(
+                _networkSendQueue, entity, Format.GetPluginStatsCompleted,
+                (e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
+            Publish(new PluginMessage.GetStats(sendToHttpEnvelope));
         }
 
         private void OnPostGeoReplicaStart(HttpEntityManager entity, UriTemplateMatch match)

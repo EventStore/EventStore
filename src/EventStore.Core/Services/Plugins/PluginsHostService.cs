@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins;
+using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Plugins
 {
-    public class PluginsHostService : IHandle<SystemMessage.StateChangeMessage>, IPluginPublisher
+    public class PluginsHostService : 
+        IHandle<SystemMessage.StateChangeMessage>, 
+        IHandle<PluginMessage.GetStats>,
+        IPluginPublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsHostService>();
         private readonly IEventStoreServiceFactory _serviceFactory;
@@ -52,6 +57,18 @@ namespace EventStore.Core.Services.Plugins
                 if (service.Try(request))
                     result = true;
             return result;
+        }
+
+        public void Handle(PluginMessage.GetStats message)
+        {
+            if (_serviceFactory == null)
+                return;
+            var results = _eventStoreServices.ToDictionary<IEventStoreService, string, dynamic>(
+                eventStoreService => eventStoreService.Name, eventStoreService => eventStoreService.GetStats());
+            message.Envelope.ReplyWith(results.Count == 0
+                ? new PluginMessage.GetStatsCompleted(PluginMessage.GetStatsCompleted.OperationStatus.NotReady, null)
+                : new PluginMessage.GetStatsCompleted(PluginMessage.GetStatsCompleted.OperationStatus.Success,
+                   JsonConvert.SerializeObject(results)));
         }
     }
 }

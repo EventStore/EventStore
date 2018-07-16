@@ -173,6 +173,7 @@
     <Compile Include="Messages\ElectionMessageDtos.cs" />
     <Compile Include="Messages\GossipMessage.cs" />
     <Compile Include="Messages\MemberInfoDto.cs" />
+    <Compile Include="Messages\PluginMessage.cs" />
     <Compile Include="Messages\ReplicationMessage.cs" />
     <Compile Include="Messages\ReplicationMessageDto.cs" />
     <Compile Include="Messages\SubscriptionMessage.cs" />
