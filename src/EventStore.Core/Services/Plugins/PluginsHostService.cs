@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Plugins
         {
             var result = false;
             foreach (var service in _eventStoreServices)
-                if (service.Try(request))
+                if (service.TryHandle(request))
                     result = true;
             return result;
         }
