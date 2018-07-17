@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>EventStore.Plugins</id>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
     <title>EventStore.Plugins</title>
     <authors>EventStore LLP - Riccardo Di Nuzzo</authors>
     <owners>EventStore LLP</owners>
@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/EventStore/EventStore</projectUrl>    
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This library is used to build Plugins for Event Store (eventstore.org)</description>
-    <releaseNotes>Exposed a method to pull the plugin stats</releaseNotes>
+    <releaseNotes>Changed method name (previous it was Try now it is TryHandle)</releaseNotes>
     <copyright>Copyright 2018</copyright>
     <tags>EventStore, Plugin</tags>
   </metadata>

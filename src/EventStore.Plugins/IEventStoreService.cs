@@ -8,7 +8,7 @@ namespace EventStore.Plugins
         void Start();
         void Stop();
         bool AutoStart { get; }
-        bool Try(IDictionary<string, dynamic> request);
+        bool TryHandle(IDictionary<string, dynamic> request);
         IDictionary<string, dynamic> GetStats();
     }
 }
