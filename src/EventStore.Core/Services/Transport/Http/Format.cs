@@ -91,7 +91,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static string GetPluginStatsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
-            if (!(message is PluginMessage.GetStatsCompleted completed) || !string.IsNullOrEmpty(completed.ErrorString))
+            var completed = message as PluginMessage.GetStatsCompleted;
+            if (completed == null || !string.IsNullOrEmpty(completed.ErrorString))
                 return string.Empty;
 
             return entity.ResponseCodec.To(completed.Stats);
