@@ -15,8 +15,6 @@
         <Description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</Description>
         <Authors>Event Store LLP</Authors>
         <DebugType>portable</DebugType>
-        <AssemblyName>EventStore.ClientAPI.NetCore</AssemblyName>
-        <PackageId>EventStore.ClientAPI.NetCore</PackageId>
         <PackageTags>eventstore;client;netstandard2.0</PackageTags>
         <PackageIconUrl>http://geteventstore.com/assets/ouro-200.png</PackageIconUrl>
         <PackageLicenseUrl>https://github.com/EventStore/netcore-client/blob/master/LICENSE.md</PackageLicenseUrl>
