@@ -17,3 +17,7 @@ Repo aliases:
 - `Internal/EventStoreNodeConnection.cs`:
     - in main the async keyword is used, in netcore Task is used directly. using main 
     - removed unused namespace `System.Data.SqlClient`
+- `Internal/OperationsManager.cs` is ahead in main with timeout management
+- `Internal/ClusterDnsEndPointDiscoverer.cs` is ahead in main with `NodePreference` setting
+- `Internal/IEndPointDiscoverer.cs` is internal in netcore, and public in main. using main
+- `Internal/NodeEndPoints.cs` is internal in netcore, and public in main. using main
