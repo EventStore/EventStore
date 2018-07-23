@@ -4,7 +4,6 @@
         <TargetFramework>netstandard2.0</TargetFramework>
     </PropertyGroup>
     <PropertyGroup>
-        <AssemblyTitle>EventStore.ClientAPI</AssemblyTitle>
         <Description>EventStore NetStandard ClientApi</Description>
         <Company>Event Store LLP</Company>
         <Copyright>Copyright © Event Store LLP. All rights reserved.</Copyright>
