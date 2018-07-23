@@ -1,0 +1,14 @@
+Migration based on code from `EventStore\ClientAPI.NetCore` repo
+at commit 6162cf3ab0cd0fb5f0331caf6cf77b43f7fcc518
+
+Repo aliases:
+
+`main` = `EventStore/EventStore`
+`netcore` = `EventStore/ClientAPI.NetCore`
+
+# Differences
+
+- `Common/Log/DebugLogger.cs`: in main was `System.Diagnostics.Trace`, in netcore was `Debug`. Used `main`
+- `Common/Log/FileLogger.cs` used `main` with Dispose fixes and ctor cleanup
+- `Common/Utils/Threading/TaskExtensions.cs` just newlines changes
+
