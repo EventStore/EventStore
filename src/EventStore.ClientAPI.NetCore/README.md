@@ -14,3 +14,6 @@ Repo aliases:
 - `Exceptions/*Exception.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
 - use assembly metadata defined in `EventStore.ClientAPI.NetCore/EventStore.ClientAPI.csproj`
 - `Internal/Consts.cs` new constant in main
+- `Internal/EventStoreNodeConnection.cs`:
+    - in main the async keyword is used, in netcore Task is used directly. using main 
+    - removed unused namespace `System.Data.SqlClient`
