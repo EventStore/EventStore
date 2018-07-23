@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyTitle>EventStore.ClientAPI</AssemblyTitle>
+        <Description>EventStore NetStandard ClientApi</Description>
+        <Company>Event Store LLP</Company>
+        <Copyright>Copyright © Event Store LLP. All rights reserved.</Copyright>
+        <Product>EventStore.ClientAPI</Product>
+        <Version>4.0.2-alpha</Version>
+    </PropertyGroup>
+    <PropertyGroup>
+        <Description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</Description>
+        <Authors>Event Store LLP</Authors>
+        <DebugType>portable</DebugType>
+        <AssemblyName>EventStore.ClientAPI.NetCore</AssemblyName>
+        <PackageId>EventStore.ClientAPI.NetCore</PackageId>
+        <PackageTags>eventstore;client;netstandard2.0</PackageTags>
+        <PackageIconUrl>http://geteventstore.com/assets/ouro-200.png</PackageIconUrl>
+        <PackageLicenseUrl>https://github.com/EventStore/netcore-client/blob/master/LICENSE.md</PackageLicenseUrl>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/EventStore/ClientAPI.NetCore</RepositoryUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+        <PackageReference Include="protobuf-net" Version="2.3.2" />
+    </ItemGroup>
+
+</Project>
