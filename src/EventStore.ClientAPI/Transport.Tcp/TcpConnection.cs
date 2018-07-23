@@ -144,7 +144,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     break;
             }
 
-            _sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int) _memoryStream.Length);
+            ArraySegment<byte> buffer;
+            //TODO check result boolean of Try
+            _memoryStream.TryGetBuffer(out buffer);
+            _sendSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
 
             try
             {
