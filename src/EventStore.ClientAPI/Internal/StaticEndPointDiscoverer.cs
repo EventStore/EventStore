@@ -11,7 +11,7 @@ namespace EventStore.ClientAPI.Internal
         public StaticEndPointDiscoverer(IPEndPoint endPoint, bool isSsl)
         {
             Ensure.NotNull(endPoint, "endPoint");
-            _task = Task.Factory.StartNew(() => new NodeEndPoints(isSsl ? null : endPoint, isSsl ? endPoint : null));
+            _task = Task.FromResult(new NodeEndPoints(isSsl ? null : endPoint, isSsl ? endPoint : null));
         }
 
         public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint)
