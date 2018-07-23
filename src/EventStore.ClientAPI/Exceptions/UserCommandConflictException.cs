@@ -32,6 +32,8 @@ namespace EventStore.ClientAPI.Exceptions
         {
         }
 
+#if EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+#else
         /// <summary>
         /// Constructs a new <see cref="UserCommandFailedException"/>.
         /// </summary>
@@ -40,5 +42,6 @@ namespace EventStore.ClientAPI.Exceptions
             : base(info, context)
         {
         }
+#endif
     }
 }

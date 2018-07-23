@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <DebugType>portable</DebugType>
+        <DefineConstants>EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION;$(DefineConstants)</DefineConstants>
     </PropertyGroup>
     <PropertyGroup>
         <Description>EventStore NetStandard ClientApi</Description>

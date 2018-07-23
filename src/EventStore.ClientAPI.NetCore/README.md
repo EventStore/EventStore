@@ -11,4 +11,5 @@ Repo aliases:
 - `Common/Log/DebugLogger.cs`: in main was `System.Diagnostics.Trace`, in netcore was `Debug`. Used `main`
 - `Common/Log/FileLogger.cs` used `main` with Dispose fixes and ctor cleanup
 - `Common/Utils/Threading/TaskExtensions.cs` just newlines changes
+- `Exceptions/*Exception.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
 
