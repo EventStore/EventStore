@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <DebugType>portable</DebugType>
     </PropertyGroup>
     <PropertyGroup>
         <Description>EventStore NetStandard ClientApi</Description>
@@ -9,9 +10,6 @@
         <Copyright>Copyright © Event Store LLP. All rights reserved.</Copyright>
         <Product>EventStore.ClientAPI</Product>
         <Version>4.0.2-alpha</Version>
-    </PropertyGroup>
-    <PropertyGroup>
-        <DebugType>portable</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
