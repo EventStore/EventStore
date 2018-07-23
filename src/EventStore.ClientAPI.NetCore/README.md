@@ -23,3 +23,4 @@ Repo aliases:
 - `Internal/NodeEndPoints.cs` is internal in netcore, and public in main. using main
 - `Internal/SingleEndpointDiscoverer.cs` new from netcore, was missing in main. added netcore, and configured under define EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER
 - `Internal/StaticEndPointDiscoverer.cs` using `Task.FromResult` (netcore) instead of `Task.Factory.StartNew` (main)
+- `Projections/ProjectionsManager.cs` reorded xmldoc (from netcore)
