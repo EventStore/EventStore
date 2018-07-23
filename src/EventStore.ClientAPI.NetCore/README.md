@@ -21,4 +21,4 @@ Repo aliases:
 - `Internal/ClusterDnsEndPointDiscoverer.cs` is ahead in main with `NodePreference` setting
 - `Internal/IEndPointDiscoverer.cs` is internal in netcore, and public in main. using main
 - `Internal/NodeEndPoints.cs` is internal in netcore, and public in main. using main
-- `Internal/SingleEndpointDiscoverer.cs` new from netcore, was missing in main. added netcore
+- `Internal/SingleEndpointDiscoverer.cs` new from netcore, was missing in main. added netcore, and configured under define EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER

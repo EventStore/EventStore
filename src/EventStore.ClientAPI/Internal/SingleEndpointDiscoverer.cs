@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Internal;
+using EventStore.ClientAPI;
 
 namespace EventStore.ClientApi.Core.Internal
 {
