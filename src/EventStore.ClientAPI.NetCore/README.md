@@ -13,4 +13,4 @@ Repo aliases:
 - `Common/Utils/Threading/TaskExtensions.cs` just newlines changes
 - `Exceptions/*Exception.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
 - use assembly metadata defined in `EventStore.ClientAPI.NetCore/EventStore.ClientAPI.csproj`
-
+- `Internal/Consts.cs` new constant in main
