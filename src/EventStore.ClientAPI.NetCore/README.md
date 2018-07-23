@@ -26,3 +26,4 @@ Repo aliases:
 - `Projections/ProjectionsManager.cs` reorded xmldoc (from netcore)
 - `Transport.Http/EndpointExtensions.cs` is ahead in main
 - `Transport.Http/HttpAsyncClient.cs` no ServicePointManager (netcore) under `EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER` define
+- `Transport.Http/WebRequestExtensions.cs` is new in main, but unused in code.
