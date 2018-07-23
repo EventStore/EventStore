@@ -11,10 +11,12 @@
         <Product>EventStore.ClientAPI</Product>
         <Version>4.0.2-alpha</Version>
     </PropertyGroup>
-
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
         <PackageReference Include="protobuf-net" Version="2.3.2" />
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="..\EventStore.ClientAPI\**\*.cs" />
     </ItemGroup>
 
 </Project>
