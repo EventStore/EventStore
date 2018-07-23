@@ -28,3 +28,4 @@ Repo aliases:
 - `Transport.Http/HttpAsyncClient.cs` no ServicePointManager (netcore) under `EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER` define
 - `Transport.Http/WebRequestExtensions.cs` is new in main, but unused in code.
 - `Transport.Tcp/PackageFramingException.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+- `Transport.Tcp/ProtobufExtensions.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
