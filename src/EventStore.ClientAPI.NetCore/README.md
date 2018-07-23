@@ -12,4 +12,5 @@ Repo aliases:
 - `Common/Log/FileLogger.cs` used `main` with Dispose fixes and ctor cleanup
 - `Common/Utils/Threading/TaskExtensions.cs` just newlines changes
 - `Exceptions/*Exception.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+- use assembly metadata defined in `EventStore.ClientAPI.NetCore/EventStore.ClientAPI.csproj`
 
