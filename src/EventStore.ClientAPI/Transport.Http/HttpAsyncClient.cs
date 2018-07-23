@@ -15,11 +15,14 @@ namespace EventStore.ClientAPI.Transport.Http
         private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private HttpClient _client;
 
+#if EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER
+#else
         static HttpAsyncClient()
         {
             ServicePointManager.MaxServicePointIdleTime = 10000;
             ServicePointManager.DefaultConnectionLimit = 800;
         }
+#endif
 
         public HttpAsyncClient(TimeSpan timeout) 
         {

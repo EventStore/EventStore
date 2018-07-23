@@ -5,6 +5,7 @@
         <DebugType>portable</DebugType>
         <DefineConstants>EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION;$(DefineConstants)</DefineConstants>
         <DefineConstants>EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER;$(DefineConstants)</DefineConstants>
+        <DefineConstants>EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER;$(DefineConstants)</DefineConstants>
     </PropertyGroup>
     <PropertyGroup>
         <Description>EventStore NetStandard ClientApi</Description>

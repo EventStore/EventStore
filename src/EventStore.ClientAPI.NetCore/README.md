@@ -25,3 +25,4 @@ Repo aliases:
 - `Internal/StaticEndPointDiscoverer.cs` using `Task.FromResult` (netcore) instead of `Task.Factory.StartNew` (main)
 - `Projections/ProjectionsManager.cs` reorded xmldoc (from netcore)
 - `Transport.Http/EndpointExtensions.cs` is ahead in main
+- `Transport.Http/HttpAsyncClient.cs` no ServicePointManager (netcore) under `EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER` define
