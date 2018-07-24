@@ -40,3 +40,4 @@ Repo aliases:
 - `DnsClusterSettingsBuilder.cs` main is ahead
 - `EventStoreCatchUpSubscription.cs` main is ahead
 - `EventStorePersistentSubscriptionBase.cs` main is ahead
+- `ExpectedVersion.cs` use long (netcore) instead of int (main)
