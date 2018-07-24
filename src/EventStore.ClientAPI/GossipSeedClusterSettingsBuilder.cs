@@ -25,7 +25,7 @@ namespace EventStore.ClientAPI
         /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
         /// </summary>
         /// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
-        /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <returns>A <see cref="GossipSeedClusterSettingsBuilder"/> for further configuration.</returns>
         /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
         public GossipSeedClusterSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds)
         {
@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI
         /// Sets gossip seed endpoints for the client.
         /// </summary>
         /// <param name="gossipSeeds"><see cref="GossipSeed"/>s representing the endpoints of nodes from which to seed gossip.</param>
-        /// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <returns>A <see cref="GossipSeedClusterSettingsBuilder"/> for further configuration.</returns>
         /// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
         public GossipSeedClusterSettingsBuilder SetGossipSeedEndPoints(params GossipSeed[] gossipSeeds)
         {
@@ -89,7 +89,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Whether to randomly choose a node that's alive from the known nodes. 
         /// </summary>
-        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <returns>A <see cref="GossipSeedClusterSettingsBuilder"/> for further configuration.</returns>
         public GossipSeedClusterSettingsBuilder PreferRandomNode()
         {
             _nodePreference = NodePreference.Random;
@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Whether to prioritize choosing a slave node that's alive from the known nodes. 
         /// </summary>
-        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        /// <returns>A <see cref="GossipSeedClusterSettingsBuilder"/> for further configuration.</returns>
         public GossipSeedClusterSettingsBuilder PreferSlaveNode()
         {
             _nodePreference = NodePreference.Slave;

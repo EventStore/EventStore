@@ -41,3 +41,4 @@ Repo aliases:
 - `EventStoreCatchUpSubscription.cs` main is ahead
 - `EventStorePersistentSubscriptionBase.cs` main is ahead
 - `ExpectedVersion.cs` use long (netcore) instead of int (main)
+- `GossipSeedClusterSettingsBuilder.cs` fix xmldoc (netcore), use main (ahead)
