@@ -42,3 +42,6 @@ Repo aliases:
 - `EventStorePersistentSubscriptionBase.cs` main is ahead
 - `ExpectedVersion.cs` use long (netcore) instead of int (main)
 - `GossipSeedClusterSettingsBuilder.cs` fix xmldoc (netcore), use main (ahead)
+- `StreamMetadata.cs` main is ahead
+- `NodeEndPoints.cs`, `NodePreference.cs` exists in main. use main
+- `UserManagement\UsersClient.cs`, `UserManagement\UsersManager.cs` refactor schema to param (netcore), use main without refactor
