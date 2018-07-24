@@ -32,3 +32,11 @@ Repo aliases:
 - `Transport.Tcp/TcpClientConnector.cs` use a `Dispose` (netcore) instead of `Close` (main). using main, because Close call Dispose
 - `Transport.Tcp/TcpConnection.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
 - `Transport.Tcp/TcpConnectionLockless.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
+- `Transport.Tcp/TcpConnectionSsl.cs` main is ahead
+- `ClusterSettings.cs` main is ahead
+- `ConnectionSettings.cs` main is ahead
+- `ConnectionSettingsBuilder.cs` main is ahead
+- `ConnectionString.cs` main is ahead
+- `DnsClusterSettingsBuilder.cs` main is ahead
+- `EventStoreCatchUpSubscription.cs` main is ahead
+- `EventStorePersistentSubscriptionBase.cs` main is ahead
