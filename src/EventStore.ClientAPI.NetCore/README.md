@@ -31,3 +31,4 @@ Repo aliases:
 - `Transport.Tcp/ProtobufExtensions.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
 - `Transport.Tcp/TcpClientConnector.cs` use a `Dispose` (netcore) instead of `Close` (main). using main, because Close call Dispose
 - `Transport.Tcp/TcpConnection.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
+- `Transport.Tcp/TcpConnectionLockless.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
