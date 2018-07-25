@@ -14,7 +14,6 @@
         <Company>Event Store LLP</Company>
         <Copyright>Copyright © Event Store LLP. All rights reserved.</Copyright>
         <Product>EventStore.ClientAPI</Product>
-        <Version>4.0.2-alpha</Version>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
