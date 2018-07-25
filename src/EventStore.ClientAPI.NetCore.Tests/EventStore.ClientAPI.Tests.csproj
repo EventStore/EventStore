@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <DefineConstants>EVENSTORE_CLIENT_TESTS_NO_EMBEDDED;$(DefineConstants)</DefineConstants>
+    <EventStoreClientApiTestNoMiniNode>true</EventStoreClientApiTestNoMiniNode>
+    <DefineConstants Condition=" '$(EventStoreClientApiTestNoMiniNode)' == 'true' ">EVENSTORE_CLIENT_TESTS_NO_MININODE;$(DefineConstants)</DefineConstants>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -10,6 +12,88 @@
     <PackageReference Include="nunit" Version="3.10.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(EventStoreClientApiTestNoMiniNode)' == 'true' ">
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\connecting_to_a_persistent_subscription.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\connecting_to_a_persistent_subscription_async.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_backward_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\SpecificationWithMiniNode.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\appending_to_implicitly_created_stream.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\isjson_flag_on_event.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_forward_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_stream_events_with_unresolved_linkto.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\subscribe_to_all_catching_up_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\subscribe_to_all_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_working_with_metadata.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\AuthenticationTestBase.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\subscribe_to_stream_catching_up_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\append_to_stream_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_event_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\append_to_stream_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_event_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_stream_events_backward_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_stream_events_forward_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_stream_events_backward_with_hash_collision.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\append_to_stream.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\deleting_stream.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\event_store_connection_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\create_persistent_subscription.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\persistent_connect_integration_tests.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\catchup_subscription_handles_small_batch_sizes.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\deleting_persistent_subscription.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\SpecificationWithLinkToToDeletedEvents.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_allevents_backward_with_linkto_deleted_event.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\deleting_persistent_subscription.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_event_stream_forward_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_forward_with_hard_deleted_stream_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\update_persistent_subscription.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_forward_with_linkto_passed_max_count.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_working_with_stream_metadata_as_structured_info.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\subscribe_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_committing_empty_transaction.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_having_max_count_set_for_stream.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_event_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\authorized_default_credentials_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_event_stream_backward_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\transaction.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\all_stream_with_no_acl_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_forward_with_linkto_to_deleted_event.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\delete_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\soft_delete.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\multiple_role_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\overriden_system_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\TestWithNode.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\overriden_system_stream_security_for_all.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\SpecificationWithLinkToToMaxCountDeletedEvents.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_having_truncatebefore_set_for_stream.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\overriden_user_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\connecting_with_connection_string.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\creating_a_user.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\read_all_events_forward_with_soft_deleted_stream_should.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\read_all_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\read_stream_meta_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\deleting_a_user.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\TestWithUser.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\read_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\get_current_user.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\list_users.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\TestWithUser.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\stream_security_inheritance.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\updating_a_user.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\stream_security_inheritance.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\subscribe_to_all_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\when_working_with_stream_metadata_as_byte_array.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\subscribe_to_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\system_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\transactional_write_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\write_stream_meta_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Security\write_stream_security.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\enable_disable_user.cs" />
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\UserManagement\reset_change_password.cs" />
   </ItemGroup>
 
   <ItemGroup>

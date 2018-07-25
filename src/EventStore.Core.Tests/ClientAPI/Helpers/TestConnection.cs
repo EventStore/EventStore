@@ -23,12 +23,15 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                                string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
 
+#if EVENSTORE_CLIENT_TESTS_NO_MININODE
+#else
         public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType, UserCredentials userCredentials = null)
         {
             return EventStoreConnection.Create(Settings(tcpType, userCredentials),
                                                tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint.ToESTcpUri() : miniNode.TcpEndPoint.ToESTcpUri(),
                                                string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
         }
+#endif
 
         private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials)
         {
