@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
-            if (EventStore.Common.Utils.Platforms.GetPlatform() != Common.Utils.Platform.Windows)
+            if (EventStore.Common.Utils.Platforms.GetPlatform() != EventStore.Common.Utils.Platform.Windows)
             {
                 Assert.Ignore("GFY THESE NEED TO BE LOOKED AT IN LINUX");
             }
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("Network")]
         public void should_throw_exception_when_trying_to_reopen_closed_connection()
         {
-            if (EventStore.Common.Utils.Platforms.GetPlatform() != Common.Utils.Platform.Windows)
+            if (EventStore.Common.Utils.Platforms.GetPlatform() != EventStore.Common.Utils.Platform.Windows)
             {
                 Assert.Ignore("GFY THESE NEED TO BE LOOKED AT IN LINUX");
             }
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("Network")]
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
-            if (EventStore.Common.Utils.Platforms.GetPlatform() != Common.Utils.Platform.Windows)
+            if (EventStore.Common.Utils.Platforms.GetPlatform() != EventStore.Common.Utils.Platform.Windows)
             {
                 Assert.Ignore("GFY THIS TEST TIMES OUT IN LINUX.");
             }
