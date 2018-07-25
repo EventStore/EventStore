@@ -12,6 +12,7 @@
     <PackageReference Include="nunit" Version="3.10.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <PackageReference Include="NLog" Version="4.5.*" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(EventStoreClientApiTestNoMiniNode)' == 'true' ">
@@ -97,12 +98,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Utils\Empty.cs" />
     <Compile Include="..\EventStore.Common\Utils\Helper.cs" />
     <Compile Include="..\EventStore.Common\Utils\Platforms.cs" />
+    <Compile Include="..\EventStore.Common\Utils\Runtime.cs" />
     <Compile Include="..\EventStore.Core\Services\SystemNames.cs" />
     <Compile Include="..\EventStore.Core.Tests\DefaultData.cs" />
     <Compile Include="..\EventStore.Core\Data\EventNumber.cs" />
     <Compile Include="..\EventStore.Core.Tests\SpecificationWithDirectoryPerTestFixture.cs" />
+    <Compile Include="..\EventStore.Core.Tests\Helpers\PortsHelper.cs" />
+    <Compile Include="..\EventStore.Common\Log\LogManager.cs" />
+    <Compile Include="..\EventStore.Common\Log\ILogger.cs" />
+    <Compile Include="..\EventStore.Common\Properties\JetbrainsAnnotations.cs" />
+    <Compile Include="..\EventStore.Common\Log\NLogger.cs" />
+    <Compile Include="..\EventStore.Common\Log\NLogDirectoryLayoutRendered.cs" />
+    <Compile Include="..\EventStore.Common\Log\LazyLogger.cs" />
+    <Compile Include="..\EventStore.Common\Utils\Ensure.cs" />
+    <Compile Include="..\EventStore.Core.Tests\Helpers\ClientApiLoggerBridge.cs" />
+    <Compile Include="..\EventStore.Common\Utils\Locations.cs" />
 
     <!-- Another project -->
     <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\ExpectedVersion64Bit\**\*.cs" />
