@@ -3,6 +3,7 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <DebugType>portable</DebugType>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DefineConstants>EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION;$(DefineConstants)</DefineConstants>
         <DefineConstants>EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER;$(DefineConstants)</DefineConstants>
         <DefineConstants>EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER;$(DefineConstants)</DefineConstants>
