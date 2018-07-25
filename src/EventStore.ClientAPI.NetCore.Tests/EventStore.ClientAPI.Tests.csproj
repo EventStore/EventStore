@@ -98,6 +98,7 @@
 
   <ItemGroup>
     <Compile Include="..\EventStore.Common\Utils\Helper.cs" />
+    <Compile Include="..\EventStore.Common\Utils\Platforms.cs" />
     <Compile Include="..\EventStore.Core\Services\SystemNames.cs" />
     <Compile Include="..\EventStore.Core.Tests\DefaultData.cs" />
     <Compile Include="..\EventStore.Core\Data\EventNumber.cs" />
