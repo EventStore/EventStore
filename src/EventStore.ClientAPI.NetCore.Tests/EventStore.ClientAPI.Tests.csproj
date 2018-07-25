@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <DefineConstants>EVENSTORE_CLIENT_TESTS_NO_EMBEDDED;$(DefineConstants)</DefineConstants>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -18,6 +19,10 @@
     <Compile Include="..\EventStore.Core\Data\EventNumber.cs" />
     <Compile Include="..\EventStore.Core.Tests\SpecificationWithDirectoryPerTestFixture.cs" />
 
+    <!-- Another project -->
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\ExpectedVersion64Bit\**\*.cs" />
+    <!-- Another project -->
+    <EventStoreClientAPITestsExclude Include="..\EventStore.Core.Tests\ClientAPI\Embedded\**\*.cs" />
 
     <Compile Include="..\EventStore.Core.Tests\ClientAPI\**\*.cs"
              Exclude="@(EventStoreClientAPITestsExclude)" />

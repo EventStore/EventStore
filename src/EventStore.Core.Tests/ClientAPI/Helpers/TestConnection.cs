@@ -3,7 +3,10 @@ using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Internal;
+#if EVENSTORE_CLIENT_TESTS_NO_EMBEDDED
+#else
 using EventStore.ClientAPI.Embedded;
+#endif
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 
@@ -45,6 +48,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         }
     }
 
+#if EVENSTORE_CLIENT_TESTS_NO_EMBEDDED
+#else
     public static class EmbeddedTestConnection
     {
         private static int _nextConnId = -1;
@@ -71,4 +76,5 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         }
     }
 
+#endif
 }
