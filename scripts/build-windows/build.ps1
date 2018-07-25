@@ -33,6 +33,9 @@ $libsDirectory = Join-Path $srcDirectory "libs"
     #Event Store
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 
+    #Event Store .NET Core
+    $eventStoreNetCoreSolution = Join-Path $srcDirectory "EventStore.NetCore.sln"
+
     #JS1
     $js1Project = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.vcxproj")
     $js1VersionResource = Join-Path $srcDirectory (Join-Path "EventStore.Projections.v8Integration" "EventStore.Projections.v8Integration.rc")
@@ -345,6 +348,9 @@ try {
             Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
             Exec { msbuild $eventStoreSolution /p:Configuration=$configuration /p:Platform=$eventStorePlatform $definesCommandLine }
+
+            # build the .NET Standard projects
+            Exec { dotnet build $eventStoreNetCoreSolution -c $configuration /p:Version=$Version $definesCommandLine }
         } finally {
             foreach ($assemblyInfo in $assemblyInfos) {
                 $path = Resolve-Path $assemblyInfo.FullName -Relative
