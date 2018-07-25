@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="nunit" Version="3.10.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\EventStore.Common\Utils\Helper.cs" />
+    <Compile Include="..\EventStore.Core\Services\SystemNames.cs" />
+    <Compile Include="..\EventStore.Core.Tests\DefaultData.cs" />
+    <Compile Include="..\EventStore.Core\Data\EventNumber.cs" />
+    <Compile Include="..\EventStore.Core.Tests\SpecificationWithDirectoryPerTestFixture.cs" />
+
+
+    <Compile Include="..\EventStore.Core.Tests\ClientAPI\**\*.cs"
+             Exclude="@(EventStoreClientAPITestsExclude)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI.NetCore\EventStore.ClientAPI.csproj" />
+  </ItemGroup>
+
+</Project>

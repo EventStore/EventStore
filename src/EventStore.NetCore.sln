@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI", "EventStore.ClientAPI.NetCore\EventStore.ClientAPI.csproj", "{6F930EA3-5DE1-4AC3-8058-F2E72DD1115C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI.Tests", "EventStore.ClientAPI.NetCore.Tests\EventStore.ClientAPI.Tests.csproj", "{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,17 @@ Global
 		{6F930EA3-5DE1-4AC3-8058-F2E72DD1115C}.Release|x64.Build.0 = Release|Any CPU
 		{6F930EA3-5DE1-4AC3-8058-F2E72DD1115C}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F930EA3-5DE1-4AC3-8058-F2E72DD1115C}.Release|x86.Build.0 = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Debug|x86.Build.0 = Debug|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|x64.Build.0 = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|x86.ActiveCfg = Release|Any CPU
+		{2C3FF131-A54D-44DC-A7D2-EF0D45FAF929}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
