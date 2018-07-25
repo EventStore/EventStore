@@ -9,6 +9,7 @@
         <DefineConstants>EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER;$(DefineConstants)</DefineConstants>
     </PropertyGroup>
     <PropertyGroup>
+        <PackageId>EventStore.Client</PackageId>
         <Description>EventStore NetStandard ClientApi</Description>
         <Company>Event Store LLP</Company>
         <Copyright>Copyright © Event Store LLP. All rights reserved.</Copyright>
