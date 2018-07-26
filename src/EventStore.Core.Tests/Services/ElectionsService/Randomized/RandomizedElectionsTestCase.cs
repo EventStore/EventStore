@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
                                                                              new InMemoryCheckpoint(),
                                                                              new InMemoryCheckpoint(),
                                                                              new FakeEpochManager(),
-                                                                             () => -1, 0);
+                                                                             () => -1, 0, true);
                 electionsService.SubscribeMessages(inputBus);
 
                 outputBus.Subscribe(sendOverHttpHandler);

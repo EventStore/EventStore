@@ -49,6 +49,8 @@ namespace EventStore.Core.Services.Replication
         private VNodeState _state = VNodeState.Initializing;
         private TcpConnectionManager _connection;
 
+        private readonly bool _isPromotable;
+
         public ReplicaService(IPublisher publisher,
                               TFChunkDb db,
                               IEpochManager epochManager,
@@ -59,7 +61,8 @@ namespace EventStore.Core.Services.Replication
                               string sslTargetHost,
                               bool sslValidateServer,
                               TimeSpan heartbeatTimeout,
-                              TimeSpan heartbeatInterval)
+                              TimeSpan heartbeatInterval, 
+                              bool isPromotable)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(db, "db");
@@ -81,6 +84,8 @@ namespace EventStore.Core.Services.Replication
             _sslValidateServer = sslValidateServer;
             _heartbeatTimeout = heartbeatTimeout;
             _heartbeatInterval = heartbeatInterval;
+
+            _isPromotable = isPromotable;
 
             _connector = new TcpClientConnector();
         }
@@ -197,7 +202,7 @@ namespace EventStore.Core.Services.Replication
             SendTcpMessage(_connection, 
                            new ReplicationMessage.SubscribeReplica(
                                    logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
-                                   message.MasterId, message.SubscriptionId, isPromotable: true));
+                                   message.MasterId, message.SubscriptionId, isPromotable: _isPromotable));
         }
 
         public void Handle(ReplicationMessage.AckLogPosition message)

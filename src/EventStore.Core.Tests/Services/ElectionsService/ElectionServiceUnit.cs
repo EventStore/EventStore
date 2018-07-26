@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService
                                                                      new InMemoryCheckpoint(WriterCheckpoint),
                                                                      new InMemoryCheckpoint(ChaserCheckpoint),
                                                                      new FakeEpochManager(),
-                                                                     () => -1, 0);
+                                                                     () => -1, 0, true);
             ElectionsService.SubscribeMessages(_bus);
 
             InputMessages = new List<Message>();

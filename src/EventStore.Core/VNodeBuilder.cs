@@ -132,6 +132,8 @@ namespace EventStore.Core
         private bool _reduceFileCachePressure;
 
         private bool _gossipOnSingleNode;
+
+        private bool _isPromotable;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         protected VNodeBuilder()
@@ -220,6 +222,8 @@ namespace EventStore.Core
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
             _reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
+
+            _isPromotable = Opts.IsPromotableDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()

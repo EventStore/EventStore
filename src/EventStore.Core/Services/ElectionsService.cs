@@ -66,6 +66,8 @@ namespace EventStore.Core.Services
 
         private MemberInfo[] _servers;
 
+        private bool _isPromotable;
+
         public ElectionsService(IPublisher publisher,
                                 VNodeInfo nodeInfo,
                                 int clusterSize,
@@ -73,7 +75,8 @@ namespace EventStore.Core.Services
                                 ICheckpoint chaserCheckpoint,
                                 IEpochManager epochManager,
                                 Func<long> getLastCommitPosition,
-                                int nodePriority)
+                                int nodePriority,
+                                bool isPromotable)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(nodeInfo, "nodeInfo");
@@ -92,6 +95,7 @@ namespace EventStore.Core.Services
             _epochManager = epochManager;
             _getLastCommitPosition = getLastCommitPosition;
             _nodePriority = nodePriority;
+            _isPromotable = isPromotable;
 
             var ownInfo = GetOwnInfo();
             _servers = new[]
@@ -140,6 +144,12 @@ namespace EventStore.Core.Services
         {
             if (_state == ElectionsState.Shutdown) return;
             if (_state == ElectionsState.ElectingLeader) return;
+
+            if (!_isPromotable)
+            {
+                Log.Trace("ELECTIONS: THIS NODE IS A NON PROMOTABLE CLONE");
+                return;
+            }
 
             Log.Debug("ELECTIONS: STARTING ELECTIONS.");
             ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -271,6 +281,7 @@ namespace EventStore.Core.Services
             if (message.ServerId == _nodeInfo.InstanceId) return;
             if (message.View != _lastAttemptedView) return;
             if (_servers.All(x => x.InstanceId != message.ServerId)) return; // unknown instance
+            if (!_isPromotable) return;
 
             Log.Debug("ELECTIONS: (V={0}) PREPARE FROM [{1}, {2:B}].", _lastAttemptedView, message.ServerInternalHttp, message.ServerId);
 

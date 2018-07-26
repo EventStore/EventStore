@@ -519,7 +519,7 @@ namespace EventStore.Core
                 // REPLICA REPLICATION
                 var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler, _internalAuthenticationProvider,
                                                     gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
-                                                    vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
+                                                    vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.IsPromotable);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
                 _mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
                 _mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
@@ -533,7 +533,7 @@ namespace EventStore.Core
 
             var electionsService = new ElectionsService(_mainQueue, gossipInfo, vNodeSettings.ClusterNodeCount,
                                                         db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-                                                        epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
+                                                        epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority, vNodeSettings.IsPromotable);
             electionsService.SubscribeMessages(_mainBus);
             if(!isSingleNode || vNodeSettings.GossipOnSingleNode) {
             // GOSSIP

@@ -80,6 +80,8 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly bool GossipOnSingleNode;
 
+        public readonly bool IsPromotable;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -142,7 +144,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool alwaysKeepScavenged = false,
                                     bool gossipOnSingleNode = false,
                                     bool skipIndexScanOnReads = false,
-                                    bool reduceFileCachePressure = false)
+                                    bool reduceFileCachePressure = false,
+                                    bool isPromotable = true)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -236,6 +239,8 @@ namespace EventStore.Core.Cluster.Settings
             AlwaysKeepScavenged = alwaysKeepScavenged;
             SkipIndexScanOnReads = skipIndexScanOnReads;
             ReduceFileCachePressure = reduceFileCachePressure;
+
+            IsPromotable = isPromotable;
         }
 
 
