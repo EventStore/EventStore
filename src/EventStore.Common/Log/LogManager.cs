@@ -78,7 +78,8 @@ namespace EventStore.Common.Log
             var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
-                ConfigurationItemFactory.Default.ValueFormatter = new ESValueFormatter(isStructured);
+                var originalFormatter = NLog.Config.ConfigurationItemFactory.Default.ValueFormatter;
+                ConfigurationItemFactory.Default.ValueFormatter = new NLogValueFormatter(originalFormatter, isStructured);
                 NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
             }
             else
