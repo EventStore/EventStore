@@ -226,6 +226,12 @@ namespace EventStore.Core
             _isPromotable = Opts.IsPromotableDefault;
         }
 
+        protected VNodeBuilder IsPromotable(bool value)
+        {
+            _isPromotable = value;
+            return this;
+        }
+
         protected VNodeBuilder WithSingleNodeSettings()
         {
             _clusterNodeCount = 1;
@@ -1425,7 +1431,9 @@ namespace EventStore.Core
                     _readerThreadsCount,
                     _alwaysKeepScavenged,
                     _gossipOnSingleNode,
-                    _skipIndexScanOnReads);
+                    _skipIndexScanOnReads, 
+                    _reduceFileCachePressure,
+                    _isPromotable);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
