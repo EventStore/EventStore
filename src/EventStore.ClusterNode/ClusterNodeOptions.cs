@@ -235,7 +235,7 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.ReduceFileCachePressureDescr, Opts.DbGroup)]
         public bool ReduceFileCachePressure { get; set; }
 
-        [ArgDescription(Opts.NodePriorityDescr, Opts.ClusterGroup)]
+        [ArgDescription(Opts.IsPromotableDescr, Opts.ClusterGroup)]
         public bool IsPromotable { get; set; }
 
         public ClusterNodeOptions()
