@@ -11,8 +11,8 @@ using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Plugins
 {
-    public class PluginsHostService : 
-        IHandle<SystemMessage.StateChangeMessage>, 
+    public class PluginsHostService :
+        IHandle<SystemMessage.StateChangeMessage>,
         IHandle<PluginMessage.GetStats>,
         IPluginPublisher
     {
@@ -47,7 +47,10 @@ namespace EventStore.Core.Services.Plugins
             _eventStoreServices = _serviceFactory.Create();
             foreach (var service in _eventStoreServices)
                 if (service.AutoStart)
+                {
                     service.Start();
+                    Log.Info($"Plugin '{service.Name}' started");
+                }
         }
 
         public bool TryPublish(IDictionary<string, dynamic> request)
