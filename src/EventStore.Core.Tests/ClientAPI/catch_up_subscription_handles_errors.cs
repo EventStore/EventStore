@@ -700,5 +700,10 @@ namespace EventStore.Core.Tests.ClientAPI
             var handler = Connected;
             if (handler != null) handler(this, e);
         }
+
+        public Task<ScavengeResult> Scavenge(UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

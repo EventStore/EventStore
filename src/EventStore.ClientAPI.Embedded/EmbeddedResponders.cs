@@ -238,7 +238,7 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadEvent : 
+        internal class ReadEvent :
             EmbeddedResponderBase<EventReadResult, ClientMessage.ReadEventCompleted>
         {
             private readonly long _eventNumber;
@@ -296,7 +296,7 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadStreamEventsBackward : 
+        internal class ReadStreamEventsBackward :
             EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsBackwardCompleted>
         {
             private readonly long _fromEventNumber;
@@ -358,7 +358,7 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class ReadStreamForwardEvents : 
+        internal class ReadStreamForwardEvents :
             EmbeddedResponderBase<StreamEventsSlice, ClientMessage.ReadStreamEventsForwardCompleted>
         {
             private readonly long _fromEventNumber;
@@ -550,13 +550,13 @@ namespace EventStore.ClientAPI.Embedded
             }
         }
 
-        internal class CreatePersistentSubscription : 
-            EmbeddedResponderBase<PersistentSubscriptionCreateResult, ClientMessage.CreatePersistentSubscriptionCompleted> 
+        internal class CreatePersistentSubscription :
+            EmbeddedResponderBase<PersistentSubscriptionCreateResult, ClientMessage.CreatePersistentSubscriptionCompleted>
         {
             private readonly string _stream;
             private readonly string _groupName;
 
-            public CreatePersistentSubscription(TaskCompletionSource<PersistentSubscriptionCreateResult> source, string stream, string groupName) 
+            public CreatePersistentSubscription(TaskCompletionSource<PersistentSubscriptionCreateResult> source, string stream, string groupName)
                 : base(source)
             {
                 _groupName = groupName;
@@ -591,12 +591,12 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         internal class UpdatePersistentSubscription :
-            EmbeddedResponderBase<PersistentSubscriptionUpdateResult, ClientMessage.UpdatePersistentSubscriptionCompleted> 
+            EmbeddedResponderBase<PersistentSubscriptionUpdateResult, ClientMessage.UpdatePersistentSubscriptionCompleted>
         {
             private readonly string _stream;
             private readonly string _groupName;
 
-            public UpdatePersistentSubscription(TaskCompletionSource<PersistentSubscriptionUpdateResult> source, string stream, string groupName) 
+            public UpdatePersistentSubscription(TaskCompletionSource<PersistentSubscriptionUpdateResult> source, string stream, string groupName)
                 : base(source)
             {
                 _groupName = groupName;
@@ -631,12 +631,12 @@ namespace EventStore.ClientAPI.Embedded
         }
 
         internal class DeletePersistentSubscription :
-            EmbeddedResponderBase<PersistentSubscriptionDeleteResult, ClientMessage.DeletePersistentSubscriptionCompleted> 
+            EmbeddedResponderBase<PersistentSubscriptionDeleteResult, ClientMessage.DeletePersistentSubscriptionCompleted>
         {
             private readonly string _stream;
             private readonly string _groupName;
 
-            public DeletePersistentSubscription(TaskCompletionSource<PersistentSubscriptionDeleteResult> source, string stream, string groupName) 
+            public DeletePersistentSubscription(TaskCompletionSource<PersistentSubscriptionDeleteResult> source, string stream, string groupName)
                 : base(source)
             {
                 _groupName = groupName;
@@ -667,6 +667,38 @@ namespace EventStore.ClientAPI.Embedded
             protected override PersistentSubscriptionDeleteResult TransformResponse(ClientMessage.DeletePersistentSubscriptionCompleted response)
             {
                 return new PersistentSubscriptionDeleteResult((PersistentSubscriptionDeleteStatus)response.Result);
+            }
+        }
+
+        internal class ScavengeDatabaseCompleted :
+        EmbeddedResponderBase<ScavengeResult, ClientMessage.ScavengeDatabaseCompleted>
+        {
+            public ScavengeDatabaseCompleted(TaskCompletionSource<ScavengeResult> source)
+            :base(source)
+            {
+            }
+
+            protected override void InspectResponse(ClientMessage.ScavengeDatabaseCompleted response)
+            {
+                switch (response.Result)
+                {
+                    case ClientMessage.ScavengeDatabase.ScavengeResult.Success:
+                        Succeed(response);
+                        break;
+                    case ClientMessage.ScavengeDatabase.ScavengeResult.InProgress:
+                        Fail(new InvalidOperationException(string.Format("A scavenge operation is already in progress")));
+                        break;
+                    case ClientMessage.ScavengeDatabase.ScavengeResult.Failed:
+                        Fail(new InvalidOperationException(String.Format("Scavenge operation failed: {0}", response.Error)));
+                        break;
+                    default:
+                        throw new Exception(string.Format("Unexpected OperationResult: {0}.", response.Result));
+                }
+            }
+
+            protected override ScavengeResult TransformResponse(ClientMessage.ScavengeDatabaseCompleted response)
+            {
+                return new ScavengeResult(response.TotalTime, response.TotalSpaceSaved);
             }
         }
     }

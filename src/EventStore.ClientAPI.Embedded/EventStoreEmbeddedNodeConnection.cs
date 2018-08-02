@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
@@ -714,6 +715,33 @@ namespace EventStore.ClientAPI.Embedded
                 _authenticationProvider, GetUserCredentials(_settings, userCredentials), source.SetException,
                 user => new ClientMessage.TransactionCommit(corrId, corrId, envelope, false,
                     transaction.TransactionId, user));
+
+            return source.Task;
+        }
+
+        public Task<ScavengeResult> Scavenge(UserCredentials userCredentials = null)
+        {
+            Guid corrId = Guid.NewGuid();
+            var source = new TaskCompletionSource<ScavengeResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var envelope = new EmbeddedResponseEnvelope(
+                new EmbeddedResponders.ScavengeDatabaseCompleted(source));
+
+            _publisher.PublishWithAuthentication(
+                _authenticationProvider,
+                GetUserCredentials(_settings, userCredentials),
+                source.SetException,
+                user => {
+                    if(user==null || !(user.IsInRole(EventStore.Core.Services.SystemRoles.Admins) || user.IsInRole(EventStore.Core.Services.SystemRoles.Operations))){
+                        source.SetException(new NotAuthenticatedException(
+                            string.Format(
+                                "Unauthorized access. Only {0} & {1} roles can launch a scavenge operation",
+                                EventStore.Core.Services.SystemRoles.Admins,
+                                EventStore.Core.Services.SystemRoles.Operations
+                            )
+                        ));
+                    }
+                    return new ClientMessage.ScavengeDatabase(envelope, corrId, user);
+                });
 
             return source.Task;
         }

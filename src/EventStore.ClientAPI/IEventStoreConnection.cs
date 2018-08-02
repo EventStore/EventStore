@@ -593,6 +593,13 @@ namespace EventStore.ClientAPI
         Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null);
 
         /// <summary>
+        /// Starts a scavenging operation on the node (For embedded clients only)
+        /// </summary>
+        /// <param name="userCredentials">User credentials to use for the operation.</param>
+        /// <returns>A <see cref="Task"/> that can be waited upon.</returns>
+        Task<ScavengeResult> Scavenge(UserCredentials userCredentials = null);
+
+        /// <summary>
         /// Fired when an <see cref="IEventStoreConnection"/> connects to an Event Store server.
         /// </summary>
         event EventHandler<ClientConnectionEventArgs> Connected;

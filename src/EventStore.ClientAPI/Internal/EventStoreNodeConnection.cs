@@ -533,6 +533,11 @@ namespace EventStore.ClientAPI.Internal
                                        new EventData(Guid.NewGuid(), SystemEventTypes.Settings, true, settings.ToJsonBytes(), null));
         }
 
+        public Task<ScavengeResult> Scavenge(UserCredentials userCredentials = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public event EventHandler<ClientConnectionEventArgs> Connected
         {
             add
