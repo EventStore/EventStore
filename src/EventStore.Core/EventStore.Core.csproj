@@ -432,6 +432,7 @@
     <Compile Include="Services\Storage\IndexCommitterService.cs" />
     <Compile Include="DataStructures\BloomFilter.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkReaderExistsAtOptimizer.cs" />
+    <Compile Include="Services\Monitoring\Utils\ProcessUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

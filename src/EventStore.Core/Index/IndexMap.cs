@@ -294,7 +294,8 @@ namespace EventStore.Core.Index
             }
 
             int trial = 0;
-            while (trial < 5)
+            int maxTrials = 5;
+            while (trial < maxTrials)
             {
                 Action<Exception> errorHandler = ex =>
                 {
@@ -315,6 +316,10 @@ namespace EventStore.Core.Index
                 catch (IOException exc)
                 {
                     errorHandler(exc);
+                    if(trial>=maxTrials){
+                        ProcessUtil.PrintWhoIsLocking(tmpIndexMap, Log);
+                        ProcessUtil.PrintWhoIsLocking(filename, Log);
+                    }
                 }
                 catch (UnauthorizedAccessException exc)
                 {

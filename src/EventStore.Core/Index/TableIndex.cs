@@ -135,6 +135,7 @@ namespace EventStore.Core.Index
                 Log.ErrorException(exc, "ReadIndex is corrupted...");
                 LogIndexMapContent(indexmapFile);
                 DumpAndCopyIndex();
+                File.SetAttributes(indexmapFile, FileAttributes.Normal);
                 File.Delete(indexmapFile);
                 DeleteForceIndexVerifyFile();
                 _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify);
@@ -587,7 +588,11 @@ namespace EventStore.Core.Index
             if (removeFiles)
             {
                 _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-                File.Delete(Path.Combine(_directory, IndexMapFilename));
+                var fileName = Path.Combine(_directory, IndexMapFilename);
+                if(File.Exists(fileName)){
+                    File.SetAttributes(fileName, FileAttributes.Normal);
+                    File.Delete(fileName);
+                }
             }
             else
             {
@@ -653,8 +658,10 @@ namespace EventStore.Core.Index
         private void DeleteForceIndexVerifyFile(){
             string path = Path.Combine(_directory,ForceIndexVerifyFilename);
             try{
-                if(File.Exists(path))
+                if(File.Exists(path)){
+                    File.SetAttributes(path, FileAttributes.Normal);
                     File.Delete(path);
+                }
             }
             catch{
                 Log.Error("Could not delete force index verification file at: "+path);

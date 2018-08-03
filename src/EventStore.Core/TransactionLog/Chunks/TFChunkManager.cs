@@ -200,7 +200,14 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
                 Log.Info("File {0} will be moved to file {1}", Path.GetFileName(oldFileName), Path.GetFileName(newFileName));
-                File.Move(oldFileName, newFileName);
+                try{
+                    File.Move(oldFileName, newFileName);
+                }
+                catch(IOException){
+                    ProcessUtil.PrintWhoIsLocking(oldFileName,Log);
+                    ProcessUtil.PrintWhoIsLocking(newFileName,Log);
+                    throw;
+                }
                 newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered, _config.InitialReaderCount, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
             }
 
