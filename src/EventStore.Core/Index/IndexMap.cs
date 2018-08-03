@@ -294,7 +294,8 @@ namespace EventStore.Core.Index
             }
 
             int trial = 0;
-            while (trial < 5)
+            int maxTrials = 5;
+            while (trial < maxTrials)
             {
                 try
                 {
@@ -307,6 +308,10 @@ namespace EventStore.Core.Index
                 {
                     Log.DebugException(exc, "Failed trial to replace indexmap.");
                     trial += 1;
+                    if(trial>=maxTrials){
+                        ProcessUtil.PrintWhoIsLocking(tmpIndexMap, Log);
+                        ProcessUtil.PrintWhoIsLocking(filename, Log);
+                    }                    
                 }
             }
         }

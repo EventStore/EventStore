@@ -124,6 +124,7 @@ namespace EventStore.Core.Index
                 Log.ErrorException(exc, "ReadIndex is corrupted...");
                 LogIndexMapContent(indexmapFile);
                 DumpAndCopyIndex();
+                File.SetAttributes(indexmapFile, FileAttributes.Normal);
                 File.Delete(indexmapFile);
                 _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
             }
@@ -555,7 +556,11 @@ namespace EventStore.Core.Index
             if (removeFiles)
             {
                 _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-                File.Delete(Path.Combine(_directory, IndexMapFilename));
+                var fileName = Path.Combine(_directory, IndexMapFilename);
+                if(File.Exists(fileName)){
+                    File.SetAttributes(fileName, FileAttributes.Normal);
+                    File.Delete(fileName);
+                }
             }
             else
             {
