@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
@@ -16,18 +17,23 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
             private string _state;
             private EmittedEventEnvelope[] _emittedEvents;
             private bool _result;
+            private DateTime _dateTime;
 
             [SetUp]
             public void when()
             {
                 _handler = new ByCorrelationId("", Console.WriteLine);
                 _handler.Initialize();
+                _dateTime = DateTime.UtcNow;
+                var dataBytes = Encoding.ASCII.GetBytes("{}");
+                var metadataBytes =  Encoding.ASCII.GetBytes("{\"$correlationId\":\"testing1\"}");
+
                 string sharedState;
                 _result = _handler.ProcessEvent(
                     "", CheckpointTag.FromPosition(0, 200, 150), null,
                     new ResolvedEvent(
-                        "cat1-stream1", 10, "cat1-stream1", 10, false, new TFPos(200, 150), Guid.NewGuid(),
-                        "event_type", true, "{}", "{\"$correlationId\":\"testing1\"}"), out _state, out sharedState, out _emittedEvents);
+                        "cat1-stream1",10, "cat1-stream1", 10, false, new TFPos(200, 150), new TFPos(200,150), Guid.NewGuid(),
+                        "event_type", true, dataBytes, metadataBytes ,null,null,_dateTime), out _state, out sharedState, out _emittedEvents);
             }
 
             [Test]
@@ -51,6 +57,16 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
                 Assert.AreEqual("$>", @event.EventType);
                 Assert.AreEqual("$bc-testing1", @event.StreamId);
                 Assert.AreEqual("10@cat1-stream1", @event.Data);
+
+                string originalEventTimestamp = null;
+                var extraMetadata = @event.ExtraMetaData();
+                foreach(var kvp in extraMetadata){
+                    if(kvp.Key.Equals("$originalEventTimestamp")){
+                        originalEventTimestamp = kvp.Value;
+                    }
+                }
+                Assert.NotNull(originalEventTimestamp);
+                Assert.AreEqual("\""+_dateTime.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ")+"\"", originalEventTimestamp);
             }
 
         }

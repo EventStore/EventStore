@@ -116,13 +116,18 @@ namespace EventStore.Projections.Core.Standard
             else
                 linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
 
+            var linkMetadata = new ExtraMetaData(
+                new Dictionary<string,string> {{"$originalEventTimestamp", "\""+data.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ")+"\""}}
+            );
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
                     new EmittedDataEvent(
                         _corrIdStreamPrefix + correlationId, Guid.NewGuid(), "$>", false,
                         linkTarget,
-                        null, eventPosition, expectedTag: null))
+                        linkMetadata,
+                        eventPosition,
+                        expectedTag: null))
             };
 
 
