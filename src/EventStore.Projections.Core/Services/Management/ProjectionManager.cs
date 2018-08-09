@@ -900,7 +900,7 @@ namespace EventStore.Projections.Core.Services.Management
                 CreateSystemProjection(
                     ProjectionNamesBuilder.StandardProjections.EventByCorrIdStandardProjection,
                     typeof(ByCorrelationId),
-                    "");
+                    "{\"correlationIdProperty\":\"$correlationId\"}");
             }
         }
 
