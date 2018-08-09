@@ -14,13 +14,38 @@ namespace EventStore.Projections.Core.Standard
     {
         private readonly string _corrIdStreamPrefix;
         private readonly string _corrIdCheckpointStream;
+        private readonly string _correlationIdProperty = "$correlationId";
 
         public ByCorrelationId(string source, Action<string, object[]> logger)
         {
-            if (!string.IsNullOrWhiteSpace(source))
-                throw new InvalidOperationException("Empty source expected");
+            if (!string.IsNullOrWhiteSpace(source)){
+                string correlationIdProperty;
+                if(!TryParseCorrelationIdProperty(source, out correlationIdProperty)){
+                    throw new InvalidOperationException("Could not parse projection source. Please make sure the source is a valid JSON string with a property: 'correlationIdProperty' having a string value");
+                }
+                _correlationIdProperty = correlationIdProperty;
+            }
             _corrIdStreamPrefix = "$bc-";
             _corrIdCheckpointStream = "$bc";
+        }
+
+        private bool TryParseCorrelationIdProperty(string source, out string correlationIdProperty)
+        {
+            correlationIdProperty = null;
+            JObject obj = null;
+            try{
+                obj = JObject.Parse(source);
+                string prop = obj["correlationIdProperty"].Value<string>();
+                if(prop != null){
+                    correlationIdProperty = prop;
+                    return true;
+                } else{
+                    return false;
+                }
+            }
+            catch(Exception){
+                return false;
+            }
         }
 
         public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder)
@@ -78,10 +103,10 @@ namespace EventStore.Projections.Core.Standard
                 return false;
             }
 
-            if(metadata["$correlationId"] == null)
+            if(metadata[_correlationIdProperty] == null)
                 return false;
 
-            string correlationId = metadata["$correlationId"].Value<string>();
+            string correlationId = metadata[_correlationIdProperty].Value<string>();
             if (correlationId == null)
                 return false;
 

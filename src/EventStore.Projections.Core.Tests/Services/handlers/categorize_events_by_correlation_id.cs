@@ -218,6 +218,72 @@ namespace EventStore.Projections.Core.Tests.Services.handlers
             {
                 Assert.IsNull(_emittedEvents);
             }
-        }        
+        }
+
+        [TestFixture]
+        public class with_custom_valid_correlation_id_property
+        {
+            private ByCorrelationId _handler;
+            private string _state;
+            private EmittedEventEnvelope[] _emittedEvents;
+            private bool _result;
+            private string source = "{\"correlationIdProperty\":\"$myCorrelationId\"}";
+
+            [SetUp]
+            public void when()
+            {
+                _handler = new ByCorrelationId(source, Console.WriteLine);
+                _handler.Initialize();
+                string sharedState;
+                _result = _handler.ProcessEvent(
+                    "", CheckpointTag.FromPosition(0, 200, 150), null,
+                    new ResolvedEvent(
+                        "cat1-stream1", 10, "cat1-stream1", 10, false, new TFPos(200, 150), Guid.NewGuid(),
+                        "event_type", true, "{}", "{\"$myCorrelationId\":\"testing1\"}"), out _state, out sharedState, out _emittedEvents);
+            }
+
+            [Test]
+            public void result_is_true()
+            {
+                Assert.IsTrue(_result);
+            }
+
+            [Test]
+            public void state_stays_null()
+            {
+                Assert.IsNull(_state);
+            }
+
+            [Test]
+            public void emits_correct_link()
+            {
+                Assert.NotNull(_emittedEvents);
+                Assert.AreEqual(1, _emittedEvents.Length);
+                var @event = _emittedEvents[0].Event;
+                Assert.AreEqual("$>", @event.EventType);
+                Assert.AreEqual("$bc-testing1", @event.StreamId);
+                Assert.AreEqual("10@cat1-stream1", @event.Data);
+            }
+
+        }
+
+        [TestFixture]
+        public class with_custom_invalid_correlation_id_property
+        {
+            private string source = "{\"thisisnotvalid\":\"$myCorrelationId\"}";
+
+            [SetUp]
+            public void when()
+            {
+            }
+
+            [Test]
+            public void should_throw_invalid_operation_exception()
+            {
+                Assert.Throws<InvalidOperationException>(()=>{
+                    new ByCorrelationId(source, Console.WriteLine);
+                });
+            }
+        }
     }
 }
