@@ -176,6 +176,7 @@
     <Compile Include="Messages\MemberInfoDto.cs" />
     <Compile Include="Messages\ReplicationMessage.cs" />
     <Compile Include="Messages\ReplicationMessageDto.cs" />
+    <Compile Include="Messages\ScavengeResultDto.cs" />
     <Compile Include="Messages\SubscriptionMessage.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\InternalAuthenticationProviderMessages.cs" />
