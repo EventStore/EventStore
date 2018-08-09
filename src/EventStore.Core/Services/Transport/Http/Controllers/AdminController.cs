@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
                 {
                     var completed = message as ClientMessage.ScavengeDatabaseResponse;
-                    return e.ResponseCodec.To(completed?.ScavengeId);
+                    return e.ResponseCodec.To(new ScavengeResultDto(completed?.ScavengeId));
                 },
                 (e, message) =>
                 {
