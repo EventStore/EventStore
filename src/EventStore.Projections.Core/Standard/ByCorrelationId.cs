@@ -116,9 +116,17 @@ namespace EventStore.Projections.Core.Standard
             else
                 linkTarget = data.EventSequenceNumber + "@" + data.EventStreamId;
 
-            var linkMetadata = new ExtraMetaData(
-                new Dictionary<string,string> {{"$originalEventTimestamp", "\""+data.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ")+"\""}}
-            );
+            var metadataDict = new Dictionary<string,string>();
+            metadataDict.Add("$eventTimestamp", "\""+data.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ")+"\"");
+            if(data.EventType == SystemEventTypes.LinkTo){
+                JObject linkObj = new JObject();
+                linkObj.Add("eventId", data.EventId);
+                linkObj.Add("metadata", metadata);
+                metadataDict.Add("$link", linkObj.ToJson());
+            }
+
+            var linkMetadata = new ExtraMetaData(metadataDict);
+
             emittedEvents = new[]
             {
                 new EmittedEventEnvelope(
