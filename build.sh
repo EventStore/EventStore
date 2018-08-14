@@ -9,7 +9,7 @@ COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
 # ------------ End of configuration -------------
 
 function usage() {
-    echo <<EOF 
+    echo <<EOF
 Usage:
   $0 [<version=0.0.0.0>] [<configuration=release>] [<distro-platform-override>]
 
@@ -39,14 +39,16 @@ EOF
 }
 
 CONFIGURATION="Release"
+BUILDUI="no"
 DEFINES="USE_UNIX_IO MONO"
 
 function checkParams() {
     version=$1
     configuration=$2
     platform_override=$3
+    build_ui=$4
 
-    [[ $# -gt 3 ]] && usage
+    [[ $# -gt 4 ]] && usage
 
     if [[ "$configuration" == "" ]]; then
         CONFIGURATION="release"
@@ -77,6 +79,12 @@ function checkParams() {
     else
         CURRENT_DISTRO=$platform_override
     fi
+
+    if [[ "$build_ui" != "" ]] ; then
+        BUILDUI=$build_ui
+        echo "Build UI set to: $BUILDUI"
+    fi
+
     LIBJS1EXT="so"
     if [ "$ES_DISTRO" == "osx" ]; then
         LIBJS1EXT="dylib"
@@ -196,6 +204,20 @@ function linkCurrentJS1 {
     done
 }
 
+function buildUI {
+    if [[ "$BUILDUI" != "yes" ]] ; then
+        echo "Skipping UI Build"
+        return
+    fi
+    rm -rf src/EventStore.ClusterNode.Web/clusternode-web/
+    pushd src/EventStore.UI
+    npm install gulp@~3.8.8 -g
+    npm install
+    gulp dist
+    mv es-dist ../EventStore.ClusterNode.Web/clusternode-web/
+    popd
+}
+
 function buildEventStore {
     patchVersionFiles
     patchVersionInfo
@@ -210,10 +232,11 @@ function exitWithError {
     exit 1
 }
 
-checkParams "$1" "$2" "$3"
+checkParams "$1" "$2" "$3" "$4"
 
 echo "Running from base directory: $BASE_DIR"
 echo "Running on distribution: $CURRENT_DISTRO"
 linkCurrentJS1
+buildUI
 buildEventStore
 rm -rf "$BASE_NAME/src/libs/x64/$CURRENT_DISTRO"
