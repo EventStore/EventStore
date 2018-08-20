@@ -1,78 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{0294FD68-461C-46DB-9FCF-B279BBFDA5F6}</ProjectGuid>
+    <TargetFramework>net46</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EventStore.ClusterNode</RootNamespace>
-    <AssemblyName>EventStore.ClusterNode</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>..\..\bin\clusternode\</OutputPath>
-    <DebugType>full</DebugType>
-    <WarningLevel>4</WarningLevel>
-    <Optimize>false</Optimize>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DebugSymbols>true</DebugSymbols>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <OutputPath>..\..\bin\clusternode\</OutputPath>
-    <DebugType>none</DebugType>
-    <WarningLevel>4</WarningLevel>
-    <Optimize>true</Optimize>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject>EventStore.ClusterNode.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>app2.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Rags, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="EventStore.Rags">
       <HintPath>..\libs\EventStore.Rags.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ClusterNodeOptions.cs" />
-    <Compile Include="ClusterVNodeBuilder.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj">
-      <Project>{898c5545-7749-42f0-961a-048af92b2a79}</Project>
-      <Name>EventStore.ClusterNode.Web</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
-      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
-      <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
-      <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
-      <Name>EventStore.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
-      <Project>{03E02082-E179-4730-81FF-CE914749D6E3}</Project>
-      <Name>EventStore.Projections.Core</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />   
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\EventStore.Common\Log\log.config">
@@ -83,20 +30,11 @@
   <ItemGroup>
     <Content Include="app2.ico" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
-  </PropertyGroup>
   <PropertyGroup>
     <IsMac>false</IsMac>
     <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
   </PropertyGroup>
-  <Target Name="BeforeBuild">
+  <Target Name="CopyJs1" BeforeTargets="BeforeBuild">
     <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\current\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
     <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\current\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
     <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
