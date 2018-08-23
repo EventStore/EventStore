@@ -1,0 +1,47 @@
+Migration based on code from `EventStore\ClientAPI.NetCore` repo
+at commit 6162cf3ab0cd0fb5f0331caf6cf77b43f7fcc518
+
+Repo aliases:
+
+`main` = `EventStore/EventStore`
+`netcore` = `EventStore/ClientAPI.NetCore`
+
+# Differences
+
+- `Common/Log/DebugLogger.cs`: in main was `System.Diagnostics.Trace`, in netcore was `Debug`. Used `main`
+- `Common/Log/FileLogger.cs` used `main` with Dispose fixes and ctor cleanup
+- `Common/Utils/Threading/TaskExtensions.cs` just newlines changes
+- `Exceptions/*Exception.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+- use assembly metadata defined in `EventStore.ClientAPI.NetCore/EventStore.ClientAPI.csproj`
+- `Internal/Consts.cs` new constant in main
+- `Internal/EventStoreNodeConnection.cs`:
+    - in main the async keyword is used, in netcore Task is used directly. using main 
+    - removed unused namespace `System.Data.SqlClient`
+- `Internal/OperationsManager.cs` is ahead in main with timeout management
+- `Internal/ClusterDnsEndPointDiscoverer.cs` is ahead in main with `NodePreference` setting
+- `Internal/IEndPointDiscoverer.cs` is internal in netcore, and public in main. using main
+- `Internal/NodeEndPoints.cs` is internal in netcore, and public in main. using main
+- `Internal/SingleEndpointDiscoverer.cs` new from netcore, was missing in main. added netcore, and configured under define EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER
+- `Internal/StaticEndPointDiscoverer.cs` using `Task.FromResult` (netcore) instead of `Task.Factory.StartNew` (main)
+- `Projections/ProjectionsManager.cs` reorded xmldoc (from netcore)
+- `Transport.Http/EndpointExtensions.cs` is ahead in main
+- `Transport.Http/HttpAsyncClient.cs` no ServicePointManager (netcore) under `EVENTSTORE_CLIENT_NO_SERVICEPOINTMANAGER` define
+- `Transport.Http/WebRequestExtensions.cs` is new in main, but unused in code.
+- `Transport.Tcp/PackageFramingException.cs` doesnt expose Serialization constructor. hidden by compiler define EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+- `Transport.Tcp/ProtobufExtensions.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
+- `Transport.Tcp/TcpClientConnector.cs` use a `Dispose` (netcore) instead of `Close` (main). using main, because Close call Dispose
+- `Transport.Tcp/TcpConnection.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
+- `Transport.Tcp/TcpConnectionLockless.cs` use MemoryStream.TryGetBuffer instead of GetBuffer (from netcore)
+- `Transport.Tcp/TcpConnectionSsl.cs` main is ahead
+- `ClusterSettings.cs` main is ahead
+- `ConnectionSettings.cs` main is ahead
+- `ConnectionSettingsBuilder.cs` main is ahead
+- `ConnectionString.cs` main is ahead
+- `DnsClusterSettingsBuilder.cs` main is ahead
+- `EventStoreCatchUpSubscription.cs` main is ahead
+- `EventStorePersistentSubscriptionBase.cs` main is ahead
+- `ExpectedVersion.cs` use long (netcore) instead of int (main)
+- `GossipSeedClusterSettingsBuilder.cs` fix xmldoc (netcore), use main (ahead)
+- `StreamMetadata.cs` main is ahead
+- `NodeEndPoints.cs`, `NodePreference.cs` exists in main. use main
+- `UserManagement\UsersClient.cs`, `UserManagement\UsersManager.cs` refactor schema to param (netcore), use main without refactor

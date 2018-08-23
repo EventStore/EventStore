@@ -36,7 +36,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             using (var memory = new MemoryStream())
             {
                 Serializer.Serialize(memory, protoContract);
-                var res = new ArraySegment<byte>(memory.GetBuffer(), 0, (int)memory.Length);
+                ArraySegment<byte> res ;
+                //TODO check boolean result of Try
+                memory.TryGetBuffer(out res);
                 return res;
             }
         }

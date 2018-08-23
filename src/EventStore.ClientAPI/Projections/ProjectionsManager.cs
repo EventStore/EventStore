@@ -23,8 +23,8 @@ namespace EventStore.ClientAPI.Projections
         /// </summary>
         /// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
         /// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
-        /// <param name="httpSchema">HTTP endpoint schema http|https.</param>
         /// <param name="operationTimeout"></param>
+        /// <param name="httpSchema">HTTP endpoint schema http|https.</param>
         public ProjectionsManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
             Ensure.NotNull(log, "log");

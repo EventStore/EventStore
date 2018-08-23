@@ -31,6 +31,8 @@ namespace EventStore.ClientAPI.Exceptions
         {
         }
 
+#if EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+#else
         /// <summary>
         /// Constructs a new <see cref="CannotEstablishConnectionException" />.
         /// </summary>
@@ -38,5 +40,6 @@ namespace EventStore.ClientAPI.Exceptions
                     StreamingContext context) : base(info, context)
         {
         }
+#endif
     }
 }

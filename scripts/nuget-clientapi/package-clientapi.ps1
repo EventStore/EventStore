@@ -7,9 +7,11 @@ Param(
 $baseDirectory = Resolve-Path (Join-Path $PSScriptRoot "..\..\")
 $binDirectory = Join-Path $baseDirectory "bin"
 $stagingDirectory = Join-Path $binDirectory "nuget"
+$netcoreNupkgDirectory = Join-Path $binDirectory "dotnetcorenupkgs"
 $outputDirectory = Join-Path $baseDirectory "packages"
 $toolsPath = Join-Path $baseDirectory "tools"
 $nugetPath = Join-Path $toolsPath (Join-Path "nuget" "nuget.exe")
+$dotnetcliToolsPath = Join-Path $toolsPath "dotnetcli"
 $nuspecDirectory = Join-Path $baseDirectory (Join-Path "scripts" "nuget-clientapi")
 $svnClientPath = Join-Path $toolsPath (Join-Path "svn" "svn.exe")
 
@@ -19,6 +21,10 @@ if ((Test-Path $stagingDirectory) -eq $false) {
 
 if ((Test-Path $outputDirectory) -eq $false) {
     New-Item -Path $outputDirectory -ItemType Directory > $null
+}
+
+if ((Test-Path $netcoreNupkgDirectory) -eq $false) {
+    New-Item -Path $netcoreNupkgDirectory -ItemType Directory > $null
 }
 
 Function Exec
@@ -42,6 +48,33 @@ Function Run-NugetPack() {
     Start-Process -NoNewWindow -Wait -FilePath $NugetPath -ArgumentList @("pack", "-symbols", "-version $Version", "$NuspecPath")
     if ($LASTEXITCODE -eq 0) {
         Move-Item -Path *.nupkg -Destination $outputDirectory
+    }
+}
+
+Function Run-DotnetPack-NoBuild() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$ProjPath
+    )
+    Exec { dotnet pack "$ProjPath" -c Release --no-build -o "$netcoreNupkgDirectory" /p:PackageVersion=$Version }
+}
+
+Function Run-Dotnet-Mergenupkg() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$SourceNupkgPath,
+        [Parameter(Mandatory=$true, Position=1)][string]$OtherNupkgPath,
+        [Parameter(Mandatory=$true, Position=2)][string]$TargetFramework
+    )
+    try {
+        Push-Location $dotnetcliToolsPath
+        # restore dotnet cli tools (is not automatic like restore with dotnet build)
+        Exec { dotnet restore }
+        # merge nupkgs updating in place the source nupkg
+        Write-Output "dotnet mergenupkg --source ""$SourceNupkgPath"" --other ""$OtherNupkgPath"" --framework $TargetFramework"
+        Exec { dotnet mergenupkg --source "$SourceNupkgPath" --other "$OtherNupkgPath" --framework "$TargetFramework" }
+    } finally {
+        Pop-Location
     }
 }
 
@@ -74,4 +107,7 @@ Function Get-SourceDependencies() {
 
 Get-SourceDependencies
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.nuspec")
+Run-DotnetPack-NoBuild (Join-Path $baseDirectory "src/EventStore.ClientAPI.NetCore/EventStore.ClientAPI.csproj")
+Run-Dotnet-Mergenupkg (Join-Path $outputDirectory "EventStore.Client.$Version.nupkg") (Join-Path $netcoreNupkgDirectory "EventStore.Client.$Version.nupkg") "netstandard2.0"
+
 Run-NugetPack -NuspecPath (Join-Path $nuspecDirectory "EventStore.Client.Embedded.nuspec")

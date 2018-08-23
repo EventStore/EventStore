@@ -19,9 +19,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
         }
 
+#if EVENTSTORE_CLIENT_NO_EXCEPTION_SERIALIZATION
+#else
         protected PackageFramingException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
         {
         }
+#endif
     }
 }

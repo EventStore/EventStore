@@ -123,9 +123,14 @@ namespace EventStore.ClientAPI
 
                 if (scheme == "tcp")
                 {
+#if EVENTSTORE_CLIENT_TCP_USE_SINGLEENDPOINTDISCOVERER
+                    return new EventStoreNodeConnection(connectionSettings, null,
+                        new EventStore.ClientApi.Core.Internal.SingleEndpointDiscoverer(uri, connectionSettings.UseSslConnection), connectionName);
+#else
                     var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
                     return new EventStoreNodeConnection(connectionSettings, null,
                         new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
+#endif
                 }
                 throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
             }
