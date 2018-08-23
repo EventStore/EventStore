@@ -14,36 +14,52 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class PluginsController : CommunicationController
     {
-        private readonly IPublisher _networkSendQueue;
         private readonly IEventStoreControllerFactory _eventStoreControllerFactory;
+        private IList<IEventStoreController> _controllers;
+        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsController>();
+        private readonly IPluginPublisher _pluginPublisher;
+        private static readonly ICodec[] SupportedCodecs = { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
-
-        public PluginsController(IPublisher publisher, IPublisher networkSendQueue, IEventStoreControllerFactory eventStoreControllerFactory) : base(publisher)
+        public PluginsController(IEventStoreControllerFactory eventStoreControllerFactory, IPublisher publisher, IPublisher networkSendQueue, IPluginPublisher pluginPublisher) : base(publisher)
         {
-            _networkSendQueue = networkSendQueue;
             _eventStoreControllerFactory = eventStoreControllerFactory;
+            _networkSendQueue = networkSendQueue;
+            _pluginPublisher = pluginPublisher;
         }
 
         protected override void SubscribeCore(IHttpService service)
         {
-            var controllers = _eventStoreControllerFactory.Create();
-            foreach (var eventStoreController in controllers)
+            _controllers = _eventStoreControllerFactory.Create();
+            foreach (var ctrl in _controllers)
             {
-                foreach (var registeredAction in eventStoreController.RegisteredActions)
-                {
-                    service.RegisterAction(new ControllerAction(registeredAction.Key, HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnRequest);
-                }
+                service.RegisterAction(new ControllerAction(ctrl.StartUriTemplate, HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostPluginStart);
+                service.RegisterAction(new ControllerAction(ctrl.StopUriTemplate, HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostPluginStop);
+                service.RegisterAction(new ControllerAction(ctrl.StatsUriTemplate, HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetStats);
             }
         }
 
-        private void OnRequest(HttpEntityManager entity, UriTemplateMatch match)
+        private void OnGetStats(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            var sendToHttpEnvelope = new SendToHttpEnvelope(
+                _networkSendQueue, entity, Format.GetPluginStatsCompleted,
+                (e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
+            Publish(new PluginMessage.GetStats(sendToHttpEnvelope));
+        }
+
+        private void OnPostPluginStart(HttpEntityManager entity, UriTemplateMatch match)
         {
             if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
                 var serviceType = match.BoundVariables["servicetype"];
-                
+                var name = match.BoundVariables["name"];
+                Log.Info("Request start a plugin service because Start command has been received.");
+                ProcessRequest(entity, new Dictionary<string, dynamic>
+                    {
+                        {"Name", name},
+                        {"ServiceType", serviceType},
+                        {"Action", "Start"}
+                    });
             }
             else
             {
@@ -51,9 +67,42 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
         }
 
+        private void OnPostPluginStop(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
+            {
+                var serviceType = match.BoundVariables["servicetype"];
+                var name = match.BoundVariables["name"];
+                Log.Info("Request stop a plugin service because Stop request has been received.");
+                ProcessRequest(entity,
+                    new Dictionary<string, dynamic>
+                    {
+                            {"Name", name},
+                            {"ServiceType", serviceType},
+                            {"Action", "Stop"}
+                    });
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
+        }
+
+        private void ProcessRequest(HttpEntityManager entity, IDictionary<string, dynamic> request)
+        {
+            if (_pluginPublisher.TryPublish(request))
+            {
+                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.BadRequest, "KO", LogReplyError);
+            }
+        }
+
         private void LogReplyError(Exception exc)
         {
-            Log.Debug("Error while using HTTP connection: {0}.", exc.GetBaseException().Message);
+            Log.Debug("Error while closing HTTP connection (plugin controller): {0}.", exc.Message);
         }
     }
 }

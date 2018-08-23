@@ -313,8 +313,31 @@ namespace EventStore.ClusterNode
             builder.WithAuthenticationProvider(authenticationProviderFactory);
             var pluginFactory = GetServiceFactory(plugInContainer);
             builder.WithPlugins(pluginFactory);
+            var controllerFactory = GetControllerFactory(plugInContainer);
+            builder.WithControllers(controllerFactory);
 
             return builder.Build(options, consumerStrategyFactories);
+        }
+
+        private static IEventStoreControllerFactory GetControllerFactory(CompositionContainer plugInContainer)
+        {
+            var allPlugins = plugInContainer.GetExports<IEventStoreControllerPlugin>();
+
+            foreach (var potentialPlugin in allPlugins)
+            {
+                try
+                {
+                    var plugin = potentialPlugin.Value;
+                    Log.Info("Loaded EventStore strategy controller plugin: {0} version {1}.", plugin.Name, plugin.Version);
+                    return plugin.GetStrategyFactory();
+                }
+                catch (CompositionException ex)
+                {
+                    Log.ErrorException(ex, "Error loading EventStore strategy controller plugin.");
+                }
+            }
+
+            return null;
         }
 
         private static IEventStoreServiceFactory GetServiceFactory(CompositionContainer plugInContainer)

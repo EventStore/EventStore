@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IEventStoreController.cs" />
+    <Compile Include="IEventStoreControllerPlugin.cs" />
     <Compile Include="IEventStorePlugin.cs" />
     <Compile Include="IEventStoreService.cs" />
     <Compile Include="IEventStoreControllerFactory.cs" />

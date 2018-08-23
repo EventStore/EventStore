@@ -324,8 +324,7 @@ namespace EventStore.Core
             var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory);
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(pluginsHostService);
             _mainBus.Subscribe<PluginMessage.GetStats>(pluginsHostService);
-            //var geoReplicaController = new GeoReplicaController(_mainQueue, _workersHandler, pluginsHostService);
-            var pluginsController = new PluginsController(_mainQueue, _workersHandler, null);
+            var pluginController = new PluginsController(vNodeSettings.PluginsControllerFactory, _mainQueue, _workersHandler, pluginsHostService);
 
             // HTTP SENDERS
             gossipController.SubscribeSenders(httpPipe);
@@ -346,8 +345,7 @@ namespace EventStore.Core
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
             _externalHttpService.SetupController(histogramController);
-            //_externalHttpService.SetupController(geoReplicaController);
-            _externalHttpService.SetupController(pluginsController);
+            _externalHttpService.SetupController(pluginController);
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);

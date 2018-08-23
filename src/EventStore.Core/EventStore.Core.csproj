@@ -234,7 +234,6 @@
     <Compile Include="Services\PersistentSubscription\SequencedEvent.cs" />
     <Compile Include="Services\PersistentSubscription\StreamBuffer.cs" />
     <Compile Include="Services\Plugins\IPluginPublisher.cs" />
-    <Compile Include="Services\Plugins\PluginsHostControllerService.cs" />
     <Compile Include="Services\Plugins\PluginsHostService.cs" />
     <Compile Include="Services\Replication\MasterReplicationService.cs" />
     <Compile Include="Services\Replication\ReplicaService.cs" />
@@ -284,7 +283,6 @@
     <Compile Include="Data\UserData.cs" />
     <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
     <Compile Include="Services\Transport\Http\Controllers\PluginsController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\GeoReplicaController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />
