@@ -19,6 +19,7 @@ namespace EventStore.Core.Services.Plugins
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsHostService>();
         private readonly IEventStoreServiceFactory _serviceFactory;
         private IList<IEventStoreService> _eventStoreServices = new List<IEventStoreService>();
+        private bool _started;
 
         public PluginsHostService(IEventStoreServiceFactory factory)
         {
@@ -29,10 +30,13 @@ namespace EventStore.Core.Services.Plugins
         {
             if (message.State != VNodeState.Master && message.State != VNodeState.Clone &&
                 message.State != VNodeState.Slave) return;
+            if (_started)
+                return;
             try
             {
                 var t = new Thread(Start) { IsBackground = true };
                 t.Start();
+                _started = true;
             }
             catch (Exception e)
             {
