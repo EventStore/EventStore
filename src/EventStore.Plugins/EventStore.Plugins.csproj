@@ -40,8 +40,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IEventStoreController.cs" />
+    <Compile Include="IEventStoreControllerPlugin.cs" />
     <Compile Include="IEventStorePlugin.cs" />
     <Compile Include="IEventStoreService.cs" />
+    <Compile Include="IEventStoreControllerFactory.cs" />
     <Compile Include="IEventStoreServiceFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

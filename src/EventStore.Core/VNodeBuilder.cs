@@ -132,6 +132,7 @@ namespace EventStore.Core
         protected bool _skipIndexScanOnReads;
         private bool _reduceFileCachePressure;
         protected IEventStoreServiceFactory _pluginsServiceFactory;
+        protected IEventStoreControllerFactory _pluginsControllerFactory;
 
         private bool _gossipOnSingleNode;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -227,6 +228,12 @@ namespace EventStore.Core
         public VNodeBuilder WithPlugins(IEventStoreServiceFactory pluginsServiceFactory)
         {
             _pluginsServiceFactory = pluginsServiceFactory;
+            return this;
+        }
+
+        public VNodeBuilder WithControllers(IEventStoreControllerFactory pluginsControllerFactory)
+        {
+            _pluginsControllerFactory = pluginsControllerFactory;
             return this;
         }
 
@@ -1431,7 +1438,8 @@ namespace EventStore.Core
                     _gossipOnSingleNode,
                     _skipIndexScanOnReads,
                     _reduceFileCachePressure,
-                    _pluginsServiceFactory);
+                    _pluginsServiceFactory,
+                    _pluginsControllerFactory);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);

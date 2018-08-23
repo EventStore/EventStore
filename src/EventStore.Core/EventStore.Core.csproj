@@ -282,7 +282,7 @@
     <Compile Include="Services\Transport\Http\Authentication\Rfc2898PasswordHashAlgorithm.cs" />
     <Compile Include="Data\UserData.cs" />
     <Compile Include="Services\Transport\Http\Authentication\TrustedHttpAuthenticationProvider.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\GeoReplicaController.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\PluginsController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ClusterWebUIController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ElectController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\GossipController.cs" />

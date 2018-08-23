@@ -79,6 +79,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool SkipIndexScanOnReads;
         public readonly bool ReduceFileCachePressure;
         public readonly IEventStoreServiceFactory PluginsServiceFactory;
+        public readonly IEventStoreControllerFactory PluginsControllerFactory;
 
         public readonly bool GossipOnSingleNode;
 
@@ -145,7 +146,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool gossipOnSingleNode = false,
                                     bool skipIndexScanOnReads = false,
                                     bool reduceFileCachePressure = false,
-                                    IEventStoreServiceFactory pluginsServiceFactory = null)
+                                    IEventStoreServiceFactory pluginsServiceFactory = null,
+                                    IEventStoreControllerFactory pluginsControllerFactory = null)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -240,6 +242,7 @@ namespace EventStore.Core.Cluster.Settings
             SkipIndexScanOnReads = skipIndexScanOnReads;
             ReduceFileCachePressure = reduceFileCachePressure;
             PluginsServiceFactory = pluginsServiceFactory;
+            PluginsControllerFactory = pluginsControllerFactory;
         }
 
 

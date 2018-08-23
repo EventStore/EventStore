@@ -5,31 +5,38 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Plugins;
+using EventStore.Plugins;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class GeoReplicaController : CommunicationController
+    public class PluginsController : CommunicationController
     {
+        private readonly IEventStoreControllerFactory _eventStoreControllerFactory;
+        private IList<IEventStoreController> _controllers;
         private readonly IPublisher _networkSendQueue;
+        private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsController>();
         private readonly IPluginPublisher _pluginPublisher;
-        private static readonly ILogger Log = LogManager.GetLoggerFor<GeoReplicaController>();
+        private static readonly ICodec[] SupportedCodecs = { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
-
-        public GeoReplicaController(IPublisher publisher, IPublisher networkSendQueue, IPluginPublisher pluginPublisher) : base(publisher)
+        public PluginsController(IEventStoreControllerFactory eventStoreControllerFactory, IPublisher publisher, IPublisher networkSendQueue, IPluginPublisher pluginPublisher) : base(publisher)
         {
+            _eventStoreControllerFactory = eventStoreControllerFactory;
             _networkSendQueue = networkSendQueue;
             _pluginPublisher = pluginPublisher;
         }
 
         protected override void SubscribeCore(IHttpService service)
         {
-            service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/start", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStart);
-            service.RegisterAction(new ControllerAction("/georeplica/{servicetype}/{name}/stop", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostGeoReplicaStop);
-            service.RegisterAction(new ControllerAction("/georeplica", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetStats);
+            _controllers = _eventStoreControllerFactory.Create();
+            foreach (var ctrl in _controllers)
+            {
+                service.RegisterAction(new ControllerAction(ctrl.StartUriTemplate, HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostPluginStart);
+                service.RegisterAction(new ControllerAction(ctrl.StopUriTemplate, HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostPluginStop);
+                service.RegisterAction(new ControllerAction(ctrl.StatsUriTemplate, HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetStats);
+            }
         }
 
         private void OnGetStats(HttpEntityManager entity, UriTemplateMatch match)
@@ -40,26 +47,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(new PluginMessage.GetStats(sendToHttpEnvelope));
         }
 
-        private void OnPostGeoReplicaStart(HttpEntityManager entity, UriTemplateMatch match)
+        private void OnPostPluginStart(HttpEntityManager entity, UriTemplateMatch match)
         {
             if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
                 var serviceType = match.BoundVariables["servicetype"];
-                if (serviceType.Equals("dispatcher") || serviceType.Equals("receiver"))
-                {
-                    var name = match.BoundVariables["name"];
-                    Log.Info("Request start GeoReplica because Start command has been received.");
-                    ProcessRequest(entity, new Dictionary<string, dynamic>
+                var name = match.BoundVariables["name"];
+                Log.Info("Request start a plugin service because Start command has been received.");
+                ProcessRequest(entity, new Dictionary<string, dynamic>
                     {
                         {"Name", name},
                         {"ServiceType", serviceType},
                         {"Action", "Start"}
                     });
-                }
-                else
-                {
-                    entity.ReplyStatus(HttpStatusCode.BadRequest, "servicetype must be 'dispatcher' or 'receiver'", LogReplyError);
-                }
             }
             else
             {
@@ -67,27 +67,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
         }
 
-        private void OnPostGeoReplicaStop(HttpEntityManager entity, UriTemplateMatch match)
+        private void OnPostPluginStop(HttpEntityManager entity, UriTemplateMatch match)
         {
             if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
             {
                 var serviceType = match.BoundVariables["servicetype"];
-                if (serviceType.Equals("dispatcher") || serviceType.Equals("receiver"))
-                {
-                    var name = match.BoundVariables["name"];
-                    Log.Info("Request stop GeoReplica because Stop request has been received.");
-                    ProcessRequest(entity,
-                        new Dictionary<string, dynamic>
-                        {
+                var name = match.BoundVariables["name"];
+                Log.Info("Request stop a plugin service because Stop request has been received.");
+                ProcessRequest(entity,
+                    new Dictionary<string, dynamic>
+                    {
                             {"Name", name},
                             {"ServiceType", serviceType},
                             {"Action", "Stop"}
-                        });
-                }
-                else
-                {
-                    entity.ReplyStatus(HttpStatusCode.BadRequest, "servicetype must be 'dispatcher' or 'receiver'", LogReplyError);
-                }
+                    });
             }
             else
             {
@@ -109,7 +102,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void LogReplyError(Exception exc)
         {
-            Log.Debug("Error while closing HTTP connection (georeplica controller): {0}.", exc.Message);
+            Log.Debug("Error while closing HTTP connection (plugin controller): {0}.", exc.Message);
         }
     }
 }
