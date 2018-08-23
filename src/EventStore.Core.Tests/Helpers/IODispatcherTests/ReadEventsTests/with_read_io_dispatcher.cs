@@ -33,18 +33,20 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests
         [OneTimeSetUp]
         public virtual void TestFixtureSetUp()
         {
-            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+            var _queue = QueuedHandler.CreateQueuedHandler(_bus, "TestQueuedHandler");
+            _ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_queue));
             IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
             _bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
             _bus.Subscribe<TimerMessage.Schedule>(this);
+            _queue.Start();
         }
 
         public virtual void Handle(ClientMessage.ReadStreamEventsForward message)
         {
             _readForward = message;
         }
-        
+
         public virtual void Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             _readBackward = message;
