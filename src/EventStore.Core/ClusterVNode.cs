@@ -321,7 +321,7 @@ namespace EventStore.Core
             var electController = new ElectController(_mainQueue);
 
             // Plugins 
-            var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory);
+            var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(pluginsHostService);
             _mainBus.Subscribe<PluginMessage.GetStats>(pluginsHostService);
             var pluginController = new PluginsController(vNodeSettings.PluginsControllerFactory, _mainQueue, _workersHandler, pluginsHostService);

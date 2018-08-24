@@ -6,6 +6,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Plugins;
 using Newtonsoft.Json;
 
@@ -18,12 +19,14 @@ namespace EventStore.Core.Services.Plugins
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PluginsHostService>();
         private readonly IEventStoreServiceFactory _serviceFactory;
+        private readonly ICheckpoint _checkpoint;
         private IList<IEventStoreService> _eventStoreServices = new List<IEventStoreService>();
         private bool _started;
 
-        public PluginsHostService(IEventStoreServiceFactory factory)
+        public PluginsHostService(IEventStoreServiceFactory factory, ICheckpoint checkpoint)
         {
             _serviceFactory = factory;
+            _checkpoint = checkpoint;
         }
 
         public void Handle(SystemMessage.StateChangeMessage message)
@@ -72,6 +75,7 @@ namespace EventStore.Core.Services.Plugins
                 return;
             var results = _eventStoreServices.ToDictionary<IEventStoreService, string, dynamic>(
                 eventStoreService => eventStoreService.Name, eventStoreService => eventStoreService.GetStats());
+            results.Add("checkpoint", _checkpoint.Read());
             message.Envelope.ReplyWith(results.Count == 0
                 ? new PluginMessage.GetStatsCompleted(PluginMessage.GetStatsCompleted.OperationStatus.NotReady, null)
                 : new PluginMessage.GetStatsCompleted(PluginMessage.GetStatsCompleted.OperationStatus.Success,
