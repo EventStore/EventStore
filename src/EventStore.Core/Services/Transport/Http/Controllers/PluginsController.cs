@@ -30,6 +30,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
+            if (_eventStoreControllerFactory == null)
+                return;
             _controllers = _eventStoreControllerFactory.Create();
             foreach (var ctrl in _controllers)
             {
