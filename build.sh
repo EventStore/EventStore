@@ -222,7 +222,13 @@ function buildEventStore {
     patchVersionFiles
     patchVersionInfo
     rm -rf bin/
-    xbuild src/EventStore.sln /p:Platform="Any CPU" /p:DefineConstants="$DEFINES" /p:Configuration="$CONFIGURATION" || err
+    msbuild \
+	    src/EventStore.sln \
+	    /p:Platform="Any CPU" \
+	    /p:DefineConstants="$DEFINES" \
+	    /p:Configuration="$CONFIGURATION" \
+	    /target:restore,compile \
+	    || err
     revertVersionFiles
     revertVersionInfo
 }
