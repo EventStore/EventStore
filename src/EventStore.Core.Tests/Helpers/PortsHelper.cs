@@ -138,7 +138,8 @@ namespace EventStore.Core.Tests.Helpers
 
         public static void ReturnPort(int port)
         {
-            AvailablePorts.Enqueue(port);
+            if(!AvailablePorts.Contains(port))
+                AvailablePorts.Enqueue(port);
         }
 
 /*
