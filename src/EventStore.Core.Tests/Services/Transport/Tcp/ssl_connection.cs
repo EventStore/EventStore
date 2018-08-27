@@ -13,17 +13,24 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture]
     public class ssl_connections
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ssl_connections>();
+        private IPAddress _ip;
+        private int _port;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _ip = IPAddress.Loopback;
+            _port = PortsHelper.GetAvailablePort(_ip);
+        }
 
         [Test]
         public void should_connect_to_each_other_and_send_data()
         {
-            var ip = IPAddress.Loopback;
-            var port = PortsHelper.GetAvailablePort(ip);
-            var serverEndPoint = new IPEndPoint(ip, port);
+            var serverEndPoint = new IPEndPoint(_ip, _port);
             X509Certificate cert = GetCertificate();
 
             var sent = new byte[1000];
@@ -39,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert, verbose: true);
                 ssl.ConnectionClosed += (x, y) => done.Set();
                 if (ssl.IsClosed) done.Set();
-                
+
                 Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback = null;
                 callback = (x, y) =>
                 {
@@ -65,8 +72,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
             }, "Secure");
 
             var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
-                Guid.NewGuid(), 
-                serverEndPoint, 
+                Guid.NewGuid(),
+                serverEndPoint,
                 "ES",
                 false,
                 new TcpClientConnector(),
@@ -101,6 +108,12 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp
                 stream.CopyTo(mem);
                 return new X509Certificate2(mem.ToArray(), "1111");
             }
+        }
+
+        [TearDown]
+        public virtual void TearDown()
+        {
+            PortsHelper.ReturnPort(_port);
         }
     }
 }

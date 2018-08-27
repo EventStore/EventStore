@@ -18,6 +18,7 @@ namespace EventStore.Core.Tests.Integration
         protected IEventStoreConnection _conn;
         protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory = new Dictionary<int, Func<bool, MiniClusterNode>>();
+        private readonly List<int> _portsUsed = new List<int>();
 
         protected class Endpoints
         {
@@ -42,6 +43,12 @@ namespace EventStore.Core.Tests.Integration
             }
         }
 
+        private int GetFreePort(IPAddress ip){
+            var port = PortsHelper.GetAvailablePort(ip);
+            _portsUsed.Add(port);
+            return port;
+        }
+
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
         {
@@ -51,19 +58,17 @@ namespace EventStore.Core.Tests.Integration
             QueueStatsCollector.InitializeIdleDetection();
 #endif
             _nodeEndpoints[0] = new Endpoints(
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
             _nodeEndpoints[1] = new Endpoints(
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
             _nodeEndpoints[2] = new Endpoints(
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-                PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
-
-            PortsHelper.GetAvailablePort(IPAddress.Loopback);
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
+                GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
 
             _nodeCreationFactory.Add(0, (wait) => CreateNode(0,
                 _nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp }, wait));
@@ -122,6 +127,10 @@ namespace EventStore.Core.Tests.Integration
         [OneTimeTearDown]
         public override void TestFixtureTearDown()
         {
+            for(var i=0;i<_portsUsed.Count;i++){
+                PortsHelper.ReturnPort(_portsUsed[i]);
+            }
+
             _conn.Close();
             _nodes[0].Shutdown();
             _nodes[1].Shutdown();
