@@ -1,0 +1,25 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+build_script:
+- ps: .\build.cmd -Configuration debug -Platform x64
+test_script:
+- ps: >-
+    .\tools\nunit-3.4.1\bin\nunit3-console.exe bin\tests\EventStore.BufferManagement.Tests.dll bin\tests\EventStore.Core.Tests.dll bin\tests\EventStore.Projections.Core.Tests.dll /framework:net-4.5 /timeout=60000
+
+
+    $result = Select-String -Path TestResult.xml -Pattern "result=`"Failed`""
+
+
+    if ([string]::IsNullOrEmpty($result) -eq "True"){
+       $host.SetShouldExit(0)
+    }else{
+       $host.SetShouldExit(1)
+    }
+notifications:
+- provider: Slack
+  incoming_webhook:
+    secure: xpQlH9012NgSg9CasA7Qfck0luuUVnkZw3nMZ3JhSovdpTQQgLC2BaOyHXRSjWhbE+fUtyJLsYVcwzpis467J+brTOpjbsOduvPZCVldlEA=
+  channel: event-store
+  on_build_success: true
+  on_build_failure: true
+  on_build_status_changed: true
