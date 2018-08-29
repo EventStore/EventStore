@@ -1527,7 +1527,6 @@ namespace EventStore.Core
             var cache = cachedChunks >= 0
                                 ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
                                 : chunksCacheSize;
-            Console.WriteLine("CHUNKSIZE IS " + chunkSize);
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,

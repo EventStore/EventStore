@@ -906,7 +906,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             if(_chunkHeader.Version >= (byte) ChunkVersions.Aligned){
                 var alignedSize = GetAlignedSize(ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size);
                 var bufferSize = alignedSize - workItem.StreamPosition - ChunkFooter.Size;
-                Log.Debug("Buffer size is " + bufferSize);
                 if(bufferSize > 0) {
                     byte[] buffer = new byte[bufferSize];
                     WriteRawData(workItem, buffer, buffer.Length);
