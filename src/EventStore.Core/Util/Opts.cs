@@ -79,6 +79,9 @@ namespace EventStore.Core.Util
         public const string ChunksCacheSizeDescr = "The amount of unmanaged memory to use for caching chunks.";
         public const int    ChunksCacheSizeDefault = TFConsts.ChunksCacheSize;
 
+        public const string ChunksSizeDescr = "The size of a chunk";
+        public const int    ChunkSizeDefault = 256 * 1024 * 1024;
+
         public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
         public static double MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs.TotalMilliseconds;
 

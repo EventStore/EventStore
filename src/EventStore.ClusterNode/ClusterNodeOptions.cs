@@ -120,6 +120,9 @@ namespace EventStore.ClusterNode
         public int ReaderThreadsCount { get; set; }
         [ArgDescription(Opts.ChunksCacheSizeDescr, Opts.DbGroup)]
         public long ChunksCacheSize { get; set; }
+        [ArgDescription(Opts.ChunksSizeDescr, Opts.DbGroup)]
+        public int ChunkSize { get; set; }
+
         [ArgDescription(Opts.MaxMemTableSizeDescr, Opts.DbGroup)]
         public int MaxMemTableSize { get; set; }
         [ArgDescription(Opts.HashCollisionReadLimitDescr, Opts.DbGroup)]
