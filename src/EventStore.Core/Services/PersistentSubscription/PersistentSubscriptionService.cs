@@ -692,7 +692,12 @@ namespace EventStore.Core.Services.PersistentSubscription
             Log.Debug("Saving Configuration.");
             var data = _config.GetSerializedForm();
             var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
-            _ioDispatcher.WriteEvent(SystemStreams.PersistentSubscriptionConfig, ExpectedVersion.Any, ev, SystemAccount.Principal, x => HandleSaveConfigurationCompleted(continueWith, x));
+            var metadata = new StreamMetadata(maxCount: 2);
+            Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(()=>metadata);
+            Event[] events = new Event[]{ev};
+            _ioDispatcher.ConfigureStreamAndWriteEvents(SystemStreams.PersistentSubscriptionConfig,
+            ExpectedVersion.Any,streamMetadata,events,SystemAccount.Principal,
+            x => HandleSaveConfigurationCompleted(continueWith, x));
         }
 
         private void HandleSaveConfigurationCompleted(Action continueWith, ClientMessage.WriteEventsCompleted obj)
