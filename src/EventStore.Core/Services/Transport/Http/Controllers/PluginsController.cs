@@ -30,6 +30,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service)
         {
+            service.RegisterAction(new ControllerAction("plugins", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostConfig);
             if (_eventStoreControllerFactory == null)
                 return;
             _controllers = _eventStoreControllerFactory.Create();
@@ -47,6 +48,28 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 _networkSendQueue, entity, Format.GetPluginStatsCompleted,
                 (e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
             Publish(new PluginMessage.GetStats(sendToHttpEnvelope));
+        }
+
+        private void OnPostConfig(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
+            {
+                // TODO
+
+                //var serviceType = match.BoundVariables["servicetype"];
+                //var name = match.BoundVariables["name"];
+                //Log.Info("Request start a plugin service because Start command has been received.");
+                //ProcessRequest(entity, new Dictionary<string, dynamic>
+                //{
+                //    {"Name", name},
+                //    {"ServiceType", serviceType},
+                //    {"Action", "Start"}
+                //});
+            }
+            else
+            {
+                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+            }
         }
 
         private void OnPostPluginStart(HttpEntityManager entity, UriTemplateMatch match)
