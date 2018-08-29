@@ -213,6 +213,7 @@ namespace EventStore.Core
             _indexBitnessVersion = Opts.IndexBitnessVersionDefault;
             _optimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
             _unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
+            _chunkSize = Opts.ChunkSizeDefault;
             _betterOrdering = Opts.BetterOrderingDefault;
             _unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
             _alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
@@ -1526,7 +1527,7 @@ namespace EventStore.Core
             var cache = cachedChunks >= 0
                                 ? cachedChunks*(long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
                                 : chunksCacheSize;
-
+            Console.WriteLine("CHUNKSIZE IS " + chunkSize);
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,
