@@ -15,7 +15,7 @@ build-mono4:
     - script:
         name: Build
         code: |
-          ./build.sh
+          ./build.sh "" debug
           
     - script:
         name: Run Tests

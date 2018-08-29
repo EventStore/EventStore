@@ -166,6 +166,9 @@ namespace EventStore.Core.Util
         public const string SkipIndexScanOnReadsDescr = "Skip Index Scan on Reads. This skips the index scan which was used to stop reading duplicates.";
         public static readonly bool SkipIndexScanOnReadsDefault = false;
 
+        public const string ReduceFileCachePressureDescr = "Change the way the DB files are opened to reduce their stickiness in the system file cache.";
+        public static readonly bool ReduceFileCachePressureDefault = false;
+
         //Loading certificates from files
         public const string CertificateFileDescr = "The path to certificate file.";
         public static readonly string CertificateFileDefault = string.Empty;

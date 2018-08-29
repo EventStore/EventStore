@@ -76,6 +76,7 @@ namespace EventStore.Core.Cluster.Settings
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
         public readonly bool AlwaysKeepScavenged;
         public readonly bool SkipIndexScanOnReads;
+        public readonly bool ReduceFileCachePressure;
 
         public readonly bool GossipOnSingleNode;
 
@@ -140,7 +141,8 @@ namespace EventStore.Core.Cluster.Settings
                                     int readerThreadsCount = 4,
                                     bool alwaysKeepScavenged = false,
                                     bool gossipOnSingleNode = false,
-                                    bool skipIndexScanOnReads = false)
+                                    bool skipIndexScanOnReads = false,
+                                    bool reduceFileCachePressure = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -233,6 +235,7 @@ namespace EventStore.Core.Cluster.Settings
             ReaderThreadsCount = readerThreadsCount;
             AlwaysKeepScavenged = alwaysKeepScavenged;
             SkipIndexScanOnReads = skipIndexScanOnReads;
+            ReduceFileCachePressure = reduceFileCachePressure;
         }
 
 
