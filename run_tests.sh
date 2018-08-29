@@ -32,14 +32,13 @@ if [[ $MONOPATH == "" ]]; then
     MONOPATH="/opt/mono"
 fi
 
-LD_LIBRARY_PATH=bin/tests:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-3.4.1/bin/nunit3-console.exe bin/tests/EventStore.Core.Tests.dll $EXCLUDE $INCLUDE $FILTER
+LD_LIBRARY_PATH=bin/tests:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-3.8.0/nunit3-console.exe bin/tests/EventStore.Core.Tests.dll $EXCLUDE $INCLUDE $FILTER
 rc=$?
-# xsltproc tools/nunit-3.4.1/results.xslt TestResult.xml
-# rm inter
+
 if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
 if [[ $RUNPROJECTIONS == "TRUE" ]]; then
-    LD_LIBRARY_PATH=bin/tests/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-3.4.1/bin/nunit3-console.exe bin/tests/EventStore.Projections.Core.Tests.dll $EXCLUDE
+    LD_LIBRARY_PATH=bin/tests/:$MONOPATH/lib/:$LD_LIBRARY_PATH mono tools/nunit-3.8.0/nunit3-console.exe bin/tests/EventStore.Projections.Core.Tests.dll $EXCLUDE
 fi
