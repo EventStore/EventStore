@@ -8,11 +8,6 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Rags">
-      <HintPath>..\libs\EventStore.Rags.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />

@@ -7,9 +7,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="protobuf-net">
-      <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
-    </Reference>
+    <PackageReference Include="protobuf-net" Version="2.3.17" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />

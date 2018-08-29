@@ -1,7 +1,7 @@
 version: 1.0.{build}
 image: Visual Studio 2017
 build_script:
-- ps: .\build.cmd -Configuration debug -Platform x64
+- cmd: dotnet msbuild src\EventStore.sln /target:restore;build /p:"Platform=Any CPU;Configuration=Debug"
 test_script:
 - ps: >-
     .\tools\nunit-3.4.1\bin\nunit3-console.exe bin\tests\EventStore.BufferManagement.Tests.dll bin\tests\EventStore.Core.Tests.dll bin\tests\EventStore.Projections.Core.Tests.dll /framework:net-4.5 /timeout=60000

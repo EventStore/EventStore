@@ -17,7 +17,6 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
-using HdrHistogram.NET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
