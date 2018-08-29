@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>..\..\bin\tests\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;$(CmdDefineConstants)</DefineConstants>
     <DebugType>full</DebugType>
     <WarningLevel>4</WarningLevel>
     <Optimize>false</Optimize>
@@ -31,6 +31,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>..\..\bin\tests\</OutputPath>
+    <DefineConstants>TRACE;$(CmdDefineConstants)</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>none</DebugType>
     <WarningLevel>4</WarningLevel>
