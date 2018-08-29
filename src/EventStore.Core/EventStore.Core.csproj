@@ -8,20 +8,12 @@
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
-  
   <ItemGroup>
-    <Reference Include="EventStore.Rags">
-      <HintPath>..\libs\EventStore.Rags.dll</HintPath>
-    </Reference>
-    <Reference Include="HdrHistogram.NET">
-      <HintPath>..\libs\hdrhistogram\HdrHistogram.NET.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="protobuf-net" Version="2.3.17" />
+    <PackageReference Include="HdrHistogram" Version="2.5.0" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />

@@ -9,9 +9,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>

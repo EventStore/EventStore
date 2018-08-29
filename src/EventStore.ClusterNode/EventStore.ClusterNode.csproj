@@ -10,9 +10,6 @@
     <ApplicationIcon>app2.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Rags">
-      <HintPath>..\libs\EventStore.Rags.dll</HintPath>
-    </Reference>
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +17,7 @@
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />   
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
     <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\EventStore.Common\Log\log.config">

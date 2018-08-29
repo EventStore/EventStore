@@ -7,14 +7,10 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Rags">
-      <HintPath>..\libs\EventStore.Rags.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog">
-      <HintPath>..\libs\NLog.dll</HintPath>
-    </Reference>
+      <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+      <PackageReference Include="NLog" Version="4.5.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
   </ItemGroup>
 </Project>
