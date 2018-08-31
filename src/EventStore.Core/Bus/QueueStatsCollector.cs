@@ -18,14 +18,14 @@ namespace EventStore.Core.Bus
 
         public Type InProgressMessage { get { return _inProgressMsgType; } }
 
-#if DEBUG        
+#if DEBUG
         public static int NonIdle
         {
             get { return _nonIdle; }
         }
 #endif
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
-        
+
         private readonly Stopwatch _busyWatch = new Stopwatch();
         private readonly Stopwatch _idleWatch = new Stopwatch();
         private readonly Stopwatch _totalIdleWatch = new Stopwatch();
@@ -43,6 +43,7 @@ namespace EventStore.Core.Bus
         private Type _inProgressMsgType;
 
         private bool _wasIdle;
+        private bool _started = false;
 
         public QueueStatsCollector(string name, string groupName = null)
         {
@@ -54,6 +55,8 @@ namespace EventStore.Core.Bus
 
         public void Start()
         {
+            Debug.Assert(!_started, string.Format("QueueStatsCollector [{0}] was already started when Start() entered",Name));
+            _started = true;
             _totalTimeWatch.Start();
 #if DEBUG
             if (_notifyLock != null)
@@ -69,8 +72,10 @@ namespace EventStore.Core.Bus
 
         public void Stop()
         {
+            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Stop() entered",Name));
             EnterIdle();
             _totalTimeWatch.Stop();
+            _started = false;
         }
 
         public void ProcessingStarted<T>(int queueLength)
@@ -95,6 +100,7 @@ namespace EventStore.Core.Bus
 
         public void EnterIdle()
         {
+            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when EnterIdle() entered",Name));
             if (_wasIdle)
                 return;
             _wasIdle = true;
@@ -104,6 +110,7 @@ namespace EventStore.Core.Bus
                 lock (_notifyLock)
                 {
                     _nonIdle = NonIdle - 1;
+                    Debug.Assert(_nonIdle >= 0,string.Format("_nonIdle = {0} < 0",_nonIdle));
                     if (NonIdle == 0)
                     {
                         Monitor.Pulse(_notifyLock);
@@ -112,7 +119,7 @@ namespace EventStore.Core.Bus
             }
 #endif
 
-            //NOTE: the following locks are primarily acquired in main thread, 
+            //NOTE: the following locks are primarily acquired in main thread,
             //      so not too high performance penalty
             lock (_statisticsLock)
             {
@@ -126,6 +133,7 @@ namespace EventStore.Core.Bus
 
         public void EnterBusy()
         {
+            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when EnterBusy() entered",Name));
             if (!_wasIdle)
                 return;
             _wasIdle = false;
@@ -288,14 +296,16 @@ namespace EventStore.Core.Bus
         [Conditional("DEBUG")]
         public void Dequeued(Message msg)
         {
-#if DEBUG            
+#if DEBUG
+            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Dequeued() entered",Name));
             Interlocked.Decrement(ref _length);
+            Debug.Assert(_length >= 0,string.Format("_length = {0} < 0",_length));
             if (DumpMessages)
             {
                 Console.WriteLine(msg.GetType().Namespace + "." + msg.GetType().Name);
             }
 #endif
         }
-    }    
+    }
 }
 
