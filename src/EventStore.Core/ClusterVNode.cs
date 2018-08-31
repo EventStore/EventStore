@@ -555,6 +555,7 @@ namespace EventStore.Core
             _mainQueue.Start();
             monitoringQueue.Start();
             subscrQueue.Start();
+            perSubscrQueue.Start();
 
             if (subsystems != null)
             {
