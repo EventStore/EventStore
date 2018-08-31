@@ -72,7 +72,11 @@ namespace EventStore.Core.Services.VNode
             _node = node;
             _subSystems = subSystems;
             if(vnodeSettings.ClusterNodeCount == 1) {
-                _serviceShutdownsToExpect = 4;
+                _serviceShutdownsToExpect =   1 /* StorageChaser */
+                                            + 1 /* StorageReader */
+                                            + 1 /* StorageWriter */
+                                            + 1 /* IndexCommitterService */
+                                            + 1 /* HttpService External*/;
             }
 
             _subSystemInitsToExpect = _subSystems != null ? subSystems.Length : 0;
@@ -195,7 +199,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreReplica)
                     .When<ReplicationMessage.ReconnectToMaster>().Do(Handle)
                     .When<ReplicationMessage.SubscribeToMaster>().Do(Handle)
-                    .When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle) 
+                    .When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle)
                     .When<ReplicationMessage.ReplicaSubscribed>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
                 .InAllStatesExcept(VNodeState.PreReplica)
@@ -297,9 +301,9 @@ namespace EventStore.Core.Services.VNode
         private void Handle(SystemMessage.BecomeUnknown message)
         {
             Log.Info("========== [{0}] IS UNKNOWN...", _nodeInfo.InternalHttp);
-           
+
             _state = VNodeState.Unknown;
-            _master = null;           
+            _master = null;
             _outputBus.Publish(message);
             _mainQueue.Publish(new ElectionMessage.StartElections());
         }
@@ -837,7 +841,6 @@ namespace EventStore.Core.Services.VNode
         private void Handle(SystemMessage.ServiceShutdown message)
         {
             Log.Info("========== [{0}] Service '{1}' has shut down.", _nodeInfo.InternalHttp, message.ServiceName);
-
             _serviceShutdownsToExpect -= 1;
             if (_serviceShutdownsToExpect == 0)
             {
