@@ -16,12 +16,19 @@ namespace EventStore.Core.Tests
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
+            SetUpDebugListeners();
             LogManager.SetLogFactory(x => new ConsoleLogger());
             Application.AddDefines(new[] { Application.AdditionalCommitChecks });
             LogEnvironmentInfo();
 
             if (!Debugger.IsAttached)
                 PortsHelper.InitPorts(IPAddress.Loopback);
+        }
+
+        private void SetUpDebugListeners()
+        {
+            Debug.Listeners.Clear(); //prevent message box popup when assertions fail
+            Debug.Listeners.Add(new ThrowExceptionTraceListener()); //all failed assertions should throw an exception to halt the tests
         }
 
         private void LogEnvironmentInfo()
@@ -53,6 +60,29 @@ namespace EventStore.Core.Tests
 
             Console.WriteLine(msg);
             LogManager.Finish();
+        }
+    }
+
+    internal class ThrowExceptionTraceListener : TraceListener
+    {
+        public ThrowExceptionTraceListener()
+        {
+        }
+
+        public override void Fail(string message){
+            throw new AssertionException(message);
+        }
+        public override void Fail(string message, string detailMessage){
+            var msg = message + detailMessage!=null?" "+detailMessage:"";
+            throw new AssertionException(msg);
+        }
+
+        public override void Write(string message)
+        {
+        }
+
+        public override void WriteLine(string message)
+        {
         }
     }
 }
