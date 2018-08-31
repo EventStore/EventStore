@@ -46,6 +46,7 @@ namespace EventStore.Core.Bus
         private bool _started = false;
 
 #if DEBUG
+        private int _activeItems = 0; //number of items pending to be processed if the queue is started
         private int _pendingItems = 0; //number of items pending to be processed if the queue is stopped
 #endif
 
@@ -64,6 +65,7 @@ namespace EventStore.Core.Bus
             _totalTimeWatch.Start();
 #if DEBUG
             Interlocked.Add(ref _length, _pendingItems);
+            _activeItems = _pendingItems;
             _pendingItems = 0;
 
             if (_notifyLock != null)
@@ -80,6 +82,11 @@ namespace EventStore.Core.Bus
         public void Stop()
         {
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Stop() entered",Name));
+#if DEBUG
+            Interlocked.Add(ref _length, -_activeItems);
+            _pendingItems = _activeItems;
+            _activeItems = 0;
+#endif
             EnterIdle();
             _totalTimeWatch.Stop();
             _started = false;
@@ -298,6 +305,7 @@ namespace EventStore.Core.Bus
 #if DEBUG
             if(_started){
                 Interlocked.Increment(ref _length);
+                _activeItems++;
             } else{
                 //if the queue is stopped, do not increment _length
                 //This is particularly important for idle detection in WaitIdle() since items published on a stopped queue may never be dequeued and WaitIdle() will wait indefinitely.
@@ -313,6 +321,7 @@ namespace EventStore.Core.Bus
 #if DEBUG
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Dequeued() entered",Name));
             Interlocked.Decrement(ref _length);
+            _activeItems--;
             Debug.Assert(_length >= 0,string.Format("_length = {0} < 0",_length));
             if (DumpMessages)
             {
