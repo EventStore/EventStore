@@ -45,6 +45,10 @@ namespace EventStore.Core.Bus
         private bool _wasIdle;
         private bool _started = false;
 
+#if DEBUG
+        private int _pendingItems = 0; //number of items pending to be processed if the queue is stopped
+#endif
+
         public QueueStatsCollector(string name, string groupName = null)
         {
             Ensure.NotNull(name, "name");
@@ -59,6 +63,9 @@ namespace EventStore.Core.Bus
             _started = true;
             _totalTimeWatch.Start();
 #if DEBUG
+            Interlocked.Add(ref _length, _pendingItems);
+            _pendingItems = 0;
+
             if (_notifyLock != null)
             {
                 lock (_notifyLock)
@@ -206,7 +213,7 @@ namespace EventStore.Core.Bus
         private static int _nonIdle = 0;
         private static ICheckpoint[] _writerCheckpoint = new ICheckpoint[3];
         private static ICheckpoint[] _chaserCheckpoint = new ICheckpoint[3];
-        private static int _length;
+        private static int _length; //sum of lengths of all active (started) queues
         public static bool DumpMessages;
 
         public static void InitializeIdleDetection(bool enable = true)
@@ -289,7 +296,14 @@ namespace EventStore.Core.Bus
         public void Enqueued()
         {
 #if DEBUG
-            Interlocked.Increment(ref _length);
+            if(_started){
+                Interlocked.Increment(ref _length);
+            } else{
+                //if the queue is stopped, do not increment _length
+                //This is particularly important for idle detection in WaitIdle() since items published on a stopped queue may never be dequeued and WaitIdle() will wait indefinitely.
+                //If ever the queue is started again, _pendingItems will be added to _length.
+                _pendingItems ++;
+            }
 #endif
         }
 
