@@ -16,8 +16,7 @@ namespace EventStore.Core.Tests.Bus
     public class FSMSpeedTest
     {
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
-        public void Test()
+        public void FSMSpeedTest1()
         {
             var fsm = CreateFSM();
             var msg = new StorageMessage.WriteCommit(Guid.NewGuid(), new NoopEnvelope(), 0);
@@ -36,8 +35,7 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
-        public void Test2()
+        public void FSMSpeedTest2()
         {
             var bus = new InMemoryBus("a", true);
             bus.Subscribe(new AdHocHandler<StorageMessage.WriteCommit>(x => { }));

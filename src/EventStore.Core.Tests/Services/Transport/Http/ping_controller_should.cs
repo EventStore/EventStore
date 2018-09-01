@@ -10,7 +10,6 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http
 {
-    [MightyMooseIgnore]
     [TestFixture, Category("LongRunning")]
     public class ping_controller_should
     {
