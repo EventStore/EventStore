@@ -1,8 +1,0 @@
-﻿<NUnitProject>
-  <Settings activeconfig="Default" />
-  <Config name="Default" binpathtype="Auto">
-    <assembly path="..\..\bin\tests\EventStore.BufferManagement.Tests.dll" />
-    <assembly path="..\..\bin\tests\EventStore.Projections.Core.Tests.dll" />
-    <assembly path="..\..\bin\tests\EventStore.Core.Tests.dll" />
-  </Config>
-</NUnitProject>
