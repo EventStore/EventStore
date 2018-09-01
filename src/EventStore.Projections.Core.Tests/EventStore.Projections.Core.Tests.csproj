@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
+    <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputPath>..\..\bin\tests\</OutputPath>
     <DebugType>pdbonly</DebugType>
@@ -31,6 +32,7 @@
     <Folder Include="Services\checkpoint_strategy\" />
     <Folder Include="Services\projections_manager\parallel_query\" />
   </ItemGroup>
+  <!-- TODO(jen20): Decide what is correct here -->
   <PropertyGroup>
     <IsMac>false</IsMac>
     <IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>

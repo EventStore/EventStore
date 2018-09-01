@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
+    <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
     <OutputPath>..\..\bin\clusternode\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup>
     <ApplicationIcon>app2.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
@@ -28,6 +26,7 @@
   <ItemGroup>
     <Content Include="app2.ico" />
   </ItemGroup>
+  <!-- TODO(jen20): Investigate which of these are correct -->
   <PropertyGroup>
     <IsMac>false</IsMac>
     <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
