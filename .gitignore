@@ -58,7 +58,6 @@ src/.vs/
 !*.csproj.ReSharper
 
 Release
-Build
 Debug
 
 *.vssscc

@@ -1,0 +1,13 @@
+{
+	"builders": [{
+		"type": "docker",
+		"image": "centos:7",
+		"commit": "true"
+	}],
+	"provisioners": [
+		{
+			"type": "shell",
+			"script": "scripts/configure-build-container.sh"
+		}
+	]
+}
