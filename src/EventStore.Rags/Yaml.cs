@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using EventStore.Rags.YamlDotNet.RepresentationModel;
+using YamlDotNet.RepresentationModel;
 
 namespace EventStore.Rags
 {
@@ -68,11 +68,6 @@ namespace EventStore.Rags
                 }
             }
             return options;
-        }
-
-        private static string MakeString(IEnumerable<string> values)
-        {
-            return string.Join(",", values);
         }
     }
 }
