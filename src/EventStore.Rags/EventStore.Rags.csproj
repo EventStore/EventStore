@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputPath>..\..\bin\eventstore.rags\</OutputPath>
     <TargetFramework>net46</TargetFramework>
+    <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputPath>..\..\bin\intermediate\</OutputPath>
     <DebugType>pdbonly</DebugType>

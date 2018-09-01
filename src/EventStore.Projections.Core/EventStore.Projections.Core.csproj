@@ -1,8 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
-  
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
+    <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputPath>..\..\bin\intermediate\</OutputPath>
     <DebugType>pdbonly</DebugType>
@@ -33,6 +32,7 @@
     <EmbeddedResource Include="Prelude\Projections.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
+    <!-- TODO(jen20): What is this and why do we need it? -->
     <Content Include="Services\Management\TODO.txt" />
   </ItemGroup>
 </Project>
