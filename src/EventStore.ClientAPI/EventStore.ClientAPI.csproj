@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\clientapi\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;$(CmdDefineConstants)</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapi\EventStore.ClientAPI.xml</DocumentationFile>
@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\clientapi\</OutputPath>
-    <DefineConstants>CLIENTAPI;TRACE;$(CmdDefineConstants)</DefineConstants>
+    <DefineConstants>CLIENTAPI;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>..\..\bin\clientapi\EventStore.ClientAPI.xml</DocumentationFile>
@@ -244,8 +244,15 @@ $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProject
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
+  -->
   <Target Name="BeforeBuild">
+    <Message Text="BeforeBuild -- DefineConstants: $(DefineConstants)" />
+    <Message Text="BeforeBuild -- AppendedDefineConstants: $(AppendedDefineConstants)" />
+    <CreateProperty Value="$(DefineConstants);$(AppendedDefineConstants)">
+      <Output TaskParameter="Value" PropertyName="DefineConstants" />
+    </CreateProperty>
+    <Message Text="BeforeBuild -- after merge - DefineConstants: $(DefineConstants)" />
   </Target>
   <Target Name="AfterBuild">
-  </Target>-->
+  </Target>
 </Project>

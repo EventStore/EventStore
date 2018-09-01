@@ -162,7 +162,7 @@ if ($configuration -eq "release") {
 if ($Defines -eq "") {
     $definesCommandLine = ""
 } else {
-    $definesCommandLine = "/p:CmdDefineConstants=$Defines"
+    $definesCommandLine = "/p:AppendedDefineConstants=$Defines"
 }
 
 Write-Info "Build Configuration"

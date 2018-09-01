@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\tests\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;$(CmdDefineConstants)</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <SolutionPlatform>anycpu</SolutionPlatform>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\tests\</OutputPath>
-    <DefineConstants>TRACE;$(CmdDefineConstants)</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
