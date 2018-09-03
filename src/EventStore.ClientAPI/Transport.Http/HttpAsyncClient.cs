@@ -21,15 +21,15 @@ namespace EventStore.ClientAPI.Transport.Http
             ServicePointManager.DefaultConnectionLimit = 800;
         }
 
-        public HttpAsyncClient(TimeSpan timeout) 
+        public HttpAsyncClient(TimeSpan timeout)
         {
             _client = new HttpClient();
             _client.Timeout = timeout;
         }
 
         public void Get(string url, UserCredentials userCredentials,
-                        Action<HttpResponse> onSuccess, Action<Exception> onException,
-                        string hostHeader = "")
+            Action<HttpResponse> onSuccess, Action<Exception> onException,
+            string hostHeader = "")
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         public void Post(string url, string body, string contentType, UserCredentials userCredentials,
-                         Action<HttpResponse> onSuccess, Action<Exception> onException)
+            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(body, "body");
@@ -51,7 +51,7 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         public void Delete(string url, UserCredentials userCredentials,
-                           Action<HttpResponse> onSuccess, Action<Exception> onException)
+            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(onSuccess, "onSuccess");
@@ -61,7 +61,7 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         public void Put(string url, string body, string contentType, UserCredentials userCredentials,
-                        Action<HttpResponse> onSuccess, Action<Exception> onException)
+            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             Ensure.NotNull(url, "url");
             Ensure.NotNull(body, "body");
@@ -73,17 +73,13 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         private void Receive(string method, string url, UserCredentials userCredentials,
-                             Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = "")
+            Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = "")
         {
             var request = new HttpRequestMessage();
-//MONOCHECK IS THIS STILL NEEDED?
-#if MONO
-            request.Headers.Add("Keep-alive", "false");
-#endif
             request.RequestUri = new Uri(url);
             request.Method = new System.Net.Http.HttpMethod(method);
 
-            if(userCredentials != null)
+            if (userCredentials != null)
                 AddAuthenticationHeader(request, userCredentials);
 
             if (!string.IsNullOrWhiteSpace(hostHeader))
@@ -94,7 +90,7 @@ namespace EventStore.ClientAPI.Transport.Http
         }
 
         private void Send(string method, string url, string body, string contentType, UserCredentials userCredentials,
-                          Action<HttpResponse> onSuccess, Action<Exception> onException)
+            Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = new HttpRequestMessage();
             request.RequestUri = new Uri(url);
@@ -133,7 +129,7 @@ namespace EventStore.ClientAPI.Transport.Http
                     var responseMsg = task.Result;
                     state.Response = new HttpResponse(responseMsg);
                     responseMsg.Content.ReadAsStringAsync()
-                            .ContinueWith(ResponseRead(state));
+                        .ContinueWith(ResponseRead(state));
                 }
                 catch (Exception ex)
                 {
@@ -143,16 +139,17 @@ namespace EventStore.ClientAPI.Transport.Http
             };
         }
 
-        private Action<Task<string>> ResponseRead(ClientOperationState state) 
+        private Action<Task<string>> ResponseRead(ClientOperationState state)
         {
-            return task => {
-                try 
+            return task =>
+            {
+                try
                 {
                     state.Response.Body = task.Result;
                     state.Dispose();
                     state.OnSuccess(state.Response);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     state.Dispose();
                     state.OnError(ex);
