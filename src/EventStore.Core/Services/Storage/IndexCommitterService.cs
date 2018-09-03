@@ -226,10 +226,10 @@ namespace EventStore.Core.Services.Storage
         {
             if(_state != VNodeState.Master || _commitCount == 1)
             {
-                _replicatedQueue.Enqueue(message);
 #if DEBUG
                 _queueStats.Enqueued();
 #endif
+                _replicatedQueue.Enqueue(message);
                 _addMsgSignal.Set();
                 return;
             }
@@ -256,10 +256,10 @@ namespace EventStore.Core.Services.Storage
 
         private void CommitReplicated(StorageMessage.CommitAck message)
         {
-            _replicatedQueue.Enqueue(message);
 #if DEBUG
             _queueStats.Enqueued();
 #endif
+            _replicatedQueue.Enqueue(message);
             _addMsgSignal.Set();
         }
 
