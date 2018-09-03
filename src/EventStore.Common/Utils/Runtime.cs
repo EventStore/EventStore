@@ -10,5 +10,7 @@ namespace EventStore.Common.Utils
                                                   | Environment.OSVersion.Platform == PlatformID.MacOSX;
 
         public static readonly bool IsWindows = !IsUnixOrMac;
+
+        public static readonly bool IsMacOS = Environment.OSVersion.Platform == PlatformID.MacOSX;
     }
 }

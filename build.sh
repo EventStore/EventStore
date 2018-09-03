@@ -40,7 +40,7 @@ EOF
 
 CONFIGURATION="Release"
 BUILDUI="no"
-DEFINES="USE_UNIX_IO MONO"
+DEFINES="MONO"
 
 function checkParams() {
     version=$1

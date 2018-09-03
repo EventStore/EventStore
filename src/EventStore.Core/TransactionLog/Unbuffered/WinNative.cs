@@ -5,8 +5,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-#if !USE_UNIX_IO
-    internal unsafe static class WinNative
+    internal static unsafe class WinNative
     {
         [DllImport("KERNEL32", SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         public static extern bool GetDiskFreeSpace(string path,
@@ -28,9 +27,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         (
             SafeFileHandle hFile,
             byte* pBuffer,
-            int NumberOfBytesToRead,
+            int numberOfBytesToRead,
             ref int pNumberOfBytesRead,
-            int Overlapped
+            int overlapped
         );
 
         [DllImport("kernel32.dll")]
@@ -71,9 +70,10 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         public static extern bool CloseHandle(IntPtr hObject);
 
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int SetFilePointer(SafeFileHandle handle, int lDistanceToMove, out int lpDistanceToMoveHigh, EMoveMethod dwMoveMethod);
+        public static extern int SetFilePointer(SafeFileHandle handle, int lDistanceToMove,
+            out int lpDistanceToMoveHigh, EMoveMethod dwMoveMethod);
 
+        // ReSharper disable once InconsistentNaming
         public const int INVALID_SET_FILE_POINTER = -1;
     }
-#endif
 }
