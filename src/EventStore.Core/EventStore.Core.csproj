@@ -33,6 +33,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
     <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
   </ItemGroup>
