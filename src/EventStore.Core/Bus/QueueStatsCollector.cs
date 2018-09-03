@@ -43,13 +43,11 @@ namespace EventStore.Core.Bus
         private Type _inProgressMsgType;
 
         private bool _wasIdle;
-        private bool _started = false;
 
 #if DEBUG
-        private int _activeItems = 0; //number of items pending to be processed if the queue is started
-        private int _pendingItems = 0; //number of items pending to be processed if the queue is stopped
+        private bool _started = false; //whether the queue has been started or not
+        private int _curItems = 0; //current number of items on the queue
 #endif
-
         public QueueStatsCollector(string name, string groupName = null)
         {
             Ensure.NotNull(name, "name");
@@ -60,13 +58,13 @@ namespace EventStore.Core.Bus
 
         public void Start()
         {
-            Debug.Assert(!_started, string.Format("QueueStatsCollector [{0}] was already started when Start() entered",Name));
-            _started = true;
             _totalTimeWatch.Start();
 #if DEBUG
-            Interlocked.Add(ref _length, _pendingItems);
-            _activeItems = _pendingItems;
-            _pendingItems = 0;
+            Debug.Assert(!_started, string.Format("QueueStatsCollector [{0}] was already started when Start() entered",Name));
+            lock(_itemsUpdateLock){
+                _started = true;
+                _lengths += _curItems;
+            }
 
             if (_notifyLock != null)
             {
@@ -81,15 +79,18 @@ namespace EventStore.Core.Bus
 
         public void Stop()
         {
-            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Stop() entered",Name));
 #if DEBUG
-            Interlocked.Add(ref _length, -_activeItems);
-            _pendingItems = _activeItems;
-            _activeItems = 0;
+            Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Stop() entered",Name));
 #endif
             EnterIdle();
             _totalTimeWatch.Stop();
-            _started = false;
+#if DEBUG
+            lock(_itemsUpdateLock){
+                _started = false;
+                _lengths -= _curItems;
+                Debug.Assert(_lengths >= 0,string.Format("QueueStatsCollector [{0}] _lengths = {1} < 0",Name,_lengths));
+            }
+#endif
         }
 
         public void ProcessingStarted<T>(int queueLength)
@@ -114,7 +115,9 @@ namespace EventStore.Core.Bus
 
         public void EnterIdle()
         {
+#if DEBUG
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when EnterIdle() entered",Name));
+#endif
             if (_wasIdle)
                 return;
             _wasIdle = true;
@@ -124,7 +127,7 @@ namespace EventStore.Core.Bus
                 lock (_notifyLock)
                 {
                     _nonIdle = NonIdle - 1;
-                    Debug.Assert(_nonIdle >= 0,string.Format("_nonIdle = {0} < 0",_nonIdle));
+                    Debug.Assert(_nonIdle >= 0,string.Format("QueueStatsCollector [{0}] _nonIdle = {1} < 0",Name,_nonIdle));
                     if (NonIdle == 0)
                     {
                         Monitor.Pulse(_notifyLock);
@@ -147,7 +150,9 @@ namespace EventStore.Core.Bus
 
         public void EnterBusy()
         {
+#if DEBUG
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when EnterBusy() entered",Name));
+#endif
             if (!_wasIdle)
                 return;
             _wasIdle = false;
@@ -217,10 +222,11 @@ namespace EventStore.Core.Bus
 
 #if DEBUG
         private static object _notifyLock;
+        private static object _itemsUpdateLock = new object();
         private static int _nonIdle = 0;
         private static ICheckpoint[] _writerCheckpoint = new ICheckpoint[3];
         private static ICheckpoint[] _chaserCheckpoint = new ICheckpoint[3];
-        private static int _length; //sum of lengths of all active (started) queues
+        private static int _lengths = 0; //sum of lengths of all active (started) queues
         public static bool DumpMessages;
 
         public static void InitializeIdleDetection(bool enable = true)
@@ -228,7 +234,7 @@ namespace EventStore.Core.Bus
             if (enable)
             {
                 _nonIdle = 0;
-                _length = 0;
+                _lengths = 0;
                 _notifyLock = new object();
                 _writerCheckpoint = new ICheckpoint[3];
                 _chaserCheckpoint = new ICheckpoint[3];
@@ -251,7 +257,7 @@ namespace EventStore.Core.Bus
                 var successes = 0;
                 while (successes < 2)
                 {
-                    while (_nonIdle > 0 || _length > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
+                    while (_nonIdle > 0 || _lengths > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
                            || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()
                            || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0))
                     {
@@ -303,14 +309,14 @@ namespace EventStore.Core.Bus
         public void Enqueued()
         {
 #if DEBUG
-            if(_started){
-                Interlocked.Increment(ref _length);
-                _activeItems++;
-            } else{
-                //if the queue is stopped, do not increment _length
-                //This is particularly important for idle detection in WaitIdle() since items published on a stopped queue may never be dequeued and WaitIdle() will wait indefinitely.
-                //If ever the queue is started again, _pendingItems will be added to _length.
-                _pendingItems ++;
+            lock(_itemsUpdateLock){
+                _curItems++;
+                if(_started){
+                    //if the queue is stopped, do not increment _lengths
+                    //This is particularly important for idle detection in WaitIdle() since items published on a stopped queue may never be dequeued and WaitIdle() will wait indefinitely.
+                    //If ever the queue is started again, _pendingItems will be added to _lengths.
+                    _lengths++;
+                }
             }
 #endif
         }
@@ -320,9 +326,15 @@ namespace EventStore.Core.Bus
         {
 #if DEBUG
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Dequeued() entered",Name));
-            Interlocked.Decrement(ref _length);
-            _activeItems--;
-            Debug.Assert(_length >= 0,string.Format("_length = {0} < 0",_length));
+            lock(_itemsUpdateLock){
+                if(_started){
+                    _curItems--;
+                    _lengths--;
+                    Debug.Assert(_curItems >= 0,string.Format("QueueStatsCollector [{0}] _curItems = {1} < 0",Name,_curItems));
+                    Debug.Assert(_lengths >= 0,string.Format("QueueStatsCollector [{0}] _lengths = {1} < 0",Name,_lengths));
+                }
+            }
+
             if (DumpMessages)
             {
                 Console.WriteLine(msg.GetType().Namespace + "." + msg.GetType().Name);
