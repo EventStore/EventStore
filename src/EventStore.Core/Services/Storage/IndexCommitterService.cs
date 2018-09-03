@@ -11,6 +11,7 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -46,11 +47,7 @@ namespace EventStore.Core.Services.Storage
                             new ConcurrentDictionary<long, PendingTransaction>();
 
         private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
-#if MONO
-        private readonly AutoResetEvent _addMsgSignal = new AutoResetEvent(false);
-#else
-        private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim();
-#endif
+        private readonly PlatformEvent _addMsgSignal = new PlatformEvent();
         private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
 
         public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount)
@@ -106,11 +103,7 @@ namespace EventStore.Core.Services.Storage
                     else
                     {
                         _queueStats.EnterIdle();
-#if MONO
-                        _addMsgSignal.WaitOne(_waitTimeoutMs);
-#else
                         _addMsgSignal.Wait(_waitTimeoutMs);
-#endif
                     }
                 }
             }
