@@ -39,6 +39,8 @@ src/EventStore/EventStore.ClientAPI/Properties/AssemblyVersion.cs
 out
 obj
 bin
+dependencies
+
 *.csproj.user
 *ReSharper*
 *resharper*
@@ -56,7 +58,6 @@ src/.vs/
 !*.csproj.ReSharper
 
 Release
-Build
 Debug
 
 *.vssscc

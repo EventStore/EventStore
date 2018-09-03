@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
     <Platform>x64</Platform>
@@ -8,11 +9,6 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="protobuf-net" Version="2.3.17" />
+    <PackageReference Include="YamlDotNet" Version="5.0.1" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup />
 </Project>
