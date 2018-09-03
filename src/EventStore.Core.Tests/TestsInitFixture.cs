@@ -70,11 +70,11 @@ namespace EventStore.Core.Tests
         }
 
         public override void Fail(string message){
-            throw new AssertionException(message);
+            Assert.Fail(message);
         }
         public override void Fail(string message, string detailMessage){
             var msg = message + detailMessage!=null?" "+detailMessage:"";
-            throw new AssertionException(msg);
+            Assert.Fail(msg);
         }
 
         public override void Write(string message)
