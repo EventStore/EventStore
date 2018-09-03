@@ -9,31 +9,27 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage
 {
     public class StorageChaser : IMonitoredQueue,
-                                 IHandle<SystemMessage.SystemInit>,
-                                 IHandle<SystemMessage.SystemStart>,
-                                 IHandle<SystemMessage.BecomeShuttingDown>
+        IHandle<SystemMessage.SystemInit>,
+        IHandle<SystemMessage.SystemStart>,
+        IHandle<SystemMessage.BecomeShuttingDown>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageChaser>();
 
-        private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+        private static readonly int TicksPerMs = (int) (Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
-#if MONO
-        private readonly AutoResetEvent _flushSignal = new AutoResetEvent(false);
-#else
-        private readonly ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
-#endif
+        private static readonly PlatformEvent FlushSignal = new PlatformEvent();
         private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(10);
 
-        public string Name { get { return _queueStats.Name; } }
+        public string Name => _queueStats.Name;
 
         private readonly IPublisher _masterBus;
         private readonly ICheckpoint _writerCheckpoint;
@@ -52,14 +48,14 @@ namespace EventStore.Core.Services.Storage
 
         private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
         private bool _commitsAfterEof;
-        private const string _chaserWaitHistogram = "chaser-wait";
-        private const string _chaserFlushHistogram = "chaser-flush";
+        private const string ChaserWaitHistogram = "chaser-wait";
+        private const string ChaserFlushHistogram = "chaser-flush";
 
         public StorageChaser(IPublisher masterBus,
-                             ICheckpoint writerCheckpoint,
-                             ITransactionFileChaser chaser,
-                             IIndexCommitterService indexCommitterService,
-                             IEpochManager epochManager)
+            ICheckpoint writerCheckpoint,
+            ITransactionFileChaser chaser,
+            IIndexCommitterService indexCommitterService,
+            IEpochManager epochManager)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -126,6 +122,7 @@ namespace EventStore.Core.Services.Storage
                 {
                     Thread.Sleep(100);
                 }
+
                 _queueStats.ProcessingEnded(0);
             }
 
@@ -142,14 +139,14 @@ namespace EventStore.Core.Services.Storage
 
         private void OnWriterFlushed(long obj)
         {
-            _flushSignal.Set();
+            FlushSignal.Set();
         }
 
         private void ChaserIteration()
         {
             _queueStats.EnterBusy();
 
-            _flushSignal.Reset(); // Reset the flush signal just before a read to reduce pointless reads from [flush flush read] patterns.
+            FlushSignal.Reset(); // Reset the flush signal just before a read to reduce pointless reads from [flush flush read] patterns.
 
             var result = _chaser.TryReadNext();
 
@@ -166,8 +163,8 @@ namespace EventStore.Core.Services.Storage
                 _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                 var startflush = _watch.ElapsedTicks;
                 _chaser.Flush();
-                HistogramService.SetValue(_chaserFlushHistogram,
-                            (long)((((double)_watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
+                HistogramService.SetValue(ChaserFlushHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - startflush) / Stopwatch.Frequency) * 1000000000));
                 _queueStats.ProcessingEnded(1);
 
                 var end = _watch.ElapsedTicks;
@@ -179,13 +176,9 @@ namespace EventStore.Core.Services.Storage
             {
                 _queueStats.EnterIdle();
                 var startwait = _watch.ElapsedTicks;
-#if MONO
-                _flushSignal.WaitOne(FlushWaitTimeout);
-#else
-                _flushSignal.Wait(FlushWaitTimeout);
-#endif
-                HistogramService.SetValue(_chaserWaitHistogram,
-                    (long)((((double)_watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
+                FlushSignal.Wait(FlushWaitTimeout);
+                HistogramService.SetValue(ChaserWaitHistogram,
+                    (long) ((((double) _watch.ElapsedTicks - startwait) / Stopwatch.Frequency) * 1000000000));
             }
         }
 
@@ -202,7 +195,7 @@ namespace EventStore.Core.Services.Storage
                 case LogRecordType.Commit:
                 {
                     _commitsAfterEof = !result.Eof;
-                    var record = (CommitLogRecord)result.LogRecord;
+                    var record = (CommitLogRecord) result.LogRecord;
                     ProcessCommitRecord(record, result.RecordPostPosition);
                     break;
                 }
@@ -215,6 +208,7 @@ namespace EventStore.Core.Services.Storage
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
             if (result.Eof && result.LogRecord.RecordType != LogRecordType.Commit && _commitsAfterEof)
             {
                 _commitsAfterEof = false;
@@ -248,17 +242,19 @@ namespace EventStore.Core.Services.Storage
                         firstEventNumber = record.ExpectedVersion + 1;
                         lastEventNumber = record.ExpectedVersion;
                     }
+
                     _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
-                                                                    record.LogPosition,
-                                                                    record.TransactionPosition,
-                                                                    firstEventNumber,
-                                                                    lastEventNumber,
-                                                                    true));
+                        record.LogPosition,
+                        record.TransactionPosition,
+                        firstEventNumber,
+                        lastEventNumber,
+                        true));
                 }
             }
             else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd))
             {
-                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
+                _masterBus.Publish(
+                    new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
             }
         }
 
@@ -271,7 +267,8 @@ namespace EventStore.Core.Services.Storage
             _indexCommitterService.AddPendingCommit(record, postPosition);
             if (lastEventNumber == EventNumber.Invalid)
                 lastEventNumber = record.FirstEventNumber - 1;
-            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition, record.TransactionPosition, firstEventNumber, lastEventNumber, true));
+            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition,
+                record.TransactionPosition, firstEventNumber, lastEventNumber, true));
         }
 
         private void ProcessSystemRecord(SystemLogRecord record)
