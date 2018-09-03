@@ -171,35 +171,82 @@ namespace EventStore.Rags
             return FormatAsTable(columnHeaders, rows, "   ");
         }
 
-        private static ConsoleString FormatAsTable(List<ConsoleString> columns, List<List<ConsoleString>> rows, string rowPrefix = "")
+        private static ConsoleString FormatAsTable(List<ConsoleString> columns, List<List<ConsoleString>> rows, string rowPrefix = "") {
+		if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+			return FormatAsTableWindows(columns, rows, rowPrefix);
+		} else {
+			return FormatAsTableUnix(columns, rows, rowPrefix);
+		}
+	}
+
+        private static ConsoleString FormatAsTableWindows(List<ConsoleString> columns, List<List<ConsoleString>> rows, string rowPrefix = "")
         {
             if (rows.Count == 0) return new ConsoleString();
 
             Dictionary<int, int> maximums = new Dictionary<int, int>();
 
-#if __MonoCS__
-            int optionDescriptionWidth = 20;
-            int standardColumnWidth = 80;
-
-            List<int> columnWidths = new List<int>();
-#endif
-
             for (int i = 0; i < columns.Count; i++)
             {
-#if __MonoCS__
-                columnWidths.Add(i == 0 ? optionDescriptionWidth : standardColumnWidth - optionDescriptionWidth);
-#endif
                 maximums.Add(i, columns[i].Length);
             }
             for (int i = 0; i < columns.Count; i++)
             {
                 foreach (var row in rows)
                 {
-#if __MonoCS__
-                       maximums[i] = columnWidths[i];
-#else
                     maximums[i] = Math.Max(maximums[i], row[i].Length);
-#endif
+                }
+            }
+
+            ConsoleString ret = new ConsoleString();
+            int buffer = 3;
+
+            ret += rowPrefix;
+            for (int i = 0; i < columns.Count; i++)
+            {
+                var val = columns[i];
+                while (val.Length < maximums[i] + buffer) val += " ";
+                ret += val;
+            }
+
+            ret += "\n";
+
+            foreach (var row in rows)
+            {
+                ret += rowPrefix;
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    var val = row[i];
+                    while (val.Length < maximums[i] + buffer) val += " ";
+
+                    ret += val;
+                }
+                ret += "\n";
+            }
+
+            return ret;
+        }
+        
+	private static ConsoleString FormatAsTableUnix(List<ConsoleString> columns, List<List<ConsoleString>> rows, string rowPrefix = "")
+        {
+            if (rows.Count == 0) return new ConsoleString();
+
+            Dictionary<int, int> maximums = new Dictionary<int, int>();
+
+            int optionDescriptionWidth = 20;
+            int standardColumnWidth = 80;
+
+            List<int> columnWidths = new List<int>();
+
+            for (int i = 0; i < columns.Count; i++)
+            {
+                columnWidths.Add(i == 0 ? optionDescriptionWidth : standardColumnWidth - optionDescriptionWidth);
+                maximums.Add(i, columns[i].Length);
+            }
+            for (int i = 0; i < columns.Count; i++)
+            {
+                foreach (var row in rows)
+                {
+                    maximums[i] = columnWidths[i];
                 }
             }
 
