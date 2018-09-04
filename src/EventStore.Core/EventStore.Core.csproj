@@ -23,14 +23,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
-  <!-- TODO(jen20): Decide which bits here are correct -->
-  <Choose>
-    <When Condition=" '$(OS)' == 'Unix' ">
-      <ItemGroup>
-        <Reference Include="Mono.Posix" />
-      </ItemGroup>
-    </When>
-  </Choose>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
