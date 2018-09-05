@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Bus
 {
@@ -39,6 +40,8 @@ namespace EventStore.Core.Bus
         private readonly QueueStatsCollector _queueStats;
 
         private readonly object _locker = new object();
+        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+
 
         public QueuedHandlerPulse(IHandle<Message> consumer,
                                   string name,
@@ -59,7 +62,7 @@ namespace EventStore.Core.Bus
             _queueStats = new QueueStatsCollector(name, groupName);
         }
 
-        public void Start()
+        public Task Start()
         {
             if (_thread != null)
                 throw new InvalidOperationException("Already a thread running.");
@@ -70,6 +73,7 @@ namespace EventStore.Core.Bus
 
             _thread = new Thread(ReadFromQueue) { IsBackground = true, Name = Name };
             _thread.Start();
+            return _tcs.Task;
         }
 
         public void Stop()
@@ -86,6 +90,7 @@ namespace EventStore.Core.Bus
 
         private void ReadFromQueue(object o)
         {
+        try{
             _queueStats.Start();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             
@@ -141,6 +146,9 @@ namespace EventStore.Core.Bus
                 catch (Exception ex)
                 {
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, Name);
+#if DEBUG
+                    throw;
+#endif
                 }
             }
             _queueStats.Stop();
@@ -148,6 +156,12 @@ namespace EventStore.Core.Bus
             _stopped.Set();
             _queueMonitor.Unregister(this);
             Thread.EndThreadAffinity();
+        }
+        catch(Exception ex){
+            _tcs.TrySetException(ex);
+            throw;
+        }
+
         }
 
         public void Publish(Message message)

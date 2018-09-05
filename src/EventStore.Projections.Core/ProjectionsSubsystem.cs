@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -70,16 +71,18 @@ namespace EventStore.Projections.Core
         }
 
 
-        public void Start()
+        public IEnumerable<Task> Start()
         {
+            var tasks = new List<Task>();
             if(_subsystemStarted == false)
             {
                 if (_masterInputQueue != null)
-                    _masterInputQueue.Start();
+                    tasks.Add(_masterInputQueue.Start());
                 foreach (var queue in _coreQueues)
-                    queue.Value.Start();
+                    tasks.Add(queue.Value.Start());
             }
             _subsystemStarted = true;
+            return tasks;
         }
 
         public void Stop()

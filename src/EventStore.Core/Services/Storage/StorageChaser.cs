@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -50,6 +51,9 @@ namespace EventStore.Core.Services.Storage
         private bool _commitsAfterEof;
         private const string ChaserWaitHistogram = "chaser-wait";
         private const string ChaserFlushHistogram = "chaser-flush";
+
+        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+        public Task Task { get {return _tcs.Task;} }
 
         public StorageChaser(IPublisher masterBus,
             ICheckpoint writerCheckpoint,
@@ -88,11 +92,11 @@ namespace EventStore.Core.Services.Storage
 
         private void ChaseTransactionLog()
         {
-            _queueStats.Start();
-            QueueMonitor.Default.Register(this);
-
             try
             {
+                _queueStats.Start();
+                QueueMonitor.Default.Register(this);
+
                 _writerCheckpoint.Flushed += OnWriterFlushed;
 
                 _chaser.Open();
@@ -117,6 +121,7 @@ namespace EventStore.Core.Services.Storage
                 Log.FatalException(exc, "Error in StorageChaser. Terminating...");
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedChaserState>(0);
+                _tcs.TrySetException(exc);
                 Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {
