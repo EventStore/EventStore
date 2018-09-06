@@ -135,6 +135,9 @@ namespace EventStore.Core.Bus
                     }
                 }
 
+                _queueStats.EnterIdle();
+                _stopped.Set();
+
                 Interlocked.CompareExchange(ref _isRunning, 0, 1);
                 // try to reacquire lock if needed
                 proceed = !_stop && _queue.Count > 0 && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0; 
