@@ -530,6 +530,7 @@ namespace EventStore.Core
             // MASTER REPLICATION
                 var masterReplicationService = new MasterReplicationService(_mainQueue, gossipInfo.InstanceId, db, _workersHandler,
                                                                         epochManager, vNodeSettings.ClusterNodeCount);
+                AddTask(masterReplicationService.Task);
                 _mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
                 _mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
                 _mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
