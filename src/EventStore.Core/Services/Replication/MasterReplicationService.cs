@@ -380,9 +380,7 @@ namespace EventStore.Core.Services.Replication
             _publisher.Publish(new SystemMessage.ServiceShutdown(Name));
             }
             catch(Exception ex){
-#if DEBUG
                 _tcs.TrySetException(ex);
-#endif
                 throw;
             }
             finally{

@@ -124,9 +124,7 @@ namespace EventStore.Core.Services.Storage
                 Log.FatalException(exc, "Error in StorageChaser. Terminating...");
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedChaserState>(0);
-#if DEBUG
                 _tcs.TrySetException(exc);
-#endif
                 Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {

@@ -150,9 +150,7 @@ namespace EventStore.Core.Bus
             }
         }
         catch(Exception ex){
-#if DEBUG
             _tcs.TrySetException(ex);
-#endif
             throw;
         }
         finally{

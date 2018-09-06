@@ -123,9 +123,7 @@ namespace EventStore.Core.Services.Storage
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
                 Log.FatalException(exc, "Error in IndexCommitterService. Terminating...");
-#if DEBUG
                 _tcs.TrySetException(exc);
-#endif
                 Application.Exit(ExitCode.Error, "Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {
