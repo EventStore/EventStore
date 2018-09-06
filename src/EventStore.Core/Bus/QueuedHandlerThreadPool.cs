@@ -136,6 +136,7 @@ namespace EventStore.Core.Bus
                 }
 
                 _queueStats.EnterIdle();
+                _queueStats.Stop();
                 _stopped.Set();
 
                 Interlocked.CompareExchange(ref _isRunning, 0, 1);
