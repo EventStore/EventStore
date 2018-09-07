@@ -77,14 +77,10 @@ namespace EventStore.Core.Bus
             EnterIdle();
         }
 
-        public void Stop(bool allowMultipleCalls=false)
+        public void Stop()
         {
 #if DEBUG
-        if(!allowMultipleCalls)
             Debug.Assert(_started, string.Format("QueueStatsCollector [{0}] was not started when Stop() entered",Name));
-
-        if(!_started)
-            return;
 #endif
             EnterIdle();
             _totalTimeWatch.Stop();
