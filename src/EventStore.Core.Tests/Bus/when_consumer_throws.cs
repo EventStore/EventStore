@@ -31,6 +31,9 @@ namespace EventStore.Core.Tests.Bus
         [Test]
         public void all_messages_in_the_queue_should_be_delivered()
         {
+#if DEBUG
+            Assert.Ignore("This test is not supported with DEBUG conditional since all exceptions are thrown in DEBUG builds.");
+#else
             Consumer.SetWaitingCount(3);
 
             Queue.Publish(new TestMessage());
@@ -46,6 +49,7 @@ namespace EventStore.Core.Tests.Bus
             Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage>());
             Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<ExecutableTestMessage>());
             Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage2>());
+#endif
         }
     }
 
