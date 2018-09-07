@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    internal unsafe class NativeFileWindows : INativeFile
+    public unsafe class NativeFileWindows : INativeFile
     {
         public uint GetDriveSectorSize(string path)
         {

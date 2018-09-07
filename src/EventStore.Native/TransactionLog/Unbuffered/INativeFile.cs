@@ -3,7 +3,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    internal interface INativeFile
+    public interface INativeFile
     {
         uint GetDriveSectorSize(string path);
         long GetPageSize(string path);

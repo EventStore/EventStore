@@ -8,7 +8,7 @@ using Mono.Unix.Native;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
 {
-    internal unsafe class NativeFileUnix : INativeFile
+    public unsafe class NativeFileUnix : INativeFile
     {
         public uint GetDriveSectorSize(string path)
         {
