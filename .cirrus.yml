@@ -8,7 +8,7 @@ task:
         compile_script: 
                 - dotnet msbuild /target:restore,compile src/EventStore.sln
         test_script:
-                - dotnet test $(find ./src -maxdepth 1 -type d -name "*.Tests")
+                - find ./src -type f -name "*.Tests.csproj" -exec dotnet test {} \;
 
 task:
         name: Build (.NET Framework 4.7.2/Windows)
@@ -35,5 +35,5 @@ task:
         compile_script:
                 - dotnet msbuild /target:restore,compile src/EventStore.sln
         test_script:
-                - dotnet test $(find ./src -maxdepth 1 -type d -name "*.Tests")
+                - find ./src -type f -name "*.Tests.csproj" -exec dotnet test {} \;
 
