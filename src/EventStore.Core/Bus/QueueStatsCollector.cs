@@ -17,13 +17,6 @@ namespace EventStore.Core.Bus
         public readonly string GroupName;
 
         public Type InProgressMessage { get { return _inProgressMsgType; } }
-
-#if DEBUG
-        public static int NonIdle
-        {
-            get { return _nonIdle; }
-        }
-#endif
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
 
         private readonly Stopwatch _busyWatch = new Stopwatch();
@@ -126,9 +119,9 @@ namespace EventStore.Core.Bus
             {
                 lock (_notifyLock)
                 {
-                    _nonIdle = NonIdle - 1;
+                    _nonIdle--;
                     Debug.Assert(_nonIdle >= 0,string.Format("QueueStatsCollector [{0}] _nonIdle = {1} < 0",Name,_nonIdle));
-                    if (NonIdle == 0)
+                    if (_nonIdle == 0)
                     {
                         Monitor.Pulse(_notifyLock);
                     }
@@ -162,7 +155,7 @@ namespace EventStore.Core.Bus
             {
                 lock (_notifyLock)
                 {
-                    _nonIdle = NonIdle + 1;
+                    _nonIdle++;
                 }
             }
 #endif
