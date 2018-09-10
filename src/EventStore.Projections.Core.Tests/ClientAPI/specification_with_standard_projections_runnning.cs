@@ -148,11 +148,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
             if (_node != null)
                 _node.Shutdown();
-
-            base.TestFixtureTearDown();
 #if DEBUG
-            QueueStatsCollector.InitializeIdleDetection(false);
+            QueueStatsCollector.DisableIdleDetection();
 #endif
+            base.TestFixtureTearDown();
         }
 
         protected virtual void When()

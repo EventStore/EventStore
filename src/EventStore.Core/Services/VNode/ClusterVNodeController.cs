@@ -407,17 +407,17 @@ namespace EventStore.Core.Services.VNode
             {
                 Log.ErrorException(exc, "Error when publishing {0}.", message);
             }
+            try
+            {
+                _node.WorkersHandler.Stop();
+                _mainQueue.RequestStop();
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when stopping workers/main queue.");
+            }
             if (_exitProcessOnShutdown)
             {
-                try
-                {
-                    _node.WorkersHandler.Stop();
-                    _mainQueue.RequestStop();
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
-                }
                 Application.Exit(ExitCode.Success, "Shutdown and exit from process was requested.");
             }
         }
