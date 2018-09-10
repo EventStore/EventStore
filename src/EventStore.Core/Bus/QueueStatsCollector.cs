@@ -241,7 +241,7 @@ namespace EventStore.Core.Bus
 #endif
 
         [Conditional("DEBUG")]
-        public static void WaitIdle(bool waitForNonEmptyTf = false, int multiplier = 1)
+        public static void WaitIdle(bool waitForCheckpoints = true,bool waitForNonEmptyTf = false, int multiplier = 1)
         {
 #if DEBUG
             var counter = 0;
@@ -250,8 +250,8 @@ namespace EventStore.Core.Bus
                 var successes = 0;
                 while (successes < 2)
                 {
-                    while (_nonIdle > 0 || _lengths > 0 || AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
-                           || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()
+                    while (_nonIdle > 0 || _lengths > 0 || (waitForCheckpoints && (AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
+                           || AreCheckpointsDifferent(2) || AnyCheckpointsDifferent()))
                            || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0))
                     {
                         if (!Monitor.Wait(_notifyLock, 100))

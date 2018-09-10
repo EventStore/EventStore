@@ -167,10 +167,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             _nodes[0].Shutdown();
             _nodes[1].Shutdown();
             _nodes[2].Shutdown();
-            base.TestFixtureTearDown();
 #if DEBUG
+            QueueStatsCollector.WaitIdle(waitForCheckpoints: false, waitForNonEmptyTf: false);
             QueueStatsCollector.InitializeIdleDetection(false);
 #endif
+            base.TestFixtureTearDown();
         }
 
         protected virtual void When()
