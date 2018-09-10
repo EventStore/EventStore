@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -54,6 +55,8 @@ namespace EventStore.Core.Services.Storage
         private bool _commitsAfterEof;
         private const string _chaserWaitHistogram = "chaser-wait";
         private const string _chaserFlushHistogram = "chaser-flush";
+        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+        public Task Task { get {return _tcs.Task;} }
 
         public StorageChaser(IPublisher masterBus,
                              ICheckpoint writerCheckpoint,
@@ -92,11 +95,11 @@ namespace EventStore.Core.Services.Storage
 
         private void ChaseTransactionLog()
         {
-            _queueStats.Start();
-            QueueMonitor.Default.Register(this);
-
             try
             {
+                _queueStats.Start();
+                QueueMonitor.Default.Register(this);
+
                 _writerCheckpoint.Flushed += OnWriterFlushed;
 
                 _chaser.Open();
@@ -121,6 +124,7 @@ namespace EventStore.Core.Services.Storage
                 Log.FatalException(exc, "Error in StorageChaser. Terminating...");
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedChaserState>(0);
+                _tcs.TrySetException(exc);
                 Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {
@@ -128,16 +132,14 @@ namespace EventStore.Core.Services.Storage
                 }
                 _queueStats.ProcessingEnded(0);
             }
+            finally{
+                _queueStats.Stop();
+                QueueMonitor.Default.Unregister(this);
+            }
 
             _writerCheckpoint.Flushed -= OnWriterFlushed;
-
             _chaser.Close();
-
             _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
-
-            _queueStats.EnterIdle();
-            _queueStats.Stop();
-            QueueMonitor.Default.Unregister(this);
         }
 
         private void OnWriterFlushed(long obj)

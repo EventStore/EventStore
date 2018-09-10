@@ -456,8 +456,9 @@ namespace EventStore.Core.Services.VNode
         private void Handle(UserManagementMessage.UserManagementServiceInitialized message)
         {
             if (_subSystems != null){
-                foreach (var subsystem in _subSystems)
-                    subsystem.Start();
+                foreach (var subsystem in _subSystems){
+                    _node.AddTasks(subsystem.Start());
+                }
             }
             _outputBus.Publish(message);
             _fsm.Handle(new SystemMessage.SystemCoreReady());

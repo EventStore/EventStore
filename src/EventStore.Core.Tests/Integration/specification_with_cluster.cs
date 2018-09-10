@@ -135,6 +135,10 @@ namespace EventStore.Core.Tests.Integration
             _nodes[0].Shutdown();
             _nodes[1].Shutdown();
             _nodes[2].Shutdown();
+#if DEBUG
+            QueueStatsCollector.WaitIdle(waitForCheckpoints: false, waitForNonEmptyTf: false);
+            QueueStatsCollector.InitializeIdleDetection(false);
+#endif
             base.TestFixtureTearDown();
         }
 
