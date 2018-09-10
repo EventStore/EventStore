@@ -136,6 +136,9 @@ namespace EventStore.Core.Tests.Integration
             _nodes[1].Shutdown();
             _nodes[2].Shutdown();
             base.TestFixtureTearDown();
+#if DEBUG
+            QueueStatsCollector.InitializeIdleDetection(false);
+#endif
         }
 
         protected static void WaitIdle()
