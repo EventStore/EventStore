@@ -39,6 +39,8 @@ namespace EventStore.Core.Bus
         private readonly QueueStatsCollector _queueStats;
 
         private int _isRunning;
+        private int _queueStatsState; //0 - never started, 1 - started, 2 - stopped
+
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
 
@@ -64,7 +66,6 @@ namespace EventStore.Core.Bus
 
         public Task Start()
         {
-            _queueStats.Start();
             _queueMonitor.Register(this);
             return _tcs.Task;
         }
@@ -74,18 +75,31 @@ namespace EventStore.Core.Bus
             _stop = true;
             if (!_stopped.Wait(_threadStopWaitTimeout))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
+            TryStopQueueStats();
             _queueMonitor.Unregister(this);
         }
 
         public void RequestStop()
         {
             _stop = true;
+            TryStopQueueStats();
             _queueMonitor.Unregister(this);
+        }
+
+        private void TryStopQueueStats(){
+            if(Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0){
+                if(Interlocked.CompareExchange(ref _queueStatsState, 2, 1) == 1)
+                    _queueStats.Stop();
+                Interlocked.CompareExchange(ref _isRunning, 0, 1);
+            }
         }
 
         private void ReadFromQueue(object o)
         {
         try{
+            if(Interlocked.CompareExchange(ref _queueStatsState, 1, 0) == 0)
+                _queueStats.Start();
+
             bool proceed = true;
             while (proceed)
             {
@@ -136,11 +150,15 @@ namespace EventStore.Core.Bus
                 }
 
                 _queueStats.EnterIdle();
+                Interlocked.CompareExchange(ref _isRunning, 0, 1);
+                if(_stop){
+                    TryStopQueueStats();
+                }
+
                 _stopped.Set();
 
-                Interlocked.CompareExchange(ref _isRunning, 0, 1);
                 // try to reacquire lock if needed
-                proceed = !_stop && _queue.Count > 0 && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0; 
+                proceed = !_stop && _queue.Count > 0 && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0;
             }
         }
         catch(Exception ex){
@@ -157,7 +175,7 @@ namespace EventStore.Core.Bus
             _queueStats.Enqueued();
 #endif
             _queue.Enqueue(message);
-            if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
+            if (!_stop && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ReadFromQueue);
         }
 
