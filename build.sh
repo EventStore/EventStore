@@ -86,7 +86,7 @@ function checkParams() {
     fi
 
     LIBJS1EXT="so"
-    if [ "$ES_DISTRO" == "osx" ]; then
+    if [[ $ES_DISTRO == "osx"* ]]; then
         LIBJS1EXT="dylib"
     fi
     LIBJS1PATH="$BASE_DIR/src/libs/x64/$CURRENT_DISTRO/libjs1.$LIBJS1EXT"

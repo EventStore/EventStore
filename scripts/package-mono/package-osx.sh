@@ -32,6 +32,9 @@ fi
 if [[ "$customMonoPrefix" == "" ]]; then
     monopath=`which mono`
     toremove="/bin/mono"
+    if [[ "${monopath}" == "/Library/Frameworks/Mono.framework/Versions/"* ]]; then
+        toremove="/Commands/mono"
+    fi
     MONOPREFIX=${monopath:0:${#monopath}-${#toremove}}
     writeLog "Mono prefix defaulted to: $MONOPREFIX"
 else
@@ -55,7 +58,7 @@ else
     exit 1
 fi
 
-for SUBVER in 12 11 10 9 8
+for SUBVER in 13 12 11 10 9 8
 do
     sdkpath=`xcodebuild -sdk -version | grep "MacOSX10.$SUBVER" | tail -1`
     if [[ $sdkpath != "" ]] ; then
@@ -82,6 +85,9 @@ else
 fi
 
 MONOPOSIXHELPER=/usr/local/lib/libMonoPosixHelper.dylib
+if [[ ! -f $MONOPOSIXHELPER ]]; then
+    MONOPOSIXHELPER=$MONOPREFIX/lib/libMonoPosixHelper.dylib
+fi
 if [[ -f $MONOPOSIXHELPER ]] ; then
     writeLog "Using libMonoPosixHelper: $MONOPOSIXHELPER"
 else
@@ -135,7 +141,8 @@ mkbundle -c \
     Newtonsoft.Json.dll \
     NLog.dll \
     protobuf-net.dll \
-    Mono.Security.dll \
+    $MONOPREFIX/lib/mono/4.5/Mono.Security.dll \
+    -L $MONOPREFIX/lib/mono/4.5 \
     --static --deps \
     --config $MONOCONFIG \
     --machine-config $MACHINECONFIG
@@ -145,7 +152,7 @@ sed -i"" -e 's/mono_mkbundle_init();/setenv("MONO_GC_DEBUG", "clear-at-gc", 0);\
         mono_mkbundle_init();/' clusternode.c
 
 gcc \
-    -mmacosx-version-min=10.6 \
+    -mmacosx-version-min=10.7 \
     -o eventstored \
     $ES_COMPILE_FLAGS \
     clusternode.c \
@@ -180,6 +187,7 @@ mkbundle -c \
     Newtonsoft.Json.dll \
     NLog.dll \
     protobuf-net.dll \
+    -L $MONOPREFIX/lib/mono/4.5 \
     --static --deps \
     --config $MONOCONFIG \
     --machine-config $MACHINECONFIG
