@@ -148,15 +148,17 @@ namespace EventStore.Core.Bus
 #endif
                 }
             }
+        }
+        catch(Exception ex){
+            _tcs.TrySetException(ex);
+            throw;
+        }
+        finally{
             _queueStats.Stop();
 
             _stopped.Set();
             _queueMonitor.Unregister(this);
             Thread.EndThreadAffinity();
-        }
-        catch(Exception ex){
-            _tcs.TrySetException(ex);
-            throw;
         }
 
         }

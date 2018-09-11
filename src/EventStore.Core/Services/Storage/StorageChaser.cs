@@ -130,16 +130,14 @@ namespace EventStore.Core.Services.Storage
 
                 _queueStats.ProcessingEnded(0);
             }
+            finally{
+                _queueStats.Stop();
+                QueueMonitor.Default.Unregister(this);
+            }
 
             _writerCheckpoint.Flushed -= OnWriterFlushed;
-
             _chaser.Close();
-
             _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
-
-            _queueStats.EnterIdle();
-            _queueStats.Stop();
-            QueueMonitor.Default.Unregister(this);
         }
 
         private void OnWriterFlushed(long obj)
