@@ -455,7 +455,7 @@ namespace EventStore.Core
 
             //TODO CC can have multiple threads working on subscription if partition
             var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus, vNodeSettings.AdditionalConsumerStrategies);
-            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue, consumerStrategyRegistry);
+            var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher, _mainQueue, consumerStrategyRegistry);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
