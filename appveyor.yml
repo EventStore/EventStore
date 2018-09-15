@@ -10,6 +10,9 @@ test_script:
        /framework:net-4.5 /timeout=60000 
        /out:TestResults.txt 
        --result=TestResults.xml;format=AppVeyor
+artifacts:
+  - path: '**\TestResults.*'
+    name: TestResults
 notifications:
 - provider: Slack
   incoming_webhook:
