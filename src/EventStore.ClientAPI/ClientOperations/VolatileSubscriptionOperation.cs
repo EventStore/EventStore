@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.Messages;
@@ -9,8 +10,8 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class VolatileSubscriptionOperation : SubscriptionOperation<EventStoreSubscription>
     {
-        public VolatileSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source, string streamId, bool resolveLinkTos, UserCredentials userCredentials, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
-            : base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
+        public VolatileSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source, string streamId, bool resolveLinkTos, UserCredentials userCredentials, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, int maxQueueSize, Func<TcpPackageConnection> getConnection)
+            : base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, maxQueueSize, getConnection)
         {
         }
 

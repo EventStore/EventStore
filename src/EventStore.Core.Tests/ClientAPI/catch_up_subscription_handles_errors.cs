@@ -419,7 +419,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         private static VolatileEventStoreSubscription CreateVolatileSubscription(Action<EventStoreSubscription, ResolvedEvent> raise, Action<EventStoreSubscription, SubscriptionDropReason, Exception> drop, int? lastEventNumber)
         {
-            return new VolatileEventStoreSubscription(new VolatileSubscriptionOperation(new NoopLogger(), new TaskCompletionSource<EventStoreSubscription>(), StreamId, false, null, raise, drop, false, () => null), StreamId, -1, lastEventNumber);
+            return new VolatileEventStoreSubscription(new VolatileSubscriptionOperation(new NoopLogger(), new TaskCompletionSource<EventStoreSubscription>(), StreamId, false, null, raise, drop, false, 2000, () => null), StreamId, -1, lastEventNumber);
         }
 
         private static StreamEventsSlice CreateStreamEventsSlice(int fromEvent = 0, int count = 1, bool isEnd = false)

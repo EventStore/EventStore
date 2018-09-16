@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
-        private readonly int _maxQueueSize = 2000;
+        private readonly int _maxQueueSize;
         private readonly ConcurrentQueue<Action> _actionQueue = new ConcurrentQueue<Action>();
         private int _actionExecuting;
         private T _subscription;
@@ -36,6 +36,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                      Action<T, ResolvedEvent> eventAppeared,
                                      Action<T, SubscriptionDropReason, Exception> subscriptionDropped,
                                      bool verboseLogging,
+                                     int maxQueueSize,
                                      Func<TcpPackageConnection> getConnection)
         {
             Ensure.NotNull(log, "log");
@@ -51,6 +52,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _eventAppeared = eventAppeared;
             _subscriptionDropped = subscriptionDropped ?? ((x, y, z) => { });
             _verboseLogging = verboseLogging;
+            _maxQueueSize = maxQueueSize;
             _getConnection = getConnection;
         }
 
@@ -254,7 +256,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private void ExecuteActionAsync(Action action)
         {
             _actionQueue.Enqueue(action);
-            if (_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.UserInitiated, new Exception("client buffer too big"));
+            if (_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.ProcessingQueueOverflow, new Exception("client buffer too big"));
             if (Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ExecuteActions);
         }

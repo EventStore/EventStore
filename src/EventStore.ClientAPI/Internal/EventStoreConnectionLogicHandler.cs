@@ -399,7 +399,7 @@ namespace EventStore.ClientAPI.Internal
                 case ConnectionState.Connected:
                     var operation = new VolatileSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId, msg.ResolveLinkTos,
                                                               msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped,
-                                                              _settings.VerboseLogging, () => _connection);
+                                                              _settings.VerboseLogging, _settings.MaxQueueSize, () => _connection);
                     LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
                     var subscription = new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout);
                     if (_state == ConnectionState.Connecting)
@@ -425,7 +425,7 @@ namespace EventStore.ClientAPI.Internal
                 case ConnectionState.Connected:
                     var operation = new ConnectToPersistentSubscriptionOperation(_settings.Log, msg.Source, msg.SubscriptionId, msg.BufferSize, msg.StreamId,
                                                               msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped,
-                                                              _settings.VerboseLogging, () => _connection);
+                                                              _settings.VerboseLogging, _settings.MaxQueueSize, () => _connection);
                     LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation, msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
                     var subscription = new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout);
                     if (_state == ConnectionState.Connecting)
