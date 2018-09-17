@@ -1,0 +1,29 @@
+resources:
+- repo: self
+
+jobs:
+- job: windows
+  displayName: 'Windows'
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - powershell: dotnet build src\EventStore.sln
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: Compile
+  - powershell: |
+      (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
+        ForEach-Object { dotnet test --logger trx $_ }
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: Test
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "Windows (.NET Framework)"
+      platform: "Windows"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  # - task: PublishBuildArtifacts@1
+  #   displayName: Publish Artifacts
+  #   inputs:
+  #     artifactName: windows-net471
+  #     pathToPublish: '$(Build.SourcesDirectory)\target\bin\'
