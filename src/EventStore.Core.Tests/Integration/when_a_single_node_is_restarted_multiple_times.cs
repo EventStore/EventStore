@@ -4,6 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace EventStore.Core.Tests.Integration
 {
@@ -12,6 +13,8 @@ namespace EventStore.Core.Tests.Integration
     {
         private List<Guid> _epochIds = new List<Guid>();
         private const int _numberOfNodeStarts = 5;
+        private ManualResetEventSlim _event = new ManualResetEventSlim(false);
+
         protected override void BeforeNodeStarts()
         {
             _node.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(Handle));
@@ -22,7 +25,9 @@ namespace EventStore.Core.Tests.Integration
         {
             for (int i = 0; i < _numberOfNodeStarts - 1; i++)
             {
+                _event.Wait(TimeSpan.FromSeconds(5));
                 ShutdownNode();
+                _event.Reset();
                 StartNode();
             }
 
@@ -32,6 +37,7 @@ namespace EventStore.Core.Tests.Integration
         private void Handle(SystemMessage.EpochWritten msg)
         {
             _epochIds.Add(msg.Epoch.EpochId);
+            _event.Set();
         }
 
         [Test]
