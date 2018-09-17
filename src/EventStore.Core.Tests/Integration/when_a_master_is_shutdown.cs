@@ -14,6 +14,7 @@ namespace EventStore.Core.Tests.Integration
         private List<Guid> _epochIds = new List<Guid>();
         private List<string> _roleAssignments = new List<string>();
         private CountdownEvent _expectedNumberOfEvents;
+        private object _lock = new object();
 
         protected override void BeforeNodesStart()
         {
@@ -39,19 +40,25 @@ namespace EventStore.Core.Tests.Integration
 
         private void Handle(SystemMessage.BecomeMaster msg)
         {
-            _roleAssignments.Add("master");
+            lock(_lock){
+                _roleAssignments.Add("master");
+            }
             _expectedNumberOfEvents?.Signal();
         }
 
         private void Handle(SystemMessage.BecomeSlave msg)
         {
-            _roleAssignments.Add("slave");
+            lock(_lock){
+                _roleAssignments.Add("slave");
+            }
             _expectedNumberOfEvents?.Signal();
         }
 
         private void Handle(SystemMessage.EpochWritten msg)
         {
-            _epochIds.Add(msg.Epoch.EpochId);
+            lock(_lock){
+                _epochIds.Add(msg.Epoch.EpochId);
+            }
             _expectedNumberOfEvents?.Signal();
         }
 
