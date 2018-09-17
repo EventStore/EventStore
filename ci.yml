@@ -17,6 +17,7 @@ jobs:
         }
     workingDirectory: $(Build.SourcesDirectory)
     displayName: Test
+    errorActionPreference: Stop
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
