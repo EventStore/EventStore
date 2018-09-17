@@ -12,7 +12,9 @@ jobs:
     displayName: Compile
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
-        ForEach-Object { dotnet test --logger trx $_ }
+        ForEach-Object { 
+          dotnet test --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+        }
     workingDirectory: $(Build.SourcesDirectory)
     displayName: Test
   - task: PublishTestResults@2
@@ -22,8 +24,8 @@ jobs:
       platform: "Windows"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
-  # - task: PublishBuildArtifacts@1
-  #   displayName: Publish Artifacts
-  #   inputs:
-  #     artifactName: windows-net471
-  #     pathToPublish: '$(Build.SourcesDirectory)\target\bin\'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: windows-net47
+      pathToPublish: '$(Build.SourcesDirectory)\bin\'
