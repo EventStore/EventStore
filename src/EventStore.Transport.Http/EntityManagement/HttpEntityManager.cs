@@ -269,6 +269,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 LogResponse(new byte[0]);
                 SetResponseLength(0);
+                HttpEntity.Response.OutputStream.Close();
                 CloseConnection(onError);
             }
             else
@@ -343,6 +344,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 }
                 else
                 {
+                    Helper.EatException(HttpEntity.Response.OutputStream.Close);
                     Helper.EatException(HttpEntity.Response.Close);
                 }
             }
