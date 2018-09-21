@@ -56,18 +56,24 @@ namespace js1
 			return status;
 
 		v8::TryCatch try_catch(get_isolate());
-		v8::Handle<v8::Script> result = v8::Script::Compile(
+		v8::MaybeLocal<v8::Script> result = v8::Script::Compile(
 			v8::String::NewFromTwoByte(get_isolate(), script_source), 
 			v8::String::NewFromTwoByte(get_isolate(), file_name));
 
-		if (set_last_error(get_isolate(), result.IsEmpty(), try_catch))
+		if(result.IsEmpty()){
+			set_last_error(get_isolate(), true, try_catch);
+			return S_ERROR;
+		}
+
+		v8::Handle<v8::Script> resultChecked = result.ToLocalChecked();
+		if (set_last_error(get_isolate(), resultChecked.IsEmpty(), try_catch))
 			return S_ERROR;
 
-		if (result.IsEmpty())
+		if (resultChecked.IsEmpty())
 			return S_ERROR;
 
 		script = std::shared_ptr<v8::Persistent<v8::Script>>(
-			new v8::Persistent<v8::Script>(get_isolate(), result));
+			new v8::Persistent<v8::Script>(get_isolate(), resultChecked));
 
 		return S_OK;
 	}
@@ -75,11 +81,18 @@ namespace js1
 	v8::Handle<v8::Value> CompiledScript::run_script(v8::Isolate *isolate, v8::Handle<v8::Context> context)
 	{
 		v8::TryCatch try_catch(get_isolate());
-		v8::Handle<v8::Value> result = v8::Handle<v8::Script>::New(isolate, *script)->Run();
-		if (set_last_error(isolate, result.IsEmpty(), try_catch)){
-			result.Clear();
+		v8::MaybeLocal<v8::Value> result = v8::Handle<v8::Script>::New(isolate, *script)->Run(context);
+
+		if(result.IsEmpty()){
+			set_last_error(isolate, true, try_catch);
+			return v8::Handle<v8::Value>();
 		}
-		return result;
+
+		v8::Handle<v8::Value> resultChecked = result.ToLocalChecked();
+		if (set_last_error(isolate, resultChecked.IsEmpty(), try_catch)){
+			resultChecked.Clear();
+		}
+		return resultChecked;
 	}
 
 	bool CompiledScript::set_last_error(v8::Isolate *isolate, bool is_error, v8::TryCatch &try_catch)
