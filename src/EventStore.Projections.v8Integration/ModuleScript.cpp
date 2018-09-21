@@ -58,7 +58,7 @@ namespace js1
 		if (prelude != NULL) 
 		{
 			// prelude can be NULL if $load_module invoked from the prelude defintion itself
-			result = v8::ObjectTemplate::New();
+			result = v8::ObjectTemplate::New(get_isolate());
 			return S_OK;
 		}
 

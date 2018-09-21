@@ -51,7 +51,7 @@ namespace js1
 		v8::Handle<v8::Object> global = get_context()->Global();
 		v8::Handle<v8::Value> prelude_result;
 		v8::Handle<v8::Object> prelude_result_object;
-		v8::TryCatch try_catch;
+		v8::TryCatch try_catch(isolate);
 
 		if (!enter_cancellable_region()) 
 			return S_TERMINATED; // initialized with 0 by default
@@ -81,8 +81,8 @@ namespace js1
 			v8::Handle<v8::String> global_property_name = global_property_names->Get(i).As<v8::String>();
 			v8::Handle<v8::Value> global_property_value = prelude_result_object->Get(global_property_name);
 
-			v8::String::Utf8Value name(global_property_name);
-			v8::String::Utf8Value value(global_property_value);
+			v8::String::Utf8Value name(get_isolate(),global_property_name);
+			v8::String::Utf8Value value(get_isolate(),global_property_value);
 			global->Set(global_property_name, global_property_value);
 		}
 
@@ -150,7 +150,7 @@ namespace js1
 		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(data->Value());
 
 		//TODO: make sure correct value type passed
-		v8::String::Value message(args[0].As<v8::String>());
+		v8::String::Value message(v8::Isolate::GetCurrent(),args[0].As<v8::String>());
 
 		prelude->log_handler(*message);
 		args.GetReturnValue().Set(v8::Undefined(v8::Isolate::GetCurrent()));
@@ -184,7 +184,7 @@ namespace js1
 		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(data->Value());
 
 		//TODO: make sure correct value type passed
-		v8::String::Value module_name(args[0].As<v8::String>());
+		v8::String::Value module_name(v8::Isolate::GetCurrent(),args[0].As<v8::String>());
 
 		ModuleScript *module = prelude->load_module(*module_name);
 		if (module == NULL) 

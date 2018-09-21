@@ -38,7 +38,7 @@ namespace js1
 			v8::HandleScope handle_scope(isolate);
 			v8::Context::Scope local(context);
 
-			v8::String::Value error_value(v8::Handle<v8::Value>::New(isolate, *last_exception));
+			v8::String::Value error_value(isolate,v8::Handle<v8::Value>::New(isolate, *last_exception));
 			//TODO: define error codes
 			report_error_callback(1, *error_value);
 		}
@@ -55,7 +55,7 @@ namespace js1
 		if (status != S_OK)
 			return status;
 
-		v8::TryCatch try_catch;
+		v8::TryCatch try_catch(get_isolate());
 		v8::Handle<v8::Script> result = v8::Script::Compile(
 			v8::String::NewFromTwoByte(get_isolate(), script_source), 
 			v8::String::NewFromTwoByte(get_isolate(), file_name));
@@ -74,7 +74,7 @@ namespace js1
 
 	v8::Handle<v8::Value> CompiledScript::run_script(v8::Isolate *isolate, v8::Handle<v8::Context> context)
 	{
-		v8::TryCatch try_catch;
+		v8::TryCatch try_catch(get_isolate());
 		v8::Handle<v8::Value> result = v8::Handle<v8::Script>::New(isolate, *script)->Run();
 		if (set_last_error(isolate, result.IsEmpty(), try_catch)){
 			result.Clear();
