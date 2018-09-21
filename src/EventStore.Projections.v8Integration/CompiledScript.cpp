@@ -20,13 +20,13 @@ namespace js1
 	void CompiledScript::isolate_terminate_execution() 
 	{
 		v8::Isolate* isolate = get_isolate();
-		v8::V8::TerminateExecution(isolate);
+		isolate->TerminateExecution();
 	}
 
 	void CompiledScript::report_errors(v8::Isolate *isolate, v8::Handle<v8::Context> context, REPORT_ERROR_CALLBACK report_error_callback)
 	{
 		v8::Isolate::Scope isolate_scope(isolate);
-		if (v8::V8::IsDead() || v8::V8::IsExecutionTerminating(isolate)) 
+		if (isolate->IsDead() || isolate->IsExecutionTerminating())
 		{
 			//TODO: define error codes
 			report_error_callback(2, NULL);

@@ -91,7 +91,7 @@ namespace js1
 
 	bool PreludeScript::exit_cancellable_region() 
 	{ 
-		if (v8::V8::IsExecutionTerminating()) 
+		if (get_isolate()->IsExecutionTerminating())
 		{
 			printf("Terminating!");
 		}
