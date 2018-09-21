@@ -56,9 +56,11 @@ namespace js1
 			return status;
 
 		v8::TryCatch try_catch(get_isolate());
+		v8::ScriptOrigin script_origin = v8::ScriptOrigin(v8::String::NewFromTwoByte(get_isolate(), file_name));
 		v8::MaybeLocal<v8::Script> result = v8::Script::Compile(
-			v8::String::NewFromTwoByte(get_isolate(), script_source), 
-			v8::String::NewFromTwoByte(get_isolate(), file_name));
+			context,
+			v8::String::NewFromTwoByte(get_isolate(), script_source),
+			&script_origin);
 
 		if(result.IsEmpty()){
 			set_last_error(get_isolate(), true, try_catch);
