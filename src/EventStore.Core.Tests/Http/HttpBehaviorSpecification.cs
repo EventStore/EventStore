@@ -31,6 +31,7 @@ namespace EventStore.Core.Tests.Http
         protected string _lastResponseBody;
         protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
+        private System.Collections.Generic.List<HttpWebResponse> _allResponses = new System.Collections.Generic.List<HttpWebResponse>();
 //MONOCHECK Does this work now?
 #if !MONO
         private Func<HttpWebResponse, byte[]> _dumpResponse;
@@ -138,9 +139,9 @@ namespace EventStore.Core.Tests.Http
                 _node.Shutdown();
             }
             base.TestFixtureTearDown();
-            if(_lastResponse != null) 
-            {
-                _lastResponse.Close();
+            foreach(var response in _allResponses){
+                if(response != null)
+                    response.Close();
             }
         }
 
@@ -368,10 +369,12 @@ namespace EventStore.Core.Tests.Http
             try
             {
                 response = (HttpWebResponse) request.GetResponse();
+                _allResponses.Add(response);
             }
             catch (WebException ex)
             {
                 response = (HttpWebResponse) ex.Response;
+                _allResponses.Add(response);
             }
 #if !MONO
             if (_dumpRequest != null)

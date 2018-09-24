@@ -15,6 +15,7 @@ namespace EventStore.Core.Tests
         [OneTimeSetUp]
         public void SetUp()
         {
+            System.Net.ServicePointManager.DefaultConnectionLimit = 1000;
             Console.WriteLine("Initializing tests (setting console loggers)...");
             SetUpDebugListeners();
             LogManager.SetLogFactory(x => new ConsoleLogger());
