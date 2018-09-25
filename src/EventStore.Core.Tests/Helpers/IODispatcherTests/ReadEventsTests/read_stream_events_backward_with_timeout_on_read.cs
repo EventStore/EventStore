@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using EventStore.Core.Helpers;
 using NUnit.Framework;
 
@@ -14,16 +15,17 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-
+            var mre = new ManualResetEvent(false);
             var step = _ioDispatcher.BeginReadBackward(
                 _cancellationScope, _eventStreamId, _fromEventNumber, _maxCount, true, _principal,
-                res => _didReceiveRead = true,
-                () => _didTimeout = true
+                res => { _didReceiveRead = true; mre.Set(); },
+                () => { _didTimeout = true; mre.Set(); }
             );
             IODispatcherAsync.Run(step);
             Assert.IsNotNull(_timeoutMessage, "Expected TimeoutMessage to not be null");
 
             _timeoutMessage.Reply();
+            mre.WaitOne(TimeSpan.FromSeconds(10));
         }
 
         [Test]
@@ -52,15 +54,17 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests
         {
             base.TestFixtureSetUp();
 
+            var mre = new ManualResetEvent(false);
             _ioDispatcher.ReadBackward(
                 _eventStreamId, _fromEventNumber, _maxCount, true, _principal,
-                res => _didReceiveRead = true,
-                () => _didTimeout = true,
+                res => { _didReceiveRead = true; mre.Set(); },
+                () => { _didTimeout = true; mre.Set(); },
                 Guid.NewGuid()
             );
             Assert.IsNotNull(_timeoutMessage, "Expected TimeoutMessage to not be null");
 
             _timeoutMessage.Reply();
+            mre.WaitOne(TimeSpan.FromSeconds(10));
         }
 
         [Test]
