@@ -397,9 +397,10 @@ namespace EventStore.Core.Services.Storage
                     // SOFT DELETE
                     var metastreamId = SystemStreams.MetastreamOf(message.EventStreamId);
                     var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
+                    var truncateBefore = expectedVersion + 1;
                     var logPosition = Writer.Checkpoint.ReadNonFlushed();
                     const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
-                    var data = new StreamMetadata(truncateBefore: expectedVersion + 1).ToJsonBytes();
+                    var data = new StreamMetadata(truncateBefore: truncateBefore).ToJsonBytes();
                     var res = WritePrepareWithRetry(
                         LogRecord.Prepare(logPosition, message.CorrelationId, eventId, logPosition, 0,
                             metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
