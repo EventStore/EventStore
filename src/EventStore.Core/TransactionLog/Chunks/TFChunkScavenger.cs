@@ -444,7 +444,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("completed in {0}.", sw.Elapsed);
                     Log.Trace("New chunk: {0} --> #{1}-{2} ({3}).", Path.GetFileName(tmpChunkPath), chunkStartNumber,
                         chunkEndNumber, Path.GetFileName(chunk.FileName));
-                    var spaceSaved = newChunk.FileSize - oldChunks.Sum(_ => _.FileSize);
+                    var spaceSaved = oldChunks.Sum(_ => _.FileSize) - newChunk.FileSize;
                     _scavengerLog.ChunksMerged(chunkStartNumber, chunkEndNumber, sw.Elapsed, spaceSaved);
                     return true;
                 }
