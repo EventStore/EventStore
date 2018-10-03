@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
             var indexPath = Path.Combine(PathName, "index");
             var readerPool = new ObjectPool<ITransactionFileReader>(
-                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableRequiredReaderCount,
                 () => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
             var lowHasher = new XXHashUnsafe();
             var highHasher = new Murmur3AUnsafe();

@@ -72,7 +72,7 @@ namespace EventStore.Core.Index
         private PTable(string filename,
                        Guid id,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
-                       int maxReaders = ESConsts.PTableMaxReaderCount,
+                       int maxReaders = ESConsts.PTableRequiredReaderCount,
                        int depth = 16,
                        bool skipIndexVerify = false)
         {
