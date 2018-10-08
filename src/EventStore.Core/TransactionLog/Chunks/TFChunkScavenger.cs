@@ -292,6 +292,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 Log.Info("{0}", oldChunksList);
                 Log.Info("Stopping scavenging and removing temp chunk '{0}'...", tmpChunkPath);
                 Log.Info("Exception message: {0}.", exc.Message);
+                newChunk.Dispose();
                 DeleteTempChunk(tmpChunkPath, MaxRetryCount);
                 PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, spaceSaved, exc.Message);
                 return false;
@@ -300,6 +301,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 Log.Info("Got exception while scavenging chunk: #{0}-{1}. This chunk will be skipped\n"
                          + "Exception: {2}.", chunkStartNumber, chunkEndNumber, ex.ToString());
+                newChunk.Dispose();
                 DeleteTempChunk(tmpChunkPath, MaxRetryCount);
                 PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, 0, ex.Message);
                 return false;
@@ -318,6 +320,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (retries > 0) {
                     Log.Error("Failed to delete the temp chunk. Retrying {0}/{1}. Reason: {2}",
                         MaxRetryCount - retries, MaxRetryCount, ex);
+                    Thread.Sleep(5000);
                     DeleteTempChunk(tmpChunkPath, retries - 1);
                 }
                 else
