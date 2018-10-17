@@ -15,7 +15,7 @@
 #     See the License for the specific language governing permissions and
 #     limitations under the License.
 #
-# This script is used to build Google V8 and the native Projections library on Linux
+# This script is used to build Google V8 and the native Projections library for Mac OS X 10.9+
 #
 
 set -e
@@ -122,7 +122,6 @@ function buildv8ProjectionsLibrary() {
     CLANG_DIR="$V8_BUILD_DIRECTORY/third_party/llvm-build/Release+Asserts/"
     V8_INCLUDE_DIR="$V8_BUILD_DIRECTORY/include"
     V8_LIB_DIR="$v8OutputDir/obj/"
-    # LIBCXX_INCLUDE_DIR="$V8_BUILD_DIRECTORY/buildtools/third_party/libc++/trunk/include/"
     LIBCXX_INCLUDE_DIR="$V8_BUILD_DIRECTORY/third_party/llvm-build/Release+Asserts/include/c++/v1/"
 
     pushd "$EVENTSTORE_DIRECTORY/src/EventStore.Projections.v8Integration/" > /dev/null
