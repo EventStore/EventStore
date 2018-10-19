@@ -2,18 +2,21 @@ resources:
 - repo: self
 
 jobs:
-- job: windows
-  displayName: 'Windows'
+- job: windows_x64_debug
+  displayName: 'Windows x64 Debug'
   pool:
     vmImage: 'vs2017-win2016'
   steps:
-  - powershell: dotnet build src\EventStore.sln
+  - powershell: |
+      dotnet build -c Debug src\EventStore.sln
+      if (-Not $?) { throw "Exit code is $?" }
     workingDirectory: $(Build.SourcesDirectory)
     displayName: Compile
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
         ForEach-Object { 
-          dotnet test --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          dotnet test -c Debug --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          if (-Not $?) { throw "Exit code is $?" }
         }
     workingDirectory: $(Build.SourcesDirectory)
     displayName: Test
@@ -30,3 +33,181 @@ jobs:
     inputs:
       artifactName: windows-net47
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
+
+- job: windows_x64_release
+  displayName: 'Windows x64 Release'
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - powershell: |
+      dotnet build -c Release src\EventStore.sln
+      if (-Not $?) { throw "Exit code is $?" }
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: Compile
+  - powershell: |
+      (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
+        ForEach-Object { 
+          dotnet test -c Release --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          if (-Not $?) { throw "Exit code is $?" }
+        }
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: Test
+    errorActionPreference: Stop
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "Windows (.NET Framework)"
+      platform: "Windows"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: windows-net47
+      pathToPublish: '$(Build.SourcesDirectory)\bin\'
+
+- job: macos_x64_debug
+  displayName: 'macOS x64 Debug'
+  pool:
+    vmImage: 'macOS 10.13'
+  steps:
+  - bash: . '$(Build.SourcesDirectory)/ci/ap-setup-osx.sh'
+    displayName: Setup
+  - bash: dotnet build -c Debug src/EventStore.sln
+    env:
+      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+    displayName: Compile
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Debug --logger trx
+    env:
+      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+    displayName: Run Tests
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "MacOS 10.13 (Mono 5.14)"
+      platform: "MacOS 10.13"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: macos-mono514
+      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+
+- job: macos_x64_release
+  displayName: 'macOS x64 Release'
+  pool:
+    vmImage: 'macOS 10.13'
+  steps:
+  - bash: . '$(Build.SourcesDirectory)/ci/ap-setup-osx.sh'
+    displayName: Setup
+  - bash: dotnet build -c Release src/EventStore.sln
+    env:
+      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+    displayName: Compile
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Release --logger trx
+    env:
+      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+    displayName: Run Tests
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "MacOS 10.13 (Mono 5.14)"
+      platform: "MacOS 10.13"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: macos-mono514
+      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+
+- job: centos7_x64_debug
+  displayName: 'Centos 7 x64 Debug'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - bash: docker pull shaan1337/eventstore-ci-linux:latest
+    displayName: Pull Docker image for build
+    failOnStderr: false
+  - task: Docker@1
+    displayName: Compile in CentOS 7 Container
+    inputs:
+      command: 'run'
+      imageName: 'shaan1337/eventstore-ci-linux:latest'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        EventStoreBuildConfig=Debug
+      containerCommand: ci/ap-build-linux.sh
+      workingDirectory: '/work'
+  - task: Docker@1
+    displayName: Test in CentOS 7 Container
+    inputs:
+      command: run
+      imageName: shaan1337/eventstore-ci-linux:latest
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        EventStoreBuildConfig=Debug
+      containerCommand: ci/ap-test-linux.sh
+      workingDirectory: '/work'
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "Centos 7 (Mono 5.14)"
+      platform: "Centos 7"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: centos7-mono514
+      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+
+- job: centos7_x64_release
+  displayName: 'Centos 7 x64 Release'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - bash: docker pull shaan1337/eventstore-ci-linux:latest
+    displayName: Pull Docker image for build
+    failOnStderr: false
+  - task: Docker@1
+    displayName: Compile in CentOS 7 Container
+    inputs:
+      command: 'run'
+      imageName: 'shaan1337/eventstore-ci-linux:latest'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        EventStoreBuildConfig=Release
+      containerCommand: ci/ap-build-linux.sh
+      workingDirectory: '/work'
+  - task: Docker@1
+    displayName: Test in CentOS 7 Container
+    inputs:
+      command: run
+      imageName: shaan1337/eventstore-ci-linux:latest
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        EventStoreBuildConfig=Release
+      containerCommand: ci/ap-test-linux.sh
+      workingDirectory: '/work'
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testRunTitle: "Centos 7 (Mono 5.14)"
+      platform: "Centos 7"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: centos7-mono514
+      pathToPublish: '$(Build.SourcesDirectory)/bin/'
