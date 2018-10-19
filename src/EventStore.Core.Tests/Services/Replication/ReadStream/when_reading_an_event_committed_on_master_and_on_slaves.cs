@@ -100,57 +100,76 @@ namespace EventStore.Core.Tests.Replication.ReadStream
         public void should_be_able_to_read_event_from_all_forward_on_slaves()
         {
             var slaves = GetSlaves();
+            var quorum = (slaves.Count() + 1) / 2 + 1;
+            var successfulReads = 0;
             foreach(var s in slaves)
             {
                 var readResult = ReplicationTestHelper.ReadAllEventsForward(s, _commitPosition);
-                Assert.AreEqual(1, readResult.Events.Where(x=>x.OriginalStreamId == _streamId).Count());
+                successfulReads += readResult.Events.Where(x=>x.OriginalStreamId == _streamId).Count();
             }
+
+            Assert.GreaterOrEqual(successfulReads, quorum - 1);
         }
 
         [Test]
         public void should_be_able_to_read_event_from_all_backward_on_slaves()
         {
             var slaves = GetSlaves();
+            var quorum = (slaves.Count() + 1) / 2 + 1;
+            var successfulReads = 0;
             foreach(var s in slaves)
             {
                 var readResult = ReplicationTestHelper.ReadAllEventsBackward(s, _commitPosition);
-                Assert.AreEqual(1, readResult.Events.Where(x=>x.OriginalStreamId == _streamId).Count());
+                successfulReads += readResult.Events.Where(x=>x.OriginalStreamId == _streamId).Count();
             }
+
+            Assert.GreaterOrEqual(successfulReads, quorum - 1);
         }
 
         [Test]
         public void should_be_able_to_read_event_from_stream_forward_on_slaves()
         {
             var slaves = GetSlaves();
+            var quorum = (slaves.Count() + 1) / 2 + 1;
+            var successfulReads = 0;
             foreach(var s in slaves)
             {
                 var readResult = ReplicationTestHelper.ReadStreamEventsForward(s, _streamId);
-                Assert.AreEqual(1, readResult.Events.Count());
+                successfulReads += readResult.Events.Count();
                 Assert.AreEqual(ReadStreamResult.Success, readResult.Result);
             }
+
+            Assert.GreaterOrEqual(successfulReads, quorum - 1);
         }
 
         [Test]
         public void should_be_able_to_read_event_from_stream_backward_on_slaves()
         {
             var slaves = GetSlaves();
+            var quorum = (slaves.Count() + 1) / 2 + 1;
+            var successfulReads = 0;
             foreach(var s in slaves)
             {
                 var readResult = ReplicationTestHelper.ReadStreamEventsBackward(s, _streamId);
-                Assert.AreEqual(1, readResult.Events.Count());
-                Assert.AreEqual(ReadStreamResult.Success, readResult.Result);
+                successfulReads += readResult.Events.Count();
             }
+
+            Assert.GreaterOrEqual(successfulReads, quorum - 1);
         }
 
         [Test]
         public void should_be_able_to_read_event_on_slaves()
         {
             var slaves = GetSlaves();
+            var quorum = (slaves.Count() + 1) / 2 + 1;
+            var successfulReads = 0;
             foreach(var s in slaves)
             {
                 var readResult = ReplicationTestHelper.ReadEvent(s, _streamId, 0);
-                Assert.AreEqual(ReadEventResult.Success, readResult.Result);
+                successfulReads += readResult.Result==ReadEventResult.Success?1:0;
             }
+
+            Assert.GreaterOrEqual(successfulReads, quorum - 1);
         }
     }
 }
