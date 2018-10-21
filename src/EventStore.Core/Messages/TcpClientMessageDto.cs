@@ -585,15 +585,19 @@ namespace EventStore.Core.Messages
     [ProtoMember(5, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
   
+    [ProtoMember(6, Name=@"allowed_event_types", DataFormat = DataFormat.Default)]
+    public readonly string[] AllowedEventTypes;
+  
     private ReadAllEvents() {}
   
-    public ReadAllEvents(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster)
+    public ReadAllEvents(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster, string[] allowedEventTypes)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         MaxCount = maxCount;
         ResolveLinkTos = resolveLinkTos;
         RequireMaster = requireMaster;
+        AllowedEventTypes = allowedEventTypes;
     }
   }
   
