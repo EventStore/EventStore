@@ -652,6 +652,103 @@ namespace EventStore.Core.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"ReadAllEventsFiltered")]
+  public partial class ReadAllEventsFiltered
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MaxCount;
+  
+    [ProtoMember(4, IsRequired = false, Name=@"max_search_window", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? MaxSearchWindow;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
+    [ProtoMember(7, Name=@"allowed_event_types", DataFormat = DataFormat.Default)]
+    public readonly string[] AllowedEventTypes;
+  
+    private ReadAllEventsFiltered() {}
+  
+    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, string[] allowedEventTypes)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+        MaxCount = maxCount;
+        MaxSearchWindow = maxSearchWindow;
+        ResolveLinkTos = resolveLinkTos;
+        RequireMaster = requireMaster;
+        AllowedEventTypes = allowedEventTypes;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"ReadAllEventsFilteredCompleted")]
+  public partial class ReadAllEventsFilteredCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    [ProtoMember(3, Name=@"events", DataFormat = DataFormat.Default)]
+    public readonly ResolvedEvent[] Events;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"next_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long NextCommitPosition;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long NextPreparePosition;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"is_end_of_stream", DataFormat = DataFormat.Default)]
+    public readonly bool IsEndOfStream;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly ReadAllEventsFilteredCompleted.ReadAllFilteredResult Result;
+  
+    [ProtoMember(8, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
+    [ProtoContract(Name=@"ReadAllFilteredResult")]
+    public enum ReadAllFilteredResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"NotModified", Value=1)]
+      NotModified = 1,
+            
+      [ProtoEnum(Name=@"Error", Value=2)]
+      Error = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
+    }
+  
+    private ReadAllEventsFilteredCompleted() {}
+  
+    public ReadAllEventsFilteredCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, ReadAllEventsFilteredCompleted.ReadAllFilteredResult result, string error)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+        Events = events;
+        NextCommitPosition = nextCommitPosition;
+        NextPreparePosition = nextPreparePosition;
+        IsEndOfStream = isEndOfStream;
+        Result = result;
+        Error = error;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"CreatePersistentSubscription")]
   public partial class CreatePersistentSubscription
   {

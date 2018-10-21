@@ -60,6 +60,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
+		public IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			StringFilter allowedEventTypes) {
+			throw new NotImplementedException();
+		}
+
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
 			throw new NotImplementedException();
 		}
