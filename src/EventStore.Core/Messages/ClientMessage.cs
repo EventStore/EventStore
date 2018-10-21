@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -716,6 +717,7 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
+            public readonly ISet<string> AllowedEventTypes;
 
             public readonly long? ValidationTfLastCommitPosition;
             public readonly TimeSpan? LongPollTimeout;
@@ -723,7 +725,7 @@ namespace EventStore.Core.Messages
             public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                         long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
                                         bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user,
-                                        TimeSpan? longPollTimeout = null)
+                                        TimeSpan? longPollTimeout = null, ISet<string> allowedEventTypes = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 CommitPosition = commitPosition;
@@ -733,6 +735,7 @@ namespace EventStore.Core.Messages
                 RequireMaster = requireMaster;
                 ValidationTfLastCommitPosition = validationTfLastCommitPosition;
                 LongPollTimeout = longPollTimeout;
+                this.AllowedEventTypes = allowedEventTypes;
             }
         }
 

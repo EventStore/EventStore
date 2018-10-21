@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
 
@@ -20,6 +21,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
         /// </summary>
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes);
         /// <summary>
         /// Returns event records in the reverse sequence they were committed into TF.
         /// Positions is specified as post-positions (pointer after the end of record).

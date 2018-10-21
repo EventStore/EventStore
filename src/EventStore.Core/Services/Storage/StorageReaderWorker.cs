@@ -299,7 +299,8 @@ namespace EventStore.Core.Services.Storage
                         return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
 
-                    var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
+                    // MARK: here we would need to pass the list of event types to the ReadAllEventsForward method
+                    var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount, msg.AllowedEventTypes);
                     var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                     if (resolved == null)
                         return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
