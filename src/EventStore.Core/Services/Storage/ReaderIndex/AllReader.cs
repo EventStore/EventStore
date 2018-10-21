@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         /// Returns event records in the sequence they were committed into TF.
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
         /// </summary>
-        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
+        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<String> allowedEventTypes);
 
         /// <summary>
         /// Returns event records in the reverse sequence they were committed into TF.
@@ -39,8 +39,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _replicationCheckpoint = replicationCheckpoint;
         }
 
-        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
+        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes)
         {
+            // MARK: This list needs to be the one to be filtered. 
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
@@ -82,7 +83,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
                                 }
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-                                    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos)
+                                    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos
+                                    && this.isInAllowedTypes(allowedEventTypes, prepare.EventType))
                                 {
                                     var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
                                     records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
@@ -121,7 +123,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                                     // prepare with useful data or delete tombstone
                                     if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-                                        && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
+                                        && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos
+                                       && this.isInAllowedTypes(allowedEventTypes, prepare.EventType))
                                     {
                                         var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
                                         records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
@@ -142,6 +145,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
                 }
                 return new IndexReadAllResult(records, pos, nextPos, prevPos);
+            }
+        }
+
+        private bool isInAllowedTypes(ISet<string> allowedTypes, string eventType) 
+        {
+            if(allowedTypes == null || allowedTypes.IsEmpty()) {
+                return true;
+            } else {
+                return allowedTypes.Contains(eventType);
             }
         }
 
