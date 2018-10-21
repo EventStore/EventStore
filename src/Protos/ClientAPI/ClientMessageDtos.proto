@@ -175,6 +175,7 @@ message ReadAllEvents {
 	required int32 max_count = 3;
 	required bool resolve_link_tos = 4;
 	required bool require_master = 5;
+    repeated string allowed_event_types = 6;
 }
 
 message ReadAllEventsCompleted {
