@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-      <PackageReference Include="NLog" Version="4.5.8" />
+      <PackageReference Include="NLog" Version="4.5.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
