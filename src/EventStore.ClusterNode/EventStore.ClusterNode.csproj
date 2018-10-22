@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>..\..\bin\clusternode\</OutputPath>
     <ApplicationIcon>app2.ico</ApplicationIcon>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.ComponentModel.Composition" />
