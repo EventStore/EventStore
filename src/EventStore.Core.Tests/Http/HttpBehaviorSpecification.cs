@@ -32,24 +32,19 @@ namespace EventStore.Core.Tests.Http
         protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
         private System.Collections.Generic.List<HttpWebResponse> _allResponses = new System.Collections.Generic.List<HttpWebResponse>();
-//MONOCHECK Does this work now?
-#if !MONO
         private Func<HttpWebResponse, byte[]> _dumpResponse;
         private Func<HttpWebResponse, int> _dumpResponse2;
         private Func<HttpWebRequest, byte[]> _dumpRequest;
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
-#endif
         private string _tag;
         private bool _createdMiniNode;
 
         public override void TestFixtureSetUp()
         {
-#if !MONO
             Helper.EatException(() => _dumpResponse = CreateDumpResponse());
             Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             Helper.EatException(() => _dumpRequest = CreateDumpRequest());
             Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
-#endif
 
             base.TestFixtureSetUp();
 
@@ -376,7 +371,7 @@ namespace EventStore.Core.Tests.Http
                 response = (HttpWebResponse) ex.Response;
                 _allResponses.Add(response);
             }
-#if !MONO
+
             if (_dumpRequest != null)
             {
                 var bytes = _dumpRequest(request);
@@ -397,7 +392,7 @@ namespace EventStore.Core.Tests.Http
                 if (bytes != null)
                     Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, len).TrimEnd('\0'));
             }
-#endif
+
             return response;
         }
 
