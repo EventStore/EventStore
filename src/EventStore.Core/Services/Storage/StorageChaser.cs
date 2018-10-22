@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Storage
 
         private static readonly int TicksPerMs = (int) (Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2 * TicksPerMs;
-        private static readonly PlatformEvent FlushSignal = new PlatformEvent();
+        private static readonly ManualResetEventSlim FlushSignal = new ManualResetEventSlim();
         private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(10);
 
         public string Name => _queueStats.Name;

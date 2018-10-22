@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.Storage
                             new ConcurrentDictionary<long, PendingTransaction>();
 
         private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
-        private readonly PlatformEvent _addMsgSignal = new PlatformEvent();
+        private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim();
         private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
         public Task Task { get {return _tcs.Task;} }
