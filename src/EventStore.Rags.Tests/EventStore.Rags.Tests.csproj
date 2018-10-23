@@ -4,9 +4,10 @@
     <TargetFramework>net47</TargetFramework>
     <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <OutputPath>..\..\bin\tests\</OutputPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>portable</DebugType>
+    <OutputPath>..\..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+    <IntermediateOutputPath>..\..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
