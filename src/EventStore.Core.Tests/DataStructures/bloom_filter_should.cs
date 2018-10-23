@@ -147,6 +147,8 @@ namespace EventStore.Core.Tests.DataStructures
                     Console.Out.WriteLine("n: {0}, p:{1}. Found {2} false positives. Expected false positives: {3}", n, p, falsePositives, expectedFalsePositives);
                 Assert.LessOrEqual(falsePositives, expectedFalsePositives);
             }
+
+            Assert.Fail();
         }
 
         [Test]
