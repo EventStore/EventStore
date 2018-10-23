@@ -18,19 +18,9 @@
   </ItemGroup>
   <!-- TODO(jen20): Investigate whcih of these are correct -->
   <Target Name="CopyDependencies" BeforeTargets="BeforeBuild">
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libv8.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libicui18n.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libicuuc.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy SourceFiles="..\libs\win32\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-    <Copy SourceFiles="..\libs\win32\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
   </Target>
 </Project>
