@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace EventStore.Core.Tests.Integration
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("LongRunning"), Ignore("Flaky test - e.g. if multiple elections take place")]
     public class when_a_master_is_shutdown : specification_with_cluster
     {
         private List<Guid> _epochIds = new List<Guid>();
