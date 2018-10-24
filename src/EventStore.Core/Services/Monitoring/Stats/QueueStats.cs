@@ -5,18 +5,57 @@ namespace EventStore.Core.Services.Monitoring.Stats
 {
     public class QueueStats
     {
+        ///<summary>
+        ///Queue name
+        ///</summary>
         public readonly string Name;
+        ///<summary>
+        ///Group queue is a member of
+        ///</summary>
         public readonly string GroupName;
+        ///<summary>
+        ///Number of items in the queue
+        ///</summary>
         public readonly int Length;
+        ///<summary>
+        ///The highest number of items in the queues
+        ///</summary>
         public readonly long LengthLifetimePeak;
+        ///<summary>
+        ///TBD
+        ///</summary>
         public readonly long LengthCurrentTryPeak;
+        ///<summary>
+        ///The number of milliseconds elapsed processing the current item
+        ///</summary>
         public readonly TimeSpan? CurrentItemProcessingTime;
+        ///<summary>
+        ///Number of milliseconds elapsed since queue went idle
+        ///</summary>
         public readonly TimeSpan? CurrentIdleTime;
+        ///<summary>
+        ///The total number of items processed by the queue.
+        ///</summary>
         public readonly long TotalItemsProcessed;
+        ///<summary>
+        ///The average number of items processed per second by the queue.
+        ///</summary>
         public readonly int AvgItemsPerSecond;
+        ///<summary>
+        ///TBD
+        ///</summary>
         public readonly double AvgProcessingTime;
+        ///<summary>
+        ///Percentage of time queue spent idle
+        ///</summary>
         public readonly double IdleTimePercent;
+        ///<summary>
+        ///Mast event type processed
+        ///</summary>
         public readonly Type LastProcessedMessageType;
+        ///<summary>
+        ///Current event type queue is processing
+        ///</summary>
         public readonly Type InProgressMessageType;
 
         public QueueStats(string name,
@@ -27,8 +66,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
                           double idleTimePercent,
                           TimeSpan? currentItemProcessingTime,
                           TimeSpan? currentIdleTime,
-                          long totalItemsProcessed, 
-                          long lengthCurrentTryPeak, 
+                          long totalItemsProcessed,
+                          long lengthCurrentTryPeak,
                           long lengthLifetimePeak,
                           Type lastProcessedMessageType,
                           Type inProgressMessageType)
@@ -53,7 +92,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public override string ToString()
         {
             var str = string.Format("{0,-22} L: {1,-5}      Avg: {5,-5}i/s    AvgProcTime: {6:0.0}ms\n"
-                                    + "      Idle %:{7,-5:00.0}  Peak: {2,-5}  MaxPeak: {3,-7}  TotalProcessed: {4,-7}\n" 
+                                    + "      Idle %:{7,-5:00.0}  Peak: {2,-5}  MaxPeak: {3,-7}  TotalProcessed: {4,-7}\n"
                                     + "      Processing: {8}, Last: {9}",
                                     Name,
                                     Length,

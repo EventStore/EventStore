@@ -11,10 +11,21 @@ namespace EventStore.Core.Services.Monitoring.Stats
     public class DiskIo
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<DiskIo>();
-
+        ///<summary>
+        ///The number of bytes read by EventStore since start.
+        ///</summary>
         public readonly ulong ReadBytes;
+        ///<summary>
+        ///The number of bytes written by EventStore since start.
+        ///</summary>
         public readonly ulong WrittenBytes;
+        ///<summary>
+        ///The number of read operations by EventStore since start.
+        ///</summary>
         public readonly ulong ReadOps;
+        ///<summary>
+        ///The number of write operations by EventStore since start.
+        ///</summary>
         public readonly ulong WriteOps;
 
         public DiskIo(ulong bytesRead, ulong bytesWritten, ulong readOps, ulong writeOps)
