@@ -15,7 +15,7 @@ jobs:
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
         ForEach-Object { 
-          dotnet test -c Debug --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          dotnet test -v normal -c Debug --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
         }
     workingDirectory: $(Build.SourcesDirectory)
@@ -47,7 +47,7 @@ jobs:
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
         ForEach-Object { 
-          dotnet test -c Release --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          dotnet test -v normal -c Release --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
         }
     workingDirectory: $(Build.SourcesDirectory)
@@ -77,7 +77,7 @@ jobs:
     env:
       FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Compile
-  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Debug --logger trx
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c Debug --logger trx
     env:
       FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Run Tests
@@ -105,7 +105,7 @@ jobs:
     env:
       FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Compile
-  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Release --logger trx
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c Release --logger trx
     env:
       FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Run Tests
