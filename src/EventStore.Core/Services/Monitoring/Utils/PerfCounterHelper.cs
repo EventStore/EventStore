@@ -117,6 +117,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
                         if (instanceDataCollection.Values != null)
                         {
                             foreach (InstanceData item in instanceDataCollection.Values)
+
                             {
                                 var instancePid = (int)item.RawValue;
                                 if (_pid.Equals(instancePid))
