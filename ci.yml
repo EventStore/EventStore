@@ -4,6 +4,7 @@ resources:
 jobs:
 - job: windows_x64_debug
   displayName: 'Windows x64 Debug'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'vs2017-win2016'
   steps:
@@ -36,6 +37,7 @@ jobs:
 
 - job: windows_x64_release
   displayName: 'Windows x64 Release'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'vs2017-win2016'
   steps:
@@ -68,6 +70,7 @@ jobs:
 
 - job: macos_x64_debug
   displayName: 'macOS x64 Debug'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'macOS 10.13'
   steps:
@@ -96,6 +99,7 @@ jobs:
 
 - job: macos_x64_release
   displayName: 'macOS x64 Release'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'macOS 10.13'
   steps:
@@ -124,6 +128,7 @@ jobs:
 
 - job: centos7_x64_debug
   displayName: 'Centos 7 x64 Debug'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
@@ -169,6 +174,7 @@ jobs:
 
 - job: centos7_x64_release
   displayName: 'Centos 7 x64 Release'
+  timeoutInMinutes: 20
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
