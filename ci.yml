@@ -31,7 +31,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net47
+      artifactName: windows-net47-debug
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: windows_x64_release
@@ -63,7 +63,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net47
+      artifactName: windows-net47-release
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: macos_x64_debug
@@ -91,7 +91,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-mono514
+      artifactName: macos-mono516-debug
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: macos_x64_release
@@ -119,7 +119,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-mono514
+      artifactName: macos-mono516-release
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: centos7_x64_debug
@@ -164,7 +164,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: centos7-mono514
+      artifactName: centos7-mono516-debug
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: centos7_x64_release
@@ -209,5 +209,5 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Artifacts
     inputs:
-      artifactName: centos7-mono514
+      artifactName: centos7-mono516-release
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
