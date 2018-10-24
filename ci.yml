@@ -75,16 +75,16 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Debug src/EventStore.sln
     env:
-      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Debug --logger trx
     env:
-      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
-      testRunTitle: "MacOS 10.13 (Mono 5.14)"
+      testRunTitle: "MacOS 10.13 (Mono 5.16)"
       platform: "MacOS 10.13"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
@@ -103,16 +103,16 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Release src/EventStore.sln
     env:
-      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Release --logger trx
     env:
-      FrameworkPathOverride: /usr/local/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
-      testRunTitle: "MacOS 10.13 (Mono 5.14)"
+      testRunTitle: "MacOS 10.13 (Mono 5.16)"
       platform: "MacOS 10.13"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
@@ -157,7 +157,7 @@ jobs:
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
-      testRunTitle: "Centos 7 (Mono 5.14)"
+      testRunTitle: "Centos 7 (Mono 5.16)"
       platform: "Centos 7"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
@@ -202,7 +202,7 @@ jobs:
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
-      testRunTitle: "Centos 7 (Mono 5.14)"
+      testRunTitle: "Centos 7 (Mono 5.16)"
       platform: "Centos 7"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'

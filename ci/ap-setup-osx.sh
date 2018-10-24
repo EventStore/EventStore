@@ -4,10 +4,9 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-# Install Mono from Homebrew, and force link it if there is an existing installation
-if ! brew install mono ; then
-	brew link --overwrite mono
-fi
+# Install Mono
+curl https://download.mono-project.com/archive/5.16.0/macos-10-universal/MonoFramework-MDK-5.16.0.179.macos10.xamarin.universal.pkg -o mono.pkg
+sudo installer -store -pkg mono.pkg -target /
 
 # Print the versions of mono and dotnet which are on PATH
 mono --version
