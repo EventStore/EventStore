@@ -75,11 +75,11 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Debug src/EventStore.sln
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Debug --logger trx
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
@@ -103,11 +103,11 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Release src/EventStore.sln
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -c Release --logger trx
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.6.2-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
@@ -138,7 +138,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        FrameworkPathOverride=/usr/lib/mono/4.7-api
         EventStoreBuildConfig=Debug
       containerCommand: ci/ap-build-linux.sh
       workingDirectory: '/work'
@@ -150,7 +150,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        FrameworkPathOverride=/usr/lib/mono/4.7-api
         EventStoreBuildConfig=Debug
       containerCommand: ci/ap-test-linux.sh
       workingDirectory: '/work'
@@ -183,7 +183,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        FrameworkPathOverride=/usr/lib/mono/4.7-api
         EventStoreBuildConfig=Release
       containerCommand: ci/ap-build-linux.sh
       workingDirectory: '/work'
@@ -195,7 +195,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.6.2-api
+        FrameworkPathOverride=/usr/lib/mono/4.7-api
         EventStoreBuildConfig=Release
       containerCommand: ci/ap-test-linux.sh
       workingDirectory: '/work'
