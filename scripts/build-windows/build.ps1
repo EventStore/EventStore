@@ -1,7 +1,7 @@
 [CmdletBinding()]
 Param(
-    [Parameter(Position=0, HelpMessage="Build Type (quick, full)")]
-    [ValidateSet('quick', 'clean-all', 'full', 'v8', 'js1')]
+    [Parameter(Position=0, HelpMessage="Build Type (quick, quick-with-ui, full)")]
+    [ValidateSet('quick', 'clean-all', 'full', 'v8', 'js1', 'quick-with-ui')]
     [string]$Target = "quick",
     [Parameter(HelpMessage="Configuration (debug, release)")]
     [string]$Configuration = "release",
@@ -105,7 +105,7 @@ if ($Target -eq "clean") {
     exit
 }
 
-if (($Target -eq "quick") -and ((Test-CanRunQuickBuild) -eq $false)) {
+if ((($Target -eq "quick") -or ($Target -eq "quick-with-ui")) -and ((Test-CanRunQuickBuild) -eq $false)) {
     Write-Info "Running full build instead"
     $Target = "full"
 }
@@ -221,6 +221,21 @@ if (($Target -eq "full") -or ($Target -eq "v8") -or ($Target -eq "js1")) {
     Pop-Location
 }
 
+if (($Target -eq "quick-with-ui") -or ($Target -eq "full")) {
+    #Build the UI
+    $uiPath = "src\EventStore.ClusterNode.Web\clusternode-web\"
+    if (Test-Path $uiPath) {
+        Remove-Item -Recurse -Force $uiPath
+    }
+    Push-Location src\EventStore.UI
+        Exec { npm install gulp@~3.8.8 -g }
+        Exec { npm install }
+        Exec { gulp dist }
+        $outputPath = Join-Path "..\..\" $uiPath
+        Exec { mv es-dist $outputPath }
+    Pop-Location
+}
+
 try {
     #Run build process
     Push-Environment
@@ -242,7 +257,7 @@ try {
         $branchName = Get-GitBranchOrTag
 
         #Build V8
-        if ($Target -ne "quick") {
+        if (($Target -ne "quick") -and ($Target -ne "quick-with-ui")) {
             #Build V8 and JS1
             Push-Location $v8Directory
             $pythonDirectory = Join-Path $depotToolsDirectory "python276_bin"
@@ -283,7 +298,7 @@ try {
             }
 
             $v8LibsDestination = Join-Path $libsDirectory $platform
-            $v8LibsDestination = Join-Path $v8LibsDestination "win" 
+            $v8LibsDestination = Join-Path $v8LibsDestination "win"
 
             Remove-Item -Recurse -Force $v8LibsDestination -ErrorAction SilentlyContinue
             New-Item -ItemType Container -Path $v8LibsDestination
@@ -340,7 +355,7 @@ try {
                 Write-Verbose "Patching $path with product information."
                 Patch-AssemblyInfo $path $Version $Version $branchName $commitHashAndTimestamp $productName $companyName $copyright
             }
-            
+
             Write-Verbose "Patching $versionInfoFile with product information."
             Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
@@ -351,7 +366,7 @@ try {
                 Write-Verbose "Reverting $path to original state."
                 & { git checkout --quiet $path }
             }
-            
+
             Write-Verbose "Reverting $versionInfoFile to original state."
             & { git checkout --quiet $versionInfoFile }
         }
