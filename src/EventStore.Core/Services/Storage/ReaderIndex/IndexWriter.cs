@@ -65,6 +65,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private long _cachedTransInfo;
         private long _notCachedTransInfo;
+        public static bool Debug = false;
 
         public IndexWriter(IIndexBackend indexBackend, IIndexReader indexReader)
         {
@@ -86,6 +87,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
+            if(IndexWriter.Debug){
+                Console.Error.WriteLine("CheckCommitStartingAt "+transactionPosition+" "+commitPosition);
+            }
             string streamId;
             long expectedVersion;
             using (var reader = _indexBackend.BorrowReader())
@@ -115,6 +119,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
                            where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                            select prepare.EventId;
+
+            if(IndexWriter.Debug){
+                Console.Error.WriteLine("CheckCommitStartingAt eventIds.Count = "+eventIds.Count());
+            }
+
             return CheckCommit(streamId, expectedVersion, eventIds);
         }
 
@@ -131,11 +140,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public CommitCheckResult CheckCommit(string streamId, long expectedVersion, IEnumerable<Guid> eventIds)
         {
+            if(IndexWriter.Debug){
+                Console.Error.WriteLine("CheckCommit "+streamId+" "+expectedVersion+" "+eventIds.Count());
+            }
+
+            if(IndexWriter.Debug) Console.Error.WriteLine("CheckCommit 1");
             var curVersion = GetStreamLastEventNumber(streamId);
             if (curVersion == EventNumber.DeletedStream)
                 return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);
             if (curVersion == EventNumber.Invalid)
                 return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
+
+            if(IndexWriter.Debug) Console.Error.WriteLine("CheckCommit 2");
 
             if(expectedVersion == ExpectedVersion.StreamExists) {
                 if(IsSoftDeleted(streamId))
@@ -148,6 +164,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
             }
 
+            if(IndexWriter.Debug) Console.Error.WriteLine("CheckCommit 3");
             // idempotency checks
             if (expectedVersion == ExpectedVersion.Any || expectedVersion == ExpectedVersion.StreamExists)
             {
@@ -157,9 +174,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 foreach (var eventId in eventIds)
                 {
                     EventInfo prepInfo;
-                    if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.StreamId != streamId)
+                    if (!_committedEvents.TryGetRecord(eventId, out prepInfo) || prepInfo.StreamId != streamId){
+                        if(IndexWriter.Debug){
+                            Console.Error.WriteLine("CheckCommit prepInfo.StreamId = "+prepInfo.StreamId+" streamId = "+streamId+" first="+first+" prepInfo.EventNumber = "+prepInfo.EventNumber);
+                        }
+
                         return new CommitCheckResult(first ? CommitDecision.Ok : CommitDecision.CorruptedIdempotency,
                                                      streamId, curVersion, -1, -1, first && IsSoftDeleted(streamId));
+                    }
                     if (first)
                         startEventNumber = prepInfo.EventNumber;
                     endEventNumber = prepInfo.EventNumber;
@@ -169,6 +191,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId))
                     : new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false);
             }
+            if(IndexWriter.Debug) Console.Error.WriteLine("CheckCommit 4");
 
             if (expectedVersion < curVersion)
             {

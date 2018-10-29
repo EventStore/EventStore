@@ -542,13 +542,16 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<StorageMessage.WriteCommit>.Handle(StorageMessage.WriteCommit message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("StorageWriterService - StorageMessage.WriteCommit "+message.CorrelationId);
             Interlocked.Decrement(ref FlushMessagesInQueue);
             try
             {
                 var commitPos = Writer.Checkpoint.ReadNonFlushed();
+                if(IndexWriter.Debug) Console.Error.WriteLine("StorageWriterService - CheckCommitStartingAt "+message.TransactionPosition+" "+commitPos);
                 var commitCheck = _indexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos);
                 if (commitCheck.Decision != CommitDecision.Ok)
                 {
+                    if(IndexWriter.Debug) Console.Error.WriteLine("StorageWriterService - ActOnCommitCheckFailure "+message.CorrelationId+" "+commitCheck);
                     ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
                     return;
                 }
@@ -587,6 +590,7 @@ namespace EventStore.Core.Services.Storage
             switch (result.Decision)
             {
                 case CommitDecision.WrongExpectedVersion:
+                    if(IndexWriter.Debug) Console.Error.WriteLine("StorageWriterService - ActOnCommitCheckFailure - WrongExpectedVersion "+correlationId+" "+result.CurrentVersion);
                     envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId, result.CurrentVersion));
                     break;
                 case CommitDecision.Deleted:
@@ -599,6 +603,7 @@ namespace EventStore.Core.Services.Storage
                         result.EndEventNumber));
                     break;
                 case CommitDecision.CorruptedIdempotency:
+                    if(IndexWriter.Debug) Console.Error.WriteLine("StorageWriterService - ActOnCommitCheckFailure - CorruptedIdempotency "+correlationId+" "+result.CurrentVersion);
                     // in case of corrupted idempotency (part of transaction is ok, other is different)
                     // then we can say that the transaction is not idempotent, so WrongExpectedVersion is ok answer
                     envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(correlationId, result.CurrentVersion));

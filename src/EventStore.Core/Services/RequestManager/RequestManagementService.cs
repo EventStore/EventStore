@@ -8,6 +8,7 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Services.Histograms;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager
 {
@@ -84,6 +85,7 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.TransactionStart message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("RequestManagementService - ClientMessage.TransactionStart "+message.InternalCorrId);
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
@@ -92,6 +94,7 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.TransactionWrite message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("RequestManagementService - ClientMessage.TransactionWrite "+message.InternalCorrId);
             var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
@@ -100,6 +103,7 @@ namespace EventStore.Core.Services.RequestManager
 
         public void Handle(ClientMessage.TransactionCommit message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("RequestManagementService - ClientMessage.TransactionCommit "+message.InternalCorrId);
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _prepareTimeout, _commitTimeout, _betterOrdering);
             _currentRequests.Add(message.InternalCorrId, manager);
             _currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());

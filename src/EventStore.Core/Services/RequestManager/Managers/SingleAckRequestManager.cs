@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(ClientMessage.TransactionStart request)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("SingleAckRequestManger - ClientMessage.TransactionStart "+request.CorrelationId+" "+request.InternalCorrId);
             if (_initialized)
                 throw new InvalidOperationException();
 
@@ -103,6 +104,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.PrepareAck message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("SingleAckRequestManger - StorageMessage.PrepareAck "+message.CorrelationId);
             if (_completed)
                 return;
             if (message.Flags.HasNoneOf(PrepareFlags.TransactionBegin))
@@ -114,6 +116,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.WrongExpectedVersion message)
         {
+            if(IndexWriter.Debug) Console.Error.WriteLine("SingleAckRequestManger - StorageMessage.WrongExpectedVersion "+message.CorrelationId);
             CompleteFailedRequest(OperationResult.WrongExpectedVersion, "Wrong expected version.");
         }
 

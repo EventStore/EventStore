@@ -9,6 +9,7 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
@@ -144,6 +145,8 @@ namespace EventStore.Core.Tests.ClientAPI
         [Category("Network")]
         public void should_commit_when_writing_with_exp_ver_any_even_while_somene_is_writing_in_parallel()
         {
+            try{
+            IndexWriter.Debug = true;
             const string stream = "should_commit_when_writing_with_exp_ver_any_even_while_somene_is_writing_in_parallel";
 
             var transWritesCompleted = new ManualResetEventSlim(false);
@@ -210,6 +213,10 @@ namespace EventStore.Core.Tests.ClientAPI
                             Is.EqualTo(totalTranWrites));
                 Assert.That(slice.Events.Count(ent => Helper.UTF8NoBom.GetString(ent.Event.Metadata) == "plain write"),
                             Is.EqualTo(totalPlainWrites));
+            }
+            }
+            finally{
+                IndexWriter.Debug = false;
             }
         }
 
