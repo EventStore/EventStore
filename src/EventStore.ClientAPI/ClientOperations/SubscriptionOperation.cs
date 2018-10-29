@@ -257,7 +257,9 @@ namespace EventStore.ClientAPI.ClientOperations
         private void ExecuteActionAsync(Func<Task> action)
         {
             _actionQueue.Enqueue(action);
-            if (_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.UserInitiated, new Exception("client buffer too big"));
+            if (_actionQueue.Count > _maxQueueSize)
+                DropSubscription(SubscriptionDropReason.ProcessingQueueOverflow,
+                    new Exception(string.Format("Action queue exceeded the maximum size ({0} items)", _maxQueueSize)));
             if (Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0)
                 ThreadPool.QueueUserWorkItem(ExecuteActions);
         }
