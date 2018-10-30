@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Helpers
                                              InternalHttpEndPoint, ExternalHttpEndPoint,
                                              null, null, 0, 0),
                 new[] {InternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA) }, new[]{ExternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA) }, enableTrustedAuth, ssl_connections.GetCertificate(), 1, false,
-                "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2),
+                "", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
                 false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
                 new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30, adminOnPublic: true,
                 statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
