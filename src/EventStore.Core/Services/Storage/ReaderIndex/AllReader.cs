@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
@@ -42,6 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes)
         {
             // MARK: This list needs to be the one to be filtered. 
+            Regex regex = this.BuildRegex(allowedEventTypes);
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
@@ -83,12 +86,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
                                 }
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-                                    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos
-                                    && this.isInAllowedTypes(allowedEventTypes, prepare.EventType))
+                                    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos)
                                 {
-                                    var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
-                                    records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
-                                    count++;
+                                    if (this.isInAllowedTypes(regex, prepare.EventType))
+                                    {
+                                        var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
+                                        records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+                                        count++;
+                                    }
                                     nextPos = new TFPos(result.RecordPostPosition, 0);
                                 }
                                 break;
@@ -123,12 +128,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                                     // prepare with useful data or delete tombstone
                                     if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-                                        && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos
-                                       && this.isInAllowedTypes(allowedEventTypes, prepare.EventType))
+                                        && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                                     {
-                                        var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                        records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-                                        count++;
+                                        if (this.isInAllowedTypes(regex, prepare.EventType))
+                                        {
+                                            var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+                                            records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
+                                            count++;
+                                        }
 
                                         // for forward pass position is inclusive, 
                                         // so we put pre-position of commit and post-position of prepare
@@ -148,12 +155,42 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private bool isInAllowedTypes(ISet<string> allowedTypes, string eventType) 
+        private Regex BuildRegex(ISet<string> allowedEventTypes) {
+            if (allowedEventTypes == null || allowedEventTypes.IsEmpty())
+            {
+                return null;
+            }
+            else if (allowedEventTypes.Count == 1)
+            {
+                IEnumerator<string> num = allowedEventTypes.GetEnumerator();
+                num.MoveNext();
+                return new Regex("^" + Regex.Escape(num.Current) + "$");
+            }
+            else
+            {
+                bool first = true;
+                StringBuilder sb = new StringBuilder();
+                sb.Append("^");
+                foreach(string s in allowedEventTypes)
+                {
+                    if (!first)
+                    {
+                        sb.Append("|");
+                    }
+                    first = false;
+                    sb.Append(Regex.Escape(s));
+                }
+                sb.Append("$");
+                return new Regex(sb.ToString(), RegexOptions.Compiled);
+            }
+        }
+
+        private bool isInAllowedTypes(Regex regex, string eventType) 
         {
-            if(allowedTypes == null || allowedTypes.IsEmpty()) {
+            if(regex == null) {
                 return true;
             } else {
-                return allowedTypes.Contains(eventType);
+                return regex.IsMatch(eventType);
             }
         }
 
