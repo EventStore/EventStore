@@ -32,7 +32,7 @@ namespace EventStore.ClusterNode
             var ret = new ClusterVNodeBuilder().WithClusterNodeSettings(clusterSize);
             return (ClusterVNodeBuilder)ret;
         }
-        
+
         protected override void SetUpProjectionsIfNeeded()
         {
             _subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType,

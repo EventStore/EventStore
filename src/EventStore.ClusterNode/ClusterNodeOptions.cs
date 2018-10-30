@@ -355,6 +355,8 @@ namespace EventStore.ClusterNode
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
             ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
+
+            IsPromotable = Opts.IsPromotableDefault;
         }
     }
 }

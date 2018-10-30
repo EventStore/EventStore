@@ -54,6 +54,7 @@ namespace EventStore.Core.Services.VNode
                                               + 1 /* HttpService Internal*/
                                               + 1 /* HttpService External*/;
         private bool _exitProcessOnShutdown;
+        private bool _isPromotable;
 
         public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
                                       ClusterVNodeSettings vnodeSettings, ClusterVNode node,
@@ -85,6 +86,7 @@ namespace EventStore.Core.Services.VNode
             _forwardingTimeout = vnodeSettings.PrepareTimeout + vnodeSettings.CommitTimeout + TimeSpan.FromMilliseconds(300);
 
             _fsm = CreateFSM();
+            _isPromotable = vnodeSettings.IsPromotable;
         }
 
         public void SetMainQueue(IQueuedHandler mainQueue)
@@ -338,9 +340,11 @@ namespace EventStore.Core.Services.VNode
             if (_master == null) throw new Exception("_master == null");
             if (_stateCorrelationId != message.CorrelationId)
                 return;
-
-            Log.Info("========== [{0}] IS CLONE... MASTER IS [{1},{2:B}]",
-                     _nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
+            Log.Info(
+                !_isPromotable
+                    ? "========== [{0}] IS CLONE (NON PROMOTABLE)... MASTER IS [{1},{2:B}]"
+                    : "========== [{0}] IS CLONE... MASTER IS [{1},{2:B}]",
+                _nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
             _state = VNodeState.Clone;
             _outputBus.Publish(message);
         }

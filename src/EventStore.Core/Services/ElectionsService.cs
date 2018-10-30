@@ -24,7 +24,7 @@ namespace EventStore.Core.Services
         Shutdown
     }
 
-    public class ElectionsService: IHandle<SystemMessage.BecomeShuttingDown>,
+    public class ElectionsService : IHandle<SystemMessage.BecomeShuttingDown>,
                                    IHandle<GossipMessage.GossipUpdated>,
                                    IHandle<ElectionMessage.StartElections>,
                                    IHandle<ElectionMessage.ElectionsTimedOut>,
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services
 
         private MemberInfo[] _servers;
 
-        private bool _isPromotable;
+        private readonly bool _isPromotable;
 
         public ElectionsService(IPublisher publisher,
                                 VNodeInfo nodeInfo,
@@ -146,12 +146,9 @@ namespace EventStore.Core.Services
             if (_state == ElectionsState.ElectingLeader) return;
 
             if (!_isPromotable)
-            {
                 Log.Trace("ELECTIONS: THIS NODE IS A NON PROMOTABLE CLONE");
-                return;
-            }
-
-            Log.Debug("ELECTIONS: STARTING ELECTIONS.");
+            else
+                Log.Debug("ELECTIONS: STARTING ELECTIONS.");
             ShiftToLeaderElection(_lastAttemptedView + 1);
             _publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
                                                             _publisherEnvelope,
@@ -210,7 +207,7 @@ namespace EventStore.Core.Services
             if (message.AttemptedView > _lastAttemptedView)
                 ShiftToLeaderElection(message.AttemptedView);
 
-            if (_vcReceived.Add(message.ServerId) && _vcReceived.Count == _clusterSize/2 + 1)
+            if (_vcReceived.Add(message.ServerId) && _vcReceived.Count == _clusterSize / 2 + 1)
             {
                 Log.Debug("ELECTIONS: (V={0}) MAJORITY OF VIEWCHANGE.", message.AttemptedView);
                 if (AmILeaderOf(_lastAttemptedView))
@@ -245,7 +242,7 @@ namespace EventStore.Core.Services
             if (AmILeaderOf(_lastAttemptedView))
             {
                 Log.Debug("ELECTIONS: (IV={0}) VIEWCHANGEPROOF FROM [{1}, {2:B}]. JUMPING TO LEADER STATE.",
-                          message.InstalledView,  message.ServerInternalHttp, message.ServerId);
+                          message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
                 ShiftToPreparePhase();
             }
@@ -323,7 +320,7 @@ namespace EventStore.Core.Services
             if (!_prepareOkReceived.ContainsKey(msg.ServerId))
             {
                 _prepareOkReceived.Add(msg.ServerId, msg);
-                if (_prepareOkReceived.Count == _clusterSize/2 + 1)
+                if (_prepareOkReceived.Count == _clusterSize / 2 + 1)
                     ShiftToRegLeader();
             }
         }
@@ -360,6 +357,7 @@ namespace EventStore.Core.Services
                                                         master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint);
             Handle(new ElectionMessage.Accept(_nodeInfo.InstanceId, _nodeInfo.InternalHttp,
                                               master.InstanceId, master.InternalHttp, _lastInstalledView));
+
             SendToAllExceptMe(proposal);
         }
 
@@ -490,7 +488,7 @@ namespace EventStore.Core.Services
             Log.Debug("ELECTIONS: (V={0}) ACCEPT FROM [{1},{2:B}] M=[{3},{4:B}]).", message.View,
                       message.ServerInternalHttp, message.ServerId, message.MasterInternalHttp, message.MasterId);
 
-            if (_acceptsReceived.Add(message.ServerId) && _acceptsReceived.Count == _clusterSize/2 + 1)
+            if (_acceptsReceived.Add(message.ServerId) && _acceptsReceived.Count == _clusterSize / 2 + 1)
             {
                 var master = _servers.FirstOrDefault(x => x.InstanceId == _masterProposal.InstanceId);
                 if (master != null)

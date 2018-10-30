@@ -133,7 +133,7 @@ namespace EventStore.Core
 
         private bool _gossipOnSingleNode;
 
-        private bool _isPromotable;
+        protected bool _isPromotable;
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         protected VNodeBuilder()
@@ -226,7 +226,7 @@ namespace EventStore.Core
             _isPromotable = Opts.IsPromotableDefault;
         }
 
-        protected VNodeBuilder IsPromotable(bool value)
+        public VNodeBuilder AsPromotable(bool value)
         {
             _isPromotable = value;
             return this;
@@ -1432,8 +1432,7 @@ namespace EventStore.Core
                     _alwaysKeepScavenged,
                     _gossipOnSingleNode,
                     _skipIndexScanOnReads, 
-                    _reduceFileCachePressure,
-                    _isPromotable);
+                    _reduceFileCachePressure);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
