@@ -1432,7 +1432,8 @@ namespace EventStore.Core
                     _alwaysKeepScavenged,
                     _gossipOnSingleNode,
                     _skipIndexScanOnReads, 
-                    _reduceFileCachePressure);
+                    _reduceFileCachePressure,
+                    _isPromotable);
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
