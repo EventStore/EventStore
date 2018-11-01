@@ -3,65 +3,62 @@
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
-COPYRIGHT="Copyright 2012 Event Store LLP. All rights reserved."
+COPYRIGHT="Copyright 2018 Event Store LLP. All rights reserved."
 
 
 # ------------ End of configuration -------------
 
-function usage() {
-    echo <<EOF
+CONFIGURATION="Release"
+BUILD_UI="no"
+NET_FRAMEWORK_API="4.7-api"
+MONO_LIB_DIR_LINUX="/usr/lib/mono"
+MONO_LIB_DIR_MAC="/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono"
+
+function usage() {    
+cat <<EOF
 Usage:
-  $0 [<version=0.0.0.0>] [<configuration=release>] [<distro-platform-override>]
+  $0 [<version=0.0.0.0>] [<configuration=Release>] [<build_ui=no>] [<mono_lib_dir_override>]
 
-Versions must be complete four part idenfitiers valid for use on a .NET assembly.
+version: EventStore build version. Versions must be complete four part identifiers valid for use on a .NET assembly.
 
-Valid configurations are:
-  debug
-  release
+configuration: Build configuration. Valid configurations are: Debug, Release
 
-The OS distribution and version will be detected automatically unless it is
-overriden as the last argument. This script expects to find libjs1.[so|dylib]
-in the src/libs/x64/distroname-distroversion/ directory, built using the scripts
-in the scripts/build-js1/ directory. Note that overriding this may result in
-crashes using Event Store.
+build_ui: Whether or not to build the EventStore UI. Building the UI requires an installation of Node.js (v8.11.4+)
 
-*The only supported Linux for production use at the moment is Ubuntu 14.04 LTS.*
-However, since several people have asked for builds compatible with Amazon Linux
-in particular, we have included a pre-built version of libjs1.so which will
-link to the correct version of libc on Amazon Linux 2015.03.
-
-Currently the supported versions without needing to build libjs1 from source are:
-  ubuntu-14.04              (Ubuntu Trusty)
-  amazon-2015.03            (Amazon Linux 2015.03)
-
+mono_lib_dir_override: Overrides the default mono lib directory. The default directories are as follows:
+  Linux: $MONO_LIB_DIR_LINUX
+  Mac: $MONO_LIB_DIR_MAC
 EOF
     exit 1
 }
 
-CONFIGURATION="Release"
-BUILDUI="no"
-DEFINES="MONO"
+
+function detectOS(){
+    unameOut="$(uname -s)"
+    case "${unameOut}" in
+        Linux*)     os=Linux;;
+        Darwin*)    os=Mac;;
+        *)          os="${unameOut}"
+    esac
+
+    if [[ "$os" != "Linux" && $os != "Mac" ]] ; then
+        echo "Unsupported operating system: $os. Only Linux and Mac are supported."
+        exit 1
+    fi
+    OS=$os
+}
 
 function checkParams() {
+    if [[ "$1" == "-help" || "$1" == "--help" ]] ; then
+        usage
+    fi
+
     version=$1
     configuration=$2
-    platform_override=$3
-    build_ui=$4
+    build_ui=$3
+    mono_lib_dir_override=$4
 
     [[ $# -gt 4 ]] && usage
-
-    if [[ "$configuration" == "" ]]; then
-        CONFIGURATION="release"
-        echo "Configuration defaulted to: $CONFIGURATION"
-    else
-        if [[ "$configuration" == "release" || "$configuration" == "debug" ]]; then
-            CONFIGURATION=$configuration
-            echo "Configuration set to: $CONFIGURATION"
-        else
-            echo "Invalid configuration: $configuration"
-            usage
-        fi
-    fi
 
     if [[ "$version" == "" ]] ; then
         VERSIONSTRING="0.0.0.0"
@@ -71,29 +68,52 @@ function checkParams() {
         echo "Version set to: $VERSIONSTRING"
     fi
 
-    if [[ "$platform_override" == "" ]] ; then
-        # shellcheck source=../detect-system/detect-system.sh disable=SC1091
-        source "$BASE_DIR/scripts/detect-system/detect-system.sh"
-        getSystemInformation
-        CURRENT_DISTRO="$ES_DISTRO-$ES_DISTRO_VERSION"
+    if [[ "$configuration" == "" ]]; then
+        CONFIGURATION="Release"
+        echo "Configuration defaulted to: $CONFIGURATION"
     else
-        CURRENT_DISTRO=$platform_override
+        if [[ "$configuration" == "Release" || "$configuration" == "Debug" ]]; then
+            CONFIGURATION=$configuration
+            echo "Configuration set to: $CONFIGURATION"
+        else
+            echo "Invalid configuration: $configuration"
+            usage
+        fi
     fi
 
-    if [[ "$build_ui" != "" ]] ; then
-        BUILDUI=$build_ui
-        echo "Build UI set to: $BUILDUI"
+    if [[ "$build_ui" == "" ]]; then
+        BUILD_UI="no"
+        echo "Build UI defaulted to: $BUILD_UI"
+    else
+        if [[ "$build_ui" == "yes" || "$build_ui" == "no" ]]; then
+            BUILD_UI=$build_ui
+            echo "Build UI set to: $BUILD_UI"
+        else
+            echo "Invalid Build UI value: $build_ui"
+            usage
+        fi
     fi
 
-    LIBJS1EXT="so"
-    if [ "$ES_DISTRO" == "osx" ]; then
-        LIBJS1EXT="dylib"
+    mono_lib_dir=""
+    if [ "$OS" == "Linux" ]; then
+        mono_lib_dir="$MONO_LIB_DIR_LINUX"
+    elif [ "$OS" == "Mac" ]; then
+        mono_lib_dir="$MONO_LIB_DIR_MAC"
     fi
-    LIBJS1PATH="$BASE_DIR/src/libs/x64/$CURRENT_DISTRO/libjs1.$LIBJS1EXT"
-    if [ ! -f "$LIBJS1PATH" ]; then
-        echo "$LIBJS1PATH does not exist. Did you build libjs1 for this distribution/version?"
+
+    if [[ "$mono_lib_dir_override" != "" ]] ; then
+        mono_lib_dir=$mono_lib_dir_override
+    fi
+
+    if [ ! -d $mono_lib_dir ]; then
+        echo "Error: Mono library directory does not exist: $mono_lib_dir"
         exit 1
     fi
+
+    export FrameworkPathOverride=$mono_lib_dir/$NET_FRAMEWORK_API
+
+    echo "Mono library directory set to: $mono_lib_dir"
+    echo "FrameworkPathOverride set to: $FrameworkPathOverride"
 }
 
 function revertVersionFiles() {
@@ -197,20 +217,19 @@ function patchVersionInfo {
     done
 }
 
-function linkCurrentJS1 {
-    mkdir -p "$BASE_DIR/src/libs/x64/current"
-    for f in $BASE_DIR/src/libs/x64/$CURRENT_DISTRO/*; do
-        ln -s "$f" "$BASE_DIR/src/libs/x64/current/$(basename "$f")"
-    done
-}
-
 function buildUI {
-    if [[ "$BUILDUI" != "yes" ]] ; then
+    if [[ "$BUILD_UI" != "yes" ]] ; then
         echo "Skipping UI Build"
         return
     fi
+
     rm -rf src/EventStore.ClusterNode.Web/clusternode-web/
     pushd src/EventStore.UI
+
+    if [ ! -f ./package.json ]; then
+        git submodule update --init
+    fi
+
     npm install gulp@~3.8.8 -g
     npm install
     gulp dist
@@ -222,13 +241,7 @@ function buildEventStore {
     patchVersionFiles
     patchVersionInfo
     rm -rf bin/
-    msbuild \
-	    src/EventStore.sln \
-	    /p:Platform="Any CPU" \
-	    /p:DefineConstants="$DEFINES" \
-	    /p:Configuration="$CONFIGURATION" \
-	    /target:restore,compile \
-	    || err
+    dotnet build -c $CONFIGURATION src/EventStore.sln || err
     revertVersionFiles
     revertVersionInfo
 }
@@ -238,11 +251,9 @@ function exitWithError {
     exit 1
 }
 
+detectOS
 checkParams "$1" "$2" "$3" "$4"
 
 echo "Running from base directory: $BASE_DIR"
-echo "Running on distribution: $CURRENT_DISTRO"
-linkCurrentJS1
 buildUI
 buildEventStore
-rm -rf "$BASE_NAME/src/libs/x64/$CURRENT_DISTRO"
