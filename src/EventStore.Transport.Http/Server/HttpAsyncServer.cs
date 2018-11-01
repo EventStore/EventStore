@@ -201,28 +201,5 @@ namespace EventStore.Transport.Http.Server
             if (handler != null)
                 handler(this, context);
         }
-//MONOCHECK is this still needed?
-#if MONO
-       private static Func<HttpListenerRequest, HttpListenerContext> CreateGetContext()
-        {
-            var r = System.Linq.Expressions.Expression.Parameter(typeof (HttpListenerRequest), "r");
-            var piHttpListenerContext = typeof (HttpListenerRequest).GetProperty("HttpListenerContext",
-                                                                                 System.Reflection.BindingFlags.GetProperty
-                                                                                 | System.Reflection.BindingFlags.NonPublic
-                                                                                 | System.Reflection.BindingFlags.FlattenHierarchy
-                                                                                 | System.Reflection.BindingFlags.Instance);
-            var fiContext = typeof (HttpListenerRequest).GetField("context",
-                                                                  System.Reflection.BindingFlags.GetProperty
-                                                                  | System.Reflection.BindingFlags.NonPublic
-                                                                  | System.Reflection.BindingFlags.FlattenHierarchy
-                                                                  | System.Reflection.BindingFlags.Instance);
-            var body = piHttpListenerContext != null
-                           ? System.Linq.Expressions.Expression.Property(r, piHttpListenerContext)
-                           : System.Linq.Expressions.Expression.Field(r, fiContext);
-            var debugExpression = System.Linq.Expressions.Expression.Lambda<Func<HttpListenerRequest, HttpListenerContext>>(body, r);
-            return debugExpression.Compile();
-        }
-#endif
-
     }
 }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -17,7 +18,6 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
-using HdrHistogram.NET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -70,6 +70,8 @@ namespace EventStore.Core.Services.Storage
         private long _maxFlushSize;
         private long _maxFlushDelay;
         private const string _writerFlushHistogram = "writer-flush";
+        private readonly List<Task> _tasks = new List<Task>();
+        public IEnumerable<Task> Tasks {get {return _tasks;}}
 
         public StorageWriterService(IPublisher bus,
             ISubscriber subscribeToBus,
@@ -104,7 +106,7 @@ namespace EventStore.Core.Services.Storage
                 "StorageWriterQueue",
                 true,
                 TimeSpan.FromMilliseconds(500));
-            StorageWriterQueue.Start();
+            _tasks.Add(StorageWriterQueue.Start());
 
             SubscribeToMessage<SystemMessage.SystemInit>();
             SubscribeToMessage<SystemMessage.StateChangeMessage>();

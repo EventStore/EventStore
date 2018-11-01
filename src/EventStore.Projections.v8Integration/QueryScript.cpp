@@ -67,7 +67,7 @@ namespace js1
 
 		v8::Handle<v8::Object> global = prelude->get_context()->Global();
 
-		v8::TryCatch try_catch;
+		v8::TryCatch try_catch(isolate);
 
 		if (!prelude->enter_cancellable_region())
 		{
@@ -185,7 +185,7 @@ namespace js1
 		v8::Handle<v8::Function> handler(args[1].As<v8::Function>());
 		EventHandler *event_handler = new EventHandler(name, handler);
 		registred_handlers.push_back(event_handler);
-		v8::String::Value uname(name);
+		v8::String::Value uname(v8::Isolate::GetCurrent(),name);
 		this->register_command_handler_callback(*uname, event_handler);
 		args.GetReturnValue().Set(v8::Undefined(v8::Isolate::GetCurrent()));
 	}
@@ -222,8 +222,8 @@ namespace js1
 		v8::Handle<v8::String> name(args[0].As<v8::String>());
 		v8::Handle<v8::String> body(args[1].As<v8::String>());
 
-		v8::String::Value name_value(name);
-		v8::String::Value body_value(body);
+		v8::String::Value name_value(v8::Isolate::GetCurrent(),name);
+		v8::String::Value body_value(v8::Isolate::GetCurrent(),body);
 
 		this->reverse_command_callback(*name_value, *body_value);
 

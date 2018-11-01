@@ -407,17 +407,17 @@ namespace EventStore.Core.Services.VNode
             {
                 Log.ErrorException(exc, "Error when publishing {0}.", message);
             }
+            try
+            {
+                _node.WorkersHandler.Stop();
+                _mainQueue.RequestStop();
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when stopping workers/main queue.");
+            }
             if (_exitProcessOnShutdown)
             {
-                try
-                {
-                    _node.WorkersHandler.Stop();
-                    _mainQueue.RequestStop();
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
-                }
                 Application.Exit(ExitCode.Success, "Shutdown and exit from process was requested.");
             }
         }
@@ -456,8 +456,9 @@ namespace EventStore.Core.Services.VNode
         private void Handle(UserManagementMessage.UserManagementServiceInitialized message)
         {
             if (_subSystems != null){
-                foreach (var subsystem in _subSystems)
-                    subsystem.Start();
+                foreach (var subsystem in _subSystems){
+                    _node.AddTasks(subsystem.Start());
+                }
             }
             _outputBus.Publish(message);
             _fsm.Handle(new SystemMessage.SystemCoreReady());

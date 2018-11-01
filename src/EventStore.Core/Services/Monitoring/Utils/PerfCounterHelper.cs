@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Services.Monitoring.Utils
@@ -57,8 +58,10 @@ namespace EventStore.Core.Services.Monitoring.Utils
 
             if (netInstanceName != null)
             {
-                _thrownExceptionsRateCounter = CreatePerfCounter(".NET CLR Exceptions", "# of Exceps Thrown / sec", netInstanceName);
-                _contentionsRateCounter = CreatePerfCounter(".NET CLR LocksAndThreads", "Contention Rate / sec", netInstanceName);
+                _thrownExceptionsRateCounter =
+                    CreatePerfCounter(".NET CLR Exceptions", "# of Exceps Thrown / sec", netInstanceName);
+                _contentionsRateCounter =
+                    CreatePerfCounter(".NET CLR LocksAndThreads", "Contention Rate / sec", netInstanceName);
                 _gcGen0ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 0 Collections", netInstanceName);
                 _gcGen1ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 1 Collections", netInstanceName);
                 _gcGen2ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 2 Collections", netInstanceName);
@@ -80,22 +83,27 @@ namespace EventStore.Core.Services.Monitoring.Utils
             try
             {
                 return string.IsNullOrEmpty(instance)
-                               ? new PerformanceCounter(category, counter)
-                               : new PerformanceCounter(category, counter, instance);
+                    ? new PerformanceCounter(category, counter)
+                    : new PerformanceCounter(category, counter, instance);
             }
             catch (Exception ex)
             {
-                _log.Trace("Could not create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
-                           category, counter, instance ?? string.Empty, ex.Message);
+                _log.Trace(
+                    "Could not create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
+                    category, counter, instance ?? string.Empty, ex.Message);
                 return null;
             }
         }
 
         private string GetProcessInstanceName(string categoryName, string counterName)
         {
-#if MONO
-            return _pid.ToString();
-#else
+            // On Unix or MacOS, use the PID as the instance name
+            if (Runtime.IsUnixOrMac)
+            {
+                return _pid.ToString();
+            }
+
+            // On Windows use the Performance Counter to get the name
             try
             {
                 if (PerformanceCounterCategory.Exists(categoryName))
@@ -106,17 +114,19 @@ namespace EventStore.Core.Services.Monitoring.Utils
                     {
                         var instanceDataCollection = category[counterName];
 
-                        foreach (InstanceData item in instanceDataCollection.Values)
+                        if (instanceDataCollection.Values != null)
                         {
-                            int instancePid = (int) item.RawValue;
-                            if (_pid.Equals(instancePid))
+                            foreach (InstanceData item in instanceDataCollection.Values)
                             {
-                                return item.InstanceName;
+                                var instancePid = (int) item.RawValue;
+                                if (_pid.Equals(instancePid))
+                                {
+                                    return item.InstanceName;
+                                }
                             }
                         }
                     }
                 }
-
             }
             catch (InvalidOperationException)
             {
@@ -124,7 +134,6 @@ namespace EventStore.Core.Services.Monitoring.Utils
             }
 
             return null;
-#endif
         }
 
 
@@ -139,7 +148,10 @@ namespace EventStore.Core.Services.Monitoring.Utils
         /// </remarks>
         public void RefreshInstanceName()
         {
-#if !MONO
+            if (!Runtime.IsWindows)
+            {
+                return;
+            }
 
             if (_procCpuCounter != null)
             {
@@ -173,7 +185,6 @@ namespace EventStore.Core.Services.Monitoring.Utils
                     if (_gcTotalBytesInHeapsCounter != null) _gcTotalBytesInHeapsCounter.InstanceName = netInstanceName;
                 }
             }
-#endif
         }
 
         public float GetTotalCpuUsage()
@@ -193,7 +204,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
 
         public int GetProcThreadsCount()
         {
-            return (int)(_procThreadsCounter?.NextValue() ?? InvalidCounterResult);
+            return (int) (_procThreadsCounter?.NextValue() ?? InvalidCounterResult);
         }
 
         public float GetThrownExceptionsRate()
@@ -242,6 +253,5 @@ namespace EventStore.Core.Services.Monitoring.Utils
             _gcTimeInGcCounter?.Dispose();
             _gcTotalBytesInHeapsCounter?.Dispose();
         }
-
     }
 }

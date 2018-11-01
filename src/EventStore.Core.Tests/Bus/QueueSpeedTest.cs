@@ -13,7 +13,6 @@ namespace EventStore.Core.Tests.Bus
     public class QueueSpeedTest
     {
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void autoreset_mpsc_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerAutoResetWithMpsc queue = null;
@@ -27,7 +26,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void autoreset_mpsc_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerAutoResetWithMpsc queue = null;
@@ -41,7 +39,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void autoreset_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerAutoReset queue = null;
@@ -55,7 +52,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void autoreset_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerAutoReset queue = null;
@@ -69,7 +65,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void sleep_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerSleep queue = null;
@@ -83,7 +78,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void sleep_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerSleep queue = null;
@@ -97,7 +91,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void pulse_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerPulse queue = null;
@@ -111,7 +104,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void pulse_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerPulse queue = null;
@@ -125,7 +117,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void mres_mpsc_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerMresWithMpsc queue = null;
@@ -139,7 +130,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void mres_mpsc_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerMresWithMpsc queue = null;
@@ -153,7 +143,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void mres_queued_handler_2_producers_50mln_messages()
         {
             QueuedHandlerMRES queue = null;
@@ -167,7 +156,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test, Category("LongRunning"), Explicit]
-        [MightyMooseIgnore]
         public void mres_queued_handler_10_producers_50mln_messages()
         {
             QueuedHandlerMRES queue = null;

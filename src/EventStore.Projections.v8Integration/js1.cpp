@@ -18,7 +18,7 @@ extern "C"
 			v8::Isolate::Scope isolate_scope(isolate);
 			v8::HandleScope scope(isolate);
 			v8::Handle<v8::Context> context = v8::Context::New(isolate);
-			v8::TryCatch try_catch;
+			v8::TryCatch try_catch(isolate);
 		}
 		return 1;
 	}
@@ -127,8 +127,8 @@ extern "C"
 		//NOTE: incorrect return types are handled in execute_handler
 		if (!result.IsEmpty()) 
 		{
-			v8::String::Value * result_buffer = new v8::String::Value(result);
-			v8::String::Value * result2_buffer = new v8::String::Value(result2);
+			v8::String::Value * result_buffer = new v8::String::Value(query_script->get_isolate(),result);
+			v8::String::Value * result2_buffer = new v8::String::Value(query_script->get_isolate(),result2);
 			*result_json = **result_buffer;
 			*result2_json = **result2_buffer;
 

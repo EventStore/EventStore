@@ -218,14 +218,17 @@ namespace EventStore.Core.Index
             if(skipIndexVerify){
                 Log.Debug("Disabling Verification of PTable");
             }
-#if  MONO
-            var workItem = GetWorkItem();
-            var stream = workItem.Stream;
-            try {
-#else
-            using (var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096))
-            {
-#endif
+
+            Stream stream = null;
+            WorkItem workItem = null;
+            if(Runtime.IsUnixOrMac){
+                workItem = GetWorkItem();
+                stream = workItem.Stream;
+            }
+            else{
+                stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096);
+            }
+
                 try {
                     int midpointsCount;
                     Midpoint[] midpoints;
@@ -345,13 +348,16 @@ namespace EventStore.Core.Index
                     Dispose();
                     throw;
                 }
-            }
-#if MONO
-            finally
-            {
-                ReturnWorkItem(workItem);
-            }
-#endif
+                finally{
+                    if(Runtime.IsUnixOrMac){
+                        if(workItem != null)
+                            ReturnWorkItem(workItem);
+                    }
+                    else{
+                        if(stream != null)
+                            stream.Dispose();
+                    }
+                }
         }
 
 

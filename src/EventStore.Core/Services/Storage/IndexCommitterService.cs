@@ -11,6 +11,9 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -46,12 +49,10 @@ namespace EventStore.Core.Services.Storage
                             new ConcurrentDictionary<long, PendingTransaction>();
 
         private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
-#if MONO
-        private readonly AutoResetEvent _addMsgSignal = new AutoResetEvent(false);
-#else
         private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim();
-#endif
         private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
+        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+        public Task Task { get {return _tcs.Task;} }
 
         public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount)
         {
@@ -84,11 +85,11 @@ namespace EventStore.Core.Services.Storage
 
         public void HandleReplicatedQueue()
         {
+        try
+        {
             _queueStats.Start();
             QueueMonitor.Default.Register(this);
 
-            try
-            {
                 StorageMessage.CommitAck replicatedMessage;
                 while(!_stop)
                 {
@@ -106,11 +107,7 @@ namespace EventStore.Core.Services.Storage
                     else
                     {
                         _queueStats.EnterIdle();
-#if MONO
-                        _addMsgSignal.WaitOne(_waitTimeoutMs);
-#else
                         _addMsgSignal.Wait(_waitTimeoutMs);
-#endif
                     }
                 }
             }
@@ -119,6 +116,7 @@ namespace EventStore.Core.Services.Storage
                 _queueStats.EnterIdle();
                 _queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
                 Log.FatalException(exc, "Error in IndexCommitterService. Terminating...");
+                _tcs.TrySetException(exc);
                 Application.Exit(ExitCode.Error, "Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
                 while (!_stop)
                 {
@@ -126,11 +124,11 @@ namespace EventStore.Core.Services.Storage
                 }
                _queueStats.ProcessingEnded(0);
             }
+            finally{
+                _queueStats.Stop();
+                QueueMonitor.Default.Unregister(this);
+            }
             _publisher.Publish(new SystemMessage.ServiceShutdown(Name));
-
-            _queueStats.EnterIdle();
-            _queueStats.Stop();
-            QueueMonitor.Default.Unregister(this);
         }
 
         private void ProcessCommitReplicated(StorageMessage.CommitAck message)
@@ -233,10 +231,10 @@ namespace EventStore.Core.Services.Storage
         {
             if(_state != VNodeState.Master || _commitCount == 1)
             {
-                _replicatedQueue.Enqueue(message);
 #if DEBUG
                 _queueStats.Enqueued();
 #endif
+                _replicatedQueue.Enqueue(message);
                 _addMsgSignal.Set();
                 return;
             }
@@ -263,10 +261,10 @@ namespace EventStore.Core.Services.Storage
 
         private void CommitReplicated(StorageMessage.CommitAck message)
         {
-            _replicatedQueue.Enqueue(message);
 #if DEBUG
             _queueStats.Enqueued();
 #endif
+            _replicatedQueue.Enqueue(message);
             _addMsgSignal.Set();
         }
 

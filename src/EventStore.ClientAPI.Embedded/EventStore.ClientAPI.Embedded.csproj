@@ -1,108 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0ED5BED0-EBF0-4C9D-B2A3-0EA54A767C3F}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EventStore.ClientAPI.Embedded</RootNamespace>
-    <AssemblyName>EventStore.ClientAPI.Embedded</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <TargetFramework>net47</TargetFramework>
+    <Platform>x64</Platform>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\clientapiembedded\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>
-    </DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\clientapiembedded\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\..\bin\clientapiembedded\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Prefer32Bit>false</Prefer32Bit>
+    <OutputPath>..\..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+    <IntermediateOutputPath>..\..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <DocumentationFile>$(OutputPath)\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
+    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />  
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AuthenticationExtensions.cs" />
-    <Compile Include="ClientMessageConverterExtensions.cs" />
-    <Compile Include="EmbeddedAuthenticationRequest.cs" />
-    <Compile Include="EmbeddedEventStoreConnection.cs" />
-    <Compile Include="EmbeddedEventStorePersistentSubscription.cs" />
-    <Compile Include="EmbeddedPersistentSubscription.cs" />
-    <Compile Include="EmbeddedResponderBase.cs" />
-    <Compile Include="EmbeddedResponders.cs" />
-    <Compile Include="EmbeddedResponseEnvelope.cs" />
-    <Compile Include="EmbeddedSubcriptionsManager.cs" />
-    <Compile Include="EmbeddedSubscriber.cs" />
-    <Compile Include="EmbeddedSubscription.cs" />
-    <Compile Include="EmbeddedSubscriptionBase.cs" />
-    <Compile Include="EmbeddedVNodeBuilder.cs" />
-    <Compile Include="EmbeddedVolatileEventStoreSubscription.cs" />
-    <Compile Include="EventStoreEmbeddedNodeConnection.cs" />
-    <Compile Include="IEmbeddedSubscription.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
-      <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
-      <Name>EventStore.ClientAPI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
-      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
-      <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
-      <Project>{d42a5833-4f20-4fcc-b364-6207ae016732}</Project>
-      <Name>EventStore.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj">
-      <Project>{03e02082-e179-4730-81ff-ce914749d6e3}</Project>
-      <Name>EventStore.Projections.Core</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent />
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  -->
-  <Target Name="BeforeBuild">
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libv8.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicui18n.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy SourceFiles="..\libs\x64\ubuntu-trusty\libicuuc.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libv8.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libicui18n.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="WarnAndContinue" SourceFiles="..\libs\x64\mac\libicuuc.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy SourceFiles="..\libs\win32\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-    <Copy SourceFiles="..\libs\win32\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
-    <Copy SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
-  </Target>
-  <Target Name="AfterBuild">
+  <!-- TODO(jen20): Investigate whcih of these are correct -->
+  <Target Name="CopyDependencies" BeforeTargets="BeforeBuild">
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
   </Target>
 </Project>

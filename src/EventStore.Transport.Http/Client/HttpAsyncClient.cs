@@ -11,7 +11,7 @@ namespace EventStore.Transport.Http.Client
 {
     public class HttpAsyncClient : IHttpClient
     {
-        private HttpClient _client;
+        private readonly HttpClient _client;
 
         static HttpAsyncClient()
         {
@@ -84,10 +84,6 @@ namespace EventStore.Transport.Http.Client
                              Action<HttpResponse> onSuccess, Action<Exception> onException)
         {
             var request = new HttpRequestMessage();
-//MONOCHECK is this still needed?
-#if MONO
-            request.Headers.Add("Keep-alive", "false");
-#endif
             request.Method = new System.Net.Http.HttpMethod(method);
             request.RequestUri = new Uri(url);
 

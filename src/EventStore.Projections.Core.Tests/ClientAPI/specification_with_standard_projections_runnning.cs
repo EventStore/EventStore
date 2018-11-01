@@ -45,13 +45,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 _manager = new ProjectionsManager(
                     new ConsoleLogger(),
                     _node.ExtHttpEndPoint,
-                    TimeSpan.FromMilliseconds(10000));
+                TimeSpan.FromMilliseconds(20000));
 
                 _queryManager = new QueryManager(
                     new ConsoleLogger(), 
                     _node.ExtHttpEndPoint,
-                    TimeSpan.FromMilliseconds(10000),
-                    TimeSpan.FromMilliseconds(10000));
+                    TimeSpan.FromMilliseconds(20000),
+                    TimeSpan.FromMilliseconds(20000));
 
                 WaitIdle();
 
@@ -148,11 +148,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
             if (_node != null)
                 _node.Shutdown();
-
-            base.TestFixtureTearDown();
 #if DEBUG
-            QueueStatsCollector.InitializeIdleDetection(false);
+            QueueStatsCollector.DisableIdleDetection();
 #endif
+            base.TestFixtureTearDown();
         }
 
         protected virtual void When()

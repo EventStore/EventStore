@@ -22,18 +22,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
             _randomCase.Init();
         }
 
-        [Test, Category("LongRunning"), Category("Network"), Explicit]
-        public void should_always_arrive_at_coherent_results([Range(0, ElectionParams.TestRunCount - 1)]int run)
-        {
-            var success = _randomCase.Run();
-            if (!success)
-                _randomCase.Logger.LogMessages();
-            Console.WriteLine("There were a total of {0} messages in this run.", _randomCase.Logger.ProcessedItems.Count());
-            Assert.True(success);
-        }
-
         [Test, Category("LongRunning"), Category("Network")]
-        public void should_always_arrive_at_coherent_results2([Range(0, 9)]int run)
+        public void should_always_arrive_at_coherent_results([Range(0, ElectionParams.TestRunCount - 1)]int run)
         {
             var success = _randomCase.Run();
             if (!success)

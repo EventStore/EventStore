@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using NUnit.Framework;
@@ -15,16 +16,17 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-
+            var mre = new ManualResetEvent(false);
             var step = _ioDispatcher.BeginReadForward(
                 _cancellationScope, _eventStreamId, _fromEventNumber, _maxCount, true, _principal,
-                res => _result = res,
-                () => _hasTimedOut = true
+                res => { _result = res; mre.Set(); },
+                () => { _hasTimedOut = true; mre.Set(); }
             );
             
             IODispatcherAsync.Run(step);
 
             _readForward.Envelope.ReplyWith(CreateReadStreamEventsForwardCompleted(_readForward));
+            mre.WaitOne(TimeSpan.FromSeconds(10));
         }
 
         [Test]
@@ -55,15 +57,16 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-
+            var mre = new ManualResetEvent(false);
             _ioDispatcher.ReadForward(
                 _eventStreamId, _fromEventNumber, _maxCount, true, _principal,
-                res => _result = res,
-                () => _hasTimedOut = true,
+                res => { _result = res; mre.Set(); },
+                () => { _hasTimedOut = true; mre.Set(); },
                 Guid.NewGuid()
             );
             
             _readForward.Envelope.ReplyWith(CreateReadStreamEventsForwardCompleted(_readForward));
+            mre.WaitOne(TimeSpan.FromSeconds(10));
         }
 
         [Test]
