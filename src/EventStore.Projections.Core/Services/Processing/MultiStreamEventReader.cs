@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Security.Principal;
 using EventStore.Core.Bus;
@@ -28,17 +29,17 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
         // event, link, progress
-        // null element in a queue means tream deleted 
+        // null element in a queue means stream deleted 
         private readonly Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>> _buffers =
             new Dictionary<string, Queue<Tuple<EventStore.Core.Data.ResolvedEvent, float>>>();
 
         private const int _maxReadCount = 111;
         private long? _safePositionToJoin;
-        private readonly Dictionary<string, bool> _eofs;
+        private readonly ConcurrentDictionary<string, bool> _eofs;
         private int _deliveredEvents;
         private long _lastPosition;
 
-        private readonly Dictionary<string, Guid> _pendingRequests;
+        private readonly ConcurrentDictionary<string, Guid> _pendingRequests;
 
         public MultiStreamEventReader(
             IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, int phase,
@@ -50,16 +51,16 @@ namespace EventStore.Projections.Core.Services.Processing
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
             if (streams.Length == 0) throw new ArgumentException("streams");
             _streams = new HashSet<string>(streams);
-            _eofs = _streams.ToDictionary(v => v, v => false);
+            _eofs = new ConcurrentDictionary<string, bool>(_streams.ToDictionary(v => v, v => false));
             var positions = CheckpointTag.FromStreamPositions(phase, fromPositions);
             ValidateTag(positions);
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
             _timeProvider = timeProvider;
-            _pendingRequests = new Dictionary<string, Guid>();
+            _pendingRequests = new ConcurrentDictionary<string, Guid>();
             foreach (var stream in streams)
             {
-                _pendingRequests.Add(stream, Guid.Empty);
+                _pendingRequests[stream] = Guid.Empty;
                 _preparePositions.Add(stream, null);
             }
         }
@@ -111,7 +112,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Read events has not been requested");
             if (Paused)
                 throw new InvalidOperationException("Paused");
-            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
 
             _lastPosition = message.TfLastCommitPosition;
             switch (message.Result)
@@ -120,7 +121,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
-                    if (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0)
+                    if (message.Result == ReadStreamResult.StreamDeleted
+                    || (message.Result == ReadStreamResult.NoStream && message.LastEventNumber >= 0))
                         EnqueueItem(null, message.EventStreamId);
                     ProcessBuffers();
                     _eventsRequested.Remove(message.EventStreamId);
@@ -170,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if(_disposed) return;
             if(Paused) return;
-            if(!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
+            if (!_pendingRequests.Values.Any(x => x == message.CorrelationId)) return;
 
             _eventsRequested.Remove(message.StreamId);
             PauseOrContinueProcessing(); 
@@ -210,9 +212,14 @@ namespace EventStore.Projections.Core.Services.Processing
             while (true)
             {
                 var anyNonEmpty = false;
+
+                var anyEvent = false;
                 var minStreamId = "";
-                var any = false;
                 var minPosition = GetMaxPosition();
+
+                var anyDeletedStream = false;
+                var deletedStreamId = "";
+
                 foreach (var buffer in _buffers)
                 {
                     if (buffer.Value.Count == 0)
@@ -221,27 +228,42 @@ namespace EventStore.Projections.Core.Services.Processing
                     var head = buffer.Value.Peek();
 
                     var currentStreamId = buffer.Key;
-                    var itemPosition = GetItemPosition(head);
 
-                    if (_safePositionToJoin != null
-                        && itemPosition.CompareTo(_safePositionToJoin.GetValueOrDefault()) <= 0
-                        && itemPosition.CompareTo(minPosition) < 0)
-                    {
-                        minPosition = itemPosition;
-                        minStreamId = currentStreamId;
-                        any = true;
+                    if(head!=null){
+                        var itemPosition = GetItemPosition(head);
+                        if (_safePositionToJoin != null
+                            && itemPosition.CompareTo(_safePositionToJoin.GetValueOrDefault()) <= 0
+                            && itemPosition.CompareTo(minPosition) < 0)
+                        {
+                            minPosition = itemPosition;
+                            minStreamId = currentStreamId;
+                            anyEvent = true;
+                        }
+                    }
+                    else{
+                        anyDeletedStream = true;
+                        deletedStreamId = currentStreamId;
                     }
                 }
-                if (!any)
+                if (!anyEvent && !anyDeletedStream)
                 {
                     if (!anyNonEmpty)
                         DeliverSafePositionToJoin();
                     break;
                 }
-                var minHead = _buffers[minStreamId].Dequeue();
-                DeliverEvent(minHead.Item1, minHead.Item2);
-                if (_buffers[minStreamId].Count == 0)
-                    PauseOrContinueProcessing();
+
+                if(anyEvent){
+                    var minHead = _buffers[minStreamId].Dequeue();
+                    DeliverEvent(minHead.Item1, minHead.Item2);
+
+                    if (_buffers[minStreamId].Count == 0)
+                        PauseOrContinueProcessing();
+                }
+            
+                if(anyDeletedStream){
+                    _buffers[deletedStreamId].Dequeue();
+                    SendPartitionDeleted_WhenReadingDataStream(deletedStreamId,-1,null,null,null,null);
+                }
             }
         }
 
@@ -260,17 +282,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var pendingRequestCorrelationId = Guid.NewGuid();
             _pendingRequests[stream] = pendingRequestCorrelationId;
+
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
             if (delay){ 
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), stream,
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
                         new TFPos(_lastPosition, _lastPosition), CreateReadTimeoutMessage(pendingRequestCorrelationId, stream)));
                 _publisher.Publish(
                     new AwakeServiceMessage.SubscribeAwake(
-                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), stream,
+                        new PublishEnvelope(_publisher, crossThread: true), Guid.NewGuid(), null,
                         new TFPos(_lastPosition, _lastPosition), readEventsForward));
             }
             else{
@@ -315,11 +338,21 @@ namespace EventStore.Projections.Core.Services.Processing
             var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
             long fromPosition = _fromPositions.Streams[streamId];
-            if (positionEvent.EventNumber != fromPosition)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Event number {0} was expected in the stream {1}, but event number {2} was received",
-                        fromPosition, streamId, positionEvent.EventNumber));
+
+            //if events have been deleted from the beginning of the stream, start from the first event we find
+            if(fromPosition==0 && positionEvent.EventNumber>0){
+                fromPosition = positionEvent.EventNumber;
+            }
+
+            if (positionEvent.EventNumber != fromPosition){
+                string reason = string.Format(
+                        "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
+                        fromPosition, streamId, positionEvent.EventNumber);
+
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
+                throw new InvalidOperationException(reason);
+            }
+
             _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
             _publisher.Publish(
                 //TODO: publish both link and event data

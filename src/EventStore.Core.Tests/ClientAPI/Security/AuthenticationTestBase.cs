@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Messages;
@@ -251,7 +252,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void SubscribeToStream(string streamId, string login, string password)
         {
-            using (Connection.SubscribeToStreamAsync(streamId, false, (x, y) => { }, (x, y, z) => { },
+            using (Connection.SubscribeToStreamAsync(streamId, false, (x, y) => Task.CompletedTask, (x, y, z) => { },
                                                 login == null && password == null ? null : new UserCredentials(login, password)).Result)
             {
             }
@@ -259,7 +260,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security
 
         protected void SubscribeToAll(string login, string password)
         {
-            using (Connection.SubscribeToAllAsync(false, (x, y) => { }, (x, y, z) => { },
+            using (Connection.SubscribeToAllAsync(false, (x, y) => Task.CompletedTask, (x, y, z) => { },
                                              login == null && password == null ? null : new UserCredentials(login, password)).Result)
             {
             }

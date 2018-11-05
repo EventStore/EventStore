@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -16,6 +17,7 @@ namespace EventStore.Projections.Core
         private readonly int _projectionWorkerThreadCount;
         private readonly ProjectionType _runProjections;
         private readonly bool _startStandardProjections;
+        private readonly TimeSpan _projectionsQueryExpiry;
         public const int VERSION = 3;
 
         private IQueuedHandler _masterInputQueue;
@@ -26,7 +28,7 @@ namespace EventStore.Projections.Core
         private bool _subsystemStarted;
 
         public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
-            bool startStandardProjections)
+            bool startStandardProjections, TimeSpan projectionQueryExpiry)
         {
             if (runProjections <= ProjectionType.System)
                 _projectionWorkerThreadCount = 1;
@@ -35,6 +37,7 @@ namespace EventStore.Projections.Core
 
             _runProjections = runProjections;
             _startStandardProjections = startStandardProjections;
+            _projectionsQueryExpiry = projectionQueryExpiry;
         }
 
         public void Register(StandardComponents standardComponents)
@@ -54,7 +57,7 @@ namespace EventStore.Projections.Core
             _coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);
             _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher) v.Value);
 
-            ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap);
+            ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap, _projectionsQueryExpiry);
             projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
         }
 
@@ -68,16 +71,18 @@ namespace EventStore.Projections.Core
         }
 
 
-        public void Start()
+        public IEnumerable<Task> Start()
         {
+            var tasks = new List<Task>();
             if(_subsystemStarted == false)
             {
                 if (_masterInputQueue != null)
-                    _masterInputQueue.Start();
+                    tasks.Add(_masterInputQueue.Start());
                 foreach (var queue in _coreQueues)
-                    queue.Value.Start();
+                    tasks.Add(queue.Value.Start());
             }
             _subsystemStarted = true;
+            return tasks;
         }
 
         public void Stop()

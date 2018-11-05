@@ -1,7 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 
 namespace EventStore.Core.TransactionLog.Unbuffered
@@ -9,6 +9,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
     //NOTE THIS DOES NOT SUPPORT ALL STREAM OPERATIONS AS YOU MIGHT EXPECT IT SUPPORTS WHAT WE USE!
     public unsafe class UnbufferedFileStream : Stream
     {
+        private static readonly INativeFile NativeFile;
+
         private byte* _writeBuffer;
         private byte* _readBuffer;
         private readonly int _writeBufferSize;
@@ -24,13 +26,26 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         private long _readLocation = -1;
         private bool _needsRead;
 
-        private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize, int internalReadBufferSize)
+        static UnbufferedFileStream()
+        {
+            if (Runtime.IsWindows)
+            {
+                NativeFile = new NativeFileWindows();
+            }
+            else
+            {
+                NativeFile = new NativeFileUnix();
+            }
+        }
+
+        private UnbufferedFileStream(SafeFileHandle handle, uint blockSize, int internalWriteBufferSize,
+            int internalReadBufferSize)
         {
             _handle = handle;
             _readBufferSize = internalReadBufferSize;
             _writeBufferSize = internalWriteBufferSize;
-            _writeBufferOriginal = Marshal.AllocHGlobal((int)(internalWriteBufferSize + blockSize));
-            _readBufferOriginal = Marshal.AllocHGlobal((int)(internalReadBufferSize + blockSize));
+            _writeBufferOriginal = Marshal.AllocHGlobal((int) (internalWriteBufferSize + blockSize));
+            _readBufferOriginal = Marshal.AllocHGlobal((int) (internalReadBufferSize + blockSize));
             _readBuffer = Align(_readBufferOriginal, blockSize);
             _writeBuffer = Align(_writeBufferOriginal, blockSize);
             _blockSize = blockSize;
@@ -41,8 +56,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             //This makes an aligned buffer linux needs this.
             //The buffer must originally be at least one alignment bigger!
             var diff = alignTo - (buf.ToInt64() % alignTo);
-            var aligned = (IntPtr)(buf.ToInt64() + diff);
-            return (byte*)aligned;
+            var aligned = (IntPtr) (buf.ToInt64() + diff);
+            return (byte*) aligned;
         }
 
         public static UnbufferedFileStream Create(string path,
@@ -70,15 +85,16 @@ namespace EventStore.Core.TransactionLog.Unbuffered
         {
             CheckDisposed();
             if (!_needsFlush) return;
-            var alignedbuffer = (int)GetLowestAlignment(_bufferedCount);
+            var alignedbuffer = (int) GetLowestAlignment(_bufferedCount);
             var positionAligned = GetLowestAlignment(_lastPosition);
             if (!_aligned)
             {
                 SeekInternal(positionAligned, SeekOrigin.Begin);
             }
+
             if (_bufferedCount == alignedbuffer)
             {
-                InternalWrite(_writeBuffer, (uint)_bufferedCount);
+                InternalWrite(_writeBuffer, (uint) _bufferedCount);
                 _lastPosition = positionAligned + _bufferedCount;
                 _bufferedCount = 0;
                 _aligned = true;
@@ -86,12 +102,13 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             else
             {
                 var left = _bufferedCount - alignedbuffer;
-                InternalWrite(_writeBuffer, (uint)(alignedbuffer + _blockSize));
+                InternalWrite(_writeBuffer, (uint) (alignedbuffer + _blockSize));
                 _lastPosition = positionAligned + alignedbuffer;
                 SetBuffer(alignedbuffer, left);
                 _bufferedCount = left;
                 _aligned = false;
             }
+
             _needsFlush = false;
         }
 
@@ -142,7 +159,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (origin == SeekOrigin.Current) throw new NotImplementedException("only supports seek origin begin/end");
             if (origin == SeekOrigin.End) mungedOffset = Length + offset;
             var aligned = GetLowestAlignment(mungedOffset);
-            var left = (int)(mungedOffset - aligned);
+            var left = (int) (mungedOffset - aligned);
             Flush();
             _bufferedCount = left;
             _aligned = aligned == left;
@@ -175,7 +192,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             if (offset + count > buffer.Length)
                 throw new ArgumentException("offset + count must be less than size of array");
             var position = GetLowestAlignment(Position);
-            var roffset = (int)(Position - position);
+            var roffset = (int) (Position - position);
 
             var bytesRead = _readBufferSize;
             if (_readLocation + _readBufferSize <= position || _readLocation > position || _readLocation == -1)
@@ -186,7 +203,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             }
             else if (_readLocation != position)
             {
-                roffset += (int)(position - _readLocation);
+                roffset += (int) (position - _readLocation);
             }
 
             var bytesAvailable = bytesRead - roffset;
@@ -205,12 +222,14 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             var done = false;
             long left = count;
             long current = offset;
-            if(_needsRead) {
+            if (_needsRead)
+            {
                 SeekInternal(_lastPosition, SeekOrigin.Begin);
-                NativeFile.Read(_handle, _writeBuffer, 0, (int)_blockSize);
+                NativeFile.Read(_handle, _writeBuffer, 0, (int) _blockSize);
                 SeekInternal(_lastPosition, SeekOrigin.Begin);
                 _needsRead = false;
             }
+
             while (!done)
             {
                 _needsFlush = true;
@@ -308,8 +327,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered
             Flush();
             _handle.Close();
             _handle = null;
-            _readBuffer = (byte*)IntPtr.Zero;
-            _writeBuffer = (byte*)IntPtr.Zero;
+            _readBuffer = (byte*) IntPtr.Zero;
+            _writeBuffer = (byte*) IntPtr.Zero;
             Marshal.FreeHGlobal(_readBufferOriginal);
             Marshal.FreeHGlobal(_writeBufferOriginal);
             GC.SuppressFinalize(this);

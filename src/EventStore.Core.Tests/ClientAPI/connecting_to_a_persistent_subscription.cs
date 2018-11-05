@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
@@ -9,6 +8,7 @@ using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
@@ -24,7 +24,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscription(
                     "nonexisting2",
                     "foo",
-                    (sub, e) => Console.Write("appeared"),
+                    (sub, e) =>
+                    {
+                        Console.Write("appeared");
+                        return Task.CompletedTask;
+                    },
                     (sub, reason, ex) =>
                     {
                     });
@@ -59,7 +63,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings, DefaultData.AdminCredentials).Wait();
             _sub = _conn.ConnectToPersistentSubscription(_stream,
                 "agroupname17",
-                (sub, e) => Console.Write("appeared"),
+                (sub, e) =>
+                {
+                    Console.Write("appeared");
+                    return Task.CompletedTask;
+                },
                 (sub, reason, ex) => {});
         }
 
@@ -91,7 +99,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscription( 
                     _stream,
                     "agroupname55",
-                    (sub, e) => Console.Write("appeared"),
+                    (sub, e) =>
+                    {
+                        Console.Write("appeared");
+                        return Task.CompletedTask;
+                    },
                     (sub, reason, ex) => Console.WriteLine("dropped."));
                 throw new Exception("should have thrown.");
             }
@@ -125,7 +137,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.ConnectToPersistentSubscription(
                 _stream,
                 _group,
-                (s, e) => s.Acknowledge(e),
+                (s, e) =>
+                {
+                    s.Acknowledge(e);
+                    return Task.CompletedTask;
+                },
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials);
         }
@@ -136,7 +152,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscription(
                     _stream,
                     _group,
-                    (s, e) => s.Acknowledge(e),
+                    (s, e) =>
+                    {
+                        s.Acknowledge(e);
+                        return Task.CompletedTask;
+                    },
                     (sub, reason, ex) => { },
                     DefaultData.AdminCredentials);
                 throw new Exception("should have thrown.");
@@ -168,6 +188,8 @@ namespace EventStore.Core.Tests.ClientAPI
 
         protected override void Given()
         {
+            
+            
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
             _conn.ConnectToPersistentSubscription(
@@ -185,12 +207,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();            
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
-            if (_set) return;
+            if (_set) return Task.CompletedTask;
             _set = true;
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -242,12 +265,13 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
-            if (_set) return;
+            if (_set) return Task.CompletedTask;
             _set = true;
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -301,7 +325,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials);
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (!_set)
             {
@@ -309,6 +333,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _firstEvent = resolvedEvent;
                 _resetEvent.Set();
             }
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -358,9 +383,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials);
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -414,10 +440,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -476,10 +503,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -534,7 +562,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private static void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private static Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             throw new Exception("test");
         }
@@ -597,10 +625,11 @@ namespace EventStore.Core.Tests.ClientAPI
 
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -661,12 +690,13 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         private bool _set = false;
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
-            if (_set) return;
+            if (_set) return Task.CompletedTask;
             _set = true;
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -721,7 +751,7 @@ namespace EventStore.Core.Tests.ClientAPI
                             string.Format("{0}@{1}", intMaxValue + 1, StreamName)), null));
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (!_set)
             {
@@ -729,6 +759,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _firstEvent = resolvedEvent;
                 _resetEvent.Set();
             }
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -737,6 +768,61 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.AreEqual(intMaxValue + 1, _firstEvent.Event.EventNumber);
             Assert.AreEqual(_event1Id, _firstEvent.Event.EventId);
+        }
+    }
+
+    [TestFixture, Category("LongRunning")]
+    public class connect_to_persistent_subscription_with_retries : SpecificationWithMiniNode
+    {
+        private readonly string _stream = Guid.NewGuid().ToString("N");
+        private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
+                                                                .DoNotResolveLinkTos()
+                                                                .StartFromBeginning();
+
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private readonly Guid _id = Guid.NewGuid();
+        int? _retryCount;
+        private const string _group = "retries";
+
+        protected override void Given()
+        {
+            _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
+                DefaultData.AdminCredentials).Wait();
+            _conn.ConnectToPersistentSubscription(
+             _stream,
+             _group,
+             HandleEvent,
+             (sub, reason, ex) => { },
+             DefaultData.AdminCredentials,autoAck:false);
+
+        }
+
+        protected override void When()
+        {
+            _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any, DefaultData.AdminCredentials,
+                new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
+        }
+
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent, int? retryCount)
+        {
+            if (retryCount > 4)
+            {
+                _retryCount = retryCount;
+                sub.Acknowledge(resolvedEvent);
+                _resetEvent.Set();
+            }
+            else
+            {
+                sub.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Retry, "Not yet tried enough times");
+            }
+            return Task.CompletedTask;
+        }
+
+        [Test]
+        public void events_are_retried_until_success()
+        {
+            Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(10)));
+            Assert.AreEqual(5, _retryCount);
         }
     }
 

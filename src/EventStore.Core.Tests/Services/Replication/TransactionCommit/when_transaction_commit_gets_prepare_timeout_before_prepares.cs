@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout, false);
+            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()

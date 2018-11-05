@@ -5,6 +5,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -15,9 +18,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             NoStream("$projections-test-projection-order");
-            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "test-projection");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated, null, "test-projection");
             ExistingEvent(
-                "$projections-test-projection", "$ProjectionUpdated", null,
+                "$projections-test-projection", ProjectionEventTypes.ProjectionUpdated, null,
                 @"{""Query"":""fromCategory('test').foreachStream().when({'e': function(s,e){}})"", 
                     ""Mode"":""3"", ""Enabled"":false, ""HandlerType"":""JS"",
                     ""SourceDefinition"":{
@@ -26,9 +29,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                         ""Streams"":[""$ce-test""]
                     }
                 }");    
-            ExistingEvent("$projections-test-projection-a-checkpoint", "$Checkpoint", @"{""s"":{""$ce-test"": 9}}", @"{""data"":1}");
+            ExistingEvent("$projections-test-projection-a-checkpoint", ProjectionEventTypes.PartitionCheckpoint, @"{""s"":{""$ce-test"": 9}}", @"{""data"":1}");
             NoStream("$projections-test-projection-b-checkpoint");
-            ExistingEvent("$projections-test-projection-checkpoint", "$ProjectionCheckpoint", @"{""s"":{""$ce-test"": 10}}", @"{}");
+            ExistingEvent("$projections-test-projection-checkpoint", ProjectionEventTypes.ProjectionCheckpoint, @"{""s"":{""$ce-test"": 10}}", @"{}");
             AllWritesSucceed();
         }
 
@@ -39,6 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             // when
             yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
+            yield return (new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now)));
             yield return (new SystemMessage.SystemCoreReady());
         }
 

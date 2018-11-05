@@ -3,16 +3,23 @@ using System.Collections.Generic;
 using EventStore.Core.Index;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
+using System.IO;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(false)]
+    [TestFixture(true)]
     public class when_merging_ptables : SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
 
         private PTable _newtable;
+        private bool _skipIndexVerify;
+
+        public when_merging_ptables(bool skipIndexVerify){
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -31,7 +38,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -67,13 +74,19 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
     }
 
-    [TestFixture]
+    [TestFixture(false)]
+    [TestFixture(true)]
     public class when_merging_ptables_to_64bit: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
 
         private PTable _newtable;
+        private bool _skipIndexVerify;
+
+        public when_merging_ptables_to_64bit(bool skipIndexVerify){
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -92,7 +105,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010700000000, 0, 0x0107);
             table.Add(0x010800000000, 0, 0x0108);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -128,13 +141,19 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
     }
 
-    [TestFixture]
+    [TestFixture(false)]
+    [TestFixture(true)]
     public class when_merging_2_32bit_ptables_and_1_64bit_ptable_to_64bit : SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
 
         private PTable _newtable;
+        private bool _skipIndexVerify;
+
+        public when_merging_2_32bit_ptables_and_1_64bit_ptable_to_64bit(bool skipIndexVerify){
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -159,7 +178,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x111000000000, 0, 0x111000000000);
             table.Add(0x121000000000, 0, 0x121000000000);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true, x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -202,7 +221,8 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
     }
 
-    [TestFixture]
+    [TestFixture(false)]
+    [TestFixture(true)]
     public class when_merging_1_32bit_ptables_and_1_64bit_ptable_with_missing_entries_to_64bit : SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
@@ -210,6 +230,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IHasher hasher;
 
         private PTable _newtable;
+        private bool _skipIndexVerify;
+
+        public when_merging_1_32bit_ptables_and_1_64bit_ptable_with_missing_entries_to_64bit(bool skipIndexVerify){
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -231,7 +256,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -263,14 +288,15 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
             foreach (var item in _newtable.IterateAllInOrder())
             {
-                Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) || 
+                Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
                 ((last.Stream == item.Stream && last.Version == item.Version) && last.Position > item.Position));
                 last = item;
             }
         }
     }
 
-    [TestFixture]
+    [TestFixture(false)]
+    [TestFixture(true)]
     public class when_merging_2_32bit_ptables_and_1_64bit_ptable_with_missing_entries_to_64bit : SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
@@ -278,6 +304,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IHasher hasher;
 
         private PTable _newtable;
+        private bool _skipIndexVerify;
+
+        public when_merging_2_32bit_ptables_and_1_64bit_ptable_with_missing_entries_to_64bit(bool skipIndexVerify){
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -305,7 +336,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010500000000, 2, 13);
             table.Add(0x010500000000, 3, 14);
             _tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
-            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2);
+            _newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0, x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -337,7 +368,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
             foreach (var item in _newtable.IterateAllInOrder())
             {
-                Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) || 
+                Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
                     ((last.Stream == item.Stream && last.Version == item.Version) && last.Position > item.Position));
                 last = item;
             }

@@ -1,12 +1,17 @@
 using System;
 using System.Diagnostics;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Services.Monitoring.Utils
 {
     internal class PerfCounterHelper : IDisposable
     {
+        private const string DotNetProcessIdCounterName = "Process Id";
+        private const string ProcessIdCounterName = "ID Process";
+        private const string DotNetMemoryCategory = ".NET CLR Memory";
+        private const string ProcessCategory = "Process";
         private const int InvalidCounterResult = -1;
 
         private readonly ILogger _log;
@@ -29,46 +34,47 @@ namespace EventStore.Core.Services.Monitoring.Utils
         private readonly PerformanceCounter _gcAllocationSpeedCounter;
         private readonly PerformanceCounter _gcTimeInGcCounter;
         private readonly PerformanceCounter _gcTotalBytesInHeapsCounter;
+        private readonly int _pid;
 
         public PerfCounterHelper(ILogger log)
         {
             _log = log;
 
+            var currentProcess = Process.GetCurrentProcess();
+            _pid = currentProcess.Id;
+
             _totalCpuCounter = CreatePerfCounter("Processor", "% Processor Time", "_Total");
             _totalMemCounter = CreatePerfCounter("Memory", "Available Bytes");
-            _procCpuCounter = CreatePerfCounterForProcess("Process", "% Processor Time");
-            _procThreadsCounter = CreatePerfCounterForProcess("Process", "Thread Count");
-            _thrownExceptionsRateCounter = CreatePerfCounterForProcess(".NET CLR Exceptions", "# of Exceps Thrown / sec");
-            _contentionsRateCounter = CreatePerfCounterForProcess(".NET CLR LocksAndThreads", "Contention Rate / sec");
-            _gcGen0ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 0 Collections");
-            _gcGen1ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 1 Collections");
-            _gcGen2ItemsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Gen 2 Collections");
-            _gcGen0SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 0 heap size");
-            _gcGen1SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 1 heap size");
-            _gcGen2SizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Gen 2 heap size");
-            _gcLargeHeapSizeCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Large Object Heap size");
-            _gcAllocationSpeedCounter = CreatePerfCounterForProcess(".NET CLR Memory", "Allocated Bytes/sec");
-            _gcTimeInGcCounter = CreatePerfCounterForProcess(".NET CLR Memory", "% Time in GC");
-            _gcTotalBytesInHeapsCounter = CreatePerfCounterForProcess(".NET CLR Memory", "# Bytes in all Heaps");
-        }
 
-        private PerformanceCounter CreatePerfCounterForProcess(string category, string counter)
-        {
-            string processName = null;
-            try
+            var processInstanceName = GetProcessInstanceName(ProcessCategory, ProcessIdCounterName);
+
+            if (processInstanceName != null)
             {
-                #if MONO
-                processName = Process.GetCurrentProcess().Id.ToString();
-                #else
-                processName = Process.GetCurrentProcess().ProcessName;
-                #endif
-                return CreatePerfCounter(category, counter, processName);
+                _procCpuCounter = CreatePerfCounter(ProcessCategory, "% Processor Time", processInstanceName);
+                _procThreadsCounter = CreatePerfCounter(ProcessCategory, "Thread Count", processInstanceName);
             }
-            catch (Exception ex)
+
+            var netInstanceName = GetProcessInstanceName(DotNetMemoryCategory, DotNetProcessIdCounterName);
+
+            if (netInstanceName != null)
             {
-                _log.Trace("Could not create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
-                           category, counter, processName ?? "<!error getting process name!>", ex.Message);
-                return null;
+                _thrownExceptionsRateCounter =
+                    CreatePerfCounter(".NET CLR Exceptions", "# of Exceps Thrown / sec", netInstanceName);
+                _contentionsRateCounter =
+                    CreatePerfCounter(".NET CLR LocksAndThreads", "Contention Rate / sec", netInstanceName);
+                _gcGen0ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 0 Collections", netInstanceName);
+                _gcGen1ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 1 Collections", netInstanceName);
+                _gcGen2ItemsCounter = CreatePerfCounter(DotNetMemoryCategory, "# Gen 2 Collections", netInstanceName);
+                _gcGen0SizeCounter = CreatePerfCounter(DotNetMemoryCategory, "Gen 0 heap size", netInstanceName);
+                _gcGen1SizeCounter = CreatePerfCounter(DotNetMemoryCategory, "Gen 1 heap size", netInstanceName);
+                _gcGen2SizeCounter = CreatePerfCounter(DotNetMemoryCategory, "Gen 2 heap size", netInstanceName);
+                _gcLargeHeapSizeCounter = CreatePerfCounter(DotNetMemoryCategory, "Large Object Heap size",
+                    netInstanceName);
+                _gcAllocationSpeedCounter =
+                    CreatePerfCounter(DotNetMemoryCategory, "Allocated Bytes/sec", netInstanceName);
+                _gcTimeInGcCounter = CreatePerfCounter(DotNetMemoryCategory, "% Time in GC", netInstanceName);
+                _gcTotalBytesInHeapsCounter =
+                    CreatePerfCounter(DotNetMemoryCategory, "# Bytes in all Heaps", netInstanceName);
             }
         }
 
@@ -77,82 +83,175 @@ namespace EventStore.Core.Services.Monitoring.Utils
             try
             {
                 return string.IsNullOrEmpty(instance)
-                               ? new PerformanceCounter(category, counter)
-                               : new PerformanceCounter(category, counter, instance);
+                    ? new PerformanceCounter(category, counter)
+                    : new PerformanceCounter(category, counter, instance);
             }
             catch (Exception ex)
             {
-                _log.Trace("Could not create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
-                           category, counter, instance ?? string.Empty, ex.Message);
+                _log.Trace(
+                    "Could not create performance counter: category='{0}', counter='{1}', instance='{2}'. Error: {3}",
+                    category, counter, instance ?? string.Empty, ex.Message);
                 return null;
+            }
+        }
+
+        private string GetProcessInstanceName(string categoryName, string counterName)
+        {
+            // On Unix or MacOS, use the PID as the instance name
+            if (Runtime.IsUnixOrMac)
+            {
+                return _pid.ToString();
+            }
+
+            // On Windows use the Performance Counter to get the name
+            try
+            {
+                if (PerformanceCounterCategory.Exists(categoryName))
+                {
+                    var category = new PerformanceCounterCategory(categoryName).ReadCategory();
+
+                    if (category.Contains(counterName))
+                    {
+                        var instanceDataCollection = category[counterName];
+
+                        if (instanceDataCollection.Values != null)
+                        {
+                            foreach (InstanceData item in instanceDataCollection.Values)
+                            {
+                                var instancePid = (int) item.RawValue;
+                                if (_pid.Equals(instancePid))
+                                {
+                                    return item.InstanceName;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                _log.Trace("Unable to get performance counter category '{0}' instances.", categoryName);
+            }
+
+            return null;
+        }
+
+
+        /// <summary>
+        /// Re-examines the performance counter instances for the correct instance name for this process.
+        /// </summary>
+        /// <remarks>
+        /// The performance counter instance on .NET Framework can change at any time 
+        /// due to creation or destruction of processes with the same image name. This method should be called before using the Get methods.
+        /// 
+        /// The correct instance name must be found by dereferencing via a look up counter, e.g. .Net CLR Memory/Process Id
+        /// </remarks>
+        public void RefreshInstanceName()
+        {
+            if (!Runtime.IsWindows)
+            {
+                return;
+            }
+
+            if (_procCpuCounter != null)
+            {
+                var processInstanceName = GetProcessInstanceName(ProcessCategory, ProcessIdCounterName);
+
+                if (processInstanceName != null)
+                {
+                    if (_procCpuCounter != null) _procCpuCounter.InstanceName = processInstanceName;
+                    if (_procThreadsCounter != null) _procThreadsCounter.InstanceName = processInstanceName;
+                }
+            }
+
+            if (_gcLargeHeapSizeCounter != null)
+            {
+                var netInstanceName = GetProcessInstanceName(DotNetMemoryCategory, DotNetProcessIdCounterName);
+
+                if (netInstanceName != null)
+                {
+                    if (_thrownExceptionsRateCounter != null)
+                        _thrownExceptionsRateCounter.InstanceName = netInstanceName;
+                    if (_contentionsRateCounter != null) _contentionsRateCounter.InstanceName = netInstanceName;
+                    if (_gcGen0ItemsCounter != null) _gcGen0ItemsCounter.InstanceName = netInstanceName;
+                    if (_gcGen1ItemsCounter != null) _gcGen1ItemsCounter.InstanceName = netInstanceName;
+                    if (_gcGen2ItemsCounter != null) _gcGen2ItemsCounter.InstanceName = netInstanceName;
+                    if (_gcGen0SizeCounter != null) _gcGen0SizeCounter.InstanceName = netInstanceName;
+                    if (_gcGen1SizeCounter != null) _gcGen1SizeCounter.InstanceName = netInstanceName;
+                    if (_gcGen2SizeCounter != null) _gcGen2SizeCounter.InstanceName = netInstanceName;
+                    if (_gcLargeHeapSizeCounter != null) _gcLargeHeapSizeCounter.InstanceName = netInstanceName;
+                    if (_gcAllocationSpeedCounter != null) _gcAllocationSpeedCounter.InstanceName = netInstanceName;
+                    if (_gcTimeInGcCounter != null) _gcTimeInGcCounter.InstanceName = netInstanceName;
+                    if (_gcTotalBytesInHeapsCounter != null) _gcTotalBytesInHeapsCounter.InstanceName = netInstanceName;
+                }
             }
         }
 
         public float GetTotalCpuUsage()
         {
-            return _totalCpuCounter != null ? _totalCpuCounter.NextValue() : InvalidCounterResult;
+            return _totalCpuCounter?.NextValue() ?? InvalidCounterResult;
         }
 
         public long GetFreeMemory()
         {
-            return _totalMemCounter != null ? _totalMemCounter.NextSample().RawValue : InvalidCounterResult;
+            return _totalMemCounter?.NextSample().RawValue ?? InvalidCounterResult;
         }
 
         public float GetProcCpuUsage()
         {
-            return _procCpuCounter != null ? _procCpuCounter.NextValue() : InvalidCounterResult;
+            return _procCpuCounter?.NextValue() ?? InvalidCounterResult;
         }
 
         public int GetProcThreadsCount()
         {
-            return _procThreadsCounter != null ? (int) _procThreadsCounter.NextValue() : InvalidCounterResult;
+            return (int) (_procThreadsCounter?.NextValue() ?? InvalidCounterResult);
         }
 
         public float GetThrownExceptionsRate()
         {
-            return _thrownExceptionsRateCounter != null ? _thrownExceptionsRateCounter.NextValue() : InvalidCounterResult;
+            return _thrownExceptionsRateCounter?.NextValue() ?? InvalidCounterResult;
         }
 
         public float GetContentionsRateCount()
         {
-            return _contentionsRateCounter != null ? _contentionsRateCounter.NextValue() : InvalidCounterResult;
+            return _contentionsRateCounter?.NextValue() ?? InvalidCounterResult;
         }
 
         public GcStats GetGcStats()
         {
             return new GcStats(
-                gcGen0Items: _gcGen0ItemsCounter != null ? _gcGen0ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen1Items: _gcGen1ItemsCounter != null ? _gcGen1ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen2Items: _gcGen2ItemsCounter != null ? _gcGen2ItemsCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen0Size: _gcGen0SizeCounter != null ? _gcGen0SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen1Size: _gcGen1SizeCounter != null ? _gcGen1SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcGen2Size: _gcGen2SizeCounter != null ? _gcGen2SizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcLargeHeapSize: _gcLargeHeapSizeCounter != null ? _gcLargeHeapSizeCounter.NextSample().RawValue : InvalidCounterResult,
-                gcAllocationSpeed: _gcAllocationSpeedCounter != null ? _gcAllocationSpeedCounter.NextValue() : InvalidCounterResult,
-                gcTimeInGc: _gcTimeInGcCounter != null ? _gcTimeInGcCounter.NextValue() : InvalidCounterResult,
-                gcTotalBytesInHeaps: _gcTotalBytesInHeapsCounter != null ? _gcTotalBytesInHeapsCounter.NextSample().RawValue : InvalidCounterResult);
+                gcGen0Items: _gcGen0ItemsCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcGen1Items: _gcGen1ItemsCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcGen2Items: _gcGen2ItemsCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcGen0Size: _gcGen0SizeCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcGen1Size: _gcGen1SizeCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcGen2Size: _gcGen2SizeCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcLargeHeapSize: _gcLargeHeapSizeCounter?.NextSample().RawValue ?? InvalidCounterResult,
+                gcAllocationSpeed: _gcAllocationSpeedCounter?.NextValue() ?? InvalidCounterResult,
+                gcTimeInGc: _gcTimeInGcCounter?.NextValue() ?? InvalidCounterResult,
+                gcTotalBytesInHeaps: _gcTotalBytesInHeapsCounter?.NextSample().RawValue ?? InvalidCounterResult);
         }
 
         public void Dispose()
         {
-            if (_totalCpuCounter != null) _totalCpuCounter.Dispose();
-            if (_totalMemCounter != null) _totalMemCounter.Dispose();
-            if (_procCpuCounter != null) _procCpuCounter.Dispose();
-            if (_procThreadsCounter != null) _procThreadsCounter.Dispose();
+            _totalCpuCounter?.Dispose();
+            _totalMemCounter?.Dispose();
+            _procCpuCounter?.Dispose();
+            _procThreadsCounter?.Dispose();
 
-            if (_thrownExceptionsRateCounter != null) _thrownExceptionsRateCounter.Dispose();
-            if (_contentionsRateCounter != null) _contentionsRateCounter.Dispose();
+            _thrownExceptionsRateCounter?.Dispose();
+            _contentionsRateCounter?.Dispose();
 
-            if (_gcGen0ItemsCounter != null) _gcGen0ItemsCounter.Dispose();
-            if (_gcGen1ItemsCounter != null) _gcGen1ItemsCounter.Dispose();
-            if (_gcGen2ItemsCounter != null) _gcGen2ItemsCounter.Dispose();
-            if (_gcGen0SizeCounter != null) _gcGen0SizeCounter.Dispose();
-            if (_gcGen1SizeCounter != null) _gcGen1SizeCounter.Dispose();
-            if (_gcGen2SizeCounter != null) _gcGen2SizeCounter.Dispose();
-            if (_gcLargeHeapSizeCounter != null) _gcLargeHeapSizeCounter.Dispose();
-            if (_gcAllocationSpeedCounter != null) _gcAllocationSpeedCounter.Dispose();
-            if (_gcTimeInGcCounter != null) _gcTimeInGcCounter.Dispose();
-            if (_gcTotalBytesInHeapsCounter != null) _gcTotalBytesInHeapsCounter.Dispose();
+            _gcGen0ItemsCounter?.Dispose();
+            _gcGen1ItemsCounter?.Dispose();
+            _gcGen2ItemsCounter?.Dispose();
+            _gcGen0SizeCounter?.Dispose();
+            _gcGen1SizeCounter?.Dispose();
+            _gcGen2SizeCounter?.Dispose();
+            _gcLargeHeapSizeCounter?.Dispose();
+            _gcAllocationSpeedCounter?.Dispose();
+            _gcTimeInGcCounter?.Dispose();
+            _gcTotalBytesInHeapsCounter?.Dispose();
         }
     }
 }

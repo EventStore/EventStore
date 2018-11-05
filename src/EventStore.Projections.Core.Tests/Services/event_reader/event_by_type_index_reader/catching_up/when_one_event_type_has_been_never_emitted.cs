@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up
 {
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     stopOnEof: false,
                     runAs: null);
                 _readerSubscriptionOptions = new ReaderSubscriptionOptions(
-                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, stopOnEof: false,
+                    checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100, checkpointAfterMs: 10000,  stopOnEof: false,
                     stopAfterNEvents: null);
             }
 
@@ -104,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
                     ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos[i]), (i + 3) + "@test-stream");
 
                 NoStream("$et-type2");
-                ExistingEvent("$et", "$Checkpoint", TFPosToMetadata(_tfPos3), TFPosToMetadata(_tfPos3));
+                ExistingEvent("$et", ProjectionEventTypes.PartitionCheckpoint, TFPosToMetadata(_tfPos3), TFPosToMetadata(_tfPos3));
             }
 
             protected override IEnumerable<WhenStep> When()

@@ -10,19 +10,26 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal abstract class SubscriptionOperation<T> : ISubscriptionOperation where T : EventStoreSubscription
+    internal interface IResolvedEvent
+    {
+        string OriginalStreamId{ get; }
+        long OriginalEventNumber { get; }
+        RecordedEvent OriginalEvent { get; }
+        Position? OriginalPosition { get; }
+    }
+    internal abstract class SubscriptionOperation<T, TE> : ISubscriptionOperation where T : EventStoreSubscription where TE: IResolvedEvent
     {
         private readonly ILogger _log;
         private readonly TaskCompletionSource<T> _source;
         protected readonly string _streamId;
         protected readonly bool _resolveLinkTos;
         protected readonly UserCredentials _userCredentials;
-        protected readonly Action<T, ResolvedEvent> _eventAppeared;
+        protected readonly Func<T, TE, Task> _eventAppeared;
         private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
-        private readonly ConcurrentQueue<Action> _actionQueue = new ConcurrentQueue<Action>();
+        private readonly ConcurrentQueue<Func<Task>> _actionQueue = new ConcurrentQueue<Func<Task>>();
         private int _actionExecuting;
         private T _subscription;
         private int _unsubscribed;
@@ -33,7 +40,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                      string streamId,
                                      bool resolveLinkTos,
                                      UserCredentials userCredentials,
-                                     Action<T, ResolvedEvent> eventAppeared,
+                                     Func<T, TE, Task> eventAppeared,
                                      Action<T, SubscriptionDropReason, Exception> subscriptionDropped,
                                      bool verboseLogging,
                                      Func<TcpPackageConnection> getConnection)
@@ -84,7 +91,6 @@ namespace EventStore.ClientAPI.ClientOperations
         }
 
         protected abstract bool InspectPackage(TcpPackage package, out InspectionResult result);
-
         public InspectionResult InspectPackage(TcpPackage package)
         {
             try
@@ -97,13 +103,6 @@ namespace EventStore.ClientAPI.ClientOperations
 
                 switch (package.Command)
                 {
-                    case TcpCommand.StreamEventAppeared:
-                        {
-                            var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
-                            EventAppeared(new ResolvedEvent(dto.Event));
-                            return new InspectionResult(InspectionDecision.DoNothing, "StreamEventAppeared");
-                        }
-
                     case TcpCommand.SubscriptionDropped:
                         {
                             var dto = package.Data.Deserialize<ClientMessage.SubscriptionDropped>();
@@ -208,7 +207,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
                 if (reason != SubscriptionDropReason.UserInitiated)
                 {
-                    var er = exc != null ? exc : new Exception(String.Format("Subscription dropped for {0}", reason));
+                    var er = exc ?? new Exception(String.Format("Subscription dropped for {0}", reason));
                     _source.TrySetException(er);
                 }
 
@@ -216,14 +215,18 @@ namespace EventStore.ClientAPI.ClientOperations
                     connection.EnqueueSend(CreateUnsubscriptionPackage());
 
                 if (_subscription != null)
-                    ExecuteActionAsync(() => _subscriptionDropped(_subscription, reason, exc));
+                    ExecuteActionAsync(() =>
+                    {
+                        _subscriptionDropped(_subscription, reason, exc);
+                        return Task.CompletedTask;
+                    });
             }
         }
 
         protected void ConfirmSubscription(long lastCommitPosition, long? lastEventNumber)
         {
             if (lastCommitPosition < -1)
-                throw new ArgumentOutOfRangeException("lastCommitPosition", string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
+                throw new ArgumentOutOfRangeException(nameof(lastCommitPosition), string.Format("Invalid lastCommitPosition {0} on subscription confirmation.", lastCommitPosition));
             if (_subscription != null)
                 throw new Exception("Double confirmation of subscription.");
 
@@ -236,7 +239,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         protected abstract T CreateSubscriptionObject(long lastCommitPosition, long? lastEventNumber);
 
-        protected void EventAppeared(ResolvedEvent e)
+        protected void EventAppeared(TE e)
         {
             if (_unsubscribed != 0)
                 return;
@@ -251,7 +254,7 @@ namespace EventStore.ClientAPI.ClientOperations
             ExecuteActionAsync(() => _eventAppeared(_subscription, e));
         }
 
-        private void ExecuteActionAsync(Action action)
+        private void ExecuteActionAsync(Func<Task> action)
         {
             _actionQueue.Enqueue(action);
             if (_actionQueue.Count > _maxQueueSize) DropSubscription(SubscriptionDropReason.UserInitiated, new Exception("client buffer too big"));
@@ -259,16 +262,16 @@ namespace EventStore.ClientAPI.ClientOperations
                 ThreadPool.QueueUserWorkItem(ExecuteActions);
         }
 
-        private void ExecuteActions(object state)
+        private async void ExecuteActions(object state)
         {
             do
             {
-                Action action;
+                Func<Task> action;
                 while (_actionQueue.TryDequeue(out action))
                 {
                     try
                     {
-                        action();
+                        await action().ConfigureAwait(false);
                     }
                     catch (Exception exc)
                     {

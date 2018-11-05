@@ -287,6 +287,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Initialize()
         {
+            _correlationLastEntries.Clear();
             _byUnorderedStageFirst = new StageEntry[_orderedStage.Length];
             _byUnorderedStageLast = new StageEntry[_orderedStage.Length];
             _byOrderedStageLast = new TaskEntry[_orderedStage.Length];

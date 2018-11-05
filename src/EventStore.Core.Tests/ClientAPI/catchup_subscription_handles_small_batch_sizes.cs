@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
@@ -34,7 +35,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.AppendToStreamAsync(_streamName, ExpectedVersion.Any, CreateThousandEvents()).Wait();
             }
 
-            _settings = new CatchUpSubscriptionSettings(100, 1, false, true);
+            _settings = new CatchUpSubscriptionSettings(100, 1, false, true, String.Empty);
         }
 
         private EventData[] CreateThousandEvents()
@@ -69,6 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     Console.WriteLine("Processed {0} events", evnt.OriginalEventNumber);
                 }
+                return Task.CompletedTask;
             }, (sub) => { mre.Set(); }, null, new UserCredentials("admin", "changeit"));
 
             if (!mre.WaitOne(TimeSpan.FromMinutes(10)))
@@ -84,6 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 {
                     Console.WriteLine("Processed {0} events", evnt.OriginalEventNumber);
                 }
+                return Task.CompletedTask;
             }, (sub) => { mre.Set(); }, null, new UserCredentials("admin", "changeit"));
 
             if (!mre.WaitOne(TimeSpan.FromMinutes(10)))

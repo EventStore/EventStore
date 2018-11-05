@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -46,15 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage
                 DbRes.Db.Close();
             }
 
-            var dbConfig = new TFChunkDbConfig(PathName,
-                                   new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                   1024 * 1024,
-                                   0,
-                                   new InMemoryCheckpoint(0),
-                                   new InMemoryCheckpoint(0),
-                                   new InMemoryCheckpoint(-1),
-                                   new InMemoryCheckpoint(-1),
-                                   inMemDb: true);
+            var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
             var dbHelper = new TFChunkDbCreationHelper(dbConfig);
 
             DbRes = dbHelper.Chunk(records).CreateDb();
@@ -80,7 +73,9 @@ namespace EventStore.Core.Tests.Services.Storage
                                       0,
                                       additionalCommitChecks: true,
                                       metastreamMaxCount: _metastreamMaxCount,
-                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault);
+                                      hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
+                                      skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
+                                      replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint);
 
             ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
         }

@@ -95,9 +95,9 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<ClientMessage.ReadStreamEventsBackwardCompleted>(WrapReadStreamEventsBackwardCompletedV1, ClientVersion.V1);
             AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompletedV1, ClientVersion.V1);
             AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompletedV1, ClientVersion.V1);
-            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStreamV1, ClientVersion.V2);
+            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStreamV1, ClientVersion.V1);
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppearedV1, ClientVersion.V1);
-            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmationV1, ClientVersion.V2);
+            AddWrapper<ClientMessage.PersistentSubscriptionConfirmation>(WrapPersistentSubscriptionConfirmationV1, ClientVersion.V1);
             AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
         }
 
@@ -583,7 +583,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapPersistentSubscriptionStreamEventAppeared(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
         {
-            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(new TcpClientMessageDto.ResolvedIndexedEvent(msg.Event.Event, msg.Event.Link));
+            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(new TcpClientMessageDto.ResolvedIndexedEvent(msg.Event.Event, msg.Event.Link), msg.RetryCount);
             return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 
@@ -679,7 +679,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapPersistentSubscriptionStreamEventAppearedV1(ClientMessage.PersistentSubscriptionStreamEventAppeared msg)
         {
-            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(ConvertToResolvedIndexedEventV1(msg.Event));
+            var dto = new TcpClientMessageDto.PersistentSubscriptionStreamEventAppeared(ConvertToResolvedIndexedEventV1(msg.Event), msg.RetryCount);
             return new TcpPackage(TcpCommand.PersistentSubscriptionStreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 

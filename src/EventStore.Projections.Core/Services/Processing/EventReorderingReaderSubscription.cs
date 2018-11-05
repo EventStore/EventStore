@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ITimeProvider timeProvider,
             long? checkpointUnhandledBytesThreshold,
             int? checkpointProcessedEventsThreshold,
+            int checkpointAfterMs,
             int processingLagMs,
             bool stopOnEof = false,
             int? stopAfterNEvents = null)
@@ -33,6 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 timeProvider,
                 checkpointUnhandledBytesThreshold,
                 checkpointProcessedEventsThreshold,
+                checkpointAfterMs,
                 stopOnEof,
                 stopAfterNEvents)
         {
@@ -99,6 +101,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
         {
             throw new NotSupportedException();
-        }
+        }   
     }
 }

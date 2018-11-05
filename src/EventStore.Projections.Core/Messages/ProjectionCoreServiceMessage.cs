@@ -10,6 +10,11 @@ namespace EventStore.Projections.Core.Messages
         {
             private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid EpochId;
+            public StartCore(Guid epochId)
+            {
+                EpochId = epochId;
+            }
         }
 
         public class StopCore : Message
@@ -53,6 +58,28 @@ namespace EventStore.Projections.Core.Messages
                 get { return _action; }
             }
         }
+
+        public class SubComponentStarted : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string SubComponent;
+            public SubComponentStarted(string subComponent)
+            {
+                SubComponent = subComponent;
+            }            
+        }
+
+        public class SubComponentStopped : Message
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly string SubComponent;
+            public SubComponentStopped(string subComponent)
+            {
+                SubComponent = subComponent;
+            }          
+        }                
 
     }
 }

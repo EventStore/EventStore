@@ -175,7 +175,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private static byte[] AsBytes(object obj, out bool isJson)
         {
-            if (obj is JObject)
+            if (obj is JObject || obj is JArray)
             {
                 isJson = true;
                 return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));

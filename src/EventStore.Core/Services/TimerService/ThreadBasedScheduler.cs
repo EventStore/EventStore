@@ -5,6 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.TimerService
 {
@@ -21,6 +22,8 @@ namespace EventStore.Core.Services.TimerService
         private volatile bool _stop;
 
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Timer");
+        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+        public Task Task { get {return _tcs.Task;} }
 
         public ThreadBasedScheduler(ITimeProvider timeProvider)
         {
@@ -45,6 +48,7 @@ namespace EventStore.Core.Services.TimerService
 
         private void DoTiming()
         {
+            try{
             _queueStats.Start();
             QueueMonitor.Default.Register(this);
 
@@ -76,12 +80,19 @@ namespace EventStore.Core.Services.TimerService
                 if (processed == 0)
                 {
                     _queueStats.EnterIdle();
-                    Thread.Sleep(1);
+
+                    Thread.Sleep(10);
                 }
             }
-
-            _queueStats.Stop();
-            QueueMonitor.Default.Unregister(this);
+            }
+            catch(Exception ex){
+                _tcs.TrySetException(ex);
+                throw;
+            }
+            finally{
+                _queueStats.Stop();
+                QueueMonitor.Default.Unregister(this);
+            }
         }
 
         public void Dispose()

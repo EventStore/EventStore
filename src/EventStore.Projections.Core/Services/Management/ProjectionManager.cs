@@ -14,6 +14,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -21,7 +22,9 @@ namespace EventStore.Projections.Core.Services.Management
         : IDisposable,
             IHandle<SystemMessage.StateChangeMessage>,
             IHandle<SystemMessage.SystemCoreReady>,
+            IHandle<SystemMessage.EpochWritten>,
             IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
+            IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
             IHandle<ClientMessage.WriteEventsCompleted>,
             IHandle<ClientMessage.DeleteStreamCompleted>,
             IHandle<ProjectionManagementMessage.Command.Post>,
@@ -37,6 +40,8 @@ namespace EventStore.Projections.Core.Services.Management
             IHandle<ProjectionManagementMessage.Command.SetRunAs>,
             IHandle<ProjectionManagementMessage.Command.Reset>,
             IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
+            IHandle<ProjectionManagementMessage.Command.GetConfig>,
+            IHandle<ProjectionManagementMessage.Command.UpdateConfig>,
             IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
             IHandle<ProjectionManagementMessage.Internal.Deleted>,
             IHandle<CoreProjectionStatusMessage.Started>,
@@ -61,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _publisher;
         private readonly Tuple<Guid, IPublisher>[] _queues;
         private readonly Guid[] _workers;
+        private readonly TimeSpan _projectionsQueryExpiry;
 
         private readonly ITimeProvider _timeProvider;
         private readonly ProjectionType _runProjections;
@@ -76,6 +82,11 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly
             RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>
+            _readForwardDispatcher;
+
+        private readonly
+            RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
@@ -83,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _lastUsedQueue = 0;
         private bool _started;
+        private bool _projectionsStarted;
         private readonly PublishEnvelope _publishEnvelope;
 
         private readonly
@@ -103,6 +115,7 @@ namespace EventStore.Projections.Core.Services.Management
             ITimeProvider timeProvider,
             ProjectionType runProjections,
             IODispatcher ioDispatcher,
+            TimeSpan projectionQueryExpiry,
             bool initializeSystemProjections = true)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
@@ -119,6 +132,7 @@ namespace EventStore.Projections.Core.Services.Management
             _runProjections = runProjections;
             _initializeSystemProjections = initializeSystemProjections;
             _ioDispatcher = ioDispatcher;
+            _projectionsQueryExpiry = projectionQueryExpiry;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -129,6 +143,13 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                    publisher,
+                    v => v.CorrelationId,
+                    v => v.CorrelationId,
+                    new PublishEnvelope(_inputQueue));
+            _readForwardDispatcher =
+                new RequestResponseDispatcher
+                    <ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
                     publisher,
                     v => v.CorrelationId,
                     v => v.CorrelationId,
@@ -161,7 +182,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Start()
         {
-            _publisher.Publish(new ProjectionManagementMessage.Starting());
+            if(_started)
+                throw new InvalidOperationException();
+            _started = true;
+            _publisher.Publish(new ProjectionManagementMessage.Starting(_epochId));
         }
 
         public void Handle(ProjectionManagementMessage.ReaderReady message)
@@ -170,7 +194,7 @@ namespace EventStore.Projections.Core.Services.Management
                 StartExistingProjections(
                     () =>
                     {
-                        _started = true;
+                        _projectionsStarted = true;
                         ScheduleExpire();
                         _publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
                     });
@@ -179,7 +203,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void ScheduleExpire()
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _publisher.Publish(
                 TimerMessage.Schedule.Create(
@@ -191,6 +215,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Stop()
         {
             _started = false;
+            _projectionsStarted = false;
 
             _writeDispatcher.CancelAll();
             _readDispatcher.CancelAll();
@@ -201,7 +226,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Post message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
 
             if (
@@ -233,11 +258,16 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Delete message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            if (IsSystemProjection(message.Name))
+            {
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("We currently don't allow for the deletion of System Projections."));
+                return;
+            }
             else
             {
                 if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs, message)) return;
@@ -251,9 +281,17 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        private bool IsSystemProjection(string name)
+        {
+            return name == ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection ||
+                   name == ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection;
+        }
+
         public void Handle(ProjectionManagementMessage.Command.GetQuery message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -267,7 +305,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.UpdateQuery message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info(
                 "Updating '{0}' projection source to '{1}' (Requested type is: '{2}')",
@@ -286,7 +324,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Disable message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Disabling '{0}' projection", message.Name);
 
@@ -302,7 +340,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Enable message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Enabling '{0}' projection", message.Name);
 
@@ -321,7 +359,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Abort message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Aborting '{0}' projection", message.Name);
 
@@ -337,7 +375,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.SetRunAs message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Setting RunAs1 account for '{0}' projection", message.Name);
 
@@ -360,7 +398,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.Reset message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             _logger.Info("Resetting '{0}' projection", message.Name);
 
@@ -379,7 +417,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetStatistics message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             if (!string.IsNullOrEmpty(message.Name))
             {
@@ -407,7 +445,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetState message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
@@ -418,13 +456,47 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Command.GetResult message)
         {
-            if (!_started)
+            if (!_projectionsStarted)
                 return;
             var projection = GetProjection(message.Name);
             if (projection == null)
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
                 projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.Command.GetConfig message)
+        {
+            if (!_projectionsStarted)
+                return;
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Read, projection.RunAs, message)) return;
+                projection.Handle(message);
+            }
+        }
+
+        public void Handle(ProjectionManagementMessage.Command.UpdateConfig message)
+        {
+            if (!_projectionsStarted)
+                return;
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            else
+            {
+                if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Read, projection.RunAs, message)) return;
+                try {
+                    projection.Handle(message);
+                }
+                catch (InvalidOperationException ex){
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
+                    return;
+                }
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
@@ -515,6 +587,11 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Handle(message);
         }
 
+        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
+        {
+            _readForwardDispatcher.Handle(message);
+        }
+
         public void Handle(ClientMessage.WriteEventsCompleted message)
         {
             _writeDispatcher.Handle(message);
@@ -526,6 +603,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private VNodeState _currentState = VNodeState.Unknown;
         private bool _systemIsReady = false;
+        private bool _ready = false;        
+        private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
             _systemIsReady = true;
@@ -535,14 +614,30 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _currentState = message.State;
+            if(_currentState != VNodeState.Master)
+                _ready = false;            
+            
             StartWhenConditionsAreMet();
+        }
+
+        public void Handle(SystemMessage.EpochWritten message)
+        {
+            if(_ready) return;
+            
+            if(_currentState == VNodeState.Master){
+                _epochId = message.Epoch.EpochId;
+                _ready = true;
+            }
+
+            StartWhenConditionsAreMet(); 
         }
 
         private void StartWhenConditionsAreMet()
         {
-            if (_currentState == VNodeState.Master)
+            //run if and only if these conditions are met
+            if (_systemIsReady && _ready)
             {
-                if (!_started && _systemIsReady)
+                if (!_started)
                 {
                     _logger.Debug("PROJECTIONS: Starting Projections Manager. (Node State : {0})", _currentState);
                     Start();
@@ -560,7 +655,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Internal.Deleted message)
         {
-            const string eventStreamId = "$projections-$all";
             var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
@@ -568,11 +662,11 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId,
                     _writeDispatcher.Envelope,
                     true,
-                    eventStreamId,
+                    ProjectionNamesBuilder.ProjectionsRegistrationStream,
                     ExpectedVersion.Any,
                     new Event(
                         Guid.NewGuid(),
-                        "$ProjectionDeleted",
+                        ProjectionEventTypes.ProjectionDeleted,
                         false,
                         Helper.UTF8NoBom.GetBytes(message.Name),
                         Empty.ByteArray),
@@ -620,102 +714,109 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartExistingProjections(Action completed)
         {
-            _logger.Debug("PROJECTIONS: Reading/Starting Existing Projections from $projections-$all");
-            BeginLoadProjectionList(completed);
+            var registeredProjections = new Dictionary<string, long>();
+            ReadProjectionsList(ProjectionNamesBuilder.ProjectionsRegistrationStream, registeredProjections, completed);
         }
 
-        private void BeginLoadProjectionList(Action completedAction, long from = -1)
+        private void ReadProjectionsList(string projectionsRegistrationStreamId, IDictionary<string, long> registeredProjections, Action completedAction, long from = 0)
         {
+            _logger.Debug("PROJECTIONS: Reading Existing Projections from {0}", projectionsRegistrationStreamId);
             var corrId = Guid.NewGuid();
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
+            _readForwardDispatcher.Publish(
+                new ClientMessage.ReadStreamEventsForward(
                     corrId,
                     corrId,
                     _readDispatcher.Envelope,
-                    "$projections-$all",
+                    projectionsRegistrationStreamId,
                     from,
                     _readEventsBatchSize,
                     resolveLinkTos: false,
                     requireMaster: false,
                     validationStreamVersion: null,
                     user: SystemAccount.Principal),
-                m => LoadProjectionListCompleted(m, from, completedAction));
+                m => OnProjectionsListReadCompleted(m, registeredProjections, from, completedAction));
         }
 
-        public static EventStore.Core.Data.ResolvedEvent ResolveState(IGrouping<string, EventStore.Core.Data.ResolvedEvent> events)
-        {
-            var eventToReturn = events.OrderByDescending(x => x.Event.TimeStamp).First();
-            return eventToReturn.Event.EventType == "$ProjectionCreated" ? eventToReturn : EventStore.Core.Data.ResolvedEvent.EmptyEvent;
-        }
-
-        private void LoadProjectionListCompleted(
-            ClientMessage.ReadStreamEventsBackwardCompleted completed,
-            long requestedFrom,
-            Action completedAction)
-        {
-            var anyFound = false;
-            if (completed.Result == ReadStreamResult.Success)
+        private void OnProjectionsListReadCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg, IDictionary<string, long> registeredProjections, long requestedFrom, Action completedAction) {
+            switch (msg.Result)
             {
-                var projectionRegistrations =
-                    completed.Events.Where(e => e.Event.EventType == "$ProjectionCreated" ||
-                                                e.Event.EventType == "$ProjectionDeleted").ToArray();
-                var grouped = projectionRegistrations.ToLookup(x => Helper.UTF8NoBom.GetString(x.Event.Data))
-                    .Select(ResolveState)
-                    .Where(x => x.Event != null)
-                    .ToArray();
-
-                _logger.Debug("PROJECTIONS: Found the following projections in {0}. {1}", completed.EventStreamId, String.Join(",", grouped.Select(x => Helper.UTF8NoBom.GetString(x.Event.Data))));
-                if (grouped.IsNotEmpty())
-                    foreach (var @event in grouped)
+                case ReadStreamResult.Success:
+                    foreach (var evnt in msg.Events)
                     {
-                        anyFound = true;
-                        var projectionName = Helper.UTF8NoBom.GetString(@event.Event.Data);
+                        var projectionId = evnt.Event.EventNumber;
+                        if (projectionId == 0)
+                            projectionId = Int32.MaxValue - 1;
+                        if(evnt.Event.EventType == ProjectionEventTypes.ProjectionsInitialized)
+                        {
+                            registeredProjections.Add(ProjectionEventTypes.ProjectionsInitialized, projectionId);
+                            continue;
+                        }
+                        var projectionName = Helper.UTF8NoBom.GetString(evnt.Event.Data);
                         if (string.IsNullOrEmpty(projectionName)
                             || _projections.ContainsKey(projectionName))
                         {
                             _logger.Warn("PROJECTIONS: The following projection: {0} has a duplicate registration event.", projectionName);
                             continue;
                         }
-                        var projectionId = @event.Event.EventNumber;
-                        //NOTE: fixing 0 projection problem
-                        if (projectionId == 0)
-                            projectionId = Int32.MaxValue - 1;
-                        int queueIndex = GetNextWorkerIndex();
-                        var managedProjection = CreateManagedProjectionInstance(
-                            projectionName,
-                            projectionId,
-                            Guid.NewGuid(),
-                            _workers[queueIndex]);
-                        managedProjection.InitializeExisting(projectionName);
-                    }
-            }
-            if (requestedFrom == -1) // first chunk
-            {
-                if (!anyFound)
-                {
-                    _logger.Debug("PROJECTIONS: No projections were found in {0}, starting from empty stream", completed.EventStreamId);
-                    if ((completed.Result == ReadStreamResult.Success || completed.Result == ReadStreamResult.NoStream)
-                        && completed.Events.Length == 0)
-                    {
-                        CreateFakeProjection(
-                            () =>
+                        if (evnt.Event.EventType == ProjectionEventTypes.ProjectionCreated)
+                        {
+                            if(registeredProjections.ContainsKey(projectionName))
                             {
-                                completedAction();
-                                CreateSystemProjections();
-                                RequestSystemProjections();
-                            });
+                                registeredProjections[projectionName] = projectionId;
+                                _logger.Warn("PROJECTIONS: The following projection: {0} has a duplicate created event. Using projection Id {1}", projectionName, projectionId);
+                                continue;
+                            }
+                            registeredProjections.Add(projectionName, projectionId);
+                        }
+                        else if(evnt.Event.EventType == ProjectionEventTypes.ProjectionDeleted)
+                        {
+                            registeredProjections.Remove(projectionName);
+                        }
+                    }
+                    if (!msg.IsEndOfStream)
+                    {
+                        ReadProjectionsList(msg.EventStreamId, registeredProjections, completedAction, @from: msg.NextEventNumber);
                         return;
                     }
-                }
+                break;
+                case ReadStreamResult.StreamDeleted:
+                case ReadStreamResult.Error:
+                case ReadStreamResult.AccessDenied:
+                    _logger.Fatal("There was an error reading the projections list due to {0}. Projections could not be loaded.", msg.Result);
+                    return;
             }
+            StartRegisteredProjections(registeredProjections, completedAction);
+        }
 
-            if (completed.Result == ReadStreamResult.Success && !completed.IsEndOfStream)
+        private void StartRegisteredProjections(IDictionary<string, long> registeredProjections, Action completedAction)
+        {
+            if(!registeredProjections.Any())
             {
-                BeginLoadProjectionList(completedAction, @from: completed.NextEventNumber);
+                _logger.Debug("PROJECTIONS: No projections were found in {0}, starting from empty stream", ProjectionNamesBuilder.ProjectionsRegistrationStream);
+                WriteProjectionsInitialized(
+                    () =>
+                    {
+                        completedAction();
+                        CreateSystemProjections();
+                    },
+                    Guid.NewGuid());
                 return;
             }
+            _logger.Debug("PROJECTIONS: Found the following projections. {1}", ProjectionNamesBuilder.ProjectionsRegistrationStream, 
+                String.Join(", ", registeredProjections
+                    .Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized)
+                    .Select(x => x.Key)));
+            foreach (var projectionRegistration in registeredProjections.Where(x => x.Key != ProjectionEventTypes.ProjectionsInitialized))
+            {
+                int queueIndex = GetNextWorkerIndex();
+                var managedProjection = CreateManagedProjectionInstance(
+                    projectionRegistration.Key,
+                    projectionRegistration.Value,
+                    Guid.NewGuid(),
+                    _workers[queueIndex]);
+                managedProjection.InitializeExisting(projectionRegistration.Key);
+            }
             completedAction();
-            RequestSystemProjections();
         }
 
         private bool IsProjectionEnabledToRunByMode(string projectionName)
@@ -724,13 +825,7 @@ namespace EventStore.Projections.Core.Services.Management
                    || _runProjections == ProjectionType.System && projectionName.StartsWith("$");
         }
 
-        private void RequestSystemProjections()
-        {
-            _publisher.Publish(
-                new ProjectionManagementMessage.RequestSystemProjections(new PublishEnvelope(_inputQueue)));
-        }
-
-        private void CreateFakeProjection(Action action)
+        private void WriteProjectionsInitialized(Action action, Guid registrationEventId)
         {
             var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
@@ -739,14 +834,14 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId,
                     _writeDispatcher.Envelope,
                     true,
-                    "$projections-$all",
+                    ProjectionNamesBuilder.ProjectionsRegistrationStream,
                     ExpectedVersion.NoStream,
-                    new Event(Guid.NewGuid(), "$ProjectionsInitialized", false, Empty.ByteArray, Empty.ByteArray),
+                    new Event(registrationEventId, ProjectionEventTypes.ProjectionsInitialized, false, Empty.ByteArray, Empty.ByteArray),
                     SystemAccount.Principal),
-                completed => WriteFakeProjectionCompleted(completed, action));
+                completed => WriteProjectionsInitializedCompleted(completed, registrationEventId, action));
         }
 
-        private void WriteFakeProjectionCompleted(ClientMessage.WriteEventsCompleted completed, Action action)
+        private void WriteProjectionsInitializedCompleted(ClientMessage.WriteEventsCompleted completed, Guid registrationEventId, Action action)
         {
             switch (completed.Result)
             {
@@ -756,7 +851,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case OperationResult.CommitTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.PrepareTimeout:
-                    CreateFakeProjection(action);
+                    WriteProjectionsInitialized(action, registrationEventId);
                     break;
                 default:
                     _logger.Fatal("Cannot initialize projections subsystem. Cannot write a fake projection");
@@ -819,8 +914,10 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (message.Mode >= ProjectionMode.OneTime)
             {
+                var eventId = Guid.NewGuid();
                 BeginWriteProjectionRegistration(
                     message.Name,
+                    eventId,
                     projectionId =>
                     {
                         InitializeNewProjection(projectionId, message, version, replyEnvelope);
@@ -864,7 +961,7 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId,
                     corrId,
                     _readDispatcher.Envelope,
-                    "$projections-" + message.Name,
+                    ProjectionNamesBuilder.ProjectionsStreamPrefix + message.Name,
                     0,
                     _readEventsBatchSize,
                     resolveLinkTos: false,
@@ -950,6 +1047,9 @@ namespace EventStore.Projections.Core.Services.Management
                         EmitEnabled = _emitEnabled,
                         CheckpointsDisabled = !_checkpointsEnabled,
                         TrackEmittedStreams = _trackEmittedStreams,
+                        CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold,
+                        CheckpointAfterMs = (int)ProjectionConsts.CheckpointAfterMs.TotalMilliseconds,
+                        MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight,
                         Epoch = -1,
                         Version = version,
                         RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null
@@ -984,6 +1084,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _getStateDispatcher,
                 _getResultDispatcher,
                 _ioDispatcher,
+                _projectionsQueryExpiry,
                 isSlave,
                 slaveMasterWorkerId,
                 slaveMasterCorrelationId);
@@ -1003,9 +1104,8 @@ namespace EventStore.Projections.Core.Services.Management
             return queueIndex;
         }
 
-        private void BeginWriteProjectionRegistration(string name, Action<long> completed, IEnvelope envelope, int retryCount)
+        private void BeginWriteProjectionRegistration(string name, Guid eventId, Action<long> completed, IEnvelope envelope, int retryCount)
         {
-            const string eventStreamId = "$projections-$all";
             var corrId = Guid.NewGuid();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
@@ -1013,20 +1113,21 @@ namespace EventStore.Projections.Core.Services.Management
                     corrId,
                     _writeDispatcher.Envelope,
                     true,
-                    eventStreamId,
+                    ProjectionNamesBuilder.ProjectionsRegistrationStream,
                     ExpectedVersion.Any,
                     new Event(
-                        Guid.NewGuid(),
-                        "$ProjectionCreated",
+                        eventId,
+                        ProjectionEventTypes.ProjectionCreated,
                         false,
                         Helper.UTF8NoBom.GetBytes(name),
                         Empty.ByteArray),
                     SystemAccount.Principal),
-                m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId, envelope, retryCount));
+                m => WriteProjectionRegistrationCompleted(m, eventId, completed, name, ProjectionNamesBuilder.ProjectionsRegistrationStream, envelope, retryCount));
         }
 
         private void WriteProjectionRegistrationCompleted(
             ClientMessage.WriteEventsCompleted message,
+            Guid eventId,
             Action<long> completed,
             string name,
             string eventStreamId,
@@ -1035,7 +1136,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (message.Result == OperationResult.Success)
             {
-                if (completed != null) completed(message.FirstEventNumber);
+                completed?.Invoke(message.FirstEventNumber);
                 return;
             }
             _logger.Info(
@@ -1050,7 +1151,7 @@ namespace EventStore.Projections.Core.Services.Management
                 if (retryCount > 0)
                 {
                     _logger.Info("Retrying write projection registration for {0}", name);
-                    BeginWriteProjectionRegistration(name, completed, replyEnvelope, --retryCount);
+                    BeginWriteProjectionRegistration(name, eventId, completed, replyEnvelope, --retryCount);
                     return;
                 }
             }

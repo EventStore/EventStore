@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
@@ -24,7 +25,7 @@ namespace EventStore.ClientAPI.Internal
         private ClusterMessages.MemberInfoDto[] _oldGossip;
         private TimeSpan _gossipTimeout;
 
-        private readonly bool _preferRandomNode;
+        private readonly NodePreference _nodePreference;
 
         public ClusterDnsEndPointDiscoverer(ILogger log, 
                                             string clusterDns,
@@ -32,7 +33,7 @@ namespace EventStore.ClientAPI.Internal
                                             int managerExternalHttpPort,
                                             GossipSeed[] gossipSeeds,
                                             TimeSpan gossipTimeout,
-                                            bool preferRandomNode)
+                                            NodePreference nodePreference)
         {
             Ensure.NotNull(log, "log");
 
@@ -43,30 +44,34 @@ namespace EventStore.ClientAPI.Internal
             _gossipSeeds = gossipSeeds;
             _gossipTimeout = gossipTimeout;
             _client = new HttpAsyncClient(_gossipTimeout);
-            _preferRandomNode = preferRandomNode;
+            _nodePreference = nodePreference;
         }
 
         public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint )
         {
             return Task.Factory.StartNew(() =>
             {
+                var maxDiscoverAttemptsStr = "";
+                if(_maxDiscoverAttempts != Int32.MaxValue) 
+                   maxDiscoverAttemptsStr = "/" + _maxDiscoverAttempts;
+
                 for (int attempt = 1; attempt <= _maxDiscoverAttempts; ++attempt)
                 {
                     //_log.Info("Discovering cluster. Attempt {0}/{1}...", attempt, _maxDiscoverAttempts);
                     try
-                    {
+                    {                            
                         var endPoints = DiscoverEndPoint(failedTcpEndPoint);
                         if (endPoints != null)
                         {
-                            _log.Info("Discovering attempt {0}/{1} successful: best candidate is {2}.", attempt, _maxDiscoverAttempts, endPoints);
+                            _log.Info("Discovering attempt {0}{1} successful: best candidate is {2}.", attempt, maxDiscoverAttemptsStr, endPoints);
                             return endPoints.Value;
                         }
 
-                        _log.Info("Discovering attempt {0}/{1} failed: no candidate found.", attempt, _maxDiscoverAttempts);
+                        _log.Info("Discovering attempt {0}{1} failed: no candidate found.", attempt, maxDiscoverAttemptsStr);
                     }
                     catch (Exception exc)
                     {
-                        _log.Info("Discovering attempt {0}/{1} failed with error: {2}.", attempt, _maxDiscoverAttempts, exc);
+                        _log.Info("Discovering attempt {0}{1} failed with error: {2}.", attempt, maxDiscoverAttemptsStr, exc);
                     }
 
                     Thread.Sleep(500);
@@ -87,7 +92,7 @@ namespace EventStore.ClientAPI.Internal
                 if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
                     continue;
 
-                var bestNode = TryDetermineBestNode(gossip.Members, _preferRandomNode);
+                var bestNode = TryDetermineBestNode(gossip.Members, _nodePreference);
                 if (bestNode != null)
                 {
                     _oldGossip = gossip.Members;
@@ -181,7 +186,7 @@ namespace EventStore.ClientAPI.Internal
             ClusterMessages.ClusterInfoDto result = null;
             var completed = new ManualResetEventSlim(false);
 
-            var url = endPoint.EndPoint.ToHttpUrl("/gossip?format=json");
+            var url = endPoint.EndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/gossip?format=json");
             _client.Get(
                 url,
                 null,
@@ -214,7 +219,7 @@ namespace EventStore.ClientAPI.Internal
             return result;
         }
 
-        private NodeEndPoints? TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members, bool preferRandomNode)
+        private NodeEndPoints? TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members, NodePreference nodePreference)
         {
             var notAllowedStates = new[]
             {
@@ -228,14 +233,20 @@ namespace EventStore.ClientAPI.Internal
                                .OrderByDescending(x => x.State)
                                .ToArray();
 
-            if (preferRandomNode)
+            switch (nodePreference)
             {
-                RandomShuffle(nodes, 0, nodes.Length - 1);
+                case NodePreference.Random:
+                    RandomShuffle(nodes, 0, nodes.Length - 1);
+                    break;
+                case NodePreference.Slave:
+                    nodes = nodes.OrderBy(nodeEntry => nodeEntry.State != ClusterMessages.VNodeState.Slave).ToArray(); // OrderBy is a stable sort and only affects order of matching entries
+                    RandomShuffle(nodes, 0, nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
+                    break;
             }
 
             var node = nodes.FirstOrDefault();
                            
-            if (node == null)
+            if (node == default(ClusterMessages.MemberInfoDto))
             {
                 //_log.Info("Unable to locate suitable node. Gossip info:\n{0}.", string.Join("\n", members.Select(x => x.ToString())));
                 return null;

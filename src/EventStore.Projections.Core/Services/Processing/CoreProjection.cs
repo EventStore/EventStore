@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _projectionProcessingPhases = projectionProcessingStrategy.CreateProcessingPhases(
                 publisher,
-                inputQueue, 
+                inputQueue,
                 projectionCorrelationId,
                 partitionStateCache,
                 UpdateStatistics,
@@ -146,14 +146,14 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Initial);
         }
 
-        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom)
+        private void BeginPhase(IProjectionProcessingPhase processingPhase, CheckpointTag startFrom, PartitionState rootPartitionState)
         {
             _projectionProcessingPhase = processingPhase;
             _projectionProcessingPhase.SetProjectionState(PhaseState.Starting);
             _checkpointManager = processingPhase.CheckpointManager;
 
              _projectionProcessingPhase.InitializeFromCheckpoint(startFrom);
-            _checkpointManager.Start(startFrom);
+            _checkpointManager.Start(startFrom,rootPartitionState);
         }
 
         private void UpdateStatistics()
@@ -210,7 +210,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Kill()
         {
-            SetFaulted("Killed");
+            if(_state != State.Stopped)
+                GoToState(State.Stopped);
         }
 
         private void GetStatistics(ProjectionStatistics info)
@@ -221,14 +222,14 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 info.Progress = -2.0f;
             }
-            info.Status = _state.EnumValueName() + info.Status; 
+            info.Status = _state.EnumValueName() + info.Status;
             info.Name = _name;
             info.EffectiveName = _name;
             info.ProjectionId = _version.ProjectionId;
             info.Epoch = _version.Epoch;
             info.Version = _version.Version;
             info.StateReason = "";
-            info.BufferedEvents = 0; 
+            info.BufferedEvents = 0;
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
             _enrichStatistics(info);
             if (_projectionProcessingPhase != null)
@@ -248,7 +249,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded || _projectionProcessingPhase == null)
             {
                 _publisher.Publish(
                     new CoreProjectionStatusMessage.StateReport(
@@ -265,7 +266,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetResult message)
         {
-            if (_state == State.LoadStateRequested || _state == State.StateLoaded)
+            if (_state == State.LoadStateRequested || _state == State.StateLoaded || _projectionProcessingPhase == null)
             {
                 _publisher.Publish(
                     new CoreProjectionStatusMessage.ResultReport(
@@ -300,9 +301,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
                 //TODO: handle errors
                 _coreProjectionCheckpointWriter.StartFrom(checkpointTag, message.CheckpointEventNumber);
-                if (_requiresRootPartition)
-                    _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(message.CheckpointData, checkpointTag), null);
-                BeginPhase(projectionProcessingPhase, checkpointTag);
+
+                PartitionState rootPartitionState = null;
+                if (_requiresRootPartition){
+                    rootPartitionState = PartitionState.Deserialize(message.CheckpointData, checkpointTag);
+                    _partitionStateCache.CacheAndLockPartitionState("", rootPartitionState, null);
+                }
+                BeginPhase(projectionProcessingPhase, checkpointTag, rootPartitionState);
                 GoToState(State.StateLoaded);
                 if (_startOnLoad)
                 {
@@ -346,12 +351,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
 
-                //
+            //
+            CompleteCheckpointSuggestedWorkItem();
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             GoToState(State.Initial);
             Start();
-            
+
         }
 
         public void Handle(CoreProjectionProcessingMessage.Failed message)
@@ -571,7 +577,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterStopped()
         {
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             _publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _name, _completed));
         }
 
@@ -583,7 +589,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterFaulted()
         {
             EnsureUnsubscribed();
-            StopSlaveProjections(); 
+            StopSlaveProjections();
             _publisher.Publish(
                 new CoreProjectionStatusMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -603,7 +609,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
                 var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
-                BeginPhase(nextPhase, nextPhaseZeroPosition);
+                BeginPhase(nextPhase, nextPhaseZeroPosition,null);
                 if (_slaveProjections != null)
                     _projectionProcessingPhase.AssignSlaves(_slaveProjections);
                 _projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
@@ -625,6 +631,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_tickPending)
                 return;
             // process messages in almost all states as we now ignore work items when processing
+            if (_state == State.LoadStateRequested)
+            {
+                _tickPending = false;
+                return;
+            }
 
             EnsureState(
                 State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted
@@ -654,7 +665,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void EnsureTickPending()
         {
             // ticks are requested when an async operation is completed or when an item is being processed
-            // thus, the tick message is removed from the queue when it does not process any work item (and 
+            // thus, the tick message is removed from the queue when it does not process any work item (and
             // it is renewed therefore)
             if (_tickPending)
                 return;
@@ -687,7 +698,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void CheckpointCompleted(CheckpointTag lastCompletedCheckpointPosition)
         {
             CompleteCheckpointSuggestedWorkItem();
-            // all emitted events caused by events before the checkpoint position have been written  
+            // all emitted events caused by events before the checkpoint position have been written
             // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
             _partitionStateCache.Unlock(lastCompletedCheckpointPosition);
 
@@ -719,7 +730,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var workItem = _checkpointSuggestedWorkItem;
             if (workItem != null)
             {
-                _checkpointSuggestedWorkItem = null; 
+                _checkpointSuggestedWorkItem = null;
                 workItem.CheckpointCompleted();
                 EnsureTickPending();
             }

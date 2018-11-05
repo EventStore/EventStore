@@ -6,20 +6,34 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class when_creating_ptable_from_memtable: SpecificationWithFile
     {
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public when_creating_ptable_from_memtable(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
+
         [Test]
         public void null_file_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null, skipIndexVerify: _skipIndexVerify));
         }
 
         [Test]
         public void null_memtable_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt"));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt",skipIndexVerify: _skipIndexVerify));
         }
 
         [Test]
@@ -27,7 +41,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             var table = new HashListMemTable(_ptableVersion, maxSize: 10);
             table.Add(0x010100000000, 0x0001, 0x0001);
-            var ptable = PTable.FromMemtable(table, Filename);
+            var ptable = PTable.FromMemtable(table, Filename, skipIndexVerify: _skipIndexVerify);
             Assert.Throws<TimeoutException>(() => ptable.WaitForDisposal(1));
 
             // tear down
@@ -48,7 +62,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void the_file_gets_created()
         {
-            var indexEntrySize = PTable.IndexEntryV3Size;
+            var indexEntrySize = PTable.IndexEntryV4Size;
             if (_ptableVersion == PTableVersions.IndexV1)
             {
                 indexEntrySize = PTable.IndexEntryV1Size;
@@ -57,16 +71,21 @@ namespace EventStore.Core.Tests.Index.IndexV1
             {
                 indexEntrySize = PTable.IndexEntryV2Size;
             }
+            else if(_ptableVersion == PTableVersions.IndexV3)
+            {
+                indexEntrySize = PTable.IndexEntryV3Size;
+            }
 
             var table = new HashListMemTable(_ptableVersion, maxSize: 10);
             table.Add(0x010100000000, 0x0001, 0x0001);
             table.Add(0x010500000000, 0x0001, 0x0002);
             table.Add(0x010200000000, 0x0001, 0x0003);
             table.Add(0x010200000000, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, Filename))
+            using (var sstable = PTable.FromMemtable(table, Filename, skipIndexVerify: _skipIndexVerify))
             {
                 var fileinfo = new FileInfo(Filename);
-                Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*indexEntrySize, fileinfo.Length);
+                var midpointsCached = PTable.GetRequiredMidpointCountCached(4, _ptableVersion);
+                Assert.AreEqual(PTableHeader.Size + 4*indexEntrySize + midpointsCached*indexEntrySize + PTableFooter.GetSize(_ptableVersion) + PTable.MD5Size, fileinfo.Length);
                 var items = sstable.IterateAllInOrder().ToList();
                 Assert.AreEqual(GetHash(0x010500000000), items[0].Stream);
                 Assert.AreEqual(0x0001, items[0].Version);
@@ -87,7 +106,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             table.Add(0x010500000000, 0x0001, 0x0002);
             table.Add(0x010200000000, 0x0001, 0x0003);
             table.Add(0x010200000000, 0x0002, 0x0003);
-            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename)) {}});
+            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename,skipIndexVerify: false)) {}});
         }
 
         private ulong GetHash(ulong value){

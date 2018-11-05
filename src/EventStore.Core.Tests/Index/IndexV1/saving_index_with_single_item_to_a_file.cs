@@ -7,7 +7,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1)]
+    [TestFixture(PTableVersions.IndexV2)]
+    [TestFixture(PTableVersions.IndexV3)]
+    [TestFixture(PTableVersions.IndexV4)]
     public class saving_index_with_single_item_to_a_file: SpecificationWithDirectoryPerTestFixture
     {
         private string _filename;
@@ -16,6 +19,10 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private string _mergeFile;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+
+        public saving_index_with_single_item_to_a_file(byte version){
+            _ptableVersion = version;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()

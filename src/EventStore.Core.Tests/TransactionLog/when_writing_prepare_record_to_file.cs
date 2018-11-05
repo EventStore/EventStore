@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -22,14 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
-            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
-                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-                                                    1024,
-                                                    0,
-                                                    _writerCheckpoint,
-                                                    new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
-                                                    new InMemoryCheckpoint(-1)));
+            _db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _writerCheckpoint, new InMemoryCheckpoint(), 1024));
             _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
@@ -61,7 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void the_data_is_written()
         {
             //TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
-            using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint))
+            using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false))
             {
                 reader.Open();
                 LogRecord r;

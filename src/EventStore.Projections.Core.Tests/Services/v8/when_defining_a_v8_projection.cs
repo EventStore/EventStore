@@ -117,6 +117,62 @@ namespace EventStore.Projections.Core.Tests.Services.v8
         }
 
         [TestFixture]
+        public class with_multiple_from_categories : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromCategories(['category1', 'category2', 'category3']).when({
+                    $any: function(state, event) {
+                            return state;
+                        }});
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(3, _source.Streams.Length);
+                Assert.AreEqual("$ce-category1", _source.Streams[0]);
+                Assert.AreEqual("$ce-category2", _source.Streams[1]);
+                Assert.AreEqual("$ce-category3", _source.Streams[2]);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
+            }
+        }
+
+        [TestFixture]
+        public class with_multiple_from_categories_plain : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromCategories('category1', 'category2', 'category3').when({
+                        $any:function(state, event) {
+                            return state;
+                        }});
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(3, _source.Streams.Length);
+                Assert.AreEqual("$ce-category1", _source.Streams[0]);
+                Assert.AreEqual("$ce-category2", _source.Streams[1]);
+                Assert.AreEqual("$ce-category3", _source.Streams[2]);
+                Assert.That(_source.Categories == null || _source.Categories.Length == 0);
+                Assert.AreEqual(false, _source.ByStreams);
+            }
+        }
+
+        [TestFixture]
         public class with_from_category : TestFixtureWithJsProjection
         {
             protected override void Given()

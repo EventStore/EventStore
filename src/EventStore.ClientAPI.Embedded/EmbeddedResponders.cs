@@ -487,6 +487,7 @@ namespace EventStore.ClientAPI.Embedded
                     case OperationResult.PrepareTimeout:
                     case OperationResult.CommitTimeout:
                     case OperationResult.ForwardTimeout:
+                        break;
                     case OperationResult.WrongExpectedVersion:
                         var err = string.Format("Start transaction failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}.", _stream, _expectedVersion);
                         Fail(new WrongExpectedVersionException(err));
@@ -533,6 +534,7 @@ namespace EventStore.ClientAPI.Embedded
                     case OperationResult.PrepareTimeout:
                     case OperationResult.CommitTimeout:
                     case OperationResult.ForwardTimeout:
+                        break;
                     case OperationResult.AccessDenied:
                         Fail(new AccessDeniedException(string.Format("Write access denied.")));
                         break;

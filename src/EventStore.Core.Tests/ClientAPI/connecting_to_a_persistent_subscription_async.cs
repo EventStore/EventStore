@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
@@ -21,7 +22,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscriptionAsync(
                      "nonexisting2",
                      "foo",
-                     (sub, e) => Console.Write("appeared"),
+                     (sub, e) =>
+                     {
+                         Console.Write("appeared");
+                         return Task.CompletedTask;
+                     },
                      (sub, reason, ex) =>
                      {
                      }).Wait();
@@ -51,7 +56,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings, DefaultData.AdminCredentials).Wait();
             _sub = _conn.ConnectToPersistentSubscriptionAsync(_stream,
                 "agroupname17",
-                (sub, e) => Console.Write("appeared"),
+                (sub, e) =>
+                {
+                    Console.Write("appeared");
+                    return Task.CompletedTask;
+                },
                 (sub, reason, ex) => { }).Result;
         }
 
@@ -82,7 +91,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscriptionAsync(
                    _stream,
                    "agroupname55",
-                   (sub, e) => Console.Write("appeared"),
+                   (sub, e) =>
+                   {
+                       Console.Write("appeared");
+                       return Task.CompletedTask;
+                   },
                    (sub, reason, ex) => Console.WriteLine("dropped.")).Wait();
             }).InnerException;
         }
@@ -119,7 +132,11 @@ namespace EventStore.Core.Tests.ClientAPI
             _firstConn = _conn.ConnectToPersistentSubscriptionAsync(
                 _stream,
                 _group,
-                (s, e) => s.Acknowledge(e),
+                (s, e) =>
+                {
+                    s.Acknowledge(e);
+                    return Task.CompletedTask;
+                },
                 (sub, reason, ex) => { },
                 DefaultData.AdminCredentials).Result;
         }
@@ -132,7 +149,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 _conn.ConnectToPersistentSubscriptionAsync(
                     _stream,
                     _group,
-                    (s, e) => s.Acknowledge(e),
+                    (s, e) =>
+                    {
+                        s.Acknowledge(e);
+                        return Task.CompletedTask;
+                    },
                     (sub, reason, ex) => { },
                     DefaultData.AdminCredentials).Wait();
             }).InnerException;
@@ -172,8 +193,9 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             _conn.CreatePersistentSubscriptionAsync(_stream, _group, _settings,
                 DefaultData.AdminCredentials).Wait();
+
             _conn.ConnectToPersistentSubscriptionAsync(
-             _stream,
+            _stream,
              _group,
              HandleEvent,
              (sub, reason, ex) => { },
@@ -186,12 +208,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
-            if (_set) return;
+            if (_set) return Task.CompletedTask;
             _set = true;
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -241,12 +264,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 new EventData(_id, "test", true, Encoding.UTF8.GetBytes("{'foo' : 'bar'}"), new byte[0])).Wait();
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
-            if (_set) return;
+            if (_set) return Task.CompletedTask;
             _set = true;
             _firstEvent = resolvedEvent;
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -301,7 +325,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials).Wait();
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             if (!_set)
             {
@@ -309,6 +333,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 _firstEvent = resolvedEvent;
                 _resetEvent.Set();
             }
+            return Task.CompletedTask;
         }
 
         [Test]
@@ -359,9 +384,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 DefaultData.AdminCredentials).Wait();
         }
 
-        private void HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
+        private Task HandleEvent(EventStorePersistentSubscriptionBase sub, ResolvedEvent resolvedEvent)
         {
             _resetEvent.Set();
+            return Task.CompletedTask;
         }
 
         [Test]

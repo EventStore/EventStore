@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -43,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             protected override IEnumerable<WhenStep> When()
             {
                 yield return(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+                yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
                 yield return(new SystemMessage.SystemCoreReady());
                 yield return
                     (new ProjectionManagementMessage.Command.Post(
@@ -109,9 +111,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
             public void writes_both_stream_and_shared_partition_checkpoints()
             {
                 var writeProjectionCheckpoints =
-                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$ProjectionCheckpoint").ToArray();
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType(ProjectionEventTypes.ProjectionCheckpoint).ToArray();
                 var writeCheckpoints =
-                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType("$Checkpoint").ToArray();
+                    HandledMessages.OfType<ClientMessage.WriteEvents>().OfEventType(ProjectionEventTypes.PartitionCheckpoint).ToArray();
 
                 Assert.AreEqual(1, writeProjectionCheckpoints.Length);
                 Assert.AreEqual(@"[{""data"": 2}]", Encoding.UTF8.GetString(writeProjectionCheckpoints[0].Data));

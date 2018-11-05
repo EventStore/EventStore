@@ -265,7 +265,7 @@ namespace EventStore.Projections.Core.Messages
                 get { return _readerId; }
             }
 
-        }
+        }    
     }
 
     public abstract class EventReaderSubscriptionMessageBase : Message

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
@@ -25,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
             yield return new SystemMessage.SystemCoreReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
@@ -42,9 +44,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             var projectionDeletedEventExists = _consumer.HandledMessages.Any(x =>
                            x.GetType() == typeof(ClientMessage.WriteEvents) &&
-                           ((ClientMessage.WriteEvents)x).Events[0].EventType == "$ProjectionDeleted");
+                           ((ClientMessage.WriteEvents)x).Events[0].EventType == ProjectionEventTypes.ProjectionDeleted);
             Assert.IsFalse(projectionDeletedEventExists,
-                "Expected that the $ProjectionDeleted event not to have been written");
+                $"Expected that the {ProjectionEventTypes.ProjectionDeleted} event not to have been written");
         }
     }
 }

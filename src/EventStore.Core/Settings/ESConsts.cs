@@ -15,7 +15,6 @@ namespace EventStore.Core.Settings
                                               + StorageReaderThreadCount
                                               + 5 /* just in case reserve :) */;
 
-        public const int TFChunkInitialReaderCount = 5;
         public const int TFChunkMaxReaderCount = PTableMaxReaderCount 
                                                + 2 /* for caching/uncaching, populating midpoints */
                                                + 1 /* for epoch manager usage of elections/replica service */
@@ -31,5 +30,7 @@ namespace EventStore.Core.Settings
         public const int CachedPrincipalCount = 1000;
 
         public static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);
+
+        public const int UnrestrictedPendingSendBytes = 0;
     }
 }

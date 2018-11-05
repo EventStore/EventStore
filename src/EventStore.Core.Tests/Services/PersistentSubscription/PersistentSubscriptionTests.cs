@@ -15,6 +15,7 @@ using NUnit.Framework;
 using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
@@ -316,6 +317,65 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             }, 1, false);
             Assert.AreEqual(2, envelope1.Replies.Count);
         }
+
+        [Test]
+        public async Task when_reading_end_of_stream_and_a_live_event_is_received_subscription_should_read_stream_again()
+        {
+            var envelope = new FakeEnvelope();
+            var checkpointReader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(
+                    (stream,startEventNumber,countToLoad,batchSize,resolveLinkTos,onEventsFound) => {
+                        List<ResolvedEvent> events = new List<ResolvedEvent>();
+                        int nextEventNumber;
+                        bool isEndOfStream;
+
+                        if(startEventNumber == 1){
+                            //Existing events: #1, #2
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 1));
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 2));
+                            nextEventNumber = 3;
+                            isEndOfStream = true;
+                        }
+                        else if(startEventNumber == 3){
+                            //New live event: #3
+                            events.Add(Helper.BuildFakeEvent(Guid.NewGuid(), "type", stream, 3));
+                            nextEventNumber = 4;
+                            isEndOfStream = true;
+                        }
+                        else{
+                            throw new Exception("Invalid start event number: "+startEventNumber);
+                        }
+
+                        Task.Delay(100).ContinueWith((action)=>{
+                            onEventsFound(events.ToArray(),nextEventNumber,isEndOfStream);
+                        });
+                    }))
+                    .WithCheckpointReader(checkpointReader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromBeginning());
+
+            //load the existing checkpoint at event #0
+            //this should trigger reading of events #1 and #2 reaching the end of stream.
+            //the read is handled by the subscription after 100ms
+            checkpointReader.Load(0);
+
+            //Meanwhile, during this 100ms time window, a new live event #3 comes in and subscription is notified
+            sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3));
+
+            //the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
+
+            //a subscriber coming in a while later, should receive all 3 events
+            await Task.Delay(500).ContinueWith((action)=>{
+                //add a subscriber
+                sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
+
+                //all 3 events should be received by the subscriber
+                Assert.AreEqual(3, envelope.Replies.Count);
+            });
+        }
     }
 
     [TestFixture]
@@ -539,18 +599,52 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var corrid = Guid.NewGuid();
             sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-            var id = Guid.NewGuid();
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
             sub.HandleReadCompleted(new[]
             {
-                Helper.BuildFakeEvent(id, "type", "streamName", 0),
-                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 2)
             }, 1, false);
-            sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { id1, id2 });
             Assert.AreEqual(1, cp);
         }
 
         [Test]
-        public void subscription_does_not_include_not_acked_messages_when_max_is_hit()
+        public void subscription_does_not_include_outstanding_messages_when_max_is_hit()
+        {
+            long cp = -1;
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 2),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3)
+            }, 1, false);
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { id1, id2 });
+            Assert.AreEqual(1, cp);
+        }
+
+        [Test]
+        public void subscription_can_write_checkpoint_for_event_number_0()
         {
             long cp = -1;
             var envelope1 = new FakeEnvelope();
@@ -577,9 +671,110 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3)
             }, 1, false);
             sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
+
+            Assert.AreEqual(0, cp);
+        }
+
+        [Test]
+        public void subscription_checkpoints_when_message_parked_and_max_is_hit()
+        {
+            long cp = -1;
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var id3 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(id3, "type", "streamName", 2),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3)
+            }, 1, false);
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { id1, id3 });
+            sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id2 }, NakAction.Park, "test park");
+            Assert.AreEqual(2, cp);
+        }
+
+        [Test]
+        public void subscription_does_not_include_retry_messages_when_max_is_hit()
+        {
+            long cp = -1;
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var id3 = Guid.NewGuid();
+            var id4 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(id3, "type", "streamName", 2),
+                Helper.BuildFakeEvent(id4, "type", "streamName", 3)
+            }, 1, false);
+            sub.NotAcknowledgeMessagesProcessed(corrid, new[] { id3 }, NakAction.Retry, "test retry");
+            sub.AcknowledgeMessagesProcessed(corrid, new [] { id1, id2, id4 });
             Assert.AreEqual(1, cp);
         }
 
+        [Test]
+        public void subscription_does_include_all_messages_when_no_retries_or_outstanding_and_max_is_hit()
+        {
+            long cp = -1;
+            var envelope1 = new FakeEnvelope();
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            var corrid = Guid.NewGuid();
+            sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
+            var id3 = Guid.NewGuid();
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(id3, "type", "streamName", 2),
+            }, 1, false);
+            sub.AcknowledgeMessagesProcessed(corrid, new [] { id1, id2, id3 });
+            Assert.AreEqual(2, cp);
+        }
 
         [Test]
         public void subscription_does_write_checkpoint_on_time_when_min_is_hit()
@@ -601,13 +796,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var corrid = Guid.NewGuid();
             sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-            var id = Guid.NewGuid();
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
             sub.HandleReadCompleted(new[]
             {
-                Helper.BuildFakeEvent(id, "type", "streamName", 0),
-                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 2),
             }, 1, false);
-            sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { id1, id2 });
             sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
@@ -632,13 +829,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             var corrid = Guid.NewGuid();
             sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
             sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-            var id = Guid.NewGuid();
+            var id1 = Guid.NewGuid();
+            var id2 = Guid.NewGuid();
             sub.HandleReadCompleted(new[]
             {
-                Helper.BuildFakeEvent(id, "type", "streamName", 0),
-                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1)
+                Helper.BuildFakeEvent(id1, "type", "streamName", 0),
+                Helper.BuildFakeEvent(id2, "type", "streamName", 1),
+                Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 2)
             }, 1, false);
-            sub.AcknowledgeMessagesProcessed(corrid, new[] { id });
+            sub.AcknowledgeMessagesProcessed(corrid, new[] { id1, id2 });
             sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
         }
@@ -670,6 +869,122 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             sub.AcknowledgeMessagesProcessed(corrid, new[] { eventId1, eventId2 });
             sub.NotifyClockTick(DateTime.UtcNow);
             Assert.AreEqual(1, cp);
+        }
+
+        [Test]
+        public void subscription_writes_correct_checkpoint_when_outstanding_messages_is_empty_and_retry_buffer_is_non_empty()
+        {
+            long cp = -1;
+            var reader = new FakeCheckpointReader();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+                    .WithMessageParker(new FakeMessageParker())
+                    .StartFromBeginning()
+                    .MinimumToCheckPoint(1)
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+
+            var eventId1 = Guid.NewGuid();
+            var eventId2 = Guid.NewGuid();
+            var eventId3 = Guid.NewGuid();
+
+            var clientConnectionId = Guid.NewGuid();
+            var clientCorrelationId = Guid.NewGuid();
+            sub.AddClient(clientCorrelationId, clientConnectionId, new FakeEnvelope(), 10, "foo", "bar");
+
+            //send events 1-3, ACK event 1 only and Mark checkpoint
+            sub.HandleReadCompleted(new[]
+            {
+                Helper.BuildFakeEvent(eventId1, "type", "streamName", 1),
+                Helper.BuildFakeEvent(eventId2, "type", "streamName", 2),
+                Helper.BuildFakeEvent(eventId3, "type", "streamName", 3)
+            }, 1, false);
+            sub.GetNextNOrLessMessages(3).ToArray();
+            sub.AcknowledgeMessagesProcessed(clientCorrelationId, new [] {eventId1});
+            sub.TryMarkCheckpoint(false);
+
+            //checkpoint should be at event 1
+            Assert.AreEqual(1, cp);
+
+            //events 2 & 3 should still be in _outstandingMessages buffer
+            Assert.AreEqual(sub.OutstandingMessageCount,2);
+            //retry queue should be empty
+            Assert.AreEqual(sub._streamBuffer.RetryBufferCount, 0);
+
+            //Disconnect the client
+            sub.RemoveClientByConnectionId(clientConnectionId);
+
+            //this should empty the _outstandingMessages buffer and move events 2 & 3 to the retry queue
+            Assert.AreEqual(sub.OutstandingMessageCount,0);
+            Assert.AreEqual(sub._streamBuffer.RetryBufferCount, 2);
+
+            //mark the checkpoint which should still be at event 1 although the _lastKnownMessage value is 3.
+            sub.TryMarkCheckpoint(false);
+            Assert.AreEqual(1, cp);
+        }
+    }
+
+    [TestFixture]
+    public class LoadCheckpointTests
+    {
+        [Test]
+        public void loading_subscription_from_checkpoint_should_read_from_the_next_event_number()
+        {
+            long lastReadEvent = -1;
+            var reader = new FakeCheckpointReader();
+            var streamReader = new FakeStreamReader(x => { lastReadEvent = x; });
+            new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(streamReader)
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => {}))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(1);
+            Assert.AreEqual(2, lastReadEvent);
+        }
+
+        [Test]
+        public void loading_subscription_from_no_checkpoint_and_no_start_from_should_read_from_0()
+        {
+            long lastReadEvent = -1;
+            var reader = new FakeCheckpointReader();
+            var streamReader = new FakeStreamReader(x => { lastReadEvent = x; });
+            new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(streamReader)
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => {}))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFromBeginning()
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            Assert.AreEqual(0, lastReadEvent);
+        }
+
+        [Test]
+        public void loading_subscription_from_no_checkpoint_and_start_from_is_set_should_read_from__start_from()
+        {
+            long lastReadEvent = -1;
+            var reader = new FakeCheckpointReader();
+            var streamReader = new FakeStreamReader(x => { lastReadEvent = x; });
+            new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(streamReader)
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(x => {}))
+                    .WithMessageParker(new FakeMessageParker())
+                    .PreferDispatchToSingle()
+                    .StartFrom(10)
+                    .MaximumToCheckPoint(1));
+            reader.Load(null);
+            Assert.AreEqual(10, lastReadEvent);
         }
     }
 
@@ -730,7 +1045,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
             {
                 Helper.BuildFakeEvent(id1, "type", "streamName", 0),
                 Helper.BuildLinkEvent(id2, "streamName", 1, Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamSource", 0))
-                
+
             }, 1, false);
             envelope1.Replies.Clear();
             sub.NotifyClockTick(DateTime.UtcNow.AddSeconds(3));
@@ -1236,6 +1551,40 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
+    [TestFixture]
+    public class ParkTests
+    {
+        [Test]
+        public void retrying_parked_messages_with_empty_stream_should_allow_retrying_parked_messages_again()
+        {
+            //setup the persistent subscription
+            var reader = new FakeCheckpointReader();
+            var parker = new FakeMessageParker();
+            var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+                PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+                    .WithEventLoader(new FakeStreamReader(x => { }))
+                    .WithCheckpointReader(reader)
+                    .WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+                    .WithMessageParker(parker)
+                    .StartFromBeginning());
+            reader.Load(null);
+
+            Assert.AreEqual(0,parker.BeginReadEndSequenceCount);
+
+            //retry all parked messages
+            sub.RetryAllParkedMessages();
+
+            //this should invoke message parker's BeginReadEndSequence
+            Assert.AreEqual(1,parker.BeginReadEndSequenceCount);
+
+            //retry all parked messages again
+            sub.RetryAllParkedMessages();
+
+            //this should invoke message parker's BeginReadEndSequence again
+            Assert.AreEqual(2,parker.BeginReadEndSequenceCount);
+        }
+    }
+
     [TestFixture, Ignore("very long test")]
     public class DeadlockTest : SpecificationWithMiniNode
     {
@@ -1269,6 +1618,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
                 {
                     manualResetEventSlim.Set();
                 }
+                return Task.CompletedTask;
             },
                 (sub, reason, ex) => { });
             Assert.IsTrue(manualResetEventSlim.Wait(TimeSpan.FromSeconds(30)), "Failed to receive all events in 2 minutes. Assume event store is deadlocked.");
@@ -1285,7 +1635,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         }
     }
 
-    public class Helper
+    public static class Helper
     {
         public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version)
         {
@@ -1306,17 +1656,25 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeStreamReader : IPersistentSubscriptionStreamReader
     {
-        private readonly Action<long> _action;
+        private readonly Action<long> _action1 = null;
+        private readonly Action<string,long,int,int,bool,Action<ResolvedEvent[], long, bool>> _action2 = null;
+
 
         public FakeStreamReader(Action<long> action)
         {
-            _action = action;
+            _action1 = action;
+        }
+
+        public FakeStreamReader(Action<string,long,int,int,bool,Action<ResolvedEvent[], long, bool>> action)
+        {
+            _action2 = action;
         }
 
         public void BeginReadEvents(string stream, long startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
             Action<ResolvedEvent[], long, bool> onEventsFound)
         {
-            _action(startEventNumber);
+            if(_action1 != null) _action1(startEventNumber);
+            else if(_action2 != null) _action2(stream,startEventNumber,countToLoad,batchSize,resolveLinkTos,onEventsFound);
         }
     }
 
@@ -1337,11 +1695,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
     class FakeMessageParker : IPersistentSubscriptionMessageParker
     {
-        private Action<long?> _readEndSequenceCompleted;
         private Action<ResolvedEvent, OperationResult> _parkMessageCompleted;
         public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
         private readonly Action _deleteAction;
-
+        private long _lastParkedEventNumber = -1;
+        public int BeginReadEndSequenceCount { get; private set; } = 0;
         public FakeMessageParker() { }
 
         public FakeMessageParker(Action deleteAction)
@@ -1351,11 +1709,6 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
 
         public long MarkedAsProcessed { get; private set; }
 
-        public void ReadEndSequenceCompleted(int sequence)
-        {
-            if (_readEndSequenceCompleted != null) _readEndSequenceCompleted(sequence);
-        }
-
         public void ParkMessageCompleted(int idx, OperationResult result)
         {
             if (_parkMessageCompleted != null) _parkMessageCompleted(ParkedEvents[idx], result);
@@ -1364,12 +1717,17 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription
         public void BeginParkMessage(ResolvedEvent ev, string reason, Action<ResolvedEvent, OperationResult> completed)
         {
             ParkedEvents.Add(ev);
+            _lastParkedEventNumber = ev.OriginalEventNumber;
             _parkMessageCompleted = completed;
         }
 
         public void BeginReadEndSequence(Action<long?> completed)
         {
-            _readEndSequenceCompleted = completed;
+            BeginReadEndSequenceCount++;
+            if(_lastParkedEventNumber==-1)
+                completed(null); //NoStream
+            else
+                completed(_lastParkedEventNumber);
         }
 
         public void BeginMarkParkedMessagesReprocessed(long sequence)

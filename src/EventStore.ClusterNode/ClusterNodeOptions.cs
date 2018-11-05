@@ -73,6 +73,8 @@ namespace EventStore.ClusterNode
         public int ExtTcpHeartbeatInterval { get; set; }
         [ArgDescription(Opts.GossipOnSingleNodeDescr, Opts.InterfacesGroup)]
         public bool GossipOnSingleNode { get; set; }
+        [ArgDescription(Opts.ConnectionPendingSendBytesThresholdDescr, Opts.InterfacesGroup)]
+        public int ConnectionPendingSendBytesThreshold { get; set; }
 
 
         [ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
@@ -138,6 +140,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
         public bool Unbuffered { get; set; }
 
+        [ArgDescription(Opts.ChunkInitialReaderCountDescr, Opts.DbGroup)]
+        public int ChunkInitialReaderCount { get; set; }
+
 
         [ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
         public ProjectionType RunProjections { get; set; }
@@ -145,6 +150,8 @@ namespace EventStore.ClusterNode
         public int ProjectionThreads { get; set; }
         [ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
         public int WorkerThreads { get; set; }
+        [ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
+        public int ProjectionsQueryExpiry { get; set; }
 
         [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] IntHttpPrefixes { get; set; }
@@ -197,8 +204,14 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
         public bool UnsafeIgnoreHardDelete { get; set; }
 
+        [ArgDescription(Opts.SkipIndexVerifyDescr, Opts.DbGroup)]
+        public bool SkipIndexVerify { get; set; }
+
         [ArgDescription(Opts.IndexCacheDepthDescr, Opts.DbGroup)]
         public int IndexCacheDepth { get; set; }
+
+        [ArgDescription(Opts.OptimizeIndexMergeDescr, Opts.DbGroup)]
+        public bool OptimizeIndexMerge { get; set; }
 
         [ArgDescription(Opts.GossipIntervalMsDescr, Opts.ClusterGroup)]
         public int GossipIntervalMs { get; set; }
@@ -215,6 +228,12 @@ namespace EventStore.ClusterNode
 
         [ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
         public bool AlwaysKeepScavenged { get; set; }
+
+        [ArgDescription(Opts.SkipIndexScanOnReadsDescr, Opts.AppGroup)]
+        public bool SkipIndexScanOnReads { get; set; }
+
+        [ArgDescription(Opts.ReduceFileCachePressureDescr, Opts.DbGroup)]
+        public bool ReduceFileCachePressure { get; set; }
 
         public ClusterNodeOptions()
         {
@@ -314,6 +333,8 @@ namespace EventStore.ClusterNode
             GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
             GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
             IndexCacheDepth = Opts.IndexCacheDepthDefault;
+            SkipIndexVerify = Opts.SkipIndexVerifyDefault;
+            OptimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
             EnableHistograms = Opts.HistogramEnabledDefault;
             ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 
@@ -325,6 +346,12 @@ namespace EventStore.ClusterNode
             WriteThrough = Opts.WriteThroughDefault;
 
             AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
+
+            SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
+            ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
+
+            ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+            ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
         }
     }
 }

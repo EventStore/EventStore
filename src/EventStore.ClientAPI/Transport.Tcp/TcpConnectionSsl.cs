@@ -170,16 +170,35 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             var sb = new StringBuilder();
             sb.AppendFormat("[S{0}, L{1}]:\n", RemoteEndPoint, LocalEndPoint);
-            sb.AppendFormat("Cipher: {0} strength {1}\n", stream.CipherAlgorithm, stream.CipherStrength);
-            sb.AppendFormat("Hash: {0} strength {1}\n", stream.HashAlgorithm, stream.HashStrength);
-            sb.AppendFormat("Key exchange: {0} strength {1}\n", stream.KeyExchangeAlgorithm, stream.KeyExchangeStrength);
+            sb.AppendFormat("Cipher: {0}\n", stream.CipherAlgorithm);
+            try{
+                sb.AppendFormat("Cipher strength: {0}\n", stream.CipherStrength);
+            }
+            catch(NotImplementedException){
+            }
+            sb.AppendFormat("Hash: {0}\n", stream.HashAlgorithm);
+            try{
+                sb.AppendFormat("Hash strength: {0}\n", stream.HashStrength);
+            }
+            catch(NotImplementedException){
+            }
+            sb.AppendFormat("Key exchange: {0}\n", stream.KeyExchangeAlgorithm);
+            try{
+                sb.AppendFormat("Key exchange strength: {0}\n", stream.KeyExchangeStrength);
+            }
+            catch(NotImplementedException){
+            }
             sb.AppendFormat("Protocol: {0}\n", stream.SslProtocol);
             sb.AppendFormat("Is authenticated: {0} as server? {1}\n", stream.IsAuthenticated, stream.IsServer);
             sb.AppendFormat("IsSigned: {0}\n", stream.IsSigned);
             sb.AppendFormat("Is Encrypted: {0}\n", stream.IsEncrypted);
             sb.AppendFormat("Can read: {0}, write {1}\n", stream.CanRead, stream.CanWrite);
             sb.AppendFormat("Can timeout: {0}\n", stream.CanTimeout);
-            sb.AppendFormat("Certificate revocation list checked: {0}\n", stream.CheckCertRevocationStatus);
+            try{
+                sb.AppendFormat("Certificate revocation list checked: {0}\n", stream.CheckCertRevocationStatus);
+            }
+            catch(NotImplementedException){
+            }
 
             X509Certificate localCert = stream.LocalCertificate;
             if (localCert != null)

@@ -1,0 +1,8 @@
+<Project>
+<PropertyGroup>
+    <!--
+    <RestoreSources>https://www.myget.org/F/eventstore-deps/api/v3/index.json</RestoreSources>
+    -->
+    <RestorePackagesPath>$(MSBuildThisFileDirectory)dependencies</RestorePackagesPath>
+</PropertyGroup>
+</Project>

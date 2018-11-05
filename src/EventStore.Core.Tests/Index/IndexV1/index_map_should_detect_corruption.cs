@@ -7,13 +7,26 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
+    [TestFixture(PTableVersions.IndexV4,false)]
+    [TestFixture(PTableVersions.IndexV4,true)]
     public class index_map_should_detect_corruption: SpecificationWithDirectory
     {
         private string _indexMapFileName;
         private string _ptableFileName;
         private PTable _ptable;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private bool _skipIndexVerify;
+
+        public index_map_should_detect_corruption(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [SetUp]
         public override void SetUp()
@@ -27,9 +40,9 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0,0,0);
             memtable.Add(1,1,100);
-            _ptable = PTable.FromMemtable(memtable, _ptableFileName);
+            _ptable = PTable.FromMemtable(memtable, _ptableFileName,skipIndexVerify:_skipIndexVerify);
 
-            indexMap = indexMap.AddPTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion).MergedMap;
+            indexMap = indexMap.AddPTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion,skipIndexVerify: _skipIndexVerify).MergedMap;
             indexMap.SaveToFile(_indexMapFileName);
         }
 

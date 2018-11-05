@@ -18,8 +18,8 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream
             _exception = null;
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test", new EmittedStream.WriterConfiguration(new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
-                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _ioDispatcher, _readyHandler,
+                "test", new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),new EmittedStream.WriterConfiguration.StreamMetadata(), null, 50), new ProjectionVersion(1, 0, 0),
+                new TransactionFilePositionTagger(0), CheckpointTag.FromPosition(0, 0, -1), _bus, _ioDispatcher, _readyHandler,
                 noCheckpoints: true);
             _stream.Start();
             try

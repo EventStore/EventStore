@@ -13,12 +13,19 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedStream : IDisposable, IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>
+    public class EmittedStream : IDisposable, 
+        IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>,
+        IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
+        private const string ReadUpTo = "upTo";
+        private const string ReadFromEventNumber = "readFromEventNumber";
         private readonly IODispatcher _ioDispatcher;
+        private readonly IPublisher _publisher;
 
 
         private readonly ILogger _logger;
@@ -56,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _recoveryCompleted;
         private Event _submittedWriteMetaStreamEvent;
         private const int MaxRetryCount = 5;
-
+        private Guid _pendingRequestCorrelationId;
 
         public class WriterConfiguration
         {
@@ -66,6 +73,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             private readonly int? maxCount;
             private readonly TimeSpan? maxAge;
+
+            private readonly IEmittedStreamsWriter _writer;
 
             public class StreamMetadata
             {
@@ -90,8 +99,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             public WriterConfiguration(
-                StreamMetadata streamMetadata, IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
+                IEmittedStreamsWriter writer, StreamMetadata streamMetadata, IPrincipal writeAs, int maxWriteBatchLength, ILogger logger = null)
             {
+                _writer = writer;
                 _writeAs = writeAs;
                 _maxWriteBatchLength = maxWriteBatchLength;
                 _logger = logger;
@@ -126,17 +136,23 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 get { return maxAge; }
             }
+
+            public IEmittedStreamsWriter Writer
+            {
+                get { return _writer; }
+            }
         }
 
         public EmittedStream(
             string streamId, WriterConfiguration writerConfiguration, ProjectionVersion projectionVersion,
-            PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IODispatcher ioDispatcher,
+            PositionTagger positionTagger, CheckpointTag fromCheckpointPosition, IPublisher publisher, IODispatcher ioDispatcher,
             IEmittedStreamContainer readyHandler, bool noCheckpoints = false)
         {
             if (string.IsNullOrEmpty(streamId)) throw new ArgumentNullException("streamId");
             if (writerConfiguration == null) throw new ArgumentNullException("writerConfiguration");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (fromCheckpointPosition == null) throw new ArgumentNullException("fromCheckpointPosition");
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             _streamId = streamId;
@@ -148,6 +164,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _zeroPosition = positionTagger.MakeZeroCheckpointTag();
             _fromCheckpointPosition = fromCheckpointPosition;
             _lastQueuedEventPosition = null;
+            _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _readyHandler = readyHandler;
             _maxWriteBatchLength = writerConfiguration.MaxWriteBatchLength;
@@ -236,19 +253,18 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
-                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside", _streamId));
+                    RequestRestart(string.Format("The '{0}' stream has been written to from the outside. Expected Version: {1}, Current Version: {2}. Checkpoint: {3}.", _streamId, _lastKnownEventNumber, message.CurrentVersion, _fromCheckpointPosition));
                     break;
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.CommitTimeout:
                     if(retryCount > 0)
                     {
-                        if (_logger != null) _logger.Info("Retrying write to {0} (Retry {1} of {2})", _streamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount);
                         PublishWriteEvents(--retryCount);
                     }
                     else
                     {
-                        Failed(string.Format("Failed to write an events to {0}. Retry limit of {1} reached. Reason: {2}", _streamId, MaxRetryCount, message.Result));
+                        Failed(string.Format("Failed to write events to {0}. Retry limit of {1} reached. Reason: {2}. Checkpoint: {3}.", _streamId, MaxRetryCount, message.Result, _fromCheckpointPosition));
                     }
                     break;
                 default:
@@ -272,6 +288,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
             if (_disposed)
                 return;
+            if (message.CorrelationId != _pendingRequestCorrelationId)
+                return;
+            _pendingRequestCorrelationId = Guid.Empty;
             _awaitingListEventsCompleted = false;
 
             var newPhysicalStream = message.LastEventNumber == ExpectedVersion.NoStream;
@@ -402,10 +421,35 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_awaitingWriteCompleted || _awaitingMetadataWriteCompleted || _awaitingListEventsCompleted)
                 throw new Exception();
             _awaitingListEventsCompleted = true;
+            _pendingRequestCorrelationId = Guid.NewGuid();
             _ioDispatcher.ReadBackward(
-                //TODO: reading events history in batches of 1 event (slow?)
                 _streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccount.Principal,
-                action: completed => ReadStreamEventsBackwardCompleted(completed, upTo));
+                action: completed => ReadStreamEventsBackwardCompleted(completed, upTo), corrId: _pendingRequestCorrelationId);
+            ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, _streamId, upTo, fromEventNumber);
+        }
+
+        private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId, CheckpointTag upTo, long fromEventNumber)
+        {
+            _publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId, new Dictionary<string, object>{
+                { ReadUpTo, upTo },
+                { ReadFromEventNumber, fromEventNumber}
+            }));
+        }
+
+        private Message CreateReadTimeoutMessage(Guid correlationId, string streamId, Dictionary<string, object> parameters)
+        {
+            return TimerMessage.Schedule.Create(
+                TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
+                new SendToThisEnvelope(this),
+                new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId, parameters));
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
+        {
+            if (message.CorrelationId != _pendingRequestCorrelationId) return;
+            _pendingRequestCorrelationId = Guid.Empty;
+            _awaitingListEventsCompleted = false;
+            SubmitListEvents((CheckpointTag)message.Parameters[ReadUpTo], (long)message.Parameters[ReadFromEventNumber]);
         }
 
         private void SubmitWriteMetadata()
@@ -433,15 +477,15 @@ namespace EventStore.Projections.Core.Services.Processing
             var delayInSeconds = MaxRetryCount - retryCount;
             if (delayInSeconds == 0)
             {
-                _ioDispatcher.WriteEvent(
-                    _metadataStreamId, ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
+                _writerConfiguration.Writer.WriteEvents(
+                    _metadataStreamId, ExpectedVersion.Any, new Event[] { _submittedWriteMetaStreamEvent }, _writeAs,
                     m => HandleMetadataWriteCompleted(m, retryCount));
             }
             else
             {
                 _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
-                    () => _ioDispatcher.WriteEvent(
-                            _metadataStreamId, ExpectedVersion.Any, _submittedWriteMetaStreamEvent, _writeAs,
+                    () => _writerConfiguration.Writer.WriteEvents(
+                            _metadataStreamId, ExpectedVersion.Any, new Event[] { _submittedWriteMetaStreamEvent }, _writeAs,
                             m => HandleMetadataWriteCompleted(m, retryCount)));
             }
         }
@@ -475,7 +519,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 case OperationResult.CommitTimeout:
                     if (retryCount > 0)
                     {
-                        if (_logger != null) _logger.Info("Retrying write to {0} (Retry {1} of {2})", _metadataStreamId, (MaxRetryCount - retryCount) + 1, MaxRetryCount);
                         PublishWriteMetaStream(--retryCount);
                     }
                     else
@@ -592,14 +635,14 @@ namespace EventStore.Projections.Core.Services.Processing
             var delayInSeconds = MaxRetryCount - retryCount;
             if (delayInSeconds == 0)
             {
-                _ioDispatcher.WriteEvents(
+                _writerConfiguration.Writer.WriteEvents(
                     _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
                     m => HandleWriteEventsCompleted(m, retryCount));
             }
             else
             {
-                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds), 
-                    () => _ioDispatcher.WriteEvents(
+                _ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
+                    () => _writerConfiguration.Writer.WriteEvents(
                         _streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
                         m => HandleWriteEventsCompleted(m, retryCount)));
             }

@@ -7,12 +7,31 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
+using System.Collections;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
-    [TestFixture]
+    public class FailureConditions : IEnumerable
+    {
+        public IEnumerator GetEnumerator()
+        {
+            yield return OperationResult.CommitTimeout;
+            yield return OperationResult.ForwardTimeout;
+            yield return OperationResult.PrepareTimeout;
+        }
+    }
+
+    [TestFixture, TestFixtureSource(typeof(FailureConditions))]
     public class when_posting_a_persistent_projection_and_registration_write_fails : TestFixtureWithProjectionCoreAndManagementServices
     {
+        private OperationResult _failureCondition;
+        public when_posting_a_persistent_projection_and_registration_write_fails(OperationResult failureCondition)
+        {
+            _failureCondition = failureCondition;
+        }
+
         protected override void Given()
         {
             NoStream("$projections-test-projection-order");
@@ -28,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
             yield return new SystemMessage.SystemCoreReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
@@ -37,15 +57,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         [Test, Category("v8")]
-        public void retries_creating_the_projection_only_the_specified_number_of_times()
+        public void retries_creating_the_projection_only_the_specified_number_of_times_and_the_same_event_id()
         {
             int retryCount = 0;
-            var projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == "$projections-$all").Last();
+            var projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream).Last();
+            var eventId = projectionRegistrationWrite.Events[0].EventId;
             while (projectionRegistrationWrite != null)
             {
-                projectionRegistrationWrite.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(projectionRegistrationWrite.CorrelationId, OperationResult.CommitTimeout, "Commit Timeout"));
+                Assert.AreEqual(eventId, projectionRegistrationWrite.Events[0].EventId);
+                projectionRegistrationWrite.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(projectionRegistrationWrite.CorrelationId, _failureCondition, Enum.GetName(typeof(OperationResult), _failureCondition)));
                 _queue.Process();
-                projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == "$projections-$all").LastOrDefault();
+                projectionRegistrationWrite = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(x => x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream).LastOrDefault();
                 if(projectionRegistrationWrite != null)
                 {
                     retryCount++;

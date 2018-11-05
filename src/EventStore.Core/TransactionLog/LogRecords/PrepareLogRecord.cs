@@ -216,7 +216,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 result = (result * 397) ^ Flags.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
                 result = (result * 397) ^ TransactionOffset;
-                result = (result * 397) ^ (int)(ExpectedVersion >> 32);
+                result = (result * 397) ^ ExpectedVersion.GetHashCode();
                 result = (result * 397) ^ EventStreamId.GetHashCode();
 
                 result = (result * 397) ^ EventId.GetHashCode();

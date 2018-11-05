@@ -1,3 +1,4 @@
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -15,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epo
                 "$projections-projection-result", "Result",
                 @"{""v"":1, ""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
-                "$projections-projection-checkpoint", "$ProjectionCheckpoint",
+                "$projections-projection-checkpoint", ProjectionEventTypes.ProjectionCheckpoint,
                 @"{""v"":1, ""c"": 100, ""p"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-result", "Result",

@@ -28,9 +28,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             unchecked
             {
-                var hashCode = (int)(ProjectionId >> 32);
-                hashCode = (hashCode*397) ^ (int)(Epoch >> 32);
-                hashCode = (hashCode*397) ^ (int)(Version >> 32);
+                var hashCode = ProjectionId.GetHashCode();
+                hashCode = (hashCode*397) ^ Epoch.GetHashCode();
+                hashCode = (hashCode*397) ^ Version.GetHashCode();
                 return hashCode;
             }
         }

@@ -105,7 +105,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                     fileSize, 
                                                     _config.InMemDb,
                                                     _config.Unbuffered,
-                                                    _config.WriteThrough);
+                                                    _config.WriteThrough,
+                                                    _config.InitialReaderCount,
+                                                    _config.ReduceFileCachePressure);
         }
 
         public TFChunk.TFChunk AddNewChunk()
@@ -121,7 +123,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                       isScavenged: false, 
                                                       inMem: _config.InMemDb,
                                                       unbuffered: _config.Unbuffered,
-                                                      writethrough: _config.WriteThrough);
+                                                      writethrough: _config.WriteThrough,
+                                                      initialReaderCount: _config.InitialReaderCount,
+                                                      reduceFileCachePressure: _config.ReduceFileCachePressure);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -144,7 +148,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                              fileSize, 
                                                              _config.InMemDb,
                                                              unbuffered: _config.Unbuffered,
-                                                             writethrough: _config.WriteThrough);
+                                                             writethrough: _config.WriteThrough,
+                                                             initialReaderCount: _config.InitialReaderCount,
+                                                             reduceFileCachePressure: _config.ReduceFileCachePressure);
                 AddChunk(chunk);
                 return chunk;
             }
@@ -195,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
                 Log.Info("File {0} will be moved to file {1}", Path.GetFileName(oldFileName), Path.GetFileName(newFileName));
                 File.Move(oldFileName, newFileName);
-                newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered);
+                newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered, _config.InitialReaderCount, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
             }
 
             lock (_chunksLocker)

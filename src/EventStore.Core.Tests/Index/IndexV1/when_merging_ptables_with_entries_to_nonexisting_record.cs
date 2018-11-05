@@ -6,13 +6,25 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1,false)]
+    [TestFixture(PTableVersions.IndexV1,true)]
+    [TestFixture(PTableVersions.IndexV2,false)]
+    [TestFixture(PTableVersions.IndexV2,true)]
+    [TestFixture(PTableVersions.IndexV3,false)]
+    [TestFixture(PTableVersions.IndexV3,true)]
     public class when_merging_ptables_with_entries_to_nonexisting_record: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
-        private PTable _newtable;
+        protected PTable _newtable;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+
+        private bool _skipIndexVerify;
+
+        public when_merging_ptables_with_entries_to_nonexisting_record(byte version, bool skipIndexVerify){
+            _ptableVersion = version;
+            _skipIndexVerify = skipIndexVerify;
+        }
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -27,10 +39,10 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 {
                     table.Add((ulong)(0x010100000000 << i), j, i*10 + j);
                 }
-                _tables.Add(PTable.FromMemtable(table, _files[i]));
+                _tables.Add(PTable.FromMemtable(table, _files[i], skipIndexVerify: _skipIndexVerify));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash, x => x.Position % 2 == 0, x => new Tuple<string, bool>("", x.Position % 2 == 0), _ptableVersion);
+            _newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash, x => x.Position % 2 == 0, x => new Tuple<string, bool>("", x.Position % 2 == 0), _ptableVersion,skipIndexVerify: _skipIndexVerify);
         }
 
         [OneTimeTearDown]
@@ -79,6 +91,6 @@ namespace EventStore.Core.Tests.Index.IndexV1
                         Assert.IsFalse(_newtable.TryGetOneValue((ulong)(0x010100000000 << i), j, out position));
                 }
             }
-        }
+        }       
     }
 }

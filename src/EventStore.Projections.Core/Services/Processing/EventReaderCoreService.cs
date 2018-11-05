@@ -29,7 +29,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
         IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
-        IHandle<ReaderCoreServiceMessage.ReaderTick>
+        IHandle<ReaderSubscriptionMessage.Faulted>,
+        IHandle<ReaderCoreServiceMessage.ReaderTick>        
     {
         private readonly IPublisher _publisher;
         private readonly IODispatcher _ioDispatcher;
@@ -253,6 +254,19 @@ namespace EventStore.Projections.Core.Services.Processing
             Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
         }
 
+        public void Handle(ReaderSubscriptionMessage.Faulted message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+
+            var subscription = _subscriptions[projectionId];
+            Handle(new ReaderSubscriptionManagement.Unsubscribe(subscription.SubscriptionId));
+            _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId,message.Reason));            
+        }
+
         private void StartReaders()
         {
             //TODO: do we need to clear subscribed projections here?
@@ -335,14 +349,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ReaderCoreServiceMessage.StartReader message)
         {
             StartReaders();
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("EventReaderCoreService"));
         }
 
         public void Handle(ReaderCoreServiceMessage.StopReader message)
         {
             StopReaders();
+            _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStopped("EventReaderCoreService"));            
         }
-
-
         public void Handle(ReaderCoreServiceMessage.ReaderTick message)
         {
             message.Action();

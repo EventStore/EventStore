@@ -6,6 +6,8 @@ using EventStore.Common.Log;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Core.Bus;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -26,12 +28,17 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
 
         private readonly IODispatcher _ioDispatcher;
+        private readonly IPublisher _publisher;
 
         private readonly ProjectionVersion _projectionVersion;
 
         private List<IEnvelope> _awaitingStreams;
 
+        private Guid[] _writeQueueIds;
+        private int _maximumAllowedWritesInFlight;
+
         public ProjectionCheckpoint(
+            IPublisher publisher,
             IODispatcher ioDispatcher,
             ProjectionVersion projectionVersion,
             IPrincipal runAs,
@@ -39,13 +46,17 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag from,
             PositionTagger positionTagger,
             int maxWriteBatchLength,
+            int maximumAllowedWritesInFlight,
             ILogger logger = null)
         {
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (from.CommitPosition < from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
+            _maximumAllowedWritesInFlight = maximumAllowedWritesInFlight;
+            _publisher = publisher;
             _ioDispatcher = ioDispatcher;
             _projectionVersion = projectionVersion;
             _runAs = runAs;
@@ -54,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
+            _writeQueueIds = Enumerable.Range(0, _maximumAllowedWritesInFlight).Select(x => Guid.NewGuid()).ToArray();
         }
 
         public void Start()
@@ -133,11 +145,20 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var streamMetadata = emittedEvents.Length > 0 ? emittedEvents[0].StreamMetadata : null;
 
-                var writerConfiguration = new EmittedStream.WriterConfiguration(
-                    streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+                var writeQueueId = _maximumAllowedWritesInFlight == AllowedWritesInFlight.Unbounded 
+                    ? (Guid?)null 
+                    :_writeQueueIds[_emittedStreams.Count % _maximumAllowedWritesInFlight];
 
-                stream = new EmittedStream(
-                    streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _ioDispatcher, this);
+                IEmittedStreamsWriter writer;
+                if (writeQueueId == null)
+                    writer = new EmittedStreamsWriter(_ioDispatcher);
+                else
+                    writer = new QueuedEmittedStreamsWriter(_ioDispatcher, writeQueueId.Value);
+
+                var writerConfiguration = new EmittedStream.WriterConfiguration(
+                    writer, streamMetadata, _runAs, maxWriteBatchLength: _maxWriteBatchLength, logger: _logger);
+
+                stream = new EmittedStream(streamId, writerConfiguration, _projectionVersion, _positionTagger, _from, _publisher, _ioDispatcher, this);
 
                 if (_started)
                     stream.Start();

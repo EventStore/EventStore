@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3, PrepareTimeout, CommitTimeout, false);
+            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
@@ -23,14 +23,12 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
             yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
-            yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3, true);
 
         }
 
         protected override Message When()
         {
-            return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
+            return new StorageMessage.CommitReplicated(InternalCorrId, 100, 2, 3, 3);
         }
 
         [Test]

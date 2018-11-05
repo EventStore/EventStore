@@ -30,7 +30,17 @@ namespace EventStore.Core.Tests
         public virtual void TearDown()
         {
             //kill whole tree
-            Directory.Delete(PathName, true);
+            ForceDeleteDirectory(PathName);
+        }
+
+        private static void ForceDeleteDirectory(string path)
+        {
+            var directory = new DirectoryInfo(path) { Attributes = FileAttributes.Normal };
+            foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories))
+            {
+                info.Attributes = FileAttributes.Normal;
+            }
+            directory.Delete(true);
         }
     }
 }

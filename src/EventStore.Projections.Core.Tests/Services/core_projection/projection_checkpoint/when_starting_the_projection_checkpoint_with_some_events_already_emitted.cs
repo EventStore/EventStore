@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
@@ -25,8 +26,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _checkpoint = new ProjectionCheckpoint(
-                _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                _bus, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, AllowedWritesInFlight.Unbounded);
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                 {

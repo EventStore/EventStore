@@ -1,18 +1,26 @@
 using System;
 using System.IO;
+using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1
 {
-    [TestFixture]
+    [TestFixture(PTableVersions.IndexV1)]
+    [TestFixture(PTableVersions.IndexV2)]
+    [TestFixture(PTableVersions.IndexV3)]
+    [TestFixture(PTableVersions.IndexV4)]
     public class when_a_ptable_is_corrupt_on_disk: SpecificationWithDirectory
     {
         private string _filename;
         private PTable _table;
         private string _copiedfilename;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        
+        public when_a_ptable_is_corrupt_on_disk(byte version){
+            _ptableVersion = version;
+        }
 
         [SetUp]
         public override void SetUp()
@@ -46,7 +54,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16, false));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
     }

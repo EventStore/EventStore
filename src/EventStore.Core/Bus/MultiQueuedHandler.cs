@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -49,12 +50,14 @@ namespace EventStore.Core.Bus
             return Interlocked.Increment(ref _nextQueueNum);
         }
 
-        public void Start()
+        public IEnumerable<Task> Start()
         {
+            var tasks = new List<Task>();
             for (int i = 0; i < Queues.Length; ++i)
             {
-                Queues[i].Start();
+                tasks.Add(Queues[i].Start());
             }
+            return tasks;
         }
 
         public void Stop()

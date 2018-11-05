@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
@@ -26,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
             yield return new SystemMessage.SystemCoreReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
@@ -50,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void a_projection_created_event_should_be_written()
         {
             Assert.AreEqual(
-                "$ProjectionCreated",
+                ProjectionEventTypes.ProjectionCreated,
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].EventType);
             Assert.AreEqual(
                 _projectionName,

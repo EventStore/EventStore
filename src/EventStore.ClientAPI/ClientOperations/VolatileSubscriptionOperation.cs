@@ -7,9 +7,9 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class VolatileSubscriptionOperation : SubscriptionOperation<EventStoreSubscription>
+    internal class VolatileSubscriptionOperation : SubscriptionOperation<EventStoreSubscription, ResolvedEvent>
     {
-        public VolatileSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source, string streamId, bool resolveLinkTos, UserCredentials userCredentials, Action<EventStoreSubscription, ResolvedEvent> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
+        public VolatileSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source, string streamId, bool resolveLinkTos, UserCredentials userCredentials, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging, Func<TcpPackageConnection> getConnection)
             : base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped, verboseLogging, getConnection)
         {
         }

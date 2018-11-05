@@ -10,6 +10,7 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
@@ -25,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         protected ProjectionsSubsystem _projections;
         protected UserCredentials _admin = DefaultData.AdminCredentials;
         protected ProjectionsManager _manager;
+        protected QueryManager _queryManager;
 
         [OneTimeSetUp]
         public override void TestFixtureSetUp()
@@ -43,10 +45,19 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
                 _manager = new ProjectionsManager(
                     new ConsoleLogger(),
                     _node.ExtHttpEndPoint,
-                    TimeSpan.FromMilliseconds(10000));
+                TimeSpan.FromMilliseconds(20000));
+
+                _queryManager = new QueryManager(
+                    new ConsoleLogger(), 
+                    _node.ExtHttpEndPoint,
+                    TimeSpan.FromMilliseconds(20000),
+                    TimeSpan.FromMilliseconds(20000));
+
                 WaitIdle();
+
                 if (GivenStandardProjectionsRunning())
                     EnableStandardProjections();
+
                 QueueStatsCollector.WaitIdle();
                 Given();
                 When();
@@ -78,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         private void CreateNode()
         {
             var projectionWorkerThreadCount = GivenWorkerThreadCount();
-            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All, startStandardProjections: false);
+            _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
+                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             _node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { _projections });
             _node.Start();
@@ -136,11 +148,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
 
             if (_node != null)
                 _node.Shutdown();
-
-            base.TestFixtureTearDown();
 #if DEBUG
-            QueueStatsCollector.InitializeIdleDetection(false);
+            QueueStatsCollector.DisableIdleDetection();
 #endif
+            base.TestFixtureTearDown();
         }
 
         protected virtual void When()

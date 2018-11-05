@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
             [Test]
             public void simple_object()
             {
+                AssertCorrect(@"");
                 AssertCorrect(@"{""a"":""b""}");
                 AssertCorrect(@"{""a"":""b"",""c"":1}");
                 AssertCorrect(@"{""z"":null,""a"":""b"",""c"":1}");
@@ -45,6 +46,14 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
                 AssertCorrect(@"{""a"":""b"",""c"":[1,2,3]}");
                 AssertCorrect(@"{""a"":""b"",""c"":{""a"":""b""}}");
                 AssertCorrect(@"{""a"":""b"",""c"":[{},[],null]}");
+            }
+
+            [Test]
+            public void array()
+            {
+                AssertCorrect(@"[]");
+                AssertCorrect(@"[""one"",""two""]");
+                AssertCorrect(@"[{""data"":{}}]");
             }
 
             [Test]

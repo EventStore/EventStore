@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 _checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
                 _manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
 
-                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10));
+                _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null);
             }
             catch (Exception ex)
             {
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void start_throws_invalid_operation_exception()
         {
-            Assert.Throws<InvalidOperationException>(()=> { _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10)); });
+            Assert.Throws<InvalidOperationException>(()=> { _manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10),null); });
         }
 
         [Test]

@@ -5,6 +5,7 @@ using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Util;
 using System.IO;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
@@ -43,7 +44,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
 
         protected void CreateNode()
 		{
-            var projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All, startStandardProjections: false);
+            var projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
+                    startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             Node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { projections });
             Node.Start();

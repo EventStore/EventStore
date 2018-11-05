@@ -90,9 +90,9 @@ namespace EventStore.Projections.Core.Services
                 hashCode = (hashCode*397) ^ (int) MasterStatus;
                 hashCode = (hashCode*397) ^ (StateReason != null ? StateReason.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ (Name != null ? Name.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (int)(ProjectionId >> 32);
-                hashCode = (hashCode*397) ^ (int)(Epoch >> 32);
-                hashCode = (hashCode*397) ^ (int)(Version >> 32);
+                hashCode = (hashCode*397) ^ ProjectionId.GetHashCode();
+                hashCode = (hashCode*397) ^ Epoch.GetHashCode();
+                hashCode = (hashCode*397) ^ Version.GetHashCode();
                 hashCode = (hashCode*397) ^ (int) Mode;
                 hashCode = (hashCode*397) ^ (Position != null ? Position.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ Progress.GetHashCode();

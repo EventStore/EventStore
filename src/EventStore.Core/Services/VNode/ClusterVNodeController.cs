@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.VNode
         private int _serviceShutdownsToExpect = 1 /* StorageChaser */
                                               + 1 /* StorageReader */
                                               + 1 /* StorageWriter */
+                                              + 1 /* IndexCommitterService */
                                               + 1 /* MasterReplicationService */
                                               + 1 /* HttpService Internal*/
                                               + 1 /* HttpService External*/;
@@ -71,7 +72,11 @@ namespace EventStore.Core.Services.VNode
             _node = node;
             _subSystems = subSystems;
             if(vnodeSettings.ClusterNodeCount == 1) {
-                _serviceShutdownsToExpect = 4;
+                _serviceShutdownsToExpect =   1 /* StorageChaser */
+                                            + 1 /* StorageReader */
+                                            + 1 /* StorageWriter */
+                                            + 1 /* IndexCommitterService */
+                                            + 1 /* HttpService External*/;
             }
 
             _subSystemInitsToExpect = _subSystems != null ? subSystems.Length : 0;
@@ -194,7 +199,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreReplica)
                     .When<ReplicationMessage.ReconnectToMaster>().Do(Handle)
                     .When<ReplicationMessage.SubscribeToMaster>().Do(Handle)
-                    .When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle) 
+                    .When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle)
                     .When<ReplicationMessage.ReplicaSubscribed>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
                 .InAllStatesExcept(VNodeState.PreReplica)
@@ -296,9 +301,9 @@ namespace EventStore.Core.Services.VNode
         private void Handle(SystemMessage.BecomeUnknown message)
         {
             Log.Info("========== [{0}] IS UNKNOWN...", _nodeInfo.InternalHttp);
-           
+
             _state = VNodeState.Unknown;
-            _master = null;           
+            _master = null;
             _outputBus.Publish(message);
             _mainQueue.Publish(new ElectionMessage.StartElections());
         }
@@ -402,17 +407,17 @@ namespace EventStore.Core.Services.VNode
             {
                 Log.ErrorException(exc, "Error when publishing {0}.", message);
             }
+            try
+            {
+                _node.WorkersHandler.Stop();
+                _mainQueue.RequestStop();
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error when stopping workers/main queue.");
+            }
             if (_exitProcessOnShutdown)
             {
-                try
-                {
-                    _node.WorkersHandler.Stop();
-                    _mainQueue.RequestStop();
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "Error when stopping workers/main queue.");
-                }
                 Application.Exit(ExitCode.Success, "Shutdown and exit from process was requested.");
             }
         }
@@ -421,8 +426,11 @@ namespace EventStore.Core.Services.VNode
         {
             if (_master != null && _master.InstanceId == message.Master.InstanceId)
             {
-                if (_master.InstanceId == _nodeInfo.InstanceId)
+                //if the master hasn't changed, we skip state changes through PreMaster or PreReplica
+                if (_master.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Master){
+                    //transitioning from master to master, we just write a new epoch
                     _fsm.Handle(new SystemMessage.WriteEpoch());
+                }
                 return;
             }
 
@@ -448,8 +456,9 @@ namespace EventStore.Core.Services.VNode
         private void Handle(UserManagementMessage.UserManagementServiceInitialized message)
         {
             if (_subSystems != null){
-                foreach (var subsystem in _subSystems)
-                    subsystem.Start();
+                foreach (var subsystem in _subSystems){
+                    _node.AddTasks(subsystem.Start());
+                }
             }
             _outputBus.Publish(message);
             _fsm.Handle(new SystemMessage.SystemCoreReady());
@@ -833,7 +842,6 @@ namespace EventStore.Core.Services.VNode
         private void Handle(SystemMessage.ServiceShutdown message)
         {
             Log.Info("========== [{0}] Service '{1}' has shut down.", _nodeInfo.InternalHttp, message.ServiceName);
-
             _serviceShutdownsToExpect -= 1;
             if (_serviceShutdownsToExpect == 0)
             {

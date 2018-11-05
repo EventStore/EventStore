@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using HdrHistogram;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -31,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var writer = new StringWriter();
             lock (histogram)
             {
-                histogram.outputPercentileDistribution(writer, outputValueUnitScalingRatio: 1000.0*1000.0);
+                histogram.OutputPercentileDistribution(writer, outputValueUnitScalingRatio: 1000.0*1000.0);
             }
             var response = Encoding.ASCII.GetBytes(writer.ToString());
             entity.Reply(response,

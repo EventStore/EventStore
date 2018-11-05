@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _initializeSystemProjections = GivenInitializeSystemProjections();
             if (!_initializeSystemProjections)
             {
-                ExistingEvent("$projections-$all", "$ProjectionsInitialized", "", "");
+                ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionsInitialized, "", "");
             }
         }
 
@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _timeProvider,
                 ProjectionType.All,
                 _ioDispatcher,
+                TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
                 _initializeSystemProjections);
 
             _coordinator = new ProjectionCoreCoordinator(
@@ -99,10 +100,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionManagementMessage.Command.Reset>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.DeleteStreamCompleted>(_manager);
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
             _bus.Subscribe<SystemMessage.SystemCoreReady>(_manager);
+            _bus.Subscribe<SystemMessage.EpochWritten>(_manager);
             _bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
             _bus.Subscribe(
                 CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
@@ -110,6 +113,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
             _bus.Subscribe<SystemMessage.SystemCoreReady>(_coordinator);
+            _bus.Subscribe<SystemMessage.EpochWritten>(_coordinator);
 
             if (GetInputQueue() != _processingQueues.First().Item2)
             {

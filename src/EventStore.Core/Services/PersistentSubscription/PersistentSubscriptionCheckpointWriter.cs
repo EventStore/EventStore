@@ -50,7 +50,6 @@ namespace EventStore.Core.Services.PersistentSubscription
 
         private void PublishCheckpoint(long state)
         {
-            Log.Debug("Publishing checkpoint for {0}: {1}", _subscriptionStateStream, state);
             _outstandingWrite = true;
             var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToJson(), null);            
             _ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccount.Principal, WriteStateCompleted);
@@ -90,7 +89,6 @@ namespace EventStore.Core.Services.PersistentSubscription
             _outstandingWrite = false;
             if (msg.Result == OperationResult.Success)
             {
-                Log.Debug("Checkpoint write successful for {0}", _subscriptionStateStream);
                 _version = msg.LastEventNumber;
             }
             else

@@ -13,7 +13,10 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionCoreCoordinator
         : IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
         IHandle<SystemMessage.StateChangeMessage>,
-        IHandle<SystemMessage.SystemCoreReady>
+        IHandle<SystemMessage.SystemCoreReady>,
+        IHandle<SystemMessage.EpochWritten>,
+        IHandle<ProjectionCoreServiceMessage.SubComponentStarted>,
+        IHandle<ProjectionCoreServiceMessage.SubComponentStopped>
     {
         private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionCoreCoordinator>();
         private readonly ProjectionType _runProjections;
@@ -22,6 +25,10 @@ namespace EventStore.Projections.Core.Services.Management
         private bool _started;
         private readonly IPublisher _publisher;
         private readonly IEnvelope _publishEnvelope;
+
+        private int _pendingSubComponentsStarts = 0;
+        private int _activeSubComponents = 0;
+        private bool _newInstanceWaiting = false;
 
         public ProjectionCoreCoordinator(
             ProjectionType runProjections,
@@ -46,7 +53,10 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private bool _systemReady = false;
+        private bool _ready = false;
+
         private VNodeState _currentState = VNodeState.Unknown;
+        private Guid _epochId = Guid.Empty;
         public void Handle(SystemMessage.SystemCoreReady message)
         {
             _systemReady = true;
@@ -56,15 +66,40 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.StateChangeMessage message)
         {
             _currentState = message.State;
+            if(_currentState != VNodeState.Master)
+                _ready = false;
+            
             StartWhenConditionsAreMet();
         }
 
+        public void Handle(SystemMessage.EpochWritten message)
+        {
+            if(_ready) return;
+            
+            if(_currentState == VNodeState.Master){
+                _epochId = message.Epoch.EpochId;
+                _ready = true;
+            }
+
+            StartWhenConditionsAreMet();            
+        }
         private void StartWhenConditionsAreMet()
         {
-            if (_systemReady && (_currentState == VNodeState.Master || _currentState == VNodeState.Slave))
+            //run if and only if these conditions are met
+            if (_systemReady && _ready)
             {
                 if (!_started)
                 {
+                    if(_pendingSubComponentsStarts + _activeSubComponents != 0){
+                        _newInstanceWaiting = true;
+                        return;
+                    }
+                    else{
+                        _newInstanceWaiting = false;
+                        _pendingSubComponentsStarts = 0;
+                        _activeSubComponents = 0;
+                    }
+
                     Log.Debug("PROJECTIONS: Starting Projections Core Coordinator. (Node State : {0})", _currentState);
                     Start();
                 }
@@ -99,8 +134,13 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
             {
                 queue.Publish(new ReaderCoreServiceMessage.StartReader());
-                if (_runProjections >= ProjectionType.System)
-                    queue.Publish(new ProjectionCoreServiceMessage.StartCore());
+                _pendingSubComponentsStarts+= 1 /*EventReaderCoreService*/;
+
+                if (_runProjections >= ProjectionType.System){
+                    queue.Publish(new ProjectionCoreServiceMessage.StartCore(_epochId));
+                    _pendingSubComponentsStarts += 1 /*ProjectionCoreService*/
+                                                +  1 /*ProjectionCoreServiceCommandReader*/;
+                }
                 else{
                     _publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
                 }
@@ -114,17 +154,37 @@ namespace EventStore.Projections.Core.Services.Management
                 _started = false;
                 foreach (var queue in _queues)
                 {
-                    queue.Publish(new ProjectionCoreServiceMessage.StopCore());
+                    queue.Publish(new ReaderCoreServiceMessage.StopReader());                    
                     if (_runProjections >= ProjectionType.System)
-                        queue.Publish(new ReaderCoreServiceMessage.StopReader());
+                        queue.Publish(new ProjectionCoreServiceMessage.StopCore());
                 }
             }
         }
+        public void Handle(ProjectionCoreServiceMessage.SubComponentStarted message)
+        {
+            _pendingSubComponentsStarts--;
+            _activeSubComponents++;
+            Log.Debug("PROJECTIONS: SubComponent Started: {0}",message.SubComponent);
+            
+            if(_newInstanceWaiting)
+                StartWhenConditionsAreMet();
+        }  
 
+        public void Handle(ProjectionCoreServiceMessage.SubComponentStopped message)
+        {
+            _activeSubComponents--;
+            Log.Debug("PROJECTIONS: SubComponent Stopped: {0}",message.SubComponent);
+            
+            if(_newInstanceWaiting)
+                StartWhenConditionsAreMet();  
+        }
         public void SetupMessaging(IBus bus)
         {
             bus.Subscribe<SystemMessage.StateChangeMessage>(this);
             bus.Subscribe<SystemMessage.SystemCoreReady>(this);
+            bus.Subscribe<SystemMessage.EpochWritten>(this);
+            bus.Subscribe<ProjectionCoreServiceMessage.SubComponentStarted>(this);
+            bus.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(this);
             if (_runProjections >= ProjectionType.System)
             {
                 bus.Subscribe<ProjectionManagementMessage.Internal.RegularTimeout>(this);

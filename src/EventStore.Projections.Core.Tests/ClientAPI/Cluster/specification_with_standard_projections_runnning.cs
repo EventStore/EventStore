@@ -12,6 +12,7 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
@@ -110,7 +111,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
         private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds)
         {
-            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All, startStandardProjections: false);
+            _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
+                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault));
             var node = new MiniClusterNode(
                 PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
@@ -165,10 +167,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
             _nodes[0].Shutdown();
             _nodes[1].Shutdown();
             _nodes[2].Shutdown();
-            base.TestFixtureTearDown();
 #if DEBUG
-            QueueStatsCollector.InitializeIdleDetection(false);
+            QueueStatsCollector.DisableIdleDetection();
 #endif
+            base.TestFixtureTearDown();
         }
 
         protected virtual void When()
@@ -285,7 +287,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
 
             var actualMeta = resultEvents.Aggregate(
                 "", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView);
-
 
             Debug.WriteLine(
                 "Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n \r\nActual metas:{3}", streamId,

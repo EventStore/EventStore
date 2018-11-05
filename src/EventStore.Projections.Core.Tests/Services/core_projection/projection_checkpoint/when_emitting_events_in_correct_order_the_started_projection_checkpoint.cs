@@ -27,8 +27,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _checkpoint = new ProjectionCheckpoint(
-                _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
-                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250);
+                _bus, _ioDispatcher, new ProjectionVersion(1, 0, 0), null, _readyHandler,
+                CheckpointTag.FromPosition(0, 100, 50), new TransactionFilePositionTagger(0), 250, 1);
             _checkpoint.Start();
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
@@ -50,6 +50,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                         new EmittedDataEvent(
                             "stream1", Guid.NewGuid(), "type4", true, "data", null, CheckpointTag.FromPosition(0, 140, 130), null))
                 });
+            OneWriteCompletes(); //stream2
+            OneWriteCompletes(); //stream3
         }
 
         [Test]
@@ -85,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         }
 
         [Test]
-        public void should_not_write_a_secong_group_until_the_first_write_completes()
+        public void should_not_write_a_second_group_until_the_first_write_completes()
         {
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]

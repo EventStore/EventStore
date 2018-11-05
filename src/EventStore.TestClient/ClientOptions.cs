@@ -38,6 +38,11 @@ namespace EventStore.TestClient
         [ArgDescription(Opts.ForceDescr)]
         public bool Force { get; set; }
         public string[] Command { get; set; }
+        public bool Reconnect { get; set; }
+
+        public bool UseSsl { get; set; }
+        public string TargetHost { get; set; }
+        public bool ValidateServer { get; set; }
 
         public ClientOptions()
         {
@@ -56,6 +61,10 @@ namespace EventStore.TestClient
             WriteWindow = 2000;
             PingWindow = 2000;
             Force = false;
+            Reconnect = true;
+            UseSsl = false;
+            TargetHost = "";
+            ValidateServer = false;
         }
     }
 }

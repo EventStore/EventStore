@@ -119,6 +119,61 @@ namespace EventStore.Core.Tests.Http.Streams
             }
         }
 
+        [TestFixture, Category("LongRunning")]
+        public class when_retrieving_feed_head_with_forwarded_prefix : SpecificationWithLongFeed
+        {
+            private JObject _feed;
+            private string _prefix;
+
+            protected override void When()
+            {
+                _prefix = "testprefix";
+                var headers = new NameValueCollection();
+                headers.Add("X-Forwarded-Prefix", _prefix);
+                _feed = GetJson<JObject>(TestStream, ContentType.AtomJson, headers: headers);
+            }
+
+            [Test]
+            public void returns_ok_status_code()
+            {
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+            }
+
+            [Test]
+            public void contains_a_link_rel_previous_with_prefix()
+            {
+                var rel = GetLink(_feed, "previous");
+                Assert.AreEqual(MakeUrl("/" + _prefix + TestStream + "/25/forward/20"), new Uri(rel));
+            }
+
+            [Test]
+            public void contains_a_link_rel_next_with_prefix()
+            {
+                var rel = GetLink(_feed, "next");
+                Assert.AreEqual(MakeUrl("/" + _prefix + TestStream + "/4/backward/20"), new Uri(rel));
+            }
+
+            [Test]
+            public void contains_a_link_rel_self_with_prefix()
+            {
+                var rel = GetLink(_feed, "self");
+                Assert.AreEqual(MakeUrl("/" + _prefix + TestStream), new Uri(rel));
+            }
+
+            [Test]
+            public void contains_a_link_rel_first_with_prefix()
+            {
+                var rel = GetLink(_feed, "first");
+                Assert.AreEqual(MakeUrl("/" + _prefix + TestStream + "/head/backward/20"), new Uri(rel));
+            }
+
+            [Test]
+            public void contains_a_link_rel_last_with_prefix()
+            {
+                var rel = GetLink(_feed, "last");
+                Assert.AreEqual(MakeUrl("/" + _prefix + TestStream + "/0/forward/20"), new Uri(rel));
+            }
+        }
 
         [TestFixture, Category("LongRunning")]
         public class when_retrieving_the_previous_link_of_the_feed_head: SpecificationWithLongFeed

@@ -18,11 +18,19 @@ namespace EventStore.Core.DataStructures
 
         private readonly int _maxCount;
         private readonly object _lock = new object();
-
+        private Func<object,bool> _onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
         public LRUCache(int maxCount)
         {
             Ensure.Nonnegative(maxCount, "maxCount");
             _maxCount = maxCount;
+        }
+
+        public LRUCache(int maxCount,Func<object,bool> onPut, Func<object,bool> onRemove)
+        {
+            Ensure.Nonnegative(maxCount, "maxCount");
+            _maxCount = maxCount;
+            _onPut = onPut;
+            _onRemove = onRemove;
         }
 
         public bool TryGet(TKey key, out TValue value)
@@ -57,13 +65,20 @@ namespace EventStore.Core.DataStructures
                     EnsureCapacity();
 
                     _items.Add(key, node);
+                    _orderList.AddLast(node);
+
+                    if(_onPut != null) _onPut(node.Value.Value);
                 }
                 else
                 {
                     node.Value.Value = value;
-                    _orderList.Remove(node);
+
+                    if(!ReferenceEquals(node, _orderList.Last)){
+                        _orderList.Remove(node);
+                        _orderList.AddLast(node);
+                    }
                 }
-                _orderList.AddLast(node);
+
                 return value;
             }
         }
@@ -77,6 +92,9 @@ namespace EventStore.Core.DataStructures
                 {
                     _orderList.Remove(node);
                     _items.Remove(key);
+                    if(_onRemove != null) _onRemove(node.Value.Value);
+
+                    ReturnNode(node);
                 }
             }
         }
@@ -95,13 +113,18 @@ namespace EventStore.Core.DataStructures
                     EnsureCapacity();
 
                     _items.Add(key, node);
+                    _orderList.AddLast(node);
+                    if(_onPut != null) _onPut(node.Value.Value);
                 }
                 else
                 {
                     node.Value.Value = updateFactory(key, node.Value.Value, userData);
-                    _orderList.Remove(node);
+
+                    if(!ReferenceEquals(node, _orderList.Last)){
+                        _orderList.Remove(node);
+                        _orderList.AddLast(node);
+                    }
                 }
-                _orderList.AddLast(node);
                 return node.Value.Value;
             }
         }
@@ -113,6 +136,7 @@ namespace EventStore.Core.DataStructures
                 var node = _orderList.First;
                 _orderList.Remove(node);
                 _items.Remove(node.Value.Key);
+                if(_onRemove != null) _onRemove(node.Value.Value);
 
                 ReturnNode(node);
             }

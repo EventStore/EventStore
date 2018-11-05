@@ -6,6 +6,9 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
+using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Services;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
@@ -19,9 +22,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             NoStream("$projections-test-projection-order");
             AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
-            ExistingEvent("$projections-$all", "$ProjectionCreated", null, "test-projection");
+            ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated, null, "test-projection");
             ExistingEvent(
-                "$projections-test-projection", "$ProjectionUpdated", null,
+                "$projections-test-projection", ProjectionEventTypes.ProjectionUpdated, null,
                 @"{
                     ""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", 
                     ""Mode"":""3"", 
@@ -41,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
             yield return new SystemMessage.SystemCoreReady();
         }
 

@@ -31,24 +31,20 @@ namespace EventStore.Core.Tests.Http
         protected string _lastResponseBody;
         protected byte[] _lastResponseBytes;
         protected JsonException _lastJsonException;
-//MONOCHECK Does this work now?
-#if !MONO
+        private System.Collections.Generic.List<HttpWebResponse> _allResponses = new System.Collections.Generic.List<HttpWebResponse>();
         private Func<HttpWebResponse, byte[]> _dumpResponse;
         private Func<HttpWebResponse, int> _dumpResponse2;
         private Func<HttpWebRequest, byte[]> _dumpRequest;
         private Func<HttpWebRequest, byte[]> _dumpRequest2;
-#endif
         private string _tag;
         private bool _createdMiniNode;
 
         public override void TestFixtureSetUp()
         {
-#if !MONO
             Helper.EatException(() => _dumpResponse = CreateDumpResponse());
             Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
             Helper.EatException(() => _dumpRequest = CreateDumpRequest());
             Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
-#endif
 
             base.TestFixtureSetUp();
 
@@ -138,9 +134,9 @@ namespace EventStore.Core.Tests.Http
                 _node.Shutdown();
             }
             base.TestFixtureTearDown();
-            if(_lastResponse != null) 
-            {
-                _lastResponse.Close();
+            foreach(var response in _allResponses){
+                if(response != null)
+                    response.Close();
             }
         }
 
@@ -368,12 +364,14 @@ namespace EventStore.Core.Tests.Http
             try
             {
                 response = (HttpWebResponse) request.GetResponse();
+                _allResponses.Add(response);
             }
             catch (WebException ex)
             {
                 response = (HttpWebResponse) ex.Response;
+                _allResponses.Add(response);
             }
-#if !MONO
+
             if (_dumpRequest != null)
             {
                 var bytes = _dumpRequest(request);
@@ -394,7 +392,7 @@ namespace EventStore.Core.Tests.Http
                 if (bytes != null)
                     Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, len).TrimEnd('\0'));
             }
-#endif
+
             return response;
         }
 

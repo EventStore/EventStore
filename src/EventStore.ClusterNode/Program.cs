@@ -198,9 +198,12 @@ namespace EventStore.ClusterNode
                         .WithNodePriority(options.NodePriority)
                         .WithScavengeHistoryMaxAge(options.ScavengeHistoryMaxAge)
                         .WithIndexPath(options.Index)
+                        .WithIndexVerification(options.SkipIndexVerify)
                         .WithIndexCacheDepth(options.IndexCacheDepth)
+                        .WithIndexMergeOptimization(options.OptimizeIndexMerge)
                         .WithSslTargetHost(options.SslTargetHost)
                         .RunProjections(options.RunProjections, options.ProjectionThreads)
+                        .WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
                         .WithTfCachedChunks(options.CachedChunks)
                         .WithTfChunksCacheSize(options.ChunksCacheSize)
                         .WithStatsStorage(StatsStorage.StreamAndCsv)
@@ -212,7 +215,9 @@ namespace EventStore.ClusterNode
                         .AdvertiseExternalTCPPortAs(options.ExtTcpPortAdvertiseAs)
                         .AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
                         .AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
-                        .HavingReaderThreads(options.ReaderThreadsCount);
+                        .HavingReaderThreads(options.ReaderThreadsCount)
+                        .WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold)
+                        .WithChunkInitialReaderCount(options.ChunkInitialReaderCount);
 
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);
@@ -235,7 +240,7 @@ namespace EventStore.ClusterNode
             foreach(var prefix in options.ExtHttpPrefixes) {
                 builder.AddExternalHttpPrefix(prefix);
             }
-            
+
             if(options.EnableTrustedAuth)
                 builder.EnableTrustedAuth();
             if(options.StartStandardProjections)
@@ -274,7 +279,11 @@ namespace EventStore.ClusterNode
                 builder.EnableUnbuffered();
             if(options.WriteThrough)
                 builder.EnableWriteThrough();
-                
+            if (options.SkipIndexScanOnReads)
+                builder.SkipIndexScanOnReads();
+            if (options.ReduceFileCachePressure)
+                builder.ReduceFileCachePressure();
+
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
                 if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation))
@@ -301,7 +310,7 @@ namespace EventStore.ClusterNode
             var authenticationProviderFactory = GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
             var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
             builder.WithAuthenticationProvider(authenticationProviderFactory);
-            
+
             return builder.Build(options, consumerStrategyFactories);
         }
 

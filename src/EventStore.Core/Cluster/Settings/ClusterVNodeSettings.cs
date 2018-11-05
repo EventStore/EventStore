@@ -59,18 +59,24 @@ namespace EventStore.Core.Cluster.Settings
         public readonly TimeSpan IntTcpHeartbeatInterval;
         public readonly TimeSpan ExtTcpHeartbeatTimeout;
         public readonly TimeSpan ExtTcpHeartbeatInterval;
+        public readonly int ConnectionPendingSendBytesThreshold;
         public readonly bool UnsafeIgnoreHardDeletes;
         public readonly bool VerifyDbHash;
         public readonly int MaxMemtableEntryCount;
         public readonly int HashCollisionReadLimit;
+        public readonly bool SkipIndexVerify;
         public readonly int IndexCacheDepth;
         public readonly byte IndexBitnessVersion;
+        public readonly bool OptimizeIndexMerge;
+        public readonly int ChunkInitialReaderCount;
 
         public readonly bool BetterOrdering;
         public readonly string Index;
         public readonly int ReaderThreadsCount;
         public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
         public readonly bool AlwaysKeepScavenged;
+        public readonly bool SkipIndexScanOnReads;
+        public readonly bool ReduceFileCachePressure;
 
         public readonly bool GossipOnSingleNode;
 
@@ -122,15 +128,21 @@ namespace EventStore.Core.Cluster.Settings
                                     bool startStandardProjections,
                                     bool disableHTTPCaching,
                                     bool logHttpRequests,
+                                    int connectionPendingSendBytesThreshold,
+                                    int chunkInitialReaderCount,
                                     string index = null, bool enableHistograms = false,
+                                    bool skipIndexVerify = false,
                                     int indexCacheDepth = 16,
-                                    byte indexBitnessVersion = 2,
+                                    byte indexBitnessVersion = 4,
+                                    bool optimizeIndexMerge = false,
                                     IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
                                     bool unsafeIgnoreHardDeletes = false,
                                     bool betterOrdering = false,
                                     int readerThreadsCount = 4,
                                     bool alwaysKeepScavenged = false,
-                                    bool gossipOnSingleNode = false)
+                                    bool gossipOnSingleNode = false,
+                                    bool skipIndexScanOnReads = false,
+                                    bool reduceFileCachePressure = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -205,19 +217,25 @@ namespace EventStore.Core.Cluster.Settings
             IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
             ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
             ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
+            ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+            ChunkInitialReaderCount = chunkInitialReaderCount;
 
             VerifyDbHash = verifyDbHash;
             MaxMemtableEntryCount = maxMemtableEntryCount;
             HashCollisionReadLimit = hashCollisionReadLimit;
 
             EnableHistograms = enableHistograms;
+            SkipIndexVerify = skipIndexVerify;
             IndexCacheDepth = indexCacheDepth;
             IndexBitnessVersion = indexBitnessVersion;
+            OptimizeIndexMerge = optimizeIndexMerge;
             Index = index;
             UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
             BetterOrdering = betterOrdering;
             ReaderThreadsCount = readerThreadsCount;
             AlwaysKeepScavenged = alwaysKeepScavenged;
+            SkipIndexScanOnReads = skipIndexScanOnReads;
+            ReduceFileCachePressure = reduceFileCachePressure;
         }
 
 
@@ -258,7 +276,9 @@ namespace EventStore.Core.Cluster.Settings
                                  + "HistogramEnabled: {32}\n"
                                  + "HTTPCachingDisabled: {33}\n"
                                  + "IndexPath: {34}\n"
-                                 + "ScavengeHistoryMaxAge: {35}\n",
+                                 + "ScavengeHistoryMaxAge: {35}\n"
+                                 + "ConnectionPendingSendBytesThreshold: {36}\n"
+                                 + "ChunkInitialReaderCount: {37}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -275,7 +295,8 @@ namespace EventStore.Core.Cluster.Settings
                                  UseSsl, SslTargetHost, SslValidateServer,
                                  StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
                                  NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
-                                 EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge);
+                                 EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
+                                 ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount);
         }
     }
 }

@@ -78,8 +78,14 @@ namespace EventStore.Core.Tests.Helpers
         private readonly HashSet<string> _writesToSucceed = new HashSet<string>();
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
+        private Queue<ClientMessage.ReadStreamEventsBackward> _readEventsBackwardsQueue;
+        private bool _readsBackwardsQueuesUp;
         private bool _readAllEnabled;
         private bool _noOtherStreams;
+        private bool _readsTimeOut;
+
+        protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
+
         private static readonly char[] _linkToSeparator = new []{'@'};
 
         protected TFPos ExistingStreamMetadata(string streamId, string metadata)
@@ -110,9 +116,25 @@ namespace EventStore.Core.Tests.Helpers
             return eventPosition;
         }
 
+        protected void AllReadsTimeOut()
+        {
+            _readsTimeOut = true;
+        }
+
         protected void EnableReadAll()
         {
             _readAllEnabled = true;
+        }
+
+        protected void ReadsBackwardQueuesUp()
+        {
+            _readsBackwardsQueuesUp = true;
+        }
+
+        protected void CompleteOneReadBackwards()
+        {
+            var read = _readEventsBackwardsQueue.Dequeue();
+            ProcessRead(read);
         }
 
         protected void NoStream(string streamId)
@@ -151,6 +173,11 @@ namespace EventStore.Core.Tests.Helpers
             _allWritesQueueUp = true;
         }
 
+        protected void TimeOutReadToStreamOnce(string streamId)
+        {
+            _readsToTimeOutOnce.Add(streamId);
+        }
+
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
@@ -181,6 +208,7 @@ namespace EventStore.Core.Tests.Helpers
         public void setup1()
         {
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
+            _readEventsBackwardsQueue = new Queue<ClientMessage.ReadStreamEventsBackward>();
             _listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
@@ -213,7 +241,24 @@ namespace EventStore.Core.Tests.Helpers
         {
         }
 
-        void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
+        public void Handle(ClientMessage.ReadStreamEventsBackward message)
+        {
+            if (_readsBackwardsQueuesUp)
+            {
+                _readEventsBackwardsQueue.Enqueue(message);
+                return;
+            }
+            if(_readsTimeOut) return;
+            if(_readsToTimeOutOnce.Contains(message.EventStreamId))
+            {
+                Console.WriteLine("[TEST] Timing out read backwards for {0}", message.EventStreamId);
+                _readsToTimeOutOnce.Remove(message.EventStreamId);
+                return;
+            }
+            ProcessRead(message);
+        }
+
+        private void ProcessRead(ClientMessage.ReadStreamEventsBackward message)
         {
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
@@ -261,25 +306,19 @@ namespace EventStore.Core.Tests.Helpers
                         return;
                     }
                     throw new NotImplementedException();
-/*
-                    message.Envelope.ReplyWith(
-                            new ClientMessage.ReadStreamEventsBackwardCompleted(
-                                    message.CorrelationId,
-                                    message.EventStreamId,
-                                    new EventLinkPair[0],
-                                    ReadStreamResult.Success,
-                                    nextEventNumber: -1,
-                                    lastEventNumber: list.Safe().Last().EventNumber,
-                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
-                                    lastCommitPosition: _lastPosition));
-*/
                 }
             }
         }
 
-
         public void Handle(ClientMessage.ReadStreamEventsForward message)
         {
+            if(_readsTimeOut) return;
+            if(_readsToTimeOutOnce.Contains(message.EventStreamId))
+            {
+                Console.WriteLine("[TEST] Timing out read forwards for {0}", message.EventStreamId);
+                _readsToTimeOutOnce.Remove(message.EventStreamId);
+                return;
+            }
             List<EventRecord> list;
             if (_deletedStreams.Contains(message.EventStreamId))
             {
@@ -474,6 +513,7 @@ namespace EventStore.Core.Tests.Helpers
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
         {
+            if(_readsTimeOut) return;
             if (!_readAllEnabled)
                 return;
             var from = new TFPos(message.CommitPosition, message.PreparePosition);

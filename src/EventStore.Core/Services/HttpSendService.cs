@@ -179,28 +179,34 @@ namespace EventStore.Core.Services
             request.RequestUri = forwardUri;
             request.Method = new System.Net.Http.HttpMethod(srcReq.HttpMethod);
 
+            var hasContentLength = false;
             // Copy unrestricted headers (including cookies, if any)
             foreach (var headerKey in srcReq.Headers.AllKeys)
             {
-                switch (headerKey.ToLower())
-                {
-                    case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "connection":        break;
-                    case "content-type":      break;
-                    case "content-length":    break;
-                    case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "expect":            break;
-                    case "host":              request.Headers.Host = forwardUri.Host; break;
-                    case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
-                    case "proxy-connection":  break;
-                    case "range":             break;
-                    case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
-                    case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
-                    case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
+                try{
+                    switch (headerKey.ToLower())
+                    {
+                        case "accept":            request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]); break;
+                        case "connection":        break;
+                        case "content-type":      break;
+                        case "content-length":    hasContentLength = true; break;
+                        case "date":              request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                        case "expect":            break;
+                        case "host":              request.Headers.Host = forwardUri.Host; break;
+                        case "if-modified-since": request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]); break;
+                        case "proxy-connection":  break;
+                        case "range":             break;
+                        case "referer":           request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]); break;
+                        case "transfer-encoding": request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]); break;
+                        case "user-agent":        request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]); break;
 
-                    default:
-                        request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
-                        break;
+                        default:
+                            request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
+                            break;
+                    }
+                }
+                catch(System.FormatException){
+                    request.Headers.TryAddWithoutValidation(headerKey,srcReq.Headers[headerKey]);
                 }
             }
 
@@ -212,13 +218,17 @@ namespace EventStore.Core.Services
             // Copy content (if content body is allowed)
             if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
-                && srcReq.HasEntityBody)
+                && hasContentLength)
             {
                 var streamContent = new StreamContent(srcReq.InputStream);
-                streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse(srcReq.ContentType);
                 streamContent.Headers.ContentLength = srcReq.ContentLength64;
                 request.Content = streamContent;
 
+                MediaTypeHeaderValue contentType;
+                if(MediaTypeHeaderValue.TryParse(srcReq.ContentType, out contentType))
+                {
+                    streamContent.Headers.ContentType = contentType;
+                }
             }
             ForwardResponse(manager, request);
         }

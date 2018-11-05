@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using EventStore.Common.Log;
-using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.v8
 {
     public class PreludeScript : IDisposable
     {
+        private const int CompileTimeoutMs = 5000;
+        private const int RetryLimit = 3;
+
         private readonly ILogger Log = LogManager.GetLoggerFor<PreludeScript>();
         private readonly Func<string, Tuple<string, string>> _getModuleSourceAndFileName;
         private readonly Action<string, object[]> _logger;
@@ -48,7 +50,7 @@ namespace EventStore.Projections.Core.v8
         {
             try
             {
-                var attempts = 3;
+                var attempts = RetryLimit;
                 var prelude = default(IntPtr);
                 do
                 {
@@ -171,7 +173,7 @@ namespace EventStore.Projections.Core.v8
                 var terminateRequested = new CancelRef();
                 _terminateRequested = terminateRequested;
                 _cancelCallbackFactory(
-                    1000, () => AnotherThreadCancel(currentCancelToken, GetHandle(), terminateRequested.Terminate));
+                    CompileTimeoutMs, () => AnotherThreadCancel(currentCancelToken, GetHandle(), terminateRequested.Terminate));
             }
             else
             {

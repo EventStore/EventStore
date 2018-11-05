@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Log;
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var dropped = new CountdownEvent(1);
                 var subscription = store.SubscribeToAllFrom(null,
                                                             CatchUpSubscriptionSettings.Default,
-                                                            (x, y) => { },
+                                                            (x, y) => Task.CompletedTask,
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) => dropped.Signal());
 
@@ -102,12 +103,13 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             {
                                                                 if (!SystemStreams.IsSystemStream(x.OriginalEvent.EventStreamId))
                                                                     appeared.Set();
+                                                                return Task.CompletedTask;
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (_, __, ___) => dropped.Signal());
 
                 Thread.Sleep(100); // give time for first pull phase
-                store.SubscribeToAllAsync(false, (s, x) => { }, (s, r, e) => { }).Wait();
+                store.SubscribeToAllAsync(false, (s, x) => Task.CompletedTask, (s, r, e) => { }).Wait();
                 Thread.Sleep(100);
 
                 Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
@@ -142,6 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                     events.Add(y);
                                                                     appeared.Signal();
                                                                 }
+                                                                return Task.CompletedTask;
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) => dropped.Signal());
@@ -193,6 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             {
                                                                 events.Add(y);
                                                                 appeared.Signal();
+                                                                return Task.CompletedTask;
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) =>
@@ -251,6 +255,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             {
                                                                 events.Add(y);
                                                                 appeared.Signal();
+                                                                return Task.CompletedTask;
                                                             },
                                                             _ => Log.Info("Live processing started."),
                                                             (x, y, z) =>

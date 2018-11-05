@@ -18,7 +18,7 @@ extern "C"
 			v8::Isolate::Scope isolate_scope(isolate);
 			v8::HandleScope scope(isolate);
 			v8::Handle<v8::Context> context = v8::Context::New(isolate);
-			v8::TryCatch try_catch;
+			v8::TryCatch try_catch(isolate);
 		}
 		return 1;
 	}
@@ -51,19 +51,20 @@ extern "C"
 	{
 		js1::PreludeScript *prelude_script;
 		v8::Isolate *isolate = js1::V8Wrapper::Instance().create_isolate();
-		prelude_script = new js1::PreludeScript(isolate, load_module_callback, enter_cancellable_region_callback, exit_cancellable_region_callback, log_callback);
+		{
+			prelude_script = new js1::PreludeScript(isolate, load_module_callback, enter_cancellable_region_callback, exit_cancellable_region_callback, log_callback);
 
-		v8::HandleScope handle_scope(isolate);
+			v8::HandleScope handle_scope(isolate);
 
-		js1::Status status;
-		if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK){
-			status = prelude_script->try_run();
+			js1::Status status;
+			if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK) {
+				status = prelude_script->try_run();
+			}
+
+			if (status != js1::S_TERMINATED) {
+				return prelude_script;
+			}
 		}
-
-		if (status != js1::S_TERMINATED){
-			return prelude_script;
-		}
-
 		delete prelude_script;
 		return NULL;
 	};
@@ -126,8 +127,8 @@ extern "C"
 		//NOTE: incorrect return types are handled in execute_handler
 		if (!result.IsEmpty()) 
 		{
-			v8::String::Value * result_buffer = new v8::String::Value(result);
-			v8::String::Value * result2_buffer = new v8::String::Value(result2);
+			v8::String::Value * result_buffer = new v8::String::Value(query_script->get_isolate(),result);
+			v8::String::Value * result2_buffer = new v8::String::Value(query_script->get_isolate(),result2);
 			*result_json = **result_buffer;
 			*result2_json = **result2_buffer;
 

@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
@@ -14,6 +15,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public class ReadIndex : IDisposable, IReadIndex
     {
         public long LastCommitPosition { get { return _indexCommitter.LastCommitPosition; } }
+        public long LastReplicatedPosition { get {return _replicationCheckpoint.ReadNonFlushed(); } }
         public IIndexWriter IndexWriter { get { return _indexWriter; } }
         public IIndexCommitter IndexCommitter { get { return _indexCommitter; } }
 
@@ -22,6 +24,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IIndexWriter _indexWriter;
         private readonly IIndexCommitter _indexCommitter;
         private readonly IAllReader _allReader;
+        private readonly ICheckpoint _replicationCheckpoint;
 
         public ReadIndex(IPublisher bus,
                          ObjectPool<ITransactionFileReader> readerPool,
@@ -29,21 +32,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          int streamInfoCacheCapacity,
                          bool additionalCommitChecks,
                          long metastreamMaxCount,
-                         int hashCollisionReadLimit)
+                         int hashCollisionReadLimit,
+                         bool skipIndexScanOnReads,
+                         ICheckpoint replicationCheckpoint)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(readerPool, "readerPool");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
             Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
+            Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 
             var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
             _indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
-            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit);
+            _indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);
             _indexWriter = new IndexWriter(_indexBackend, _indexReader);
             _indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
-            _allReader = new AllReader(_indexBackend, _indexCommitter);
+            _allReader = new AllReader(_indexBackend, _indexCommitter, replicationCheckpoint);
+            _replicationCheckpoint = replicationCheckpoint;
         }
 
         void IReadIndex.Init(long buildToPosition)

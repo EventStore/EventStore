@@ -23,6 +23,7 @@ namespace EventStore.ClientAPI
         private bool _requireMaster = Consts.DefaultRequireMaster;
 
         private TimeSpan _reconnectionDelay = Consts.DefaultReconnectionDelay;
+        private TimeSpan _queueTimeout = Consts.DefaultQueueTimeout;
         private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
@@ -40,7 +41,7 @@ namespace EventStore.ClientAPI
         private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
         private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
         private GossipSeed[] _gossipSeeds;
-        private bool _preferRandomNode = false;
+        private NodePreference _nodePreference = NodePreference.Master;
 
 
         internal ConnectionSettingsBuilder()
@@ -48,7 +49,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Configures the connection to output log messages to the given <see cref="ILogger" />.
+        /// Configures the connection to output log messages to the given <see cref="ILogger" />. You should implement this interface using another library such as NLog or log4net.
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to use.</param>
         /// <returns></returns>
@@ -89,7 +90,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Turns on verbose <see cref="EventStoreConnection"/> internal logic logging.
+        /// Turns on verbose <see cref="EventStoreConnection"/> internal logic logging. By contains default information about connection, disconnection and errors, but you can customize output.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder EnableVerboseLogging()
@@ -99,7 +100,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the limit for number of outstanding operations
+        /// Sets the limit for number of outstanding operations.
         /// </summary>
         /// <param name="limit">The new limit of outstanding operations</param>
         /// <returns></returns>
@@ -112,7 +113,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of concurrent operations that this connection can have
+        /// Limits the number of concurrent operations that this connection can have.
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -125,7 +126,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of operation attempts
+        /// Limits the number of operation attempts.
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -138,7 +139,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of operation retries
+        /// Limits the number of operation retries.
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -151,7 +152,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Allows infinite operation retry attempts
+        /// Allows infinite operation retry attempts.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder KeepRetrying()
@@ -161,7 +162,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Limits the number of reconnections this connection can try to make
+        /// Limits the number of reconnections this connection can try to make.
         /// </summary>
         /// <param name="limit"></param>
         /// <returns></returns>
@@ -174,7 +175,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Allows infinite reconnection attempts
+        /// Allows infinite reconnection attempts.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder KeepReconnecting()
@@ -184,7 +185,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Requires all write and read requests to be served only by master (cluster version only) 
+        /// Requires all write and read requests to be served only by master (cluster version only).
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder PerformOnMasterOnly()
@@ -194,7 +195,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Allow for writes to be forwarded and read requests served locally if node is not master (cluster version only) 
+        /// Allow for writes to be forwarded and read requests served locally if node is not master (cluster version only).
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder PerformOnAnyNode()
@@ -204,7 +205,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the delay between reconnection attempts
+        /// Sets the delay between reconnection attempts.
         /// </summary>
         /// <param name="reconnectionDelay"></param>
         /// <returns></returns>
@@ -215,7 +216,18 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the operation timeout duration
+        /// Sets the maximum permitted time a request may be queued awaiting transmission; if exceeded an <see cref="Exceptions.OperationExpiredException"/> is thrown.
+        /// </summary>
+        /// <param name="queueTimeout"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder SetQueueTimeoutTo(TimeSpan queueTimeout)
+        {
+            _queueTimeout = queueTimeout;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the operation timeout duration.
         /// </summary>
         /// <param name="operationTimeout"></param>
         /// <returns></returns>
@@ -237,7 +249,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets the default <see cref="UserCredentials"/> to be used for this connection.
+        /// Sets the default <see cref="UserCredentials"/> used for this connection.
         /// If user credentials are not given for an operation, these credentials will be used.
         /// </summary>
         /// <param name="userCredentials"></param>
@@ -264,7 +276,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Marks that no response from server should cause an error on the request
+        /// Marks that no response from server should cause an error on the request.
         /// </summary>
         /// <returns></returns>
         public ConnectionSettingsBuilder FailOnNoServerResponse()
@@ -274,7 +286,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets how often heartbeats should be expected on the connection (lower values detect broken sockets faster)
+        /// Sets how often heartbeats should be expected on the connection (lower values detect broken sockets faster).
         /// </summary>
         /// <param name="interval"></param>
         /// <returns></returns>
@@ -285,7 +297,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Sets how long to wait without heartbeats before determining a connection to be dead (must be longer than heartbeat interval)
+        /// Sets how long to wait without heartbeats before determining a connection to be dead (must be longer than heartbeat interval).
         /// </summary>
         /// <param name="timeout"></param>
         /// <returns></returns>
@@ -350,7 +362,17 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
         public ConnectionSettingsBuilder PreferRandomNode()
         {
-            _preferRandomNode = true;
+            _nodePreference = NodePreference.Random;
+            return this;
+        }
+
+        /// <summary>
+        /// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+        /// </summary>
+        /// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+        public ConnectionSettingsBuilder PreferSlaveNode()
+        {
+            _nodePreference = NodePreference.Slave;
             return this;
         }
 
@@ -378,10 +400,11 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Sets gossip seed endpoints for the client.
         /// 
-        /// Note that this should be the external HTTP endpoint of the server, as it is required
-        /// for the client to exchange gossip with the server. The standard port which should be
-        /// used here is 2113.
-        /// 
+        /// <note>
+        /// This should be the external HTTP endpoint of the server, as it is required
+        /// for the client to exchange gossip with the server. The standard port is 2113.
+        /// </note>
+        ///
         /// If the server requires a specific Host header to be sent as part of the gossip
         /// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
         /// </summary>
@@ -438,6 +461,7 @@ namespace EventStore.ClientAPI
                                           _maxReconnections,
                                           _requireMaster,
                                           _reconnectionDelay,
+                                          _queueTimeout,
                                           _operationTimeout,
                                           _operationTimeoutCheckPeriod,
                                           _defaultUserCredentials,
@@ -453,7 +477,7 @@ namespace EventStore.ClientAPI
                                           _maxDiscoverAttempts,
                                           _gossipExternalHttpPort,
                                           _gossipTimeout,
-                                          _preferRandomNode);
+                                          _nodePreference);
         }
     }
 }

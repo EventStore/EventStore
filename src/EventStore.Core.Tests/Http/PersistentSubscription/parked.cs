@@ -12,6 +12,9 @@ using EventStore.Transport.Http;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.Core.Data;
+using System.Threading.Tasks;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription
 {
@@ -44,6 +47,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             {
                 _parkedEventId = y.Event.EventId;
                 _eventParked.Set();
+                return Task.CompletedTask;
             }, 
             (x,y,z)=> { }, 
             DefaultData.AdminCredentials).Wait();
@@ -63,13 +67,25 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
     class when_replaying_parked_message : with_subscription_having_events
     {
         private string _nackLink;
-        private AutoResetEvent _eventParked = new AutoResetEvent(false);
         private Guid _eventIdToPark;
-        private EventStore.ClientAPI.ResolvedEvent replayedParkedEvent;
+        private Guid _receivedEventId;
+
+        private string _subscriptionParkedStream;
+        private Guid _writeCorrelationId;
+        private ManualResetEvent _eventParked = new ManualResetEvent(false);
+
         protected override void Given()
         {
+            _connection.Close();
+            _connection.Dispose();
             NumberOfEventsToCreate = 1;
             base.Given();
+
+            _subscriptionParkedStream = "$persistentsubscription-" + TestStream.Substring(9) + "::" + GroupName + "-parked";
+
+            // Subscribe to the writes to ensure the parked message has been written
+            _node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
+            _node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(Handle));
 
             var json = GetJson2<JObject>(
                SubscriptionPath + "/1", "embed=rich",
@@ -87,30 +103,56 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
             Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
         }
 
+        private void Handle(StorageMessage.WritePrepares msg)
+        {
+            if (msg.EventStreamId == _subscriptionParkedStream)
+            {
+                _writeCorrelationId = msg.CorrelationId;
+            }
+        }
+
+        private void Handle(StorageMessage.CommitReplicated msg)
+        {
+            if (msg.CorrelationId == _writeCorrelationId)
+            {
+                _eventParked.Set();
+            }
+        }
+
         protected override void When()
         {
-            _connection.ConnectToPersistentSubscriptionAsync(TestStreamName, GroupName, (x, y) =>
+            if(!_eventParked.WaitOne(TimeSpan.FromSeconds(10)))
             {
-                replayedParkedEvent = y;
-                _eventParked.Set();
-            },
-            (x, y, z) => { },
-            DefaultData.AdminCredentials).Wait();
+                Assert.Fail("Timed out waiting for event to be written to the parked stream");
+            }
 
-            //Replayed parked messages
             var response = MakePost(SubscriptionPath + "/replayParked", _admin);
-
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var json = GetJson2<JObject>(
+                   SubscriptionPath + "/1", "embed=rich",
+                   ContentType.CompetingJson,
+                   _admin);
+
+                Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+
+                var entries = json != null ? json["entries"].ToList() : new List<JToken>();
+                if (entries.Count != 0)
+                {
+                    _receivedEventId = Guid.Parse(entries[0]["eventId"].ToString());
+                    break;
+                }
+                Console.WriteLine("Received no entries. Attempt {0} of 10", i + 1);
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+            }
         }
 
         [Test]
-        public void should_have_replayed_the_parked_event()
+        public void should_receive_the_replayed_event()
         {
-            if(!_eventParked.WaitOne(TimeSpan.FromSeconds(5))) 
-            {
-                Assert.Fail("Timed out waiting for parked event");
-            }
-            Assert.AreEqual(replayedParkedEvent.Event.EventId, _eventIdToPark);
+            Assert.AreEqual(_eventIdToPark, _receivedEventId);
         }
     }
 }

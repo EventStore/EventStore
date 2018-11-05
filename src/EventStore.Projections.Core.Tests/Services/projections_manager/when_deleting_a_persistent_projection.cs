@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
@@ -27,6 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override IEnumerable<WhenStep> When()
         {
             yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
+            yield return new SystemMessage.EpochWritten(new EpochRecord(0L,0,Guid.NewGuid(),0L,DateTime.Now));
             yield return new SystemMessage.SystemCoreReady();
             yield return
                 new ProjectionManagementMessage.Command.Post(
@@ -47,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             Assert.AreEqual(
                 true,
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == "$ProjectionDeleted" && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
         }
 
         [Test, Category("v8")]

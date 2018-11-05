@@ -6,6 +6,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     public interface IReadIndex
     {
         long LastCommitPosition { get; }
+        long LastReplicatedPosition { get; }
         IIndexWriter IndexWriter { get; }
 
         void Init(long buildToPosition);

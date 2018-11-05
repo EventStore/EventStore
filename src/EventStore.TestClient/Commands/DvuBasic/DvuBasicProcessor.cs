@@ -261,6 +261,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
             closed = (_, __) =>
             {
+                if (!context.Client.Options.Reconnect) return;
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 connection = context.Client.CreateTcpConnection(context, packageHandler, cn => iteration.Set(), closed, false);
             };
@@ -292,6 +293,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
                                         wrongExpectedVersion, streamsDeleted, failed, requests);
             status.FinilizeStatus(writerIdx, failed != sent);
+            context.Client.Options.Reconnect = false;
             connection.Close();
             finish.Set();
         }
@@ -345,6 +347,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
             closed = (_, __) =>
             {
+                if (!context.Client.Options.Reconnect) return;
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 connection = context.Client.CreateTcpConnection(context, packageReceived, cn => iteration.Set(), closed, false);
             };
@@ -375,6 +378,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
             status.ReportReadsProgress(readerIdx, successes, fails);
             status.FinilizeStatus(readerIdx, fails == 0);
+            context.Client.Options.Reconnect = false;
             connection.Close();
             finishedEvent.Set();
         }

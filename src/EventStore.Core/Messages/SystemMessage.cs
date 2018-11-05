@@ -4,6 +4,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
 {
@@ -294,5 +295,19 @@ namespace EventStore.Core.Messages
 		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		    public override int MsgTypeId { get { return TypeId; } }
 	    }
+
+        public class EpochWritten: Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly EpochRecord Epoch;
+
+            public EpochWritten(EpochRecord epoch)
+            {
+                Ensure.NotNull(epoch,"epoch");
+                Epoch = epoch;
+            }            
+        }           
     }
 }

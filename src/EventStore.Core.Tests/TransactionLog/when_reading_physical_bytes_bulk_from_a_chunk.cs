@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void the_file_will_not_be_deleted_until_reader_released()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
+            var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
             using (var reader = chunk.AcquireReader())
             {
                 chunk.MarkForDeletion();
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_on_new_file_can_be_performed()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
+            var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 3000, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
+            var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_read_past_eof_returns_eof_and_no_footer()
         {
-            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0, isScavenged: false, inMem: false, unbuffered: false, writethrough: false);
+            var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 300);
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[8092];
