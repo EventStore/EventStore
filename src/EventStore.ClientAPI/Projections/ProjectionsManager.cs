@@ -325,5 +325,17 @@ namespace EventStore.ClientAPI.Projections
             Ensure.NotNullOrEmpty(name, "name");
             return _client.Delete(_httpEndPoint, name, deleteEmittedStreams, userCredentials, _httpSchema);
         }
+
+        /// <summary>
+        /// Asynchronously resets a projection
+        /// </summary>
+        /// <param name="name">The name of the projection.</param>
+        /// <param name="userCredentials">Credentials for a user with permission to delete a projection</param>
+        /// <returns>A task representing the operation.</returns>
+        public Task ResetAsync(string name, UserCredentials userCredentials = null)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Reset(_httpEndPoint, name, userCredentials, _httpSchema);
+        }
     }
 }

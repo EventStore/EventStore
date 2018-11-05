@@ -160,6 +160,11 @@ namespace EventStore.ClientAPI.Projections
             return SendDelete(endPoint.ToHttpUrl(httpSchema, "/projection/{0}?deleteEmittedStreams={1}", name, deleteEmittedStreams), userCredentials, HttpStatusCode.OK);
         }
 
+        public Task Reset(EndPoint endPoint, string name, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
+        {
+            return SendPost(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/command/reset", name), string.Empty, userCredentials, HttpStatusCode.OK);
+        }
+
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
         {
             var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
