@@ -112,9 +112,9 @@ namespace EventStore.Core
                     Application.Exit(3, "Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." + 
                         "to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
                 }
-                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("4.6.2")))
+                if(OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("5.16.0")))
                 {
-                    Log.Warn("You appear to be running a version of Mono which is untested and not supported. Only Mono 4.6.2 is supported at this time.");
+                    Log.Warn("You appear to be running a version of Mono which is untested and not supported. Only Mono 5.16.0 is supported at this time.");
                 }
             }
         }
