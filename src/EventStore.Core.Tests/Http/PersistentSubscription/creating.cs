@@ -44,6 +44,44 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription
         }
     }
 
+   [TestFixture, Category("LongRunning")]
+    class when_creating_a_subscription_with_query_params : with_admin_user
+    {
+        private HttpWebResponse _response;
+
+        protected override void Given()
+        {
+        }
+
+        protected override void When()
+        {
+            _response = MakeJsonPut(
+                "/subscriptions/stream/groupname334?testing=test",
+                new
+                {
+                    ResolveLinkTos = true
+                }, _admin);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _response.Close();
+        }
+
+        [Test]
+        public void returns_created()
+        {
+            Assert.AreEqual(HttpStatusCode.Created, _response.StatusCode);
+        }
+
+        [Test]
+        public void returns_location_header()
+        {
+            Assert.AreEqual("http://" + _node.ExtHttpEndPoint + "/subscriptions/stream/groupname334", _response.Headers["location"]);
+        }
+    }
+
     [TestFixture, Category("LongRunning")]
     class when_creating_a_subscription_without_permissions : with_admin_user
     {
