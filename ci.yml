@@ -30,6 +30,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: windows-net47-debug
@@ -63,6 +64,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: windows-net47-release
@@ -92,6 +94,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: macos-mono516-debug
@@ -121,6 +124,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: macos-mono516-release
@@ -167,6 +171,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: centos7-mono516-debug
@@ -213,6 +218,7 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
       artifactName: centos7-mono516-release
