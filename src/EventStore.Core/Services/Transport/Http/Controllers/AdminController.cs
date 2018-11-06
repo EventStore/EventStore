@@ -11,18 +11,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class AdminController : CommunicationController
     {
+        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
 
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml };
 
-        public AdminController(IPublisher publisher) : base(publisher)
+        public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service)
         {
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
-            service.RegisterAction(new ControllerAction("/admin/scavenge", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+            service.RegisterAction(new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+            service.RegisterAction(new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs, SupportedCodecs), OnStopScavenge);
         }
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
@@ -41,16 +44,74 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)
         {
-            if (entity.User != null && (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations)))
+            int startFromChunk = 0;
+
+            var startFromChunkVariable = match.BoundVariables["startFromChunk"];
+            if (startFromChunkVariable != null)
             {
-                Log.Info("Request scavenging because /admin/scavenge request has been received.");
-                Publish(new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.Empty, entity.User));
-                entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+                if (!int.TryParse(startFromChunkVariable, out startFromChunk) || startFromChunk < 0)
+                {
+                    SendBadRequest(entity, "startFromChunk must be a positive integer");
+                    return;
+                }
             }
-            else
-            {
-                entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
-            }
+
+            Log.Info("Request scavenging because /admin/scavenge?startFromChunk={0} request has been received.", startFromChunk);
+
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    return e.ResponseCodec.To(new ScavengeResultDto(completed?.ScavengeId));
+                },
+                (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    switch (completed?.Result)
+                    {
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
+                            return Configure.Ok(e.ResponseCodec.ContentType);
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
+                            return Configure.BadRequest();
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+                            return Configure.Unauthorized();
+                        default:
+                            return Configure.InternalServerError();
+                    }
+                }
+            );
+
+            Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User, startFromChunk));
+        }
+
+        private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            var scavengeId = match.BoundVariables["scavengeId"];
+
+            Log.Info("Stopping scavenge because /admin/scavenge/{0} DELETE request has been received.", scavengeId);
+
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    return e.ResponseCodec.To(completed?.ScavengeId);
+                },
+                (e, message) =>
+                {
+                    var completed = message as ClientMessage.ScavengeDatabaseResponse;
+                    switch (completed?.Result)
+                    {
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
+                            return Configure.Ok(e.ResponseCodec.ContentType);
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+                            return Configure.Unauthorized();
+                        case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId:
+                            return Configure.NotFound();
+                        default:
+                            return Configure.InternalServerError();
+                    }
+                }
+            );
+
+            Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
         }
 
         private void LogReplyError(Exception exc)

@@ -328,7 +328,7 @@ namespace EventStore.Core
 
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
-            var adminController = new AdminController(_mainQueue);
+            var adminController = new AdminController(_mainQueue, _workersHandler);
             var pingController = new PingController();
             var histogramController = new HistogramController();
             var statController = new StatController(monitoringQueue, _workersHandler);
@@ -495,19 +495,19 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
             // STORAGE SCAVENGER
+            var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(), TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
             var storageScavenger = new StorageScavenger(db,
-                                                        ioDispatcher,
                                                         tableIndex,
                                                         readIndex,
+                                                        scavengerLogManager,
                                                         vNodeSettings.AlwaysKeepScavenged,
-                                                        _nodeInfo.ExternalHttp.ToString(),
                                                         !vNodeSettings.DisableScavengeMerging,
-                                                        vNodeSettings.ScavengeHistoryMaxAge,
                                                         unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
-            _mainBus.Subscribe<UserManagementMessage.UserManagementServiceInitialized>(storageScavenger);
+            _mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
             // ReSharper restore RedundantTypeArgumentsOfMethod
 
 

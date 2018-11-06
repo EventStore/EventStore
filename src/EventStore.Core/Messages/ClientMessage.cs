@@ -1369,50 +1369,67 @@ namespace EventStore.Core.Messages
             public readonly IEnvelope Envelope;
             public readonly Guid CorrelationId;
             public readonly IPrincipal User;
+            public readonly int StartFromChunk;
 
-            public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user)
+            public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user, int startFromChunk)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Envelope = envelope;
                 CorrelationId = correlationId;
                 User = user;
-            }
-
-            public enum ScavengeResult
-            {
-                Success,
-                InProgress,
-                Failed
+                StartFromChunk = startFromChunk;
             }
         }
+        
+        public class StopDatabaseScavenge : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
 
-        public class ScavengeDatabaseCompleted: Message
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly IPrincipal User;
+            public readonly string ScavengeId;
+
+            public StopDatabaseScavenge(IEnvelope envelope, Guid correlationId, IPrincipal user, string scavengeId)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                User = user;
+                ScavengeId = scavengeId;
+            }
+        }
+        
+        public class ScavengeDatabaseResponse : Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
             public override int MsgTypeId { get { return TypeId; } }
 
             public readonly Guid CorrelationId;
-            public readonly ScavengeDatabase.ScavengeResult Result;
-            public readonly string Error;
-            public readonly TimeSpan TotalTime;
-            public readonly long TotalSpaceSaved;
+            public readonly ScavengeResult Result;
+            public readonly string ScavengeId;
 
-            public ScavengeDatabaseCompleted(Guid correlationId,
-                                             ScavengeDatabase.ScavengeResult result,
-                                             string error,
-                                             TimeSpan totalTime,
-                                             long totalSpaceSaved)
+            public ScavengeDatabaseResponse(Guid correlationId,
+                ScavengeResult result, string scavengeId)
             {
                 CorrelationId = correlationId;
                 Result = result;
-                Error = error;
-                TotalTime = totalTime;
-                TotalSpaceSaved = totalSpaceSaved;
+                ScavengeId = scavengeId;
             }
 
             public override string ToString()
             {
-                return String.Format("Result: {0}, Error: {1}, TotalTime: {2}, TotalSpaceSaved: {3}", Result, Error, TotalTime, TotalSpaceSaved);
+                return String.Format("Result: {0}, ScavengeId: {1}", Result, ScavengeId);
+            }
+
+            public enum ScavengeResult
+            {
+                Started,
+                Unauthorized,
+                InProgress,                
+                Stopped,
+                InvalidScavengeId
             }
         }
 
