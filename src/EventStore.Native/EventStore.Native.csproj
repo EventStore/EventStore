@@ -1,18 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net471</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputPath>..\..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
-    <IntermediateOutputPath>..\..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
   </PropertyGroup>
-
+  <!--<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <TargetFramework>net471</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(OS) != 'Windows_NT'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>-->
   <ItemGroup>
-    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
+    <!--Unfortunately, Mono.Posix.NETStandard forwards to Mono.Posix when compiling for net471, which doesn't necessarily exist on windows-->
+    <PackageReference Include="Mono.Posix" Version="5.4.0.201" Condition="'$(OS)' == 'Windows_NT'" />
+    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" Condition="$(OS) != 'Windows_NT'" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
   </ItemGroup>
-
+  
 </Project>

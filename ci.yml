@@ -80,11 +80,11 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Debug src/EventStore.sln
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c Debug --logger trx
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
@@ -110,11 +110,11 @@ jobs:
     displayName: Setup
   - bash: dotnet build -c Release src/EventStore.sln
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c Release --logger trx
     env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api
+      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
