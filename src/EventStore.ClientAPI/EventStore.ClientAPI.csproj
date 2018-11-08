@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
@@ -10,10 +10,16 @@
     <DocumentationFile>$(OutputPath)\EventStore.ClientAPI.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-  <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
       <PackageReference Include="protobuf-net" Version="2.4.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+      <PackageReference Include="System.Net.Http" Version="4.3.4" />
+      <PackageReference Include="System.Net.Requests" Version="4.3.0" />
+      <PackageReference Include="System.Net.Security" Version="4.3.2" />
+      <PackageReference Include="System.Data.SqlClient" Version="4.5.1" />
   </ItemGroup>
 </Project>
