@@ -24,6 +24,7 @@ jobs:
     errorActionPreference: Stop
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "Windows (.NET Framework)"
       platform: "Windows"
@@ -58,6 +59,7 @@ jobs:
     errorActionPreference: Stop
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "Windows (.NET Framework)"
       platform: "Windows"
@@ -88,6 +90,7 @@ jobs:
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "MacOS 10.13 (Mono 5.16)"
       platform: "MacOS 10.13"
@@ -118,6 +121,7 @@ jobs:
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "MacOS 10.13 (Mono 5.16)"
       platform: "MacOS 10.13"
@@ -165,6 +169,7 @@ jobs:
       workingDirectory: '/work'
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "Centos 7 (Mono 5.16)"
       platform: "Centos 7"
@@ -212,6 +217,7 @@ jobs:
       workingDirectory: '/work'
   - task: PublishTestResults@2
     displayName: Publish Test Results
+    condition: succeededOrFailed()
     inputs:
       testRunTitle: "Centos 7 (Mono 5.16)"
       platform: "Centos 7"
