@@ -8,6 +8,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
     {
         public string ScavengeId { get; } = "FakeScavenge";
 
+        public long SpaceSaved { get; } = 0;
+
         public bool Started { get; private set; }
 
         public bool Completed { get; private set; }

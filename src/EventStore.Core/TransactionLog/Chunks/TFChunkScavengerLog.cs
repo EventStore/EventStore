@@ -36,6 +36,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public string ScavengeId => _scavengeId;
 
+        public long SpaceSaved => Interlocked.Read(ref _spaceSaved);
+
         public void ScavengeStarted()
         {
             var metadataEventId = Guid.NewGuid();

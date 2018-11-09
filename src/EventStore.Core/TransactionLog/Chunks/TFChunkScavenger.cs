@@ -201,7 +201,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 } while (mergedSomething);
             }
 
-            Log.Trace("SCAVENGING: total time taken: {0}.", totalSw.Elapsed);
+            Log.Trace("SCAVENGING: total time taken: {0}, total space saved: {1}.", totalSw.Elapsed, _scavengerLog.SpaceSaved);
         }
 
         private void ScavengeChunk(bool alwaysKeepScavenged, TFChunk.TFChunk oldChunk, ThreadLocalScavengeCache threadLocalCache, CancellationToken ct)

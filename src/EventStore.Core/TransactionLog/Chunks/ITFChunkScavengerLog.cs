@@ -6,7 +6,9 @@ namespace EventStore.Core.TransactionLog.Chunks
     public interface ITFChunkScavengerLog : IIndexScavengerLog
     {
         string ScavengeId { get; }
-        
+
+        long SpaceSaved { get; }
+
         void ScavengeStarted();
 
         void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
