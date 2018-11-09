@@ -433,5 +433,20 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class BatchLogExpiredMessages : Message, IQueueAffineMessage
+        {
+            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+            public readonly Guid CorrelationId;
+            public int QueueId { get; }
+            public BatchLogExpiredMessages(Guid correlationId,int queueId)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.Nonnegative(queueId, "queueId");
+                CorrelationId = correlationId;
+                QueueId = queueId;
+            }
+        }
+
     }
 }
