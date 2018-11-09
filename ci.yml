@@ -34,7 +34,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net47-debug
+      artifactName: windows-net471-debug
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: windows_x64_release
@@ -69,7 +69,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net47-release
+      artifactName: windows-net471-release
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: macos_x64_debug
@@ -151,7 +151,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7-api
+        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
         EventStoreBuildConfig=Debug
       containerCommand: ci/ap-build-linux.sh
       workingDirectory: '/work'
@@ -163,7 +163,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7-api
+        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
         EventStoreBuildConfig=Debug
       containerCommand: ci/ap-test-linux.sh
       workingDirectory: '/work'
@@ -199,7 +199,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7-api
+        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
         EventStoreBuildConfig=Release
       containerCommand: ci/ap-build-linux.sh
       workingDirectory: '/work'
@@ -211,7 +211,7 @@ jobs:
       runInBackground: false
       volumes: '$(Build.SourcesDirectory):/work'
       envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7-api
+        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
         EventStoreBuildConfig=Release
       containerCommand: ci/ap-test-linux.sh
       workingDirectory: '/work'

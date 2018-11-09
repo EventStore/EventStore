@@ -10,7 +10,7 @@ COPYRIGHT="Copyright 2018 Event Store LLP. All rights reserved."
 
 CONFIGURATION="Release"
 BUILD_UI="no"
-NET_FRAMEWORK_API="4.7-api"
+NET_FRAMEWORK_API="4.7.1-api"
 MONO_LIB_DIR_LINUX="/usr/lib/mono"
 MONO_LIB_DIR_MAC="/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono"
 
