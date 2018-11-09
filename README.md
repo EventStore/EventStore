@@ -33,12 +33,12 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 
 **Required Environment Variables**
 ```
-export FrameworkPathOverride=/usr/lib/mono/4.7-api
+export FrameworkPathOverride=/usr/lib/mono/4.7.1-api
 ```
 
 ### Windows
 **Prerequisites**
-- [.NET Framework 4.7 (Developer Pack)](https://www.microsoft.com/net/download)
+- [.NET Framework 4.7.1 (Developer Pack)](https://www.microsoft.com/net/download)
 - [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
 
 ### Mac OS X
@@ -48,7 +48,7 @@ export FrameworkPathOverride=/usr/lib/mono/4.7-api
 
 **Required Environment Variables**
 ```
-export FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7-api/
+export FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api/
 ```
 
 ### Build EventStore
@@ -59,7 +59,7 @@ dotnet build -c Release src/EventStore.sln
 
 To start a single node, you can then run:
 ```
-bin/Release/EventStore.ClusterNode/net47/EventStore.ClusterNode.exe --db ../db --log ../logs
+bin/Release/EventStore.ClusterNode/net471/EventStore.ClusterNode.exe --db ../db --log ../logs
 ```
 
 You'll need to launch the node with `mono` on Linux or Mac OS X.
