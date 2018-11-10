@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly long LengthLifetimePeak;
         ///<summary>
-        ///TBD
+        ///The highest number of items in the current queue
         ///</summary>
         public readonly long LengthCurrentTryPeak;
         ///<summary>
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly int AvgItemsPerSecond;
         ///<summary>
-        ///TBD
+        ///Average
         ///</summary>
         public readonly double AvgProcessingTime;
         ///<summary>

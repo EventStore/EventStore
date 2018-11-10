@@ -189,7 +189,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///Total CPU usage in TBD
+        ///Total CPU usage in percentage
         ///</summary>
         public float GetTotalCpuUsage()
         {
@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///Total process CPU usage in TBD
+        ///Total process CPU usage
         ///</summary>
         public float GetProcCpuUsage()
         {
@@ -229,7 +229,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///TBD
+        ///Current rate at which VM components are waiting to process events
         ///</summary>
         public float GetContentionsRateCount()
         {

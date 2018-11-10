@@ -13,41 +13,42 @@ namespace EventStore.ClientAPI.Transport.Tcp
         ///</summary>
         public readonly long SentBytesTotal;
         ///<summary>
-        ///Total bytes sent to TCP connections
+        ///Total bytes received by TCP connections
         ///</summary>
         public readonly long ReceivedBytesTotal;
         ///<summary>
-        ///TBD
+        ///Total bytes sent to TCP connections since last run
         ///</summary>
         public readonly long SentBytesSinceLastRun;
         ///<summary>
-        ///TBD
+        ///Total bytes received by TCP connections since last run
         ///</summary>
         public readonly long ReceivedBytesSinceLastRun;
         ///<summary>
-        ///TBD
+        ///Sending speed in bytes
         ///</summary>
         public readonly double SendingSpeed;
         ///<summary>
-        ///TBD
+        ///Receiving speed in bytes
         ///</summary>
         public readonly double ReceivingSpeed;
         ///<summary>
-        ///TBD
+        ///Number of bytes waiting to be sent to connections
         ///</summary>
         public readonly long PendingSend;
         ///<summary>
-        ///TBD
+        ///Number of bytes waiting to be sent to connections
         ///</summary>
         public readonly long InSend;
         ///<summary>
-        ///TBD
+        ///Number of bytes waiting to be received by connections
         ///</summary>
         public readonly long PendingReceived;
         ///<summary>
-        ///TBD
+        ///Time elapsed since last stats read
         ///</summary>
         public readonly TimeSpan MeasureTime;
+
 
         public TcpStats(int connections,
                         long sentBytesTotal,
