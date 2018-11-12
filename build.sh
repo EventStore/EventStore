@@ -17,7 +17,7 @@ MONO_LIB_DIR_MAC="/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono"
 function usage() {    
 cat <<EOF
 Usage:
-  $0 [<version=0.0.0.0>] [<configuration=Release>] [<build_ui=no>] [<mono_lib_dir_override>]
+  $0 [<version=0.0.0.0>] [<configuration=Debug|Release>] [<build_ui=yes|no>] [<mono_lib_dir_override>]
 
 version: EventStore build version. Versions must be complete four part identifiers valid for use on a .NET assembly.
 
