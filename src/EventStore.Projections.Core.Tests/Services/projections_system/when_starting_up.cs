@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system
             {
                 var statistics = HandledMessages.OfType<ProjectionManagementMessage.Statistics>().LastOrDefault();
                 Assert.NotNull(statistics);
-                Assert.AreEqual(4, statistics.Projections.Length);
+                Assert.AreEqual(5, statistics.Projections.Length);
             }
 
             [Test]

@@ -12,6 +12,8 @@ namespace EventStore.Projections.Core.Services.Processing
             public const string StreamByCategoryStandardProjection = "$stream_by_category";
             public const string EventByCategoryStandardProjection = "$by_category";
             public const string EventByTypeStandardProjection = "$by_event_type";
+            public const string EventByCorrIdStandardProjection = "$by_correlation_id";
+
         }
 
         public static ProjectionNamesBuilder CreateForTest(string name)
