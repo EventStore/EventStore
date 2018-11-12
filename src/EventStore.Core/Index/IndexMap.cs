@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Messages;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
@@ -49,6 +51,7 @@ namespace EventStore.Core.Index
             {
                 tmp.Add(new List<PTable>(tables[i]));
             }
+
             return tmp;
         }
 
@@ -57,15 +60,30 @@ namespace EventStore.Core.Index
             if (_map.SelectMany(level => level).Any(item => item == null))
                 throw new CorruptIndexException("Internal indexmap structure corruption.");
         }
-
-        private static void CreateIfNeeded(int level, List<List<PTable>> tables)
+        
+        private static void AddTableToTables(List<List<PTable>> tables, int level, PTable table)
         {
             while (level >= tables.Count)
             {
                 tables.Add(new List<PTable>());
             }
-            if (tables[level] == null)
-                tables[level] = new List<PTable>();
+
+            var innerTables = tables[level] ?? (tables[level] = new List<PTable>());
+            
+            innerTables.Add(table);
+        }
+
+        private static void InsertTableToTables(List<List<PTable>> tables, int level, int position, PTable table)
+        {
+            while (level >= tables.Count)
+                tables.Add(new List<PTable>());
+
+            var innerTables = tables[level] ?? (tables[level] = new List<PTable>());
+            
+            while (position >= innerTables.Count) 
+                innerTables.Add(null);
+            
+            innerTables[position] = table;
         }
 
         public IEnumerable<PTable> InOrder()
@@ -86,10 +104,10 @@ namespace EventStore.Core.Index
         {
             var map = _map;
             // N (oldest tables) -> level 0 (newest tables)
-            for (int i = map.Count-1; i >= 0; --i)
+            for (int i = map.Count - 1; i >= 0; --i)
             {
                 // from first (oldest on level) in the level's list -> last in the level's list (newest on level)
-                for (int j = 0, n=map[i].Count; j < n; ++j)
+                for (int j = 0, n = map[i].Count; j < n; ++j)
                 {
                     yield return map[i][j];
                 }
@@ -99,8 +117,8 @@ namespace EventStore.Core.Index
         public IEnumerable<string> GetAllFilenames()
         {
             return from level in _map
-                   from table in level
-                   select table.Filename;
+                from table in level
+                select table.Filename;
         }
 
         public static IndexMap CreateEmpty(int maxTablesPerLevel = 4)
@@ -108,7 +126,8 @@ namespace EventStore.Core.Index
             return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel);
         }
 
-        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true, int cacheDepth = 16, bool skipIndexVerify = false)
+        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4, bool loadPTables = true, int cacheDepth = 16, bool skipIndexVerify = false,
+            int threads = 1)
         {
             if (!File.Exists(filename))
                 return CreateEmpty(maxTablesPerLevel);
@@ -130,7 +149,7 @@ namespace EventStore.Core.Index
                     var prepareCheckpoint = checkpoints.PreparePosition;
                     var commitCheckpoint = checkpoints.CommitPosition;
 
-                    var tables = loadPTables ? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify) : new List<List<PTable>>();
+                    var tables = loadPTables ? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify, threads) : new List<List<PTable>>();
 
                     if (!loadPTables && reader.ReadLine() != null)
                         throw new CorruptIndexException(
@@ -154,25 +173,27 @@ namespace EventStore.Core.Index
             var expectedHash = new byte[16];
             for (int i = 0; i < 16; ++i)
             {
-                expectedHash[i] = Convert.ToByte(text.Substring(i*2, 2), 16);
+                expectedHash[i] = Convert.ToByte(text.Substring(i * 2, 2), 16);
             }
+
             if (expectedHash.Length != realHash.Length)
             {
                 throw new CorruptIndexException(
-                        string.Format("Hash validation error (different hash sizes).\n"
-                                      + "Expected hash ({0}): {1}, real hash ({2}): {3}.",
-                                      expectedHash.Length, BitConverter.ToString(expectedHash),
-                                      realHash.Length, BitConverter.ToString(realHash)));
+                    string.Format("Hash validation error (different hash sizes).\n"
+                                  + "Expected hash ({0}): {1}, real hash ({2}): {3}.",
+                        expectedHash.Length, BitConverter.ToString(expectedHash),
+                        realHash.Length, BitConverter.ToString(realHash)));
             }
+
             for (int i = 0; i < realHash.Length; ++i)
             {
                 if (expectedHash[i] != realHash[i])
                 {
                     throw new CorruptIndexException(
-                            string.Format("Hash validation error (different hashes).\n"
-                                          + "Expected hash ({0}): {1}, real hash ({2}): {3}.",
-                                          expectedHash.Length, BitConverter.ToString(expectedHash),
-                                          realHash.Length, BitConverter.ToString(realHash)));
+                        string.Format("Hash validation error (different hashes).\n"
+                                      + "Expected hash ({0}): {1}, real hash ({2}): {3}.",
+                            expectedHash.Length, BitConverter.ToString(expectedHash),
+                            realHash.Length, BitConverter.ToString(realHash)));
                 }
             }
         }
@@ -208,51 +229,93 @@ namespace EventStore.Core.Index
             }
         }
 
-        private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints, int cacheDepth, bool skipIndexVerify)
+        private static IEnumerable<string> GetAllLines(StreamReader reader)
         {
-            var tables = new List<List<PTable>>();
-
             // all next lines are PTables sorted by levels
             string text;
             while ((text = reader.ReadLine()) != null)
             {
-                if (checkpoints.PreparePosition < 0 || checkpoints.CommitPosition < 0)
-                    throw new CorruptIndexException(
-                        string.Format("Negative prepare/commit checkpoint in non-empty IndexMap: {0}.", checkpoints));
+                yield return text;
+            }
+        }
 
-                PTable ptable = null;
-                var pieces = text.Split(',');
+        private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints, int cacheDepth, bool skipIndexVerify,
+            int threads)
+        {
+            var tables = new List<List<PTable>>();
+            try
+            {
                 try
                 {
-                    var level = int.Parse(pieces[0]);
-                    var position = int.Parse(pieces[1]);
-                    var file = pieces[2];
-                    var path = Path.GetDirectoryName(indexmapFilename);
-                    var ptablePath = Path.Combine(path, file);
-
-                    ptable = PTable.FromFile(ptablePath, cacheDepth, skipIndexVerify);
-
-                    CreateIfNeeded(level, tables);
-                    tables[level].Insert(position, ptable);
-                }
-                catch (Exception exc)
-                {
-                    // if PTable file path was correct, but data is corrupted, we still need to dispose opened streams
-                    if (ptable != null)
-                        ptable.Dispose();
-
-                    // also dispose all previously loaded correct PTables
-                    for (int i=0; i<tables.Count; ++i)
-                    {
-                        for (int j=0; j<tables[i].Count; ++j)
+                    Parallel.ForEach(GetAllLines(reader).Reverse(), // Reverse so we load the highest levels (biggest files) first - ensures we use concurrency in the most efficient way. 
+                        new ParallelOptions {MaxDegreeOfParallelism = threads},
+                        indexMapEntry =>
                         {
-                            tables[i][j].Dispose();
+                            if (checkpoints.PreparePosition < 0 || checkpoints.CommitPosition < 0)
+                                throw new CorruptIndexException(
+                                    string.Format("Negative prepare/commit checkpoint in non-empty IndexMap: {0}.", checkpoints));
+
+                            PTable ptable = null;
+                            var pieces = indexMapEntry.Split(',');
+                            try
+                            {
+                                var level = int.Parse(pieces[0]);
+                                var position = int.Parse(pieces[1]);
+                                var file = pieces[2];
+                                var path = Path.GetDirectoryName(indexmapFilename);
+                                var ptablePath = Path.Combine(path, file);
+
+                                ptable = PTable.FromFile(ptablePath, cacheDepth, skipIndexVerify);
+
+                                lock (tables)
+                                {
+                                    InsertTableToTables(tables, level, position, ptable);
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                // if PTable file path was correct, but data is corrupted, we still need to dispose opened streams
+                                if (ptable != null)
+                                    ptable.Dispose();
+
+                                throw;
+                            }
+                        });
+                    
+                    // Verify map is correct
+                    for (int i = 0; i < tables.Count; ++i)
+                    {
+                        for (int j = 0; j < tables[i].Count; ++j)
+                        {
+                            if (tables[i][j] == null)
+                            {
+                                throw new CorruptIndexException($"indexmap is missing contiguous level,position {i},{j}");
+                            }
                         }
                     }
-
-                    throw new CorruptIndexException("Error while loading IndexMap.", exc);
+                    
+                }
+                catch (AggregateException aggEx)
+                {
+                    // We only care that *something* has gone wrong, throw the first exception
+                    throw aggEx.InnerException;
                 }
             }
+            catch (Exception exc)
+            {
+                // also dispose all previously loaded correct PTables
+                for (int i = 0; i < tables.Count; ++i)
+                {
+                    for (int j = 0; j < tables[i].Count; ++j)
+                    {
+                        if (tables[i][j] != null)
+                            tables[i][j].Dispose();
+                    }
+                }
+
+                throw new CorruptIndexException("Error while loading IndexMap.", exc);
+            }
+
             return tables;
         }
 
@@ -273,6 +336,7 @@ namespace EventStore.Core.Index
                         memWriter.WriteLine("{0},{1},{2}", i, j, new FileInfo(_map[i][j].Filename).Name);
                     }
                 }
+
                 memWriter.Flush();
 
                 memStream.Position = 32;
@@ -283,12 +347,13 @@ namespace EventStore.Core.Index
                 {
                     memWriter.Write(t.ToString("X2"));
                 }
+
                 memWriter.Flush();
 
                 memStream.Position = 0;
                 using (var f = File.OpenWrite(tmpIndexMap))
                 {
-                    f.Write(memStream.GetBuffer(), 0, (int)memStream.Length);
+                    f.Write(memStream.GetBuffer(), 0, (int) memStream.Length);
                     f.FlushToDisk();
                 }
             }
@@ -310,6 +375,7 @@ namespace EventStore.Core.Index
                         File.SetAttributes(filename, FileAttributes.Normal);
                         File.Delete(filename);
                     }
+
                     File.Move(tmpIndexMap, filename);
                     break;
                 }
@@ -329,22 +395,21 @@ namespace EventStore.Core.Index
         }
 
         public MergeResult AddPTable(PTable tableToAdd,
-                                     long prepareCheckpoint,
-                                     long commitCheckpoint,
-                                     Func<string, ulong, ulong> upgradeHash,
-                                     Func<IndexEntry, bool> existsAt,
-                                     Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
-                                     IIndexFilenameProvider filenameProvider,
-                                     byte version,
-                                     int indexCacheDepth = 16,
-                                     bool skipIndexVerify = false)
+            long prepareCheckpoint,
+            long commitCheckpoint,
+            Func<string, ulong, ulong> upgradeHash,
+            Func<IndexEntry, bool> existsAt,
+            Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
+            IIndexFilenameProvider filenameProvider,
+            byte version,
+            int indexCacheDepth = 16,
+            bool skipIndexVerify = false)
         {
             Ensure.Nonnegative(prepareCheckpoint, "prepareCheckpoint");
             Ensure.Nonnegative(commitCheckpoint, "commitCheckpoint");
 
             var tables = CopyFrom(_map);
-            CreateIfNeeded(0, tables);
-            tables[0].Add(tableToAdd);
+            AddTableToTables(tables, 0, tableToAdd);
 
             var toDelete = new List<PTable>();
             for (int level = 0; level < tables.Count; level++)
@@ -352,9 +417,9 @@ namespace EventStore.Core.Index
                 if (tables[level].Count >= _maxTablesPerLevel)
                 {
                     var filename = filenameProvider.GetFilenameNewTable();
-                    PTable table = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt, version, indexCacheDepth, skipIndexVerify);
-                    CreateIfNeeded(level + 1, tables);
-                    tables[level + 1].Add(table);
+                    PTable mergedTable = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt, version, indexCacheDepth, skipIndexVerify);
+                    
+                    AddTableToTables(tables, level + 1, mergedTable);
                     toDelete.AddRange(tables[level]);
                     tables[level].Clear();
                 }
@@ -370,6 +435,7 @@ namespace EventStore.Core.Index
             {
                 ptable.Dispose();
             }
+
             foreach (var ptable in InOrder())
             {
                 ptable.WaitForDisposal(timeout);

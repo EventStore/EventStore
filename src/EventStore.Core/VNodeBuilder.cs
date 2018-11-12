@@ -130,8 +130,10 @@ namespace EventStore.Core
         protected bool _alwaysKeepScavenged;
         protected bool _skipIndexScanOnReads;
         private bool _reduceFileCachePressure;
+        private int _initializationThreads;
 
         private bool _gossipOnSingleNode;
+
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         protected VNodeBuilder()
@@ -220,6 +222,7 @@ namespace EventStore.Core
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
             _reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
+            _initializationThreads = Opts.InitializationThreadsDefault;
         }
 
         protected VNodeBuilder WithSingleNodeSettings()
@@ -1064,6 +1067,18 @@ namespace EventStore.Core
             _chunkInitialReaderCount = chunkInitialReaderCount;
             return this;
         }
+        
+        
+        /// <summary>
+        /// Sets the number of threads to use to initialize the node.
+        /// </summary>
+        /// <param name="initializationThreads">The number of threads to use when initializing the node</param>
+        /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+        public VNodeBuilder WithInitializationThreads(int initializationThreads)
+        {
+            _initializationThreads = Math.Min(initializationThreads, Environment.ProcessorCount);
+            return this;
+        }
 
         /// <summary>
         /// Sets the Server SSL Certificate
@@ -1421,7 +1436,10 @@ namespace EventStore.Core
                     _readerThreadsCount,
                     _alwaysKeepScavenged,
                     _gossipOnSingleNode,
-                    _skipIndexScanOnReads);
+                    _skipIndexScanOnReads,
+                    _reduceFileCachePressure,
+                    _initializationThreads);
+            
             var infoController = new InfoController(options, _projectionType);
 
             _log.Info("{0,-25} {1}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
