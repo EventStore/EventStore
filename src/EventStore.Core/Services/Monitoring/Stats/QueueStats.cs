@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly double IdleTimePercent;
         ///<summary>
-        ///Mast event type processed
+        ///Last message type processed
         ///</summary>
         public readonly Type LastProcessedMessageType;
         ///<summary>
