@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly long LengthLifetimePeak;
         ///<summary>
-        ///The highest number of items in the current queue
+        ///The highest number of items in the queue within the past 100ms
         ///</summary>
         public readonly long LengthCurrentTryPeak;
         ///<summary>
