@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly TimeSpan? CurrentItemProcessingTime;
         ///<summary>
-        ///Number of milliseconds elapsed since queue went idle
+        ///Time elapsed since queue went idle
         ///</summary>
         public readonly TimeSpan? CurrentIdleTime;
         ///<summary>
