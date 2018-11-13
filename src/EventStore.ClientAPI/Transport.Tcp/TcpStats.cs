@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         ///</summary>
         public readonly long PendingSend;
         ///<summary>
-        ///Number of bytes waiting to be sent to connections
+        ///Number of bytes sent to connections but not yet acknowledged by the receiving party
         ///</summary>
         public readonly long InSend;
         ///<summary>
