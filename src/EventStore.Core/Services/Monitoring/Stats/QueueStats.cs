@@ -26,7 +26,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly long LengthCurrentTryPeak;
         ///<summary>
-        ///The number of milliseconds elapsed processing the current item
+        ///Time elapsed processing the current item
         ///</summary>
         public readonly TimeSpan? CurrentItemProcessingTime;
         ///<summary>
