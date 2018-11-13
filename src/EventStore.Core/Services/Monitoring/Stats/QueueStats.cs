@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly Type LastProcessedMessageType;
         ///<summary>
-        ///Current event type queue is processing
+        ///Current message type queue is processing
         ///</summary>
         public readonly Type InProgressMessageType;
 
