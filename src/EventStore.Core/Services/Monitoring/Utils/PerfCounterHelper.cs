@@ -213,7 +213,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///Number of processes on a thread
+        ///Current thread count
         ///</summary>
         public int GetProcThreadsCount()
         {
