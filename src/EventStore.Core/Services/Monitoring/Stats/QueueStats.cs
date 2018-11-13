@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly int AvgItemsPerSecond;
         ///<summary>
-        ///Average
+        ///Average number of items processed per second
         ///</summary>
         public readonly double AvgProcessingTime;
         ///<summary>
