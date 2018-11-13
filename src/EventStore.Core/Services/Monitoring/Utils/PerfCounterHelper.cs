@@ -221,7 +221,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///Number of exceptions thrown
+        ///Number of exceptions thrown per second
         ///</summary>
         public float GetThrownExceptionsRate()
         {
