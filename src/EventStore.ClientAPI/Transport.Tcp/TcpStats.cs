@@ -25,7 +25,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         ///</summary>
         public readonly long ReceivedBytesSinceLastRun;
         ///<summary>
-        ///Sending speed in bytes
+        ///Sending speed in bytes per second
         ///</summary>
         public readonly double SendingSpeed;
         ///<summary>
