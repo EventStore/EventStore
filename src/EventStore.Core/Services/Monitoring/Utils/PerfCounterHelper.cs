@@ -229,7 +229,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         }
 
         ///<summary>
-        ///Current rate at which VM components are waiting to process events
+        ///The rate at which threads in the runtime attempt to acquire a managed lock unsuccessfully
         ///</summary>
         public float GetContentionsRateCount()
         {
