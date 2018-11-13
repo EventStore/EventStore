@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         ///</summary>
         public readonly int Length;
         ///<summary>
-        ///The highest number of items in the queues
+        ///The highest number of items in the queue
         ///</summary>
         public readonly long LengthLifetimePeak;
         ///<summary>
