@@ -117,8 +117,9 @@ namespace EventStore.Core.Services.Monitoring.Utils
                         if (instanceDataCollection.Values != null)
                         {
                             foreach (InstanceData item in instanceDataCollection.Values)
+
                             {
-                                var instancePid = (int) item.RawValue;
+                                var instancePid = (int)item.RawValue;
                                 if (_pid.Equals(instancePid))
                                 {
                                     return item.InstanceName;
@@ -141,9 +142,9 @@ namespace EventStore.Core.Services.Monitoring.Utils
         /// Re-examines the performance counter instances for the correct instance name for this process.
         /// </summary>
         /// <remarks>
-        /// The performance counter instance on .NET Framework can change at any time 
+        /// The performance counter instance on .NET Framework can change at any time
         /// due to creation or destruction of processes with the same image name. This method should be called before using the Get methods.
-        /// 
+        ///
         /// The correct instance name must be found by dereferencing via a look up counter, e.g. .Net CLR Memory/Process Id
         /// </remarks>
         public void RefreshInstanceName()
@@ -187,31 +188,49 @@ namespace EventStore.Core.Services.Monitoring.Utils
             }
         }
 
+        ///<summary>
+        ///Total CPU usage in percentage
+        ///</summary>
         public float GetTotalCpuUsage()
         {
             return _totalCpuCounter?.NextValue() ?? InvalidCounterResult;
         }
 
+        ///<summary>
+        ///Free memory in bytes
+        ///</summary>
         public long GetFreeMemory()
         {
             return _totalMemCounter?.NextSample().RawValue ?? InvalidCounterResult;
         }
 
+        ///<summary>
+        ///Total process CPU usage
+        ///</summary>
         public float GetProcCpuUsage()
         {
             return _procCpuCounter?.NextValue() ?? InvalidCounterResult;
         }
 
+        ///<summary>
+        ///Current thread count
+        ///</summary>
         public int GetProcThreadsCount()
         {
-            return (int) (_procThreadsCounter?.NextValue() ?? InvalidCounterResult);
+            return (int)(_procThreadsCounter?.NextValue() ?? InvalidCounterResult);
         }
 
+        ///<summary>
+        ///Number of exceptions thrown per second
+        ///</summary>
         public float GetThrownExceptionsRate()
         {
             return _thrownExceptionsRateCounter?.NextValue() ?? InvalidCounterResult;
         }
 
+        ///<summary>
+        ///The rate at which threads in the runtime attempt to acquire a managed lock unsuccessfully
+        ///</summary>
         public float GetContentionsRateCount()
         {
             return _contentionsRateCounter?.NextValue() ?? InvalidCounterResult;

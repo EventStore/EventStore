@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Monitoring
             var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
             if (drive != null)
             {
-                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName.Replace("\\","").Replace(":",""), stat);
+                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName.Replace("\\", "").Replace(":", ""), stat);
                 stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
                 stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
                 stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
@@ -106,8 +106,8 @@ namespace EventStore.Core.Services.Monitoring
             {
                 _perfCounter.RefreshInstanceName();
 
-                var procCpuUsage = _perfCounter.GetProcCpuUsage(); 
-                
+                var procCpuUsage = _perfCounter.GetProcCpuUsage();
+
                 stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
                 stats["proc-id"] = process.Id;
                 stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
@@ -144,6 +144,9 @@ namespace EventStore.Core.Services.Monitoring
             }
         }
 
+        ///<summary>
+        ///Free system memory in bytes
+        ///</summary>
         private long GetFreeMem()
         {
             switch (OS.OsFlavor)
@@ -208,11 +211,14 @@ namespace EventStore.Core.Services.Monitoring
             {
                 var vmstat = ShellExecutor.GetOutput("vm_stat");
                 var sysctlStats = vmstat.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                foreach(var line in sysctlStats) {
-                    var l = line.Substring(0, line.Length -1);
+                foreach (var line in sysctlStats)
+                {
+                    var l = line.Substring(0, line.Length - 1);
                     var pieces = l.Split(':');
-                    if(pieces.Length == 2) {
-                        if(pieces[0].Trim().ToLower() == "pages free") {
+                    if (pieces.Length == 2)
+                    {
+                        if (pieces[0].Trim().ToLower() == "pages free")
+                        {
                             freePages = int.Parse(pieces[1]);
                             break;
                         }

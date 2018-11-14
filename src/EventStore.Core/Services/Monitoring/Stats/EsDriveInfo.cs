@@ -10,10 +10,25 @@ namespace EventStore.Core.Services.Monitoring.Stats
 {
     public class EsDriveInfo
     {
+        ///<summary>
+        ///Data storage path
+        ///</summary>
         public readonly string DiskName;
+        ///<summary>
+        ///Total bytes of space available to Event Store
+        ///</summary>
         public readonly long TotalBytes;
+        ///<summary>
+        ///Remaining bytes of space available to Event Store
+        ///</summary>
         public readonly long AvailableBytes;
+        ///<summary>
+        ///Total bytes of space used by Event Store
+        ///</summary>
         public readonly long UsedBytes;
+        ///<summary>
+        ///Percentage usage of space used by Event Store
+        ///</summary>
         public readonly string Usage;
 
         public static EsDriveInfo FromDirectory(string path, ILogger log)
@@ -65,10 +80,10 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
             try
             {
-                if(!Directory.Exists(directory)) return null;
+                if (!Directory.Exists(directory)) return null;
                 var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
                 var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                if(driveInfoLines.Length == 0) return null;
+                if (driveInfoLines.Length == 0) return null;
                 var ourline = driveInfoLines[1];
                 var trimmedLine = SystemStatsHelper.SpacesRegex.Replace(ourline, " ");
                 var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
