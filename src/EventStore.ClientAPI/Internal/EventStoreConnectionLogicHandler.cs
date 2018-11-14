@@ -312,6 +312,7 @@ namespace EventStore.ClientAPI.Internal
                         else
                         {
                             RaiseReconnecting();
+                            _operations.CheckTimeoutsAndRetry(_connection);
                             DiscoverEndPoint(null);
                         }
                     }
