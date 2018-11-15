@@ -18,6 +18,8 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _streamName;
         private long _fromSequenceNumber;
+        private bool _checkpointVerified;
+        private long _checkpointSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -27,6 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _lastPosition;
         private bool _eof;
         private Guid _pendingRequestCorrelationId;
+        public Guid PendingRequestCorrelationId { get {return _pendingRequestCorrelationId; } }
 
         public StreamEventReader(
             IPublisher publisher,
@@ -48,6 +51,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
             _produceStreamDeletes = produceStreamDeletes;
+            _checkpointVerified = false;
+            _checkpointSequenceNumber = fromSequenceNumber;
         }
 
         protected override bool AreEventsRequested()
@@ -93,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
-                    var oldFromSequenceNumber = StartFrom(message, _fromSequenceNumber);
+                    var oldFromSequenceNumber = StartFrom(message, _fromSequenceNumber, _checkpointVerified, _checkpointSequenceNumber);
                     _fromSequenceNumber = message.NextEventNumber;
                     var eof = message.Events.Length == 0;
                     _eof = eof;
@@ -119,6 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
                                 ref oldFromSequenceNumber);
                         }
+                        _checkpointVerified = true;
                     }
 
                     break;
@@ -141,14 +147,15 @@ namespace EventStore.Projections.Core.Services.Processing
             PauseOrContinueProcessing();
         }
 
-        private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
+        private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber, bool checkpointVerified, long checkpointSequenceNumber)
         {
+            if (!checkpointVerified && checkpointSequenceNumber != 0) return checkpointSequenceNumber;
             if (fromSequenceNumber != 0) return fromSequenceNumber;
             if(message.Events.Length > 0)
             {
                 return message.Events[0].OriginalEventNumber;
             }
-            return fromSequenceNumber;
+            return 0;
         }
 
         private void SendIdle()

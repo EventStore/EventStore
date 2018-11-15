@@ -35,11 +35,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _edp.Resume();
         }
 
-        private void HandleEvents(long[] eventNumbers){
+        private void HandleEvents(long[] eventNumbers, int nextEventNumber = -1){
+            Console.Error.WriteLine("Handling events: "+eventNumbers.Length);
             string eventType = "event_type";
             List<ResolvedEvent> events = new List<ResolvedEvent>();
 
             foreach(long eventNumber in eventNumbers){
+                
                 events.Add(
                     ResolvedEvent.ForUnresolvedEvent(
                         new EventRecord(
@@ -51,8 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                 );
             }
 
-            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().CorrelationId;
-
+            var correlationId = _edp.PendingRequestCorrelationId;
             long start, end;
             if(eventNumbers.Length > 0){
                 start = eventNumbers[0];
@@ -65,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    correlationId, _streamName, start, 100, ReadStreamResult.Success,events.ToArray(), null, false, "", start+1, end, true, 200)
+                    correlationId, _streamName, start, 100, ReadStreamResult.Success,events.ToArray(), null, false, "", nextEventNumber!=-1?nextEventNumber:start+1, end, true, 200)
             );            
         }
 
@@ -91,6 +92,18 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             long eventSequenceNumber = _fromSequenceNumber+5;
 
             Assert.Throws<InvalidOperationException>(() => {
+                HandleEvents(eventSequenceNumber,eventSequenceNumber);
+            });
+
+            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
+        }
+        [Test]
+        public void should_not_allow_first_event_to_be_greater_than_sequence_number_when_first_read_eof()
+        {
+            long eventSequenceNumber = _fromSequenceNumber+5;
+
+            Assert.Throws<InvalidOperationException>(() => {
+                HandleEvents(new long[0],_fromSequenceNumber+5);
                 HandleEvents(eventSequenceNumber,eventSequenceNumber);
             });
 
