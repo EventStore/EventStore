@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _loadingPrerecordedEventsFrom;
         private static readonly char[] _linkToSeparator = new []{'@'};
 
+
         public MultiStreamMultiOutputCheckpointManager(
             IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
             IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
@@ -175,9 +176,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     switch (completed.Result)
                     {
                         case ReadStreamResult.Success:
-                            if (completed.Events.Length != 1)
-                                throw new Exception(
-                                    string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
                             item.SetLoadedEvent(completed.Events[0]);
                             _loadingItemsCount--;
                             CheckAllEventsLoaded();
@@ -188,10 +186,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 });
         }
 
-        private void ReadPrerecordedEventStream(string streamId, long eventNumber, Action<ClientMessage.ReadStreamEventsBackwardCompleted> action)
+        private void ReadPrerecordedEventStream(string streamId, long eventNumber, Action<ClientMessage.ReadStreamEventsBackwardCompleted> action, int eofReads=0)
         {
             _ioDispatcher.ReadBackward(
-                streamId, eventNumber, 1, true, SystemAccount.Principal, action, () =>
+                streamId, eventNumber, 1, true, SystemAccount.Principal, (result) => {
+                    Console.WriteLine("result.Events.Length: "+result.Events.Length+" result.IsEndOfStream: "+result.IsEndOfStream);
+                    
+                    if(result.Events.Length == 0){
+                        if(eofReads == 1) throw new Exception(string.Format("Cannot read {0}. Error: {1}", streamId, "Stream is empty."));
+                        ReadPrerecordedEventStream(streamId, result.NextEventNumber, action, eofReads+1);
+                    }else{
+                        action(result);
+                    }
+                        
+                }, () =>
                 {
                     _logger.Warn("Read backward of stream {0} timed out. Retrying", streamId);
                     ReadPrerecordedEventStream(streamId, eventNumber, action);
