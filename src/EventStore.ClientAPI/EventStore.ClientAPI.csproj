@@ -22,6 +22,5 @@
       <PackageReference Include="System.Net.Security" Version="4.3.2" />
     <Compile Include="Exceptions\PersistentSubscriptionCommandFailedException.cs" />
     <Compile Include="PersistentSubscriptions\PersistentSubscriptionDetails.cs" />
-    <Compile Include="PersistentSubscriptions\PersistentSubscriptionsClient.cs" />
   </ItemGroup>
 </Project>
