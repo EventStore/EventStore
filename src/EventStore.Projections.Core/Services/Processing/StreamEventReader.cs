@@ -17,7 +17,8 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private readonly string _streamName;
-        private long _fromSequenceNumber;
+        private long _checkFromSequenceNumber;
+        private long _readFromSequenceNumber;
         private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
         private readonly bool _produceStreamDeletes;
@@ -27,6 +28,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _lastPosition;
         private bool _eof;
         private Guid _pendingRequestCorrelationId;
+        public Guid PendingRequestCorrelationId { get {return _pendingRequestCorrelationId; } }
 
         public StreamEventReader(
             IPublisher publisher,
@@ -44,7 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (streamName == null) throw new ArgumentNullException("streamName");
             if (string.IsNullOrEmpty(streamName)) throw new ArgumentException("streamName");
             _streamName = streamName;
-            _fromSequenceNumber = fromSequenceNumber;
+            _checkFromSequenceNumber = fromSequenceNumber;
+            _readFromSequenceNumber = fromSequenceNumber;
             _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
             _produceStreamDeletes = produceStreamDeletes;
@@ -93,8 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
-                    var oldFromSequenceNumber = StartFrom(message, _fromSequenceNumber);
-                    _fromSequenceNumber = message.NextEventNumber;
+                    _readFromSequenceNumber = message.NextEventNumber;
                     var eof = message.Events.Length == 0;
                     _eof = eof;
                     var willDispose = eof && _stopOnEof;
@@ -116,8 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
-                                ref oldFromSequenceNumber);
+                            DeliverEvent(message.Events[index], 100.0f*(link ?? @event).EventNumber/message.LastEventNumber);
                         }
                     }
 
@@ -141,14 +142,10 @@ namespace EventStore.Projections.Core.Services.Processing
             PauseOrContinueProcessing();
         }
 
-        private long StartFrom(ClientMessage.ReadStreamEventsForwardCompleted message, long fromSequenceNumber)
+        private long CheckFrom(EventRecord evt, long fromSequenceNumber)
         {
             if (fromSequenceNumber != 0) return fromSequenceNumber;
-            if(message.Events.Length > 0)
-            {
-                return message.Events[0].OriginalEventNumber;
-            }
-            return fromSequenceNumber;
+            return evt.EventNumber;
         }
 
         private void SendIdle()
@@ -200,7 +197,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Message CreateReadEventsMessage(Guid readCorrelationId)
         {
             return new ClientMessage.ReadStreamEventsForward(
-                readCorrelationId, readCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                readCorrelationId, readCorrelationId, new SendToThisEnvelope(this), _streamName, _readFromSequenceNumber,
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
         }
 
@@ -213,9 +210,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     EventReaderCorrelationId, null, safeJoinPosition, 100.0f, source: this.GetType()));
         }
 
-        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref long sequenceNumber)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress)
         {
             EventRecord positionEvent = pair.OriginalEvent;
+            var sequenceNumber = CheckFrom(positionEvent, _checkFromSequenceNumber);
             if (positionEvent.EventNumber != sequenceNumber){
                 string reason = string.Format("Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection."
                 ,sequenceNumber, _streamName, positionEvent.EventNumber);
@@ -224,7 +222,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException(reason);
             }
 
-            sequenceNumber = positionEvent.EventNumber + 1;
+            _checkFromSequenceNumber = positionEvent.EventNumber + 1;
             var resolvedEvent = new ResolvedEvent(pair, null);
 
             string deletedPartitionStreamId;
