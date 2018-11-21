@@ -89,10 +89,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void should_not_allow_first_event_to_be_greater_than_sequence_number()
         {
             long eventSequenceNumber = _fromSequenceNumber+5;
-
-            Assert.Throws<InvalidOperationException>(() => {
-                HandleEvents(eventSequenceNumber,eventSequenceNumber);
-            });
+            
+            HandleEvents(eventSequenceNumber,eventSequenceNumber);
 
             Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
@@ -101,23 +99,19 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void should_not_allow_first_event_to_be_less_than_sequence_number()
         {
             long eventSequenceNumber = _fromSequenceNumber-1;
-
-            Assert.Throws<InvalidOperationException>(() => {
-                HandleEvents(eventSequenceNumber,eventSequenceNumber);
-            });
+            
+            HandleEvents(eventSequenceNumber,eventSequenceNumber);
             
             Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());
         }
 
         [Test]
-        public void events_after_first_event_should_be_in_sequence()
-        {            
-            Assert.Throws<InvalidOperationException>(() => {
-                //_fromSequenceNumber+2 has been omitted
-                HandleEvents(new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
-            });
-
-            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
+        public void events_after_second_event_should_not_be_in_sequence()
+        {
+            //_fromSequenceNumber+2 has been omitted
+            HandleEvents(new long[] { _fromSequenceNumber, _fromSequenceNumber + 1, _fromSequenceNumber + 3, _fromSequenceNumber + 4 });
+            
+            Assert.AreEqual(2, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
     }
 }

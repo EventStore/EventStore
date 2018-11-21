@@ -262,6 +262,13 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
 
+            if (message.Reason.Contains("was expected in the stream"))
+            {
+                // Log without fault the projection
+                _logger.Debug(message.Reason);
+                return;
+            }
+
             var subscription = _subscriptions[projectionId];
             Handle(new ReaderSubscriptionManagement.Unsubscribe(subscription.SubscriptionId));
             _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId,message.Reason));            

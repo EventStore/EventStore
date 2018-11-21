@@ -96,14 +96,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         }
 
         [Test]
-        public void events_after_first_event_should_be_in_sequence()
-        {            
-            Assert.Throws<InvalidOperationException>(() => {
-                //_fromSequenceNumber+2 has been omitted
-                HandleEvents(new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
-            });
+        public void events_after_second_event_should_not_be_in_sequence()
+        {   
+            //_fromSequenceNumber+2 has been omitted
+            HandleEvents(new long[]{_fromSequenceNumber,_fromSequenceNumber+1,_fromSequenceNumber+3,_fromSequenceNumber+4});
             
-            Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
+            Assert.AreEqual(2, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
     }
 }
