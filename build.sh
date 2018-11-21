@@ -227,7 +227,7 @@ function buildUI {
     pushd src/EventStore.UI
 
     if [ ! -f ./package.json ]; then
-        git submodule update --init
+        git submodule update --init ./
     fi
 
     npm install gulp@~3.8.8 -g
