@@ -21,12 +21,14 @@ namespace EventStore.Projections.Core.Services.Processing
         IHandle<ProjectionManagementMessage.Internal.ReadTimeout>
     {
         private readonly HashSet<string> _streams;
-        private CheckpointTag _fromPositions;
+        private CheckpointTag _checkFromPositions;
+        private readonly Dictionary<string, long> _readFromPositions = new Dictionary<string, long>();
         private readonly bool _resolveLinkTos;
         private readonly ITimeProvider _timeProvider;
-
+        
         private readonly HashSet<string> _eventsRequested = new HashSet<string>();
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
+        
 
         // event, link, progress
         // null element in a queue means stream deleted 
@@ -54,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eofs = new ConcurrentDictionary<string, bool>(_streams.ToDictionary(v => v, v => false));
             var positions = CheckpointTag.FromStreamPositions(phase, fromPositions);
             ValidateTag(positions);
-            _fromPositions = positions;
+            _checkFromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
             _timeProvider = timeProvider;
             _pendingRequests = new ConcurrentDictionary<string, Guid>();
@@ -62,6 +64,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _pendingRequests[stream] = Guid.Empty;
                 _preparePositions.Add(stream, null);
+            }
+            foreach(var stream in fromPositions.Keys){
+                _readFromPositions[stream] = fromPositions[stream];
             }
         }
 
@@ -131,6 +136,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckEof();
                     break;
                 case ReadStreamResult.Success:
+                    _readFromPositions[message.EventStreamId] = message.NextEventNumber;
                     if (message.Events.Length == 0)
                     {
                         // the end
@@ -167,7 +173,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
         }
-
+        private long CheckFrom(EventRecord evt, long fromSequenceNumber)
+        {
+            if (fromSequenceNumber != 0) return fromSequenceNumber;
+            return evt.EventNumber;
+        }
         public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message)
         {
             if(_disposed) return;
@@ -284,7 +294,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pendingRequests[stream] = pendingRequestCorrelationId;
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
+                Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream, _readFromPositions[stream],
                 _maxReadCount, _resolveLinkTos, false, null, ReadAs);
             if (delay){ 
                 _publisher.Publish(
@@ -337,23 +347,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _deliveredEvents ++;
             var positionEvent = pair.OriginalEvent;
             string streamId = positionEvent.EventStreamId;
-            long fromPosition = _fromPositions.Streams[streamId];
+            var checkFromSequenceNumber = CheckFrom(positionEvent, _checkFromPositions.Streams[streamId]);
 
-            //if events have been deleted from the beginning of the stream, start from the first event we find
-            if(fromPosition==0 && positionEvent.EventNumber>0){
-                fromPosition = positionEvent.EventNumber;
-            }
-
-            if (positionEvent.EventNumber != fromPosition){
+            if (positionEvent.EventNumber != checkFromSequenceNumber){
                 string reason = string.Format(
                         "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
-                        fromPosition, streamId, positionEvent.EventNumber);
+                        checkFromSequenceNumber, streamId, positionEvent.EventNumber);
 
                 _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
                 throw new InvalidOperationException(reason);
             }
-
-            _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
+            
+            _checkFromPositions = _checkFromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ReaderSubscriptionMessage.CommittedEventDistributed(
