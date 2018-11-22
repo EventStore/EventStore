@@ -107,6 +107,19 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             });
             Assert.AreEqual(1, HandledMessages.OfType<ReaderSubscriptionMessage.Faulted>().Count());            
         }
+        [Test]
+        public void should_not_allow_first_event_to_be_greater_than_sequence_number_when_first_read_eof()
+        {
+            long eventSequenceNumber = _fromSequenceNumber+5;
+            Assert.Throws<InvalidOperationException>(() => {
+                HandleEvents(_streamNames[0],new long[0]);
+                //to trigger event delivery:
+                HandleEvents(_streamNames[1],100,101);
+                HandleEvents(_streamNames[0],eventSequenceNumber,eventSequenceNumber);
+                //to trigger event delivery:
+                HandleEvents(_streamNames[1],101,102);    
+            });
+        }
 
         [Test]
         public void should_not_allow_first_event_to_be_less_than_sequence_number()
