@@ -189,7 +189,7 @@ Function Start-Build{
         }
         Push-Location $uiSrcDirectory
             if(-Not (Test-Path (Join-Path $uiSrcDirectory "package.json"))) {
-                Exec { git submodule update --init }
+                Exec { git submodule update --init ./ }
             }
             Exec { npm install gulp@~3.8.8 -g }
             Exec { npm install }
@@ -209,22 +209,22 @@ Function Start-Build{
     try {
         foreach ($assemblyInfo in $assemblyInfos) {
             $path = Resolve-Path $assemblyInfo.FullName -Relative
-            Write-Verbose "Patching $path with product information."
+            Write-Info "Patching $path with product information."
             Patch-AssemblyInfo $path $Version $Version $branchName $commitHashAndTimestamp $productName $companyName $copyright
         }
 
-        Write-Verbose "Patching $versionInfoFile with product information."
+        Write-Info "Patching $versionInfoFile with product information."
         Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
         Exec { dotnet build -c $configuration $eventStoreSolution }
     } finally {
         foreach ($assemblyInfo in $assemblyInfos) {
             $path = Resolve-Path $assemblyInfo.FullName -Relative
-            Write-Verbose "Reverting $path to original state."
+            Write-Info "Reverting $path to original state."
             & { git checkout --quiet $path }
         }
 
-        Write-Verbose "Reverting $versionInfoFile to original state."
+        Write-Info "Reverting $versionInfoFile to original state."
         & { git checkout --quiet $versionInfoFile }
     }
 }
