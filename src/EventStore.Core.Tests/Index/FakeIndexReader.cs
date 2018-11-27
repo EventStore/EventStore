@@ -6,6 +6,13 @@ namespace EventStore.Core.Tests.Fakes
 {
     public class FakeIndexReader : ITransactionFileReader
     {
+        private readonly Func<long, bool> _existsAt;
+
+        public FakeIndexReader(Func<long,bool> existsAt = null)
+        {
+            _existsAt = existsAt ?? (l => true);
+        }
+
         public void Reposition(long position)
         {
             throw new NotImplementedException();
@@ -29,7 +36,7 @@ namespace EventStore.Core.Tests.Fakes
 
         public bool ExistsAt(long position)
         {
-            return true;
+            return _existsAt(position);
         }
     }
 }

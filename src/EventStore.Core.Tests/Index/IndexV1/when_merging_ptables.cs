@@ -277,9 +277,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
 
         [Test]
-        public void there_are_5_records_in_the_merged_index()
+        public void there_are_8_records_in_the_merged_index()
         {
-            Assert.AreEqual(5, _newtable.Count);
+            // 5 from the 64 bit table (existsAt doesn't get used)
+            // 3 from the 32 bit table (3 even positions)
+            Assert.AreEqual(8, _newtable.Count);
         }
 
         [Test]
@@ -357,9 +359,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
         }
 
         [Test]
-        public void there_are_7_records_in_the_merged_index()
+        public void there_are_10_records_in_the_merged_index()
         {
-            Assert.AreEqual(7, _newtable.Count);
+            // 5 from 64 bit (existsAt not called)
+            // 2 from first table (2 even positions)
+            // 3 from last table (3 even positions)
+            Assert.AreEqual(10, _newtable.Count);
         }
 
         [Test]

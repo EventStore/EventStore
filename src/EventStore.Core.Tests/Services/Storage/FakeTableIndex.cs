@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Services.Storage
@@ -7,6 +8,7 @@ namespace EventStore.Core.Tests.Services.Storage
     public class FakeTableIndex: ITableIndex
     {
         internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
+        public int ScavengeCount { get; private set; }
 
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
         public long CommitCheckpoint { get { throw new NotImplementedException(); } }
@@ -50,6 +52,11 @@ namespace EventStore.Core.Tests.Services.Storage
         public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null)
         {
             yield break;
+        }
+
+        public void Scavenge(IIndexScavengerLog log, CancellationToken ct)
+        {
+            ScavengeCount++;
         }
     }
 }

@@ -28,5 +28,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             Assert.That(Log.Completed);
             Assert.That(Log.Result, Is.EqualTo(ScavengeResult.Failed));
         }
+
+        [Test]
+        public void doesnt_call_scavenge_on_the_table_index()
+        {
+            Assert.That(FakeTableIndex.ScavengeCount, Is.EqualTo(0));
+        }
     }
 }

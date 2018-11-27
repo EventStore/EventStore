@@ -4,6 +4,10 @@ namespace EventStore.Core.DataStructures
 {
     public class NoLRUCache<TKey, TValue>: ILRUCache<TKey, TValue>
     {
+        public void Clear()
+        {
+        }
+
         public bool TryGet(TKey key, out TValue value)
         {
             value = default(TValue);

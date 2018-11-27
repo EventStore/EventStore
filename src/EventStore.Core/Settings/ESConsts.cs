@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Settings
 {
@@ -10,7 +11,7 @@ namespace EventStore.Core.Settings
         public const int PTableMaxReaderCount = 1 /* StorageWriter */
                                               + 1 /* StorageChaser */
                                               + 1 /* Projections */
-                                              + 1 /* Scavenging */
+                                              + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
                                               + 1 /* Subscription LinkTos resolving */
                                               + StorageReaderThreadCount
                                               + 5 /* just in case reserve :) */;

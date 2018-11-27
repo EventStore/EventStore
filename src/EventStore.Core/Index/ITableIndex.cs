@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 
 namespace EventStore.Core.Index
 {
@@ -18,5 +19,7 @@ namespace EventStore.Core.Index
         bool TryGetOldestEntry(string streamId, out IndexEntry entry);
 
         IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null);
+
+        void Scavenge(IIndexScavengerLog log, CancellationToken ct);
     }
 }

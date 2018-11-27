@@ -30,5 +30,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             Assert.That(Log.Scavenged[0].Scavenged, Is.True);
         }
 
+
+        [Test]
+        public void doesnt_call_scavenge_on_the_table_index()
+        {
+            Assert.That(FakeTableIndex.ScavengeCount, Is.EqualTo(0));
+        }
     }
 }

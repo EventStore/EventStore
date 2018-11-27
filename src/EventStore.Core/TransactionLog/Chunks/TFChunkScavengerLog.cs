@@ -36,6 +36,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public string ScavengeId => _scavengeId;
 
+        public long SpaceSaved => Interlocked.Read(ref _spaceSaved);
+
         public void ScavengeStarted()
         {
             var metadataEventId = Guid.NewGuid();
@@ -96,6 +98,78 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {"timeTaken", elapsed},
                 {"wasScavenged", false},
                 {"spaceSaved", 0},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", errorMessage}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+        public void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved)
+        {
+            Interlocked.Add(ref _spaceSaved, spaceSaved);
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeMergeCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"chunkStartNumber", chunkStartNumber},
+                {"chunkEndNumber", chunkEndNumber},
+                {"timeTaken", elapsed},
+                {"spaceSaved", spaceSaved},
+                {"wasMerged", true},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", ""}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+        public void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage)
+        {
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeMergeCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"chunkStartNumber", chunkStartNumber},
+                {"chunkEndNumber", chunkEndNumber},
+                {"timeTaken", elapsed},
+                {"spaceSaved", 0},
+                {"wasMerged", false},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", errorMessage}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+
+        public void IndexTableScavenged(int level, int index, TimeSpan elapsed, long entriesDeleted, long entriesKept,
+            long spaceSaved)
+        {
+            Interlocked.Add(ref _spaceSaved, spaceSaved);
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"level", level},
+                {"index", index},
+                {"timeTaken", elapsed},
+                {"entriesDeleted", entriesDeleted},
+                {"entriesKept", entriesKept},
+                {"spaceSaved", spaceSaved},
+                {"wasScavenged", true},
+                {"nodeEndpoint", _nodeId},
+                {"errorMessage", ""}
+            }.ToJsonBytes(), null);
+
+            WriteScavengeChunkCompletedEvent(_streamName, evnt, _retryAttempts);
+        }
+
+        public void IndexTableNotScavenged(int level, int index, TimeSpan elapsed, long entriesKept, string errorMessage)
+        {
+            var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeIndexCompleted, true, new Dictionary<string, object>{
+                {"scavengeId", _scavengeId},
+                {"level", level},
+                {"index", index},
+                {"timeTaken", elapsed},
+                {"entriesDeleted", 0},
+                {"entriesKept", entriesKept},
+                {"spaceSaved", 0},
+                {"wasScavenged", false},
                 {"nodeEndpoint", _nodeId},
                 {"errorMessage", errorMessage}
             }.ToJsonBytes(), null);
@@ -170,5 +244,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 WriteScavengeIndexEvent(linkToIndexEvent, _retryAttempts);
             }
         }
+
     }
 }
