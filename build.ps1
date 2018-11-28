@@ -167,6 +167,7 @@ Function Start-Build{
 
     $baseDirectory = $PSScriptRoot
     $srcDirectory = Join-Path $baseDirectory "src"
+    $binDirectory = Join-Path $baseDirectory "bin"
     $libsDirectory = Join-Path $srcDirectory "libs"
     $eventStoreSolution = Join-Path $srcDirectory "EventStore.sln"
 
@@ -199,6 +200,8 @@ Function Start-Build{
     }
 
     #Build Event Store (Patch AssemblyInfo, Build, Revert AssemblyInfo)
+    Remove-Item -Force -Recurse $binDirectory -ErrorAction SilentlyContinue > $null
+
     $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
     $commitHash = Get-GitCommitHash
     $timestamp = Get-GitTimestamp
