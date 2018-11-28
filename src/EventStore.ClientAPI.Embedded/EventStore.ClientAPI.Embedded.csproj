@@ -27,26 +27,29 @@
     <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+      <Content Include="..\EventStore.Projections.Core\Prelude\**\*">
+        <Pack>true</Pack>
+        <PackagePath>Prelude</PackagePath>
+        <Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\libs\x64\win\js1.dll">
+          <Pack>true</Pack>
+          <PackagePath>runtimes/win-x64/native/js1.dll</PackagePath>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\libs\x64\linux\libjs1.so">
+          <Pack>true</Pack>
+          <PackagePath>runtimes/linux-x64/native/libjs1.so</PackagePath>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\libs\x64\mac\libjs1.dylib">
+          <Pack>true</Pack>
+          <PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+  </ItemGroup>
+  <ItemGroup>
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta-63127-02" PrivateAssets="All"/>
   </ItemGroup>
-  <!-- TODO(jen20): Investigate whcih of these are correct -->
-  <Target Name="CopyDependencies"
-          BeforeTargets="BeforeBuild">
-    <Copy ContinueOnError="ErrorAndStop"
-          SourceFiles="..\libs\x64\linux\libjs1.so"
-          DestinationFolder="$(OutDir)"
-          Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="ErrorAndStop"
-          SourceFiles="..\libs\x64\mac\libjs1.dylib"
-          DestinationFolder="$(OutDir)"
-          Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="ErrorAndStop"
-          SourceFiles="..\libs\x64\win\js1.dll"
-          DestinationFolder="$(OutDir)"
-          Condition=" '$(OS)' == 'Windows_NT' " />
-    <Copy ContinueOnError="ErrorAndStop"
-          SourceFiles="..\libs\x64\win\js1.pdb"
-          DestinationFolder="$(OutDir)" />
-              
-  </Target>
 </Project>
