@@ -123,14 +123,15 @@ namespace EventStore.Core.Tests.Services.Storage
                                                string data,
                                                DateTime? timestamp = null,
                                                Guid eventId = default(Guid),
-                                               bool retryOnFail = false)
+                                               bool retryOnFail = false, 
+                                               string eventType = "some-type")
         {
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 Guid.NewGuid(),
                                                 eventStreamId,
                                                 eventNumber - 1,
-                                                "some-type",
+                                                eventType,
                                                 Helper.UTF8NoBom.GetBytes(data),
                                                 null,
                                                 timestamp);
