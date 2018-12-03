@@ -27,7 +27,7 @@ build_ui: Whether or not to build the EventStore UI. Building the UI requires an
 
 mono_lib_dir_override: Overrides the default mono lib directory. The default directories are as follows:
   Linux: $MONO_LIB_DIR_LINUX
-  Mac: $MONO_LIB_DIR_MAC
+  MacOS: $MONO_LIB_DIR_MAC
 EOF
     exit 1
 }
@@ -37,12 +37,12 @@ function detectOS(){
     unameOut="$(uname -s)"
     case "${unameOut}" in
         Linux*)     os=Linux;;
-        Darwin*)    os=Mac;;
+        Darwin*)    os=MacOS;;
         *)          os="${unameOut}"
     esac
 
-    if [[ "$os" != "Linux" && $os != "Mac" ]] ; then
-        echo "Unsupported operating system: $os. Only Linux and Mac are supported."
+    if [[ "$os" != "Linux" && $os != "MacOS" ]] ; then
+        echo "Unsupported operating system: $os. Only Linux and MacOS are supported."
         exit 1
     fi
     OS=$os
@@ -97,7 +97,7 @@ function checkParams() {
     mono_lib_dir=""
     if [ "$OS" == "Linux" ]; then
         mono_lib_dir="$MONO_LIB_DIR_LINUX"
-    elif [ "$OS" == "Mac" ]; then
+    elif [ "$OS" == "MacOS" ]; then
         mono_lib_dir="$MONO_LIB_DIR_MAC"
     fi
 
