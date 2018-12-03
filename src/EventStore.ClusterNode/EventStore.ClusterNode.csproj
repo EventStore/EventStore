@@ -5,7 +5,6 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
     <ApplicationIcon>app2.ico</ApplicationIcon>
-    <DebugType>portable</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.ComponentModel.Composition" />
