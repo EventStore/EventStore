@@ -363,5 +363,10 @@ namespace EventStore.Core.Util
 
 	    public const string AuthenticationConfigFileDescr = "Path to the configuration file for authentication configuration (if applicable).";
 		public static readonly string AuthenticationConfigFileDefault = string.Empty;
+        /*
+         * Scavenge options
+         */
+        public const string AutomergeIndexesDescr = "During an Index Merge operation, writes can be slowed down. Set this to false if you want to trigger manually the Index Merge operation";
+        public static readonly bool AutomergeIndexesDefault = true;
     }
 }

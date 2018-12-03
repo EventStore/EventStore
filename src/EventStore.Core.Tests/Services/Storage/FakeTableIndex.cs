@@ -58,5 +58,10 @@ namespace EventStore.Core.Tests.Services.Storage
         {
             ScavengeCount++;
         }
+
+        public void MergeIndexes()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

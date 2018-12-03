@@ -26,6 +26,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterAction(new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostShutdown);
             service.RegisterAction(new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
             service.RegisterAction(new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs, SupportedCodecs), OnStopScavenge);
+            service.RegisterAction(new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostMergeIndexes);
         }
 
         private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match)
@@ -40,6 +41,31 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
             }
+        }
+
+        private void OnPostMergeIndexes(HttpEntityManager entity, UriTemplateMatch match)
+        {
+            Log.Info("Request merge indexes because /admin/mergeindexes request has been received.");
+
+            var correlationId = Guid.NewGuid();
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) =>
+                {
+                    return e.ResponseCodec.To(new MergeIndexesResultDto(correlationId.ToString()));
+                },
+                (e, message) =>
+                {
+                    var completed = message as ClientMessage.MergeIndexesResponse;
+                    switch (completed?.Result)
+                    {
+                        case ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started:
+                            return Configure.Ok(e.ResponseCodec.ContentType);
+                        default:
+                            return Configure.InternalServerError();
+                    }
+                }
+            );
+
+            Publish(new ClientMessage.MergeIndexes(envelope, correlationId, entity.User));
         }
 
         private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match)

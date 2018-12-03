@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -54,6 +54,7 @@ namespace EventStore.Core.Index
 
         private bool _initialized;
         public const string ForceIndexVerifyFilename = ".forceverify";
+        private readonly bool _autoMergeIndexes;
 
         public TableIndex(string directory,
                           IHasher lowHasher,
@@ -67,7 +68,8 @@ namespace EventStore.Core.Index
                           bool inMem = false,
                           bool skipIndexVerify = false,
                           int indexCacheDepth = 16,
-                          int initializationThreads = 1)
+                          int initializationThreads = 1,
+                          bool autoMergeIndexes = true)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
@@ -97,6 +99,8 @@ namespace EventStore.Core.Index
 
             _lowHasher = lowHasher;
             _highHasher = highHasher;
+
+            _autoMergeIndexes = autoMergeIndexes;
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -211,7 +215,7 @@ namespace EventStore.Core.Index
         {
             //should only be called on a single thread.
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
-
+            
             var collection = entries.Select(x => CreateIndexEntry(x)).ToList();
             table.AddEntries(collection);
 
@@ -222,26 +226,36 @@ namespace EventStore.Core.Index
                 {
                     prepareCheckpoint = Math.Max(prepareCheckpoint, collection[i].Position);
                 }
-
-                lock (_awaitingTablesLock)
-                {
-                    var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
-                    newTables.AddRange(_awaitingMemTables.Select(
-                        (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
-
-                    Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
-
-                    _awaitingMemTables = newTables;
-                    if (_inMem) return;
-                    TryProcessAwaitingTables();
-
-                    if (_additionalReclaim)
-                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
-                }
+                
+                TryProcessAwaitingTables(commitPos, prepareCheckpoint, _autoMergeIndexes);
             }
         }
 
-        private void TryProcessAwaitingTables()
+        public void MergeIndexes()
+        {
+            TryProcessAwaitingTables(_indexMap.CommitCheckpoint, _indexMap.PrepareCheckpoint, true);
+        }
+
+        private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint, bool mergeIndexes)
+        {
+            lock (_awaitingTablesLock)
+            {
+                var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1)};
+                newTables.AddRange(_awaitingMemTables.Select(
+                    (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
+
+                    Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
+
+                _awaitingMemTables = newTables;
+                if (_inMem) return;
+                TryProcessAwaitingTables(mergeIndexes);
+
+                if (_additionalReclaim)
+                    ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
+            }
+        }
+
+        private void TryProcessAwaitingTables(bool mergeIndexes)
         {
             lock(_awaitingTablesLock)
             {
@@ -249,12 +263,12 @@ namespace EventStore.Core.Index
                 {
                     _backgroundRunningEvent.Reset();
                     _backgroundRunning = true;
-                    ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
+                    ThreadPool.QueueUserWorkItem(x => ReadOffQueue(mergeIndexes));
                 }
             }
         }
 
-        private void ReadOffQueue()
+        private void ReadOffQueue(bool mergeIndexes)
         {
             try
             {
@@ -267,7 +281,6 @@ namespace EventStore.Core.Index
                         Log.Trace("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
                         if (_awaitingMemTables.Count == 1)
                         {
-
                             return;
                         }
 
@@ -295,7 +308,7 @@ namespace EventStore.Core.Index
                             (streamId, currentHash) => UpgradeHash(streamId, currentHash),
                             entry => reader.ExistsAt(entry.Position),
                             entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
-                            _indexCacheDepth, _skipIndexVerify);
+                            _indexCacheDepth, _skipIndexVerify, mergeIndexes);
                     }
 
                     _indexMap = mergeResult.MergedMap;
@@ -369,7 +382,7 @@ namespace EventStore.Core.Index
                     _backgroundRunning = false;
                     _backgroundRunningEvent.Set();
 
-                    TryProcessAwaitingTables();
+                    TryProcessAwaitingTables(_autoMergeIndexes);
                 }
 
                 Log.Info("Completed scavenge of TableIndex.  Elapsed: {elapsed}", sw.Elapsed);

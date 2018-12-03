@@ -193,7 +193,9 @@ namespace EventStore.Core
                                             inMem: db.Config.InMemDb,
                                             skipIndexVerify: vNodeSettings.SkipIndexVerify,
                                             indexCacheDepth: vNodeSettings.IndexCacheDepth,
-                                            initializationThreads: vNodeSettings.InitializationThreads);
+                                            initializationThreads: vNodeSettings.InitializationThreads,
+                                            additionalReclaim: false, 
+                                            autoMergeIndexes: vNodeSettings.AutoMergeIndexes);
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
@@ -508,7 +510,8 @@ namespace EventStore.Core
                                                         !vNodeSettings.DisableScavengeMerging,
                                                         unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
-			// ReSharper disable RedundantTypeArgumentsOfMethod
+            // ReSharper disable RedundantTypeArgumentsOfMethod
+            _mainBus.Subscribe<ClientMessage.MergeIndexes>(storageScavenger);
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             _mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
