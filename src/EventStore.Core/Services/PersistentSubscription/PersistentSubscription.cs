@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     Log.Debug("Subscription {0}: no checkpoint found", _settings.SubscriptionId);
 
-                    Log.Debug("strtfrom = " + _settings.StartFrom);
+                    Log.Debug("Start from = " + _settings.StartFrom);
                     _nextEventToPullFrom = _settings.StartFrom >= 0 ? _settings.StartFrom : 0;
                     _streamBuffer = new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1,
                         _settings.StartFrom >= 0);
