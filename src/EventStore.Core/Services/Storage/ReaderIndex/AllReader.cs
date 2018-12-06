@@ -52,6 +52,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
             long count = 0;
             bool firstCommit = true;
+            bool reachedEndOfStream = false;
+            EventRecord lastFilteredOutEvent = null;
+            long lastFilteredOutCommitPosition = -1;
             using (var reader = _backend.BorrowReader())
             {
                 long nextCommitPos = pos.CommitPosition;
@@ -59,6 +62,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     if (nextCommitPos > _indexCommitter.LastCommitPosition || !IsReplicated(nextCommitPos))
                     {
+                        reachedEndOfStream = true;
                         break;
                     }
                     reader.Reposition(nextCommitPos);
@@ -87,11 +91,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                                     && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos)
                                 {
+                                    var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
+                                    count++;
                                     if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                     {
-                                        var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
                                         records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
-                                        count++;
+                                    }
+                                    else
+                                    {
+                                        lastFilteredOutEvent = eventRecord;
+                                        lastFilteredOutCommitPosition = prepare.LogPosition;
                                     }
                                     nextPos = new TFPos(result.RecordPostPosition, 0);
                                 }
@@ -129,11 +138,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                                         && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                                     {
+                                        var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+                                        count++;
                                         if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                         {
-                                            var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
                                             records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-                                            count++;
+                                        }
+                                        else
+                                        {
+                                            lastFilteredOutEvent = eventRecord;
+                                            lastFilteredOutCommitPosition = commit.LogPosition;
                                         }
 
                                         // for forward pass position is inclusive, 
@@ -149,6 +163,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         default:
                             throw new Exception(string.Format("Unexpected log record type: {0}.", result.LogRecord.RecordType));
                     }
+                }
+                if(!reachedEndOfStream && records.Count == 0)
+                {
+                    records.Add(new CommitEventRecord(lastFilteredOutEvent, lastFilteredOutCommitPosition));
                 }
                 return new IndexReadAllResult(records, pos, nextPos, prevPos);
             }
