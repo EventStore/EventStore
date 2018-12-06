@@ -102,7 +102,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount)
         {
-            return _allReader.ReadAllEventsForward(pos, maxCount, null);
+            return _allReader.ReadAllEventsForward(pos, maxCount, new StringFilter(null));
         }
 
         IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
