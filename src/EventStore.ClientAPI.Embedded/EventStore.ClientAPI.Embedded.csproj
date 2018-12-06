@@ -58,6 +58,10 @@
           <PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <Content Include="EventStore.Client.Embedded.targets">
+          <Pack>true</Pack>
+          <PackagePath>/build</PackagePath>
+      </Content>
   </ItemGroup>
   <!-- workaround for https://github.com/nuget/home/issues/3891 -->
   <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
