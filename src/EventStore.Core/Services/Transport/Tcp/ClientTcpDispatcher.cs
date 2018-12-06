@@ -400,10 +400,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEvents>();
             if (dto == null) return null;
 
-            StringFilter allowedTypes = null;
-            if(dto.AllowedEventTypes != null) {
-                allowedTypes = new StringFilter(dto.AllowedEventTypes);
-            }
+            StringFilter allowedTypes = new StringFilter(dto.AllowedEventTypes);
             return new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
                                                           dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
                                                           dto.ResolveLinkTos, dto.RequireMaster, null, user, null, allowedTypes);
