@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
@@ -399,9 +400,9 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEvents>();
             if (dto == null) return null;
 
-            ISet<string> allowedTypes = null;
+            StringFilter allowedTypes = null;
             if(dto.AllowedEventTypes != null) {
-                allowedTypes = new HashSet<string>(dto.AllowedEventTypes);
+                allowedTypes = new StringFilter(dto.AllowedEventTypes);
             }
             return new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
                                                           dto.CommitPosition, dto.PreparePosition, dto.MaxCount,

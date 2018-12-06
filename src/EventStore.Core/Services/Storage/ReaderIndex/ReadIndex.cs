@@ -10,6 +10,7 @@ using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -104,7 +105,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return _allReader.ReadAllEventsForward(pos, maxCount, null);
         }
 
-        IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes)
+        IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
         {
             return _allReader.ReadAllEventsForward(pos, maxCount, allowedEventTypes);
         }

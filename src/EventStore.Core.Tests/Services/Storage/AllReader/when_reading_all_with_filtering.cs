@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Collections.Generic;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader
 {
@@ -18,10 +19,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
         }
 
         [Test]
-        public void should_be_able_to_read_all_backwards_and_get_events_before_replication_checkpoint()
+        public void should_read_only_allowed_events()
         {
-            var expectedEventTypes = new HashSet<string>();
-            expectedEventTypes.Add("event-type");
+            var expectedEventTypes = new StringFilter(new string[] { "event-type" });
             var pos = new TFPos(this.firstEvent.LogPosition, this.firstEvent.LogPosition);
             var result = ReadIndex.ReadAllEventsForward(pos, 10, expectedEventTypes);
             Assert.AreEqual(2, result.Records.Count);

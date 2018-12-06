@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -16,7 +17,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         /// Returns event records in the sequence they were committed into TF.
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
         /// </summary>
-        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<String> allowedEventTypes);
+        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes);
 
         /// <summary>
         /// Returns event records in the reverse sequence they were committed into TF.
@@ -41,10 +42,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _replicationCheckpoint = replicationCheckpoint;
         }
 
-        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes)
+        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
         {
-            // MARK: This list needs to be the one to be filtered. 
-            Regex regex = this.BuildRegex(allowedEventTypes);
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
@@ -88,7 +87,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                                     && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos)
                                 {
-                                    if (this.isInAllowedTypes(regex, prepare.EventType))
+                                    if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                     {
                                         var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
                                         records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
@@ -130,7 +129,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
                                         && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                                     {
-                                        if (this.isInAllowedTypes(regex, prepare.EventType))
+                                        if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                         {
                                             var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
                                             records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
@@ -152,45 +151,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
                 }
                 return new IndexReadAllResult(records, pos, nextPos, prevPos);
-            }
-        }
-
-        private Regex BuildRegex(ISet<string> allowedEventTypes) {
-            if (allowedEventTypes == null || allowedEventTypes.IsEmpty())
-            {
-                return null;
-            }
-            else if (allowedEventTypes.Count == 1)
-            {
-                IEnumerator<string> num = allowedEventTypes.GetEnumerator();
-                num.MoveNext();
-                return new Regex("^" + Regex.Escape(num.Current) + "$");
-            }
-            else
-            {
-                bool first = true;
-                StringBuilder sb = new StringBuilder();
-                sb.Append("^");
-                foreach(string s in allowedEventTypes)
-                {
-                    if (!first)
-                    {
-                        sb.Append("|");
-                    }
-                    first = false;
-                    sb.Append(Regex.Escape(s));
-                }
-                sb.Append("$");
-                return new Regex(sb.ToString(), RegexOptions.Compiled);
-            }
-        }
-
-        private bool isInAllowedTypes(Regex regex, string eventType) 
-        {
-            if(regex == null) {
-                return true;
-            } else {
-                return regex.IsMatch(eventType);
             }
         }
 

@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;
+using EventStore.Core.Util;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -717,7 +718,7 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinkTos;
             public readonly bool RequireMaster;
-            public readonly ISet<string> AllowedEventTypes;
+            public readonly StringFilter AllowedEventTypes;
 
             public readonly long? ValidationTfLastCommitPosition;
             public readonly TimeSpan? LongPollTimeout;
@@ -725,7 +726,7 @@ namespace EventStore.Core.Messages
             public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
                                         long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
                                         bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user,
-                                        TimeSpan? longPollTimeout = null, ISet<string> allowedEventTypes = null)
+                                        TimeSpan? longPollTimeout = null, StringFilter allowedEventTypes = null)
                 : base(internalCorrId, correlationId, envelope, user)
             {
                 CommitPosition = commitPosition;

@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
@@ -63,7 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog
             throw new NotImplementedException();
         }
 
-        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, ISet<string> allowedEventTypes)
+        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
         {
             throw new NotImplementedException();
         }

@@ -297,9 +297,7 @@ namespace EventStore.Core.Services.Storage
                     var access = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Read, msg.User);
                     if (!access.Granted)
                         return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
-
-
-                    // MARK: here we would need to pass the list of event types to the ReadAllEventsForward method
+                        
                     var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount, msg.AllowedEventTypes);
                     var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                     if (resolved == null)
