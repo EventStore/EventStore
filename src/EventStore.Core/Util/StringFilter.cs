@@ -62,7 +62,10 @@ namespace EventStore.Core.Util
         {
             private readonly String expectedString;
 
-            public SingleStringStrategy(String expectedString) => this.expectedString = expectedString;
+            public SingleStringStrategy(String expectedString)
+            {
+                this.expectedString = expectedString;
+            }
 
             public bool IsStringAllowed(string s)
             {
