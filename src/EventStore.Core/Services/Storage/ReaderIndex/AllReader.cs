@@ -44,13 +44,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
         {
+            int maxEventsToConsider = 20 * maxCount;
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
             // PreparePosition to long.MaxValue, so if you decide to read backwards from PrevPos, 
             // you will receive all prepares.
             var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
-            long count = 0;
+            long consideredEventsCount = 0;
             bool firstCommit = true;
             bool reachedEndOfStream = false;
             EventRecord lastFilteredOutEvent = null;
@@ -58,7 +59,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             using (var reader = _backend.BorrowReader())
             {
                 long nextCommitPos = pos.CommitPosition;
-                while (count < maxCount)
+                while (records.Count < maxCount && consideredEventsCount < maxEventsToConsider)
                 {
                     if (nextCommitPos > _indexCommitter.LastCommitPosition || !IsReplicated(nextCommitPos))
                     {
@@ -92,7 +93,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos)
                                 {
                                     var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */, prepare);
-                                    count++;
+                                    consideredEventsCount++;
                                     if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                     {
                                         records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
@@ -118,7 +119,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
                                 }
                                 reader.Reposition(commit.TransactionPosition);
-                                while (count < maxCount)
+                                while (consideredEventsCount < maxCount)
                                 {
                                     result = reader.TryReadNext();
                                     if (!result.Success) // no more records in TF
@@ -139,7 +140,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                         && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos)
                                     {
                                         var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-                                        count++;
+                                        consideredEventsCount++;
                                         if (allowedEventTypes.IsStringAllowed(prepare.EventType))
                                         {
                                             records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
