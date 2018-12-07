@@ -5,9 +5,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <!--Unfortunately, Mono.Posix.NETStandard forwards to Mono.Posix when compiling for net471, which doesn't necessarily exist on windows-->
+      <Reference Include="Mono.Posix" Condition="$(OS) != 'Windows_NT'" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Mono.Posix" Version="5.4.0.201" Condition="'$(OS)' == 'Windows_NT'" />
-    <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" Condition="$(OS) != 'Windows_NT'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />

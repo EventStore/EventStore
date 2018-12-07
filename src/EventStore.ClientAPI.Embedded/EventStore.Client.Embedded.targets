@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <IsMac>false</IsMac>
+        <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="$(MSBuildThisFileDirectory)..\Prelude\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+        <Content Include="$(MSBuildThisFileDirectory)..\runtimes\win-x64\native\js1.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>js1.dll</Link>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(OS)' == 'Unix' And '$(IsMac)' == 'false' ">
+        <Content Include="$(MSBuildThisFileDirectory)..\runtimes\linux-x64\native\libjs1.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>libjs1.so</Link>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(OS)' == 'Unix' And '$(IsMac)' == 'true'">
+        <Content Include="$(MSBuildThisFileDirectory)..\runtimes\osx-x64\native\libjs1.dylib">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>libjs1.dylib</Link>
+        </Content>
+    </ItemGroup>
+</Project>

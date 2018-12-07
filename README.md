@@ -79,6 +79,19 @@ dotnet test src/EventStore.Core.Tests/EventStore.Core.Tests.csproj -- RunConfigu
 dotnet test src/EventStore.Projections.Core.Tests/EventStore.Projections.Core.Tests.csproj -- RunConfiguration.TargetPlatform=x64
 ```
 
+## Building the EventStore Client / Embedded Client
+You can build the client / embedded client with the steps below. This will generate a nuget package file (.nupkg) that you can include in your project.
+#### Client
+```
+dotnet pack -c Release src/EventStore.ClientAPI/EventStore.ClientAPI.csproj /p:Version=5.0.0
+```
+
+#### Embedded Client
+```
+dotnet pack -c Release src/EventStore.ClientAPI.Embedded/EventStore.ClientAPI.Embedded.csproj /p:Version=5.0.0
+```
+
+
 ## Building the EventStore web UI
 The web UI is prebuilt and the files are located under [src/EventStore.ClusterNode.Web/clusternode-web](src/EventStore.ClusterNode.Web/clusternode-web).
 If you want to build the web UI, please consult this [repository](https://github.com/EventStore/EventStore.UI) which is also a git submodule of the current repository located under `src/EventStore.UI`.
