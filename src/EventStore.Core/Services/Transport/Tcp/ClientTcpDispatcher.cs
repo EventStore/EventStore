@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
 using EventStore.Common.Utils;
@@ -6,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
@@ -397,9 +399,11 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEvents>();
             if (dto == null) return null;
+
+            StringFilter allowedTypes = new StringFilter(dto.AllowedEventTypes);
             return new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
                                                           dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
-                                                          dto.ResolveLinkTos, dto.RequireMaster, null, user);
+                                                          dto.ResolveLinkTos, dto.RequireMaster, null, user, null, allowedTypes);
         }
 
         private static TcpPackage WrapReadAllEventsForwardCompleted(ClientMessage.ReadAllEventsForwardCompleted msg)

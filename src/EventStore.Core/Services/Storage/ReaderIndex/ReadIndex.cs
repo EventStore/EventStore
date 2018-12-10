@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -9,6 +10,7 @@ using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
@@ -100,7 +102,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount)
         {
-            return _allReader.ReadAllEventsForward(pos, maxCount);
+            return _allReader.ReadAllEventsForward(pos, maxCount, new StringFilter(null));
+        }
+
+        IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
+        {
+            return _allReader.ReadAllEventsForward(pos, maxCount, allowedEventTypes);
         }
 
         IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount)

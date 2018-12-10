@@ -27,7 +27,7 @@ namespace EventStore.ClientAPI.ClientOperations
         protected override object CreateRequestDto()
         {
             return new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount,
-                                                   _resolveLinkTos, _requireMaster);
+                                                   _resolveLinkTos, _requireMaster, null);
         }
 
         protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)

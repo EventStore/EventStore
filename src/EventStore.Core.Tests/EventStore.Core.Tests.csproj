@@ -664,6 +664,8 @@
     <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_backward_with_timeout_on_read.cs" />
     <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\async_read_stream_events_backward_with_cancelled_read.cs" />
     <Compile Include="Helpers\IODispatcherTests\IODispatcherTestHelpers.cs" />
+    <Compile Include="Services\Storage\AllReader\when_reading_all_with_filtering.cs" />
+    <Compile Include="Util\StringFilterTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">
@@ -696,6 +698,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="TransactionLog\Manager\" />
+    <Folder Include="Util\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestConfigs\test_config_with_incorrectly_cased_option.yaml">
