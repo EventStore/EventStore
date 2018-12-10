@@ -736,7 +736,7 @@ namespace EventStore.Core.Messages
                 RequireMaster = requireMaster;
                 ValidationTfLastCommitPosition = validationTfLastCommitPosition;
                 LongPollTimeout = longPollTimeout;
-                this.AllowedEventTypes = allowedEventTypes;
+                AllowedEventTypes = allowedEventTypes;
             }
         }
 
