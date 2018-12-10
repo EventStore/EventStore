@@ -1,5 +1,5 @@
-﻿using System;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace EventStore.Core.Util
@@ -11,30 +11,30 @@ namespace EventStore.Core.Util
     /// </summary>
     public class StringFilter
     {
-        private interface CompareStrategy
+        private interface IFilterStrategy
         {
-            bool IsStringAllowed(String s);
+            bool IsStringAllowed(string s);
         }
 
-        private CompareStrategy strategy;
+        private readonly IFilterStrategy _strategy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:EventStore.Core.Util.StringFilter"/> class.
         /// </summary>
         /// <param name="allowedStrings">Allowed strings. If null or empty, all strings are considered valid by <see cref="IsStringAllowed(string)"/></param>
-        public StringFilter(string[] allowedStrings)
+        public StringFilter(IReadOnlyList<string> allowedStrings)
         {
-            if(allowedStrings == null || allowedStrings.Length == 0)
+            if (allowedStrings == null || allowedStrings.Count == 0)
             {
-                this.strategy = new AlwaysAllowStrategy();
-            } 
-            else if(allowedStrings.Length == 1)
+                _strategy = new AlwaysAllowStrategy();
+            }
+            else if (allowedStrings.Count == 1)
             {
-                this.strategy = new SingleStringStrategy(allowedStrings[0]);
+                _strategy = new SingleStringStrategy(allowedStrings[0]);
             }
             else
             {
-                this.strategy = new RegexStrategy(allowedStrings);
+                _strategy = new RegexStrategy(allowedStrings);
             }
         }
 
@@ -45,12 +45,12 @@ namespace EventStore.Core.Util
         /// </summary>
         /// <returns><c>true</c>, if string is allowed, <c>false</c> otherwise.</returns>
         /// <param name="s">String to check</param>
-        public bool IsStringAllowed(String s)
+        public bool IsStringAllowed(string s)
         {
-            return this.strategy.IsStringAllowed(s);
+            return _strategy.IsStringAllowed(s);
         }
 
-        private class AlwaysAllowStrategy : CompareStrategy
+        private class AlwaysAllowStrategy : IFilterStrategy
         {
             public bool IsStringAllowed(string s)
             {
@@ -58,48 +58,35 @@ namespace EventStore.Core.Util
             }
         }
 
-        private class SingleStringStrategy : CompareStrategy
+        private class SingleStringStrategy : IFilterStrategy
         {
-            private readonly String expectedString;
+            private readonly string _expectedString;
 
-            public SingleStringStrategy(String expectedString)
+            public SingleStringStrategy(string expectedString)
             {
-                this.expectedString = expectedString;
+                _expectedString = expectedString;
             }
 
             public bool IsStringAllowed(string s)
             {
-                return this.expectedString.Equals(s);
+                return _expectedString.Equals(s);
             }
         }
 
-        private class RegexStrategy : CompareStrategy
+        private class RegexStrategy : IFilterStrategy
         {
-            private readonly Regex allowedStringsRegex;
+            private readonly Regex _allowedStringsRegex;
 
-            public RegexStrategy(string[] allowedStrings)
+            public RegexStrategy(IEnumerable<string> allowedStrings)
             {
-                bool first = true;
-                StringBuilder sb = new StringBuilder();
-                sb.Append("^");
-                foreach (string s in allowedStrings)
-                {
-                    if (!first)
-                    {
-                        sb.Append("|");
-                    }
-                    first = false;
-                    sb.Append(Regex.Escape(s));
-                }
-                sb.Append("$");
-                this.allowedStringsRegex = new Regex(sb.ToString(), RegexOptions.Compiled);
+                var filters = allowedStrings.Select(Regex.Escape);
+                _allowedStringsRegex = new Regex("^" + string.Join("|", filters) + "$", RegexOptions.Compiled);
             }
 
             public bool IsStringAllowed(string s)
             {
-                return this.allowedStringsRegex.IsMatch(s);
+                return _allowedStringsRegex.IsMatch(s);
             }
         }
     }
-
 }

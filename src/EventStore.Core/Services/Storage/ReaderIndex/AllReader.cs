@@ -28,6 +28,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
     public class AllReader : IAllReader
     {
+        private static readonly int READ_WINDOW_MULTIPLIER = 20;
         private readonly IIndexBackend _backend;
         private readonly IIndexCommitter _indexCommitter;
         private readonly ICheckpoint _replicationCheckpoint;
@@ -44,7 +45,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes)
         {
-            int maxEventsToConsider = 20 * maxCount;
+            // We attempt to fulfil the client request of maxCount events, even if we are filtering. To do that, 
+            // we increase the window of events we are looking at by an experimentally found number. 
+            int maxEventsToConsider = READ_WINDOW_MULTIPLIER * maxCount;
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
@@ -165,8 +168,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             throw new Exception(string.Format("Unexpected log record type: {0}.", result.LogRecord.RecordType));
                     }
                 }
-                if(!reachedEndOfStream && records.Count == 0)
+                if(records.Count == 0 && !reachedEndOfStream)
                 {
+                    // Everything was filtered out in read window. We can't return an empty list to the client, 
+                    // because the client will think we are at the end of stream. 
                     records.Add(new CommitEventRecord(lastFilteredOutEvent, lastFilteredOutCommitPosition));
                 }
                 return new IndexReadAllResult(records, pos, nextPos, prevPos);
