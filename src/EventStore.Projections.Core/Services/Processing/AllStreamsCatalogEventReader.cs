@@ -375,10 +375,13 @@ namespace EventStore.Projections.Core.Services.Processing
             if (link != null) throw new Exception();
             var positionEvent = @event;
             if (positionEvent.EventNumber != sequenceNumber)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Event number {0} was expected in the stream {1}, but event number {2} was received",
-                        sequenceNumber, SystemStreams.StreamsStream, positionEvent.EventNumber));
+            {
+                // This can happen when the original stream has $maxAge/$maxCount set
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId, string.Format(
+                    "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
+                    sequenceNumber, SystemStreams.StreamsStream, positionEvent.EventNumber), GetType()));
+                return;
+            }
             sequenceNumber = positionEvent.EventNumber + 1;
 
             var item = new DeliverEventOutItem(_ioDispatcher, this, @event, @progress);

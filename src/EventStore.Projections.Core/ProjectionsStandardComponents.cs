@@ -12,19 +12,22 @@ namespace EventStore.Projections.Core
         private readonly InMemoryBus _masterOutputBus;
         private readonly IQueuedHandler _masterInputQueue;
         private readonly InMemoryBus _masterMainBus;
+        private readonly bool _failOutoforderProjections;
 
         public ProjectionsStandardComponents(
             int projectionWorkerThreadCount,
             ProjectionType runProjections,
             InMemoryBus masterOutputBus,
             IQueuedHandler masterInputQueue,
-            InMemoryBus masterMainBus)
+            InMemoryBus masterMainBus,
+            bool failOutoforderProjections)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
             _runProjections = runProjections;
             _masterOutputBus = masterOutputBus;
             _masterInputQueue = masterInputQueue;
             _masterMainBus = masterMainBus;
+            _failOutoforderProjections = failOutoforderProjections;
         }
 
         public int ProjectionWorkerThreadCount
@@ -50,6 +53,11 @@ namespace EventStore.Projections.Core
         public InMemoryBus MasterMainBus
         {
             get { return _masterMainBus; }
+        }
+
+        public bool FailOutoforderProjections
+        {
+            get { return _failOutoforderProjections; }
         }
     }
 }

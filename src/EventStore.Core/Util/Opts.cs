@@ -130,6 +130,9 @@ namespace EventStore.Core.Util
         public const string ProjectionThreadsDescr = "The number of threads to use for projections.";
         public const int    ProjectionThreadsDefault = 3;
 
+        public const string FailOutoforderProjectionsDescr = "Fail the projection if the Event number that was expected in the stream differs from what is received. This may happen if events have been deleted or expired";
+        public const bool FailOutoforderProjectionsDefault = false;
+
         public const string ProjectionsQueryExpiryDescr = "The number of minutes a query can be idle before it expires";
         public const int    ProjectionsQueryExpiryDefault = 5;
 

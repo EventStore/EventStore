@@ -27,8 +27,10 @@ namespace EventStore.Projections.Core
         private Dictionary<Guid, IPublisher> _queueMap;
         private bool _subsystemStarted;
 
+        private readonly bool _failOutoforderProjections;
+
         public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
-            bool startStandardProjections, TimeSpan projectionQueryExpiry)
+            bool startStandardProjections, TimeSpan projectionQueryExpiry, bool failOutoforderProjections)
         {
             if (runProjections <= ProjectionType.System)
                 _projectionWorkerThreadCount = 1;
@@ -38,6 +40,7 @@ namespace EventStore.Projections.Core
             _runProjections = runProjections;
             _startStandardProjections = startStandardProjections;
             _projectionsQueryExpiry = projectionQueryExpiry;
+            _failOutoforderProjections = failOutoforderProjections;
         }
 
         public void Register(StandardComponents standardComponents)
@@ -51,7 +54,7 @@ namespace EventStore.Projections.Core
                 _runProjections,
                 _masterOutputBus,
                 _masterInputQueue,
-                _masterMainBus);
+                _masterMainBus, _failOutoforderProjections);
 
             CreateAwakerService(standardComponents);
             _coreQueues = ProjectionCoreWorkersNode.CreateCoreWorkers(standardComponents, projectionsStandardComponents);

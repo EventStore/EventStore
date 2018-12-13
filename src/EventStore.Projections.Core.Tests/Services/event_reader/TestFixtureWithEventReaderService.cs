@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader
 
             ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
             _readerService = new EventReaderCoreService(
-                GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning());
+                GetInputQueue(), _ioDispatcher, 10, writerCheckpoint, runHeadingReader: GivenHeadingReaderRunning(), failOutoforderProjections: true);
             _subscriptionDispatcher =
                 new ReaderSubscriptionDispatcher(GetInputQueue());
 
