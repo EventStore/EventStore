@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 
         [Test]
         public void events_after_second_event_should_not_be_in_sequence()
-        {
+        {   
             //_fromSequenceNumber+2 has been omitted
             HandleEvents(new long[] { _fromSequenceNumber, _fromSequenceNumber + 1, _fromSequenceNumber + 3, _fromSequenceNumber + 4 });
             
