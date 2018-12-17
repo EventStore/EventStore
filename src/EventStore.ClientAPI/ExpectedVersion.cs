@@ -5,14 +5,14 @@ namespace EventStore.ClientAPI
     /// </summary>
     /// <remarks>
     /// The use of expected version can be a bit tricky especially when discussing idempotency assurances given by Event Store.
-    /// 
+    ///
     /// There are four possible values you can use for passing an expected version.
-    /// Any other value states that the last event written to the stream should have a sequence number matching your 
+    /// Any other value states that the last event written to the stream should have a sequence number matching your
     /// expected value.
-    /// 
+    ///
     /// Event Store assures idempotency for all operations using any value in ExpectedVersion except for
     /// ExpectedVersion.Any and ExpectedVersion.StreamExists. When using ExpectedVersion.Any or ExpectedVersion.StreamExists
-    /// Event Store will does its best to assure idempotency but does not guarantee idempotency.
+    /// Event Store does its best to assure idempotency but does not guarantee idempotency.
     /// </remarks>
     public static class ExpectedVersion
     {
