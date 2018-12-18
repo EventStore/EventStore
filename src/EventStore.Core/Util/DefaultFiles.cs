@@ -11,6 +11,7 @@ namespace EventStore.Core.Util
             switch (Platforms.GetPlatform())
             {
                 case Platform.Linux:
+                case Platform.Mac:
                     DefaultConfigFile = "eventstore.conf";
                     break;
                 default:
