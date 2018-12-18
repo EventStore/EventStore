@@ -345,12 +345,11 @@ namespace EventStore.Projections.Core.Services.Processing
             }
 
             if (positionEvent.EventNumber != fromPosition){
-                string reason = string.Format(
-                        "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
-                        fromPosition, streamId, positionEvent.EventNumber);
-
-                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
-                throw new InvalidOperationException(reason);
+                // This can happen when the original stream has $maxAge/$maxCount set
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId, string.Format(
+                    "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
+                    fromPosition, streamId, positionEvent.EventNumber), this.GetType()));
+                return;
             }
 
             _fromPositions = _fromPositions.UpdateStreamPosition(streamId, positionEvent.EventNumber + 1);

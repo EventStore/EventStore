@@ -151,7 +151,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _ioDispatcher,
                 10,
                 writerCheckpoint,
-                runHeadingReader: true);
+                runHeadingReader: true, faultOutOfOrderProjections: true);
             _subscriptionDispatcher = new ReaderSubscriptionDispatcher(inputQueue);
             var spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(GetInputQueue());
 

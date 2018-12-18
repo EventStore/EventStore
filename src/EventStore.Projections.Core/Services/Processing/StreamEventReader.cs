@@ -216,12 +216,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private void DeliverEvent(EventStore.Core.Data.ResolvedEvent pair, float progress, ref long sequenceNumber)
         {
             EventRecord positionEvent = pair.OriginalEvent;
-            if (positionEvent.EventNumber != sequenceNumber){
-                string reason = string.Format("Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection."
-                ,sequenceNumber, _streamName, positionEvent.EventNumber);
-
-                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId,reason,this.GetType()));
-                throw new InvalidOperationException(reason);
+            if (positionEvent.EventNumber != sequenceNumber)
+            {
+                // This can happen when the original stream has $maxAge/$maxCount set
+                _publisher.Publish(new ReaderSubscriptionMessage.Faulted(EventReaderCorrelationId, string.Format(
+                    "Event number {0} was expected in the stream {1}, but event number {2} was received. This may happen if events have been deleted from the beginning of your stream, please reset your projection.",
+                    sequenceNumber, _streamName, positionEvent.EventNumber), this.GetType()));
+                return;
             }
 
             sequenceNumber = positionEvent.EventNumber + 1;

@@ -39,7 +39,8 @@ namespace EventStore.Projections.Core
             IQueuedHandler inputQueue,
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
-            ProjectionType runProjections)
+            ProjectionType runProjections,
+            bool faultOutOfOrderProjections)
         {
             _runProjections = runProjections;
             Ensure.NotNull(db, "db");
@@ -56,7 +57,8 @@ namespace EventStore.Projections.Core
                 _ioDispatcher,
                 10,
                 db.Config.WriterCheckpoint,
-                runHeadingReader: runProjections >= ProjectionType.System);
+                runHeadingReader: runProjections >= ProjectionType.System,
+                faultOutOfOrderProjections: faultOutOfOrderProjections);
 
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections >= ProjectionType.System)

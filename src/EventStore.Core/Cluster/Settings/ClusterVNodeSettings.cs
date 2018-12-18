@@ -82,6 +82,8 @@ namespace EventStore.Core.Cluster.Settings
 
         public readonly bool GossipOnSingleNode;
 
+        public readonly bool FaultOutOfOrderProjections;
+
         public ClusterVNodeSettings(Guid instanceId, int debugIndex,
                                     IPEndPoint internalTcpEndPoint,
                                     IPEndPoint internalSecureTcpEndPoint,
@@ -145,7 +147,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool gossipOnSingleNode = false,
                                     bool skipIndexScanOnReads = false,
                                     bool reduceFileCachePressure = false,
-                                    int initializationThreads = 1)
+                                    int initializationThreads = 1,
+                                    bool faultOutOfOrderProjections = false)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -241,6 +244,8 @@ namespace EventStore.Core.Cluster.Settings
             SkipIndexScanOnReads = skipIndexScanOnReads;
             ReduceFileCachePressure = reduceFileCachePressure;
             InitializationThreads = initializationThreads;
+
+            FaultOutOfOrderProjections = faultOutOfOrderProjections;
         }
 
 
