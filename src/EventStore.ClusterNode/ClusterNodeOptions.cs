@@ -152,8 +152,8 @@ namespace EventStore.ClusterNode
         public int WorkerThreads { get; set; }
         [ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
         public int ProjectionsQueryExpiry { get; set; }
-        [ArgDescription(Opts.FailOutoforderProjectionsDescr, Opts.ProjectionsGroup)]
-        public bool FailOutoforderProjections { get; set; }
+        [ArgDescription(Opts.FaultOutOfOrderProjectionsDescr, Opts.ProjectionsGroup)]
+        public bool FaultOutOfOrderProjections { get; set; }
 
         [ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
         public string[] IntHttpPrefixes { get; set; }
@@ -285,7 +285,7 @@ namespace EventStore.ClusterNode
             SkipDbVerify = Opts.SkipDbVerifyDefault;
             RunProjections = Opts.RunProjectionsDefault;
             ProjectionThreads = Opts.ProjectionThreadsDefault;
-            FailOutoforderProjections = Opts.FailOutoforderProjectionsDefault;
+            FaultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
             WorkerThreads = Opts.WorkerThreadsDefault;
             BetterOrdering = Opts.BetterOrderingDefault;
 

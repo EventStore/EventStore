@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager
 		{
             var projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
                     startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-                    failOutoforderProjections: Opts.FailOutoforderProjectionsDefault);
+                    faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
             Node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { projections });
             Node.Start();

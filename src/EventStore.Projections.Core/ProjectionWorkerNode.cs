@@ -33,8 +33,6 @@ namespace EventStore.Projections.Core
         private readonly ProjectionCoreResponseWriter _coreResponseWriter;
         private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
 
-        private readonly bool _failOutoforderProjections;
-
         public ProjectionWorkerNode(
             Guid workerId,
             TFChunkDb db,
@@ -42,10 +40,9 @@ namespace EventStore.Projections.Core
             ITimeProvider timeProvider,
             ISingletonTimeoutScheduler timeoutScheduler,
             ProjectionType runProjections,
-            bool failOutoforderProjections)
+            bool faultOutOfOrderProjections)
         {
             _runProjections = runProjections;
-            _failOutoforderProjections = failOutoforderProjections;
             Ensure.NotNull(db, "db");
 
             _coreOutput = new InMemoryBus("Core Output");
@@ -60,8 +57,8 @@ namespace EventStore.Projections.Core
                 _ioDispatcher,
                 10,
                 db.Config.WriterCheckpoint,
-                runHeadingReader: runProjections >= ProjectionType.System, 
-                failOutoforderProjections: _failOutoforderProjections);
+                runHeadingReader: runProjections >= ProjectionType.System,
+                faultOutOfOrderProjections: faultOutOfOrderProjections);
 
             _feedReaderService = new FeedReaderService(_subscriptionDispatcher, timeProvider);
             if (runProjections >= ProjectionType.System)

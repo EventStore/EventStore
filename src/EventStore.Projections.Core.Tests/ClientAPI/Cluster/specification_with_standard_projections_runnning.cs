@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster
         {
             _projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
                             startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), 
-                            failOutoforderProjections: Opts.FailOutoforderProjectionsDefault);
+                            faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
             var node = new MiniClusterNode(
                 PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp, endpoints.ExternalTcp,
                 endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,

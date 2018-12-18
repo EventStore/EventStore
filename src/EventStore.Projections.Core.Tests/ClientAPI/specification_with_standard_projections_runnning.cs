@@ -90,8 +90,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI
         {
             var projectionWorkerThreadCount = GivenWorkerThreadCount();
             _projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
-                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), 
-                            failOutoforderProjections: Opts.FailOutoforderProjectionsDefault);
+                            startStandardProjections: false, projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+                            faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
             _node = new MiniNode(
                 PathName, inMemDb: true, skipInitializeStandardUsersCheck: false, subsystems: new ISubsystem[] { _projections });
             _node.Start();

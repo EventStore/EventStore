@@ -114,7 +114,7 @@ namespace EventStore.Core
         protected ProjectionType _projectionType;
         protected int _projectionsThreads;
         protected TimeSpan _projectionsQueryExpiry;
-        protected bool _failOutoforderProjections;
+        protected bool _faultOutOfOrderProjections;
 
         protected TFChunkDb _db;
         protected ClusterVNodeSettings _vNodeSettings;
@@ -222,7 +222,7 @@ namespace EventStore.Core
             _skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
             _chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
             _projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
-            _failOutoforderProjections = Opts.FailOutoforderProjectionsDefault;
+            _faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
             _reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
             _initializationThreads = Opts.InitializationThreadsDefault;
         }
@@ -270,11 +270,11 @@ namespace EventStore.Core
         /// <param name="projectionType">The mode in which to run the projections system</param>
         /// <param name="numberOfThreads">The number of threads to use for projections. Defaults to 3.</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-        public VNodeBuilder RunProjections(ProjectionType projectionType, int numberOfThreads = Opts.ProjectionThreadsDefault, bool failOutoforderProjections = Opts.FailOutoforderProjectionsDefault)
+        public VNodeBuilder RunProjections(ProjectionType projectionType, int numberOfThreads = Opts.ProjectionThreadsDefault, bool faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault)
         {
             _projectionType = projectionType;
             _projectionsThreads = numberOfThreads;
-            _failOutoforderProjections = failOutoforderProjections;
+            _faultOutOfOrderProjections = faultOutOfOrderProjections;
             return this;
         }
 
@@ -1442,7 +1442,7 @@ namespace EventStore.Core
                     _skipIndexScanOnReads,
                     _reduceFileCachePressure,
                     _initializationThreads,
-                    _failOutoforderProjections);
+                    _faultOutOfOrderProjections);
             
             var infoController = new InfoController(options, _projectionType);
 
