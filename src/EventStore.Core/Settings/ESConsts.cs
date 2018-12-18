@@ -4,15 +4,18 @@ namespace EventStore.Core.Settings
 {
     public static class ESConsts
     {
+        public const int StorageReaderThreadCount = 4;
+
         public const int PTableInitialReaderCount = 5;
-        public const int PTableRequiredReaderCount = 1 /* StorageWriter */
+        public const int PTableMaxReaderCount = 1 /* StorageWriter */
                                               + 1 /* StorageChaser */
                                               + 1 /* Projections */
                                               + 1 /* Scavenging */
                                               + 1 /* Subscription LinkTos resolving */
+                                              + StorageReaderThreadCount
                                               + 5 /* just in case reserve :) */;
 
-        public const int TFChunkMaxReaderCount = PTableRequiredReaderCount 
+        public const int TFChunkMaxReaderCount = PTableMaxReaderCount 
                                                + 2 /* for caching/uncaching, populating midpoints */
                                                + 1 /* for epoch manager usage of elections/replica service */
                                                + 1 /* for epoch manager usage of master replication service */;
