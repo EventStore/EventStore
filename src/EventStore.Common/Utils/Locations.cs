@@ -36,6 +36,13 @@ namespace EventStore.Common.Utils
                     DefaultLogDirectory = "/var/log/eventstore";
                     DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
                     break;
+                case Platform.Mac:
+                    DefaultContentDirectory = "/usr/local/share/eventstore";
+                    DefaultConfigurationDirectory = "/etc/eventstore";
+                    DefaultDataDirectory = "/var/lib/eventstore";
+                    DefaultLogDirectory = "/var/log/eventstore";
+                    DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
+                    break;
                 default:
                     DefaultContentDirectory = ApplicationDirectory;
                     DefaultConfigurationDirectory = ApplicationDirectory;
