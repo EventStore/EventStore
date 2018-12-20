@@ -1,3 +1,4 @@
+using System.Reflection;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Util
@@ -8,11 +9,18 @@ namespace EventStore.Core.Util
 
         static DefaultFiles()
         {
+            bool isTestClient = false;
+            if (Assembly.GetEntryAssembly()!=null)
+                isTestClient = Assembly.GetEntryAssembly().FullName.StartsWith("EventStore.TestClient");
+
             switch (Platforms.GetPlatform())
             {
                 case Platform.Linux:
                 case Platform.Mac:
-                    DefaultConfigFile = "eventstore.conf";
+                    if(isTestClient)
+                        DefaultConfigFile = "testclient.conf";
+                    else
+                        DefaultConfigFile = "eventstore.conf";
                     break;
                 default:
                     DefaultConfigFile = System.String.Empty;
