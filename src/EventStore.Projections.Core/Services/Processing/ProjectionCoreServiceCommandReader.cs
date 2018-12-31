@@ -37,14 +37,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionCoreServiceMessage.StartCore message)
         {
             _cancellationScope = new IODispatcherAsync.CancellationScope();
-            Log.Debug("PROJECTIONS: Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
+            Log.Debug("PROJECTIONS: Starting Projection Core Reader (reads from $projections-${coreServiceId})", _coreServiceId);
             _stopped = false;
             StartCoreSteps(message).Run();
         }
 
         public void Handle(ProjectionCoreServiceMessage.StopCore message)
         {
-            Log.Debug("PROJECTIONS: Stopping Projection Core Reader ({0})", _coreServiceId);
+            Log.Debug("PROJECTIONS: Stopping Projection Core Reader ({coreServiceId})", _coreServiceId);
             _cancellationScope.Cancel();
             _stopped = true;
             _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStopped("ProjectionCoreServiceCommandReader"));            
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             long fromEventNumber = 0;
 
-            Log.Debug($"PROJECTIONS: Starting read {ProjectionNamesBuilder.BuildControlStreamName(epochId)}");
+            Log.Debug("PROJECTIONS: Starting read {stream}",ProjectionNamesBuilder.BuildControlStreamName(epochId));
 
             long subscribeFrom = 0;
             while (!_stopped)
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 readResultForward = completed;
                                 success = true;
                             },
-                            () => Log.Warn("Read forward of stream {0} timed out. Retrying", ProjectionNamesBuilder.BuildControlStreamName(epochId)));
+                            () => Log.Warn("Read forward of stream {stream} timed out. Retrying", ProjectionNamesBuilder.BuildControlStreamName(epochId)));
                 }
                 if (readResultForward.Result != ReadStreamResult.Success
                     && readResultForward.Result != ReadStreamResult.NoStream)
@@ -146,7 +146,7 @@ namespace EventStore.Projections.Core.Services.Processing
                             readResult = completed;
                             success = true;
                         },
-                        () => Log.Warn("Read backward of stream {0} timed out. Retrying", coreControlStreamID));
+                        () => Log.Warn("Read backward of stream {stream} timed out. Retrying", coreControlStreamID));
             }
 
             long from = 0;
@@ -163,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 from = readResult.LastEventNumber + 1;
             }
 
-            Log.Debug("PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-${0})", _coreServiceId);
+            Log.Debug("PROJECTIONS: Finished Starting Projection Core Reader (reads from $projections-${coreServiceId})", _coreServiceId);
             _publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted("ProjectionCoreServiceCommandReader"));
 
             ControlSteps(startCoreMessage.EpochId).Run();
@@ -193,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 foreach (var e in completed.Events)
                                     PublishCommand(e);
                             },
-                            () => Log.Warn("Read forward of stream {0} timed out. Retrying", coreControlStreamID));
+                            () => Log.Warn("Read forward of stream {stream} timed out. Retrying", coreControlStreamID));
                 } while (!eof);
                 yield return
                     _ioDispatcher.BeginSubscribeAwake(_cancellationScope, coreControlStreamID, subscribeFrom, message => { });
@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var command = resolvedEvent.Event.EventType;
             if (!Logging.FilteredMessages.Contains(command))
             {
-                Log.Debug("PROJECTIONS: Command received: {0}@{1}", resolvedEvent.OriginalEventNumber, command);
+                Log.Debug("PROJECTIONS: Command received: {eventNumber}@{command}", resolvedEvent.OriginalEventNumber, command);
             }
             switch (command)
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -36,7 +36,7 @@ namespace EventStore.Core
             catch (AbandonedMutexException exc)
             {
                 Log.InfoException(exc, 
-                                  "DB mutex '{0}' is said to be abandoned. " 
+                                  "DB mutex '{mutex}' is said to be abandoned. " 
                                   + "Probably previous instance of server was terminated abruptly.", 
                                   MutexName);
             }

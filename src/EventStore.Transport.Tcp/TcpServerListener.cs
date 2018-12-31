@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using EventStore.Common.Log;
@@ -41,7 +41,7 @@ namespace EventStore.Transport.Tcp
 
             _onSocketAccepted = callback;
 
-            Log.Info("Starting {0} TCP listening on TCP endpoint: {1}.", securityType, _serverEndPoint);
+            Log.Info("Starting {securityType} TCP listening on TCP endpoint: {serverEndPoint}.", securityType, _serverEndPoint);
             try
             {
                 _listeningSocket.Bind(_serverEndPoint);
@@ -49,7 +49,7 @@ namespace EventStore.Transport.Tcp
             }
             catch (Exception)
             {
-                Log.Info("Failed to listen on TCP endpoint: {0}.", _serverEndPoint);
+                Log.Info("Failed to listen on TCP endpoint: {serverEndPoint}.", _serverEndPoint);
                 Helper.EatException(() => _listeningSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
                 throw;
             }

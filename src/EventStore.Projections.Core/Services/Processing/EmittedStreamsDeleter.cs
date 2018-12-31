@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Log;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -83,21 +83,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         if (x.Result == OperationResult.Success || x.Result == OperationResult.StreamDeleted)
                         {
-                            Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _emittedStreamsCheckpointStreamId);
+                            Log.Info("PROJECTIONS: Projection Stream '{stream}' deleted", _emittedStreamsCheckpointStreamId);
                         }
                         else
                         {
-                            Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _emittedStreamsCheckpointStreamId, x.Result);
+                            Log.Error("PROJECTIONS: Failed to delete projection stream '{stream}'. Reason: {e}", _emittedStreamsCheckpointStreamId, x.Result);
                         }
                         _ioDispatcher.DeleteStream(_emittedStreamsId, ExpectedVersion.Any, false, SystemAccount.Principal, y =>
                         {
                             if (y.Result == OperationResult.Success || y.Result == OperationResult.StreamDeleted)
                             {
-                                Log.Info("PROJECTIONS: Projection Stream '{0}' deleted", _emittedStreamsId);
+                                Log.Info("PROJECTIONS: Projection Stream '{stream}' deleted", _emittedStreamsId);
                             }
                             else
                             {
-                                Log.Error("PROJECTIONS: Failed to delete projection stream '{0}'. Reason: {1}", _emittedStreamsId, y.Result);
+                                Log.Error("PROJECTIONS: Failed to delete projection stream '{stream}'. Reason: {e}", _emittedStreamsId, y.Result);
                             }
                             onEmittedStreamsDeleted();
                         });
@@ -128,12 +128,12 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_retryCount == 0)
                 {
-                    Log.Error("PROJECTIONS: Retry limit reached, could not delete stream: {0}. Manual intervention is required and you may need to delete this stream manually", streamId);
+                    Log.Error("PROJECTIONS: Retry limit reached, could not delete stream: {stream}. Manual intervention is required and you may need to delete this stream manually", streamId);
                     _retryCount = RetryLimit;
                     DeleteEmittedStreamsFrom(eventNumber + 1, onEmittedStreamsDeleted);
                     return;
                 }
-                Log.Error("PROJECTIONS: Failed to delete emitted stream {0}, Retrying ({1}/{2}). Reason: {3}", streamId, (RetryLimit - _retryCount) + 1, RetryLimit, deleteStreamCompleted.Result);
+                Log.Error("PROJECTIONS: Failed to delete emitted stream {stream}, Retrying ({retryCount}/{maxRetryCount}). Reason: {reason}", streamId, (RetryLimit - _retryCount) + 1, RetryLimit, deleteStreamCompleted.Result);
                 _retryCount--;
                 DeleteEmittedStreamsFrom(eventNumber, onEmittedStreamsDeleted);
             }
@@ -145,11 +145,11 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (x.Result == OperationResult.Success)
                 {
-                    Log.Debug("PROJECTIONS: Emitted Stream Deletion Checkpoint written at {0}", eventNumber);
+                    Log.Debug("PROJECTIONS: Emitted Stream Deletion Checkpoint written at {eventNumber}", eventNumber);
                 }
                 else
                 {
-                    Log.Debug("PROJECTIONS: Emitted Stream Deletion Checkpoint Failed to be written at {0}", eventNumber);
+                    Log.Debug("PROJECTIONS: Emitted Stream Deletion Checkpoint Failed to be written at {eventNumber}", eventNumber);
                 }
             });
         }

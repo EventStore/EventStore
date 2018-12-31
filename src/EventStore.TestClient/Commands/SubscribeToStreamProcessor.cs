@@ -30,7 +30,7 @@ namespace EventStore.TestClient.Commands
                             case TcpCommand.SubscriptionConfirmation:
                             {
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
-                                context.Log.Info("Subscription to <{0}> WAS CONFIRMED! Subscribed at {1} ({2})", 
+                                context.Log.Info("Subscription to <{stream}> WAS CONFIRMED! Subscribed at {lastCommitPosition} ({lastEventNumber})", 
                                                  streamByCorrId[pkg.CorrelationId], dto.LastCommitPosition, dto.LastEventNumber);
                                 break;
                             }
@@ -38,11 +38,11 @@ namespace EventStore.TestClient.Commands
                             {
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
                                 context.Log.Info("NEW EVENT:\n\n"
-                                                 + "\tEventStreamId: {0}\n"
-                                                 + "\tEventNumber:   {1}\n"
-                                                 + "\tEventType:     {2}\n"
-                                                 + "\tData:          {3}\n"
-                                                 + "\tMetadata:      {4}\n",
+                                                 + "\tEventStreamId: {stream}\n"
+                                                 + "\tEventNumber:   {eventNumber}\n"
+                                                 + "\tEventType:     {eventType}\n"
+                                                 + "\tData:          {data}\n"
+                                                 + "\tMetadata:      {metadata}\n",
                                                  dto.Event.Event.EventStreamId,
                                                  dto.Event.Event.EventNumber,
                                                  dto.Event.Event.EventType,
@@ -53,7 +53,7 @@ namespace EventStore.TestClient.Commands
                             case TcpCommand.SubscriptionDropped:
                             {
                                 pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
-                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
+                                context.Log.Error("Subscription to <{stream}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
                                 break;
                             }
                             default:
@@ -81,7 +81,7 @@ namespace EventStore.TestClient.Commands
             {
                 foreach (var stream in args)
                 {
-                    context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
+                    context.Log.Info("SUBSCRIBING TO STREAM <{stream}>...", stream);
                     var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
                     var correlationId = Guid.NewGuid();
                     streamByCorrId[correlationId] = stream;

@@ -486,7 +486,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation
                 standardOutput.AutoFlush = true;
                 Console.SetOut(standardOutput);
                 Console.WriteLine(output);
-                Assert.IsTrue(output.Contains("EXCEPTION(S) OCCURRED:"));
+                Assert.IsTrue(output.Contains("EXCEPTION OCCURRED"));
                 Assert.IsTrue(output.Contains("EventStore.Core.Exceptions.HashValidationException"));
             }
             

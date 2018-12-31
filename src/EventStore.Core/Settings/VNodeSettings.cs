@@ -41,7 +41,7 @@ namespace EventStore.Core.Settings
                                    TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
                                    TimeSpan tcpTimeout,
-                                   StatsStorage statsStorage = StatsStorage.StreamAndCsv,
+                                   StatsStorage statsStorage = StatsStorage.StreamAndFile,
                                    bool skipInitializeStandardUsersCheck = false,
                                    bool disableScavengeMerging = false)
         {

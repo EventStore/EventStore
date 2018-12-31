@@ -36,6 +36,8 @@ namespace EventStore.Core.Util
         public const bool DisableHttpCachingDefault = false;
 
         public const string LogsDescr = "Path where to keep log files.";
+        public const string StructuredLogDescr = "Enable structured logging.";
+        public const bool StructuredLog = false;
 
         public const string ConfigsDescr = "Configuration files.";
         public static readonly string[] ConfigsDefault = new string[0];

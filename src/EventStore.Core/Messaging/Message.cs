@@ -93,7 +93,7 @@ namespace EventStore.Core.Messaging
 
                 foreach (var wrongType in wrongTypes)
                 {
-                    Log.Fatal("MsgTypeId {0} is assigned to type: {1}",
+                    Log.Fatal("MsgTypeId {typeId} is assigned to type: {messageTypes}",
                               wrongType.TypeId,
                               string.Join(", ", wrongType.MsgTypes.Select(x => x.Name)));
                 }
@@ -125,7 +125,7 @@ namespace EventStore.Core.Messaging
                 DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
             }
 
-            Log.Trace("MessageHierarchy initialization took {0}.", sw.Elapsed);
+            Log.Trace("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
         }
 
         static Type[] LoadAvailableTypes(Assembly assembly)
@@ -136,8 +136,8 @@ namespace EventStore.Core.Messaging
             }
             catch (ReflectionTypeLoadException ex)
             {
-                if(ex.LoaderExceptions.Length >0)
-                    Log.Info("The exception(s) occured when scanning for message types: ",
+                if(ex.LoaderExceptions.Length > 0)
+                    Log.Info("The exception(s) occured when scanning for message types: {e}",
                         string.Join(",", ex.LoaderExceptions.Select(x => x.Message)));
                 else
                 {

@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
                 });
         }
 
-        private static Dictionary<string, object> Group(Dictionary<string, object> input)
+        public static Dictionary<string, object> Group(Dictionary<string, object> input)
         {
             Ensure.NotNull(input, "input");
 

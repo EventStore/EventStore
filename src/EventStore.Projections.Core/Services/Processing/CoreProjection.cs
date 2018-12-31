@@ -340,7 +340,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             _logger.Info(
-                "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
+                "Projection '{projection}'({projectionCorrelationId}) restart has been requested due to: '{reason}'", _name, _projectionCorrelationId,
                 message.Reason);
             if (_state != State.Running)
             {
@@ -398,7 +398,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void GoToState(State state)
         {
-//            _logger.Trace("CP: {0} {1} => {2}", _name, _state, state);
+//            _logger.Trace("CP: {projection} {stateFrom} => {stateTo}", _name, _state, state);
             var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
                               || _state == State.CompletingPhase;

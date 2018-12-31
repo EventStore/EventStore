@@ -219,7 +219,7 @@ namespace EventStore.Projections.Core.Services.Http
                         config.CheckpointUnhandledBytesThreshold, config.PendingEventsThreshold,
                         config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, GetRunAs(http, match));
                     Publish(message);
-                }, ex => Log.Debug("Failed to update projection configuration. Error: {0}", ex));
+                }, ex => Log.Debug("Failed to update projection configuration. Error: {e}", ex));
         }
 
         private void OnProjectionCommandDisable(HttpEntityManager http, UriTemplateMatch match)

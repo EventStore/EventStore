@@ -69,6 +69,35 @@ namespace EventStore.Common.Options
             return ArgUsage.GetUsage<TOptions>();
         }
 
+        public static object DumpOptionsStructured()
+        {
+            Dictionary<string,object> opts = new Dictionary<string,object>();
+            if (_effectiveOptions == null)
+            {
+                return opts;
+            }
+
+            Dictionary<string,object> defaults = new Dictionary<string,object>();
+            Dictionary<string,object> modified = new Dictionary<string,object>();
+
+            foreach (var option in _effectiveOptions)
+            {
+                var value = option.Value;
+                if(value!=null) value = value.ToString();
+                if (option.Source.ToLower().Contains("default"))
+                {
+                    defaults.Add(option.Name, value);
+                }
+                else{
+                    modified.Add(option.Name, value);
+                }
+            }
+            opts.Add("defaults", defaults);
+            opts.Add("modified", modified);
+
+            return opts;
+        }
+
         public static string DumpOptions()
         {
             if (_effectiveOptions == null)

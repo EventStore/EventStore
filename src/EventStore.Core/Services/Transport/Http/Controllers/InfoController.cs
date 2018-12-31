@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void LogReplyError(Exception exc)
         {
-            Log.Debug("Error while replying (info controller): {0}.", exc.Message);
+            Log.Debug("Error while replying (info controller): {e}.", exc.Message);
         }
 
         public class OptionStructure

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -151,7 +151,7 @@ namespace EventStore.TestClient.Commands
                             if (currentMinute != elapsedMinutesInt)
                             {
                                 currentMinute = elapsedMinutesInt;
-                                context.Log.Info("\nElapsed {0} of {1} minutes, sent {2}; next block coef. {3}",
+                                context.Log.Info("\nElapsed {elapsed} of {runTime} minutes, sent {sent}; next block coef. {dataSizeCoefficient}",
                                                  elapsedMinutesInt,
                                                  runTimeMinutes,
                                                  sent,
@@ -205,9 +205,9 @@ namespace EventStore.TestClient.Commands
                 client.Close();
             }
 
-            context.Log.Info("Completed. Successes: {0}, failures: {1}", succ, fail);
+            context.Log.Info("Completed. Successes: {success}, failures: {failures}", succ, fail);
             var reqPerSec = (requestsCnt + 0.0)/sw.ElapsedMilliseconds*1000;
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).",
+            context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).",
                              requestsCnt,
                              sw.ElapsedMilliseconds,
                              reqPerSec);

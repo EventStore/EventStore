@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Log;
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: PROJECTIONS: Remove before release
             if (!Logging.FilteredMessages.Contains(command))
             {
-                Log.Debug("PROJECTIONS: Scheduling the writing of {0} to {1}. Current status of Writer: Busy: {2}", command, "$projections-$" + workerId, queue.Busy);
+                Log.Debug("PROJECTIONS: Scheduling the writing of {command} to {workerId}. Current status of Writer: Busy: {isBusy}", command, "$projections-$" + workerId, queue.Busy);
             }
             queue.Items.Add(new Queue.Item { Command = command, Body = body });
             if (!queue.Busy)
@@ -75,17 +75,15 @@ namespace EventStore.Projections.Core.Services.Management
                             //TODO: PROJECTIONS: Remove before release
                             if (!Logging.FilteredMessages.Contains(evt.EventType))
                             {
-                                Log.Debug("PROJECTIONS: Finished writing events to {0}: {1}", streamId, evt.EventType);
+                                Log.Debug("PROJECTIONS: Finished writing events to {stream}: {eventType}", streamId, evt.EventType);
                             }
                         }
                     }
                     else
                     {
-                        var message = String.Format("PROJECTIONS: Failed writing events to {0} because of {1}: {2}", 
+                        Log.Debug("PROJECTIONS: Failed writing events to {stream} because of {e}: {eventTypes}",
                             streamId, 
                             completed.Result, String.Join(",", events.Select(x => String.Format("{0}", x.EventType))));
-                        Log.Debug(message); //Can't do anything about it, log and move on
-                        //throw new Exception(message);
                     }
 
                     if (queue.Items.Count > 0)

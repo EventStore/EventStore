@@ -23,7 +23,7 @@ namespace EventStore.Core.Util
 
         public MiniWeb(string localWebRootPath, string fileSystemRoot)
         {
-            Logger.Info("Starting MiniWeb for {0} ==> {1}", localWebRootPath, fileSystemRoot);
+            Logger.Info("Starting MiniWeb for {localWebRootPath} ==> {fileSystemRoot}", localWebRootPath, fileSystemRoot);
             _localWebRootPath = localWebRootPath;
             _fileSystemRoot = fileSystemRoot;
         }
@@ -31,7 +31,7 @@ namespace EventStore.Core.Util
         public void RegisterControllerActions(IHttpService service)
         {
             var pattern = _localWebRootPath + "/{*remaining_path}";
-            Logger.Trace("Binding MiniWeb to {0}", pattern);
+            Logger.Trace("Binding MiniWeb to {path}", pattern);
             service.RegisterAction(new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.ManualEncoding }), OnStaticContent);
         }
 
@@ -47,7 +47,7 @@ namespace EventStore.Core.Util
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
                 contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
 
-            //_logger.Trace("{0} requested from MiniWeb", contentLocalPath);
+            //_logger.Trace("{contentLocalPath} requested from MiniWeb", contentLocalPath);
             try
             {
                 var extensionToContentType = new Dictionary<string, string>
@@ -75,7 +75,7 @@ namespace EventStore.Core.Util
                     || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
                     || !File.Exists(fullPath))
                 {
-                    Logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
+                    Logger.Info("Replying 404 for {contentLocalPath} ==> {fullPath}", contentLocalPath, fullPath);
                     http.ReplyTextContent(
                         "Not Found", 404, "Not Found", "text/plain", null,
                         ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));

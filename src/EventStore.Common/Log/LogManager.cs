@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.IO;
 using EventStore.Common.Utils;
+using NLog.Config;
 
 namespace EventStore.Common.Log
 {
@@ -25,11 +26,20 @@ namespace EventStore.Common.Log
             }
         }
 
+        public static bool StructuredLog
+        {
+            get
+            {
+                return _isStructured;
+            }
+        }
+
         private const string EVENTSTORE_LOG_FILENAME = "log.config";
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
         private static Func<string, ILogger> _logFactory = x => new NLogger(x);
         internal static string _logsDirectory;
+        private static bool _isStructured;
 
         static LogManager()
         {
@@ -37,6 +47,7 @@ namespace EventStore.Common.Log
             conf.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
             conf.ConditionMethods.RegisterDefinition("is-dot-net", typeof(NLoggerHelperMethods).GetMethod("IsDotNet"));
             conf.ConditionMethods.RegisterDefinition("is-mono", typeof(NLoggerHelperMethods).GetMethod("IsMono"));
+            conf.ConditionMethods.RegisterDefinition("is-structured", typeof(NLoggerHelperMethods).GetMethod("IsStructured"));
         }
 
         public static ILogger GetLoggerFor(Type type)
@@ -54,7 +65,7 @@ namespace EventStore.Common.Log
             return new LazyLogger(() => _logFactory(logName));
         }
 
-        public static void Init(string componentName, string logsDirectory, string configurationDirectory)
+        public static void Init(string componentName, string logsDirectory, bool isStructured, string configurationDirectory)
         {
             Ensure.NotNull(componentName, "componentName");
             if (_initialized)
@@ -67,6 +78,8 @@ namespace EventStore.Common.Log
             var configFilePath = potentialNLogConfigurationFilePaths.FirstOrDefault(x => File.Exists(x));
             if(!String.IsNullOrEmpty(configFilePath))
             {
+                var originalFormatter = NLog.Config.ConfigurationItemFactory.Default.ValueFormatter;
+                ConfigurationItemFactory.Default.ValueFormatter = new NLogValueFormatter(originalFormatter, isStructured);
                 NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(configFilePath);
             }
             else
@@ -80,6 +93,7 @@ namespace EventStore.Common.Log
             _initialized = true;
 
             _logsDirectory = logsDirectory;
+            _isStructured = isStructured;
             Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
@@ -87,7 +101,7 @@ namespace EventStore.Common.Log
                 if (exc != null)
                     GlobalLogger.FatalException(exc, "Global Unhandled Exception occurred.");
                 else
-                    GlobalLogger.Fatal("Global Unhandled Exception object: {0}.", e.ExceptionObject);
+                    GlobalLogger.Fatal("Global Unhandled Exception object: {e}.", e.ExceptionObject);
                 GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
             };
         }

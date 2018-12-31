@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -91,7 +91,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 }
                 if (producersArg.Any(p => !AvailableProducers.Contains(p)))
                 {
-                    context.Log.Error("Invalid producers argument. Pass comma-separated subset of [{0}]",
+                    context.Log.Error("Invalid producers argument. Pass comma-separated subset of [{producers}]",
                                       string.Join(",", AvailableProducers));
                     return false;
                 }

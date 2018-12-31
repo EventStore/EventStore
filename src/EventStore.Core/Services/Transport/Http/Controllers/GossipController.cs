@@ -71,10 +71,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     {
                         var msg = string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
                                                 url, response.ContentType, response.Body);
-                        Log.Error(string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}.",
-                                                url, response.ContentType));
-                        Log.Error(string.Format("Received as RESPONSE invalid ClusterInfo from [{0}]. Body: {1}.",
-                                                url, response.Body));
+                        Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Content-Type: {contentType}.",
+                                                url, response.ContentType);
+                        Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Body: {body}.",
+                                                url, response.Body);
                         Publish(new GossipMessage.GossipSendFailed(msg, endPoint));
                         return;
                     }
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostGossip(HttpEntityManager entity, UriTemplateMatch match)
         {
-            entity.ReadTextRequestAsync(OnPostGossipRequestRead, e => Log.Debug("Error while reading request (gossip): {0}", e.Message));
+            entity.ReadTextRequestAsync(OnPostGossipRequestRead, e => Log.Debug("Error while reading request (gossip): {e}", e.Message));
         }
 
         private void OnPostGossipRequestRead(HttpEntityManager manager, string body)
@@ -96,10 +96,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             {
                 var msg = string.Format("Received as POST invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
                                         manager.RequestedUrl, manager.RequestCodec.ContentType, body);
-                Log.Error(string.Format("Received as POST invalid ClusterInfo from [{0}]. Content-Type: {1}.",
-                                        manager.RequestedUrl, manager.RequestCodec.ContentType));
-                Log.Error(string.Format("Received as POST invalid ClusterInfo from [{0}]. Body: {1}.",
-                                        manager.RequestedUrl, body));
+                Log.Error("Received as POST invalid ClusterInfo from [{requestedUrl}]. Content-Type: {contentType}.",
+                                        manager.RequestedUrl, manager.RequestCodec.ContentType);
+                Log.Error("Received as POST invalid ClusterInfo from [{requestedUrl}]. Body: {body}.",
+                                        manager.RequestedUrl, body);
                 SendBadRequest(manager, msg);
                 return;
             }

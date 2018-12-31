@@ -240,6 +240,9 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.InitializationThreadsDescr, Opts.DbGroup)]
         public int InitializationThreads { get; set; }
 
+        [ArgDescription(Opts.StructuredLogDescr, Opts.DbGroup)]
+        public bool StructuredLog { get; set; }
+
         public ClusterNodeOptions()
         {
             Config = "";

@@ -165,10 +165,13 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshTcpConnectionStats>(monitoring);
 
             var truncPos = db.Config.TruncateCheckpoint.Read();
+            var writerCheckpoint = db.Config.WriterCheckpoint.Read();
+            var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
+            var epochCheckpoint = db.Config.EpochCheckpoint.Read();
             if (truncPos != -1)
             {
-                Log.Info("Truncate checkpoint is present. Truncate: {0} (0x{0:X}), Writer: {1} (0x{1:X}), Chaser: {2} (0x{2:X}), Epoch: {3} (0x{3:X})",
-                         truncPos, db.Config.WriterCheckpoint.Read(), db.Config.ChaserCheckpoint.Read(), db.Config.EpochCheckpoint.Read());
+                Log.Info("Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
+                         truncPos,truncPos,writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint, epochCheckpoint, epochCheckpoint);
                 var truncator = new TFChunkDbTruncator(db.Config);
                 truncator.TruncateDb(truncPos);
             }

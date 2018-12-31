@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -122,8 +122,8 @@ namespace EventStore.TestClient.Commands
             clients.ForEach(client => client.Close());
 
             var reqPerSec = (all + 0.0)/sw.ElapsedMilliseconds*1000;
-            context.Log.Info("Completed. Successes: {0}, failures: {1}", succ, fail);
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec, latency: {3:0.00} ms).",
+            context.Log.Info("Completed. Successes: {success}, failures: {failures}", succ, fail);
+            context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec, latency: {latency:0.00} ms).",
                              all, sw.ElapsedMilliseconds, reqPerSec, (sw.Elapsed.TotalMilliseconds + 0.0) / requestsCnt);
             PerfUtils.LogData(Keyword,
                               PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),

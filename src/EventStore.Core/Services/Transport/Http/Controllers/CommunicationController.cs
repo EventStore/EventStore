@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
                                           reason,
-                                          e => Log.Debug("Error while closing HTTP connection (bad request): {0}.", e.Message));
+                                          e => Log.Debug("Error while closing HTTP connection (bad request): {e}.", e.Message));
             return new RequestParams(done: true);
         }
 
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             httpEntityManager.ReplyStatus(HttpStatusCode.OK,
                                           "OK",
-                                          e => Log.Debug("Error while closing HTTP connection (ok): {0}.", e.Message));
+                                          e => Log.Debug("Error while closing HTTP connection (ok): {e}.", e.Message));
             return new RequestParams(done: true);
         }
 

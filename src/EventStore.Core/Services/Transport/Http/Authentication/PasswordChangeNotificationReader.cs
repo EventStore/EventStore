@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                             case ReadStreamResult.AccessDenied:
                             case ReadStreamResult.Error:
                             case ReadStreamResult.NotModified:
-                                _log.Error("Failed to read: " + UserManagementService.UserPasswordNotificationsStreamId + " completed.Result=" + completed.Result.ToString());
+                                _log.Error("Failed to read: {stream} completed.Result={e}" ,UserManagementService.UserPasswordNotificationsStreamId,completed.Result.ToString());
                                 _ioDispatcher.Delay(
                                     TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
                                 break;
@@ -108,7 +108,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
             }
             catch (JsonException ex)
             {
-                _log.Error("Failed to de-serialize event #{0}. Error: '{1}'", @event.OriginalEventNumber, ex.Message);
+                _log.Error("Failed to de-serialize event #{eventNumber}. Error: '{e}'", @event.OriginalEventNumber, ex.Message);
             }
         }
 

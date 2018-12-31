@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType),
                 () =>
                 {
-                    _logger.Warn("Read backward for stream {0} timed out. Retrying", partitionStreamName);
+                    _logger.Warn("Read backward for stream {stream} timed out. Retrying", partitionStreamName);
                     _loadStateRequests.Remove(requestId);
                     _readRequestsInProgress--;
                     ReadPartitionStream(partitionStreamName, eventNumber, requestedStateCheckpointTag, loadCompleted, stateEventType);

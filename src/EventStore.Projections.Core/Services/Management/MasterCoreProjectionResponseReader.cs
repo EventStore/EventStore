@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Services.Management
                                     }
                                 }
                             },
-                            () => Log.Warn("Read forward of stream {0} timed out. Retrying", _streamId));
+                            () => Log.Warn("Read forward of stream {stream} timed out. Retrying", _streamId));
                 } while (!eof);
                 _lastAwakeCorrelationId = Guid.NewGuid();
                 yield return
@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void PublishCommand(ResolvedEvent resolvedEvent)
         {
             var command = resolvedEvent.Event.EventType;
-            Log.Debug("Response received: {0}", command);
+            Log.Debug("Response received: {command}", command);
             switch (command)
             {
                 case "$measured":

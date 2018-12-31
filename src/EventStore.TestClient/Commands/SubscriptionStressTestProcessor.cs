@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,13 +44,13 @@ namespace EventStore.TestClient.Commands
                         if (c%1000 == 0) Console.Write('\'');
                         if (c%100000 == 0)
                         {
-                            context.Log.Trace("Received total {0} events ({1} per sec)...", c, 100000.0/sw.Elapsed.TotalSeconds);
+                            context.Log.Trace("Received total {events} events ({rate} per sec)...", c, 100000.0/sw.Elapsed.TotalSeconds);
                             sw.Restart();
                         }
                         return Task.CompletedTask;
                     }).Wait();
             }
-            context.Log.Info("Subscribed to {0} streams...", subscriptionCount);
+            context.Log.Info("Subscribed to {subscriptionCount} streams...", subscriptionCount);
             return true;
         }
     }

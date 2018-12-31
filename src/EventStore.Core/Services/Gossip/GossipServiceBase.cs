@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -183,11 +184,11 @@ namespace EventStore.Core.Services.Gossip
 
             if (CurrentMaster != null && node.InstanceId == CurrentMaster.InstanceId)
             {
-                Log.Trace("Looks like master [{0}, {1:B}] is DEAD (Gossip send failed), though we wait for TCP to decide.",
+                Log.Trace("Looks like master [{masterEndPoint}, {instanceId:B}] is DEAD (Gossip send failed), though we wait for TCP to decide.",
                           message.Recipient, node.InstanceId);
                 return;
             }
-            Log.Trace("Looks like node [{0}] is DEAD (Gossip send failed).", message.Recipient);
+            Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
 
             var oldCluster = _cluster;
             _cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient) ? x.Updated(isAlive: false) : x);
@@ -202,7 +203,7 @@ namespace EventStore.Core.Services.Gossip
             if (node == null || !node.IsAlive)
                 return;
 
-            Log.Trace("Looks like node [{0}] is DEAD (TCP connection lost).", message.VNodeEndPoint);
+            Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost).", message.VNodeEndPoint);
 
             var oldCluster = _cluster;
             _cluster = UpdateCluster(_cluster, x => x.Is(message.VNodeEndPoint) ? x.Updated(isAlive: false) : x);
@@ -232,8 +233,8 @@ namespace EventStore.Core.Services.Gossip
                 {
                     if ((DateTime.UtcNow - member.TimeStamp).Duration() > AllowedTimeDifference)
                     {
-                        Log.Error("Time difference between us and [{0}] is too great! "
-                                  + "UTC now: {1:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {2:yyyy-MM-dd HH:mm:ss.fff}.",
+                        Log.Error("Time difference between us and [{peerEndPoint}] is too great! "
+                                  + "UTC now: {dateTime:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {peerTimestamp:yyyy-MM-dd HH:mm:ss.fff}.",
                                   peerEndPoint, DateTime.UtcNow, member.TimeStamp);
                     }
                     mems[member.InternalHttpEndPoint] = member;
@@ -277,19 +278,35 @@ namespace EventStore.Core.Services.Gossip
 
         private static void LogClusterChange(ClusterInfo oldCluster, ClusterInfo newCluster, string source)
         {
-            Log.Trace("CLUSTER HAS CHANGED{0}", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
-            Log.Trace("Old:");
             var ipEndPointComparer = new IPEndPointComparer();
-            foreach (var oldMember in oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
-            {
-                Log.Trace(oldMember.ToString());
+
+            if(!LogManager.StructuredLog){
+                Log.Trace("CLUSTER HAS CHANGED{0}", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
+                Log.Trace("Old:");
+                foreach (var oldMember in oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
+                {
+                    Log.Trace(oldMember.ToString());
+                }
+                Log.Trace("New:");
+                foreach (var newMember in newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
+                {
+                    Log.Trace(newMember.ToString());
+                }
+                Log.Trace(new string('-', 80));
+            } else{
+                List<MemberInfo> oldMembers = oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
+                List<MemberInfo> newMembers = newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
+                Log.Trace(
+                    "CLUSTER HAS CHANGED {source}"
+                    +"\nOld:"
+                    +"\n{@oldMembers}"
+                    +"\nNew:"
+                    +"\n{@newMembers}"
+                    , source.IsNotEmptyString() ? source : string.Empty
+                    , oldMembers
+                    , newMembers
+                );
             }
-            Log.Trace("New:");
-            foreach (var newMember in newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer))
-            {
-                Log.Trace(newMember.ToString());
-            }
-            Log.Trace(new string('-', 80));
         }
     }
 }

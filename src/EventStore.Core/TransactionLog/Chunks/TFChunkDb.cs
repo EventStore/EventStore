@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -142,7 +142,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Manager.AddChunk(lastChunk);
                     if (!readOnly)
                     {
-                        Log.Info("Moving WriterCheckpoint from {0} to {1}, as it points to the scavenged chunk. "
+                        Log.Info("Moving WriterCheckpoint from {checkpoint} to {chunkEndPosition}, as it points to the scavenged chunk. "
                                  + "If that was not caused by replication of scavenged chunks, that could be a bug.",
                             checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
                         Config.WriterCheckpoint.Write(lastChunk.ChunkHeader.ChunkEndPosition);
@@ -182,15 +182,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                         }
                         catch (FileBeingDeletedException exc)
                         {
-                            Log.Trace("{0} exception was thrown while doing background validation of chunk {1}.",
+                            Log.Trace("{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",
                                 exc.GetType().Name, chunk);
-                            Log.Trace("That's probably OK, especially if truncation was request at the same time: {0}.",
+                            Log.Trace("That's probably OK, especially if truncation was request at the same time: {e}.",
                                 exc.Message);
                         }
                         catch (Exception exc)
                         {
+                            Log.FatalException(exc, "Verification of chunk {chunk} failed, terminating server...", chunk);
                             var msg = string.Format("Verification of chunk {0} failed, terminating server...", chunk);
-                            Log.FatalException(exc, msg);
                             Application.Exit(ExitCode.Error, msg);
                             return;
                         }
@@ -279,7 +279,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
                     for (int j = (i == chunk.ChunkHeader.ChunkStartNumber ? 1 : 0); j < files.Length; ++j)
                     {
-                        RemoveFile("Removing excess chunk version: {0}...", files[j]);
+                        RemoveFile("Removing excess chunk version: {chunk}...", files[j]);
                     }
                 }
 
@@ -294,11 +294,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 try
                 {
-                    RemoveFile("Deleting temporary file {0}...", tempFile);
+                    RemoveFile("Deleting temporary file {file}...", tempFile);
                 }
                 catch (Exception exc)
                 {
-                    Log.ErrorException(exc, "Error while trying to delete remaining temp file: '{0}'.", tempFile);
+                    Log.ErrorException(exc, "Error while trying to delete remaining temp file: '{tempFile}'.", tempFile);
                 }
             }
         }

@@ -45,7 +45,7 @@ namespace EventStore.TestClient
             ICmdProcessor commandProcessor;
             if (!_processors.TryGetValue(commandName, out commandProcessor))
             {
-                _log.Info("Unknown command: {0}.", commandName);
+                _log.Info("Unknown command: {command}.", commandName);
                 if (_regCommandsProcessor != null)
                     _regCommandsProcessor.Execute(context, new string[0]);
                 exitCode = 1;
@@ -67,13 +67,13 @@ namespace EventStore.TestClient
                     else
                     {
                         exitC = 1;
-                        _log.Info("Usage of {0}:{1}{2}", commandName, Environment.NewLine, commandProcessor.Usage);
+                        _log.Info("Usage of {command}:{newLine}{usage}", commandName, Environment.NewLine, commandProcessor.Usage);
                     }
                     executedEvent.Set();
                 }
                 catch (Exception exc)
                 {
-                    _log.ErrorException(exc, "Error while executing command {0}.", commandName);
+                    _log.ErrorException(exc, "Error while executing command {command}.", commandName);
                     exitC = -1;
                     executedEvent.Set();
                 }
@@ -83,14 +83,14 @@ namespace EventStore.TestClient
             context.WaitForCompletion();
 
             if (!string.IsNullOrWhiteSpace(context.Reason))
-                _log.Error("Error during execution of command: {0}.", context.Reason);
+                _log.Error("Error during execution of command: {e}.", context.Reason);
             if (context.Error != null)
             {
                 _log.ErrorException(context.Error, "Error during execution of command");
 
                 var details = new StringBuilder();
                 BuildFullException(context.Error, details);
-                _log.Error("Details: {0}", details.ToString());
+                _log.Error("Details: {details}", details.ToString());
             }
             
             exitCode = exitC == 0 ? context.ExitCode : exitC;

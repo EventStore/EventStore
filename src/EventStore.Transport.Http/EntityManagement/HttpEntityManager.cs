@@ -104,7 +104,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ArgumentException e)
             {
-                Log.ErrorException(e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
+                Log.ErrorException(e, "Description string '{description}' did not pass validation. Status description was not set.", desc);
             }
         }
 
@@ -120,7 +120,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (InvalidOperationException e)
             {
-                Log.Debug("Error during setting content type on HTTP response: {0}.", e.Message);
+                Log.Debug("Error during setting content type on HTTP response: {e}.", e.Message);
             }
             catch (ArgumentOutOfRangeException e)
             {
@@ -140,11 +140,11 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (InvalidOperationException e)
             {
-                Log.Debug("Error during setting content length on HTTP response: {0}.", e.Message);
+                Log.Debug("Error during setting content length on HTTP response: {e}.", e.Message);
             }
             catch (ArgumentOutOfRangeException e)
             {
-                Log.ErrorException(e, "Attempt to set invalid value '{0}' as content length.", length);
+                Log.ErrorException(e, "Attempt to set invalid value '{length}' as content length.", length);
             }
         }
 
@@ -165,7 +165,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.Debug("Failed to set required response headers: {0}.", e.Message);
+                Log.Debug("Failed to set required response headers: {e}.", e.Message);
             }
         }
 
@@ -177,7 +177,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.Debug("Failed to set Content-Encoding header: {0}.", e.Message);
+                Log.Debug("Failed to set Content-Encoding header: {e}.", e.Message);
             }
         }
 
@@ -196,7 +196,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.Debug("Failed to set additional response headers: {0}.", e.Message);
+                Log.Debug("Failed to set additional response headers: {e}.", e.Message);
             }
         }
 
@@ -248,7 +248,7 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             IOStreams.SafelyDispose(_currentOutputStream);
             _currentOutputStream = null;
-            CloseConnection(e => Log.Debug(message + "\nException: " + e.Message));
+            CloseConnection(e => Log.Debug(message + "\nException: {e}",e.Message));
         }
 
         public void EndReply()
@@ -350,7 +350,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.ErrorException(e, "Failed to set up forwarded response parameters for '{0}'.", RequestedUrl);
+                Log.ErrorException(e, "Failed to set up forwarded response parameters for '{requestedUrl}'.", RequestedUrl);
             }
         }
 
@@ -389,7 +389,7 @@ namespace EventStore.Transport.Http.EntityManagement
             if (copier.Error != null)
             {
                 state.Dispose();
-                CloseConnection(exc => Log.Debug("Close connection error (after crash in read request): {0}", exc.Message));
+                CloseConnection(exc => Log.Debug("Close connection error (after crash in read request): {e}", exc.Message));
 
                 state.OnError(copier.Error);
                 return;
@@ -431,21 +431,33 @@ namespace EventStore.Transport.Http.EntityManagement
             return logBuilder.ToString();
         }
 
+        private Dictionary<string,object> CreateHeaderLogStructured(NameValueCollection headers)
+        {
+            var dict = new Dictionary<string, object>();
+            foreach (var header in HttpEntity.Request.Headers)
+            {
+                dict.Add(header.ToString(), HttpEntity.Request.Headers[header.ToString()]);
+            }
+            return dict;
+        }
+
         private void LogRequest(byte[] body)
         {
             if (_logHttpRequests)
             {
-                var logBuilder = new StringBuilder();
-                logBuilder.AppendLine("HTTP Request Received");
-                logBuilder.AppendFormat("{0}\n", DateTime.Now);
-                logBuilder.AppendFormat("From: {0}\n", HttpEntity.Request.RemoteEndPoint.ToString());
-                logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Request.HttpMethod, HttpEntity.Request.Url);
-                logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Request.Headers));
+                var bodyStr = "";
                 if (body != null && body.Length > 0)
                 {
-                    logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
+                    bodyStr = System.Text.Encoding.Default.GetString(body);
                 }
-                Log.Debug(logBuilder.ToString());
+                Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n"+(LogManager.StructuredLog?"{@headers}":"{headers}")+"\n{body}"
+                , DateTime.Now
+                , HttpEntity.Request.RemoteEndPoint.ToString()
+                , HttpEntity.Request.HttpMethod
+                , HttpEntity.Request.Url
+                , LogManager.StructuredLog? (object)CreateHeaderLogStructured(HttpEntity.Request.Headers): (object)CreateHeaderLog(HttpEntity.Request.Headers)
+                , bodyStr
+                );
             }
         }
 
@@ -453,16 +465,19 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             if (_logHttpRequests)
             {
-                var logBuilder = new StringBuilder();
-                logBuilder.AppendLine("HTTP Response");
-                logBuilder.AppendFormat("{0}\n", DateTime.Now);
-                logBuilder.AppendFormat("{0} {1}\n", HttpEntity.Response.StatusCode, HttpEntity.Response.StatusDescription);
-                logBuilder.AppendLine(CreateHeaderLog(HttpEntity.Response.Headers));
+                var bodyStr = "";
                 if (body != null && body.Length > 0)
                 {
-                    logBuilder.AppendLine(System.Text.Encoding.Default.GetString(body));
+                    bodyStr = System.Text.Encoding.Default.GetString(body);
                 }
-                Log.Debug(logBuilder.ToString());
+
+                Log.Debug("HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n"+(LogManager.StructuredLog?"{@headers}":"{headers}")+"\n{body}",
+                    DateTime.Now,
+                    HttpEntity.Response.StatusCode,
+                    HttpEntity.Response.StatusDescription,
+                    LogManager.StructuredLog? (object)CreateHeaderLogStructured(HttpEntity.Request.Headers): (object)CreateHeaderLog(HttpEntity.Response.Headers),
+                    bodyStr
+                );
             }
         }
 

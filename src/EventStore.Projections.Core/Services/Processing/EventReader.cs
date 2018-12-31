@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _paused = false;
             _pauseRequested = false;
-//            _logger.Trace("Resuming event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
+//            _logger.Trace("Resuming event distribution {eventReaderCorrelationId} at '{at}'", EventReaderCorrelationId, FromAsText());
             RequestEvents();
         }
 
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!AreEventsRequested())
                 _paused = true;
-//            _logger.Trace("Pausing event distribution {0} at '{1}'", EventReaderCorrelationId, FromAsText());
+//            _logger.Trace("Pausing event distribution {eventReaderCorrelationId} at '{at}'", EventReaderCorrelationId, FromAsText());
         }
 
         public virtual void Dispose()
