@@ -114,7 +114,7 @@ namespace EventStore.BufferManagement
         /// <param name="initialBufferCount">The number of initial buffers.</param>
         /// <param name="bufferManager">The buffer manager.</param>
         public BufferPool(int initialBufferCount, BufferManager bufferManager)
-        {
+        { 
             if (initialBufferCount <= 0)
                 throw new ArgumentException("initialBufferCount");
             if (bufferManager == null)
