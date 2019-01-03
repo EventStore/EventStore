@@ -359,6 +359,7 @@ namespace EventStore.ClusterNode
             SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
             ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
             InitializationThreads = Opts.InitializationThreadsDefault;
+            StructuredLog = Opts.StructuredLogDefault;
 
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
             ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;

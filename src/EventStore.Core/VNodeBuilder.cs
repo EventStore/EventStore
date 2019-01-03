@@ -148,7 +148,7 @@ namespace EventStore.Core
             _cachedChunks = Opts.CachedChunksDefault;
             _inMemoryDb = true;
             _projectionType = ProjectionType.None;
-            _structuredLog = Opts.StructuredLog;
+            _structuredLog = Opts.StructuredLogDefault;
 
             _externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
             _externalSecureTcp = null;
