@@ -122,7 +122,7 @@ namespace EventStore.BufferManagement
             _length = 0;
             _buffers = new List<ArraySegment<byte>>(bufferManager.CheckOut(initialBufferCount));
             // must have 1 buffer
-            _chunkSize = _buffers[0].Count;
+            _chunkSize = _buffers[0].Count; 
             _bufferManager = bufferManager;
             _disposed = false;
         }
