@@ -1467,6 +1467,7 @@ namespace EventStore.Core
                     _reduceFileCachePressure,
                     _initializationThreads,
                     _faultOutOfOrderProjections,
+                    _structuredLog,
 					_autoMergeIndexes);
             
             var infoController = new InfoController(options, _projectionType);

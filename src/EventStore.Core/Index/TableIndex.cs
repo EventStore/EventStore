@@ -5,12 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Index
@@ -230,10 +232,21 @@ namespace EventStore.Core.Index
                 TryProcessAwaitingTables(commitPos, prepareCheckpoint, _autoMergeIndexes);
             }
         }
-
-        public void MergeIndexes()
+     
+        public Task MergeIndexes()
         {
-            TryProcessAwaitingTables(_indexMap.CommitCheckpoint, _indexMap.PrepareCheckpoint, true);
+            return Task.Run(() =>
+            {
+                try
+                {
+                    if (_indexMap.CommitCheckpoint == -1 && _indexMap.PrepareCheckpoint == -1) return;
+                    TryProcessAwaitingTables(_indexMap.CommitCheckpoint, _indexMap.PrepareCheckpoint, true);
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "MERGING INDEXES: error while merging indexes.");
+                }
+            }, CancellationToken.None); 
         }
 
         private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint, bool mergeIndexes)

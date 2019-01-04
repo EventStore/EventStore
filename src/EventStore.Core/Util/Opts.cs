@@ -366,7 +366,7 @@ namespace EventStore.Core.Util
         /*
          * Scavenge options
          */
-        public const string AutomergeIndexesDescr = "During an Index Merge operation, writes can be slowed down. Set this to false if you want to trigger manually the Index Merge operation";
-        public static readonly bool AutomergeIndexesDefault = true;
+        public const string AutoMergeIndexesDescr = "During an Index Merge operation, writes can be slowed down. Set this to false if you want to trigger manually the Index Merge operation";
+        public static readonly bool AutoMergeIndexesDefault = true;
     }
 }

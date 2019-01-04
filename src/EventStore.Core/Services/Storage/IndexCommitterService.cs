@@ -11,9 +11,11 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using System.Security.Principal;
+using EventStore.Core.Index;
+using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -30,7 +32,8 @@ namespace EventStore.Core.Services.Storage
                                          IMonitoredQueue,
                                          IHandle<SystemMessage.StateChangeMessage>,
                                          IHandle<SystemMessage.BecomeShuttingDown>,
-                                         IHandle<StorageMessage.CommitAck>
+                                         IHandle<StorageMessage.CommitAck>,
+                                         IHandle<ClientMessage.MergeIndexes>
     {
         private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
         private readonly IIndexCommitter _indexCommitter;
@@ -38,6 +41,8 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _replicationCheckpoint;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly int _commitCount;
+        private readonly ITableIndex _tableIndex;
+        private readonly ITFChunkScavengerLogManager _logManager;
         private Thread _thread;
         private bool _stop;
         private VNodeState _state;
@@ -54,7 +59,7 @@ namespace EventStore.Core.Services.Storage
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
         public Task Task { get {return _tcs.Task;} }
 
-        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount)
+        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex, ITFChunkScavengerLogManager logManager)
         {
             Ensure.NotNull(indexCommitter, "indexCommitter");
             Ensure.NotNull(publisher, "publisher");
@@ -67,6 +72,8 @@ namespace EventStore.Core.Services.Storage
             _replicationCheckpoint = replicationCheckpoint;
             _writerCheckpoint = writerCheckpoint;
             _commitCount = commitCount;
+            _tableIndex = tableIndex;
+            _logManager = logManager;
         }
 
         public void Init(long checkpointPosition)
@@ -439,6 +446,41 @@ namespace EventStore.Core.Services.Storage
                     return CommitAcks.Count >= commitCount && _hadSelf;
                 }
             }
+        }
+
+        private Task _mergeIndexesTask;
+
+        public void Handle(ClientMessage.MergeIndexes message)
+        {
+            if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) return;
+            if (_mergeIndexesTask != null && _mergeIndexesTask.Status == TaskStatus.Running)
+            {
+                Log.Info("Index Merge Operation already running...");
+                MakeReplyForMergeIndexes(message);
+                return;
+            }
+            _mergeIndexesTask = _tableIndex.MergeIndexes().ContinueWith(t =>
+            {
+                _tableIndex.Scavenge(_logManager.CreateLog(), default(CancellationToken));
+            });
+            MakeReplyForMergeIndexes(message);
+        }
+
+        private static void MakeReplyForMergeIndexes(ClientMessage.MergeIndexes message)
+        {
+            message.Envelope.ReplyWith(new ClientMessage.MergeIndexesResponse(message.CorrelationId,
+                ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started));
+        }
+
+        private bool IsAllowed(IPrincipal user, Guid correlationId, IEnvelope envelope)
+        {
+            if (user == null || (!user.IsInRole(SystemRoles.Admins) && !user.IsInRole(SystemRoles.Operations)))
+            {
+                envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
+                return false;
+            }
+
+            return true;
         }
     }
 }

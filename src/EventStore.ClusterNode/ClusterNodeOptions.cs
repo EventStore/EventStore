@@ -243,8 +243,8 @@ namespace EventStore.ClusterNode
         [ArgDescription(Opts.StructuredLogDescr, Opts.DbGroup)]
         public bool StructuredLog { get; set; }
 		
-		[ArgDescription(Opts.AutomergeIndexesDescr, Opts.DbGroup)]
-        public bool AutomergeIndexes { get; set; }
+		[ArgDescription(Opts.AutoMergeIndexesDescr, Opts.DbGroup)]
+        public bool AutoMergeIndexes { get; set; }
 
         public ClusterNodeOptions()
         {
@@ -366,7 +366,7 @@ namespace EventStore.ClusterNode
             ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
             ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 
-            AutomergeIndexes = Opts.AutomergeIndexesDefault;
+            AutoMergeIndexes = Opts.AutoMergeIndexesDefault;
         }
     }
 }

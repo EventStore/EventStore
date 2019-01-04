@@ -219,7 +219,7 @@ namespace EventStore.ClusterNode
                         .WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold)
                         .WithChunkInitialReaderCount(options.ChunkInitialReaderCount)
                         .WithInitializationThreads(options.InitializationThreads)
-                        .WithAutoMergeIndexes(options.AutomergeIndexes);
+                        .WithAutoMergeIndexes(options.AutoMergeIndexes);
 
             if(options.GossipSeed.Length > 0)
                 builder.WithGossipSeeds(options.GossipSeed);

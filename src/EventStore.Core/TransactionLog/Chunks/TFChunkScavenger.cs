@@ -76,21 +76,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public Task MergeIndexes()
-        {
-            return Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    _tableIndex.MergeIndexes();
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "MERGING INDEXES: error while merging indexes.");
-                }
-            }, TaskCreationOptions.LongRunning);
-        }
-
         public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0, CancellationToken ct = default(CancellationToken))
         {
             Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));

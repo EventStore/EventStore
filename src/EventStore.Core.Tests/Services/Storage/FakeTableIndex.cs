@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Services.Storage
@@ -59,9 +60,9 @@ namespace EventStore.Core.Tests.Services.Storage
             ScavengeCount++;
         }
 
-        public void MergeIndexes()
+        public Task MergeIndexes()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

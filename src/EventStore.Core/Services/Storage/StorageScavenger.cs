@@ -15,7 +15,6 @@ namespace EventStore.Core.Services.Storage
 {
 
     public class StorageScavenger : 
-        IHandle<ClientMessage.MergeIndexes>,
         IHandle<ClientMessage.ScavengeDatabase>, 
         IHandle<ClientMessage.StopDatabaseScavenge>, 
         IHandle<SystemMessage.StateChangeMessage>
@@ -53,18 +52,6 @@ namespace EventStore.Core.Services.Storage
             if (message.State == VNodeState.Master || message.State == VNodeState.Slave)
             {
                 _logManager.Initialise();
-            }
-        }
-
-        public void Handle(ClientMessage.MergeIndexes message)
-        {
-            if (IsAllowed(message.User, message.CorrelationId, message.Envelope))
-            {
-                var tfChunkScavengerLog = _logManager.CreateLog();
-                var mergeIndexes = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex, _readIndex);
-                mergeIndexes.MergeIndexes();
-                message.Envelope.ReplyWith(new ClientMessage.MergeIndexesResponse(message.CorrelationId,
-                    ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started));
             }
         }
 
