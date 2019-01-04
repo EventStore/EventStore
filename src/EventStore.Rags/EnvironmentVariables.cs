@@ -7,7 +7,7 @@ namespace EventStore.Rags
 {
     public static class EnvironmentVariables 
     {
-        static readonly Regex _regex = new Regex(@"^\[(\w+)]$");
+        static readonly Regex _regex = new Regex(@"^\$\{env\:(\w+)\}$");
 
         public static IEnumerable<OptionSource> Parse<TOptions>(Func<string, string> nameTranslator) where TOptions : class
         {
@@ -16,7 +16,9 @@ namespace EventStore.Rags
                  let environmentVariableName = nameTranslator(property.Name)
                  let environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName.ToUpper())
                  where !String.IsNullOrEmpty(environmentVariableValue)
-                 select OptionSource.String("Environment Variable", property.Name, environmentVariableValue, _regex.IsMatch(environmentVariableValue)));
+                 select ParseReferenceEnvironmentVariable(
+                     OptionSource.String("Environment Variable", property.Name, environmentVariableValue, _regex.IsMatch(environmentVariableValue)
+                )));
         }
 
         public static OptionSource ParseReferenceEnvironmentVariable(OptionSource source)
