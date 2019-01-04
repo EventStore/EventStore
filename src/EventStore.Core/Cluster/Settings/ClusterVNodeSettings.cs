@@ -245,6 +245,7 @@ namespace EventStore.Core.Cluster.Settings
             InitializationThreads = initializationThreads;
 
             FaultOutOfOrderProjections = faultOutOfOrderProjections;
+            StructuredLog = structuredLog;
         }
 
 
@@ -289,7 +290,8 @@ namespace EventStore.Core.Cluster.Settings
                                  + "ConnectionPendingSendBytesThreshold: {36}\n"
                                  + "ChunkInitialReaderCount: {37}\n"
                                  + "ReduceFileCachePressure: {38}\n"
-                                 + "InitializationThreads: {39}\n",
+                                 + "InitializationThreads: {39}\n"
+                                 + "StructuredLog: {40}\n",
                                  NodeInfo.InstanceId,
                                  NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
                                  NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -308,7 +310,7 @@ namespace EventStore.Core.Cluster.Settings
                                  NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
                                  EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
                                  ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
-                                 ReduceFileCachePressure, InitializationThreads);
+                                 ReduceFileCachePressure, InitializationThreads, StructuredLog);
         }
     }
 }

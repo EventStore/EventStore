@@ -148,7 +148,7 @@ namespace EventStore.Core
             _cachedChunks = Opts.CachedChunksDefault;
             _inMemoryDb = true;
             _projectionType = ProjectionType.None;
-            _structuredLog = Opts.StructuredLog;
+            _structuredLog = Opts.StructuredLogDefault;
 
             _externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
             _externalSecureTcp = null;
@@ -248,9 +248,9 @@ namespace EventStore.Core
         /// <summary>
         /// Enable structured logging
         /// </summary>
-        /// <param name="StructuredLog">Enable structured logging</param>
+        /// <param name="structuredLog">Enable structured logging</param>
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-        public VNodeBuilder StructuredLog(bool structuredLog)
+        public VNodeBuilder WithStructuredLogging(bool structuredLog)
         {
             _structuredLog = structuredLog;
             return this;
@@ -1454,7 +1454,8 @@ namespace EventStore.Core
                     _skipIndexScanOnReads,
                     _reduceFileCachePressure,
                     _initializationThreads,
-                    _faultOutOfOrderProjections);
+                    _faultOutOfOrderProjections,
+                    _structuredLog);
             
             var infoController = new InfoController(options, _projectionType);
 

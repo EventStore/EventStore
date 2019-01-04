@@ -285,7 +285,7 @@ namespace EventStore.ClusterNode
             if (options.ReduceFileCachePressure)
                 builder.ReduceFileCachePressure();
             if (options.StructuredLog)
-                builder.StructuredLog(options.StructuredLog);
+                builder.WithStructuredLogging(options.StructuredLog);
 
             if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0)
             {
