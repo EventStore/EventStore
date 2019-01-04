@@ -179,8 +179,9 @@ namespace EventStore.Core
             // STORAGE SUBSYSTEM
             db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
             var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
+            var maxReaderCount = ESConsts.PTableMaxReaderCount + vNodeSettings.ReaderThreadsCount;
             var readerPool = new ObjectPool<ITransactionFileReader>(
-                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, maxReaderCount,
                 () => new TFChunkReader(db, db.Config.WriterCheckpoint, optimizeReadSideCache: db.Config.OptimizeReadSideCache));
             var tableIndex = new TableIndex(indexPath,
                                             new XXHashUnsafe(),
