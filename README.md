@@ -59,7 +59,7 @@ dotnet build -c Release src/EventStore.sln
 
 To start a single node, you can then run:
 ```
-bin/Release/EventStore.ClusterNode/net471/EventStore.ClusterNode.exe --db ../db --log ../logs
+mono bin/Release/EventStore.ClusterNode/net471/EventStore.ClusterNode.exe --db ../db --log ../logs
 ```
 
 You'll need to launch the node with `mono` on Linux or Mac OS X.
