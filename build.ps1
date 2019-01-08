@@ -192,6 +192,8 @@ Function Start-Build{
             if(-Not (Test-Path (Join-Path $uiSrcDirectory "package.json"))) {
                 Exec { git submodule update --init ./ }
             }
+            Exec { npm install bower@~1.8.4 -g }
+            Exec { bower install --allow-root }
             Exec { npm install gulp@~3.8.8 -g }
             Exec { npm install }
             Exec { gulp dist }        
