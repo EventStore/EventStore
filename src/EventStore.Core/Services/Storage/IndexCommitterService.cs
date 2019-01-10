@@ -12,9 +12,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
-using System.Security.Principal;
 using EventStore.Core.Index;
-using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
@@ -452,7 +450,6 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(ClientMessage.MergeIndexes message)
         {
-            if (!IsAllowed(message.User, message.CorrelationId, message.Envelope)) return;
             if (_mergeIndexesTask != null && _mergeIndexesTask.Status == TaskStatus.Running)
             {
                 Log.Info("Index Merge Operation already running...");
@@ -470,17 +467,6 @@ namespace EventStore.Core.Services.Storage
         {
             message.Envelope.ReplyWith(new ClientMessage.MergeIndexesResponse(message.CorrelationId,
                 ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started));
-        }
-
-        private bool IsAllowed(IPrincipal user, Guid correlationId, IEnvelope envelope)
-        {
-            if (user == null || (!user.IsInRole(SystemRoles.Admins) && !user.IsInRole(SystemRoles.Operations)))
-            {
-                envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId, ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
-                return false;
-            }
-
-            return true;
         }
     }
 }
