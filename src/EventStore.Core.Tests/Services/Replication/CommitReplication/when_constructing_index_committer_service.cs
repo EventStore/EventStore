@@ -8,11 +8,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Services.Replication;
 using NUnit.Framework;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication
 {
@@ -25,42 +22,41 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication
         protected InMemoryBus _publisher = new InMemoryBus("publisher");
         protected FakeIndexCommitter _indexCommitter = new FakeIndexCommitter();
         protected ITableIndex _tableIndex = new FakeTableIndex();
-        protected ITFChunkScavengerLogManager _tfChunkScavengerLogManager = new FakeTfChunkLogManager();
 
         [Test]
         public void null_index_committer_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(null, _publisher, _replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(null, _publisher, _replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex));
         }
 
         [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, null, _replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, null, _replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex));
         }
 
         [Test]
         public void null_writer_checkpoint_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, null, _commitCount, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, null, _commitCount, _tableIndex));
         }
 
         [Test]
         public void null_replication_checkpoint_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher, null, _writerCheckpoint, _commitCount, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher, null, _writerCheckpoint, _commitCount, _tableIndex));
         }
 
         [Test]
         public void commit_count_of_zero_throws_argument_out_of_range_exception()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint, 0, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint, 0, _tableIndex));
         }
 
         [Test]
         public void negative_commit_count_throws_argument_out_of_range_exception()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint, -1, _tableIndex, _tfChunkScavengerLogManager));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint, -1, _tableIndex));
         }
     }
 }

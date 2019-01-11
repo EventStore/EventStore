@@ -228,12 +228,8 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
-            // IO DISPATCHER
-            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
-            var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(), TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
-
             var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
-                db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount, tableIndex, scavengerLogManager);
+                db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount, tableIndex);
             AddTask(indexCommitterService.Task);
 
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
@@ -456,6 +452,8 @@ namespace EventStore.Core
             subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
 
             // PERSISTENT SUBSCRIPTIONS
+            // IO DISPATCHER
+            var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
             _mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
             _mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
@@ -505,6 +503,7 @@ namespace EventStore.Core
             perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
             // STORAGE SCAVENGER
+            var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(), TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
             var storageScavenger = new StorageScavenger(db,
                                                         tableIndex,
                                                         readIndex,
@@ -514,7 +513,6 @@ namespace EventStore.Core
                                                         unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
             // ReSharper disable RedundantTypeArgumentsOfMethod
-            //_mainBus.Subscribe<ClientMessage.MergeIndexes>(storageScavenger);
             _mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
             _mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
             _mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);

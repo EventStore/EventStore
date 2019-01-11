@@ -249,6 +249,11 @@ namespace EventStore.Core.Index
             }, CancellationToken.None); 
         }
 
+        public bool IsBackgroungTaskRunning
+        {
+            get { return _backgroundRunning; }
+        }
+
         private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint, bool mergeIndexes)
         {
             lock (_awaitingTablesLock)

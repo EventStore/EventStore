@@ -64,5 +64,10 @@ namespace EventStore.Core.Tests.Services.Storage
         {
             return Task.CompletedTask;
         }
+
+        public bool IsBackgroungTaskRunning
+        {
+            get { return false; }
+        }
     }
 }

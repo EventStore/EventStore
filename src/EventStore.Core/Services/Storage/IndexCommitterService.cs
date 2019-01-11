@@ -40,7 +40,6 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _writerCheckpoint;
         private readonly int _commitCount;
         private readonly ITableIndex _tableIndex;
-        private readonly ITFChunkScavengerLogManager _logManager;
         private Thread _thread;
         private bool _stop;
         private VNodeState _state;
@@ -57,7 +56,7 @@ namespace EventStore.Core.Services.Storage
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
         public Task Task { get {return _tcs.Task;} }
 
-        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex, ITFChunkScavengerLogManager logManager)
+        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex)
         {
             Ensure.NotNull(indexCommitter, "indexCommitter");
             Ensure.NotNull(publisher, "publisher");
@@ -71,7 +70,6 @@ namespace EventStore.Core.Services.Storage
             _writerCheckpoint = writerCheckpoint;
             _commitCount = commitCount;
             _tableIndex = tableIndex;
-            _logManager = logManager;
         }
 
         public void Init(long checkpointPosition)
@@ -446,20 +444,16 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private Task _mergeIndexesTask;
-
         public void Handle(ClientMessage.MergeIndexes message)
         {
-            if (_mergeIndexesTask != null && _mergeIndexesTask.Status == TaskStatus.Running)
+            if (_tableIndex.IsBackgroungTaskRunning)
             {
                 Log.Info("Index Merge Operation already running...");
                 MakeReplyForMergeIndexes(message);
                 return;
             }
-            _mergeIndexesTask = _tableIndex.MergeIndexes().ContinueWith(t =>
-            {
-                _tableIndex.Scavenge(_logManager.CreateLog(), default(CancellationToken));
-            });
+
+            _tableIndex.MergeIndexes();
             MakeReplyForMergeIndexes(message);
         }
 

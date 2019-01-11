@@ -23,5 +23,6 @@ namespace EventStore.Core.Index
 
         void Scavenge(IIndexScavengerLog log, CancellationToken ct);
         Task MergeIndexes();
+        bool IsBackgroungTaskRunning { get; }
     }
 }
