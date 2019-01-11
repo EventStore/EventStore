@@ -446,9 +446,9 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(ClientMessage.MergeIndexes message)
         {
-            if (_tableIndex.IsBackgroungTaskRunning)
+            if (_tableIndex.IsBackgroundTaskRunning)
             {
-                Log.Info("Index Merge Operation already running...");
+                Log.Info("A background operation is already running...");
                 MakeReplyForMergeIndexes(message);
                 return;
             }

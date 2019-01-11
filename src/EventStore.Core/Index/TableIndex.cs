@@ -249,7 +249,7 @@ namespace EventStore.Core.Index
             }, CancellationToken.None); 
         }
 
-        public bool IsBackgroungTaskRunning
+        public bool IsBackgroundTaskRunning
         {
             get { return _backgroundRunning; }
         }
