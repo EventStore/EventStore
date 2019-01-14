@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
@@ -14,6 +15,8 @@ namespace EventStore.Transport.Tcp
         private readonly SocketArgsPool _connectSocketArgsPool;
         private readonly ConcurrentDictionary<Guid, PendingConnection> _pendingConections;
         private readonly Timer _timer;
+
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpClientConnector>();
 
         public TcpClientConnector()
         {
@@ -159,6 +162,11 @@ namespace EventStore.Transport.Tcp
         private bool RemoveFromConnecting(PendingConnection pendingConnection)
         {
             PendingConnection conn;
+            if (pendingConnection.Connection == null)
+            {
+                Log.Warn("Network Card disconnected");
+                return false;
+            }
             return _pendingConections.TryRemove(pendingConnection.Connection.ConnectionId, out conn)
                    && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
         }
