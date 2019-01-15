@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands
                 {
                     context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...", conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
-                    var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster, null);
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster);
                     var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
                     sw.Start();
                     conn.EnqueueSend(package);
@@ -98,7 +98,7 @@ namespace EventStore.TestClient.Commands
                     }
                     context.Log.Info("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
 
-                    var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition, 10, resolveLinkTos, requireMaster, null);
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition, 10, resolveLinkTos, requireMaster);
                     var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
                     conn.EnqueueSend(package);
                 },

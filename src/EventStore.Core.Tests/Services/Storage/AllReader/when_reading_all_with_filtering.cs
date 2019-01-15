@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
         {
             var expectedEventTypes = new StringFilter(new string[] { "event-type" });
             var pos = new TFPos(this.firstEvent.LogPosition, this.firstEvent.LogPosition);
-            var result = ReadIndex.ReadAllEventsForward(pos, 10, expectedEventTypes);
+            var result = ReadIndex.ReadAllEventsForwardFiltered(pos, 10, 10, expectedEventTypes);
             Assert.AreEqual(2, result.Records.Count);
         }
     }

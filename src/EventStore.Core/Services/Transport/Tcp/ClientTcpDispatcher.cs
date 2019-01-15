@@ -63,6 +63,9 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddUnwrapper(TcpCommand.ReadAllEventsBackward, UnwrapReadAllEventsBackward, ClientVersion.V2);
             AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompleted, ClientVersion.V2);
 
+            AddUnwrapper(TcpCommand.ReadAllEventsForwardFiltered, UnwrapReadAllEventsForwardFiltered, ClientVersion.V2);
+            AddWrapper<ClientMessage.ReadAllEventsForwardFilteredCompleted>(WrapReadAllEventsForwardFilteredCompleted, ClientVersion.V2);
+
             AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream, ClientVersion.V2);
             AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream, ClientVersion.V2);
 
@@ -400,11 +403,11 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEvents>();
             if (dto == null) return null;
 
-            StringFilter allowedTypes = new StringFilter(dto.AllowedEventTypes);
             return new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
                                                           dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
-                                                          dto.ResolveLinkTos, dto.RequireMaster, null, user, null, allowedTypes);
+                                                          dto.ResolveLinkTos, dto.RequireMaster, null, user, null);
         }
+
 
         private static TcpPackage WrapReadAllEventsForwardCompleted(ClientMessage.ReadAllEventsForwardCompleted msg)
         {
@@ -431,6 +434,31 @@ namespace EventStore.Core.Services.Transport.Tcp
                 msg.NextPos.CommitPosition, msg.NextPos.PreparePosition,
                 (TcpClientMessageDto.ReadAllEventsCompleted.ReadAllResult)msg.Result, msg.Error);
             return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private static ClientMessage.ReadAllEventsForwardFiltered UnwrapReadAllEventsForwardFiltered(TcpPackage package, IEnvelope envelope, IPrincipal user)
+        {
+            var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEventsFiltered>();
+            if (dto == null) return null;
+
+            StringFilter allowedTypes = new StringFilter(dto.AllowedEventTypes);
+            int maxSearchWindow = dto.MaxCount;
+            if(dto.MaxSearchWindow.HasValue)
+            {
+                maxSearchWindow = dto.MaxSearchWindow.GetValueOrDefault();
+            }
+            return new ClientMessage.ReadAllEventsForwardFiltered(Guid.NewGuid(), package.CorrelationId, envelope,
+                                                          dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
+                                                          dto.ResolveLinkTos, dto.RequireMaster, maxSearchWindow, null, user, null, allowedTypes);
+        }
+
+        private static TcpPackage WrapReadAllEventsForwardFilteredCompleted(ClientMessage.ReadAllEventsForwardFilteredCompleted msg)
+        {
+            var dto = new TcpClientMessageDto.ReadAllEventsFilteredCompleted(
+                msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEvents(msg.Events),
+                msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, msg.IsEndOfStream,
+                (TcpClientMessageDto.ReadAllEventsFilteredCompleted.ReadAllResult)msg.Result, msg.Error);
+            return new TcpPackage(TcpCommand.ReadAllEventsForwardFilteredCompleted, msg.CorrelationId, dto.Serialize());
         }
 
         private static TcpClientMessageDto.ResolvedEvent[] ConvertToResolvedEvents(ResolvedEvent[] events)

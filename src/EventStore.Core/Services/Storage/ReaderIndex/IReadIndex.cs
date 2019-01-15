@@ -22,12 +22,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         /// Positions is specified as pre-positions (pointer at the beginning of the record).
         /// </summary>
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
-        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, StringFilter allowedEventTypes);
         /// <summary>
         /// Returns event records in the reverse sequence they were committed into TF.
         /// Positions is specified as post-positions (pointer after the end of record).
         /// </summary>
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
+        IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow, StringFilter allowedEventTypes);
 
         bool IsStreamDeleted(string streamId);
         long GetStreamLastEventNumber(string streamId);
