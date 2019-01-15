@@ -106,6 +106,15 @@ namespace EventStore.Core.Tests.Util
         }
 
         [Test]
+        public void system_events_not_regexed()
+        {
+            StringFilter sf = new StringFilter(new string[] { "$User" });
+            Assert.True(sf.IsStringAllowed("$User"));
+            Assert.False(sf.IsStringAllowed("User"));
+            Assert.False(sf.IsStringAllowed("abdef"));
+        }
+
+        [Test]
         public void invalid_regexes_throws()
         {
             Assert.Throws<ArgumentException>(() => new StringFilter(new string[] { "ab[c-def" }));
