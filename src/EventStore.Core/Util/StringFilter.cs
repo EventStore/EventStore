@@ -28,13 +28,39 @@ namespace EventStore.Core.Util
             {
                 _strategy = new AlwaysAllowStrategy();
             }
-            else if (allowedStrings.Count == 1)
-            {
-                _strategy = new SingleStringStrategy(allowedStrings[0]);
-            }
             else
             {
-                _strategy = new RegexStrategy(allowedStrings);
+                var plainStrings = new List<string>();
+                var regexes = new List<Regex>();
+
+                foreach (var str in allowedStrings)
+                {
+                    if (RegexCollectionStrategy.IsRegexString(str))
+                    {
+                        regexes.Add(new Regex(str, RegexOptions.Compiled));
+                    }
+                    else
+                    {
+                        plainStrings.Add(str);
+                    }
+                }
+                var strategies = new List<IFilterStrategy>();
+
+                if (plainStrings.Count == 1)
+                {
+                    strategies.Add(new SingleStringStrategy(plainStrings[0]));
+                }
+                else if (plainStrings.Count > 1)
+                {
+                    strategies.Add(new PlainStringCollectionStrategy(plainStrings));
+                }
+
+                if (regexes.Count != 0)
+                {
+                    strategies.Add(new RegexCollectionStrategy(regexes));
+                }
+
+                _strategy = new MultiStrategyStrategy(strategies);
             }
         }
 
@@ -73,11 +99,11 @@ namespace EventStore.Core.Util
             }
         }
 
-        private class RegexStrategy : IFilterStrategy
+        private class PlainStringCollectionStrategy : IFilterStrategy
         {
             private readonly Regex _allowedStringsRegex;
 
-            public RegexStrategy(IEnumerable<string> allowedStrings)
+            public PlainStringCollectionStrategy(IEnumerable<string> allowedStrings)
             {
                 var filters = allowedStrings.Select(Regex.Escape);
                 _allowedStringsRegex = new Regex("^" + string.Join("|", filters) + "$", RegexOptions.Compiled);
@@ -86,6 +112,55 @@ namespace EventStore.Core.Util
             public bool IsStringAllowed(string s)
             {
                 return _allowedStringsRegex.IsMatch(s);
+            }
+        }
+
+        private class RegexCollectionStrategy : IFilterStrategy
+        {
+            private readonly List<Regex> regexes;
+
+            public RegexCollectionStrategy(List<Regex> regexes)
+            {
+                this.regexes = regexes;
+            }
+
+            public static bool IsRegexString(string s)
+            {
+                return !s.Equals(Regex.Escape(s));
+            }
+
+            public bool IsStringAllowed(string s)
+            {
+                foreach(var regex in regexes)
+                {
+                    if(regex.IsMatch(s))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        private class MultiStrategyStrategy : IFilterStrategy
+        {
+            private readonly List<IFilterStrategy> strategies;
+
+            public MultiStrategyStrategy(List<IFilterStrategy> strategies)
+            {
+                this.strategies = strategies;
+            }
+
+            public bool IsStringAllowed(string s)
+            {
+                foreach(var strat in strategies)
+                {
+                    if (strat.IsStringAllowed(s))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
         }
     }
