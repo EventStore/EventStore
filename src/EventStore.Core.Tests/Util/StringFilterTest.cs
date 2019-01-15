@@ -76,5 +76,39 @@ namespace EventStore.Core.Tests.Util
             Assert.False(sf.IsStringAllowed("the"));
             Assert.False(sf.IsStringAllowed("hedge"));
         }
+
+        [Test]
+        public void regex_supported_in_match()
+        {
+            StringFilter sf = new StringFilter(new string[] { "foo-.+" });
+            Assert.True(sf.IsStringAllowed("foo-bar"));
+            Assert.True(sf.IsStringAllowed("foo-foo"));
+            Assert.False(sf.IsStringAllowed("foo-"));
+        }
+
+        [Test]
+        public void regex_supported_in_match2()
+        {
+            StringFilter sf = new StringFilter(new string[] { "ab[c-e]fg" });
+            Assert.True(sf.IsStringAllowed("abcfg"));
+            Assert.True(sf.IsStringAllowed("abdfg"));
+            Assert.True(sf.IsStringAllowed("abefg"));
+            Assert.False(sf.IsStringAllowed("abbfg"));
+        }
+
+        [Test]
+        public void dashes_in_plain_string_not_interpreted_as_regex()
+        {
+            StringFilter sf = new StringFilter(new string[] { "abc-def" });
+            Assert.True(sf.IsStringAllowed("abc-def"));
+            Assert.False(sf.IsStringAllowed("abcef"));
+            Assert.False(sf.IsStringAllowed("abdef"));
+        }
+
+        [Test]
+        public void invalid_regexes_throws()
+        {
+            Assert.Throws<ArgumentException>(() => new StringFilter(new string[] { "ab[c-def" }));
+        }
     }
 }
