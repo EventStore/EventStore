@@ -38,6 +38,7 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Diagnostics;
+using EventStore.Core.Services.Plugins;
 
 namespace EventStore.Core
 {
@@ -342,6 +343,12 @@ namespace EventStore.Core
             var persistentSubscriptionController = new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
             var electController = new ElectController(_mainQueue);
 
+            // Plugins 
+            var pluginsHostService = new PluginsHostService(vNodeSettings.PluginsServiceFactory, db.Config.WriterCheckpoint);
+            _mainBus.Subscribe<SystemMessage.StateChangeMessage>(pluginsHostService);
+            _mainBus.Subscribe<PluginMessage.GetStats>(pluginsHostService);
+            var pluginController = new PluginsController(vNodeSettings.PluginsControllerFactory, _mainQueue, _workersHandler, pluginsHostService);
+
             // HTTP SENDERS
             gossipController.SubscribeSenders(httpPipe);
             electController.SubscribeSenders(httpPipe);
@@ -361,6 +368,7 @@ namespace EventStore.Core
             if(vNodeSettings.GossipOnPublic)
                 _externalHttpService.SetupController(gossipController);
             _externalHttpService.SetupController(histogramController);
+            _externalHttpService.SetupController(pluginController);
 
             _mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);

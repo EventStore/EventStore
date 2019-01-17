@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EventStore.Plugins</id>
+    <version>1.8.0</version>
+    <title>EventStore.Plugins</title>
+    <authors>EventStore LLP - Riccardo Di Nuzzo</authors>
+    <owners>EventStore LLP</owners>    
+    <licenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://github.com/EventStore/EventStore</projectUrl>    
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>This library is used to build Plugins for Event Store (eventstore.org)</description>
+    <releaseNotes>Make TryHandle asynch</releaseNotes>
+    <copyright>Copyright 2018</copyright>
+    <tags>EventStore, Plugin</tags>
+  </metadata>
+</package>
