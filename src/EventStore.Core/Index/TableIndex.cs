@@ -235,6 +235,12 @@ namespace EventStore.Core.Index
      
         public Task MergeIndexes()
         {
+            if (_autoMergeIndexes)
+            {
+                Log.Warn("Manual Indexes Merge is not allowed when AutoMergeIndexes option is true");
+                return Task.CompletedTask;
+            }
+
             return Task.Run(() =>
             {
                 try
