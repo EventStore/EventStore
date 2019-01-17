@@ -404,7 +404,8 @@ namespace EventStore.Core.Index
             byte version,
             int indexCacheDepth = 16,
             bool skipIndexVerify = false, 
-            bool mergeIndexes = true)
+            bool mergeIndexes = true, 
+            bool autoMergeIndexes = true)
         {
             Ensure.Nonnegative(prepareCheckpoint, "prepareCheckpoint");
             Ensure.Nonnegative(commitCheckpoint, "commitCheckpoint");
@@ -416,6 +417,9 @@ namespace EventStore.Core.Index
 
             if (mergeIndexes)
             {
+                if (autoMergeIndexes)
+                    tables = Flatted(tables);
+
                 for (int level = 0; level < tables.Count; level++)
                 {
                     if (tables[level].Count >= _maxTablesPerLevel)
@@ -429,11 +433,17 @@ namespace EventStore.Core.Index
                     }
                 }
             }
-            else
-                Log.Info("AutoMergeIndexes option is set to false and index-merge's must be manually triggered.");
             
             var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
+        }
+
+        private static List<List<PTable>> Flatted(IEnumerable<List<PTable>> tables)
+        {
+            var flattened = new List<PTable>();
+            foreach (var t in tables.Where(a => a.Any()))
+                flattened.AddRange(t);
+            return new List<List<PTable>> {flattened};
         }
 
         public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
