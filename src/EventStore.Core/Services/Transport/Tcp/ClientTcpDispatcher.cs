@@ -457,7 +457,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = new TcpClientMessageDto.ReadAllEventsFilteredCompleted(
                 msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEvents(msg.Events),
                 msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, msg.IsEndOfStream,
-                (TcpClientMessageDto.ReadAllEventsFilteredCompleted.ReadAllResult)msg.Result, msg.Error);
+                (TcpClientMessageDto.ReadAllEventsFilteredCompleted.ReadAllFilteredResult)msg.Result, msg.Error);
             return new TcpPackage(TcpCommand.ReadAllEventsForwardFilteredCompleted, msg.CorrelationId, dto.Serialize());
         }
 

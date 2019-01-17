@@ -664,28 +664,28 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxCount;
   
-    [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    [ProtoMember(4, IsRequired = false, Name=@"max_search_window", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? MaxSearchWindow;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
-    [ProtoMember(5, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    [ProtoMember(6, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
-  
-    [ProtoMember(6, IsRequired = false, Name=@"max_search_window", DataFormat = DataFormat.TwosComplement)]
-    public readonly int? MaxSearchWindow;
   
     [ProtoMember(7, Name=@"allowed_event_types", DataFormat = DataFormat.Default)]
     public readonly string[] AllowedEventTypes;
   
     private ReadAllEventsFiltered() {}
   
-    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster, int? maxSearchWindow, string[] allowedEventTypes)
+    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, string[] allowedEventTypes)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         MaxCount = maxCount;
+        MaxSearchWindow = maxSearchWindow;
         ResolveLinkTos = resolveLinkTos;
         RequireMaster = requireMaster;
-        MaxSearchWindow = maxSearchWindow;
         AllowedEventTypes = allowedEventTypes;
     }
   }
@@ -712,13 +712,13 @@ namespace EventStore.Core.Messages
     public readonly bool IsEndOfStream;
   
     [ProtoMember(7, IsRequired = false, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly ReadAllEventsFilteredCompleted.ReadAllResult Result;
+    public readonly ReadAllEventsFilteredCompleted.ReadAllFilteredResult Result;
   
     [ProtoMember(8, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
   
-    [ProtoContract(Name=@"ReadAllResult")]
-    public enum ReadAllResult
+    [ProtoContract(Name=@"ReadAllFilteredResult")]
+    public enum ReadAllFilteredResult
     {
             
       [ProtoEnum(Name=@"Success", Value=0)]
@@ -736,7 +736,7 @@ namespace EventStore.Core.Messages
   
     private ReadAllEventsFilteredCompleted() {}
   
-    public ReadAllEventsFilteredCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, ReadAllEventsFilteredCompleted.ReadAllResult result, string error)
+    public ReadAllEventsFilteredCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, ReadAllEventsFilteredCompleted.ReadAllFilteredResult result, string error)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;

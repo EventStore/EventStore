@@ -14,6 +14,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
 
+
 namespace EventStore.Core.Services.Storage
 {
     public class StorageReaderWorker: IHandle<ClientMessage.ReadEvent>,
@@ -165,7 +166,7 @@ namespace EventStore.Core.Services.Storage
         {
             if (msg.Expires < DateTime.UtcNow)
             {
-                Log.Debug("Read All Stream Events Forward operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
+                Log.Debug("Read All Stream Events Forward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}", msg.CommitPosition, msg.PreparePosition, msg.Expires);
                 return;
             }
             using (HistogramService.Measure(_readerAllRangeHistogram))
@@ -173,7 +174,7 @@ namespace EventStore.Core.Services.Storage
                 var res = ReadAllEventsForwardFiltered(msg);
                 switch (res.Result)
                 {
-                    case ReadAllResult.Success:
+                    case ReadAllFilteredResult.Success:
                         if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0)
                         {
                             _publisher.Publish(new SubscriptionMessage.PollStream(
@@ -183,7 +184,7 @@ namespace EventStore.Core.Services.Storage
                         else
                             msg.Envelope.ReplyWith(res);
                         break;
-                    case ReadAllResult.NotModified:
+                    case ReadAllFilteredResult.NotModified:
                         if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.CurrentPos.CommitPosition > res.TfLastCommitPosition)
                         {
                             _publisher.Publish(new SubscriptionMessage.PollStream(
@@ -193,8 +194,8 @@ namespace EventStore.Core.Services.Storage
                         else
                             msg.Envelope.ReplyWith(res);
                         break;
-                    case ReadAllResult.Error:
-                    case ReadAllResult.AccessDenied:
+                    case ReadAllFilteredResult.Error:
+                    case ReadAllFilteredResult.AccessDenied:
                         msg.Envelope.ReplyWith(res);
                         break;
                     default:
@@ -436,27 +437,27 @@ namespace EventStore.Core.Services.Storage
                         pos = new TFPos(checkpoint, checkpoint);
                     }
                     if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
-                        return NoDataForFilteredCommand(msg, ReadAllResult.Error, pos, lastCommitPosition, "Invalid position.");
+                        return NoDataForFilteredCommand(msg, ReadAllFilteredResult.Error, pos, lastCommitPosition, "Invalid position.");
                     if (msg.ValidationTfLastCommitPosition == lastCommitPosition)
-                        return NoDataForFilteredCommand(msg, ReadAllResult.NotModified, pos, lastCommitPosition);
+                        return NoDataForFilteredCommand(msg, ReadAllFilteredResult.NotModified, pos, lastCommitPosition);
                     var access = _readIndex.CheckStreamAccess(SystemStreams.AllStream, StreamAccessType.Read, msg.User);
                     if (!access.Granted)
-                        return NoDataForFilteredCommand(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
+                        return NoDataForFilteredCommand(msg, ReadAllFilteredResult.AccessDenied, pos, lastCommitPosition);
 
                     var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow, msg.AllowedEventTypes);
                     var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
                     if (resolved == null)
-                        return NoDataForFilteredCommand(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
+                        return NoDataForFilteredCommand(msg, ReadAllFilteredResult.AccessDenied, pos, lastCommitPosition);
 
                     var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
                     return new ClientMessage.ReadAllEventsForwardFilteredCompleted(
-                        msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
+                        msg.CorrelationId, ReadAllFilteredResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
                         res.CurrentPos, res.NextPos, res.PrevPos, lastCommitPosition, res.IsEndOfStream);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error during processing ReadAllEventsForwardFiltered request.");
-                    return NoDataForFilteredCommand(msg, ReadAllResult.Error, pos, lastCommitPosition, exc.Message);
+                    return NoDataForFilteredCommand(msg, ReadAllFilteredResult.Error, pos, lastCommitPosition, exc.Message);
                 }
             }
         }
@@ -510,7 +511,7 @@ namespace EventStore.Core.Services.Storage
                 msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition);
         }
 
-        private ClientMessage.ReadAllEventsForwardFilteredCompleted NoDataForFilteredCommand(ClientMessage.ReadAllEventsForwardFiltered msg, ReadAllResult result, TFPos pos, long lastCommitPosition, string error = null)
+        private ClientMessage.ReadAllEventsForwardFilteredCompleted NoDataForFilteredCommand(ClientMessage.ReadAllEventsForwardFiltered msg, ReadAllFilteredResult result, TFPos pos, long lastCommitPosition, string error = null)
         {
             return new ClientMessage.ReadAllEventsForwardFilteredCompleted(
                 msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
