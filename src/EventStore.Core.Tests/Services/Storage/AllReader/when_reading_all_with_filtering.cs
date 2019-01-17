@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
         [Test]
         public void should_read_only_allowed_events()
         {
-            var expectedEventTypes = new StringFilter(new string[] { "event-type" });
+            var expectedEventTypes = new StringFilter(new[] { "event-type" });
             var pos = new TFPos(this.firstEvent.LogPosition, this.firstEvent.LogPosition);
             var result = ReadIndex.ReadAllEventsForwardFiltered(pos, 10, 10, expectedEventTypes);
             Assert.AreEqual(2, result.Records.Count);
