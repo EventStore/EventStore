@@ -433,6 +433,7 @@
     <Compile Include="DataStructures\BloomFilter.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkReaderExistsAtOptimizer.cs" />
     <Compile Include="Util\StringFilter.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadAllFilteredResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

@@ -12,18 +12,18 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
 
         protected override void WriteTestScenario()
         {
-            this.firstEvent = this.WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
+            firstEvent = WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
+            WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
+            WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
+            WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
         }
 
         [Test]
         public void should_read_only_allowed_events()
         {
-            var expectedEventTypes = new StringFilter(new string[] { "event-type" });
+            var expectedEventTypes = new StringFilter(new[] { "event-type" });
             var pos = new TFPos(this.firstEvent.LogPosition, this.firstEvent.LogPosition);
-            var result = ReadIndex.ReadAllEventsForward(pos, 10, expectedEventTypes);
+            var result = ReadIndex.ReadAllEventsForwardFiltered(pos, 10, 10, expectedEventTypes);
             Assert.AreEqual(2, result.Records.Count);
         }
     }
