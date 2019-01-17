@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void all_strings_allowed_when_passing_null()
         {
-            StringFilter sf = new StringFilter(null);
+            var sf = new StringFilter(null);
             Assert.True(sf.IsStringAllowed("lorem"));
             Assert.True(sf.IsStringAllowed("ipsum"));
             Assert.True(sf.IsStringAllowed("dolor"));
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void all_strings_allowed_when_passing_empty_array()
         {
-            StringFilter sf = new StringFilter(new string[0]);
+            var sf = new StringFilter(new string[0]);
             Assert.True(sf.IsStringAllowed("lorem"));
             Assert.True(sf.IsStringAllowed("ipsum"));
             Assert.True(sf.IsStringAllowed("dolor"));
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void only_one_string_allowed_when_passing_single_string()
         {
-            StringFilter sf = new StringFilter(new string[] { "lorem" });
+            var sf = new StringFilter(new string[] { "lorem" });
             Assert.True(sf.IsStringAllowed("lorem"));
             Assert.False(sf.IsStringAllowed("ipsum"));
             Assert.False(sf.IsStringAllowed("dolor"));
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void only_selected_strings_allowed_when_passing_list_of_strings()
         {
-            StringFilter sf = new StringFilter(new string[] { "lorem", "ipsum", "dolor" });
+            var sf = new StringFilter(new string[] { "lorem", "ipsum", "dolor" });
             Assert.True(sf.IsStringAllowed("lorem"));
             Assert.True(sf.IsStringAllowed("ipsum"));
             Assert.True(sf.IsStringAllowed("dolor"));
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void substrings_do_not_match_for_multiple_strings()
         {
-            StringFilter sf = new StringFilter(new string[] { "The quick brown fox", "jumped over the hedge"});
+            var sf = new StringFilter(new string[] { "The quick brown fox", "jumped over the hedge"});
             Assert.True(sf.IsStringAllowed("The quick brown fox"));
             Assert.True(sf.IsStringAllowed("jumped over the hedge"));
             Assert.False(sf.IsStringAllowed("The"));
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void substrings_do_not_match_for_single_string()
         {
-            StringFilter sf = new StringFilter(new string[] { "The quick brown fox jumped over the hedge" });
+            var sf = new StringFilter(new string[] { "The quick brown fox jumped over the hedge" });
             Assert.True(sf.IsStringAllowed("The quick brown fox jumped over the hedge"));
             Assert.False(sf.IsStringAllowed("The quick brown fox"));
             Assert.False(sf.IsStringAllowed("jumped over the hedge"));
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void regex_supported_in_match()
         {
-            StringFilter sf = new StringFilter(new string[] { "foo-.+" });
+            var sf = new StringFilter(new string[] { "foo-.+" });
             Assert.True(sf.IsStringAllowed("foo-bar"));
             Assert.True(sf.IsStringAllowed("foo-foo"));
             Assert.False(sf.IsStringAllowed("foo-"));
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void regex_supported_in_match2()
         {
-            StringFilter sf = new StringFilter(new string[] { "ab[c-e]fg" });
+            var sf = new StringFilter(new string[] { "ab[c-e]fg" });
             Assert.True(sf.IsStringAllowed("abcfg"));
             Assert.True(sf.IsStringAllowed("abdfg"));
             Assert.True(sf.IsStringAllowed("abefg"));
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void dashes_in_plain_string_not_interpreted_as_regex()
         {
-            StringFilter sf = new StringFilter(new string[] { "abc-def" });
+            var sf = new StringFilter(new string[] { "abc-def" });
             Assert.True(sf.IsStringAllowed("abc-def"));
             Assert.False(sf.IsStringAllowed("abcef"));
             Assert.False(sf.IsStringAllowed("abdef"));
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Util
         [Test]
         public void system_events_not_regexed()
         {
-            StringFilter sf = new StringFilter(new string[] { "$User" });
+            var sf = new StringFilter(new string[] { "$User" });
             Assert.True(sf.IsStringAllowed("$User"));
             Assert.False(sf.IsStringAllowed("User"));
             Assert.False(sf.IsStringAllowed("abdef"));

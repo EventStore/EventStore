@@ -88,9 +88,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             // PreparePosition to long.MaxValue, so if you decide to read backwards from PrevPos, 
             // you will receive all prepares.
             var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
-            long consideredEventsCount = 0;
-            bool firstCommit = true;
-            bool reachedEndOfStream = false;
+            var consideredEventsCount = 0L;
+            var firstCommit = true;
+            var reachedEndOfStream = false;
             using (var reader = _backend.BorrowReader())
             {
                 long nextCommitPos = pos.CommitPosition;
