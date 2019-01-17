@@ -12,10 +12,10 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
 
         protected override void WriteTestScenario()
         {
-            this.firstEvent = this.WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
-            this.WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
+            firstEvent = WriteSingleEvent("ES1", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
+            WriteSingleEvent("ES2", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
+            WriteSingleEvent("ES3", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type", retryOnFail: true);
+            WriteSingleEvent("ES4", 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "other-event-type", retryOnFail: true);
         }
 
         [Test]
