@@ -28,7 +28,7 @@ namespace EventStore.Core.Bus
         private readonly TimeSpan _slowMsgThreshold;
 
         private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
-        private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
 
         private Thread _thread;
         private volatile bool _stop;

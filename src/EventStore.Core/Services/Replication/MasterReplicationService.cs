@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Replication
         private volatile bool _newSubscriptions;
         private TimeSpan _noQuorumTimestamp = TimeSpan.Zero;
         private bool _noQuorumNotified;
-        private ManualResetEventSlim _flushSignal = new ManualResetEventSlim();
+        private ManualResetEventSlim _flushSignal = new ManualResetEventSlim(false, 1);
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
         public Task Task { get {return _tcs.Task;} }
         
