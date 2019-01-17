@@ -757,7 +757,7 @@ namespace EventStore.Core.Messages
             public readonly TFPos PrevPos;
             public readonly long TfLastCommitPosition;
 
-            public virtual bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
+            public bool IsEndOfStream { get { return Events == null || Events.Length < MaxCount; } }
 
             public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
                                                  StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
