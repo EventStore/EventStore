@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
+using static EventStore.Core.Messages.TcpClientMessageDto.ReadAllEventsFilteredCompleted;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -889,7 +890,7 @@ namespace EventStore.Core.Messages
 
             public readonly Guid CorrelationId;
 
-            public readonly ReadAllResult Result;
+            public readonly ReadAllFilteredResult Result;
             public readonly string Error;
 
             public readonly ResolvedEvent[] Events;
@@ -902,7 +903,7 @@ namespace EventStore.Core.Messages
             public readonly long TfLastCommitPosition;
             public readonly bool IsEndOfStream;
 
-            public ReadAllEventsForwardFilteredCompleted(Guid correlationId, ReadAllResult result, string error, ResolvedEvent[] events,
+            public ReadAllEventsForwardFilteredCompleted(Guid correlationId, ReadAllFilteredResult result, string error, ResolvedEvent[] events,
                                                  StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
                                                  TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition, 
                                                  bool isEndOfStream)
