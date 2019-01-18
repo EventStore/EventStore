@@ -332,7 +332,7 @@ namespace EventStore.Core.Index
                             (streamId, currentHash) => UpgradeHash(streamId, currentHash),
                             entry => reader.ExistsAt(entry.Position),
                             entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
-                            _indexCacheDepth, _skipIndexVerify, mergeIndexes);
+                            _indexCacheDepth, _skipIndexVerify, mergeIndexes, _autoMergeIndexes);
                     }
 
                     _indexMap = mergeResult.MergedMap;

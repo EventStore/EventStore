@@ -417,8 +417,9 @@ namespace EventStore.Core.Index
 
             if (mergeIndexes)
             {
-                if (autoMergeIndexes)
-                    tables = Flatted(tables);
+                // Flat the levels if we are in manual merge indexes mode
+                if (!autoMergeIndexes)
+                    tables = new List<List<PTable>> {tables.SelectMany(a => a).ToList()};
 
                 for (int level = 0; level < tables.Count; level++)
                 {
@@ -436,14 +437,6 @@ namespace EventStore.Core.Index
             
             var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
-        }
-
-        private static List<List<PTable>> Flatted(IEnumerable<List<PTable>> tables)
-        {
-            var flattened = new List<PTable>();
-            foreach (var t in tables.Where(a => a.Any()))
-                flattened.AddRange(t);
-            return new List<List<PTable>> {flattened};
         }
 
         public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
