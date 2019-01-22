@@ -151,10 +151,15 @@ namespace EventStore.Core
             Log.Info("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8);
             Log.Info("{description,-25} {maxGeneration}", "GC:", GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
             Log.Info("{description,-25} {logsDirectory}", "LOGS:", LogManager.LogsDirectory);
+            
+
+
             if(!structuredLog)
                 Log.Info("{esOptions}", EventStoreOptions.DumpOptions());
-            else
+            else{
+                Console.WriteLine(EventStoreOptions.DumpOptions());
                 Log.Info("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
+            } 
 
             if (options.WhatIf)
                 Application.Exit(ExitCode.Success, "WhatIf option specified");
