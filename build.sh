@@ -2,8 +2,8 @@
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PRODUCTNAME="Event Store Open Source"
-COMPANYNAME="Event Store LLP"
-COPYRIGHT="Copyright 2018 Event Store LLP. All rights reserved."
+COMPANYNAME="Event Store Ltd"
+COPYRIGHT="Copyright 2018 Event Store Ltd. All rights reserved."
 
 
 # ------------ End of configuration -------------
@@ -14,7 +14,7 @@ NET_FRAMEWORK_API="4.7.1-api"
 MONO_LIB_DIR_LINUX="/usr/lib/mono"
 MONO_LIB_DIR_MAC="/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono"
 
-function usage() {    
+function usage() {
 cat <<EOF
 Usage:
   $0 [<version=0.0.0.0>] [<configuration=Debug|Release>] [<build_ui=yes|no>] [<mono_lib_dir_override>]

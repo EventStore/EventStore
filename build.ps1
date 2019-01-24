@@ -95,7 +95,7 @@ Function Patch-VersionInfo {
         $branchPattern = 'public static readonly string Branch = ".*";'
         $commitHashPattern = 'public static readonly string Hashtag = ".*";'
         $timestampPattern = 'public static readonly string Timestamp = ".*";'
-        
+
         $edited = (Get-Content $versionInfoFilePath) | ForEach-Object {
             % {$_ -replace "\/\*+.*\*+\/", "" } |
             % {$_ -replace "\/\/+.*$", "" } |
@@ -161,8 +161,8 @@ Function Start-Build{
 
     #Configuration
     $productName = "Event Store Open Source"
-    $companyName = "Event Store LLP"
-    $copyright = "Copyright 2018 Event Store LLP. All rights reserved."
+    $companyName = "Event Store Ltd"
+    $copyright = "Copyright 2018 Event Store Ltd. All rights reserved."
     $platform = "x64"
 
     $baseDirectory = $PSScriptRoot
@@ -179,12 +179,12 @@ Function Start-Build{
 
     Write-Info "Version: $Version"
     Write-Info "Platform: $platform"
-    Write-Info "Configuration: $Configuration"    
+    Write-Info "Configuration: $Configuration"
     Write-Info "Build UI: $BuildUI"
 
     #Build Event Store UI
     if ($BuildUI -eq "yes") {
-        #Build the UI    
+        #Build the UI
         if (Test-Path $uiDistDirectory) {
             Remove-Item -Recurse -Force $uiDistDirectory
         }
@@ -196,7 +196,7 @@ Function Start-Build{
             Exec { bower install --allow-root }
             Exec { npm install gulp@~3.8.8 -g }
             Exec { npm install }
-            Exec { gulp dist }        
+            Exec { gulp dist }
             Exec { mv es-dist $uiDistDirectory }
         Pop-Location
     }
@@ -208,7 +208,7 @@ Function Start-Build{
     $commitHash = Get-GitCommitHash
     $timestamp = Get-GitTimestamp
     $branchName = Get-GitBranchOrTag
-    
+
     $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
     $versionInfoFile = Resolve-Path (Join-Path $srcDirectory (Join-Path "EventStore.Common" (Join-Path "Utils" "VersionInfo.cs"))) -Relative
     try {

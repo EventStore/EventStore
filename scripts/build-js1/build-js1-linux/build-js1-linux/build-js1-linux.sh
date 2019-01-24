@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # File License:
-#     Copyright 2018, Event Store LLP
+#     Copyright 2018, Event Store Ltd
 #
 #     Licensed under the Apache License, Version 2.0 (the "License");
 #     you may not use this file except in compliance with the License.
