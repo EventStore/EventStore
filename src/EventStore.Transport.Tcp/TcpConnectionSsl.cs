@@ -332,7 +332,7 @@ namespace EventStore.Transport.Tcp
         {
             lock (_streamLock)
             {
-                if (_isSending || _sendQueue.Count == 0 || _sslStream == null || !_isAuthenticated) return;
+                if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
                 _isSending = true;
             }
@@ -489,7 +489,7 @@ namespace EventStore.Transport.Tcp
                 return;
             do
             {
-                if (_receiveQueue.Count > 0 && _receiveCallback != null)
+                if (!_receiveQueue.IsEmpty && _receiveCallback != null)
                 {
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)
@@ -522,7 +522,7 @@ namespace EventStore.Transport.Tcp
                     NotifyReceiveDispatched(bytes);
                 }
                 Interlocked.Exchange(ref _receiveHandling, 0);
-            } while (_receiveQueue.Count > 0
+            } while (!_receiveQueue.IsEmpty
                      && _receiveCallback != null
                      && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
         }

@@ -126,7 +126,7 @@ namespace EventStore.ClientAPI.Embedded
                 }
 
                 Interlocked.Exchange(ref _actionExecuting, 0);
-            } while (_actionQueue.Count > 0 && Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0);
+            } while (!_actionQueue.IsEmpty && Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0);
         }
 
         public abstract void Start(Guid correlationId);

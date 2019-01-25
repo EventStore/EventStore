@@ -332,7 +332,7 @@ namespace EventStore.ClientAPI
                     }
                 }
                 Interlocked.CompareExchange(ref _isProcessing, 0, 1);
-            } while (_liveQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
+            } while (!_liveQueue.IsEmpty && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
 
         internal void DropSubscription(SubscriptionDropReason reason, Exception error)

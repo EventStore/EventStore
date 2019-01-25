@@ -130,7 +130,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         {
             lock (_sendLock)
             {
-                if (_isSending || _sendQueue.Count == 0 || _socket == null) return;
+                if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
                 if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
                 _isSending = true;
             }
