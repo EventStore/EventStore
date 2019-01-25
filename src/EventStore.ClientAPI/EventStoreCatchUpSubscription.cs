@@ -1,4 +1,5 @@
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using System;
@@ -59,7 +60,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         protected readonly bool Verbose;
 
-        private readonly ConcurrentQueue<ResolvedEvent> _liveQueue = new ConcurrentQueue<ResolvedEvent>();
+        private readonly ConcurrentQueueWrapper<ResolvedEvent> _liveQueue = new ConcurrentQueueWrapper<ResolvedEvent>();
         private EventStoreSubscription _subscription;
         private DropData _dropData;
         private volatile bool _allowProcessing;

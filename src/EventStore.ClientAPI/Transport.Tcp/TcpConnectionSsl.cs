@@ -11,6 +11,7 @@ using System.Threading;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using System.Collections.Concurrent;
+using EventStore.ClientAPI.Common.Utils.Threading;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
@@ -51,8 +52,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly Guid _connectionId;
         private readonly ILogger _log;
 
-        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
-        private readonly ConcurrentQueue<ArraySegment<byte>> _receiveQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue = new ConcurrentQueueWrapper<ArraySegment<byte>>();
+        private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _receiveQueue = new ConcurrentQueueWrapper<ArraySegment<byte>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _streamLock = new object();

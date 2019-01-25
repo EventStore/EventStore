@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -55,7 +56,7 @@ namespace EventStore.ClientAPI.Internal
         private readonly string _connectionName;
         private readonly ConnectionSettings _settings;
         private readonly Dictionary<Guid, OperationItem> _activeOperations = new Dictionary<Guid, OperationItem>();
-        private readonly ConcurrentQueue<OperationItem> _waitingOperations = new ConcurrentQueue<OperationItem>();
+        private readonly ConcurrentQueueWrapper<OperationItem> _waitingOperations = new ConcurrentQueueWrapper<OperationItem>();
         private readonly List<OperationItem> _retryPendingOperations = new List<OperationItem>();
         private readonly object _lock = new object();
         private int _totalOperationCount;

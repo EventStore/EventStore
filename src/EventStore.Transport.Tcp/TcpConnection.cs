@@ -67,7 +67,7 @@ namespace EventStore.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue = new ConcurrentQueueWrapper<ArraySegment<byte>>();
         private readonly Queue<ReceivedData> _receiveQueue = new Queue<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 

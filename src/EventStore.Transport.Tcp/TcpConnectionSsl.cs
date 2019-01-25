@@ -79,8 +79,8 @@ namespace EventStore.Transport.Tcp
         private readonly bool _verbose;
         public string _clientConnectionName;
 
-        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
-        private readonly ConcurrentQueue<ReceivedData> _receiveQueue = new ConcurrentQueue<ReceivedData>();
+        private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue = new ConcurrentQueueWrapper<ArraySegment<byte>>();
+        private readonly ConcurrentQueueWrapper<ReceivedData> _receiveQueue = new ConcurrentQueueWrapper<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _streamLock = new object();
