@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Storage
 
         public string Name { get { return _queueStats.Name; } }
         private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Index Committer");
-        private readonly ConcurrentQueue<StorageMessage.CommitAck> _replicatedQueue = new ConcurrentQueue<StorageMessage.CommitAck>();
+        private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue = new ConcurrentQueueWrapper<StorageMessage.CommitAck>();
         private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions =
                             new ConcurrentDictionary<long, PendingTransaction>();
 
@@ -100,7 +100,7 @@ namespace EventStore.Core.Services.Storage
 #if DEBUG
                         _queueStats.Dequeued(replicatedMessage);
 #endif
-                        _queueStats.ProcessingStarted(replicatedMessage.GetType(), 0);
+                        _queueStats.ProcessingStarted(replicatedMessage.GetType(), _replicatedQueue.Count);
                         ProcessCommitReplicated(replicatedMessage);
                         _queueStats.ProcessingEnded(1);
                     }
