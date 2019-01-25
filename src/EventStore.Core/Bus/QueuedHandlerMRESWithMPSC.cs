@@ -32,7 +32,7 @@ namespace EventStore.Core.Bus
         // assuming 8bytes per object ref its ~1MB.
         private readonly MPSCMessageQueue _queue = new MPSCMessageQueue(128*1024);
 
-        private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
 
         private Thread _thread;
         private volatile bool _stop;
