@@ -1361,6 +1361,49 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class MergeIndexes : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly IPrincipal User;
+
+            public MergeIndexes(IEnvelope envelope, Guid correlationId, IPrincipal user)
+            {
+                Ensure.NotNull(envelope, "envelope");
+                Envelope = envelope;
+                CorrelationId = correlationId;
+                User = user;
+            }
+        }
+
+        public class MergeIndexesResponse : Message
+        {
+            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+            public override int MsgTypeId { get { return TypeId; } }
+
+            public readonly Guid CorrelationId;
+            public readonly MergeIndexesResult Result;
+
+            public MergeIndexesResponse(Guid correlationId, MergeIndexesResult result)
+            {
+                CorrelationId = correlationId;
+                Result = result;
+            }
+
+            public override string ToString()
+            {
+                return String.Format("Result: {0}", Result);
+            }
+
+            public enum MergeIndexesResult
+            {
+                Started
+            }
+        }
+
         public class ScavengeDatabase: Message
         {
             private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

@@ -363,5 +363,10 @@ namespace EventStore.Core.Util
 
 	    public const string AuthenticationConfigFileDescr = "Path to the configuration file for authentication configuration (if applicable).";
 		public static readonly string AuthenticationConfigFileDefault = string.Empty;
+        /*
+         * Scavenge options
+         */
+        public const string MaxAutoMergeIndexLevelDescr = "During an Index Merge operation, writes can be slowed down. Set this to the number you want the automatic merge to happen. Any other PTable will be merged manually.";
+        public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
     }
 }

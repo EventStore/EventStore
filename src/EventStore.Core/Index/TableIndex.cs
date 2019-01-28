@@ -1,16 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Index
@@ -54,6 +56,7 @@ namespace EventStore.Core.Index
 
         private bool _initialized;
         public const string ForceIndexVerifyFilename = ".forceverify";
+        private readonly int _maxAutoMergeIndexLevel;
 
         public TableIndex(string directory,
                           IHasher lowHasher,
@@ -61,13 +64,15 @@ namespace EventStore.Core.Index
                           Func<IMemTable> memTableFactory,
                           Func<TFReaderLease> tfReaderFactory,
                           byte ptableVersion,
+                          int maxAutoMergeIndexLevel,
                           int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false,
                           bool inMem = false,
                           bool skipIndexVerify = false,
                           int indexCacheDepth = 16,
-                          int initializationThreads = 1)
+                          int initializationThreads = 1
+                          )
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
@@ -93,10 +98,12 @@ namespace EventStore.Core.Index
             _indexCacheDepth = indexCacheDepth;
             _initializationThreads = initializationThreads;
             _ptableVersion = ptableVersion;
-            _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
+            _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 
             _lowHasher = lowHasher;
             _highHasher = highHasher;
+
+            _maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -110,7 +117,7 @@ namespace EventStore.Core.Index
 
             if (_inMem)
             {
-                _indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel);
+                _indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel, int.MaxValue);
                 _prepareCheckpoint = _indexMap.PrepareCheckpoint;
                 _commitCheckpoint = _indexMap.CommitCheckpoint;
                 return;
@@ -211,7 +218,7 @@ namespace EventStore.Core.Index
         {
             //should only be called on a single thread.
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
-
+            
             var collection = entries.Select(x => CreateIndexEntry(x)).ToList();
             table.AddEntries(collection);
 
@@ -222,23 +229,62 @@ namespace EventStore.Core.Index
                 {
                     prepareCheckpoint = Math.Max(prepareCheckpoint, collection[i].Position);
                 }
+                
+                TryProcessAwaitingTables(commitPos, prepareCheckpoint);
+            }
+        }
+     
+        public Task MergeIndexes()
+        {
+            TryManualMerge();
+            return Task.CompletedTask;
+        }
 
-                lock (_awaitingTablesLock)
-                {
-                    var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
-                    newTables.AddRange(_awaitingMemTables.Select(
-                        (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
+        public bool IsBackgroundTaskRunning
+        {
+            get { return _backgroundRunning; }
+        }
+
+		//Automerge only
+        private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint)
+        {
+            lock (_awaitingTablesLock)
+            {
+                var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+                newTables.AddRange(_awaitingMemTables.Select(
+                    (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
                     Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
-                    _awaitingMemTables = newTables;
-                    if (_inMem) return;
-                    TryProcessAwaitingTables();
+                _awaitingMemTables = newTables;
+                if (_inMem) return;
+                TryProcessAwaitingTables();
 
-                    if (_additionalReclaim)
-                        ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
-                }
+                if (_additionalReclaim)
+                    ThreadPool.QueueUserWorkItem(x => ReclaimMemoryIfNeeded(_awaitingMemTables));
             }
+        }
+
+        public void TryManualMerge()
+        {
+	        lock (_awaitingTablesLock)
+	        {
+		        
+		        var (maxLevel, highest) = _indexMap.GetTableForManualMerge();
+		        if (highest == null) return; //no work to do
+
+		        //These values are actually ignored later as manual merge will never change the checkpoint as no
+				//new entries are added, but they can be helpful to see when the manual merge was called
+				//because of the way the "queue" currently works (LIFO) it should always be the same
+			    var prepare = _indexMap.PrepareCheckpoint;
+			    var commit = _indexMap.CommitCheckpoint;
+			    var newTables = new List<TableItem>(_awaitingMemTables)
+			    {
+				    new TableItem(highest, prepare, commit, maxLevel)
+			    };
+			    _awaitingMemTables = newTables;
+	            TryProcessAwaitingTables();
+	        }
         }
 
         private void TryProcessAwaitingTables()
@@ -267,7 +313,6 @@ namespace EventStore.Core.Index
                         Log.Trace("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
                         if (_awaitingMemTables.Count == 1)
                         {
-
                             return;
                         }
 
@@ -286,16 +331,21 @@ namespace EventStore.Core.Index
                         ptable = (PTable) tableItem.Table;
 
                     var indexmapFile = Path.Combine(_directory, IndexMapFilename);
-
                     MergeResult mergeResult;
                     using (var reader = _tfReaderFactory())
                     {
-                        mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint,
-                            tableItem.CommitCheckpoint,
+
+	                    mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint,
+		                    tableItem.CommitCheckpoint,
+		                    
                             (streamId, currentHash) => UpgradeHash(streamId, currentHash),
                             entry => reader.ExistsAt(entry.Position),
-                            entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
-                            _indexCacheDepth, _skipIndexVerify);
+                            entry => ReadEntry(reader, entry.Position), 
+		                    _fileNameProvider,
+		                    _ptableVersion,
+		                    tableItem.Level,
+                            _indexCacheDepth, 
+		                    _skipIndexVerify);
                     }
 
                     _indexMap = mergeResult.MergedMap;
@@ -479,7 +529,8 @@ namespace EventStore.Core.Index
                         swapped = true;
                         _awaitingMemTables[j] = new TableItem(ptable,
                             tableItem.PrepareCheckpoint,
-                            tableItem.CommitCheckpoint);
+                            tableItem.CommitCheckpoint,
+                            tableItem.Level);
                         break;
                     }
                 }
@@ -758,12 +809,14 @@ namespace EventStore.Core.Index
             public readonly ISearchTable Table;
             public readonly long PrepareCheckpoint;
             public readonly long CommitCheckpoint;
+            public readonly int Level;
 
-            public TableItem(ISearchTable table, long prepareCheckpoint, long commitCheckpoint)
+            public TableItem(ISearchTable table, long prepareCheckpoint, long commitCheckpoint, int level)
             {
                 Table = table;
                 PrepareCheckpoint = prepareCheckpoint;
                 CommitCheckpoint = commitCheckpoint;
+                Level = level;
             }
         }
 

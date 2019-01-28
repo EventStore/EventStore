@@ -42,11 +42,12 @@ namespace EventStore.Core.Tests.Index.IndexVAny
                 var md5 = MD5Hash.GetHashFor(fs);
                 var md5String = BitConverter.ToString(md5).Replace("-", "");
 
-                Assert.AreEqual(4, lines.Count());
+                Assert.AreEqual(5, lines.Count());
                 Assert.AreEqual(md5String, lines[0]);
                 Assert.AreEqual(IndexMap.IndexMapVersion.ToString(), lines[1]);
                 Assert.AreEqual("-1/-1", lines[2]);
-                Assert.AreEqual("", lines[3]);
+                Assert.AreEqual($"{int.MaxValue}", lines[3]);
+                Assert.AreEqual("", lines[4]);
             }
         }
 

@@ -14,7 +14,10 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Services.Storage
 {
 
-    public class StorageScavenger : IHandle<ClientMessage.ScavengeDatabase>, IHandle<ClientMessage.StopDatabaseScavenge>, IHandle<SystemMessage.StateChangeMessage>
+    public class StorageScavenger : 
+        IHandle<ClientMessage.ScavengeDatabase>, 
+        IHandle<ClientMessage.StopDatabaseScavenge>, 
+        IHandle<SystemMessage.StateChangeMessage>
     {
         private readonly TFChunkDb _db;
         private readonly ITableIndex _tableIndex;

@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                             () => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
                                             () => new TFReaderLease(readerPool),
                                             PTableVersions.IndexV3,
+                                            5,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
             ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault, _dbResult.Db.Config.ReplicationCheckpoint);

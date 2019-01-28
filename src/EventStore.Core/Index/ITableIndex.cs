@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Index
 {
@@ -21,5 +22,7 @@ namespace EventStore.Core.Index
         IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null);
 
         void Scavenge(IIndexScavengerLog log, CancellationToken ct);
+        Task MergeIndexes();
+        bool IsBackgroundTaskRunning { get; }
     }
 }

@@ -11,9 +11,9 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using EventStore.Core.Index;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -30,7 +30,8 @@ namespace EventStore.Core.Services.Storage
                                          IMonitoredQueue,
                                          IHandle<SystemMessage.StateChangeMessage>,
                                          IHandle<SystemMessage.BecomeShuttingDown>,
-                                         IHandle<StorageMessage.CommitAck>
+                                         IHandle<StorageMessage.CommitAck>,
+                                         IHandle<ClientMessage.MergeIndexes>
     {
         private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
         private readonly IIndexCommitter _indexCommitter;
@@ -38,6 +39,7 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _replicationCheckpoint;
         private readonly ICheckpoint _writerCheckpoint;
         private readonly int _commitCount;
+        private readonly ITableIndex _tableIndex;
         private Thread _thread;
         private bool _stop;
         private VNodeState _state;
@@ -54,7 +56,7 @@ namespace EventStore.Core.Services.Storage
         private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
         public Task Task { get {return _tcs.Task;} }
 
-        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount)
+        public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher, ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex)
         {
             Ensure.NotNull(indexCommitter, "indexCommitter");
             Ensure.NotNull(publisher, "publisher");
@@ -67,6 +69,7 @@ namespace EventStore.Core.Services.Storage
             _replicationCheckpoint = replicationCheckpoint;
             _writerCheckpoint = writerCheckpoint;
             _commitCount = commitCount;
+            _tableIndex = tableIndex;
         }
 
         public void Init(long checkpointPosition)
@@ -439,6 +442,25 @@ namespace EventStore.Core.Services.Storage
                     return CommitAcks.Count >= commitCount && _hadSelf;
                 }
             }
+        }
+
+        public void Handle(ClientMessage.MergeIndexes message)
+        {
+            if (_tableIndex.IsBackgroundTaskRunning)
+            {
+                Log.Info("A background operation is already running...");
+                MakeReplyForMergeIndexes(message);
+                return;
+            }
+
+            _tableIndex.MergeIndexes();
+            MakeReplyForMergeIndexes(message);
+        }
+
+        private static void MakeReplyForMergeIndexes(ClientMessage.MergeIndexes message)
+        {
+            message.Envelope.ReplyWith(new ClientMessage.MergeIndexesResponse(message.CorrelationId,
+                ClientMessage.MergeIndexesResponse.MergeIndexesResult.Started));
         }
     }
 }

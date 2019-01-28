@@ -104,3 +104,6 @@ test_results
 
 # Visual Studio Code
 src/.vscode/
+
+#NCrunch
+_NCrunch_*/
