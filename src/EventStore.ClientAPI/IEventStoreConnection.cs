@@ -248,50 +248,6 @@ namespace EventStore.ClientAPI
         /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
         /// phase to the live subscription phase.
         /// </summary>
-        /// <param name="stream">The stream to subscribe to</param>
-        /// <param name="lastCheckpoint">The event number from which to start.
-        ///
-        /// To receive all events in the stream, use <see cref="StreamCheckpoint.StreamStart" />.
-        /// If events have already been received and resubscription from the same point
-        /// is desired, use the event number of the last event processed which
-        /// appeared on the subscription.
-        ///
-        /// Using <see cref="StreamPosition.Start" /> here will result in missing
-        /// the first event in the stream.</param>
-        /// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
-        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
-        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-        /// <param name="userCredentials">User credentials to use for the operation.</param>
-        /// <param name="readBatchSize">The batch size to use during the read phase.</param>
-        /// <param name="subscriptionName">The name of subscription.</param>
-        /// <returns>An <see cref="EventStoreStreamCatchUpSubscription"/> representing the subscription.</returns>
-        [Obsolete("This method will be obsoleted in the next major version please switch to the overload with a settings object")]
-        EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(
-                string stream,
-                long? lastCheckpoint,
-                bool resolveLinkTos,
-                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
-                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null,
-                int readBatchSize = 500,
-                string subscriptionName = "");
-
-        /// <summary>
-        /// Subscribes to a single event stream. Existing events from
-        /// lastCheckpoint onwards are read from the stream
-        /// and presented to the user of <see cref="EventStoreCatchUpSubscription"/>
-        /// as if they had been pushed.
-        ///
-        /// Once the end of the stream is read the subscription is
-        /// transparently (to the user) switched to push new events as
-        /// they are written.
-        ///
-        /// The action liveProcessingStarted is called when the
-        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
-        /// phase to the live subscription phase.
-        /// </summary>
         /// <param name="stream">The stream to subscribe to.</param>
         /// <param name="lastCheckpoint">The event number from which to start.
         ///
@@ -415,47 +371,6 @@ namespace EventStore.ClientAPI
             int? bufferSize = null,
             bool autoAck = true);
         */
-
-        /// <summary>
-        /// Subscribes to all events. Existing events from lastCheckpoint
-        /// onwards are read from Event Store and presented to the user of
-        /// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
-        ///
-        /// Once the end of the stream is read the subscription is
-        /// transparently (to the user) switched to push new events as
-        /// they are written.
-        ///
-        /// The action liveProcessingStarted is called when the
-        /// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
-        /// phase to the live subscription phase.
-        /// </summary>
-        /// <param name="lastCheckpoint">The position from which to start.
-        ///
-        /// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
-        /// If events have already been received and resubscription from the same point
-        /// is desired, use the position representing the last event processed which
-        /// appeared on the subscription.
-        ///
-        /// Using <see cref="Position.Start" /> here will result in missing
-        /// the first event in the stream.</param>
-        /// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
-        /// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-        /// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
-        /// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-        /// <param name="userCredentials">User credentials to use for the operation.</param>
-        /// <param name="readBatchSize">The batch size to use during the read phase.</param>
-        /// <param name="subscriptionName">The name of subscription.</param>
-        /// <returns>An <see cref="EventStoreAllCatchUpSubscription"/> representing the subscription.</returns>
-        [Obsolete("This overload will be removed in the next major release please use the overload with a settings object")]
-        EventStoreAllCatchUpSubscription SubscribeToAllFrom(
-                Position? lastCheckpoint,
-                bool resolveLinkTos,
-                Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
-                Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-                Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-                UserCredentials userCredentials = null,
-                int readBatchSize = 500,
-                string subscriptionName = "");
 
         /// <summary>
         /// Subscribes to a all events. Existing events from lastCheckpoint
