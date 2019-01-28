@@ -35,6 +35,7 @@ namespace EventStore.Common.Utils
                     DefaultDataDirectory = "/var/lib/eventstore";
                     DefaultLogDirectory = "/var/log/eventstore";
                     DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
+                    if(!Directory.Exists(PluginsDirectory)) PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
                     break;
                 case Platform.Mac:
                     DefaultContentDirectory = "/usr/local/share/eventstore";
@@ -42,6 +43,7 @@ namespace EventStore.Common.Utils
                     DefaultDataDirectory = "/var/lib/eventstore";
                     DefaultLogDirectory = "/var/log/eventstore";
                     DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
+                    if(!Directory.Exists(PluginsDirectory)) PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
                     break;
                 default:
                     DefaultContentDirectory = ApplicationDirectory;
