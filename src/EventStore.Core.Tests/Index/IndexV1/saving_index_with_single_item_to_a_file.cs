@@ -19,6 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private string _mergeFile;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private int _maxAutoMergeIndexLevel = 4;
 
         public saving_index_with_single_item_to_a_file(byte version){
             _ptableVersion = version;
@@ -33,11 +34,11 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
-            _map = IndexMap.FromFile(_filename);
+            _map = IndexMap.FromFile(_filename, maxAutoMergeLevel:_maxAutoMergeIndexLevel);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 7);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
             _result.MergedMap.SaveToFile(_filename);
             _result.ToDelete.ForEach(x => x.Dispose());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.Dispose());
@@ -72,12 +73,13 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 var md5 = MD5Hash.GetHashFor(fs);
                 var md5String = BitConverter.ToString(md5).Replace("-", "");
 
-                Assert.AreEqual(5, lines.Count());
+                Assert.AreEqual(6, lines.Count());
                 Assert.AreEqual(md5String, lines[0]);
                 Assert.AreEqual(_map.Version.ToString(), lines[1]);
                 Assert.AreEqual("7/11", lines[2]);
-                Assert.AreEqual("0,0," + Path.GetFileName(_tablename), lines[3]);
-                Assert.AreEqual("", lines[4]);
+				Assert.AreEqual(_maxAutoMergeIndexLevel.ToString(), lines[3]);
+                Assert.AreEqual("0,0," + Path.GetFileName(_tablename), lines[4]);
+                Assert.AreEqual("", lines[5]);
             }
         }
 

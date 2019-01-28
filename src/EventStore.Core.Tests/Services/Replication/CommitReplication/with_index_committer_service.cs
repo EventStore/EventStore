@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Index;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Services.Replication;
@@ -10,6 +11,8 @@ using NUnit.Framework;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage;
+using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication
 {
@@ -19,6 +22,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication
         protected string _eventStreamId = "test_stream";
         protected int _commitCount = 2;
         protected long _replicationPosition = 0;
+        protected ITableIndex _tableIndex;
 
         protected ICheckpoint _replicationCheckpoint;
         protected ICheckpoint _writerCheckpoint;
@@ -27,6 +31,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication
 
         protected IndexCommitterService _service;
         protected FakeIndexCommitter _indexCommitter;
+        protected ITFChunkScavengerLogManager _tfChunkScavengerLogManager;
 
         protected int _expectedCommitReplicatedMessages;
 
@@ -37,7 +42,10 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication
             _replicationCheckpoint = new InMemoryCheckpoint(_replicationPosition);
             _writerCheckpoint = new InMemoryCheckpoint(0);
             _publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _handledMessages.Add(m)));
-            _service = new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint, _commitCount);
+            _tableIndex = new FakeTableIndex();
+            _tfChunkScavengerLogManager = new FakeTfChunkLogManager();
+            _service = new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint,
+                _commitCount, _tableIndex);
             _service.Init(0);
             When();
         }
