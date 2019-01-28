@@ -75,8 +75,8 @@ namespace EventStore.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
-        private readonly ConcurrentQueue<ReceivedData> _receiveQueue = new ConcurrentQueue<ReceivedData>();
+        private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue = new ConcurrentQueueWrapper<ArraySegment<byte>>();
+        private readonly ConcurrentQueueWrapper<ReceivedData> _receiveQueue = new ConcurrentQueueWrapper<ReceivedData>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private int _sending;
@@ -149,9 +149,9 @@ namespace EventStore.Transport.Tcp
 
         private void TrySend()
         {
-            while (_sendQueue.Count > 0 && Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
+            while (!_sendQueue.IsEmpty && Interlocked.CompareExchange(ref _sending, 1, 0) == 0)
             {
-                if (_sendQueue.Count > 0 && _sendSocketArgs != null)
+                if (!_sendQueue.IsEmpty && _sendSocketArgs != null)
                 {
                     //if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 
@@ -277,9 +277,9 @@ namespace EventStore.Transport.Tcp
 
         private void TryDequeueReceivedData()
         {
-            while (_receiveQueue.Count > 0 && Interlocked.CompareExchange(ref _receiving, 1, 0) == 0)
+            while (!_receiveQueue.IsEmpty && Interlocked.CompareExchange(ref _receiving, 1, 0) == 0)
             {
-                if (_receiveQueue.Count > 0 && _receiveCallback != null)
+                if (!_receiveQueue.IsEmpty && _receiveCallback != null)
                 {
                     var callback = Interlocked.Exchange(ref _receiveCallback, null);
                     if (callback == null)

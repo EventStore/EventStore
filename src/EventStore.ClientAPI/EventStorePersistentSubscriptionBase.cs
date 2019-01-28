@@ -234,7 +234,7 @@ namespace EventStore.ClientAPI
                     }
                 }
                 Interlocked.CompareExchange(ref _isProcessing, 0, 1);
-            } while (_queue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
+            } while (!_queue.IsEmpty && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
 
         

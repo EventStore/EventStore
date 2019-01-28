@@ -97,7 +97,7 @@ namespace EventStore.Transport.Http
                 }
 
                 Interlocked.Exchange(ref _processing, 0);
-                proceed = _queue.Count > 0 && Interlocked.CompareExchange(ref _processing, 1, 0) == 0;
+                proceed = !_queue.IsEmpty && Interlocked.CompareExchange(ref _processing, 1, 0) == 0;
             }
         }
 

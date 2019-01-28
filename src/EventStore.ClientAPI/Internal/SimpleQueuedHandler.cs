@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI.Internal
                 }
 
                 Interlocked.Exchange(ref _isProcessing, 0);
-            } while (_messageQueue.Count > 0 && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
+            } while (!_messageQueue.IsEmpty && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
         }
     }
 }

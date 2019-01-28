@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -29,7 +30,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _verboseLogging;
         protected readonly Func<TcpPackageConnection> _getConnection;
         private readonly int _maxQueueSize = 2000;
-        private readonly ConcurrentQueue<Func<Task>> _actionQueue = new ConcurrentQueue<Func<Task>>();
+        private readonly ConcurrentQueueWrapper<Func<Task>> _actionQueue = new ConcurrentQueueWrapper<Func<Task>>();
         private int _actionExecuting;
         private T _subscription;
         private int _unsubscribed;
@@ -283,7 +284,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 Interlocked.Exchange(ref _actionExecuting, 0);
-            } while (_actionQueue.Count > 0 && Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0);
+            } while (!_actionQueue.IsEmpty && Interlocked.CompareExchange(ref _actionExecuting, 1, 0) == 0);
         }
     }
 

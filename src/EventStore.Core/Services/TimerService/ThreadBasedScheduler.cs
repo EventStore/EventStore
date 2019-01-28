@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.TimerService
     {
         public string Name { get { return _queueStats.Name; } }
 
-        private readonly ConcurrentQueue<ScheduledTask> _pending = new ConcurrentQueue<ScheduledTask>();
+        private readonly ConcurrentQueueWrapper<ScheduledTask> _pending = new ConcurrentQueueWrapper<ScheduledTask>();
         private readonly PairingHeap<ScheduledTask> _tasks = new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
         private readonly ITimeProvider _timeProvider;
