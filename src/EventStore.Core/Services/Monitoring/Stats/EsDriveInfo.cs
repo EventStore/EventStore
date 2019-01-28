@@ -20,18 +20,12 @@ namespace EventStore.Core.Services.Monitoring.Stats
         {
             try
             {
-                string driveName;
                 if (OS.IsUnix)
                 {
-                    driveName = GetDirectoryRootInUnix(path, log);
-                    if (driveName == null)
-                        return null;
-                }
-                else
-                {
-                    driveName = Directory.GetDirectoryRoot(path);
+                    return GetEsDriveInfoUnix(path, log);
                 }
 
+                var driveName = Directory.GetDirectoryRoot(path);
                 var drive = new DriveInfo(driveName);
                 var esDrive = new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace);
                 return esDrive;
@@ -54,7 +48,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
                     : "0%";
         }
 
-        private static string GetDirectoryRootInUnix(string directory, ILogger log)
+        private static EsDriveInfo GetEsDriveInfoUnix(string directory, ILogger log)
         {
             // http://unix.stackexchange.com/questions/11311/how-do-i-find-on-which-physical-device-a-folder-is-located
 
@@ -71,8 +65,13 @@ namespace EventStore.Core.Services.Monitoring.Stats
                 if(driveInfoLines.Length == 0) return null;
                 var ourline = driveInfoLines[1];
                 var trimmedLine = SystemStatsHelper.SpacesRegex.Replace(ourline, " ");
-                var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
-                return driveName;
+                var info = trimmedLine.Split(' ');
+
+                var totalBytes     = long.Parse(info[1].Trim())*1024; // the '1024-blocks' column
+                var availableBytes = long.Parse(info[3].Trim())*1024; // the 'Available' column
+                var mountPoint     = info[5];                    // the 'Mounted on' column
+
+                return new EsDriveInfo(mountPoint, totalBytes, availableBytes);
             }
             catch (Exception ex)
             {
