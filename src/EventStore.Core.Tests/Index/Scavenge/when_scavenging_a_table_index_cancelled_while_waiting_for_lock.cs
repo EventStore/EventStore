@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Index.Scavenge
                 () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
                 () => fakeReader,
                 PTableVersions.IndexV4,
+                5,
                 maxSizeForMemory: 2,
                 maxTablesPerLevel: 5);
             _tableIndex.Initialize(long.MaxValue);
@@ -58,6 +59,7 @@ namespace EventStore.Core.Tests.Index.Scavenge
                 () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
                 () => fakeReader,
                 PTableVersions.IndexV4,
+                5,
                 maxSizeForMemory: 2,
                 maxTablesPerLevel: 5);
 

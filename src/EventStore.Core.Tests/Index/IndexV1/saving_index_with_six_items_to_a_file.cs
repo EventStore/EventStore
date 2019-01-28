@@ -19,6 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private IndexMap _map;
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
+        private int _maxAutoMergeIndexLevel = 4;
 
         public saving_index_with_six_items_to_a_file(byte version){
             _ptableVersion = version;
@@ -37,12 +38,12 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 2, 123);
             var table = PTable.FromMemtable(memtable, _tablename);
-            _result = _map.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            var merged = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = merged.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
-            _result = _result.MergedMap.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion);
+            _result = _map.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
+            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
+            _result = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
+            var merged = _result.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
+            _result = merged.MergedMap.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
+            _result = _result.MergedMap.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0);
             _result.MergedMap.SaveToFile(_filename);
 
             table.Dispose();
@@ -73,15 +74,16 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 var md5 = MD5Hash.GetHashFor(fs);
                 var md5String = BitConverter.ToString(md5).Replace("-", "");
 
-                Assert.AreEqual(7, lines.Count());
+                Assert.AreEqual(8, lines.Count());
                 Assert.AreEqual(md5String, lines[0]);
                 Assert.AreEqual(_map.Version.ToString(), lines[1]);
                 Assert.AreEqual("7/11", lines[2]);
+                Assert.AreEqual(int.MaxValue.ToString(), lines[3]);
                 var name = new FileInfo(_tablename).Name;
-                Assert.AreEqual("0,0," + name, lines[3]);
-                Assert.AreEqual("0,1," + name, lines[4]);
-                Assert.AreEqual("1,0," + Path.GetFileName(_mergeFile), lines[5]);
-                Assert.AreEqual("", lines[6]);
+                Assert.AreEqual("0,0," + name, lines[4]);
+                Assert.AreEqual("0,1," + name, lines[5]);
+                Assert.AreEqual("1,0," + Path.GetFileName(_mergeFile), lines[6]);
+                Assert.AreEqual("", lines[7]);
             }
         }
 

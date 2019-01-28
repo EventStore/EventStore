@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         private MergeResult _result;
         protected byte _ptableVersion = PTableVersions.IndexV1;
         private bool _skipIndexVerify;
+        private int _maxAutoMergeIndexLevel = 4;
 
         public adding_item_to_empty_index_map(byte version, bool skipIndexVerify){
             _ptableVersion = version;
@@ -41,7 +42,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0, 1, 0);
             var table = PTable.FromMemtable(memtable, _tablename,skipIndexVerify:_skipIndexVerify);
-            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion,skipIndexVerify: _skipIndexVerify);
+            _result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, _maxAutoMergeIndexLevel, 0,skipIndexVerify: _skipIndexVerify);
             table.MarkForDestruction();
         }
 

@@ -79,6 +79,8 @@ namespace EventStore.Core.Cluster.Settings
         public readonly bool SkipIndexScanOnReads;
         public readonly bool ReduceFileCachePressure;
         public readonly int InitializationThreads;
+        public readonly int MaxAutoMergeIndexLevel;
+
         public readonly bool GossipOnSingleNode;
         public readonly bool FaultOutOfOrderProjections;
         public readonly bool StructuredLog;
@@ -147,7 +149,8 @@ namespace EventStore.Core.Cluster.Settings
                                     bool reduceFileCachePressure = false,
                                     int initializationThreads = 1,
                                     bool faultOutOfOrderProjections = false,
-                                    bool structuredLog = false)
+                                    bool structuredLog = false,
+                                    int maxAutoMergeIndexLevel = 1000)
         {
             Ensure.NotEmptyGuid(instanceId, "instanceId");
             Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -243,7 +246,7 @@ namespace EventStore.Core.Cluster.Settings
             SkipIndexScanOnReads = skipIndexScanOnReads;
             ReduceFileCachePressure = reduceFileCachePressure;
             InitializationThreads = initializationThreads;
-
+            MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
             FaultOutOfOrderProjections = faultOutOfOrderProjections;
             StructuredLog = structuredLog;
         }
