@@ -56,12 +56,6 @@ namespace EventStore.ClientAPI.Projections
                             query, userCredentials, HttpStatusCode.Created);
         }
 
-        [Obsolete("Use 'Task<List<ProjectionDetails>> ListAll' instead")]
-        public Task<string> ListAllAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
-        {
-            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/any"), userCredentials, HttpStatusCode.OK);
-        }
-
         public Task<List<ProjectionDetails>> ListAll(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
             return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/any"), userCredentials, HttpStatusCode.OK)
@@ -73,12 +67,6 @@ namespace EventStore.ClientAPI.Projections
                     });
         }
 
-        [Obsolete("Use 'Task<List<ProjectionDetails>> ListOneTime' instead")]
-        public Task<string> ListOneTimeAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
-        {
-            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/onetime"), userCredentials, HttpStatusCode.OK);
-        }
-
         public Task<List<ProjectionDetails>> ListOneTime(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
         {
             return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/onetime"), userCredentials, HttpStatusCode.OK)
@@ -88,12 +76,6 @@ namespace EventStore.ClientAPI.Projections
                         var r = JObject.Parse(x.Result);
                         return r["projections"] != null ? r["projections"].ToObject<List<ProjectionDetails>>() : null;
                     });
-        }
-
-        [Obsolete("Use 'Task<List<ProjectionDetails>> ListContinuous' instead")]
-        public Task<string> ListContinuousAsString(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
-        {
-            return SendGet(endPoint.ToHttpUrl(httpSchema, "/projections/continuous"), userCredentials, HttpStatusCode.OK);
         }
 
         public Task<List<ProjectionDetails>> ListContinuous(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA)
