@@ -135,7 +135,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify, threads: _initializationThreads);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth, _skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -153,7 +153,7 @@ namespace EventStore.Core.Index
                 File.SetAttributes(indexmapFile, FileAttributes.Normal);
                 File.Delete(indexmapFile);
                 DeleteForceIndexVerifyFile();
-                _indexMap = IndexMap.FromFile(indexmapFile, maxTablesPerLevel: _maxTablesPerLevel, cacheDepth: _indexCacheDepth, skipIndexVerify: _skipIndexVerify, threads: _initializationThreads);
+                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth, _skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
             }
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;

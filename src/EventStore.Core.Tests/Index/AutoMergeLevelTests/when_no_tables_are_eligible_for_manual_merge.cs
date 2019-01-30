@@ -7,8 +7,9 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 	public class when_no_tables_are_eligible_for_manual_merge: when_max_auto_merge_level_is_set
 	{
 		[SetUp]
-		public void Setup()
+		public override void Setup()
 		{
+            base.Setup();
 			AddTables(8);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 			var (level, table)= _result.MergedMap.GetTableForManualMerge();
@@ -20,6 +21,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x=>x.MarkForDestruction());
 		}
+
 		[Test]
 		public void should_not_return_table_for_merge()
 		{

@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny
 		[Test]
 		public void should_initialize_auto_merge_level_correctly()
 		{
-			var map = IndexMap.FromFile(_filename, loadPTables: false, maxAutoMergeLevel: 4);
+			var map = IndexMapTestFactory.FromFile(_filename, loadPTables: false, maxAutoMergeLevel: 4);
 
 			var v2File = GetFilePathFor("v1tov2");
 			map.SaveToFile(v2File);
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny
 			base.TestFixtureSetUp();
             
 			_filename = GetFilePathFor("indexfile");
-			var empty = IndexMap.CreateEmpty(maxTableLevelsForAutomaticMerge:4);
+			var empty = IndexMap.CreateEmpty(2,maxTableLevelsForAutomaticMerge:4);
 			empty.SaveToFile(_filename);
 			
 		}
@@ -61,14 +61,14 @@ namespace EventStore.Core.Tests.Index.IndexVAny
 		[Test]
 		public void should_throw_if_max_auto_merge_is_larger_than_map_value()
 		{
-			Assert.Throws<CorruptIndexException>(()=> IndexMap.FromFile(_filename, maxAutoMergeLevel: 5));
+			Assert.Throws<CorruptIndexException>(()=> IndexMapTestFactory.FromFile(_filename, maxAutoMergeLevel: 5));
 		}
 
 		[Test]
 		public void can_reduce_max_auto_merge_to_lower_than_map_value()
 		{
 			IndexMap map = null;
-			Assert.DoesNotThrow(()=> map = IndexMap.FromFile(_filename, maxAutoMergeLevel: 3));
+			Assert.DoesNotThrow(()=> map = IndexMapTestFactory.FromFile(_filename, maxAutoMergeLevel: 3));
 			var newIndexFile = GetFilePathFor("indexfile2");
 			map?.SaveToFile(newIndexFile);
 			var lines = File.ReadAllLines(newIndexFile);
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny
 		[Test]
 		public void should_open_if_auto_merge_levels_match()
 		{
-			Assert.DoesNotThrow(()=> IndexMap.FromFile(_filename, maxAutoMergeLevel: 4));
+			Assert.DoesNotThrow(()=> IndexMapTestFactory.FromFile(_filename, maxAutoMergeLevel: 4));
 		}
 	}
 }

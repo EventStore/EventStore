@@ -122,15 +122,19 @@ namespace EventStore.Core.Index
                 select table.Filename;
         }
 
-        public static IndexMap CreateEmpty(int maxTablesPerLevel = 4, int maxTableLevelsForAutomaticMerge = int.MaxValue)
+        public static IndexMap CreateEmpty(int maxTablesPerLevel, int maxTableLevelsForAutomaticMerge)
         {
             return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel, maxTableLevelsForAutomaticMerge);
         }
 
-        public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4,
-	        bool loadPTables = true, int cacheDepth = 16, bool skipIndexVerify = false,
-	        int threads = 1,
-	        int maxAutoMergeLevel = int.MaxValue)
+        public static IndexMap FromFile(
+            string filename, 
+            int maxTablesPerLevel,
+	        bool loadPTables, 
+            int cacheDepth, 
+            bool skipIndexVerify,
+	        int threads,
+	        int maxAutoMergeLevel)
         {
             if (!File.Exists(filename))
                 return CreateEmpty(maxTablesPerLevel, maxAutoMergeLevel);
@@ -553,7 +557,7 @@ namespace EventStore.Core.Index
 
                         scavengedMap[level][i] = scavenged;
 
-                        var indexMap = new IndexMap(Version, scavengedMap, PrepareCheckpoint, CommitCheckpoint, _maxTablesPerLevel, int.MaxValue);
+                        var indexMap = new IndexMap(Version, scavengedMap, PrepareCheckpoint, CommitCheckpoint, _maxTablesPerLevel, _maxTableLevelsForAutomaticMerge);
                         
                         return ScavengeResult.Success(indexMap, oldTable, scavenged, spaceSaved, level, i);
                     }

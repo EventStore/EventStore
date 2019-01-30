@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _indexMapFileName = GetFilePathFor("index.map");
             _ptableFileName = GetFilePathFor("ptable");
 
-            var indexMap = IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
+            var indexMap = IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
             memtable.Add(0,0,0);
             memtable.Add(1,1,100);
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _ptable = null;
             File.Delete(_ptableFileName);
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Skip(1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, lines.Where((x,i) => i != 1));
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             File.WriteAllText(_indexMapFileName, "");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
         {
             File.WriteAllText(_indexMapFileName, "alkfjasd;lkf\nasdfasdf\n");
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], string.Format("0,{0}", _ptableFileName)});
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], _ptableFileName });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             var lines = File.ReadAllLines(_indexMapFileName);
             File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], "0,0" });
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -185,7 +185,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(123);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -203,7 +203,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
 
         [Test]
@@ -221,7 +221,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                 fs.WriteByte(b);
             }
 
-            Assert.Throws<CorruptIndexException>(() => IndexMap.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
+            Assert.Throws<CorruptIndexException>(() => IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
         }
     }
 }
