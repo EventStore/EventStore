@@ -232,7 +232,7 @@ namespace EventStore.Rags
 
             Dictionary<int, int> maximums = new Dictionary<int, int>();
 
-            int optionDescriptionWidth = 20;
+            int optionDescriptionWidth = 41;
             int standardColumnWidth = 80;
 
             List<int> columnWidths = new List<int>();
