@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.SystemData;
-
+#if!NET452
+using TaskEx = System.Threading.Tasks.Task;
+#else
+using EventStore.ClientAPI.Common.Utils.Threading;
+#endif
 namespace EventStore.ClientAPI
 {
     /// <summary>
@@ -14,7 +18,7 @@ namespace EventStore.ClientAPI
                             (subscription, e) =>
                             {
                                 eventAppeared(subscription, e);
-                                return Task.CompletedTask;
+                                return TaskEx.CompletedTask;
                             };
         
         /// <summary>
