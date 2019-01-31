@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 			_map.Dispose(TimeSpan.FromMilliseconds(100));
 			_map = IndexMapTestFactory.FromFile(filename, maxAutoMergeLevel:3);
 			var (level, table)= _map.GetTableForManualMerge();
-			Assert.AreEqual(5, level);
+			Assert.Greater(level, _maxAutoMergeLevel);
 			_result = _map.AddPTable(table, _result.MergedMap.PrepareCheckpoint, _result.MergedMap.CommitCheckpoint, UpgradeHash, ExistsAt,
 				RecordExistsAt, _fileNameProvider, _ptableVersion, 
 				level: level,

@@ -421,11 +421,23 @@ namespace EventStore.Core.Index
 
 		public Tuple<int, PTable> GetTableForManualMerge()
 		{
-			if ((_map.Count > _maxTableLevelsForAutomaticMerge && _map[_maxTableLevelsForAutomaticMerge] != null && _map[_maxTableLevelsForAutomaticMerge].Count > 0) 
-			    || _map.Count > _maxTableLevelsForAutomaticMerge +2/*see if there are any tables above the manual merge level*/)
+            //we have more than one entry at the max level
+            //or we have at least one entry at the max level and tables at a level above it
+            // or we have any tables > max level
+		    var tablesExistAtMaxLevelOrAbove = _map.Count > _maxTableLevelsForAutomaticMerge
+		            && _map[_maxTableLevelsForAutomaticMerge] != null;
+		    bool moreThanOneEntryAtMaxLevel = tablesExistAtMaxLevelOrAbove
+		                                      && _map[_maxTableLevelsForAutomaticMerge].Count > 1;
+		    bool atLeastOneEntryAtMaxLevelAndOneAboveIt = tablesExistAtMaxLevelOrAbove && _map[_maxTableLevelsForAutomaticMerge].Count == 1
+		                                                  && _map.Count > _maxTableLevelsForAutomaticMerge + 1
+		                                                  && _map.Skip(_maxTableLevelsForAutomaticMerge).Any(x=>x.Count > 0);
+		    bool moreThanOneEntryAboveMaxLevel = tablesExistAtMaxLevelOrAbove &&
+		                                         _map.Skip(_maxTableLevelsForAutomaticMerge).Any(x => x.Count > 1) ||
+		                                         _map.Skip(_maxTableLevelsForAutomaticMerge).Count(x => x.Count > 0) > 1;
+			if (moreThanOneEntryAtMaxLevel || atLeastOneEntryAtMaxLevelAndOneAboveIt || moreThanOneEntryAboveMaxLevel)
 			{
 				//we don't actually care which table we return here as manual merge will actually just iterate over anything above the max merge level
-				return Tuple.Create(_map.Count - 1, _map[_map.Count - 1].FirstOrDefault());
+				return Tuple.Create(_map.Count, _map[_map.Count - 1].FirstOrDefault());
 			}
 
 			return Tuple.Create(_map.Count-1, default(PTable) );
@@ -443,12 +455,30 @@ namespace EventStore.Core.Index
             int indexCacheDepth = 16,
             bool skipIndexVerify = false)
         {
-	        if (level < _maxTableLevelsForAutomaticMerge)
-		        return AddPTableForAutomaticMerge(tableToAdd, prepareCheckpoint, commitCheckpoint, upgradeHash,
-			        existsAt, recordExistsAt, filenameProvider, version, indexCacheDepth, skipIndexVerify);
-			//For manual merge, we are never adding any extra entries, just merging existing files, so the index p/c checkpoint won't change
-	        return AddPTableForManualMerge(PrepareCheckpoint, CommitCheckpoint, upgradeHash, existsAt, recordExistsAt,
-		        filenameProvider, version, indexCacheDepth, skipIndexVerify);
+            bool isManual;
+            //if (_maxTableLevelsForAutomaticMerge == 0)
+            //{
+            //    //when we are not auto merging at all, a manual merge will only be triggered if
+            //    //there are entries in the index map. the table it passes is always the first table
+            //    //at the maximum automerge level, so we only need to hit the first table and see if it
+            //    //matches, otherwise it must be an an add of a memtable.
+            //    //although we are not automatically merging, the automerge process is also responsible
+            //    //for writing out the memtable that just got persisted so we want to call auto merge still
+            //    isManual = _map.Count != 0 && _map[0].FirstOrDefault() == tableToAdd;
+            //}
+            //else
+            //{
+                isManual = level > _maxTableLevelsForAutomaticMerge;
+            //}
+
+            if (isManual)
+            {
+                //For manual merge, we are never adding any extra entries, just merging existing files, so the index p/c checkpoint won't change
+                return AddPTableForManualMerge(PrepareCheckpoint, CommitCheckpoint, upgradeHash, existsAt, recordExistsAt,
+                    filenameProvider, version, indexCacheDepth, skipIndexVerify);
+            }
+		    return AddPTableForAutomaticMerge(tableToAdd, prepareCheckpoint, commitCheckpoint, upgradeHash,
+			    existsAt, recordExistsAt, filenameProvider, version, indexCacheDepth, skipIndexVerify);
         }
 
         public MergeResult AddPTableForAutomaticMerge(PTable tableToAdd,
@@ -509,6 +539,8 @@ namespace EventStore.Core.Index
 
             var toDelete = new List<PTable>();
             var tablesToMerge = tables.Skip(_maxTableLevelsForAutomaticMerge).SelectMany(a => a).ToList();
+            if(tablesToMerge.Count == 1)
+                return new MergeResult(this, new List<PTable>());
 
             var filename = filenameProvider.GetFilenameNewTable();
             PTable mergedTable = PTable.MergeTo(tablesToMerge, filename, upgradeHash, existsAt, recordExistsAt,

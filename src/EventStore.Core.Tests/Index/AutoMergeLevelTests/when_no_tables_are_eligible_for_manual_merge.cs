@@ -6,7 +6,6 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 {
 	public class when_no_tables_are_eligible_for_manual_merge: when_max_auto_merge_level_is_set
 	{
-		[SetUp]
 		public override void Setup()
 		{
             base.Setup();
