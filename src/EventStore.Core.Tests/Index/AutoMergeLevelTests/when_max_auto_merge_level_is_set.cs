@@ -42,13 +42,15 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 			var first = _map;
 			if (_result != null)
 				first = _result.MergedMap;
-			_result = first.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(),skipIndexVerify:_skipIndexVerify),
+		    var pTable = PTable.FromMemtable(memtable, GetTempFilePath(),skipIndexVerify:_skipIndexVerify);
+		    _result = first.AddPTable(pTable,
 				10, 20, UpgradeHash, ExistsAt, RecordExistsAt, _fileNameProvider, _ptableVersion,
 				0, 0,skipIndexVerify:_skipIndexVerify);
 			for (int i = 3; i <= count * 2; i+=2)
 			{
-				_result = _result.MergedMap.AddPTable(
-					PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+			    pTable = PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify);
+			    _result = _result.MergedMap.AddPTable(
+					pTable,
 					i*10, (i+1)*10, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 					_fileNameProvider, _ptableVersion, 0,0, skipIndexVerify: _skipIndexVerify);
 				_result.ToDelete.ForEach(x => x.MarkForDestruction());
