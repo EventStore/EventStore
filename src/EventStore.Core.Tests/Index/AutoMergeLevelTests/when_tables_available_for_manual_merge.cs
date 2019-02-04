@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+using EventStore.Core.Index;
 using NUnit.Framework;
+using static EventStore.Core.Index.TableIndex;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 {
@@ -11,11 +13,13 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 		{
 			AddTables(100);
 			Assert.AreEqual(25, _result.MergedMap.InOrder().Count());
-			var (level, table)= _result.MergedMap.GetTableForManualMerge();
-			Assert.AreEqual(2, level);
-			_result = _result.MergedMap.AddPTable(table, _result.MergedMap.PrepareCheckpoint, _result.MergedMap.CommitCheckpoint, UpgradeHash, ExistsAt,
+			var ptableLevels = _result.MergedMap.GetAllPTablesWithLevels();
+			Assert.AreEqual(ptableLevels[_maxAutoMergeLevel].Count, 25);
+
+			var manualMergeItem = TableItem.GetManualMergeTableItem();
+			_result = _result.MergedMap.AddPTable((PTable)manualMergeItem.Table, manualMergeItem.PrepareCheckpoint, manualMergeItem.CommitCheckpoint, UpgradeHash, ExistsAt,
 				RecordExistsAt, _fileNameProvider, _ptableVersion, 
-				level: level,
+				level: manualMergeItem.Level,
 				skipIndexVerify: _skipIndexVerify);
 			Assert.AreEqual(1,_result.MergedMap.InOrder().Count());
 			

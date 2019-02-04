@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
+using EventStore.Core.Index;
 using NUnit.Framework;
+using static EventStore.Core.Index.TableIndex;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 {
@@ -12,12 +14,11 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
             base.Setup();
 			AddTables(8);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
-			var (level, table)= _result.MergedMap.GetTableForManualMerge();
-			Assert.NotNull(table);
+			var manualMergeItem = TableItem.GetManualMergeTableItem();
 			
-			_result = _result.MergedMap.AddPTable(table, _result.MergedMap.PrepareCheckpoint, _result.MergedMap.CommitCheckpoint, UpgradeHash, ExistsAt,
+			_result = _result.MergedMap.AddPTable((PTable)manualMergeItem.Table, manualMergeItem.PrepareCheckpoint, manualMergeItem.CommitCheckpoint, UpgradeHash, ExistsAt,
 				RecordExistsAt, _fileNameProvider, _ptableVersion, 
-				level: level,
+				level: manualMergeItem.Level,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x=>x.MarkForDestruction());
 		}
@@ -27,11 +28,11 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 		{
 			Assert.AreEqual(1, _result.MergedMap.InOrder().Count());
 			AddTables(3); //adding 3 tables will cause an auto merge, but not enough to give us tables for manual merge
-			var (level, table)= _result.MergedMap.GetTableForManualMerge();
-			Assert.Null(table);
-			
 			Assert.AreEqual(3,_result.MergedMap.InOrder().Count());
-			
+
+			var ptableLevels = _result.MergedMap.GetAllPTablesWithLevels();
+			Assert.AreEqual(ptableLevels[_maxAutoMergeLevel].Count, 1);
+			Assert.AreEqual(ptableLevels[_maxAutoMergeLevel+1], null);
 		}
 	}
 }

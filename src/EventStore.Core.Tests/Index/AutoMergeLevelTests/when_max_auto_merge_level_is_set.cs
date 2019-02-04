@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 	[TestFixture]
 	public class when_max_auto_merge_level_is_set : SpecificationWithDirectoryPerTestFixture
 	{
-		private readonly int _maxAutoMergeLevel;
+		protected readonly int _maxAutoMergeLevel;
 		protected  string _filename;
 		protected  IndexMap _map;
 		protected  byte _ptableVersion = 4;

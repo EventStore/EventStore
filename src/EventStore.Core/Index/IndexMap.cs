@@ -420,6 +420,22 @@ namespace EventStore.Core.Index
             }
         }
 
+        public Dictionary<int, List<PTable> > GetAllPTablesWithLevels() //this function is used only to improve testability
+        {
+            var map = _map;
+            var result = new Dictionary<int, List<PTable> > ();
+            for (int i = 0; i < map.Count; ++i)
+            {
+                result.Add(i, new List<PTable>());
+                if(map[i] != null && map[i].Count > 0){
+                    for(var j = 0; j < map[i].Count; j++){
+                        result[i].Add(map[i][j]);
+                    }
+                }
+            }
+            return result;
+        }
+
         public MergeResult AddPTable(PTable tableToAdd,
             long prepareCheckpoint,
             long commitCheckpoint,

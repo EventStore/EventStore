@@ -11,9 +11,11 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 		{
 			AddTables(3);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
-			var (level, table)= _result.MergedMap.GetTableForManualMerge();
-			Assert.AreEqual(1, level);
-			Assert.Null(table);
+			var ptableLevels = _result.MergedMap.GetAllPTablesWithLevels();
+			Assert.AreEqual(ptableLevels[0].Count, 1);
+			Assert.AreEqual(ptableLevels[1].Count, 1);
+			Assert.AreEqual(ptableLevels[_maxAutoMergeLevel], null);
+			Assert.AreEqual(ptableLevels[_maxAutoMergeLevel+1], null);
 		}
 	}
 }
