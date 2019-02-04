@@ -269,18 +269,9 @@ namespace EventStore.Core.Index
         {
 	        lock (_awaitingTablesLock)
 	        {
-		        
-		        var (maxLevel, highest) = _indexMap.GetTableForManualMerge();
-		        if (highest == null) return; //no work to do
-
-		        //These values are actually ignored later as manual merge will never change the checkpoint as no
-				//new entries are added, but they can be helpful to see when the manual merge was called
-				//because of the way the "queue" currently works (LIFO) it should always be the same
-			    var prepare = _indexMap.PrepareCheckpoint;
-			    var commit = _indexMap.CommitCheckpoint;
 			    var newTables = new List<TableItem>(_awaitingMemTables)
 			    {
-				    new TableItem(highest, prepare, commit, maxLevel)
+                    TableItem.GetManualMergeTableItem()
 			    };
 			    _awaitingMemTables = newTables;
 	            TryProcessAwaitingTables();
@@ -355,13 +346,17 @@ namespace EventStore.Core.Index
                     {
                         var memTables = _awaitingMemTables.ToList();
 
-                        var corrTable = memTables.First(x => x.Table.Id == ptable.Id);
+                        TableItem corrTable;
+                        if(tableItem.IsManualMergeTableItem){
+                            corrTable = memTables.First(x => x.Table == null);
+                        } else{
+                            corrTable = memTables.First(x => x.Table.Id == ptable.Id);
+                        }
                         memTables.Remove(corrTable);
-
                         // parallel thread could already switch table,
                         // so if we have another PTable instance with same ID,
                         // we need to kill that instance as we added ours already
-                        if (!ReferenceEquals(corrTable.Table, ptable) && corrTable.Table is PTable)
+                        if (!corrTable.IsManualMergeTableItem && !ReferenceEquals(corrTable.Table, ptable) && corrTable.Table is PTable)
                             ((PTable) corrTable.Table).MarkForDestruction();
 
                         Log.Trace("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
@@ -804,12 +799,13 @@ namespace EventStore.Core.Index
             return new IndexKey(streamId, version, position, CreateHash(streamId));
         }
 
-        private class TableItem
+        public class TableItem
         {
             public readonly ISearchTable Table;
             public readonly long PrepareCheckpoint;
             public readonly long CommitCheckpoint;
             public readonly int Level;
+            public bool IsManualMergeTableItem { get { return Table==null && PrepareCheckpoint == -1 && CommitCheckpoint == -1 && Level == -1; } }
 
             public TableItem(ISearchTable table, long prepareCheckpoint, long commitCheckpoint, int level)
             {
@@ -817,6 +813,10 @@ namespace EventStore.Core.Index
                 PrepareCheckpoint = prepareCheckpoint;
                 CommitCheckpoint = commitCheckpoint;
                 Level = level;
+            }
+            public static TableItem GetManualMergeTableItem(){
+                //these dummy values indicate a manual merge
+                return new TableItem(null, -1, -1, -1);
             }
         }
 

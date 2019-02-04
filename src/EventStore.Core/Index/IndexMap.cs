@@ -9,6 +9,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Util;
+using static EventStore.Core.Index.TableIndex;
 
 namespace EventStore.Core.Index
 {
@@ -419,18 +420,6 @@ namespace EventStore.Core.Index
             }
         }
 
-		public Tuple<int, PTable> GetTableForManualMerge()
-		{
-			if ((_map.Count > _maxTableLevelsForAutomaticMerge && _map[_maxTableLevelsForAutomaticMerge] != null && _map[_maxTableLevelsForAutomaticMerge].Count > 0) 
-			    || _map.Count > _maxTableLevelsForAutomaticMerge +2/*see if there are any tables above the manual merge level*/)
-			{
-				//we don't actually care which table we return here as manual merge will actually just iterate over anything above the max merge level
-				return Tuple.Create(_map.Count - 1, _map[_map.Count - 1].FirstOrDefault());
-			}
-
-			return Tuple.Create(_map.Count-1, default(PTable) );
-		}
-
         public MergeResult AddPTable(PTable tableToAdd,
             long prepareCheckpoint,
             long commitCheckpoint,
@@ -443,12 +432,14 @@ namespace EventStore.Core.Index
             int indexCacheDepth = 16,
             bool skipIndexVerify = false)
         {
-	        if (level < _maxTableLevelsForAutomaticMerge)
+            if(new TableItem(tableToAdd,prepareCheckpoint,commitCheckpoint,level).IsManualMergeTableItem){
+			    //For manual merge, we are never adding any extra entries, just merging existing files, so the index p/c checkpoint won't change
+                return AddPTableForManualMerge(PrepareCheckpoint, CommitCheckpoint, upgradeHash, existsAt, recordExistsAt,
+                    filenameProvider, version, indexCacheDepth, skipIndexVerify);
+            } else{
 		        return AddPTableForAutomaticMerge(tableToAdd, prepareCheckpoint, commitCheckpoint, upgradeHash,
 			        existsAt, recordExistsAt, filenameProvider, version, indexCacheDepth, skipIndexVerify);
-			//For manual merge, we are never adding any extra entries, just merging existing files, so the index p/c checkpoint won't change
-	        return AddPTableForManualMerge(PrepareCheckpoint, CommitCheckpoint, upgradeHash, existsAt, recordExistsAt,
-		        filenameProvider, version, indexCacheDepth, skipIndexVerify);
+            }
         }
 
         public MergeResult AddPTableForAutomaticMerge(PTable tableToAdd,
