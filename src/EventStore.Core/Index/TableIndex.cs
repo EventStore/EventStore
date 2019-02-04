@@ -254,7 +254,7 @@ namespace EventStore.Core.Index
                 newTables.AddRange(_awaitingMemTables.Select(
                     (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
-                Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
+                    Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
                 _awaitingMemTables = newTables;
                 if (_inMem) return;
