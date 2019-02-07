@@ -55,16 +55,16 @@ namespace EventStore.Core.Util
         public const int MonoMinThreadpoolSizeDefault = 10;
 
         public const string ExtTcpHeartbeatTimeoutDescr = "Heartbeat timeout for external TCP sockets";
-        public const int ExtTcpHeartbeatTimeoutDefault = 1000;
+        public const int ExtTcpHeartbeatTimeoutDefault = 3000;
 
         public const string IntTcpHeartbeatTimeoutDescr = "Heartbeat timeout for internal TCP sockets";
-        public const int IntTcpHeartbeatTimeoutDefault = 700;
+        public const int IntTcpHeartbeatTimeoutDefault = 3000;
 
         public const string ExtTcpHeartbeatIntervalDescr = "Heartbeat interval for external TCP sockets";
-        public const int ExtTcpHeartbeatIntervalDefault = 2000;
+        public const int ExtTcpHeartbeatIntervalDefault = 1500;
 
         public const string IntTcpHeartbeatIntervalDescr = "Heartbeat interval for internal TCP sockets";
-        public const int IntTcpHeartbeatIntervalDefault = 700;
+        public const int IntTcpHeartbeatIntervalDefault = 1500;
 
         public const string ConnectionPendingSendBytesThresholdDescr = "The maximum number of pending send bytes allowed before a connection is closed.";
         public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
@@ -219,10 +219,10 @@ namespace EventStore.Core.Util
         public const int GossipAllowedDifferenceMsDefault = 60000;
 
         public const string GossipIntervalMsDescr = "The interval, in ms, nodes should try to gossip with each other.";
-        public const int GossipIntervalMsDefault = 1000;
+        public const int GossipIntervalMsDefault = 2000;
 
         public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
-        public const int GossipTimeoutMsDefault = 500;
+        public const int GossipTimeoutMsDefault = 4000;
 
         public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external HTTP endpoint";
         public const bool AdminOnExtDefault = true;
