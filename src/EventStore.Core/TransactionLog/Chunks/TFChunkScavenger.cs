@@ -166,7 +166,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                     var chunksToMerge = new List<TFChunk.TFChunk>();
                     long totalDataSize = 0;
-                    foreach (var chunk in GetAllChunks(startFromChunk))
+                    foreach (var chunk in GetAllChunks(0))
                     {
                         ct.ThrowIfCancellationRequested();
 

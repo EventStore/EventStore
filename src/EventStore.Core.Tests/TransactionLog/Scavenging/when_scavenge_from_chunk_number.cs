@@ -36,6 +36,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
             Assert.That(Log.Scavenged[0].ChunkEnd, Is.EqualTo(1));
         }
 
+        [Test]
+        public void scavenge_record_for_chunks_all()
+        {
+            Assert.That(Log.Merged, Has.Count.EqualTo(1));
+            Assert.That(Log.Merged[0].Scavenged, Is.True);
+            Assert.That(Log.Merged[0].ChunkStart, Is.EqualTo(0));
+            Assert.That(Log.Merged[0].ChunkEnd, Is.EqualTo(1));
+        }
 
         [Test]
         public void calls_scavenge_on_the_table_index()
