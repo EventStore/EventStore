@@ -8,10 +8,15 @@ namespace EventStore.ClientAPI.Internal
 {
     internal class SimpleQueuedHandler
     {
-        private readonly ConcurrentQueue<Message> _messageQueue = new ConcurrentQueue<Message>();
+	    private readonly ILogger _log;
+	    private readonly ConcurrentQueue<Message> _messageQueue = new ConcurrentQueue<Message>();
         private readonly Dictionary<Type, Action<Message>> _handlers = new Dictionary<Type, Action<Message>>();
         private int _isProcessing;
-
+		
+        public SimpleQueuedHandler(ILogger log)
+        {
+	        _log = log;
+        }
         public void RegisterHandler<T>(Action<T> handler) where T : Message
         {
             Ensure.NotNull(handler, "handler");
@@ -31,14 +36,24 @@ namespace EventStore.ClientAPI.Internal
         {
             do
             {
-                Message message;
-
-                while (_messageQueue.TryDequeue(out message))
+	            while (_messageQueue.TryDequeue(out var message))
                 {
-                    Action<Message> handler;
-                    if (!_handlers.TryGetValue(message.GetType(), out handler))
-                        throw new Exception(string.Format("No handler registered for message {0}", message.GetType().Name));
-                    handler(message);
+	                if (!_handlers.TryGetValue(message.GetType(), out var handler))
+	                {
+		                _log.Error($"No handler registered for type {message.GetType().FullName}");
+	                }
+	                else
+	                {
+		                try
+		                {
+			                handler(message);
+		                }
+		                catch (Exception e)
+		                {
+			                _log.Error(e,$"Error processing {message.GetType().FullName}");
+		                }
+		                
+	                }
                 }
 
                 Interlocked.Exchange(ref _isProcessing, 0);
