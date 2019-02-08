@@ -9,11 +9,22 @@ namespace EventStore.ClientAPI.Exceptions
     /// </summary>
     public class WrongExpectedVersionException : EventStoreConnectionException
     {
-        /// <summary>
+	    public long? ExpectedVersion { get; }
+	    public long? ActualVersion { get; }
+
+	    /// <summary>
         /// Constructs a new instance of <see cref="WrongExpectedVersionException" />.
         /// </summary>
         public WrongExpectedVersionException(string message) : base(message)
         {
+        }
+	    /// <summary>
+	    /// Constructs a new instance of <see cref="WrongExpectedVersionException" /> with the expected and actual versions if available.
+	    /// </summary>
+        public WrongExpectedVersionException(string message, long? expectedVersion, long? actualVersion):base(message)
+        {
+	        ExpectedVersion = expectedVersion;
+	        ActualVersion = actualVersion;
         }
 
         /// <summary>
