@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Threading;
 using EventStore.Common.Log;
@@ -151,6 +152,7 @@ namespace EventStore.Core.Services.Monitoring
         {
             if(LogManager.StructuredLog)
             {
+                 rawStats.Add("timestamp", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
                  RegularLog.Info("{@stats}",rawStats);
             }
             else
