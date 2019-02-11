@@ -56,7 +56,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     return new InspectionResult(InspectionDecision.Retry, "CommitTimeout");
                 case ClientMessage.OperationResult.WrongExpectedVersion:
                     var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, Current version: {2}", _stream, _expectedVersion, response.CurrentVersion);
-                    Fail(new WrongExpectedVersionException(err));
+                    Fail(new WrongExpectedVersionException(err, _expectedVersion, response.CurrentVersion));
                     return new InspectionResult(InspectionDecision.EndOperation, "WrongExpectedVersion");
                 case ClientMessage.OperationResult.StreamDeleted:
                     Fail(new StreamDeletedException(_stream));

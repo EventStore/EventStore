@@ -264,7 +264,12 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
  
                 var append = store.AppendToStreamAsync(stream, 1, new[] { TestEvent.NewTestEvent() });
-                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                var aex = Assert.Throws<AggregateException>(() => append.Wait());
+				Assert.IsInstanceOf<WrongExpectedVersionException>(aex.InnerException);
+				var wev = (WrongExpectedVersionException) aex.InnerException;
+				Assert.AreEqual(1, wev.ExpectedVersion);
+				Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualVersion);
+				
             }
         }
 
@@ -325,7 +330,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.ConnectAsync().Wait();
  
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, new[] { TestEvent.NewTestEvent() });
-                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                var aex = Assert.Throws<AggregateException>(() => append.Wait());
+                Assert.IsInstanceOf<WrongExpectedVersionException>(aex.InnerException);
+                var wev = (WrongExpectedVersionException) aex.InnerException;
+                Assert.AreEqual(ExpectedVersion.StreamExists, wev.ExpectedVersion);
+                Assert.AreEqual(ExpectedVersion.NoStream, wev.ActualVersion);
             }
         }
 
@@ -588,7 +597,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(0, store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
 
                 var append = store.AppendToStreamAsync(stream, 1, new[] { TestEvent.NewTestEvent() });
-                Assert.That(() => append.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                var aex = Assert.Throws<AggregateException>(() => append.Wait());
+                Assert.IsInstanceOf<WrongExpectedVersionException>(aex.InnerException);
+                var wev = (WrongExpectedVersionException) aex.InnerException;
+                Assert.AreEqual(1, wev.ExpectedVersion);
+                Assert.AreEqual(0, wev.ActualVersion);
             }
         }
 

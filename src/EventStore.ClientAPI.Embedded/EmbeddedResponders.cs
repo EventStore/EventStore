@@ -35,7 +35,7 @@ namespace EventStore.ClientAPI.Embedded
                         break;
                     case OperationResult.WrongExpectedVersion:
                         var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}", _stream, _expectedVersion);
-                        Fail(new WrongExpectedVersionException(err));
+                        Fail(new WrongExpectedVersionException(err, _expectedVersion, response.CurrentVersion));
                         break;
                     case OperationResult.StreamDeleted:
                         Fail(new StreamDeletedException(_stream));
