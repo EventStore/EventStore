@@ -206,6 +206,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
+			Ensure.GreaterThanOrEqualTo(start, StreamPosition.End, nameof(start));
             if (count > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
             var source = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
             var operation = new ReadStreamEventsBackwardOperation(Settings.Log, source, stream, start, count,

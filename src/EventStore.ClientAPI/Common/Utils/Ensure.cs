@@ -16,6 +16,12 @@ namespace EventStore.ClientAPI.Common.Utils
                 throw new ArgumentNullException(argument, argumentName);
         }
 
+        public static void GreaterThanOrEqualTo(long number, long minimum, string argumentName)
+        {
+	        if (number < minimum)
+		        throw new ArgumentOutOfRangeException(argumentName,  $"{argumentName} should be greater than or equal to {minimum}.");
+        }
+
         public static void Positive(int number, string argumentName)
         {
             if (number <= 0)
