@@ -137,7 +137,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                         .LimitRetriesForOperationTo(maxReconnections)
                                         .LimitReconnectionsTo(maxOperationRetries)
                                         .FailOnNoServerResponse(),
-                    new Uri(string.Format("tcp://{0}:{1}", _nodeConnection.IpAddress, _nodeConnection.TcpPort)),
+                    new Uri(string.Format("tcp://admin:changeit@{0}:{1}", _nodeConnection.IpAddress, _nodeConnection.TcpPort)),
                     string.Format("ESConn-{0}", i));
                 _connections[i].Closed += (s, e) => Log.Debug("[SCENARIO] {connection} closed.", e.Connection.ConnectionName);
                 _connections[i].Connected += (s, e) => Log.Debug("[SCENARIO] {connection} connected to [{remoteEndPoint}].", e.Connection.ConnectionName, e.RemoteEndPoint);
@@ -311,7 +311,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private int StartNewNode()
         {
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
+            //../../EventStore.ClusterNode/net471/EventStore.ClusterNode.exe
+            var clusterNodeFolder = System.IO.Directory.GetParent(System.IO.Directory.GetParent(clientFolder).FullName)
+                                    + "/EventStore.ClusterNode/net471/";
             string fileName;
             string argumentsHead;
 
@@ -320,15 +322,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 Log.Info("Mono at {pathToMono} will be used.", pathToMono);
                 fileName = pathToMono;
-                argumentsHead = string.Format("--debug --gc=sgen {0}", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
+                argumentsHead = string.Format("--debug --gc=sgen {0}", Path.Combine(clusterNodeFolder, "EventStore.ClusterNode.exe"));
             }
             else
             {
-                fileName = Path.Combine(clientFolder, "EventStore.SingleNode.exe");
+                fileName = Path.Combine(clusterNodeFolder, "EventStore.ClusterNode.exe");
                 argumentsHead = "";
             }
 
-            var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4}",
+            var arguments = string.Format("{0} --run-projections=all --ext-ip {1} --ext-tcp-port {2} --ext-http-port {3} --db {4}",
                                           argumentsHead,
                                           _nodeConnection.IpAddress,
                                           _nodeConnection.TcpPort,

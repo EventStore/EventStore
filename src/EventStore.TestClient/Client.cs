@@ -92,8 +92,10 @@ namespace EventStore.TestClient
 
         public int Run()
         {
-            if (!InteractiveMode)
-                return Execute(Options.Command.ToArray());
+            if (!InteractiveMode){
+                var args = ParseCommandLine(Options.Command[0]);
+                return Execute(args);
+            }
 
             new Thread(() =>
             {
