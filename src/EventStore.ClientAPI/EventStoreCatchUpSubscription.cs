@@ -6,7 +6,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-
+#if!NET452
+using TaskEx = System.Threading.Tasks.Task;
+#endif
 namespace EventStore.ClientAPI
 {
     /// <summary>
@@ -272,14 +274,14 @@ namespace EventStore.ClientAPI
             {
                 EnqueueSubscriptionDropNotification(SubscriptionDropReason.ProcessingQueueOverflow, null);
                 subscription.Unsubscribe();
-                return Task.CompletedTask;
+                return TaskEx.CompletedTask;
             }
 
             _liveQueue.Enqueue(e);
 
             if (_allowProcessing)
                 EnsureProcessingPushQueue();
-            return Task.CompletedTask;
+            return TaskEx.CompletedTask;
         }
 
         private void ServerSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exc)

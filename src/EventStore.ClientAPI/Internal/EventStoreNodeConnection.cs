@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.Internal
@@ -59,7 +60,7 @@ namespace EventStore.ClientAPI.Internal
 
         public Task ConnectAsync()
         {
-            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<object>();
             _handler.EnqueueMessage(new StartConnectionMessage(source, _endPointDiscoverer));
             return source.Task;
         }
@@ -83,7 +84,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var source = new TaskCompletionSource<DeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<DeleteResult>();
             var operation = new DeleteStreamOperation(Settings.Log, source, Settings.RequireMaster,
                                                       stream, expectedVersion, hardDelete, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -112,7 +113,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
-            var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<WriteResult>();
             var operation = new AppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
                                                         stream, expectedVersion, events, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -127,7 +128,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
-            var source = new TaskCompletionSource<ConditionalWriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<ConditionalWriteResult>();
             var operation = new ConditionalAppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
                                                                    stream, expectedVersion, events, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -139,7 +140,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var source = new TaskCompletionSource<EventStoreTransaction>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<EventStoreTransaction>();
             var operation = new StartTransactionOperation(Settings.Log, source, Settings.RequireMaster,
                                                           stream, expectedVersion, this, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -158,7 +159,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
 
-            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<object>();
             var operation = new TransactionalWriteOperation(Settings.Log, source, Settings.RequireMaster,
                                                             transaction.TransactionId, events, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -170,7 +171,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNull(transaction, "transaction");
 
-            var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<WriteResult>();
             var operation = new CommitTransactionOperation(Settings.Log, source, Settings.RequireMaster,
                                                            transaction.TransactionId, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -182,7 +183,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
-            var source = new TaskCompletionSource<EventReadResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<EventReadResult>();
             var operation = new ReadEventOperation(Settings.Log, source, stream, eventNumber, resolveLinkTos,
                                                    Settings.RequireMaster, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -195,7 +196,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
             if(count > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
-            var source = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
             var operation = new ReadStreamEventsForwardOperation(Settings.Log, source, stream, start, count,
                                                                  resolveLinkTos, Settings.RequireMaster, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -208,7 +209,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.Positive(count, "count");
 			Ensure.GreaterThanOrEqualTo(start, StreamPosition.End, nameof(start));
             if (count > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
-            var source = new TaskCompletionSource<StreamEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
             var operation = new ReadStreamEventsBackwardOperation(Settings.Log, source, stream, start, count,
                                                                   resolveLinkTos, Settings.RequireMaster, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -219,7 +220,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.Positive(maxCount, "maxCount");
             if (maxCount > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
-            var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
             var operation = new ReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
                                                               resolveLinkTos, Settings.RequireMaster, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -230,7 +231,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.Positive(maxCount, "maxCount");
             if (maxCount > ClientApiConstants.MaxReadSize) throw new ArgumentException(string.Format("Count should be less than {0}. For larger reads you should page.", ClientApiConstants.MaxReadSize));
-            var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
             var operation = new ReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
                                                                resolveLinkTos, Settings.RequireMaster, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
@@ -256,7 +257,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
-            var source = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
             _handler.EnqueueMessage(new StartSubscriptionMessage(source, stream, resolveLinkTos, userCredentials,
                                                                  eventAppeared, subscriptionDropped,
                                                                  Settings.MaxRetries, Settings.OperationTimeout));
@@ -308,7 +309,7 @@ namespace EventStore.ClientAPI.Internal
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
 
-            var source = new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
             _handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
                                                                  eventAppeared, subscriptionDropped,
                                                                  Settings.MaxRetries, Settings.OperationTimeout));
@@ -413,7 +414,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNull(settings, "settings");
-            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<PersistentSubscriptionCreateResult>();
             var operation = new CreatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
             await source.Task.ConfigureAwait(false);
@@ -424,7 +425,7 @@ namespace EventStore.ClientAPI.Internal
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
             Ensure.NotNull(settings, "settings");
-            var source = new TaskCompletionSource<PersistentSubscriptionUpdateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<PersistentSubscriptionUpdateResult>();
             var operation = new UpdatePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, settings, credentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
             await source.Task.ConfigureAwait(false);
@@ -444,7 +445,7 @@ namespace EventStore.ClientAPI.Internal
         public async Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNullOrEmpty(groupName, "groupName");
-            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<PersistentSubscriptionDeleteResult>();
             var operation = new DeletePersistentSubscriptionOperation(Settings.Log, source, stream, groupName, userCredentials);
             await EnqueueOperation(operation).ConfigureAwait(false);
             await source.Task.ConfigureAwait(false);
@@ -472,7 +473,7 @@ namespace EventStore.ClientAPI.Internal
             if (SystemStreams.IsMetastream(stream))
                 throw new ArgumentException(string.Format("Setting metadata for metastream '{0}' is not supported.", stream), nameof(stream));
 
-            var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<WriteResult>();
 
             var metaevent = new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata ?? Empty.ByteArray, null);
             var operation = new AppendToStreamOperation(Settings.Log,
