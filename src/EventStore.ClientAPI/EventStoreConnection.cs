@@ -4,6 +4,8 @@ using System.Net.Sockets;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 using System;
+using System.Runtime.ExceptionServices;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
@@ -13,6 +15,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public static class EventStoreConnection
     {
+	    private static readonly ExceptionDispatchInfo SerializationInitializationError = ClientMessage.InitializeSerializers();
         /// <summary>
         /// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
         /// </summary>
@@ -81,7 +84,8 @@ namespace EventStore.ClientAPI
         public static IEventStoreConnection Create(ConnectionSettings connectionSettings, Uri uri,
             string connectionName = null)
         {
-            connectionSettings = connectionSettings ?? ConnectionSettings.Default;
+	        SerializationInitializationError?.Throw();
+	        connectionSettings = connectionSettings ?? ConnectionSettings.Default;
             if (uri != null)
             {
                 var scheme = uri.Scheme.ToLower();
