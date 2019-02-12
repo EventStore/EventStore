@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 			_maxAutoMergeLevel = maxAutoMergeLevel;
 		}
 		[OneTimeSetUp]
-		public void Setup()
+		public virtual void Setup()
 		{
 			_filename = GetTempFilePath();
 			_fileNameProvider = new GuidFilenameProvider(PathName);

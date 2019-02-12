@@ -9,12 +9,22 @@ namespace EventStore.ClientAPI.Exceptions
     /// </summary>
     public class WrongExpectedVersionException : EventStoreConnectionException
     {
+		/// <summary>
+		/// If available, the expected version specified for the operation that failed.
+		/// </summary>
+		/// <remarks>Only available if the operation was <see cref="IEventStoreConnection.AppendToStreamAsync(string,long,EventStore.ClientAPI.EventData[])"/> or one of it's overloads.</remarks>
 	    public long? ExpectedVersion { get; }
+
+		/// <summary>
+		/// If available, the current version of the stream that the operation was attempted on.
+		/// </summary>
+		/// <remarks>Only available if the operation was <see cref="IEventStoreConnection.AppendToStreamAsync(string,long,EventStore.ClientAPI.EventData[])"/> or one of it's overloads.</remarks>
 	    public long? ActualVersion { get; }
 
 	    /// <summary>
         /// Constructs a new instance of <see cref="WrongExpectedVersionException" />.
         /// </summary>
+       
         public WrongExpectedVersionException(string message) : base(message)
         {
         }
