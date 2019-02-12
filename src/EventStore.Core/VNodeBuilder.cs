@@ -1103,6 +1103,8 @@ namespace EventStore.Core
         /// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
         public VNodeBuilder WithMaxAutoMergeIndexLevel(int maxAutoMergeIndexLevel)
         {
+            if(maxAutoMergeIndexLevel < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxAutoMergeIndexLevel), maxAutoMergeIndexLevel, "MaxAutoMergeIndexLevel must be > 0");
             _maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
             return this;
         }

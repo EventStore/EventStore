@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny
         [SetUp]
         public void Setup()
         {
-            _map = IndexMap.FromFile("thisfiledoesnotexist");
+            _map = IndexMapTestFactory.FromFile("thisfiledoesnotexist");
         }
 
         [Test]

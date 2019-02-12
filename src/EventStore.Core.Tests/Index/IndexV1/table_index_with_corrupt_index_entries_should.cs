@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => new HashListMemTable(version, maxSize: NumIndexEntries),
                                          () => fakeReader,
                                          version,
-                                         5,
+                                         int.MaxValue,
                                          maxSizeForMemory: NumIndexEntries,
                                          skipIndexVerify: skipIndexVerify);
             _tableIndex.Initialize(long.MaxValue);
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
             _tableIndex.Close(false);
 
             //load index map to obtain ptable filenames
-            _indexMap = IndexMap.FromFile(Path.Combine(PathName,TableIndex.IndexMapFilename));
+            _indexMap = IndexMapTestFactory.FromFile(Path.Combine(PathName,TableIndex.IndexMapFilename));
             List<string> ptableFiles = new List<string>();
 
             foreach(string ptableFilename in _indexMap.GetAllFilenames()){
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Index.IndexV1
                                          () => new HashListMemTable(version, maxSize: NumIndexEntries),
                                          () => fakeReader,
                                          version,
-                                         5,
+                                         int.MaxValue,
                                          maxSizeForMemory: NumIndexEntries,
                                          skipIndexVerify: skipIndexVerify,
                                          indexCacheDepth: 8);
