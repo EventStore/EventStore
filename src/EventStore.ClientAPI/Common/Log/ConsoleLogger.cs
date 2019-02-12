@@ -52,6 +52,17 @@ namespace EventStore.ClientAPI.Common.Log
         }
 
         /// <summary>
+        /// Writes a Warn message to the logger
+        /// </summary>
+        /// <param name="ex">A thrown exception.</param>
+        /// <param name="format">Format string for the log message.</param>
+        /// <param name="args">Arguments to be inserted into the format string.</param>
+        public void Warn(Exception ex, string format, params object[] args)
+        {
+            Console.WriteLine(Log("WARN", ex, format, args));
+        }
+
+        /// <summary>
         /// Writes an information message to the logger
         /// </summary>
         /// <param name="format">Format string for the log message.</param>

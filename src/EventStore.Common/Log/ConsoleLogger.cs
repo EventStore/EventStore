@@ -60,6 +60,10 @@ namespace EventStore.Common.Log
         {
             Console.WriteLine(Log("DEBUG", exc, format, args));
         }
+        public void WarnException(Exception exc, string format, params object[] args)
+        {
+            Console.WriteLine(Log("WARN", exc, format, args));
+        }
 
         public void TraceException(Exception exc, string format, params object[] args)
         {

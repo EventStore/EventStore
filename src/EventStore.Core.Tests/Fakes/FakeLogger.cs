@@ -24,6 +24,9 @@ namespace EventStore.Core.Tests.Fakes
         public void Debug(string text)
         {
         }
+        public void Warn(string text)
+        {
+        }
 
         public void Trace(string text)
         {
@@ -86,6 +89,9 @@ namespace EventStore.Core.Tests.Fakes
         }
 
         public void DebugException(Exception exc, string format, params object[] args)
+        {
+        }
+        public void WarnException(Exception exc, string format, params object[] args)
         {
         }
 
