@@ -8,7 +8,7 @@ using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
-
+using EventStore.ClientAPI.Common.Utils.Threading;
 namespace EventStore.ClientAPI.UserManagement
 {
     internal class UsersClient
@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI.UserManagement
 
         private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<string>();
             _client.Get(url,
                 userCredentials,
                 response =>
@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.UserManagement
 
         private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<string>();
             _client.Delete(url,
                 userCredentials,
                 response =>
@@ -142,7 +142,7 @@ namespace EventStore.ClientAPI.UserManagement
 
         private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<object>();
             _client.Put(url,
                 content,
                 "application/json",
@@ -166,7 +166,7 @@ namespace EventStore.ClientAPI.UserManagement
 
         private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode)
         {
-            var source = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<object>();
             _client.Post(url,
                 content,
                 "application/json",

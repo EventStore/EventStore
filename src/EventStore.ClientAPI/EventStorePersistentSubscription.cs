@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
@@ -68,7 +69,7 @@ namespace EventStore.ClientAPI
             Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> onEventAppeared,
             Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped, ConnectionSettings settings)
         {
-            var source = new TaskCompletionSource<PersistentEventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = TaskCompletionSourceFactory.Create<PersistentEventStoreSubscription>();
             _handler.EnqueueMessage(new StartPersistentSubscriptionMessage(source, subscriptionId, streamId, bufferSize,
                 userCredentials, onEventAppeared,
                 onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout));

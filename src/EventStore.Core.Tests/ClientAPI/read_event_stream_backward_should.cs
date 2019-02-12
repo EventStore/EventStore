@@ -44,6 +44,18 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+        [Test]
+        [Category("Network")]
+        public void throw_if_start_less_than_minus_one()
+        {
+	        const string stream = "read_event_stream_backward_should_throw_if_start_less_than_minus_one";
+	        using (var store = BuildConnection(_node))
+	        {
+		        store.ConnectAsync().Wait();
+		        Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => store.ReadStreamEventsBackwardAsync(stream, -2, 100, resolveLinkTos: false));
+	        }
+        }
+
 
         [Test]
         [Category("Network")]

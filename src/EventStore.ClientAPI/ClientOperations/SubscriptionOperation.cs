@@ -8,6 +8,9 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
+#if!NET452
+using TaskEx = System.Threading.Tasks.Task;
+#endif
 
 namespace EventStore.ClientAPI.ClientOperations
 {
@@ -219,7 +222,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     ExecuteActionAsync(() =>
                     {
                         _subscriptionDropped(_subscription, reason, exc);
-                        return Task.CompletedTask;
+                        return TaskEx.CompletedTask;
                     });
             }
         }

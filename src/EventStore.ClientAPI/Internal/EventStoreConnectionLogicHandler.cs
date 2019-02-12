@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI.Internal
         private readonly ConnectionSettings _settings;
         private readonly byte ClientVersion = 1;
 
-        private readonly SimpleQueuedHandler _queue = new SimpleQueuedHandler();
+        private readonly SimpleQueuedHandler _queue;
         private readonly Timer _timer;
         private IEndPointDiscoverer _endPointDiscoverer;
 
@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI.Internal
 
             _operations = new OperationsManager(_esConnection.ConnectionName, settings);
             _subscriptions = new SubscriptionsManager(_esConnection.ConnectionName, settings);
-
+			_queue = new SimpleQueuedHandler(_settings.Log);
             _queue.RegisterHandler<StartConnectionMessage>(msg => StartConnection(msg.Task, msg.EndPointDiscoverer));
             _queue.RegisterHandler<CloseConnectionMessage>(msg => CloseConnection(msg.Reason, msg.Exception));
 

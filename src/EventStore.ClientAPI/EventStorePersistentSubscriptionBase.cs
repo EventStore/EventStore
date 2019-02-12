@@ -5,6 +5,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.SystemData;
+#if!NET452
+using TaskEx = System.Threading.Tasks.Task;
+#else
+using EventStore.ClientAPI.Common.Utils.Threading;
+#endif
 
 namespace EventStore.ClientAPI
 {
@@ -180,7 +185,7 @@ namespace EventStore.ClientAPI
         private Task OnEventAppeared(EventStoreSubscription subscription, PersistentSubscriptionResolvedEvent resolvedEvent)
         {
             Enqueue(resolvedEvent);
-            return Task.CompletedTask;
+            return TaskEx.CompletedTask;
         }
 
         private void Enqueue(PersistentSubscriptionResolvedEvent resolvedEvent)

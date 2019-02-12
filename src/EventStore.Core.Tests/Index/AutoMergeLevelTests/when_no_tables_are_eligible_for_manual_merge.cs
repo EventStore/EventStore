@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests
 	{
 		public override void Setup()
 		{
-            base.Setup();
+			base.Setup();
 			AddTables(8);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 			var (level, table)= _result.MergedMap.GetTableForManualMerge();
