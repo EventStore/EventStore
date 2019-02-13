@@ -44,7 +44,7 @@ namespace EventStore.Common.Log
 
         public void Fatal(string format, params object[] args)
         {
-            _logger.Fatal(format, args); 
+            _logger.Fatal(format, args);
         }
 
         public void Error(string format, params object[] args)
@@ -59,7 +59,7 @@ namespace EventStore.Common.Log
 
         public void Debug(string format, params object[] args)
         {
-            _logger.Debug(format, args); 
+            _logger.Debug(format, args);
         }
 
         public void Warn(string format, params object[] args)
@@ -91,11 +91,12 @@ namespace EventStore.Common.Log
         {
             _logger.Debug(exc, format, args);
         }
-        
+
         public void WarnException(Exception exc, string format, params object[] args)
         {
             _logger.Warn(exc, format, args);
-        }   
+        }
+
         public void TraceException(Exception exc, string format, params object[] args)
         {
             _logger.Trace(exc, format, args);
