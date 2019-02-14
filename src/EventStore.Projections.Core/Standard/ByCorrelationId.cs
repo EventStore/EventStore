@@ -10,10 +10,9 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Standard
 {
-    public class ByCorrelationId : IProjectionStateHandler, IProjectionCheckpointHandler
+    public class ByCorrelationId : IProjectionStateHandler
     {
         private readonly string _corrIdStreamPrefix;
-        private readonly string _corrIdCheckpointStream;
         private readonly string _correlationIdProperty = "$correlationId";
 
         public ByCorrelationId(string source, Action<string, object[]> logger)
@@ -26,7 +25,6 @@ namespace EventStore.Projections.Core.Standard
                 _correlationIdProperty = correlationIdProperty;
             }
             _corrIdStreamPrefix = "$bc-";
-            _corrIdCheckpointStream = "$bc";
         }
 
         private bool TryParseCorrelationIdProperty(string source, out string correlationIdProperty)
@@ -160,17 +158,6 @@ namespace EventStore.Projections.Core.Standard
 
         public void Dispose()
         {
-        }
-
-        public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEventEnvelope[] emittedEvents)
-        {
-            emittedEvents = new[]
-            {
-                new EmittedEventEnvelope(
-                    new EmittedDataEvent(
-                        _corrIdCheckpointStream, Guid.NewGuid(), ProjectionEventTypes.PartitionCheckpoint,
-                        true, checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
-            };
         }
 
         public IQuerySources GetSourceDefinition()
