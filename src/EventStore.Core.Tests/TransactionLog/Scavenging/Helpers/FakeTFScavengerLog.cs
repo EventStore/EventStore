@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public event EventHandler<EventArgs> CompletedCallback;
 
         public IList<ScavengedLog> Scavenged { get; } = new List<ScavengedLog>(); 
+        public IList<ScavengedLog> Merged { get; } = new List<ScavengedLog>(); 
         public IList<IndexScavengedLog> ScavengedIndices { get; } = new List<IndexScavengedLog>(); 
 
         public void ScavengeStarted()
@@ -49,14 +50,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         public void ChunksMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved)
         {
             var scavengedLog = new ScavengedLog(chunkStartNumber, chunkEndNumber, true, "");
-            Scavenged.Add(scavengedLog);
+            Merged.Add(scavengedLog);
             ChunkScavenged?.Invoke(this, scavengedLog);
         }
 
         public void ChunksNotMerged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, string errorMessage)
         {
             var scavengedLog = new ScavengedLog(chunkStartNumber, chunkEndNumber, false, "");
-            Scavenged.Add(scavengedLog);
+            Merged.Add(scavengedLog);
             ChunkScavenged?.Invoke(this, scavengedLog);
         }
 

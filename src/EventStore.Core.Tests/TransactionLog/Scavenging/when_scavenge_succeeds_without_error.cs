@@ -28,18 +28,24 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging
         }
 
         [Test]
-        public void scavenge_record_for_all_completed_chunks_plus_merge()
+        public void scavenge_record_for_all_completed_chunks()
         {
-            Assert.That(Log.Scavenged, Has.Count.EqualTo(3));
+            Assert.That(Log.Scavenged, Has.Count.EqualTo(2));
             Assert.That(Log.Scavenged[0].Scavenged, Is.True);
             Assert.That(Log.Scavenged[0].ChunkStart, Is.EqualTo(0));
             Assert.That(Log.Scavenged[0].ChunkEnd, Is.EqualTo(0));            
             Assert.That(Log.Scavenged[1].Scavenged, Is.True);
             Assert.That(Log.Scavenged[1].ChunkStart, Is.EqualTo(1));
             Assert.That(Log.Scavenged[1].ChunkEnd, Is.EqualTo(1));
-            Assert.That(Log.Scavenged[2].Scavenged, Is.True);
-            Assert.That(Log.Scavenged[2].ChunkStart, Is.EqualTo(0));
-            Assert.That(Log.Scavenged[2].ChunkEnd, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void merge_record_for_all_completed_merges()
+        {
+            Assert.That(Log.Merged, Has.Count.EqualTo(1));
+            Assert.That(Log.Merged[0].Scavenged, Is.True);
+            Assert.That(Log.Merged[0].ChunkStart, Is.EqualTo(0));
+            Assert.That(Log.Merged[0].ChunkEnd, Is.EqualTo(1));
         }
 
         [Test]
