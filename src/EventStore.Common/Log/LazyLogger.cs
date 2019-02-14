@@ -67,6 +67,10 @@ namespace EventStore.Common.Log
         {
             _logger.Value.DebugException(exc, format, args);
         }
+        public void WarnException(Exception exc, string format, params object[] args)
+        {
+            _logger.Value.WarnException(exc, format, args);
+        }
 
         public void TraceException(Exception exc, string format, params object[] args)
         {

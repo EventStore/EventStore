@@ -37,6 +37,9 @@ namespace EventStore.Common.Log
         void DebugException(Exception exc, string format, params object[] args);
 
         [StringFormatMethod("format")]
+        void WarnException(Exception exc, string format, params object[] args);
+
+        [StringFormatMethod("format")]
         void TraceException(Exception exc, string format, params object[] args);
     }
 }
