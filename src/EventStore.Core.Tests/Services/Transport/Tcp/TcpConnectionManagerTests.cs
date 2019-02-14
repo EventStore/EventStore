@@ -16,234 +16,222 @@ using EventStore.Core.Messages;
 using System.Threading;
 using EventStore.Core.Settings;
 
-namespace EventStore.Core.Tests.Services.Transport.Tcp
-{
-    [TestFixture]
-    public class TcpConnectionManagerTests
-    {
-        private int _connectionPendingSendBytesThreshold = 10 * 1024;
+namespace EventStore.Core.Tests.Services.Transport.Tcp {
+	[TestFixture]
+	public class TcpConnectionManagerTests {
+		private int _connectionPendingSendBytesThreshold = 10 * 1024;
 
-        public void when_handling_trusted_write_on_external_service()
-        {
-            var package = new TcpPackage(TcpCommand.WriteEvents, TcpFlags.TrustedWrite, Guid.NewGuid(), null, null, new byte[] { });
+		public void when_handling_trusted_write_on_external_service() {
+			var package = new TcpPackage(TcpCommand.WriteEvents, TcpFlags.TrustedWrite, Guid.NewGuid(), null, null,
+				new byte[] { });
 
-            var dummyConnection = new DummyTcpConnection();
+			var dummyConnection = new DummyTcpConnection();
 
-            var tcpConnectionManager = new TcpConnectionManager(
-                Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
-                InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					new StubPasswordHashAlgorithm(), 1),
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
+				_connectionPendingSendBytesThreshold);
 
-            tcpConnectionManager.ProcessPackage(package);
+			tcpConnectionManager.ProcessPackage(package);
 
-            var data = dummyConnection.ReceivedData.Last();
-            var receivedPackage = TcpPackage.FromArraySegment(data);
-           
-            Assert.AreEqual(receivedPackage.Command, TcpCommand.BadRequest, "Expected Bad Request but got {0}", receivedPackage.Command);
-        }
+			var data = dummyConnection.ReceivedData.Last();
+			var receivedPackage = TcpPackage.FromArraySegment(data);
 
-        public void when_handling_trusted_write_on_internal_service()
-        {
-            ManualResetEvent waiter = new ManualResetEvent(false);
-            ClientMessage.WriteEvents publishedWrite = null;
-            var evnt = new Event(Guid.NewGuid(), "TestEventType", true, new byte[] { }, new byte[] { });
-            var write = new TcpClientMessageDto.WriteEvents(
-                Guid.NewGuid().ToString(),
-                ExpectedVersion.Any,
-                new[] { new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0, evnt.Data, evnt.Metadata) },
-                false);
+			Assert.AreEqual(receivedPackage.Command, TcpCommand.BadRequest, "Expected Bad Request but got {0}",
+				receivedPackage.Command);
+		}
 
-            var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
-            var dummyConnection = new DummyTcpConnection();
-            var publisher = InMemoryBus.CreateTest();
+		public void when_handling_trusted_write_on_internal_service() {
+			ManualResetEvent waiter = new ManualResetEvent(false);
+			ClientMessage.WriteEvents publishedWrite = null;
+			var evnt = new Event(Guid.NewGuid(), "TestEventType", true, new byte[] { }, new byte[] { });
+			var write = new TcpClientMessageDto.WriteEvents(
+				Guid.NewGuid().ToString(),
+				ExpectedVersion.Any,
+				new[] {
+					new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0,
+						evnt.Data, evnt.Metadata)
+				},
+				false);
 
-            publisher.Subscribe(new AdHocHandler<ClientMessage.WriteEvents>(x => {
-                publishedWrite = x;
-                waiter.Set();
-            }));
+			var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
+			var dummyConnection = new DummyTcpConnection();
+			var publisher = InMemoryBus.CreateTest();
 
-            var tcpConnectionManager = new TcpConnectionManager(
-                Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
-                publisher, dummyConnection, publisher, new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()), new StubPasswordHashAlgorithm(), 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
+			publisher.Subscribe(new AdHocHandler<ClientMessage.WriteEvents>(x => {
+				publishedWrite = x;
+				waiter.Set();
+			}));
 
-            tcpConnectionManager.ProcessPackage(package);
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
+				publisher, dummyConnection, publisher,
+				new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
+					new StubPasswordHashAlgorithm(), 1),
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
+				_connectionPendingSendBytesThreshold);
 
-            if (!waiter.WaitOne(TimeSpan.FromSeconds(5)))
-            {
-                throw new Exception("Timed out waiting for events.");
-            }
-            Assert.AreEqual(evnt.EventId, publishedWrite.Events.First().EventId, "Expected the published write to be the event that was sent through the tcp connection manager to be the event {0} but got {1}", evnt.EventId, publishedWrite.Events.First().EventId);
-        }
+			tcpConnectionManager.ProcessPackage(package);
 
-        [Test]
-        public void when_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_connection()
-        {
-            var mre = new ManualResetEventSlim();
+			if (!waiter.WaitOne(TimeSpan.FromSeconds(5))) {
+				throw new Exception("Timed out waiting for events.");
+			}
 
-            var messageSize = _connectionPendingSendBytesThreshold / 2;
-            var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now, PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
-            var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
-            var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success, record, StreamMetadata.Empty, false, "");
-            
-            var dummyConnection = new DummyTcpConnection();
-            dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
+			Assert.AreEqual(evnt.EventId, publishedWrite.Events.First().EventId,
+				"Expected the published write to be the event that was sent through the tcp connection manager to be the event {0} but got {1}",
+				evnt.EventId, publishedWrite.Events.First().EventId);
+		}
 
-            var tcpConnectionManager = new TcpConnectionManager(
-                Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
-                InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => {
-                    mre.Set();
-                }, _connectionPendingSendBytesThreshold);
+		[Test]
+		public void
+			when_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_close_connection() {
+			var mre = new ManualResetEventSlim();
 
-            tcpConnectionManager.SendMessage(message);
+			var messageSize = _connectionPendingSendBytesThreshold / 2;
+			var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now,
+				PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
+			var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
+			var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success,
+				record, StreamMetadata.Empty, false, "");
 
-            if (!mre.Wait(2000))
-            {
-                Assert.Fail("Timed out waiting for connection to close");
-            }
-        }
+			var dummyConnection = new DummyTcpConnection();
+			dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
 
-        [Test]
-        public void when_limit_pending_and_sending_message_larger_than_pending_bytes_threshold_but_no_bytes_pending_should_not_close_connection()
-        {
-            var messageSize = _connectionPendingSendBytesThreshold + 1000;
-            var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now, PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
-            var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
-            var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success, record, StreamMetadata.Empty, false, "");
-            
-            var dummyConnection = new DummyTcpConnection();
-            dummyConnection.PendingSendBytes = 0;
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
+				_connectionPendingSendBytesThreshold);
 
-            var tcpConnectionManager = new TcpConnectionManager(
-                Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
-                InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { }, _connectionPendingSendBytesThreshold);
+			tcpConnectionManager.SendMessage(message);
 
-            tcpConnectionManager.SendMessage(message);
+			if (!mre.Wait(2000)) {
+				Assert.Fail("Timed out waiting for connection to close");
+			}
+		}
 
-            var data = dummyConnection.ReceivedData.Last();
-            var receivedPackage = TcpPackage.FromArraySegment(data);
-           
-            Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted, "Expected ReadEventCompleted but got {0}", receivedPackage.Command);
-        }
+		[Test]
+		public void
+			when_limit_pending_and_sending_message_larger_than_pending_bytes_threshold_but_no_bytes_pending_should_not_close_connection() {
+			var messageSize = _connectionPendingSendBytesThreshold + 1000;
+			var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now,
+				PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
+			var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
+			var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success,
+				record, StreamMetadata.Empty, false, "");
 
-        [Test]
-        public void when_not_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_not_close_connection()
-        {
-            var mre = new ManualResetEventSlim();
+			var dummyConnection = new DummyTcpConnection();
+			dummyConnection.PendingSendBytes = 0;
 
-            var messageSize = _connectionPendingSendBytesThreshold / 2;
-            var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now, PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
-            var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
-            var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success, record, StreamMetadata.Empty, false, "");
-            
-            var dummyConnection = new DummyTcpConnection();
-            dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
+				_connectionPendingSendBytesThreshold);
 
-            var tcpConnectionManager = new TcpConnectionManager(
-                Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
-                InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
-                TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => {
-                    mre.Set();
-                }, ESConsts.UnrestrictedPendingSendBytes);
+			tcpConnectionManager.SendMessage(message);
 
-            tcpConnectionManager.SendMessage(message);
+			var data = dummyConnection.ReceivedData.Last();
+			var receivedPackage = TcpPackage.FromArraySegment(data);
 
-            var data = dummyConnection.ReceivedData.Last();
-            var receivedPackage = TcpPackage.FromArraySegment(data);
-           
-            Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted, "Expected ReadEventCompleted but got {0}", receivedPackage.Command);
-        }
-    }
+			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
+				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
+		}
 
-    internal class DummyTcpConnection : ITcpConnection
-    {
-        public Guid ConnectionId
-        {
-            get
-            {
-                return Guid.NewGuid();
-            }
-        }
+		[Test]
+		public void
+			when_not_limit_pending_and_sending_message_smaller_than_threshold_and_pending_bytes_over_threshold_should_not_close_connection() {
+			var mre = new ManualResetEventSlim();
 
-        public string ClientConnectionName
-        {
-            get
-            {
-                return _clientConnectionName;
-            }
-        }
+			var messageSize = _connectionPendingSendBytesThreshold / 2;
+			var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now,
+				PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
+			var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
+			var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success,
+				record, StreamMetadata.Empty, false, "");
 
-        public bool IsClosed
-        {
-            get
-            {
-                return false;
-            }
-        }
+			var dummyConnection = new DummyTcpConnection();
+			dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
 
-        public IPEndPoint LocalEndPoint
-        {
-            get
-            {
-                return new IPEndPoint(IPAddress.Loopback, 2);
-            }
-        }
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
+				ESConsts.UnrestrictedPendingSendBytes);
 
-        public IPEndPoint RemoteEndPoint
-        {
-            get
-            {
-                return new IPEndPoint(IPAddress.Loopback, 1);
-            }
-        }
+			tcpConnectionManager.SendMessage(message);
 
-        public int SendQueueSize
-        {
-            get
-            {
-                return 0;
-            }
-        }
+			var data = dummyConnection.ReceivedData.Last();
+			var receivedPackage = TcpPackage.FromArraySegment(data);
 
-        private int _pendingSendBytes;
-        public int PendingSendBytes
-        {
-            get
-            {
-                return _pendingSendBytes;
-            }
-            set
-            {
-                _pendingSendBytes = value;
-            }
-        }
+			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
+				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
+		}
+	}
 
-        public event Action<ITcpConnection, SocketError> ConnectionClosed;
-        private string _clientConnectionName;
+	internal class DummyTcpConnection : ITcpConnection {
+		public Guid ConnectionId {
+			get { return Guid.NewGuid(); }
+		}
 
-        public void Close(string reason)
-        {
-            var handler = ConnectionClosed;
-            if (handler != null)
-                handler(this, SocketError.Shutdown);
-        }
+		public string ClientConnectionName {
+			get { return _clientConnectionName; }
+		}
 
-        public IEnumerable<ArraySegment<byte>> ReceivedData;
-        public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
-        {
-            ReceivedData = data;
-        }
+		public bool IsClosed {
+			get { return false; }
+		}
 
-        public void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback)
-        {
-            throw new NotImplementedException();
-        }
+		public IPEndPoint LocalEndPoint {
+			get { return new IPEndPoint(IPAddress.Loopback, 2); }
+		}
 
-        public void SetClientConnectionName(string clientConnectionName)
-        {
-            _clientConnectionName = clientConnectionName;
-        }
-    }
+		public IPEndPoint RemoteEndPoint {
+			get { return new IPEndPoint(IPAddress.Loopback, 1); }
+		}
+
+		public int SendQueueSize {
+			get { return 0; }
+		}
+
+		private int _pendingSendBytes;
+
+		public int PendingSendBytes {
+			get { return _pendingSendBytes; }
+			set { _pendingSendBytes = value; }
+		}
+
+		public event Action<ITcpConnection, SocketError> ConnectionClosed;
+		private string _clientConnectionName;
+
+		public void Close(string reason) {
+			var handler = ConnectionClosed;
+			if (handler != null)
+				handler(this, SocketError.Shutdown);
+		}
+
+		public IEnumerable<ArraySegment<byte>> ReceivedData;
+
+		public void EnqueueSend(IEnumerable<ArraySegment<byte>> data) {
+			ReceivedData = data;
+		}
+
+		public void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback) {
+			throw new NotImplementedException();
+		}
+
+		public void SetClientConnectionName(string clientConnectionName) {
+			_clientConnectionName = clientConnectionName;
+		}
+	}
 }

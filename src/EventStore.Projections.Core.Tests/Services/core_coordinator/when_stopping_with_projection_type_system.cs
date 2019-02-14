@@ -12,41 +12,39 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using System.Collections.Generic;
 
-namespace EventStore.Projections.Core.Tests.Services.core_coordinator
-{
-    [TestFixture]
-    public class when_stopping_with_projection_type_system
-    {
-        private FakePublisher[] queues;
-        private FakePublisher publisher;
-        private ProjectionCoreCoordinator _coordinator;
-        private TimeoutScheduler[] timeoutScheduler = {};
-        private FakeEnvelope envelope = new FakeEnvelope();
-        [SetUp]
-        public void Setup()
-        {
-            queues = new List<FakePublisher>(){new FakePublisher()}.ToArray();
-            publisher = new FakePublisher();
+namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
+	[TestFixture]
+	public class when_stopping_with_projection_type_system {
+		private FakePublisher[] queues;
+		private FakePublisher publisher;
+		private ProjectionCoreCoordinator _coordinator;
+		private TimeoutScheduler[] timeoutScheduler = { };
+		private FakeEnvelope envelope = new FakeEnvelope();
 
-            _coordinator = new ProjectionCoreCoordinator(ProjectionType.System,timeoutScheduler,queues,publisher,envelope);
-            _coordinator.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-            _coordinator.Handle(new SystemMessage.SystemCoreReady());
-            _coordinator.Handle(new SystemMessage.EpochWritten(new EpochRecord(0,0,Guid.NewGuid(),0,DateTime.Now)));
+		[SetUp]
+		public void Setup() {
+			queues = new List<FakePublisher>() {new FakePublisher()}.ToArray();
+			publisher = new FakePublisher();
 
-            //force stop
-            _coordinator.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
-        }
+			_coordinator =
+				new ProjectionCoreCoordinator(ProjectionType.System, timeoutScheduler, queues, publisher, envelope);
+			_coordinator.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			_coordinator.Handle(new SystemMessage.SystemCoreReady());
+			_coordinator.Handle(new SystemMessage.EpochWritten(new EpochRecord(0, 0, Guid.NewGuid(), 0, DateTime.Now)));
 
-        [Test]
-        public void should_publish_stop_reader_messages()
-        {
-         Assert.AreEqual(1,queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
-        }
+			//force stop
+			_coordinator.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+		}
 
-        [Test]
-        public void should_publish_stop_core_messages()
-        {
-         Assert.AreEqual(1,queues[0].Messages.FindAll(x => x.GetType() == typeof(ProjectionCoreServiceMessage.StopCore)).Count);
-        }
-    }
+		[Test]
+		public void should_publish_stop_reader_messages() {
+			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+		}
+
+		[Test]
+		public void should_publish_stop_core_messages() {
+			Assert.AreEqual(1,
+				queues[0].Messages.FindAll(x => x.GetType() == typeof(ProjectionCoreServiceMessage.StopCore)).Count);
+		}
+	}
 }

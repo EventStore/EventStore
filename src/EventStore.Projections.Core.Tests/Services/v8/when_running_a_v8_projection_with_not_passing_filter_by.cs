@@ -4,14 +4,11 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.v8
-{
-    [TestFixture]
-    public class when_running_a_v8_projection_with_not_passing_filter_by : TestFixtureWithJsProjection
-    {
-        protected override void Given()
-        {
-            _projection = @"
+namespace EventStore.Projections.Core.Tests.Services.v8 {
+	[TestFixture]
+	public class when_running_a_v8_projection_with_not_passing_filter_by : TestFixtureWithJsProjection {
+		protected override void Given() {
+			_projection = @"
                 fromAll().when({$any: 
                     function(state, event) {
                         state.a = event.body.a;
@@ -22,34 +19,33 @@ namespace EventStore.Projections.Core.Tests.Services.v8
                     return state.a == '2';
                 });
             ";
-        }
+		}
 
-        [Test, Category("v8")]
-        public void filter_by_that_passes_returns_correct_result()
-        {
-            string state;
-            EmittedEventEnvelope[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""2""}", out state, out emittedEvents);
-            var result = _stateHandler.TransformStateToResult();
+		[Test, Category("v8")]
+		public void filter_by_that_passes_returns_correct_result() {
+			string state;
+			EmittedEventEnvelope[] emittedEvents;
+			_stateHandler.ProcessEvent(
+				"", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0,
+				"metadata",
+				@"{""a"":""2""}", out state, out emittedEvents);
+			var result = _stateHandler.TransformStateToResult();
 
-            Assert.IsNotNull(result);
-            Assert.AreEqual(@"{""a"":""2""}", result);
-        }
+			Assert.IsNotNull(result);
+			Assert.AreEqual(@"{""a"":""2""}", result);
+		}
 
-        [Test, Category("v8")]
-        public void filter_by_that_does_not_pass_returns_correct_result()
-        {
-            string state;
-            EmittedEventEnvelope[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""3""}", out state, out emittedEvents);
-            var result = _stateHandler.TransformStateToResult();
+		[Test, Category("v8")]
+		public void filter_by_that_does_not_pass_returns_correct_result() {
+			string state;
+			EmittedEventEnvelope[] emittedEvents;
+			_stateHandler.ProcessEvent(
+				"", CheckpointTag.FromPosition(0, 20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0,
+				"metadata",
+				@"{""a"":""3""}", out state, out emittedEvents);
+			var result = _stateHandler.TransformStateToResult();
 
-            Assert.IsNull(result);
-        }
-
-    }
+			Assert.IsNull(result);
+		}
+	}
 }

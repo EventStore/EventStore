@@ -6,273 +6,220 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Transport.Http.Codecs;
 
-namespace EventStore.TestClient.Commands.DvuBasic
-{
-    public class BankAccountBasicProducer : IBasicProducer
-    {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<BankAccountBasicProducer>();
+namespace EventStore.TestClient.Commands.DvuBasic {
+	public class BankAccountBasicProducer : IBasicProducer {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<BankAccountBasicProducer>();
 
-        public string Name
-        {
-            get
-            {
-                return "account";
-            }
-        }
+		public string Name {
+			get { return "account"; }
+		}
 
-        public Event Create(int version)
-        {
-            var accountObject = BankAccountEventFactory.CreateAccountObject(version);
+		public Event Create(int version) {
+			var accountObject = BankAccountEventFactory.CreateAccountObject(version);
 
-            var serializedObject = Codec.Json.To(accountObject);
-            var @event = new Event(Guid.NewGuid(), accountObject.GetType().Name, true, Helper.UTF8NoBom.GetBytes(serializedObject), new byte[0]);
+			var serializedObject = Codec.Json.To(accountObject);
+			var @event = new Event(Guid.NewGuid(), accountObject.GetType().Name, true,
+				Helper.UTF8NoBom.GetBytes(serializedObject), new byte[0]);
 
-            return @event;
-        }
+			return @event;
+		}
 
-        public bool Equal(int eventVersion, string eventType, byte[] actualData)
-        {
-            var generated = BankAccountEventFactory.CreateAccountObject(eventVersion);
-            object deserialized;
+		public bool Equal(int eventVersion, string eventType, byte[] actualData) {
+			var generated = BankAccountEventFactory.CreateAccountObject(eventVersion);
+			object deserialized;
 
-            bool isEqual;
-            string reason;
-            if (actualData == null)
-            {
-                isEqual = false;
-                reason = "Null received";
-            }
-            else
-            {
-                deserialized = Deserialize(eventType, actualData);
+			bool isEqual;
+			string reason;
+			if (actualData == null) {
+				isEqual = false;
+				reason = "Null received";
+			} else {
+				deserialized = Deserialize(eventType, actualData);
 
-                if (deserialized.GetType() != generated.GetType())
-                {
-                    isEqual = false;
-                    reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().Name);
-                }
-                else
-                {
-                    isEqual = generated.Equals(deserialized);
-                    reason = "Value differs";
-                }
-            }
+				if (deserialized.GetType() != generated.GetType()) {
+					isEqual = false;
+					reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().Name);
+				} else {
+					isEqual = generated.Equals(deserialized);
+					reason = "Value differs";
+				}
+			}
 
-            if (!isEqual)
-            {
-                LogExpected(generated, actualData, reason);
-            }
+			if (!isEqual) {
+				LogExpected(generated, actualData, reason);
+			}
 
-            return isEqual;
-        }
+			return isEqual;
+		}
 
-        private object Deserialize(string eventType, byte[] actualData)
-        {
-            object result = null;
-            var strData = Helper.UTF8NoBom.GetString(actualData);
-            if (eventType == typeof(AccountCreated).FullName)
-            {
-                result = Codec.Json.From<AccountCreated>(strData);
-            }
-            else
-            {
-                if (eventType == typeof(AccountCredited).Name)
-                {
-                    result = Codec.Json.From<AccountCredited>(strData);
-                }
-                else
-                {
-                    if (eventType == typeof(AccountDebited).Name)
-                    {
-                        result = Codec.Json.From<AccountDebited>(strData);
-                    }
-                    else
-                    {
-                        if (eventType == typeof(AccountCheckPoint).Name)
-                        {
-                            result = Codec.Json.From<AccountCheckPoint>(strData);
-                        }
-                        else
-                        {
-                            throw new NotSupportedException(string.Format("Event type {0} is not recognized.", eventType));
-                        }
-                    }
+		private object Deserialize(string eventType, byte[] actualData) {
+			object result = null;
+			var strData = Helper.UTF8NoBom.GetString(actualData);
+			if (eventType == typeof(AccountCreated).FullName) {
+				result = Codec.Json.From<AccountCreated>(strData);
+			} else {
+				if (eventType == typeof(AccountCredited).Name) {
+					result = Codec.Json.From<AccountCredited>(strData);
+				} else {
+					if (eventType == typeof(AccountDebited).Name) {
+						result = Codec.Json.From<AccountDebited>(strData);
+					} else {
+						if (eventType == typeof(AccountCheckPoint).Name) {
+							result = Codec.Json.From<AccountCheckPoint>(strData);
+						} else {
+							throw new NotSupportedException(string.Format("Event type {0} is not recognized.",
+								eventType));
+						}
+					}
+				}
+			}
 
-                }
-            }
-            return result;
-        }
+			return result;
+		}
 
-        private static void LogExpected(object generated, object actual, string reason)
-        {
-            Log.Info("Expected: {expected}\n" +
-                     "  Actual: {actual}\n" +
-                     " Details: {reason}",
-                     generated.ToString(),
-                     (actual == null ? "<null>" : actual.ToString()),
-                     reason
-                );
-        }
-      
-    }
+		private static void LogExpected(object generated, object actual, string reason) {
+			Log.Info("Expected: {expected}\n" +
+			         "  Actual: {actual}\n" +
+			         " Details: {reason}",
+				generated.ToString(),
+				(actual == null ? "<null>" : actual.ToString()),
+				reason
+			);
+		}
+	}
 
-    public class AccountCreated
-    {
-        public readonly string AccountNumber;
+	public class AccountCreated {
+		public readonly string AccountNumber;
 
-        public AccountCreated(string accountNumber)
-        {
-            AccountNumber = accountNumber;
-        }
+		public AccountCreated(string accountNumber) {
+			AccountNumber = accountNumber;
+		}
 
-        public override bool Equals(object obj)
-        {
-            if (obj == null)
-                return false;
+		public override bool Equals(object obj) {
+			if (obj == null)
+				return false;
 
-            if (obj.GetType() != GetType())
-                return false;
+			if (obj.GetType() != GetType())
+				return false;
 
-            var casted = (AccountCreated)obj;
-            return Equals(casted);
-        }
+			var casted = (AccountCreated)obj;
+			return Equals(casted);
+		}
 
-        protected bool Equals(AccountCreated other)
-        {
-            return string.Equals(AccountNumber, other.AccountNumber);
-        }
+		protected bool Equals(AccountCreated other) {
+			return string.Equals(AccountNumber, other.AccountNumber);
+		}
 
-        public override int GetHashCode()
-        {
-            return (AccountNumber != null ? AccountNumber.GetHashCode() : 0);
-        }
+		public override int GetHashCode() {
+			return (AccountNumber != null ? AccountNumber.GetHashCode() : 0);
+		}
 
-        public override string ToString()
-        {
-            return string.Format("Type: {0}; AccountNumber: {1}", GetType().Name, AccountNumber);
-        }
-    }
+		public override string ToString() {
+			return string.Format("Type: {0}; AccountNumber: {1}", GetType().Name, AccountNumber);
+		}
+	}
 
-    public class AccountCredited
-    {
-        public readonly decimal CreditedAmount;
-        public readonly string Kind;
+	public class AccountCredited {
+		public readonly decimal CreditedAmount;
+		public readonly string Kind;
 
-        public AccountCredited(decimal creditedAmount, int kind)
-        {
-            CreditedAmount = creditedAmount;
-            Kind = kind.ToString(CultureInfo.InvariantCulture);
-        }
+		public AccountCredited(decimal creditedAmount, int kind) {
+			CreditedAmount = creditedAmount;
+			Kind = kind.ToString(CultureInfo.InvariantCulture);
+		}
 
-        public override bool Equals(object obj)
-        {
-            if (obj == null)
-                return false;
+		public override bool Equals(object obj) {
+			if (obj == null)
+				return false;
 
-            if (obj.GetType() != GetType())
-                return false;
+			if (obj.GetType() != GetType())
+				return false;
 
-            var casted = (AccountCredited)obj;
-            return Equals(casted);
-        }
+			var casted = (AccountCredited)obj;
+			return Equals(casted);
+		}
 
-        protected bool Equals(AccountCredited other)
-        {
-            return CreditedAmount == other.CreditedAmount;
-        }
+		protected bool Equals(AccountCredited other) {
+			return CreditedAmount == other.CreditedAmount;
+		}
 
-        public override int GetHashCode()
-        {
-            return CreditedAmount.GetHashCode();
-        }
+		public override int GetHashCode() {
+			return CreditedAmount.GetHashCode();
+		}
 
-        public override string ToString()
-        {
-            return string.Format("Type: {0}; CreditedAmount: {1}", GetType().Name, CreditedAmount);
-        }
-    }
+		public override string ToString() {
+			return string.Format("Type: {0}; CreditedAmount: {1}", GetType().Name, CreditedAmount);
+		}
+	}
 
-    public class AccountDebited
-    {
-        public readonly decimal DebitedAmount;
-        public readonly string Kind;
+	public class AccountDebited {
+		public readonly decimal DebitedAmount;
+		public readonly string Kind;
 
-        public AccountDebited(decimal debitedAmount, int kind)
-        {
-            DebitedAmount = debitedAmount;
-            Kind = kind.ToString(CultureInfo.InvariantCulture);
-        }
+		public AccountDebited(decimal debitedAmount, int kind) {
+			DebitedAmount = debitedAmount;
+			Kind = kind.ToString(CultureInfo.InvariantCulture);
+		}
 
-        public override bool Equals(object obj)
-        {
-            if (obj == null)
-                return false;
+		public override bool Equals(object obj) {
+			if (obj == null)
+				return false;
 
-            if (obj.GetType() != GetType())
-                return false;
+			if (obj.GetType() != GetType())
+				return false;
 
-            var casted = (AccountDebited)obj;
-            return Equals(casted);
-        }
+			var casted = (AccountDebited)obj;
+			return Equals(casted);
+		}
 
-        protected bool Equals(AccountDebited other)
-        {
-            return DebitedAmount == other.DebitedAmount;
-        }
+		protected bool Equals(AccountDebited other) {
+			return DebitedAmount == other.DebitedAmount;
+		}
 
-        public override int GetHashCode()
-        {
-            return DebitedAmount.GetHashCode();
-        }
+		public override int GetHashCode() {
+			return DebitedAmount.GetHashCode();
+		}
 
-        public override string ToString()
-        {
-            return string.Format("Type: {0}; DebitedAmount: {1}", GetType().Name, DebitedAmount);
-        }
-    }
+		public override string ToString() {
+			return string.Format("Type: {0}; DebitedAmount: {1}", GetType().Name, DebitedAmount);
+		}
+	}
 
-    public class AccountCheckPoint
-    {
-        public readonly decimal CreditedAmount;
-        public readonly decimal DebitedAmount;
+	public class AccountCheckPoint {
+		public readonly decimal CreditedAmount;
+		public readonly decimal DebitedAmount;
 
-        public AccountCheckPoint(decimal creditedAmount, decimal debitedAmount)
-        {
-            CreditedAmount = creditedAmount;
-            DebitedAmount = debitedAmount;
-        }
+		public AccountCheckPoint(decimal creditedAmount, decimal debitedAmount) {
+			CreditedAmount = creditedAmount;
+			DebitedAmount = debitedAmount;
+		}
 
-        public override bool Equals(object obj)
-        {
-            if (obj == null)
-                return false;
+		public override bool Equals(object obj) {
+			if (obj == null)
+				return false;
 
-            if (obj.GetType() != GetType())
-                return false;
+			if (obj.GetType() != GetType())
+				return false;
 
-            var casted = (AccountCheckPoint)obj;
-            return Equals(casted);
-        }
+			var casted = (AccountCheckPoint)obj;
+			return Equals(casted);
+		}
 
-        protected bool Equals(AccountCheckPoint other)
-        {
-            return CreditedAmount == other.CreditedAmount && DebitedAmount == other.DebitedAmount;
-        }
+		protected bool Equals(AccountCheckPoint other) {
+			return CreditedAmount == other.CreditedAmount && DebitedAmount == other.DebitedAmount;
+		}
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (CreditedAmount.GetHashCode() * 397) ^ DebitedAmount.GetHashCode();
-            }
-        }
+		public override int GetHashCode() {
+			unchecked {
+				return (CreditedAmount.GetHashCode() * 397) ^ DebitedAmount.GetHashCode();
+			}
+		}
 
-        public override string ToString()
-        {
-            return string.Format("Type: {0}; CreditedAmount: {1}, DebitedAmount: {2}",
-                                 GetType().Name,
-                                 CreditedAmount,
-                                 DebitedAmount);
-        }
-    }
+		public override string ToString() {
+			return string.Format("Type: {0}; CreditedAmount: {1}, DebitedAmount: {2}",
+				GetType().Name,
+				CreditedAmount,
+				DebitedAmount);
+		}
+	}
 }

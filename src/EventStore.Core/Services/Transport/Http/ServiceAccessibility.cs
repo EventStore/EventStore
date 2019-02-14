@@ -1,8 +1,6 @@
-﻿namespace EventStore.Core.Services.Transport.Http
-{
-    public enum ServiceAccessibility
-    {
-        Private,
-        Public
-    }
+﻿namespace EventStore.Core.Services.Transport.Http {
+	public enum ServiceAccessibility {
+		Private,
+		Public
+	}
 }

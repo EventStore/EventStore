@@ -1,43 +1,39 @@
 using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Helpers
-{
-    public sealed class IODispatcherDelayedMessage : Message
-    {
-        private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-        public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Core.Helpers {
+	public sealed class IODispatcherDelayedMessage : Message {
+		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        private readonly Guid _correlationId;
-        private readonly Action _action;
-        private readonly Guid? _messageCorrelationId;
+		public override int MsgTypeId {
+			get { return TypeId; }
+		}
 
-        public IODispatcherDelayedMessage(Guid correlationId, Action action)
-        {
-            _action = action;
-            _correlationId = correlationId;
-        }
+		private readonly Guid _correlationId;
+		private readonly Action _action;
+		private readonly Guid? _messageCorrelationId;
 
-        public IODispatcherDelayedMessage(Guid correlationId, Action action, Guid? messageCorrelationId)
-        {
-            _action = action;
-            _correlationId = correlationId;
-            _messageCorrelationId = messageCorrelationId;
-        }
+		public IODispatcherDelayedMessage(Guid correlationId, Action action) {
+			_action = action;
+			_correlationId = correlationId;
+		}
 
-        public Action Action
-        {
-            get { return _action; }
-        }
+		public IODispatcherDelayedMessage(Guid correlationId, Action action, Guid? messageCorrelationId) {
+			_action = action;
+			_correlationId = correlationId;
+			_messageCorrelationId = messageCorrelationId;
+		}
 
-        public Guid CorrelationId
-        {
-            get { return _correlationId; }
-        }
+		public Action Action {
+			get { return _action; }
+		}
 
-        public Guid? MessageCorrelationId
-        {
-            get { return _messageCorrelationId; }
-        }
-    }
+		public Guid CorrelationId {
+			get { return _correlationId; }
+		}
+
+		public Guid? MessageCorrelationId {
+			get { return _messageCorrelationId; }
+		}
+	}
 }

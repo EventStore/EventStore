@@ -8,109 +8,103 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.TestClient.Commands.DvuBasic;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
-{
-    internal class ProjectionsKillScenario : ProjectionsScenarioBase
-    {
-        public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
-                                       int maxConcurrentRequests, 
-                                       int connections, 
-                                       int streams, 
-                                       int eventsPerStream, 
-                                       int streamDeleteStep, 
-                                       string dbParentPath,
-                                       NodeConnectionInfo customNode)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
-        {
-        }
+namespace EventStore.TestClient.Commands.RunTestScenarios {
+	internal class ProjectionsKillScenario : ProjectionsScenarioBase {
+		public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
+			int maxConcurrentRequests,
+			int connections,
+			int streams,
+			int eventsPerStream,
+			int streamDeleteStep,
+			string dbParentPath,
+			NodeConnectionInfo customNode)
+			: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
+				dbParentPath, customNode) {
+		}
 
-        private EventData CreateBankEvent(int version)
-        {
-            var accountObject = BankAccountEventFactory.CreateAccountObject(version);
-            var @event = BankAccountEvent.FromEvent(accountObject);
-            return @event;
-        }
+		private EventData CreateBankEvent(int version) {
+			var accountObject = BankAccountEventFactory.CreateAccountObject(version);
+			var @event = BankAccountEvent.FromEvent(accountObject);
+			return @event;
+		}
 
-        protected virtual int GetIterationCode()
-        {
-            return 0;
-        }
+		protected virtual int GetIterationCode() {
+			return 0;
+		}
 
-        protected override void RunInternal()
-        {
-            var nodeProcessId = StartNode();
-            EnableProjectionByCategory();
+		protected override void RunInternal() {
+			var nodeProcessId = StartNode();
+			EnableProjectionByCategory();
 
-            var countItem = CreateCountItem();
-            var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
+			var countItem = CreateCountItem();
+			var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
 
-            var writeTask = WriteData();
+			var writeTask = WriteData();
 
-            var success = false;
-            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
-            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
+			var success = false;
+			var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
+			var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-            var isWatchStarted = false;
-            
-            var stopWatch = new Stopwatch();
-            
-            var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
-            while (stopWatch.Elapsed < waitDuration)
-            {
-                if (writeTask.IsFaulted)
-                    throw new ApplicationException("Failed to write data");
+			var isWatchStarted = false;
 
-                if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                {
-                    stopWatch.Start();
-                    isWatchStarted = true;
-                }
+			var stopWatch = new Stopwatch();
 
-                success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
-                       && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion);
+			var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
+			while (stopWatch.Elapsed < waitDuration) {
+				if (writeTask.IsFaulted)
+					throw new ApplicationException("Failed to write data");
 
-                if (success)
-                    break;
+				if (writeTask.IsCompleted && !stopWatch.IsRunning) {
+					stopWatch.Start();
+					isWatchStarted = true;
+				}
 
-                if (isWatchStarted)
-                    stopWatch.Stop();
+				success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+				          && CheckProjectionState(sumCheckForBankAccount0, "success",
+					          x => x == lastExpectedEventVersion);
 
-                Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
+				if (success)
+					break;
 
-                KillNode(nodeProcessId);
-                nodeProcessId = StartNode();
+				if (isWatchStarted)
+					stopWatch.Stop();
 
-                if (isWatchStarted)
-                    stopWatch.Start();
-            }
+				Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
 
-            writeTask.Wait();
+				KillNode(nodeProcessId);
+				nodeProcessId = StartNode();
 
-            KillNode(nodeProcessId);
+				if (isWatchStarted)
+					stopWatch.Start();
+			}
 
-            if (!success)
-                throw new ApplicationException(string.Format("Projections did not complete with expected result in time"));
-        }
+			writeTask.Wait();
 
-        protected Task WriteData()
-        {
-            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
-            var slices = Split(streams, 3);
+			KillNode(nodeProcessId);
 
-            var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream, CreateBankEvent);
-            var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
-            var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
+			if (!success)
+				throw new ApplicationException(
+					string.Format("Projections did not complete with expected result in time"));
+		}
 
-            var task = Task.Factory.ContinueWhenAll(new[] { w1, w2, w3 }, Task.WaitAll);
-            return task.ContinueWith(x => Log.Info("Data written for iteration {iteration}.", GetIterationCode()));
-        }
+		protected Task WriteData() {
+			var streams = Enumerable.Range(0, Streams)
+				.Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
+			var slices = Split(streams, 3);
 
-        protected string CreateCountItem()
-        {
-            var projectionManager = GetProjectionsManager();
+			var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream, CreateBankEvent);
+			var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
+			var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
 
-            string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
-            string countItemsProjection = string.Format(@"
+			var task = Task.Factory.ContinueWhenAll(new[] {w1, w2, w3}, Task.WaitAll);
+			return task.ContinueWith(x => Log.Info("Data written for iteration {iteration}.", GetIterationCode()));
+		}
+
+		protected string CreateCountItem() {
+			var projectionManager = GetProjectionsManager();
+
+			string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
+			string countItemsProjection = string.Format(@"
                 fromCategory('bank_account_it{0}').when({{
                 $init: function() {{ return {{count:0}}; }},
                 AccountCredited: function (state, event) {{ 
@@ -125,14 +119,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }})
 ", GetIterationCode());
 
-            projectionManager.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
-            return countItemsProjectionName;
-        }
+			projectionManager.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials)
+				.Wait();
+			return countItemsProjectionName;
+		}
 
-        protected string CreateSumCheckForBankAccount0()
-        {
-            string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
-            string countItemsProjection = string.Format(@"
+		protected string CreateSumCheckForBankAccount0() {
+			string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
+			string countItemsProjection = string.Format(@"
                 fromStream('bank_account_it{0}-0').when({{
                     $init: function() {{ 
                         return {{credited:0, credsum:'', debited:0, debsum:''}}; 
@@ -169,9 +163,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 }})                
 ", GetIterationCode());
 
-            GetProjectionsManager().CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
+			GetProjectionsManager()
+				.CreateContinuousAsync(countItemsProjectionName, countItemsProjection, AdminCredentials).Wait();
 
-            return countItemsProjectionName;
-        }
-    }
+			return countItemsProjectionName;
+		}
+	}
 }

@@ -1,3 +1,2 @@
-namespace EventStore.Core.Tests.Services.ElectionsService.LeaderNode
-{
+namespace EventStore.Core.Tests.Services.ElectionsService.LeaderNode {
 }

@@ -8,181 +8,168 @@ using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
-namespace EventStore.Core.Bus
-{
-    /// <summary>
-    /// Lightweight in-memory queue with a separate thread in which it passes messages
-    /// to the consumer. It also tracks statistics about the message processing to help
-    /// in identifying bottlenecks
-    /// </summary>
-    public class QueuedHandlerAutoReset : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
-    {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerAutoReset>();
+namespace EventStore.Core.Bus {
+	/// <summary>
+	/// Lightweight in-memory queue with a separate thread in which it passes messages
+	/// to the consumer. It also tracks statistics about the message processing to help
+	/// in identifying bottlenecks
+	/// </summary>
+	public class QueuedHandlerAutoReset : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
+		IThreadSafePublisher {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerAutoReset>();
 
-        public int MessageCount { get { return _queue.Count; } }
-        public string Name { get { return _queueStats.Name; } }
+		public int MessageCount {
+			get { return _queue.Count; }
+		}
 
-        private readonly IHandle<Message> _consumer;
+		public string Name {
+			get { return _queueStats.Name; }
+		}
 
-        private readonly bool _watchSlowMsg;
-        private readonly TimeSpan _slowMsgThreshold;
+		private readonly IHandle<Message> _consumer;
 
-        private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
-        private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
+		private readonly bool _watchSlowMsg;
+		private readonly TimeSpan _slowMsgThreshold;
 
-        private Thread _thread;
-        private volatile bool _stop;
-        private volatile bool _starving;
-        private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
-        private readonly TimeSpan _threadStopWaitTimeout;
+		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
+		private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
-        // monitoring
-        private readonly QueueMonitor _queueMonitor;
-        private readonly QueueStatsCollector _queueStats;
-        private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private Thread _thread;
+		private volatile bool _stop;
+		private volatile bool _starving;
+		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
+		private readonly TimeSpan _threadStopWaitTimeout;
 
-        public QueuedHandlerAutoReset(IHandle<Message> consumer,
-                                      string name,
-                                      bool watchSlowMsg = true,
-                                      TimeSpan? slowMsgThreshold = null,
-                                      TimeSpan? threadStopWaitTimeout = null,
-                                      string groupName = null)
-        {
-            Ensure.NotNull(consumer, "consumer");
-            Ensure.NotNull(name, "name");
+		// monitoring
+		private readonly QueueMonitor _queueMonitor;
+		private readonly QueueStatsCollector _queueStats;
+		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
-            _consumer = consumer;
+		public QueuedHandlerAutoReset(IHandle<Message> consumer,
+			string name,
+			bool watchSlowMsg = true,
+			TimeSpan? slowMsgThreshold = null,
+			TimeSpan? threadStopWaitTimeout = null,
+			string groupName = null) {
+			Ensure.NotNull(consumer, "consumer");
+			Ensure.NotNull(name, "name");
 
-            _watchSlowMsg = watchSlowMsg;
-            _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
-            _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
+			_consumer = consumer;
 
-            _queueMonitor = QueueMonitor.Default;
-            _queueStats = new QueueStatsCollector(name, groupName);
-        }
+			_watchSlowMsg = watchSlowMsg;
+			_slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
+			_threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
 
-        public Task Start()
-        {
-            if (_thread != null)
-                throw new InvalidOperationException("Already a thread running.");
+			_queueMonitor = QueueMonitor.Default;
+			_queueStats = new QueueStatsCollector(name, groupName);
+		}
 
-            _queueMonitor.Register(this);
+		public Task Start() {
+			if (_thread != null)
+				throw new InvalidOperationException("Already a thread running.");
 
-            _stopped.Reset();
+			_queueMonitor.Register(this);
 
-            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
-            _thread.Start();
-            return _tcs.Task;
-        }
+			_stopped.Reset();
 
-        public void Stop()
-        {
-            _stop = true;
-            if (!_stopped.Wait(_threadStopWaitTimeout))
-                throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
-        }
+			_thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
+			_thread.Start();
+			return _tcs.Task;
+		}
 
-        public void RequestStop()
-        {
-            _stop = true;
-        }
+		public void Stop() {
+			_stop = true;
+			if (!_stopped.Wait(_threadStopWaitTimeout))
+				throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
+		}
 
-        private void ReadFromQueue(object o)
-        {
-        try{
-            _queueStats.Start();
-            Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
+		public void RequestStop() {
+			_stop = true;
+		}
 
-            while (!_stop)
-            {
-                Message msg = null;
-                try
-                {
-                    if (!_queue.TryDequeue(out msg))
-                    {
-                        _queueStats.EnterIdle();
+		private void ReadFromQueue(object o) {
+			try {
+				_queueStats.Start();
+				Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
 
-                        _starving = true;
-                        _msgAddEvent.WaitOne(100);
-                        _starving = false;
-                    }
-                    else
-                    {
-                        _queueStats.EnterBusy();
+				while (!_stop) {
+					Message msg = null;
+					try {
+						if (!_queue.TryDequeue(out msg)) {
+							_queueStats.EnterIdle();
+
+							_starving = true;
+							_msgAddEvent.WaitOne(100);
+							_starving = false;
+						} else {
+							_queueStats.EnterBusy();
 #if DEBUG
-                        _queueStats.Dequeued(msg);
+							_queueStats.Dequeued(msg);
 #endif
 
-                        var cnt = _queue.Count;
-                        _queueStats.ProcessingStarted(msg.GetType(), cnt);
+							var cnt = _queue.Count;
+							_queueStats.ProcessingStarted(msg.GetType(), cnt);
 
-                        if (_watchSlowMsg)
-                        {
-                            var start = DateTime.UtcNow;
+							if (_watchSlowMsg) {
+								var start = DateTime.UtcNow;
 
-                            _consumer.Handle(msg);
+								_consumer.Handle(msg);
 
-                            var elapsed = DateTime.UtcNow - start;
-                            if (elapsed > _slowMsgThreshold)
-                            {
-                                Log.Trace("SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
-                                          Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
-                                if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(msg is SystemMessage.SystemInit))
-                                    Log.Error("---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
-                                              Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
-                            }
-                        }
-                        else
-                        {
-                            _consumer.Handle(msg);
-                        }
+								var elapsed = DateTime.UtcNow - start;
+								if (elapsed > _slowMsgThreshold) {
+									Log.Trace(
+										"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
+										Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt,
+										_queue.Count);
+									if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
+									    !(msg is SystemMessage.SystemInit))
+										Log.Error(
+											"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
+											Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
+											cnt, _queue.Count);
+								}
+							} else {
+								_consumer.Handle(msg);
+							}
 
-                        _queueStats.ProcessingEnded(1);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.ErrorException(ex, "Error while processing message {message} in queued handler '{queue}'.", msg, Name);
+							_queueStats.ProcessingEnded(1);
+						}
+					} catch (Exception ex) {
+						Log.ErrorException(ex, "Error while processing message {message} in queued handler '{queue}'.",
+							msg, Name);
 #if DEBUG
-                    throw;
+						throw;
 #endif
-                }
-            }
-        }
-        catch(Exception ex){
-            _tcs.TrySetException(ex);
-            throw;
-        }
-        finally{
-            _queueStats.Stop();
+					}
+				}
+			} catch (Exception ex) {
+				_tcs.TrySetException(ex);
+				throw;
+			} finally {
+				_queueStats.Stop();
 
-            _stopped.Set();
-            _queueMonitor.Unregister(this);
-            Thread.EndThreadAffinity();
-        }
+				_stopped.Set();
+				_queueMonitor.Unregister(this);
+				Thread.EndThreadAffinity();
+			}
+		}
 
-        }
-
-        public void Publish(Message message)
-        {
-            //Ensure.NotNull(message, "message");
+		public void Publish(Message message) {
+			//Ensure.NotNull(message, "message");
 #if DEBUG
-            _queueStats.Enqueued();
+			_queueStats.Enqueued();
 #endif
-            _queue.Enqueue(message);
-            if (_starving)
-                _msgAddEvent.Set();
-        }
+			_queue.Enqueue(message);
+			if (_starving)
+				_msgAddEvent.Set();
+		}
 
-        public void Handle(Message message)
-        {
-            Publish(message);
-        }
+		public void Handle(Message message) {
+			Publish(message);
+		}
 
-        public QueueStats GetStatistics()
-        {
-            return _queueStats.GetStatistics(_queue.Count);
-        }
-    }
+		public QueueStats GetStatistics() {
+			return _queueStats.GetStatistics(_queue.Count);
+		}
+	}
 }
-

@@ -4,94 +4,90 @@ using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
-namespace EventStore.Core.TransactionLog.Chunks
-{
-    public class TFChunkBulkReader : IDisposable
-    {
-        public TFChunk.TFChunk Chunk { get { return _chunk; } }
-        internal Stream Stream { get { return _stream; } }
+namespace EventStore.Core.TransactionLog.Chunks {
+	public class TFChunkBulkReader : IDisposable {
+		public TFChunk.TFChunk Chunk {
+			get { return _chunk; }
+		}
 
-        private readonly TFChunk.TFChunk _chunk;
-        private readonly Stream _stream;
-        private bool _disposed;
+		internal Stream Stream {
+			get { return _stream; }
+		}
 
-        internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse)
-        {
-            Ensure.NotNull(chunk, "chunk");
-            Ensure.NotNull(streamToUse, "stream");
-            _chunk = chunk;
-            _stream = streamToUse;
-        }
+		private readonly TFChunk.TFChunk _chunk;
+		private readonly Stream _stream;
+		private bool _disposed;
 
-        ~TFChunkBulkReader()
-        {
-            Dispose();
-        }
+		internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse) {
+			Ensure.NotNull(chunk, "chunk");
+			Ensure.NotNull(streamToUse, "stream");
+			_chunk = chunk;
+			_stream = streamToUse;
+		}
 
-        public void SetRawPosition(int rawPosition)
-        {
-            if (rawPosition >= _stream.Length)
-                throw new ArgumentOutOfRangeException("rawPosition", string.Format("Raw position {0} is out of bounds.", rawPosition));
-            _stream.Position = rawPosition;
-        }
+		~TFChunkBulkReader() {
+			Dispose();
+		}
 
-        public void SetDataPosition(long dataPosition)
-        {
-            var rawPos = dataPosition + ChunkHeader.Size;
-            if (rawPos >= _stream.Length)
-                throw new ArgumentOutOfRangeException("dataPosition", string.Format("Data position {0} is out of bounds.", dataPosition));
-            _stream.Position = rawPos;
-        }
+		public void SetRawPosition(int rawPosition) {
+			if (rawPosition >= _stream.Length)
+				throw new ArgumentOutOfRangeException("rawPosition",
+					string.Format("Raw position {0} is out of bounds.", rawPosition));
+			_stream.Position = rawPosition;
+		}
 
-        public void Release()
-        {
-            _stream.Close();
-            _stream.Dispose();
-            _disposed = true;
-            _chunk.ReleaseReader(this);
-        }
+		public void SetDataPosition(long dataPosition) {
+			var rawPos = dataPosition + ChunkHeader.Size;
+			if (rawPos >= _stream.Length)
+				throw new ArgumentOutOfRangeException("dataPosition",
+					string.Format("Data position {0} is out of bounds.", dataPosition));
+			_stream.Position = rawPos;
+		}
 
-        public BulkReadResult ReadNextRawBytes(int count, byte[] buffer)
-        {
-            Ensure.NotNull(buffer, "buffer");
-            Ensure.Nonnegative(count, "count");
+		public void Release() {
+			_stream.Close();
+			_stream.Dispose();
+			_disposed = true;
+			_chunk.ReleaseReader(this);
+		}
 
-            if (count > buffer.Length)
-                count = buffer.Length;
+		public BulkReadResult ReadNextRawBytes(int count, byte[] buffer) {
+			Ensure.NotNull(buffer, "buffer");
+			Ensure.Nonnegative(count, "count");
 
-            var oldPos = (int)_stream.Position;
-            int bytesRead = _stream.Read(buffer, 0, count);
-            return new BulkReadResult(oldPos, bytesRead, isEof: _stream.Length == _stream.Position);
-        }
+			if (count > buffer.Length)
+				count = buffer.Length;
 
-        public BulkReadResult ReadNextDataBytes(int count, byte[] buffer)
-        {
-            Ensure.NotNull(buffer, "buffer");
-            Ensure.Nonnegative(count, "count");
+			var oldPos = (int)_stream.Position;
+			int bytesRead = _stream.Read(buffer, 0, count);
+			return new BulkReadResult(oldPos, bytesRead, isEof: _stream.Length == _stream.Position);
+		}
 
-            if (_stream.Position == 0)
-                _stream.Position = ChunkHeader.Size;
+		public BulkReadResult ReadNextDataBytes(int count, byte[] buffer) {
+			Ensure.NotNull(buffer, "buffer");
+			Ensure.Nonnegative(count, "count");
 
-            if (count > buffer.Length)
-                count = buffer.Length;
+			if (_stream.Position == 0)
+				_stream.Position = ChunkHeader.Size;
 
-            var oldPos = (int)_stream.Position - ChunkHeader.Size;
-            var toRead = Math.Min(_chunk.PhysicalDataSize - oldPos, count);
-            Debug.Assert(toRead >= 0);
-            _stream.Position = _stream.Position; // flush read buffer
-            int bytesRead = _stream.Read(buffer, 0, toRead);
-            return new BulkReadResult(oldPos,
-                                      bytesRead,
-                                      isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.PhysicalDataSize);
-        }
+			if (count > buffer.Length)
+				count = buffer.Length;
 
-        public void Dispose()
-        {
-            if(_disposed) 
-                return;
-            Release();
-            GC.SuppressFinalize(this);
-        }
+			var oldPos = (int)_stream.Position - ChunkHeader.Size;
+			var toRead = Math.Min(_chunk.PhysicalDataSize - oldPos, count);
+			Debug.Assert(toRead >= 0);
+			_stream.Position = _stream.Position; // flush read buffer
+			int bytesRead = _stream.Read(buffer, 0, toRead);
+			return new BulkReadResult(oldPos,
+				bytesRead,
+				isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.PhysicalDataSize);
+		}
 
-    }
+		public void Dispose() {
+			if (_disposed)
+				return;
+			Release();
+			GC.SuppressFinalize(this);
+		}
+	}
 }

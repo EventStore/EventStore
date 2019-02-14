@@ -3,139 +3,147 @@ using System.Net.Sockets;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
 
-namespace EventStore.Core.Messages
-{
-    public static class TcpMessage
-    {
-        public class TcpSend: Message, IQueueAffineMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Core.Messages {
+	public static class TcpMessage {
+		public class TcpSend : Message, IQueueAffineMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public int QueueId { get { return ConnectionManager.GetHashCode(); } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly TcpConnectionManager ConnectionManager;
-            public readonly Message Message;
+			public int QueueId {
+				get { return ConnectionManager.GetHashCode(); }
+			}
 
-            public TcpSend(TcpConnectionManager connectionManager, Message message)
-            {
-                ConnectionManager = connectionManager;
-                Message = message;
-            }
-        }
+			public readonly TcpConnectionManager ConnectionManager;
+			public readonly Message Message;
 
-        public class Heartbeat: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public TcpSend(TcpConnectionManager connectionManager, Message message) {
+				ConnectionManager = connectionManager;
+				Message = message;
+			}
+		}
 
-            public readonly int MessageNumber;
+		public class Heartbeat : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public Heartbeat(int messageNumber)
-            {
-                MessageNumber = messageNumber;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class HeartbeatTimeout: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly int MessageNumber;
 
-            public readonly int MessageNumber;
+			public Heartbeat(int messageNumber) {
+				MessageNumber = messageNumber;
+			}
+		}
 
-            public HeartbeatTimeout(int messageNumber)
-            {
-                MessageNumber = messageNumber;
-            }
-        }
+		public class HeartbeatTimeout : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class PongMessage: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly Guid CorrelationId;
-            public readonly byte[] Payload;
+			public readonly int MessageNumber;
 
-            public PongMessage(Guid correlationId, byte[] payload)
-            {
-                CorrelationId = correlationId;
-                Payload = payload;
-            }
-        }
+			public HeartbeatTimeout(int messageNumber) {
+				MessageNumber = messageNumber;
+			}
+		}
 
-        public class ConnectionEstablished: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class PongMessage : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly TcpConnectionManager Connection;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public ConnectionEstablished(TcpConnectionManager connection)
-            {
-                Connection = connection;
-            }
-        }
+			public readonly Guid CorrelationId;
+			public readonly byte[] Payload;
 
-        public class ConnectionClosed: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public PongMessage(Guid correlationId, byte[] payload) {
+				CorrelationId = correlationId;
+				Payload = payload;
+			}
+		}
 
-            public readonly TcpConnectionManager Connection;
-            public readonly SocketError SocketError;
+		public class ConnectionEstablished : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public ConnectionClosed(TcpConnectionManager connection, SocketError socketError)
-            {
-                Connection = connection;
-                SocketError = socketError;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class NotReady : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly TcpConnectionManager Connection;
 
-            public readonly Guid CorrelationId;
-            public readonly string Reason;
+			public ConnectionEstablished(TcpConnectionManager connection) {
+				Connection = connection;
+			}
+		}
 
-            public NotReady(Guid correlationId, string reason)
-            {
-                CorrelationId = correlationId;
-                Reason = reason;
-            }
-        }
+		public class ConnectionClosed : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly TcpConnectionManager Connection;
+			public readonly SocketError SocketError;
+
+			public ConnectionClosed(TcpConnectionManager connection, SocketError socketError) {
+				Connection = connection;
+				SocketError = socketError;
+			}
+		}
+
+		public class NotReady : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+			public readonly string Reason;
+
+			public NotReady(Guid correlationId, string reason) {
+				CorrelationId = correlationId;
+				Reason = reason;
+			}
+		}
 
 
-        public class NotAuthenticated : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class NotAuthenticated : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly Guid CorrelationId;
-            public readonly string Reason;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public NotAuthenticated(Guid correlationId, string reason)
-            {
-                CorrelationId = correlationId;
-                Reason = reason;
-            }
-        }
+			public readonly Guid CorrelationId;
+			public readonly string Reason;
 
-        public class Authenticated : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public NotAuthenticated(Guid correlationId, string reason) {
+				CorrelationId = correlationId;
+				Reason = reason;
+			}
+		}
 
-            public readonly Guid CorrelationId;
+		public class Authenticated : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public Authenticated(Guid correlationId)
-            {
-                CorrelationId = correlationId;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-    }
+			public readonly Guid CorrelationId;
+
+			public Authenticated(Guid correlationId) {
+				CorrelationId = correlationId;
+			}
+		}
+	}
 }

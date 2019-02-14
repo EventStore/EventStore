@@ -2,84 +2,92 @@ using System;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
 
-namespace EventStore.Projections.Core.Messages
-{
-    public static partial class ProjectionCoreServiceMessage
-    {
-        public class StartCore : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-            public readonly Guid EpochId;
-            public StartCore(Guid epochId)
-            {
-                EpochId = epochId;
-            }
-        }
+namespace EventStore.Projections.Core.Messages {
+	public static partial class ProjectionCoreServiceMessage {
+		public class StartCore : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class StopCore : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class Connected : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly Guid EpochId;
 
-            private readonly TcpConnectionManager _connection;
+			public StartCore(Guid epochId) {
+				EpochId = epochId;
+			}
+		}
 
-            public Connected(TcpConnectionManager connection)
-            {
-                _connection = connection;
-            }
+		public class StopCore : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public TcpConnectionManager Connection
-            {
-                get { return _connection; }
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-        public class CoreTick : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class Connected : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            private readonly Action _action;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public CoreTick(Action action)
-            {
-                _action = action;
-            }
+			private readonly TcpConnectionManager _connection;
 
-            public Action Action
-            {
-                get { return _action; }
-            }
-        }
+			public Connected(TcpConnectionManager connection) {
+				_connection = connection;
+			}
 
-        public class SubComponentStarted : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-            public readonly string SubComponent;
-            public SubComponentStarted(string subComponent)
-            {
-                SubComponent = subComponent;
-            }            
-        }
+			public TcpConnectionManager Connection {
+				get { return _connection; }
+			}
+		}
 
-        public class SubComponentStopped : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-            public readonly string SubComponent;
-            public SubComponentStopped(string subComponent)
-            {
-                SubComponent = subComponent;
-            }          
-        }                
+		public class CoreTick : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-    }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			private readonly Action _action;
+
+			public CoreTick(Action action) {
+				_action = action;
+			}
+
+			public Action Action {
+				get { return _action; }
+			}
+		}
+
+		public class SubComponentStarted : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string SubComponent;
+
+			public SubComponentStarted(string subComponent) {
+				SubComponent = subComponent;
+			}
+		}
+
+		public class SubComponentStopped : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string SubComponent;
+
+			public SubComponentStopped(string subComponent) {
+				SubComponent = subComponent;
+			}
+		}
+	}
 }

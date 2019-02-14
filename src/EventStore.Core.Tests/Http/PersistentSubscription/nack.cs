@@ -13,59 +13,54 @@ using EventStore.Transport.Http;
 
 // ReSharper disable InconsistentNaming
 
-namespace EventStore.Core.Tests.Http.PersistentSubscription
-{
-    class when_nacking_a_message : with_subscription_having_events
-    {
-        private HttpWebResponse _response;
-        private string _nackLink;
-        protected override void Given()
-        {
-            base.Given();
-            var json = GetJson<JObject>(
-               SubscriptionPath + "/1",
-               ContentType.CompetingJson,
-               _admin);
-            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-            _nackLink = ((JObject)json)["entries"].Children().First()["links"].Children().First(x => x.Value<string>("relation") == "nack").Value<string>("uri");
-        }
+namespace EventStore.Core.Tests.Http.PersistentSubscription {
+	class when_nacking_a_message : with_subscription_having_events {
+		private HttpWebResponse _response;
+		private string _nackLink;
 
-        protected override void When()
-        {
-            _response = MakePost(_nackLink, _admin);
-        }
+		protected override void Given() {
+			base.Given();
+			var json = GetJson<JObject>(
+				SubscriptionPath + "/1",
+				ContentType.CompetingJson,
+				_admin);
+			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+			_nackLink = ((JObject)json)["entries"].Children().First()["links"].Children()
+				.First(x => x.Value<string>("relation") == "nack").Value<string>("uri");
+		}
 
-        [Test]
-        public void returns_accepted()
-        {
-            Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
-        }
-    }
+		protected override void When() {
+			_response = MakePost(_nackLink, _admin);
+		}
 
-    class when_nacking_messages : with_subscription_having_events
-    {
-        private HttpWebResponse _response;
-        private string _nackAllLink;
-        protected override void Given()
-        {
-            base.Given();
-            var json = GetJson<JObject>(
-               SubscriptionPath + "/" + Events.Count,
-               ContentType.CompetingJson,
-               _admin);
-            Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-            _nackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "nackAll").Value<string>("uri");
-        }
+		[Test]
+		public void returns_accepted() {
+			Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
+		}
+	}
 
-        protected override void When()
-        {
-            _response = MakePost(_nackAllLink, _admin);
-        }
+	class when_nacking_messages : with_subscription_having_events {
+		private HttpWebResponse _response;
+		private string _nackAllLink;
 
-        [Test]
-        public void returns_accepted()
-        {
-            Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
-        }
-    }
+		protected override void Given() {
+			base.Given();
+			var json = GetJson<JObject>(
+				SubscriptionPath + "/" + Events.Count,
+				ContentType.CompetingJson,
+				_admin);
+			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+			_nackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "nackAll")
+				.Value<string>("uri");
+		}
+
+		protected override void When() {
+			_response = MakePost(_nackAllLink, _admin);
+		}
+
+		[Test]
+		public void returns_accepted() {
+			Assert.AreEqual(HttpStatusCode.Accepted, _response.StatusCode);
+		}
+	}
 }

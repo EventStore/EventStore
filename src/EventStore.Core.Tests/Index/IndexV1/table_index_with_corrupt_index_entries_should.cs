@@ -9,172 +9,170 @@ using System.IO;
 using System.Collections.Generic;
 using EventStore.Core.Exceptions;
 
-namespace EventStore.Core.Tests.Index.IndexV1
-{
-    public class table_index_with_corrupt_index_entries_should : SpecificationWithDirectoryPerTestFixture
-    {
-        private TableIndex _tableIndex;
-        private IndexMap _indexMap;
-        public const string StreamName = "stream";
-        public const int NumIndexEntries = 512;
+namespace EventStore.Core.Tests.Index.IndexV1 {
+	public class table_index_with_corrupt_index_entries_should : SpecificationWithDirectoryPerTestFixture {
+		private TableIndex _tableIndex;
+		private IndexMap _indexMap;
+		public const string StreamName = "stream";
+		public const int NumIndexEntries = 512;
 
-        public void ConstructTableIndexWithCorruptIndexEntries(byte version, bool skipIndexVerify, bool createForceVerifyFile = false)
-        {
-            base.TestFixtureSetUp();
-            var lowHasher = new XXHashUnsafe();
-            var highHasher = new Murmur3AUnsafe();
-            var fakeReader = new TFReaderLease(new FakeIndexReader());
+		public void ConstructTableIndexWithCorruptIndexEntries(byte version, bool skipIndexVerify,
+			bool createForceVerifyFile = false) {
+			base.TestFixtureSetUp();
+			var lowHasher = new XXHashUnsafe();
+			var highHasher = new Murmur3AUnsafe();
+			var fakeReader = new TFReaderLease(new FakeIndexReader());
 
-            _tableIndex = new TableIndex(PathName, lowHasher, highHasher,
-                                         () => new HashListMemTable(version, maxSize: NumIndexEntries),
-                                         () => fakeReader,
-                                         version,
-                                         int.MaxValue,
-                                         maxSizeForMemory: NumIndexEntries,
-                                         skipIndexVerify: skipIndexVerify);
-            _tableIndex.Initialize(long.MaxValue);
+			_tableIndex = new TableIndex(PathName, lowHasher, highHasher,
+				() => new HashListMemTable(version, maxSize: NumIndexEntries),
+				() => fakeReader,
+				version,
+				int.MaxValue,
+				maxSizeForMemory: NumIndexEntries,
+				skipIndexVerify: skipIndexVerify);
+			_tableIndex.Initialize(long.MaxValue);
 
-            //create index entries
-            for(int i=1;i<=NumIndexEntries;i++){
-                _tableIndex.Add(i*1337,StreamName,i,i*1337);
-            }
-            _tableIndex.Close(false);
+			//create index entries
+			for (int i = 1; i <= NumIndexEntries; i++) {
+				_tableIndex.Add(i * 1337, StreamName, i, i * 1337);
+			}
 
-            //load index map to obtain ptable filenames
-            _indexMap = IndexMapTestFactory.FromFile(Path.Combine(PathName,TableIndex.IndexMapFilename));
-            List<string> ptableFiles = new List<string>();
+			_tableIndex.Close(false);
 
-            foreach(string ptableFilename in _indexMap.GetAllFilenames()){
-                ptableFiles.Add(ptableFilename);
-            }
+			//load index map to obtain ptable filenames
+			_indexMap = IndexMapTestFactory.FromFile(Path.Combine(PathName, TableIndex.IndexMapFilename));
+			List<string> ptableFiles = new List<string>();
 
-            _indexMap.Dispose(TimeSpan.FromSeconds(5));
+			foreach (string ptableFilename in _indexMap.GetAllFilenames()) {
+				ptableFiles.Add(ptableFilename);
+			}
 
-            //corrupt ptable files
-            foreach(string ptableFilename in ptableFiles){
-                CorruptPTableFile(ptableFilename, version, "zeroOutMiddleEntry");
-            }
+			_indexMap.Dispose(TimeSpan.FromSeconds(5));
 
-            //create force verify file if requested
-            if(createForceVerifyFile){
-                using(FileStream fs = new FileStream(Path.Combine(PathName,TableIndex.ForceIndexVerifyFilename), FileMode.OpenOrCreate)){
-                };
-            }
+			//corrupt ptable files
+			foreach (string ptableFilename in ptableFiles) {
+				CorruptPTableFile(ptableFilename, version, "zeroOutMiddleEntry");
+			}
 
-            //load table index again
-            _tableIndex = new TableIndex(PathName, lowHasher, highHasher,
-                                         () => new HashListMemTable(version, maxSize: NumIndexEntries),
-                                         () => fakeReader,
-                                         version,
-                                         int.MaxValue,
-                                         maxSizeForMemory: NumIndexEntries,
-                                         skipIndexVerify: skipIndexVerify,
-                                         indexCacheDepth: 8);
-            _tableIndex.Initialize(long.MaxValue);
-        }
+			//create force verify file if requested
+			if (createForceVerifyFile) {
+				using (FileStream fs = new FileStream(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename),
+					FileMode.OpenOrCreate)) {
+				}
 
-        public override void TestFixtureTearDown()
-        {
-            _tableIndex.Close();
-            base.TestFixtureTearDown();
-        }
+				;
+			}
 
-        private ulong GetOriginalHash(ulong stream, byte version){
-            if(version == PTableVersions.IndexV1) return stream << 32;
-            else return stream;
-        }
+			//load table index again
+			_tableIndex = new TableIndex(PathName, lowHasher, highHasher,
+				() => new HashListMemTable(version, maxSize: NumIndexEntries),
+				() => fakeReader,
+				version,
+				int.MaxValue,
+				maxSizeForMemory: NumIndexEntries,
+				skipIndexVerify: skipIndexVerify,
+				indexCacheDepth: 8);
+			_tableIndex.Initialize(long.MaxValue);
+		}
 
-        private void CorruptPTableFile(string ptableFile, byte version, string corruptionType){
-            int indexEntrySize = 0;
-            if(version == PTableVersions.IndexV1)
-                indexEntrySize = PTable.IndexEntryV1Size;
-            else if(version == PTableVersions.IndexV2)
-                indexEntrySize = PTable.IndexEntryV2Size;
-            else if(version == PTableVersions.IndexV3)
-                indexEntrySize = PTable.IndexEntryV3Size;
-            else if(version == PTableVersions.IndexV4)
-                indexEntrySize = PTable.IndexEntryV4Size;
+		public override void TestFixtureTearDown() {
+			_tableIndex.Close();
+			base.TestFixtureTearDown();
+		}
 
-            int indexEntryKeySize = 0;
-            if(version == PTableVersions.IndexV1)
-                indexEntryKeySize = PTable.IndexKeyV1Size;
-            else if(version == PTableVersions.IndexV2)
-                indexEntryKeySize = PTable.IndexKeyV2Size;
-            else if(version == PTableVersions.IndexV3)
-                indexEntryKeySize = PTable.IndexKeyV3Size;
-            else if(version == PTableVersions.IndexV4)
-                indexEntryKeySize = PTable.IndexKeyV4Size;
+		private ulong GetOriginalHash(ulong stream, byte version) {
+			if (version == PTableVersions.IndexV1) return stream << 32;
+			else return stream;
+		}
 
-            byte[] data = new byte[255];
+		private void CorruptPTableFile(string ptableFile, byte version, string corruptionType) {
+			int indexEntrySize = 0;
+			if (version == PTableVersions.IndexV1)
+				indexEntrySize = PTable.IndexEntryV1Size;
+			else if (version == PTableVersions.IndexV2)
+				indexEntrySize = PTable.IndexEntryV2Size;
+			else if (version == PTableVersions.IndexV3)
+				indexEntrySize = PTable.IndexEntryV3Size;
+			else if (version == PTableVersions.IndexV4)
+				indexEntrySize = PTable.IndexEntryV4Size;
 
-            using (FileStream stream = File.Open(ptableFile, FileMode.Open))
-            {
+			int indexEntryKeySize = 0;
+			if (version == PTableVersions.IndexV1)
+				indexEntryKeySize = PTable.IndexKeyV1Size;
+			else if (version == PTableVersions.IndexV2)
+				indexEntryKeySize = PTable.IndexKeyV2Size;
+			else if (version == PTableVersions.IndexV3)
+				indexEntryKeySize = PTable.IndexKeyV3Size;
+			else if (version == PTableVersions.IndexV4)
+				indexEntryKeySize = PTable.IndexKeyV4Size;
 
-                if(corruptionType == "zeroOutMiddleEntry"){
-                    //zeroes out the middle entry - useful for binary search tests
-                    List<int> indexEntriesToCorrupt = new List<int>();
-                    indexEntriesToCorrupt.Add(NumIndexEntries / 2 - 1);
+			byte[] data = new byte[255];
 
-                    foreach(int entry in indexEntriesToCorrupt){
-                        stream.Seek(PTableHeader.Size + entry * indexEntrySize,SeekOrigin.Begin);
-                        //modify one of the index entry hashes/version
-                        stream.Write(data,0,indexEntryKeySize);
+			using (FileStream stream = File.Open(ptableFile, FileMode.Open)) {
+				if (corruptionType == "zeroOutMiddleEntry") {
+					//zeroes out the middle entry - useful for binary search tests
+					List<int> indexEntriesToCorrupt = new List<int>();
+					indexEntriesToCorrupt.Add(NumIndexEntries / 2 - 1);
 
-                        if(version >= PTableVersions.IndexV4){
-                            //modify one of the midpoint entry hashes/version
-                            stream.Seek(PTableHeader.Size + NumIndexEntries * indexEntrySize + entry * indexEntrySize,SeekOrigin.Begin);
-                            stream.Write(data,0,indexEntryKeySize);
-                        }
-                    }
-                }
-            }
-        }
+					foreach (int entry in indexEntriesToCorrupt) {
+						stream.Seek(PTableHeader.Size + entry * indexEntrySize, SeekOrigin.Begin);
+						//modify one of the index entry hashes/version
+						stream.Write(data, 0, indexEntryKeySize);
 
-        [TestCase(PTableVersions.IndexV1)]
-        [TestCase(PTableVersions.IndexV2)]
-        [TestCase(PTableVersions.IndexV3)]
-        [TestCase(PTableVersions.IndexV4)]
-        public void throws_corrupt_index_exception_if_verification_enabled(byte version)
-        {
-            //the CorruptIndexException is caught internally and should trigger an index file deletion if caught
-            ConstructTableIndexWithCorruptIndexEntries(version, false);
-            //index map file should be deleted if index verification fails
-            Assert.False(File.Exists(Path.Combine(PathName,TableIndex.IndexMapFilename)));
-            //force verify file should be cleared after rebuild/verification
-            Assert.False(File.Exists(Path.Combine(PathName,TableIndex.ForceIndexVerifyFilename)));
-        }
+						if (version >= PTableVersions.IndexV4) {
+							//modify one of the midpoint entry hashes/version
+							stream.Seek(PTableHeader.Size + NumIndexEntries * indexEntrySize + entry * indexEntrySize,
+								SeekOrigin.Begin);
+							stream.Write(data, 0, indexEntryKeySize);
+						}
+					}
+				}
+			}
+		}
 
-        [TestCase(PTableVersions.IndexV1)]
-        [TestCase(PTableVersions.IndexV2)]
-        [TestCase(PTableVersions.IndexV3)]
-        [TestCase(PTableVersions.IndexV4)]
-        public void throws_maybe_corrupt_index_exception_if_verification_disabled(byte version)
-        {
-            //the MaybeCorruptIndexException is caught internally and should trigger an index file deletion if caught
+		[TestCase(PTableVersions.IndexV1)]
+		[TestCase(PTableVersions.IndexV2)]
+		[TestCase(PTableVersions.IndexV3)]
+		[TestCase(PTableVersions.IndexV4)]
+		public void throws_corrupt_index_exception_if_verification_enabled(byte version) {
+			//the CorruptIndexException is caught internally and should trigger an index file deletion if caught
+			ConstructTableIndexWithCorruptIndexEntries(version, false);
+			//index map file should be deleted if index verification fails
+			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.IndexMapFilename)));
+			//force verify file should be cleared after rebuild/verification
+			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
+		}
 
-            ConstructTableIndexWithCorruptIndexEntries(version, true);
-            Assert.Throws<MaybeCorruptIndexException>(()=> {
-                //since index entries are sorted in descending order, the corrupted index entry corresponds to NumIndexEntries/2+1
-                _tableIndex.GetRange(StreamName,NumIndexEntries/2+1,NumIndexEntries/2+1,null).ToArray();
-            });
+		[TestCase(PTableVersions.IndexV1)]
+		[TestCase(PTableVersions.IndexV2)]
+		[TestCase(PTableVersions.IndexV3)]
+		[TestCase(PTableVersions.IndexV4)]
+		public void throws_maybe_corrupt_index_exception_if_verification_disabled(byte version) {
+			//the MaybeCorruptIndexException is caught internally and should trigger an index file deletion if caught
 
-            //force verify file should be created
-            Assert.True(File.Exists(Path.Combine(PathName,TableIndex.ForceIndexVerifyFilename)));
-        }
+			ConstructTableIndexWithCorruptIndexEntries(version, true);
+			Assert.Throws<MaybeCorruptIndexException>(() => {
+				//since index entries are sorted in descending order, the corrupted index entry corresponds to NumIndexEntries/2+1
+				_tableIndex.GetRange(StreamName, NumIndexEntries / 2 + 1, NumIndexEntries / 2 + 1, null).ToArray();
+			});
 
-        [TestCase(PTableVersions.IndexV1)]
-        [TestCase(PTableVersions.IndexV2)]
-        [TestCase(PTableVersions.IndexV3)]
-        [TestCase(PTableVersions.IndexV4)]
-        public void force_verification_of_index_if_verification_disabled_but_force_verification_file_present(byte version)
-        {
-            //the CorruptIndexException is caught internally and should trigger an index file deletion if caught
-            ConstructTableIndexWithCorruptIndexEntries(version, true, createForceVerifyFile: true);
+			//force verify file should be created
+			Assert.True(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
+		}
 
-            //index map file should be deleted if index verification fails
-            Assert.False(File.Exists(Path.Combine(PathName,TableIndex.IndexMapFilename)));
-            //force verify file should be cleared after rebuild/verification
-            Assert.False(File.Exists(Path.Combine(PathName,TableIndex.ForceIndexVerifyFilename)));
-        }
-    }
+		[TestCase(PTableVersions.IndexV1)]
+		[TestCase(PTableVersions.IndexV2)]
+		[TestCase(PTableVersions.IndexV3)]
+		[TestCase(PTableVersions.IndexV4)]
+		public void force_verification_of_index_if_verification_disabled_but_force_verification_file_present(
+			byte version) {
+			//the CorruptIndexException is caught internally and should trigger an index file deletion if caught
+			ConstructTableIndexWithCorruptIndexEntries(version, true, createForceVerifyFile: true);
+
+			//index map file should be deleted if index verification fails
+			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.IndexMapFilename)));
+			//force verify file should be cleared after rebuild/verification
+			Assert.False(File.Exists(Path.Combine(PathName, TableIndex.ForceIndexVerifyFilename)));
+		}
+	}
 }

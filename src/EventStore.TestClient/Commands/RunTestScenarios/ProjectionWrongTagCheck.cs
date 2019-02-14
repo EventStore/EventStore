@@ -4,128 +4,125 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
-{
-    internal class ProjectionWrongTagCheck : ProjectionsKillScenario
-    {
-        private TimeSpan _executionPeriod;
+namespace EventStore.TestClient.Commands.RunTestScenarios {
+	internal class ProjectionWrongTagCheck : ProjectionsKillScenario {
+		private TimeSpan _executionPeriod;
 
-        public ProjectionWrongTagCheck(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath, NodeConnectionInfo customNode)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
-        {
-            _executionPeriod = executionPeriod;
-        }
+		public ProjectionWrongTagCheck(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests,
+			int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod,
+			string dbParentPath, NodeConnectionInfo customNode)
+			: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
+				dbParentPath, customNode) {
+			_executionPeriod = executionPeriod;
+		}
 
-        private int _iterationCode = 0;
-        protected override int GetIterationCode()
-        {
-            return _iterationCode;
-        }
+		private int _iterationCode = 0;
 
-        protected void SetNextIterationCode()
-        {
-            _iterationCode += 1;
-        }
+		protected override int GetIterationCode() {
+			return _iterationCode;
+		}
 
-        protected override void RunInternal()
-        {
-            var nodeProcessId = StartNode();
-            EnableProjectionByCategory();
-            KillNode(nodeProcessId);
+		protected void SetNextIterationCode() {
+			_iterationCode += 1;
+		}
 
-            var stopWatch = Stopwatch.StartNew();
+		protected override void RunInternal() {
+			var nodeProcessId = StartNode();
+			EnableProjectionByCategory();
+			KillNode(nodeProcessId);
 
-            while (stopWatch.Elapsed < _executionPeriod)
-            {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
-                           GetIterationCode(),
-                           (int)stopWatch.Elapsed.TotalMinutes,
-                           _executionPeriod.TotalMinutes,
-                           GetType().Name);
+			var stopWatch = Stopwatch.StartNew();
 
-                Log.Info("=================== Start run #{iteration}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
-                           GetIterationCode(),
-                           (int)stopWatch.Elapsed.TotalMinutes,
-                           _executionPeriod.TotalMinutes,
-                           GetType().Name); 
-                Log.Info("##teamcity[message '{message}']", msg);
+			while (stopWatch.Elapsed < _executionPeriod) {
+				var msg = string.Format(
+					"=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
+					GetIterationCode(),
+					(int)stopWatch.Elapsed.TotalMinutes,
+					_executionPeriod.TotalMinutes,
+					GetType().Name);
 
-                var iterationTask = RunIteration();
-                iterationTask.Wait();
+				Log.Info(
+					"=================== Start run #{iteration}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
+					GetIterationCode(),
+					(int)stopWatch.Elapsed.TotalMinutes,
+					_executionPeriod.TotalMinutes,
+					GetType().Name);
+				Log.Info("##teamcity[message '{message}']", msg);
 
-                SetNextIterationCode();
-            }
-        }
+				var iterationTask = RunIteration();
+				iterationTask.Wait();
 
-        private Task RunIteration()
-        {
-            var nodeProcessId = StartNode();
+				SetNextIterationCode();
+			}
+		}
+
+		private Task RunIteration() {
+			var nodeProcessId = StartNode();
 
 
-            var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
+			var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
 
-            var writeTask = WriteData();
+			var writeTask = WriteData();
 
-            var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
+			var lastExpectedEventVersion = (EventsPerStream - 1).ToString();
 
-            var successTask = Task.Factory.StartNew<bool>(() =>
-            {
-                var success = true;
-                var stopWatch = new Stopwatch();
-                
-                var wasLessLastTime = false;
-                while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams)))
-                {
-                    if (!wasLessLastTime)
-                    {
-                        KillNode(nodeProcessId);
-                        nodeProcessId = StartNode();
-                    }
+			var successTask = Task.Factory.StartNew<bool>(() => {
+				var success = true;
+				var stopWatch = new Stopwatch();
 
-                    if (writeTask.IsFaulted)
-                        throw new ApplicationException("Failed to write data");
+				var wasLessLastTime = false;
+				while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams))) {
+					if (!wasLessLastTime) {
+						KillNode(nodeProcessId);
+						nodeProcessId = StartNode();
+					}
 
-                    if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                    {
-                        stopWatch.Start();
-                    }
+					if (writeTask.IsFaulted)
+						throw new ApplicationException("Failed to write data");
 
-                    var count1 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
-                    for (var i = 0; i < 5; ++i)
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(1));
-                        var count2 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
+					if (writeTask.IsCompleted && !stopWatch.IsRunning) {
+						stopWatch.Start();
+					}
 
-                        if (count1 > count2)
-                        {
-                            if (wasLessLastTime)
-                            {
-                                success = false;
-                                break;
-                            }
-                            wasLessLastTime = true;
-                        }
+					var count1 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
+					for (var i = 0; i < 5; ++i) {
+						Thread.Sleep(TimeSpan.FromSeconds(1));
+						var count2 = GetProjectionStateValue(sumCheckForBankAccount0, "success", int.Parse, -1);
 
-                        count1 = count2;
-                    }
+						if (count1 > count2) {
+							if (wasLessLastTime) {
+								success = false;
+								break;
+							}
 
-                    if (!success)
-                        break;
+							wasLessLastTime = true;
+						}
 
-                    if (CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
-                        break;
-                }
+						count1 = count2;
+					}
 
-                KillNode(nodeProcessId);
+					if (!success)
+						break;
 
-                if (!success)
-                    throw new ApplicationException(string.Format("Projection {0} has not completed with expected result {1} in time.", sumCheckForBankAccount0, lastExpectedEventVersion));
+					if (CheckProjectionState(sumCheckForBankAccount0, "success", x => x == lastExpectedEventVersion))
+						break;
+				}
 
-                return success;
+				KillNode(nodeProcessId);
 
-            });
+				if (!success)
+					throw new ApplicationException(string.Format(
+						"Projection {0} has not completed with expected result {1} in time.", sumCheckForBankAccount0,
+						lastExpectedEventVersion));
 
-            return Task.Factory.ContinueWhenAll(new[] { writeTask, successTask }, tasks => { Log.Info("Iteration {iteration} tasks completed", GetIterationCode()); Task.WaitAll(tasks); Log.Info("Iteration {iteration} successful", GetIterationCode()); });
-        }
-    }
+				return success;
+			});
+
+			return Task.Factory.ContinueWhenAll(new[] {writeTask, successTask}, tasks => {
+				Log.Info("Iteration {iteration} tasks completed", GetIterationCode());
+				Task.WaitAll(tasks);
+				Log.Info("Iteration {iteration} successful", GetIterationCode());
+			});
+		}
+	}
 }

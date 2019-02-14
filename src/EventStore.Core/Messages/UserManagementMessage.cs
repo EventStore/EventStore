@@ -5,340 +5,345 @@ using System.Security.Principal;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Controllers;
 
-namespace EventStore.Core.Messages
-{
-    public static class UserManagementMessage
-    {
-        public class RequestMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Core.Messages {
+	public static class UserManagementMessage {
+		public class RequestMessage : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly IEnvelope Envelope;
-            public readonly IPrincipal Principal;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public RequestMessage(IEnvelope envelope, IPrincipal principal)
-            {
-                Envelope = envelope;
-                Principal = principal;
-            }
-        }
+			public readonly IEnvelope Envelope;
+			public readonly IPrincipal Principal;
 
-        public class ResponseMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public RequestMessage(IEnvelope envelope, IPrincipal principal) {
+				Envelope = envelope;
+				Principal = principal;
+			}
+		}
 
-            public readonly bool Success;
-            public readonly Error Error;
+		public class ResponseMessage : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public ResponseMessage(bool success, Error error)
-            {
-                Success = success;
-                Error = error;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class UserManagementRequestMessage : RequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly bool Success;
+			public readonly Error Error;
 
-            public readonly string LoginName;
+			public ResponseMessage(bool success, Error error) {
+				Success = success;
+				Error = error;
+			}
+		}
 
-            protected UserManagementRequestMessage(IEnvelope envelope, IPrincipal principal, string loginName)
-                : base(envelope, principal)
-            {
-                LoginName = loginName;
-            }
-        }
+		public class UserManagementRequestMessage : RequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public sealed class Create : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly string FullName;
-            public readonly string[] Groups;
-            public readonly string Password;
+			public readonly string LoginName;
 
-            public Create(
-                IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups,
-                string password)
-                : base(envelope, principal, loginName)
-            {
-                FullName = fullName;
-                Groups = groups;
-                Password = password;
-            }
-        }
+			protected UserManagementRequestMessage(IEnvelope envelope, IPrincipal principal, string loginName)
+				: base(envelope, principal) {
+				LoginName = loginName;
+			}
+		}
 
-        public sealed class Update : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public sealed class Create : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly string FullName;
-            public readonly string[] Groups;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public Update(IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups)
-                : base(envelope, principal, loginName)
-            {
-                FullName = fullName;
-                Groups = groups;
-            }
-        }
+			public readonly string FullName;
+			public readonly string[] Groups;
+			public readonly string Password;
 
-        public sealed class Disable : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public Create(
+				IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups,
+				string password)
+				: base(envelope, principal, loginName) {
+				FullName = fullName;
+				Groups = groups;
+				Password = password;
+			}
+		}
 
-            public Disable(IEnvelope envelope, IPrincipal principal, string loginName)
-                : base(envelope, principal, loginName)
-            {
-            }
-        }
+		public sealed class Update : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public sealed class Enable : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public Enable(IEnvelope envelope, IPrincipal principal, string loginName)
-                : base(envelope, principal, loginName)
-            {
-            }
-        }
+			public readonly string FullName;
+			public readonly string[] Groups;
 
-        public sealed class Delete : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public Update(IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups)
+				: base(envelope, principal, loginName) {
+				FullName = fullName;
+				Groups = groups;
+			}
+		}
 
-            public Delete(IEnvelope envelope, IPrincipal principal, string loginName)
-                : base(envelope, principal, loginName)
-            {
-            }
-        }
+		public sealed class Disable : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public sealed class ResetPassword : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly string NewPassword;
+			public Disable(IEnvelope envelope, IPrincipal principal, string loginName)
+				: base(envelope, principal, loginName) {
+			}
+		}
 
-            public ResetPassword(IEnvelope envelope, IPrincipal principal, string loginName, string newPassword)
-                : base(envelope, principal, loginName)
-            {
-                NewPassword = newPassword;
-            }
-        }
+		public sealed class Enable : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public sealed class ChangePassword : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly string CurrentPassword;
-            public readonly string NewPassword;
+			public Enable(IEnvelope envelope, IPrincipal principal, string loginName)
+				: base(envelope, principal, loginName) {
+			}
+		}
 
-            public ChangePassword(
-                IEnvelope envelope, IPrincipal principal, string loginName, string currentPassword, string newPassword)
-                : base(envelope, principal, loginName)
-            {
-                CurrentPassword = currentPassword;
-                NewPassword = newPassword;
-            }
-        }
+		public sealed class Delete : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public sealed class GetAll : RequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public GetAll(IEnvelope envelope, IPrincipal principal)
-                : base(envelope, principal)
-            {
-            }
-        }
+			public Delete(IEnvelope envelope, IPrincipal principal, string loginName)
+				: base(envelope, principal, loginName) {
+			}
+		}
 
-        public sealed class Get : UserManagementRequestMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public sealed class ResetPassword : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public Get(IEnvelope envelope, IPrincipal principal, string loginName)
-                : base(envelope, principal, loginName)
-            {
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public enum Error
-        {
-            Success,
-            NotFound,
-            Conflict,
-            Error,
-            TryAgain,
-            Unauthorized
-        }
+			public readonly string NewPassword;
 
-        public sealed class UserData
-        {
-            public readonly string LoginName;
-            public readonly string FullName;
-            public readonly string[] Groups;
-            public readonly DateTimeOffset? DateLastUpdated;
-            public readonly bool Disabled;
+			public ResetPassword(IEnvelope envelope, IPrincipal principal, string loginName, string newPassword)
+				: base(envelope, principal, loginName) {
+				NewPassword = newPassword;
+			}
+		}
 
-            public UserData(
-                string loginName, string fullName, string[] groups, bool disabled, DateTimeOffset? dateLastUpdated)
-            {
-                LoginName = loginName;
-                FullName = fullName;
-                Groups = groups;
-                Disabled = disabled;
-                DateLastUpdated = dateLastUpdated;
-            }
+		public sealed class ChangePassword : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            internal UserData()
-            {
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public sealed class UpdateResult : ResponseMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly string CurrentPassword;
+			public readonly string NewPassword;
 
-            public readonly string LoginName;
+			public ChangePassword(
+				IEnvelope envelope, IPrincipal principal, string loginName, string currentPassword, string newPassword)
+				: base(envelope, principal, loginName) {
+				CurrentPassword = currentPassword;
+				NewPassword = newPassword;
+			}
+		}
 
+		public sealed class GetAll : RequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public UpdateResult(string loginName)
-                : base(true, Error.Success)
-            {
-                LoginName = loginName;
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public UpdateResult(string loginName, Error error)
-                : base(false, error)
-            {
-                LoginName = loginName;
-            }
-        }
+			public GetAll(IEnvelope envelope, IPrincipal principal)
+				: base(envelope, principal) {
+			}
+		}
+
+		public sealed class Get : UserManagementRequestMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public Get(IEnvelope envelope, IPrincipal principal, string loginName)
+				: base(envelope, principal, loginName) {
+			}
+		}
+
+		public enum Error {
+			Success,
+			NotFound,
+			Conflict,
+			Error,
+			TryAgain,
+			Unauthorized
+		}
+
+		public sealed class UserData {
+			public readonly string LoginName;
+			public readonly string FullName;
+			public readonly string[] Groups;
+			public readonly DateTimeOffset? DateLastUpdated;
+			public readonly bool Disabled;
+
+			public UserData(
+				string loginName, string fullName, string[] groups, bool disabled, DateTimeOffset? dateLastUpdated) {
+				LoginName = loginName;
+				FullName = fullName;
+				Groups = groups;
+				Disabled = disabled;
+				DateLastUpdated = dateLastUpdated;
+			}
+
+			internal UserData() {
+			}
+		}
+
+		public sealed class UpdateResult : ResponseMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string LoginName;
 
 
-        public class UserDataHttpFormated
-        {
-            public readonly string LoginName;
-            public readonly string FullName;
-            public readonly string[] Groups;
-            public readonly DateTimeOffset? DateLastUpdated;
-            public readonly bool Disabled;
-            public readonly List<RelLink> Links;
+			public UpdateResult(string loginName)
+				: base(true, Error.Success) {
+				LoginName = loginName;
+			}
 
-            public UserDataHttpFormated(UserData userData, Func<string, string> makeAbsoluteUrl)
-            {
-                LoginName = userData.LoginName;
-                FullName = userData.FullName;
-                Groups = userData.Groups;
-                Disabled = userData.Disabled;
-
-                Links = new List<RelLink>();
-                var userLocalUrl = "/users/" + userData.LoginName;
-                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/reset-password"), "reset-password"));
-                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/change-password"), "change-password"));
-                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "edit"));
-                Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "delete"));
-
-                Links.Add(userData.Disabled
-                    ? new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/enable"), "enable")
-                    : new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/disable"), "disable"));
-            }
-        }
+			public UpdateResult(string loginName, Error error)
+				: base(false, error) {
+				LoginName = loginName;
+			}
+		}
 
 
-        public class UserDetailsResultHttpFormatted : ResponseMessage
-        {
-            public readonly UserDataHttpFormated Data;
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class UserDataHttpFormated {
+			public readonly string LoginName;
+			public readonly string FullName;
+			public readonly string[] Groups;
+			public readonly DateTimeOffset? DateLastUpdated;
+			public readonly bool Disabled;
+			public readonly List<RelLink> Links;
 
-            public UserDetailsResultHttpFormatted(UserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
-                base(msg.Success, msg.Error)
-            {
-                if (msg.Data != null)
-                    Data = new UserDataHttpFormated(msg.Data, makeAbsoluteUrl);
-            }
+			public UserDataHttpFormated(UserData userData, Func<string, string> makeAbsoluteUrl) {
+				LoginName = userData.LoginName;
+				FullName = userData.FullName;
+				Groups = userData.Groups;
+				Disabled = userData.Disabled;
 
-        }
+				Links = new List<RelLink>();
+				var userLocalUrl = "/users/" + userData.LoginName;
+				Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/reset-password"), "reset-password"));
+				Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/change-password"), "change-password"));
+				Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "edit"));
+				Links.Add(new RelLink(makeAbsoluteUrl(userLocalUrl), "delete"));
 
-        public class AllUserDetailsResultHttpFormatted : ResponseMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public readonly UserDataHttpFormated[] Data;
-            public override int MsgTypeId { get { return TypeId; } }
-
-            public AllUserDetailsResultHttpFormatted(AllUserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
-                base(msg.Success, msg.Error)
-            {
-                Data = msg.Data.Select(user => new UserDataHttpFormated(user, makeAbsoluteUrl)).ToArray();
-
-            }
-        }
+				Links.Add(userData.Disabled
+					? new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/enable"), "enable")
+					: new RelLink(makeAbsoluteUrl(userLocalUrl + "/command/disable"), "disable"));
+			}
+		}
 
 
-        public sealed class UserDetailsResult : ResponseMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class UserDetailsResultHttpFormatted : ResponseMessage {
+			public readonly UserDataHttpFormated Data;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly UserData Data;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public UserDetailsResult(UserData data)
-                : base(true, Error.Success)
-            {
-                Data = data;
-            }
+			public UserDetailsResultHttpFormatted(UserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
+				base(msg.Success, msg.Error) {
+				if (msg.Data != null)
+					Data = new UserDataHttpFormated(msg.Data, makeAbsoluteUrl);
+			}
+		}
 
-            public UserDetailsResult(Error error)
-                : base(false, error)
-            {
-                Data = null;
-            }
-        }
+		public class AllUserDetailsResultHttpFormatted : ResponseMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public readonly UserDataHttpFormated[] Data;
 
-        public sealed class AllUserDetailsResult : ResponseMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly UserData[] Data;
+			public AllUserDetailsResultHttpFormatted(AllUserDetailsResult msg, Func<string, string> makeAbsoluteUrl) :
+				base(msg.Success, msg.Error) {
+				Data = msg.Data.Select(user => new UserDataHttpFormated(user, makeAbsoluteUrl)).ToArray();
+			}
+		}
 
-            internal AllUserDetailsResult()
-                : base(true, Error.Success)
-            {
-            }
 
-            public AllUserDetailsResult(UserData[] data)
-                : base(true, Error.Success)
-            {
-                Data = data;
-            }
+		public sealed class UserDetailsResult : ResponseMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public AllUserDetailsResult(Error error)
-                : base(false, error)
-            {
-                Data = null;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public sealed class UserManagementServiceInitialized : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
-    }
+			public readonly UserData Data;
+
+			public UserDetailsResult(UserData data)
+				: base(true, Error.Success) {
+				Data = data;
+			}
+
+			public UserDetailsResult(Error error)
+				: base(false, error) {
+				Data = null;
+			}
+		}
+
+		public sealed class AllUserDetailsResult : ResponseMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly UserData[] Data;
+
+			internal AllUserDetailsResult()
+				: base(true, Error.Success) {
+			}
+
+			public AllUserDetailsResult(UserData[] data)
+				: base(true, Error.Success) {
+				Data = data;
+			}
+
+			public AllUserDetailsResult(Error error)
+				: base(false, error) {
+				Data = null;
+			}
+		}
+
+		public sealed class UserManagementServiceInitialized : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+	}
 }

@@ -5,189 +5,178 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
-{
-    internal class LoopingScenario : ScenarioBase
-    {
-        private readonly TimeSpan _executionPeriod;
-        
-        private readonly Random _rnd = new Random();
-        private volatile bool _stopParalleWrites;
-        private TimeSpan _startupWaitInterval;
+namespace EventStore.TestClient.Commands.RunTestScenarios {
+	internal class LoopingScenario : ScenarioBase {
+		private readonly TimeSpan _executionPeriod;
 
-        protected override TimeSpan StartupWaitInterval
-        {
-            get { return _startupWaitInterval; }
-        }
+		private readonly Random _rnd = new Random();
+		private volatile bool _stopParalleWrites;
+		private TimeSpan _startupWaitInterval;
 
-        public LoopingScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
-                               int maxConcurrentRequests, 
-                               int connections, 
-                               int streams, 
-                               int eventsPerStream, 
-                               int streamDeleteStep,
-                               TimeSpan executionPeriod,
-                               string dbParentPath,
-                               NodeConnectionInfo customNodeConnection)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNodeConnection)
-        {
-            _executionPeriod = executionPeriod;
-            SetStartupWaitInterval(TimeSpan.FromSeconds(10));
-        }
+		protected override TimeSpan StartupWaitInterval {
+			get { return _startupWaitInterval; }
+		}
 
-        private void SetStartupWaitInterval(TimeSpan interval)
-        {
-            _startupWaitInterval = interval;
-        }
+		public LoopingScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
+			int maxConcurrentRequests,
+			int connections,
+			int streams,
+			int eventsPerStream,
+			int streamDeleteStep,
+			TimeSpan executionPeriod,
+			string dbParentPath,
+			NodeConnectionInfo customNodeConnection)
+			: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
+				dbParentPath, customNodeConnection) {
+			_executionPeriod = executionPeriod;
+			SetStartupWaitInterval(TimeSpan.FromSeconds(10));
+		}
 
-        protected override void RunInternal()
-        {
-            var stopWatch = Stopwatch.StartNew();
+		private void SetStartupWaitInterval(TimeSpan interval) {
+			_startupWaitInterval = interval;
+		}
 
-            var runIndex = 0;
-            while (stopWatch.Elapsed < _executionPeriod)
-            {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
-                                        runIndex,
-                                        (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes,
-                                        GetType().Name);
-                Log.Info("=================== Start run #{runIndex}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
-                                        runIndex,
-                                        (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes,
-                                        GetType().Name);
-                Log.Info("##teamcity[message '{message}']", msg);
+		protected override void RunInternal() {
+			var stopWatch = Stopwatch.StartNew();
 
-                SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
-                InnerRun(runIndex);
-                runIndex += 1;
-            }
-        }
+			var runIndex = 0;
+			while (stopWatch.Elapsed < _executionPeriod) {
+				var msg = string.Format(
+					"=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
+					runIndex,
+					(int)stopWatch.Elapsed.TotalMinutes,
+					_executionPeriod.TotalMinutes,
+					GetType().Name);
+				Log.Info(
+					"=================== Start run #{runIndex}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
+					runIndex,
+					(int)stopWatch.Elapsed.TotalMinutes,
+					_executionPeriod.TotalMinutes,
+					GetType().Name);
+				Log.Info("##teamcity[message '{message}']", msg);
 
-        protected virtual void InnerRun(int runIndex)
-        {
-            var nodeProcessId = StartNode();
+				SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
+				InnerRun(runIndex);
+				runIndex += 1;
+			}
+		}
 
-            var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 10);
+		protected virtual void InnerRun(int runIndex) {
+			var nodeProcessId = StartNode();
 
-            var parallelWriteTask = RunParallelWrites(runIndex);
+			var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 10);
 
-            var streams = Enumerable.Range(0, Streams).Select(i => FormatStreamName(runIndex, i)).ToArray();
-            
-            var slices = Split(streams, 3);
-            var singleEventSlice = slices.Take(1).SelectMany(x => x).ToArray();
-            var batchSlice = slices.Skip(1).Take(1).SelectMany(x => x).ToArray();
-            var transSlice = slices.Skip(2).Take(1).SelectMany(x => x).ToArray();
+			var parallelWriteTask = RunParallelWrites(runIndex);
 
-            var wr1 = Write(WriteMode.SingleEventAtTime, singleEventSlice, EventsPerStream);
-            var wr2 = Write(WriteMode.Bucket, batchSlice, EventsPerStream);
-            var wr3 = Write(WriteMode.Transactional, transSlice, EventsPerStream);
+			var streams = Enumerable.Range(0, Streams).Select(i => FormatStreamName(runIndex, i)).ToArray();
 
-            if (runIndex % 4 == 0)
-                Scavenge();
+			var slices = Split(streams, 3);
+			var singleEventSlice = slices.Take(1).SelectMany(x => x).ToArray();
+			var batchSlice = slices.Skip(1).Take(1).SelectMany(x => x).ToArray();
+			var transSlice = slices.Skip(2).Take(1).SelectMany(x => x).ToArray();
 
-            Task.WaitAll(wr1, wr2, wr3);
+			var wr1 = Write(WriteMode.SingleEventAtTime, singleEventSlice, EventsPerStream);
+			var wr2 = Write(WriteMode.Bucket, batchSlice, EventsPerStream);
+			var wr3 = Write(WriteMode.Transactional, transSlice, EventsPerStream);
 
-            var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
-            DeleteStreams(deleted);
+			if (runIndex % 4 == 0)
+				Scavenge();
 
-            _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(parallelWritesTimeout))
-                throw new ApplicationException("Parallel writes stop timed out, 1.");
+			Task.WaitAll(wr1, wr2, wr3);
 
-            KillNode(nodeProcessId);
-            nodeProcessId = StartNode();
+			var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
+			DeleteStreams(deleted);
 
-            parallelWriteTask = RunParallelWrites(runIndex);
+			_stopParalleWrites = true;
+			if (!parallelWriteTask.Wait(parallelWritesTimeout))
+				throw new ApplicationException("Parallel writes stop timed out, 1.");
 
-            var dl1 = CheckStreamsDeleted(deleted);
+			KillNode(nodeProcessId);
+			nodeProcessId = StartNode();
 
-            var exceptDeleted = streams.Except(deleted).ToArray();
+			parallelWriteTask = RunParallelWrites(runIndex);
 
-            var readCnt = Math.Min(100, EventsPerStream/3);
-            var rd1 = Read(exceptDeleted, @from: 0, count: readCnt);
-            var rd2 = Read(exceptDeleted, @from: EventsPerStream - readCnt, count: readCnt);
-            var rd3 = Read(exceptDeleted, @from: EventsPerStream / 2, count: Math.Min(readCnt, EventsPerStream - EventsPerStream/2));
+			var dl1 = CheckStreamsDeleted(deleted);
 
-            Log.Info("== READ from picked ALL ==");
+			var exceptDeleted = streams.Except(deleted).ToArray();
 
-            var allExistingStreamsSlice = (from run in Enumerable.Range(0, runIndex + 1)
-                                           from streamNum in Enumerable.Range(0, Streams)
-                                           where streamNum % StreamDeleteStep != 0
-                                           where _rnd.NextDouble() < 0.1
-                                           select FormatStreamName(run, streamNum)).ToArray();
+			var readCnt = Math.Min(100, EventsPerStream / 3);
+			var rd1 = Read(exceptDeleted, @from: 0, count: readCnt);
+			var rd2 = Read(exceptDeleted, @from: EventsPerStream - readCnt, count: readCnt);
+			var rd3 = Read(exceptDeleted, @from: EventsPerStream / 2,
+				count: Math.Min(readCnt, EventsPerStream - EventsPerStream / 2));
 
-            var allDeletedStreamsSlice = (from run in Enumerable.Range(0, runIndex + 1)
-                                          from streamNum in Enumerable.Range(0, Streams)
-                                          where streamNum % StreamDeleteStep == 0
-                                          where _rnd.NextDouble() < 0.1
-                                          select FormatStreamName(run, streamNum)).ToArray();
+			Log.Info("== READ from picked ALL ==");
 
-            var prevCheckTasks = new List<Task>();
-            if (allExistingStreamsSlice.Length > 0)
-            {
-                var rd4 = Read(allExistingStreamsSlice, 0, Math.Max(1, EventsPerStream / 5));
-                var rd5 = Read(allExistingStreamsSlice, EventsPerStream / 2, Math.Max(1, EventsPerStream / 5));
+			var allExistingStreamsSlice = (from run in Enumerable.Range(0, runIndex + 1)
+				from streamNum in Enumerable.Range(0, Streams)
+				where streamNum % StreamDeleteStep != 0
+				where _rnd.NextDouble() < 0.1
+				select FormatStreamName(run, streamNum)).ToArray();
 
-                prevCheckTasks.Add(rd4);
-                prevCheckTasks.Add(rd5);
-            }
+			var allDeletedStreamsSlice = (from run in Enumerable.Range(0, runIndex + 1)
+				from streamNum in Enumerable.Range(0, Streams)
+				where streamNum % StreamDeleteStep == 0
+				where _rnd.NextDouble() < 0.1
+				select FormatStreamName(run, streamNum)).ToArray();
 
-            if (allDeletedStreamsSlice.Length > 0)
-            {
-                var dl2 = CheckStreamsDeleted(allDeletedStreamsSlice);
-                prevCheckTasks.Add(dl2);
-            }
+			var prevCheckTasks = new List<Task>();
+			if (allExistingStreamsSlice.Length > 0) {
+				var rd4 = Read(allExistingStreamsSlice, 0, Math.Max(1, EventsPerStream / 5));
+				var rd5 = Read(allExistingStreamsSlice, EventsPerStream / 2, Math.Max(1, EventsPerStream / 5));
 
-            Task.WaitAll(new [] {dl1, rd1, rd2, rd3}.Union(prevCheckTasks).ToArray());
+				prevCheckTasks.Add(rd4);
+				prevCheckTasks.Add(rd5);
+			}
 
-            _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(parallelWritesTimeout))
-                throw new ApplicationException("Parallel writes stop timed out, 2.");
+			if (allDeletedStreamsSlice.Length > 0) {
+				var dl2 = CheckStreamsDeleted(allDeletedStreamsSlice);
+				prevCheckTasks.Add(dl2);
+			}
 
-            KillNode(nodeProcessId);
-        }
+			Task.WaitAll(new[] {dl1, rd1, rd2, rd3}.Union(prevCheckTasks).ToArray());
 
-        protected virtual Task RunParallelWrites(int runIndex)
-        {
-            _stopParalleWrites = false;
+			_stopParalleWrites = true;
+			if (!parallelWriteTask.Wait(parallelWritesTimeout))
+				throw new ApplicationException("Parallel writes stop timed out, 2.");
 
-            return Task.Factory.StartNew(() =>
-            {
-                int index = 0;
-                while (!_stopParalleWrites)
-                {
-                    
-                    Log.Debug("Start RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
+			KillNode(nodeProcessId);
+		}
 
-                    var parallelStreams = Enumerable.Range(0, 2)
-                            .Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
-                                                       runIndex,
-                                                       x,
-                                                       string.Format("rnd{0}-{1}", _rnd.Next(), DateTime.UtcNow.Ticks)))
-                            .ToArray();
+		protected virtual Task RunParallelWrites(int runIndex) {
+			_stopParalleWrites = false;
 
-                    var wr = Write(WriteMode.SingleEventAtTime, parallelStreams, EventsPerStream);
-                    wr.Wait();
+			return Task.Factory.StartNew(() => {
+				int index = 0;
+				while (!_stopParalleWrites) {
+					Log.Debug("Start RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
 
-                    Log.Debug("Wrote RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
+					var parallelStreams = Enumerable.Range(0, 2)
+						.Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
+							runIndex,
+							x,
+							string.Format("rnd{0}-{1}", _rnd.Next(), DateTime.UtcNow.Ticks)))
+						.ToArray();
 
-                    var rd1 = Read(parallelStreams, 0, EventsPerStream / 6);
-                    var rd2 = Read(parallelStreams, EventsPerStream / 3, EventsPerStream / 6);
-                    var rd3 = Read(parallelStreams, EventsPerStream - EventsPerStream / 10, EventsPerStream / 10);
-                    Task.WaitAll(rd1, rd2, rd3);
+					var wr = Write(WriteMode.SingleEventAtTime, parallelStreams, EventsPerStream);
+					wr.Wait();
 
-                    Log.Debug("Done RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
+					Log.Debug("Wrote RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
 
-                    index += 1;
-                }
-            }, TaskCreationOptions.LongRunning);
-        }
+					var rd1 = Read(parallelStreams, 0, EventsPerStream / 6);
+					var rd2 = Read(parallelStreams, EventsPerStream / 3, EventsPerStream / 6);
+					var rd3 = Read(parallelStreams, EventsPerStream - EventsPerStream / 10, EventsPerStream / 10);
+					Task.WaitAll(rd1, rd2, rd3);
 
-        protected static string FormatStreamName(int runIndex, int i)
-        {
-            return string.Format("stream-in{0}-{1}", runIndex, i);
-        }
-    }
+					Log.Debug("Done RunParallelWrites #{index} for runIndex {runIndex}", index, runIndex);
+
+					index += 1;
+				}
+			}, TaskCreationOptions.LongRunning);
+		}
+
+		protected static string FormatStreamName(int runIndex, int i) {
+			return string.Format("stream-in{0}-{1}", runIndex, i);
+		}
+	}
 }

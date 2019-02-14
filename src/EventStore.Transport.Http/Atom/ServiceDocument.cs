@@ -5,173 +5,150 @@ using System.Xml.Schema;
 using System.Xml.Serialization;
 using EventStore.Common.Utils;
 
-namespace EventStore.Transport.Http.Atom
-{
-    public class ServiceDocument : IXmlSerializable
-    {
-        public List<WorkspaceElement> Workspaces { get; set; }
+namespace EventStore.Transport.Http.Atom {
+	public class ServiceDocument : IXmlSerializable {
+		public List<WorkspaceElement> Workspaces { get; set; }
 
-        public ServiceDocument()
-        {
-            Workspaces = new List<WorkspaceElement>();
-        }
+		public ServiceDocument() {
+			Workspaces = new List<WorkspaceElement>();
+		}
 
-        public void AddWorkspace(WorkspaceElement workspace)
-        {
-            Ensure.NotNull(workspace, "workspace");
-            Workspaces.Add(workspace);
-        }
- 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
+		public void AddWorkspace(WorkspaceElement workspace) {
+			Ensure.NotNull(workspace, "workspace");
+			Workspaces.Add(workspace);
+		}
 
-        public void ReadXml(XmlReader reader)
-        {
-            throw new NotImplementedException();
-        }
+		public XmlSchema GetSchema() {
+			return null;
+		}
 
-        public void WriteXml(XmlWriter writer)
-        {
-            if (Workspaces.Count == 0)
-                ThrowHelper.ThrowSpecificationViolation("An app:service element MUST contain one or more app:workspace elements.");
+		public void ReadXml(XmlReader reader) {
+			throw new NotImplementedException();
+		}
 
-            writer.WriteStartElement("service", AtomSpecs.AtomPubV1Namespace);
-            writer.WriteAttributeString("xmlns", "atom", null, AtomSpecs.AtomV1Namespace);
-            Workspaces.ForEach(w => w.WriteXml(writer));
+		public void WriteXml(XmlWriter writer) {
+			if (Workspaces.Count == 0)
+				ThrowHelper.ThrowSpecificationViolation(
+					"An app:service element MUST contain one or more app:workspace elements.");
 
-            writer.WriteEndElement();
-        }
-    }
+			writer.WriteStartElement("service", AtomSpecs.AtomPubV1Namespace);
+			writer.WriteAttributeString("xmlns", "atom", null, AtomSpecs.AtomV1Namespace);
+			Workspaces.ForEach(w => w.WriteXml(writer));
 
-    public class WorkspaceElement : IXmlSerializable
-    {
-        public string Title { get; set; }
-        public List<CollectionElement> Collections { get; set; }
+			writer.WriteEndElement();
+		}
+	}
 
-        public WorkspaceElement()
-        {
-            Collections = new List<CollectionElement>();
-        }
+	public class WorkspaceElement : IXmlSerializable {
+		public string Title { get; set; }
+		public List<CollectionElement> Collections { get; set; }
 
-        public void SetTitle(string title)
-        {
-            Ensure.NotNull(title, "title");
-            Title = title;
-        }
+		public WorkspaceElement() {
+			Collections = new List<CollectionElement>();
+		}
 
-        public void AddCollection(CollectionElement collection)
-        {
-            Ensure.NotNull(collection, "collection");
-            Collections.Add(collection);
-        }
+		public void SetTitle(string title) {
+			Ensure.NotNull(title, "title");
+			Title = title;
+		}
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
+		public void AddCollection(CollectionElement collection) {
+			Ensure.NotNull(collection, "collection");
+			Collections.Add(collection);
+		}
 
-        public void ReadXml(XmlReader reader)
-        {
-            throw new NotImplementedException();
-        }
+		public XmlSchema GetSchema() {
+			return null;
+		}
 
-        public void WriteXml(XmlWriter writer)
-        {
-            if (string.IsNullOrEmpty(Title))
-                ThrowHelper.ThrowSpecificationViolation("The app:workspace element MUST contain one 'atom:title' element");
+		public void ReadXml(XmlReader reader) {
+			throw new NotImplementedException();
+		}
 
-            writer.WriteStartElement("workspace");
+		public void WriteXml(XmlWriter writer) {
+			if (string.IsNullOrEmpty(Title))
+				ThrowHelper.ThrowSpecificationViolation(
+					"The app:workspace element MUST contain one 'atom:title' element");
 
-            writer.WriteElementString("atom", "title", AtomSpecs.AtomV1Namespace, Title);
-            Collections.ForEach(c => c.WriteXml(writer));
+			writer.WriteStartElement("workspace");
 
-            writer.WriteEndElement();
-        }
-    }
+			writer.WriteElementString("atom", "title", AtomSpecs.AtomV1Namespace, Title);
+			Collections.ForEach(c => c.WriteXml(writer));
 
-    public class CollectionElement : IXmlSerializable
-    {
-        public string Title { get; set; }
-        public string Uri { get; set; }
+			writer.WriteEndElement();
+		}
+	}
 
-        public List<AcceptElement> Accepts { get; set; }
+	public class CollectionElement : IXmlSerializable {
+		public string Title { get; set; }
+		public string Uri { get; set; }
 
-        public CollectionElement()
-        {
-            Accepts = new List<AcceptElement>();
-        }
+		public List<AcceptElement> Accepts { get; set; }
 
-        public void SetTitle(string title)
-        {
-            Ensure.NotNull(title, "title");
-            Title = title;
-        }
+		public CollectionElement() {
+			Accepts = new List<AcceptElement>();
+		}
 
-        public void SetUri(string uri)
-        {
-            Ensure.NotNull(uri, "uri");
-            Uri = uri;
-        }
+		public void SetTitle(string title) {
+			Ensure.NotNull(title, "title");
+			Title = title;
+		}
 
-        public void AddAcceptType(string type)
-        {
-            Ensure.NotNull(type, "type");
-            Accepts.Add(new AcceptElement(type));
-        }
+		public void SetUri(string uri) {
+			Ensure.NotNull(uri, "uri");
+			Uri = uri;
+		}
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
+		public void AddAcceptType(string type) {
+			Ensure.NotNull(type, "type");
+			Accepts.Add(new AcceptElement(type));
+		}
 
-        public void ReadXml(XmlReader reader)
-        {
-            throw new NotImplementedException();
-        }
+		public XmlSchema GetSchema() {
+			return null;
+		}
 
-        public void WriteXml(XmlWriter writer)
-        {
-            if (string.IsNullOrEmpty(Title))
-                ThrowHelper.ThrowSpecificationViolation("The app: collection element MUST contain one atom:title element.");
-            if (string.IsNullOrEmpty(Uri))
-                ThrowHelper.ThrowSpecificationViolation("The app:collection element MUST contain an 'href' attribute, " +
-                                                        "whose value gives the IRI of the Collection.");
+		public void ReadXml(XmlReader reader) {
+			throw new NotImplementedException();
+		}
 
-            writer.WriteStartElement("collection");
-            writer.WriteAttributeString("href", Uri);
-            writer.WriteElementString("atom", "title", AtomSpecs.AtomV1Namespace, Title);
-            Accepts.ForEach(a => a.WriteXml(writer));
+		public void WriteXml(XmlWriter writer) {
+			if (string.IsNullOrEmpty(Title))
+				ThrowHelper.ThrowSpecificationViolation(
+					"The app: collection element MUST contain one atom:title element.");
+			if (string.IsNullOrEmpty(Uri))
+				ThrowHelper.ThrowSpecificationViolation(
+					"The app:collection element MUST contain an 'href' attribute, " +
+					"whose value gives the IRI of the Collection.");
 
-            writer.WriteEndElement();
-        }
-    }
+			writer.WriteStartElement("collection");
+			writer.WriteAttributeString("href", Uri);
+			writer.WriteElementString("atom", "title", AtomSpecs.AtomV1Namespace, Title);
+			Accepts.ForEach(a => a.WriteXml(writer));
 
-    public class AcceptElement : IXmlSerializable
-    {
-        public string Type { get; set; }
+			writer.WriteEndElement();
+		}
+	}
 
-        public AcceptElement(string type)
-        {
-            Type = type;
-        }
+	public class AcceptElement : IXmlSerializable {
+		public string Type { get; set; }
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
+		public AcceptElement(string type) {
+			Type = type;
+		}
 
-        public void ReadXml(XmlReader reader)
-        {
-            throw new NotImplementedException();
-        }
+		public XmlSchema GetSchema() {
+			return null;
+		}
 
-        public void WriteXml(XmlWriter writer)
-        {
-            if (string.IsNullOrEmpty(Type))
-                ThrowHelper.ThrowSpecificationViolation("atom:accept element MUST contain value");
-            writer.WriteElementString("accept", Type);
-        }
-    }
+		public void ReadXml(XmlReader reader) {
+			throw new NotImplementedException();
+		}
+
+		public void WriteXml(XmlWriter writer) {
+			if (string.IsNullOrEmpty(Type))
+				ThrowHelper.ThrowSpecificationViolation("atom:accept element MUST contain value");
+			writer.WriteElementString("accept", Type);
+		}
+	}
 }

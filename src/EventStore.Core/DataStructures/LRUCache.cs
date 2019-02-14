@@ -3,172 +3,152 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.DataStructures
-{
-    public class LRUCache<TKey, TValue>: ILRUCache<TKey, TValue>
-    {
-        private class LRUItem
-        {
-            public TKey Key;
-            public TValue Value;
-        }
+namespace EventStore.Core.DataStructures {
+	public class LRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
+		private class LRUItem {
+			public TKey Key;
+			public TValue Value;
+		}
 
-        private readonly LinkedList<LRUItem> _orderList = new LinkedList<LRUItem>();
-        private readonly Dictionary<TKey, LinkedListNode<LRUItem>> _items = new Dictionary<TKey, LinkedListNode<LRUItem>>();
-        private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new Queue<LinkedListNode<LRUItem>>();
+		private readonly LinkedList<LRUItem> _orderList = new LinkedList<LRUItem>();
 
-        private readonly int _maxCount;
-        private readonly object _lock = new object();
-        private Func<object,bool> _onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
-        public LRUCache(int maxCount)
-        {
-            Ensure.Nonnegative(maxCount, "maxCount");
-            _maxCount = maxCount;
-        }
+		private readonly Dictionary<TKey, LinkedListNode<LRUItem>> _items =
+			new Dictionary<TKey, LinkedListNode<LRUItem>>();
 
-        public LRUCache(int maxCount,Func<object,bool> onPut, Func<object,bool> onRemove)
-        {
-            Ensure.Nonnegative(maxCount, "maxCount");
-            _maxCount = maxCount;
-            _onPut = onPut;
-            _onRemove = onRemove;
-        }
+		private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new Queue<LinkedListNode<LRUItem>>();
 
-        public bool TryGet(TKey key, out TValue value)
-        {
-            lock (_lock)
-            {
-                LinkedListNode<LRUItem> node;
-                if (_items.TryGetValue(key, out node))
-                {
-                    _orderList.Remove(node);
-                    _orderList.AddLast(node);
-                    value = node.Value.Value;
-                    return true;
-                }
+		private readonly int _maxCount;
+		private readonly object _lock = new object();
 
-                value = default(TValue);
-                return false;
-            }
-        }
+		private Func<object, bool>
+			_onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
 
-        public TValue Put(TKey key, TValue value)
-        {
-            lock (_lock)
-            {
-                LinkedListNode<LRUItem> node;
-                if (!_items.TryGetValue(key, out node))
-                {
-                    node = GetNode();
-                    node.Value.Key = key;
-                    node.Value.Value = value;
+		public LRUCache(int maxCount) {
+			Ensure.Nonnegative(maxCount, "maxCount");
+			_maxCount = maxCount;
+		}
 
-                    EnsureCapacity();
+		public LRUCache(int maxCount, Func<object, bool> onPut, Func<object, bool> onRemove) {
+			Ensure.Nonnegative(maxCount, "maxCount");
+			_maxCount = maxCount;
+			_onPut = onPut;
+			_onRemove = onRemove;
+		}
 
-                    _items.Add(key, node);
-                    _orderList.AddLast(node);
+		public bool TryGet(TKey key, out TValue value) {
+			lock (_lock) {
+				LinkedListNode<LRUItem> node;
+				if (_items.TryGetValue(key, out node)) {
+					_orderList.Remove(node);
+					_orderList.AddLast(node);
+					value = node.Value.Value;
+					return true;
+				}
 
-                    if(_onPut != null) _onPut(node.Value.Value);
-                }
-                else
-                {
-                    node.Value.Value = value;
+				value = default(TValue);
+				return false;
+			}
+		}
 
-                    if(!ReferenceEquals(node, _orderList.Last)){
-                        _orderList.Remove(node);
-                        _orderList.AddLast(node);
-                    }
-                }
+		public TValue Put(TKey key, TValue value) {
+			lock (_lock) {
+				LinkedListNode<LRUItem> node;
+				if (!_items.TryGetValue(key, out node)) {
+					node = GetNode();
+					node.Value.Key = key;
+					node.Value.Value = value;
 
-                return value;
-            }
-        }
+					EnsureCapacity();
 
-        public void Remove(TKey key)
-        {
-            lock (_lock)
-            {
-                LinkedListNode<LRUItem> node;
-                if (_items.TryGetValue(key, out node))
-                {
-                    _orderList.Remove(node);
-                    _items.Remove(key);
-                    if (_onRemove != null) _onRemove(node.Value.Value);
+					_items.Add(key, node);
+					_orderList.AddLast(node);
 
-                    ReturnNode(node);
-                }
-            }
-        }
+					if (_onPut != null) _onPut(node.Value.Value);
+				} else {
+					node.Value.Value = value;
 
-        public void Clear()
-        {
-            lock (_lock)
-            {
-                while (_orderList.Count > 0)
-                {
-                    var node = _orderList.First;
-                    _orderList.RemoveFirst();
-                    _items.Remove(node.Value.Key);
-                    if (_onRemove != null) _onRemove(node.Value.Value);
-                    
-                    ReturnNode(node);
-                }
-            }
-        }
+					if (!ReferenceEquals(node, _orderList.Last)) {
+						_orderList.Remove(node);
+						_orderList.AddLast(node);
+					}
+				}
 
-        public TValue Put<T>(TKey key, T userData, Func<TKey, T, TValue> addFactory, Func<TKey, TValue, T, TValue> updateFactory)
-        {
-            lock (_lock)
-            {
-                LinkedListNode<LRUItem> node;
-                if (!_items.TryGetValue(key, out node))
-                {
-                    node = GetNode();
-                    node.Value.Key = key;
-                    node.Value.Value = addFactory(key, userData);
+				return value;
+			}
+		}
 
-                    EnsureCapacity();
+		public void Remove(TKey key) {
+			lock (_lock) {
+				LinkedListNode<LRUItem> node;
+				if (_items.TryGetValue(key, out node)) {
+					_orderList.Remove(node);
+					_items.Remove(key);
+					if (_onRemove != null) _onRemove(node.Value.Value);
 
-                    _items.Add(key, node);
-                    _orderList.AddLast(node);
-                    if(_onPut != null) _onPut(node.Value.Value);
-                }
-                else
-                {
-                    node.Value.Value = updateFactory(key, node.Value.Value, userData);
+					ReturnNode(node);
+				}
+			}
+		}
 
-                    if(!ReferenceEquals(node, _orderList.Last)){
-                        _orderList.Remove(node);
-                        _orderList.AddLast(node);
-                    }
-                }
-                return node.Value.Value;
-            }
-        }
+		public void Clear() {
+			lock (_lock) {
+				while (_orderList.Count > 0) {
+					var node = _orderList.First;
+					_orderList.RemoveFirst();
+					_items.Remove(node.Value.Key);
+					if (_onRemove != null) _onRemove(node.Value.Value);
 
-        private void EnsureCapacity()
-        {
-            while (_items.Count > 0 && _items.Count >= _maxCount)
-            {
-                var node = _orderList.First;
-                _orderList.Remove(node);
-                _items.Remove(node.Value.Key);
-                if(_onRemove != null) _onRemove(node.Value.Value);
+					ReturnNode(node);
+				}
+			}
+		}
 
-                ReturnNode(node);
-            }
-        }
+		public TValue Put<T>(TKey key, T userData, Func<TKey, T, TValue> addFactory,
+			Func<TKey, TValue, T, TValue> updateFactory) {
+			lock (_lock) {
+				LinkedListNode<LRUItem> node;
+				if (!_items.TryGetValue(key, out node)) {
+					node = GetNode();
+					node.Value.Key = key;
+					node.Value.Value = addFactory(key, userData);
 
-        private LinkedListNode<LRUItem> GetNode()
-        {
-            if (_nodesPool.Count > 0)
-                return _nodesPool.Dequeue();
-            return new LinkedListNode<LRUItem>(new LRUItem());
-        }
+					EnsureCapacity();
 
-        private void ReturnNode(LinkedListNode<LRUItem> node)
-        {
-            _nodesPool.Enqueue(node);
-        }
-    }
+					_items.Add(key, node);
+					_orderList.AddLast(node);
+					if (_onPut != null) _onPut(node.Value.Value);
+				} else {
+					node.Value.Value = updateFactory(key, node.Value.Value, userData);
+
+					if (!ReferenceEquals(node, _orderList.Last)) {
+						_orderList.Remove(node);
+						_orderList.AddLast(node);
+					}
+				}
+
+				return node.Value.Value;
+			}
+		}
+
+		private void EnsureCapacity() {
+			while (_items.Count > 0 && _items.Count >= _maxCount) {
+				var node = _orderList.First;
+				_orderList.Remove(node);
+				_items.Remove(node.Value.Key);
+				if (_onRemove != null) _onRemove(node.Value.Value);
+
+				ReturnNode(node);
+			}
+		}
+
+		private LinkedListNode<LRUItem> GetNode() {
+			if (_nodesPool.Count > 0)
+				return _nodesPool.Dequeue();
+			return new LinkedListNode<LRUItem>(new LRUItem());
+		}
+
+		private void ReturnNode(LinkedListNode<LRUItem> node) {
+			_nodesPool.Enqueue(node);
+		}
+	}
 }

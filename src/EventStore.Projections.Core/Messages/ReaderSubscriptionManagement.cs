@@ -2,176 +2,173 @@ using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Messages
-{
-    public static class ReaderSubscriptionManagement
-    {
-        public abstract class ReaderSubscriptionManagementMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Projections.Core.Messages {
+	public static class ReaderSubscriptionManagement {
+		public abstract class ReaderSubscriptionManagementMessage : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            private readonly Guid _subscriptionId;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            protected ReaderSubscriptionManagementMessage(Guid subscriptionId)
-            {
-                _subscriptionId = subscriptionId;
-            }
+			private readonly Guid _subscriptionId;
 
-            public Guid SubscriptionId
-            {
-                get { return _subscriptionId; }
-            }
-        }
+			protected ReaderSubscriptionManagementMessage(Guid subscriptionId) {
+				_subscriptionId = subscriptionId;
+			}
 
-        public class Subscribe : ReaderSubscriptionManagementMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public Guid SubscriptionId {
+				get { return _subscriptionId; }
+			}
+		}
 
-            private readonly CheckpointTag _fromPosition;
-            private readonly IReaderStrategy _readerStrategy;
-            private readonly ReaderSubscriptionOptions _options;
+		public class Subscribe : ReaderSubscriptionManagementMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public Subscribe(
-                Guid subscriptionId, CheckpointTag from,
-                IReaderStrategy readerStrategy, ReaderSubscriptionOptions readerSubscriptionOptions): base(subscriptionId)
-            {
-                if (@from == null) throw new ArgumentNullException("from");
-                if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
-                _fromPosition = @from;
-                _readerStrategy = readerStrategy;
-                _options = readerSubscriptionOptions;
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public CheckpointTag FromPosition
-            {
-                get { return _fromPosition; }
-            }
+			private readonly CheckpointTag _fromPosition;
+			private readonly IReaderStrategy _readerStrategy;
+			private readonly ReaderSubscriptionOptions _options;
 
-            public IReaderStrategy ReaderStrategy
-            {
-                get { return _readerStrategy; }
-            }
+			public Subscribe(
+				Guid subscriptionId, CheckpointTag from,
+				IReaderStrategy readerStrategy, ReaderSubscriptionOptions readerSubscriptionOptions) : base(
+				subscriptionId) {
+				if (@from == null) throw new ArgumentNullException("from");
+				if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
+				_fromPosition = @from;
+				_readerStrategy = readerStrategy;
+				_options = readerSubscriptionOptions;
+			}
 
-            public ReaderSubscriptionOptions Options
-            {
-                get { return _options; }
-            }
-        }
+			public CheckpointTag FromPosition {
+				get { return _fromPosition; }
+			}
 
-        public class Pause : ReaderSubscriptionManagementMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public IReaderStrategy ReaderStrategy {
+				get { return _readerStrategy; }
+			}
 
-            public Pause(Guid subscriptionId)
-                : base(subscriptionId)
-            {
-            }
+			public ReaderSubscriptionOptions Options {
+				get { return _options; }
+			}
+		}
 
-        }
+		public class Pause : ReaderSubscriptionManagementMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class Resume : ReaderSubscriptionManagementMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public Resume(Guid subscriptionId)
-                : base(subscriptionId)
-            {
-            }
+			public Pause(Guid subscriptionId)
+				: base(subscriptionId) {
+			}
+		}
 
-        }
+		public class Resume : ReaderSubscriptionManagementMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class Unsubscribe : ReaderSubscriptionManagementMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public Unsubscribe(Guid subscriptionId)
-                : base(subscriptionId)
-            {
-            }
+			public Resume(Guid subscriptionId)
+				: base(subscriptionId) {
+			}
+		}
 
-        }
+		public class Unsubscribe : ReaderSubscriptionManagementMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public Unsubscribe(Guid subscriptionId)
+				: base(subscriptionId) {
+			}
+		}
 
 
-        public sealed class SpoolStreamReading : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public sealed class SpoolStreamReading : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public long LimitingCommitPosition
-            {
-                get { return _limitingCommitPosition; }
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public Guid WorkerId
-            {
-                get { return _workerId; }
-            }
+			public long LimitingCommitPosition {
+				get { return _limitingCommitPosition; }
+			}
 
-            private readonly Guid _workerId;
-            public readonly Guid SubscriptionId;
-            public readonly string StreamId;
-            public readonly long CatalogSequenceNumber;
-            private readonly long _limitingCommitPosition;
+			public Guid WorkerId {
+				get { return _workerId; }
+			}
 
-            public SpoolStreamReading(
-                Guid workerId,
-                Guid subscriptionId,
-                string streamId,
-                long catalogSequenceNumber,
-                long limitingCommitPosition)
-            {
-                _workerId = workerId;
-                SubscriptionId = subscriptionId;
-                StreamId = streamId;
-                CatalogSequenceNumber = catalogSequenceNumber;
-                _limitingCommitPosition = limitingCommitPosition;
-            }
-        }
+			private readonly Guid _workerId;
+			public readonly Guid SubscriptionId;
+			public readonly string StreamId;
+			public readonly long CatalogSequenceNumber;
+			private readonly long _limitingCommitPosition;
 
-        public sealed class CompleteSpooledStreamReading : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public SpoolStreamReading(
+				Guid workerId,
+				Guid subscriptionId,
+				string streamId,
+				long catalogSequenceNumber,
+				long limitingCommitPosition) {
+				_workerId = workerId;
+				SubscriptionId = subscriptionId;
+				StreamId = streamId;
+				CatalogSequenceNumber = catalogSequenceNumber;
+				_limitingCommitPosition = limitingCommitPosition;
+			}
+		}
 
-            public readonly Guid SubscriptionId;
+		public sealed class CompleteSpooledStreamReading : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public CompleteSpooledStreamReading(Guid subscriptionId)
-            {
-                SubscriptionId = subscriptionId;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public sealed class SpoolStreamReadingCore : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly Guid SubscriptionId;
 
-            public long LimitingCommitPosition
-            {
-                get { return _limitingCommitPosition; }
-            }
+			public CompleteSpooledStreamReading(Guid subscriptionId) {
+				SubscriptionId = subscriptionId;
+			}
+		}
 
-            public readonly Guid SubscriptionId;
-            public readonly string StreamId;
-            public readonly long CatalogSequenceNumber;
-            private readonly long _limitingCommitPosition;
+		public sealed class SpoolStreamReadingCore : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public SpoolStreamReadingCore(
-                Guid subscriptionId,
-                string streamId,
-                long catalogSequenceNumber,
-                long limitingCommitPosition)
-            {
-                SubscriptionId = subscriptionId;
-                StreamId = streamId;
-                CatalogSequenceNumber = catalogSequenceNumber;
-                _limitingCommitPosition = limitingCommitPosition;
-            }
-        }
-    }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public long LimitingCommitPosition {
+				get { return _limitingCommitPosition; }
+			}
+
+			public readonly Guid SubscriptionId;
+			public readonly string StreamId;
+			public readonly long CatalogSequenceNumber;
+			private readonly long _limitingCommitPosition;
+
+			public SpoolStreamReadingCore(
+				Guid subscriptionId,
+				string streamId,
+				long catalogSequenceNumber,
+				long limitingCommitPosition) {
+				SubscriptionId = subscriptionId;
+				StreamId = streamId;
+				CatalogSequenceNumber = catalogSequenceNumber;
+				_limitingCommitPosition = limitingCommitPosition;
+			}
+		}
+	}
 }

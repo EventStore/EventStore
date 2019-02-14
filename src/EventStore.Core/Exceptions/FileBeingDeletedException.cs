@@ -1,20 +1,15 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace EventStore.Core.Exceptions
-{
-    public class FileBeingDeletedException : Exception
-    {
-        public FileBeingDeletedException()
-        {
-        }
+namespace EventStore.Core.Exceptions {
+	public class FileBeingDeletedException : Exception {
+		public FileBeingDeletedException() {
+		}
 
-        public FileBeingDeletedException(string message) : base(message)
-        {
-        }
+		public FileBeingDeletedException(string message) : base(message) {
+		}
 
-        public FileBeingDeletedException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-    }
+		public FileBeingDeletedException(string message, Exception innerException) : base(message, innerException) {
+		}
+	}
 }
