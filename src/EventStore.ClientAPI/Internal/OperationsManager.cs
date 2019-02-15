@@ -92,13 +92,11 @@ namespace EventStore.ClientAPI.Internal
 
         public void CheckTimeoutsAndRetry(TcpPackageConnection connection)
         {
-            Ensure.NotNull(connection, "connection");
-
             var retryOperations = new List<OperationItem>();
             var removeOperations = new List<OperationItem>();
             foreach (var operation in _activeOperations.Values)
             {
-                if (operation.ConnectionId != connection.ConnectionId)
+                if (connection != null && operation.ConnectionId != connection.ConnectionId)
                 {
                     retryOperations.Add(operation);
                 }
@@ -121,13 +119,16 @@ namespace EventStore.ClientAPI.Internal
                 }
             }
 
-            foreach (var operation in retryOperations)
-            {
-                ScheduleOperationRetry(operation);
-            }
             foreach (var operation in removeOperations)
             {
                 RemoveOperation(operation);
+            }
+
+            if (connection == null) return;
+
+            foreach (var operation in retryOperations)
+            {
+                ScheduleOperationRetry(operation);
             }
 
             if (_retryPendingOperations.Count > 0)
