@@ -4,47 +4,40 @@ using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Bus.Helpers
-{
-    public class WaitingConsumer : IHandle<Message>, IDisposable
-    {
-        public readonly List<Message> HandledMessages = new List<Message>();
-        
-        private readonly CountdownEvent _countdownEvent;
+namespace EventStore.Core.Tests.Bus.Helpers {
+	public class WaitingConsumer : IHandle<Message>, IDisposable {
+		public readonly List<Message> HandledMessages = new List<Message>();
 
-        public WaitingConsumer(int initialCount)
-        {
-            _countdownEvent = new CountdownEvent(initialCount);
-        }
+		private readonly CountdownEvent _countdownEvent;
 
-        public void SetWaitingCount(int count)
-        {
-            _countdownEvent.Reset(count);
-        }
+		public WaitingConsumer(int initialCount) {
+			_countdownEvent = new CountdownEvent(initialCount);
+		}
 
-        public bool Wait(int ms = 5000)
-        {
-            return _countdownEvent.Wait(ms);
-        }
+		public void SetWaitingCount(int count) {
+			_countdownEvent.Reset(count);
+		}
 
-        public void Handle(Message message)
-        {
-            HandledMessages.Add(message);
+		public bool Wait(int ms = 5000) {
+			return _countdownEvent.Wait(ms);
+		}
 
-            var typedMsg = message as DeferredExecutionTestMessage;
-            if (typedMsg != null)
-                ((Action<DeferredExecutionTestMessage>) (deffered => deffered.Execute()))(typedMsg);
+		public void Handle(Message message) {
+			HandledMessages.Add(message);
 
-            var executableTestMessage = message as ExecutableTestMessage;
-            if (executableTestMessage != null)
-                ((Action<ExecutableTestMessage>) (deffered => deffered.Execute()))(executableTestMessage);
+			var typedMsg = message as DeferredExecutionTestMessage;
+			if (typedMsg != null)
+				((Action<DeferredExecutionTestMessage>)(deffered => deffered.Execute()))(typedMsg);
 
-            _countdownEvent.Signal();
-        }
+			var executableTestMessage = message as ExecutableTestMessage;
+			if (executableTestMessage != null)
+				((Action<ExecutableTestMessage>)(deffered => deffered.Execute()))(executableTestMessage);
 
-        public void Dispose()
-        {
-            _countdownEvent.Dispose();
-        }
-    }
+			_countdownEvent.Signal();
+		}
+
+		public void Dispose() {
+			_countdownEvent.Dispose();
+		}
+	}
 }

@@ -1,11 +1,9 @@
-namespace EventStore.ClientAPI.SystemData
-{
-    internal enum InspectionDecision
-    {
-        DoNothing,
-        EndOperation,
-        Retry,
-        Reconnect,
-        Subscribed
-    }
+namespace EventStore.ClientAPI.SystemData {
+	internal enum InspectionDecision {
+		DoNothing,
+		EndOperation,
+		Retry,
+		Reconnect,
+		Subscribed
+	}
 }

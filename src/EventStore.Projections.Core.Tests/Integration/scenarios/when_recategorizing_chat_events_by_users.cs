@@ -1,49 +1,45 @@
 ﻿using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Integration.scenarios
-{
-    [TestFixture]
-    public class when_recategorizing_chat_events_by_users : specification_with_a_v8_query_posted
-    {
-        protected override void GivenEvents()
-        {
-        }
+namespace EventStore.Projections.Core.Tests.Integration.scenarios {
+	[TestFixture]
+	public class when_recategorizing_chat_events_by_users : specification_with_a_v8_query_posted {
+		protected override void GivenEvents() {
+		}
 
-        protected override IEnumerable<WhenStep> When()
-        {
-            foreach (var e in base.When()) yield return e;
-            yield return CreateWriteEvent("chat-1", "ChatMessage", @"
+		protected override IEnumerable<WhenStep> When() {
+			foreach (var e in base.When()) yield return e;
+			yield return CreateWriteEvent("chat-1", "ChatMessage", @"
     {
       ""sender"": ""Greg"",
       ""message"": ""Hi"",
       ""time"": ""03:45:30""
     }");
-            yield return CreateWriteEvent("chat-1", "ChatMessage", @"
+			yield return CreateWriteEvent("chat-1", "ChatMessage", @"
     {
       ""sender"": ""Ronan"",
       ""message"": ""starbucks"",
       ""time"": ""03:45:31""
     }");
-            yield return CreateWriteEvent("chat-1", "ChatMessage", @"
+			yield return CreateWriteEvent("chat-1", "ChatMessage", @"
     {
       ""sender"": ""James"",
       ""message"": ""herpherp"",
       ""time"": ""03:45:32""
     }");
-            yield return CreateWriteEvent("chat-2", "ChatMessage", @"
+			yield return CreateWriteEvent("chat-2", "ChatMessage", @"
     {
       ""sender"": ""Rob"",
       ""message"": ""starbucks"",
       ""time"": ""03:45:30""
     }");
-            yield return CreateWriteEvent("chat-2", "ChatMessage", @"
+			yield return CreateWriteEvent("chat-2", "ChatMessage", @"
     {
       ""sender"": ""Ronan"",
       ""message"": ""put the moose in the chocolate"",
       ""time"": ""03:45:31""
     }");
-            yield return CreateQueryMessage("query1", @"
+			yield return CreateQueryMessage("query1", @"
 fromCategory(""chat"")
     .foreachStream()
     .when({
@@ -56,7 +52,7 @@ fromCategory(""chat"")
         }
     });
 ");
-            yield return CreateQueryMessage("query2", @"
+			yield return CreateQueryMessage("query2", @"
 fromCategory(""user"")
     .foreachStream()
     .when({
@@ -69,7 +65,7 @@ fromCategory(""user"")
         }
     });
 ");
-            yield return CreateQueryMessage("query3", @"
+			yield return CreateQueryMessage("query3", @"
 options({disableParallelism: true});
 fromCategory(""user"")
     .foreachStream()
@@ -83,26 +79,22 @@ fromCategory(""user"")
         }
     });
 ");
-        }
+		}
 
-        protected override bool GivenInitializeSystemProjections()
-        {
-            return true;
-        }
+		protected override bool GivenInitializeSystemProjections() {
+			return true;
+		}
 
-        protected override bool GivenStartSystemProjections()
-        {
-            return true;
-        }
+		protected override bool GivenStartSystemProjections() {
+			return true;
+		}
 
-        protected override string GivenQuery()
-        {
-            return "";
-        }
+		protected override string GivenQuery() {
+			return "";
+		}
 
-        protected override IEnumerable<string> GivenOtherProjections()
-        {
-            yield return @"
+		protected override IEnumerable<string> GivenOtherProjections() {
+			yield return @"
 fromCategory(""chat"")
 .when({
     ChatMessage: function(state, event) {
@@ -111,7 +103,7 @@ fromCategory(""chat"")
     }
 })";
 
-            yield return @"
+			yield return @"
 fromCategory(""user"")
     .foreachStream()
     .when({
@@ -124,42 +116,38 @@ fromCategory(""user"")
         }
     }).outputState();
 ";
-        }
+		}
 
-        [Test]
-        public void query1_returns_correct_result()
-        {
-            AssertStreamTailWithLinks(
-                "$projections-query1-result", @"Result:{""count"":3}", @"Result:{""count"":2}", "$Eof:");
-        }
+		[Test]
+		public void query1_returns_correct_result() {
+			AssertStreamTailWithLinks(
+				"$projections-query1-result", @"Result:{""count"":3}", @"Result:{""count"":2}", "$Eof:");
+		}
 
-        [Test]
-        public void query2_returns_correct_result()
-        {
-            AssertStreamTailWithLinks(
-                "$projections-query2-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
-                @"Result:{""count"":1}", "$Eof:");
-        }
+		[Test]
+		public void query2_returns_correct_result() {
+			AssertStreamTailWithLinks(
+				"$projections-query2-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
+				@"Result:{""count"":1}", "$Eof:");
+		}
 
-        [Test]
-        public void query3_returns_correct_result()
-        {
-            AssertStreamTailWithLinks(
-                "$projections-query3-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
-                @"Result:{""count"":1}", "$Eof:");
-        }
+		[Test]
+		public void query3_returns_correct_result() {
+			AssertStreamTailWithLinks(
+				"$projections-query3-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
+				@"Result:{""count"":1}", "$Eof:");
+		}
 
-        [Test]
-        public void other_1_projection_produces_correct_results()
-        {
-            AssertStreamTail(
-                "$projections-other_1-result", "0@$projections-other_1-user-Greg-result",
-                "0@$projections-other_1-user-Ronan-result", "0@$projections-other_1-user-James-result",
-                "0@$projections-other_1-user-Rob-result", "1@$projections-other_1-user-Ronan-result");
-            AssertStreamTailWithLinks(
-                "$projections-other_1-result", @"Result:{""count"":1}", @"Result:{""count"":1}", @"Result:{""count"":1}",
-                @"Result:{""count"":1}", @"Result:{""count"":2}");
-        }
-
-    }
+		[Test]
+		public void other_1_projection_produces_correct_results() {
+			AssertStreamTail(
+				"$projections-other_1-result", "0@$projections-other_1-user-Greg-result",
+				"0@$projections-other_1-user-Ronan-result", "0@$projections-other_1-user-James-result",
+				"0@$projections-other_1-user-Rob-result", "1@$projections-other_1-user-Ronan-result");
+			AssertStreamTailWithLinks(
+				"$projections-other_1-result", @"Result:{""count"":1}", @"Result:{""count"":1}",
+				@"Result:{""count"":1}",
+				@"Result:{""count"":1}", @"Result:{""count"":2}");
+		}
+	}
 }

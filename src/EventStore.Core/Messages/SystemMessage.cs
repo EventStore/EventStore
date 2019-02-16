@@ -6,308 +6,344 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
 
-namespace EventStore.Core.Messages
-{
-    public static class SystemMessage
-    {
-        public class SystemInit : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+namespace EventStore.Core.Messages {
+	public static class SystemMessage {
+		public class SystemInit : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class SystemStart : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-        public class SystemCoreReady : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+		public class SystemStart : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class SystemReady : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-        public class ServiceInitialized: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class SystemCoreReady : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public readonly string ServiceName;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-            public ServiceInitialized(string serviceName)
-            {
-                Ensure.NotNullOrEmpty(serviceName, "serviceName");
-                ServiceName = serviceName;
-            }
-        }
+		public class SystemReady : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class SubSystemInitialized: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-            public readonly string SubSystemName;
+		public class ServiceInitialized : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public SubSystemInitialized(string subSystemName)
-            {
-                Ensure.NotNullOrEmpty(subSystemName, "subSystemName");
-                SubSystemName = subSystemName;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class WriteEpoch: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public readonly string ServiceName;
 
-        public abstract class StateChangeMessage: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public ServiceInitialized(string serviceName) {
+				Ensure.NotNullOrEmpty(serviceName, "serviceName");
+				ServiceName = serviceName;
+			}
+		}
 
-            public readonly Guid CorrelationId;
-            public readonly VNodeState State;
+		public class SubSystemInitialized : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            protected StateChangeMessage(Guid correlationId, VNodeState state)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                CorrelationId = correlationId;
-                State = state;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class BecomePreMaster : StateChangeMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly string SubSystemName;
 
-            public BecomePreMaster(Guid correlationId): base(correlationId, VNodeState.PreMaster)
-            {
-            }
-        }
+			public SubSystemInitialized(string subSystemName) {
+				Ensure.NotNullOrEmpty(subSystemName, "subSystemName");
+				SubSystemName = subSystemName;
+			}
+		}
 
-        public class BecomeMaster: StateChangeMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class WriteEpoch : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public BecomeMaster(Guid correlationId): base(correlationId, VNodeState.Master)
-            {
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-        public class BecomeShuttingDown : StateChangeMessage
-        {
-            public readonly bool ShutdownHttp;
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public abstract class StateChangeMessage : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public readonly bool ExitProcess;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public BecomeShuttingDown(Guid correlationId, bool exitProcess, bool shutdownHttp): base(correlationId, VNodeState.ShuttingDown)
-            {
-                ShutdownHttp = shutdownHttp;
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                ExitProcess = exitProcess;
-            }
-        }
+			public readonly Guid CorrelationId;
+			public readonly VNodeState State;
 
-        public class BecomeShutdown : StateChangeMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			protected StateChangeMessage(Guid correlationId, VNodeState state) {
+				Ensure.NotEmptyGuid(correlationId, "correlationId");
+				CorrelationId = correlationId;
+				State = state;
+			}
+		}
 
-            public BecomeShutdown(Guid correlationId): base(correlationId, VNodeState.Shutdown)
-            {
-            }
-        }
+		public class BecomePreMaster : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class BecomeUnknown : StateChangeMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public BecomeUnknown(Guid correlationId)
-                : base(correlationId, VNodeState.Unknown)
-            {
-            }
-        }
+			public BecomePreMaster(Guid correlationId) : base(correlationId, VNodeState.PreMaster) {
+			}
+		}
 
-        public abstract class ReplicaStateMessage : StateChangeMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class BecomeMaster : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public readonly VNodeInfo Master;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo master)
-                : base(correlationId, state)
-            {
-                Ensure.NotNull(master, "master");
-                Master = master;
-            }
-        }
+			public BecomeMaster(Guid correlationId) : base(correlationId, VNodeState.Master) {
+			}
+		}
 
-        public class BecomePreReplica : ReplicaStateMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class BecomeShuttingDown : StateChangeMessage {
+			public readonly bool ShutdownHttp;
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public BecomePreReplica(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.PreReplica, master)
-            {
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class BecomeCatchingUp : ReplicaStateMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly bool ExitProcess;
 
-            public BecomeCatchingUp(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.CatchingUp, master)
-            {
-            }
-        }
+			public BecomeShuttingDown(Guid correlationId, bool exitProcess, bool shutdownHttp) : base(correlationId,
+				VNodeState.ShuttingDown) {
+				ShutdownHttp = shutdownHttp;
+				Ensure.NotEmptyGuid(correlationId, "correlationId");
+				ExitProcess = exitProcess;
+			}
+		}
 
-        public class BecomeClone : ReplicaStateMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class BecomeShutdown : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public BecomeClone(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Clone, master)
-            {
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class BecomeSlave : ReplicaStateMessage
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public BecomeShutdown(Guid correlationId) : base(correlationId, VNodeState.Shutdown) {
+			}
+		}
 
-            public BecomeSlave(Guid correlationId, VNodeInfo master): base(correlationId, VNodeState.Slave, master)
-            {
-            }
-        }
+		public class BecomeUnknown : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class ServiceShutdown : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly string ServiceName;
+			public BecomeUnknown(Guid correlationId)
+				: base(correlationId, VNodeState.Unknown) {
+			}
+		}
 
-            public ServiceShutdown(string serviceName)
-            {
-                if (String.IsNullOrEmpty(serviceName)) 
-                    throw new ArgumentNullException("serviceName");
-                ServiceName = serviceName;
-            }
-        }
+		public abstract class ReplicaStateMessage : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class ShutdownTimeout : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class VNodeConnectionLost : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly VNodeInfo Master;
 
-            public readonly IPEndPoint VNodeEndPoint;
-            public readonly Guid ConnectionId;
+			protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo master)
+				: base(correlationId, state) {
+				Ensure.NotNull(master, "master");
+				Master = master;
+			}
+		}
 
-            public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId)
-            {
-                Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
-                Ensure.NotEmptyGuid(connectionId, "connectionId");
+		public class BecomePreReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-                VNodeEndPoint = vNodeEndPoint;
-                ConnectionId = connectionId;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class VNodeConnectionEstablished : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public BecomePreReplica(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.PreReplica,
+				master) {
+			}
+		}
 
-            public readonly IPEndPoint VNodeEndPoint;
-            public readonly Guid ConnectionId;
+		public class BecomeCatchingUp : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public VNodeConnectionEstablished(IPEndPoint vNodeEndPoint, Guid connectionId)
-            {
-                Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
-                Ensure.NotEmptyGuid(connectionId, "connectionId");
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-                VNodeEndPoint = vNodeEndPoint;
-                ConnectionId = connectionId;
-            }
-        }
+			public BecomeCatchingUp(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.CatchingUp,
+				master) {
+			}
+		}
 
-        public class WaitForChaserToCatchUp : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class BecomeClone : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public readonly Guid CorrelationId;
-            public readonly TimeSpan TotalTimeWasted;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public WaitForChaserToCatchUp(Guid correlationId, TimeSpan totalTimeWasted)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
+			public BecomeClone(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.Clone, master) {
+			}
+		}
 
-                CorrelationId = correlationId;
-                TotalTimeWasted = totalTimeWasted;
-            }
-        }
+		public class BecomeSlave : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class ChaserCaughtUp : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly Guid CorrelationId;
+			public BecomeSlave(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.Slave, master) {
+			}
+		}
 
-            public ChaserCaughtUp(Guid correlationId)
-            {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                CorrelationId = correlationId;
-            }
-        }
+		public class ServiceShutdown : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-	    public class RequestForwardingTimerTick : Message
-	    {
-		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		    public override int MsgTypeId { get { return TypeId; } }
-	    }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-	    public class NoQuorumMessage : Message
-	    {
-		    private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-		    public override int MsgTypeId { get { return TypeId; } }
-	    }
+			public readonly string ServiceName;
 
-        public class EpochWritten: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public ServiceShutdown(string serviceName) {
+				if (String.IsNullOrEmpty(serviceName))
+					throw new ArgumentNullException("serviceName");
+				ServiceName = serviceName;
+			}
+		}
 
-            public readonly EpochRecord Epoch;
+		public class ShutdownTimeout : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public EpochWritten(EpochRecord epoch)
-            {
-                Ensure.NotNull(epoch,"epoch");
-                Epoch = epoch;
-            }            
-        }           
-    }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class VNodeConnectionLost : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IPEndPoint VNodeEndPoint;
+			public readonly Guid ConnectionId;
+
+			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId) {
+				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
+				Ensure.NotEmptyGuid(connectionId, "connectionId");
+
+				VNodeEndPoint = vNodeEndPoint;
+				ConnectionId = connectionId;
+			}
+		}
+
+		public class VNodeConnectionEstablished : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IPEndPoint VNodeEndPoint;
+			public readonly Guid ConnectionId;
+
+			public VNodeConnectionEstablished(IPEndPoint vNodeEndPoint, Guid connectionId) {
+				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
+				Ensure.NotEmptyGuid(connectionId, "connectionId");
+
+				VNodeEndPoint = vNodeEndPoint;
+				ConnectionId = connectionId;
+			}
+		}
+
+		public class WaitForChaserToCatchUp : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+			public readonly TimeSpan TotalTimeWasted;
+
+			public WaitForChaserToCatchUp(Guid correlationId, TimeSpan totalTimeWasted) {
+				Ensure.NotEmptyGuid(correlationId, "correlationId");
+
+				CorrelationId = correlationId;
+				TotalTimeWasted = totalTimeWasted;
+			}
+		}
+
+		public class ChaserCaughtUp : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+
+			public ChaserCaughtUp(Guid correlationId) {
+				Ensure.NotEmptyGuid(correlationId, "correlationId");
+				CorrelationId = correlationId;
+			}
+		}
+
+		public class RequestForwardingTimerTick : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class NoQuorumMessage : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class EpochWritten : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly EpochRecord Epoch;
+
+			public EpochWritten(EpochRecord epoch) {
+				Ensure.NotNull(epoch, "epoch");
+				Epoch = epoch;
+			}
+		}
+	}
 }

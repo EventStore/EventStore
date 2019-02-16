@@ -5,54 +5,48 @@ using System.Net;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
-namespace EventStore.Core.Tests.Services.ElectionsService.Randomized
-{
-    internal class ElectionsProgressCondition : IRandTestFinishCondition
-    {
-        public bool Done { get; protected set; }
+namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
+	internal class ElectionsProgressCondition : IRandTestFinishCondition {
+		public bool Done { get; protected set; }
 
-        public bool Success
-        {
-            get
-            {
-                var byView = ElectionsResults.Values.GroupBy(x => x.Item1)
-                                                    .Select(x => Tuple.Create(x.Count(), x.Select(y => y.Item2).Distinct().Count()))
-                                                    .ToArray();
-                return byView.Count(x => x.Item1 >= _majorityCount && x.Item2 == 1) == 1;
-            }
-        }
+		public bool Success {
+			get {
+				var byView = ElectionsResults.Values.GroupBy(x => x.Item1)
+					.Select(x => Tuple.Create(x.Count(), x.Select(y => y.Item2).Distinct().Count()))
+					.ToArray();
+				return byView.Count(x => x.Item1 >= _majorityCount && x.Item2 == 1) == 1;
+			}
+		}
 
-        private readonly int _majorityCount;
-        protected readonly Dictionary<IPEndPoint, Tuple<int, IPEndPoint>> ElectionsResults = new Dictionary<IPEndPoint, Tuple<int, IPEndPoint>>();
+		private readonly int _majorityCount;
 
-        public ElectionsProgressCondition(int instancesCount)
-        {
-            _majorityCount = instancesCount/2 + 1;
-        }
+		protected readonly Dictionary<IPEndPoint, Tuple<int, IPEndPoint>> ElectionsResults =
+			new Dictionary<IPEndPoint, Tuple<int, IPEndPoint>>();
 
-        public virtual void Process(int iteration, RandTestQueueItem item)
-        {
-            var msg = item.Message as ElectionMessage.ElectionsDone;
-            if (msg != null)
-            {
-                var master = msg.Master.ExternalHttpEndPoint;
-                ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, master);
-                Done = ElectionsResults.Values.Count(x => x.Item1 == msg.InstalledView) >= _majorityCount;
-            }
-        }
+		public ElectionsProgressCondition(int instancesCount) {
+			_majorityCount = instancesCount / 2 + 1;
+		}
 
-        public void Log()
-        {
-            Console.WriteLine("Success Condition data:");
-            Console.WriteLine("node - (installed view, master)");
-            foreach (var electionsResult in ElectionsResults)
-            {
-                Console.WriteLine("{0} - ({1}, {2})",
-                                  electionsResult.Key.Port,
-                                  electionsResult.Value.Item1,
-                                  electionsResult.Value.Item2.Port);
-            }
-            Console.WriteLine("end.");
-        }
-    }
+		public virtual void Process(int iteration, RandTestQueueItem item) {
+			var msg = item.Message as ElectionMessage.ElectionsDone;
+			if (msg != null) {
+				var master = msg.Master.ExternalHttpEndPoint;
+				ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, master);
+				Done = ElectionsResults.Values.Count(x => x.Item1 == msg.InstalledView) >= _majorityCount;
+			}
+		}
+
+		public void Log() {
+			Console.WriteLine("Success Condition data:");
+			Console.WriteLine("node - (installed view, master)");
+			foreach (var electionsResult in ElectionsResults) {
+				Console.WriteLine("{0} - ({1}, {2})",
+					electionsResult.Key.Port,
+					electionsResult.Value.Item1,
+					electionsResult.Value.Item2.Port);
+			}
+
+			Console.WriteLine("end.");
+		}
+	}
 }

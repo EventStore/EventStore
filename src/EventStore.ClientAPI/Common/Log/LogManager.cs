@@ -1,5 +1,4 @@
-﻿namespace EventStore.ClientAPI.Common.Log
-{
+﻿namespace EventStore.ClientAPI.Common.Log {
 /*    public static class LogManager
     {
         private static readonly ILogger Default = new DebugLogger();

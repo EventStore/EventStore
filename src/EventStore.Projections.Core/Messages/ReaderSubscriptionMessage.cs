@@ -4,319 +4,292 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Messages
-{
-    public static class ReaderSubscriptionMessage
-    {
-        public class SubscriptionMessage : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Projections.Core.Messages {
+	public static class ReaderSubscriptionMessage {
+		public class SubscriptionMessage : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            private readonly Guid _correlationId;
-            private readonly CheckpointTag _preTagged;
-            private readonly object _source;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public SubscriptionMessage(Guid correlationId, CheckpointTag preTagged, object source)
-            {
-                _correlationId = correlationId;
-                _preTagged = preTagged;
-                _source = source;
-            }
+			private readonly Guid _correlationId;
+			private readonly CheckpointTag _preTagged;
+			private readonly object _source;
 
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
-            }
+			public SubscriptionMessage(Guid correlationId, CheckpointTag preTagged, object source) {
+				_correlationId = correlationId;
+				_preTagged = preTagged;
+				_source = source;
+			}
 
-            public CheckpointTag PreTagged
-            {
-                get { return _preTagged; }
-            }
+			public Guid CorrelationId {
+				get { return _correlationId; }
+			}
 
-            public object Source
-            {
-                get { return _source; }
-            }
-        }
+			public CheckpointTag PreTagged {
+				get { return _preTagged; }
+			}
 
-        public class EventReaderIdle : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public object Source {
+				get { return _source; }
+			}
+		}
 
-            private readonly DateTime _idleTimestampUtc;
+		public class EventReaderIdle : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null)
-                : base(correlationId, null, source)
-            {
-                _idleTimestampUtc = idleTimestampUtc;
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public DateTime IdleTimestampUtc
-            {
-                get { return _idleTimestampUtc; }
-            }
-        }
+			private readonly DateTime _idleTimestampUtc;
 
-        public sealed class EventReaderStarting : SubscriptionMessage
-        {
-            private readonly long _lastCommitPosition;
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null)
+				: base(correlationId, null, source) {
+				_idleTimestampUtc = idleTimestampUtc;
+			}
 
-            public EventReaderStarting(Guid correlationId, long lastCommitPosition, object source = null)
-                : base(correlationId, null, source)
-            {
-                _lastCommitPosition = lastCommitPosition;
-            }
+			public DateTime IdleTimestampUtc {
+				get { return _idleTimestampUtc; }
+			}
+		}
 
-            public long LastCommitPosition
-            {
-                get { return _lastCommitPosition; }
-            }
-        }
+		public sealed class EventReaderStarting : SubscriptionMessage {
+			private readonly long _lastCommitPosition;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class EventReaderEof : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            private readonly bool _maxEventsReached;
+			public EventReaderStarting(Guid correlationId, long lastCommitPosition, object source = null)
+				: base(correlationId, null, source) {
+				_lastCommitPosition = lastCommitPosition;
+			}
 
-            public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
-                : base(correlationId, null, source)
-            {
-                _maxEventsReached = maxEventsReached;
-            }
+			public long LastCommitPosition {
+				get { return _lastCommitPosition; }
+			}
+		}
 
-            public bool MaxEventsReached
-            {
-                get { return _maxEventsReached; }
-            }
-        }
+		public class EventReaderEof : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class EventReaderPartitionEof : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
+			private readonly bool _maxEventsReached;
 
-            private readonly string _partition;
+			public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
+				: base(correlationId, null, source) {
+				_maxEventsReached = maxEventsReached;
+			}
 
-            public EventReaderPartitionEof(
-                Guid correlationId, string partition, CheckpointTag preTagged, object source = null)
-                : base(correlationId, preTagged, source)
-            {
-                _partition = partition;
-            }
+			public bool MaxEventsReached {
+				get { return _maxEventsReached; }
+			}
+		}
 
-            public string Partition
-            {
-                get { return _partition; }
-            }
-        }
+		public class EventReaderPartitionEof : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-        public class EventReaderPartitionDeleted : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
+			private readonly string _partition;
 
-            private readonly string _partition;
-            private readonly long? _lastEventNumber;
-            private readonly TFPos? _deleteLinkOrEventPosition;
-            private readonly TFPos? _deleteEventOrLinkTargetPosition;
-            private readonly string _positionStreamId;
-            private readonly long? _positionEventNumber;
+			public EventReaderPartitionEof(
+				Guid correlationId, string partition, CheckpointTag preTagged, object source = null)
+				: base(correlationId, preTagged, source) {
+				_partition = partition;
+			}
 
-            public EventReaderPartitionDeleted(
-                Guid correlationId, string partition, long? lastEventNumber, TFPos? deleteLinkOrEventPosition,
-                TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, long? positionEventNumber,
-                CheckpointTag preTagged = null, object source = null)
-                : base(correlationId, preTagged, source)
-            {
-                _partition = partition;
-                _lastEventNumber = lastEventNumber;
-                _deleteLinkOrEventPosition = deleteLinkOrEventPosition;
-                _deleteEventOrLinkTargetPosition = deleteEventOrLinkTargetPosition;
-                _positionStreamId = positionStreamId;
-                _positionEventNumber = positionEventNumber;
-            }
+			public string Partition {
+				get { return _partition; }
+			}
+		}
 
-            public string Partition
-            {
-                get { return _partition; }
-            }
+		public class EventReaderPartitionDeleted : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public long? LastEventNumber
-            {
-                get { return _lastEventNumber; }
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public TFPos? DeleteEventOrLinkTargetPosition
-            {
-                get { return _deleteEventOrLinkTargetPosition; }
-            }
+			private readonly string _partition;
+			private readonly long? _lastEventNumber;
+			private readonly TFPos? _deleteLinkOrEventPosition;
+			private readonly TFPos? _deleteEventOrLinkTargetPosition;
+			private readonly string _positionStreamId;
+			private readonly long? _positionEventNumber;
 
-            public string PositionStreamId
-            {
-                get { return _positionStreamId; }
-            }
+			public EventReaderPartitionDeleted(
+				Guid correlationId, string partition, long? lastEventNumber, TFPos? deleteLinkOrEventPosition,
+				TFPos? deleteEventOrLinkTargetPosition, string positionStreamId, long? positionEventNumber,
+				CheckpointTag preTagged = null, object source = null)
+				: base(correlationId, preTagged, source) {
+				_partition = partition;
+				_lastEventNumber = lastEventNumber;
+				_deleteLinkOrEventPosition = deleteLinkOrEventPosition;
+				_deleteEventOrLinkTargetPosition = deleteEventOrLinkTargetPosition;
+				_positionStreamId = positionStreamId;
+				_positionEventNumber = positionEventNumber;
+			}
 
-            public long? PositionEventNumber
-            {
-                get { return _positionEventNumber; }
-            }
+			public string Partition {
+				get { return _partition; }
+			}
 
-            public TFPos? DeleteLinkOrEventPosition
-            {
-                get { return _deleteLinkOrEventPosition; }
-            }
-        }
+			public long? LastEventNumber {
+				get { return _lastEventNumber; }
+			}
 
-        public class EventReaderPartitionMeasured : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public TFPos? DeleteEventOrLinkTargetPosition {
+				get { return _deleteEventOrLinkTargetPosition; }
+			}
 
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
+			public string PositionStreamId {
+				get { return _positionStreamId; }
+			}
 
-            private readonly string _partition;
-            private readonly long _size;
+			public long? PositionEventNumber {
+				get { return _positionEventNumber; }
+			}
 
-            public EventReaderPartitionMeasured(
-                Guid correlationId, string partition, long size, object source = null)
-                : base(correlationId, null, source)
-            {
-                _partition = partition;
-                _size = size;
-            }
+			public TFPos? DeleteLinkOrEventPosition {
+				get { return _deleteLinkOrEventPosition; }
+			}
+		}
 
-            public string Partition
-            {
-                get { return _partition; }
-            }
+		public class EventReaderPartitionMeasured : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public long Size
-            {
-                get { return _size; }
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public sealed class EventReaderNotAuthorized : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			private readonly string _partition;
+			private readonly long _size;
 
-            public EventReaderNotAuthorized(Guid correlationId, object source = null)
-                : base(correlationId, null, source)
-            {
-            }
-        }
+			public EventReaderPartitionMeasured(
+				Guid correlationId, string partition, long size, object source = null)
+				: base(correlationId, null, source) {
+				_partition = partition;
+				_size = size;
+			}
 
-        public class CommittedEventDistributed : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public string Partition {
+				get { return _partition; }
+			}
 
-            public static CommittedEventDistributed Sample(
-                Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId, long positionSequenceNumber,
-                string eventStreamId, long eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,
-                bool isJson, byte[] data, byte[] metadata, long? safeTransactionFileReaderJoinPosition, float progress)
-            {
-                return new CommittedEventDistributed(
-                    correlationId,
-                    new ResolvedEvent(
-                        positionStreamId, positionSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo,
-                        position, originalPosition, eventId, eventType, isJson, data, metadata, null, null, default(DateTime)),
-                    safeTransactionFileReaderJoinPosition, progress);
-            }
+			public long Size {
+				get { return _size; }
+			}
+		}
 
-            public static CommittedEventDistributed Sample(
-                Guid correlationId, TFPos position, string eventStreamId, long eventSequenceNumber,
-                bool resolvedLinkTo, Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata,
-                DateTime? timestamp = null)
-            {
-                return new CommittedEventDistributed(
-                    correlationId,
-                    new ResolvedEvent(
-                        eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, position,
-                        position, eventId, eventType, isJson, data, metadata, null, null, timestamp.GetValueOrDefault()),
-                    position.PreparePosition, 11.1f);
-            }
+		public sealed class EventReaderNotAuthorized : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            private readonly ResolvedEvent _data;
-            private readonly long? _safeTransactionFileReaderJoinPosition;
-            private readonly float _progress;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            //NOTE: committed event with null event _data means - end of the source reached.  
-            // Current last available TF commit position is in _position.CommitPosition
-            // TODO: separate message?
+			public EventReaderNotAuthorized(Guid correlationId, object source = null)
+				: base(correlationId, null, source) {
+			}
+		}
 
-            public CommittedEventDistributed(
-                Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress,
-                object source = null, CheckpointTag preTagged = null)
-                : base(correlationId, preTagged, source)
-            {
-                _data = data;
-                _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
-                _progress = progress;
-            }
+		public class CommittedEventDistributed : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public CommittedEventDistributed(Guid correlationId, ResolvedEvent data, CheckpointTag preTagged = null)
-                : this(correlationId, data, data.Position.PreparePosition, 11.1f, preTagged)
-            {
-            }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public ResolvedEvent Data
-            {
-                get { return _data; }
-            }
+			public static CommittedEventDistributed Sample(
+				Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId,
+				long positionSequenceNumber,
+				string eventStreamId, long eventSequenceNumber, bool resolvedLinkTo, Guid eventId, string eventType,
+				bool isJson, byte[] data, byte[] metadata, long? safeTransactionFileReaderJoinPosition,
+				float progress) {
+				return new CommittedEventDistributed(
+					correlationId,
+					new ResolvedEvent(
+						positionStreamId, positionSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo,
+						position, originalPosition, eventId, eventType, isJson, data, metadata, null, null,
+						default(DateTime)),
+					safeTransactionFileReaderJoinPosition, progress);
+			}
 
-            public long? SafeTransactionFileReaderJoinPosition
-            {
-                get { return _safeTransactionFileReaderJoinPosition; }
-            }
+			public static CommittedEventDistributed Sample(
+				Guid correlationId, TFPos position, string eventStreamId, long eventSequenceNumber,
+				bool resolvedLinkTo, Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata,
+				DateTime? timestamp = null) {
+				return new CommittedEventDistributed(
+					correlationId,
+					new ResolvedEvent(
+						eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo,
+						position,
+						position, eventId, eventType, isJson, data, metadata, null, null,
+						timestamp.GetValueOrDefault()),
+					position.PreparePosition, 11.1f);
+			}
 
-            public float Progress
-            {
-                get { return _progress; }
-            }
+			private readonly ResolvedEvent _data;
+			private readonly long? _safeTransactionFileReaderJoinPosition;
+			private readonly float _progress;
 
-        }
+			//NOTE: committed event with null event _data means - end of the source reached.  
+			// Current last available TF commit position is in _position.CommitPosition
+			// TODO: separate message?
 
-        public class Faulted : SubscriptionMessage
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public CommittedEventDistributed(
+				Guid correlationId, ResolvedEvent data, long? safeTransactionFileReaderJoinPosition, float progress,
+				object source = null, CheckpointTag preTagged = null)
+				: base(correlationId, preTagged, source) {
+				_data = data;
+				_safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
+				_progress = progress;
+			}
 
-            public override int MsgTypeId
-            {
-                get { return TypeId; }
-            }
+			public CommittedEventDistributed(Guid correlationId, ResolvedEvent data, CheckpointTag preTagged = null)
+				: this(correlationId, data, data.Position.PreparePosition, 11.1f, preTagged) {
+			}
 
-            private readonly string _reason;
+			public ResolvedEvent Data {
+				get { return _data; }
+			}
 
-            public Faulted(
-                Guid correlationId, string reason, object source = null)
-                : base(correlationId, null, source)
-            {
-                _reason = reason;
-            }
+			public long? SafeTransactionFileReaderJoinPosition {
+				get { return _safeTransactionFileReaderJoinPosition; }
+			}
 
-            public string Reason
-            {
-                get { return _reason; }
-            }
-        }        
+			public float Progress {
+				get { return _progress; }
+			}
+		}
 
-    }
+		public class Faulted : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			private readonly string _reason;
+
+			public Faulted(
+				Guid correlationId, string reason, object source = null)
+				: base(correlationId, null, source) {
+				_reason = reason;
+			}
+
+			public string Reason {
+				get { return _reason; }
+			}
+		}
+	}
 }

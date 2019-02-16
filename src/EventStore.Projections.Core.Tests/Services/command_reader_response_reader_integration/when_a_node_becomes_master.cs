@@ -7,33 +7,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.command_reader_response_reader_integration
-{
-    [TestFixture]
-    public class when_a_node_becomes_master : TestFixtureWithProjectionCoreAndManagementServices
-    {
-        private Guid _uniqueId;
-        protected override void Given()
-        {
-            AllWritesSucceed();
-        }
+namespace EventStore.Projections.Core.Tests.Services.command_reader_response_reader_integration {
+	[TestFixture]
+	public class when_a_node_becomes_master : TestFixtureWithProjectionCoreAndManagementServices {
+		private Guid _uniqueId;
 
-        protected override IEnumerable<WhenStep> When()
-        {
-            yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-            
-            _uniqueId = Guid.NewGuid();
-            EpochRecord epochRecord = new EpochRecord(0L,0,_uniqueId,0L,DateTime.Now);
+		protected override void Given() {
+			AllWritesSucceed();
+		}
 
-            yield return new SystemMessage.EpochWritten(epochRecord);
-            yield return new SystemMessage.SystemCoreReady();
-        }
+		protected override IEnumerable<WhenStep> When() {
+			yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
 
-        [Test]
-        public void readers_should_use_the_same_control_stream_id()
-        {
-            Assert.AreEqual(_uniqueId, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Starting>().First().EpochId);
-            Assert.AreEqual(_uniqueId, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>().First().EpochId);
-        }
-    }
+			_uniqueId = Guid.NewGuid();
+			EpochRecord epochRecord = new EpochRecord(0L, 0, _uniqueId, 0L, DateTime.Now);
+
+			yield return new SystemMessage.EpochWritten(epochRecord);
+			yield return new SystemMessage.SystemCoreReady();
+		}
+
+		[Test]
+		public void readers_should_use_the_same_control_stream_id() {
+			Assert.AreEqual(_uniqueId,
+				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Starting>().First().EpochId);
+			Assert.AreEqual(_uniqueId,
+				_consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>().First().EpochId);
+		}
+	}
 }

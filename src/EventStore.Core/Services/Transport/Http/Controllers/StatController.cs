@@ -7,109 +7,103 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
-namespace EventStore.Core.Services.Transport.Http.Controllers
-{
-    public class StatController : CommunicationController
-    {
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
-        
-        private readonly IPublisher _networkSendQueue;
+namespace EventStore.Core.Services.Transport.Http.Controllers {
+	public class StatController : CommunicationController {
+		private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml, Codec.ApplicationXml};
 
-        public StatController(IPublisher publisher, IPublisher networkSendQueue)
-            : base(publisher)
-        {
-            _networkSendQueue = networkSendQueue;
-        }
+		private readonly IPublisher _networkSendQueue;
 
-        protected override void SubscribeCore(IHttpService service)
-        {
-            Ensure.NotNull(service, "service");
+		public StatController(IPublisher publisher, IPublisher networkSendQueue)
+			: base(publisher) {
+			_networkSendQueue = networkSendQueue;
+		}
 
-            service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
-            service.RegisterAction(new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetReplicationStats);
-            service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetTcpConnectionStats);
-            service.RegisterAction(new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetFreshStats);
-        }
+		protected override void SubscribeCore(IHttpService service) {
+			Ensure.NotNull(service, "service");
 
-        private void OnGetTcpConnectionStats(HttpEntityManager entity, UriTemplateMatch match)
-        {
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
-                                                  Format.GetFreshTcpConnectionStatsCompleted,
-                                                  Configure.GetFreshTcpConnectionStatsCompleted);
-            Publish(new MonitoringMessage.GetFreshTcpConnectionStats(envelope));
-        }
+			service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				OnGetFreshStats);
+			service.RegisterAction(
+				new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				OnGetReplicationStats);
+			service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				OnGetTcpConnectionStats);
+			service.RegisterAction(
+				new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				OnGetFreshStats);
+		}
 
-        private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match)
-        {
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
-                                                  Format.GetFreshStatsCompleted,
-                                                  Configure.GetFreshStatsCompleted);
+		private void OnGetTcpConnectionStats(HttpEntityManager entity, UriTemplateMatch match) {
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				entity,
+				Format.GetFreshTcpConnectionStatsCompleted,
+				Configure.GetFreshTcpConnectionStatsCompleted);
+			Publish(new MonitoringMessage.GetFreshTcpConnectionStats(envelope));
+		}
 
-            var statPath = match.BoundVariables["statPath"];
-            var statSelector = GetStatSelector(statPath);
+		private void OnGetFreshStats(HttpEntityManager entity, UriTemplateMatch match) {
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				entity,
+				Format.GetFreshStatsCompleted,
+				Configure.GetFreshStatsCompleted);
 
-            bool useMetadata;
-            if (!bool.TryParse(match.QueryParameters["metadata"], out useMetadata))
-                useMetadata = false;
+			var statPath = match.BoundVariables["statPath"];
+			var statSelector = GetStatSelector(statPath);
 
-            bool useGrouping;
-            if (!bool.TryParse(match.QueryParameters["group"], out useGrouping))
-                useGrouping = true;
+			bool useMetadata;
+			if (!bool.TryParse(match.QueryParameters["metadata"], out useMetadata))
+				useMetadata = false;
 
-            if (!useGrouping && !string.IsNullOrEmpty(statPath))
-            {
-                SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
-                return;
-            }
-             
-            Publish(new MonitoringMessage.GetFreshStats(envelope, statSelector, useMetadata, useGrouping));
-        }
+			bool useGrouping;
+			if (!bool.TryParse(match.QueryParameters["group"], out useGrouping))
+				useGrouping = true;
 
-        private static Func<Dictionary<string, object>, Dictionary<string, object>> GetStatSelector(string statPath)
-        {
-            if (string.IsNullOrEmpty(statPath))
-                return dict => dict;
+			if (!useGrouping && !string.IsNullOrEmpty(statPath)) {
+				SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
+				return;
+			}
 
-            //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
-            //todo: use IsMono here?
-            if (statPath.StartsWith("stats/"))
-            {
-                statPath = statPath.Substring(6);
-                if (string.IsNullOrEmpty(statPath))
-                    return dict => dict;
-            }
+			Publish(new MonitoringMessage.GetFreshStats(envelope, statSelector, useMetadata, useGrouping));
+		}
 
-            var groups = statPath.Split('/');
+		private static Func<Dictionary<string, object>, Dictionary<string, object>> GetStatSelector(string statPath) {
+			if (string.IsNullOrEmpty(statPath))
+				return dict => dict;
 
-            return dict =>
-            {
-                Ensure.NotNull(dict, "dictionary");
+			//NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
+			//todo: use IsMono here?
+			if (statPath.StartsWith("stats/")) {
+				statPath = statPath.Substring(6);
+				if (string.IsNullOrEmpty(statPath))
+					return dict => dict;
+			}
 
-                foreach (string groupName in groups)
-                {
-                    object item;
-                    if (!dict.TryGetValue(groupName, out item))
-                        return null;
+			var groups = statPath.Split('/');
 
-                    dict = item as Dictionary<string, object>;
+			return dict => {
+				Ensure.NotNull(dict, "dictionary");
 
-                    if (dict == null)
-                        return null;
-                }
+				foreach (string groupName in groups) {
+					object item;
+					if (!dict.TryGetValue(groupName, out item))
+						return null;
 
-                return dict;
-            };
-        }
+					dict = item as Dictionary<string, object>;
 
-        private void OnGetReplicationStats(HttpEntityManager entity, UriTemplateMatch match)
-        {
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
-                                                  Format.GetReplicationStatsCompleted,
-                                                  Configure.GetReplicationStatsCompleted);
-            Publish(new ReplicationMessage.GetReplicationStats(envelope));
-        }
-    }
+					if (dict == null)
+						return null;
+				}
+
+				return dict;
+			};
+		}
+
+		private void OnGetReplicationStats(HttpEntityManager entity, UriTemplateMatch match) {
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				entity,
+				Format.GetReplicationStatsCompleted,
+				Configure.GetReplicationStatsCompleted);
+			Publish(new ReplicationMessage.GetReplicationStats(envelope));
+		}
+	}
 }

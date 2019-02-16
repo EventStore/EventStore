@@ -9,137 +9,120 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 
-namespace EventStore.Core.Util
-{
-    public class MiniWeb
-    {
-        private readonly string _localWebRootPath;
-        private readonly string _fileSystemRoot;
-        private static readonly ILogger Logger = LogManager.GetLoggerFor<MiniWeb>();
+namespace EventStore.Core.Util {
+	public class MiniWeb {
+		private readonly string _localWebRootPath;
+		private readonly string _fileSystemRoot;
+		private static readonly ILogger Logger = LogManager.GetLoggerFor<MiniWeb>();
 
-        public MiniWeb(string localWebRootPath) : this(localWebRootPath, GetWebRootFileSystemDirectory())
-        {
-        }
+		public MiniWeb(string localWebRootPath) : this(localWebRootPath, GetWebRootFileSystemDirectory()) {
+		}
 
-        public MiniWeb(string localWebRootPath, string fileSystemRoot)
-        {
-            Logger.Info("Starting MiniWeb for {localWebRootPath} ==> {fileSystemRoot}", localWebRootPath, fileSystemRoot);
-            _localWebRootPath = localWebRootPath;
-            _fileSystemRoot = fileSystemRoot;
-        }
+		public MiniWeb(string localWebRootPath, string fileSystemRoot) {
+			Logger.Info("Starting MiniWeb for {localWebRootPath} ==> {fileSystemRoot}", localWebRootPath,
+				fileSystemRoot);
+			_localWebRootPath = localWebRootPath;
+			_fileSystemRoot = fileSystemRoot;
+		}
 
-        public void RegisterControllerActions(IHttpService service)
-        {
-            var pattern = _localWebRootPath + "/{*remaining_path}";
-            Logger.Trace("Binding MiniWeb to {path}", pattern);
-            service.RegisterAction(new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.ManualEncoding }), OnStaticContent);
-        }
+		public void RegisterControllerActions(IHttpService service) {
+			var pattern = _localWebRootPath + "/{*remaining_path}";
+			Logger.Trace("Binding MiniWeb to {path}", pattern);
+			service.RegisterAction(
+				new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}),
+				OnStaticContent);
+		}
 
-        private void OnStaticContent(HttpEntityManager http, UriTemplateMatch match)
-        {
-            var contentLocalPath = match.BoundVariables["remaining_path"];
-            ReplyWithContent(http, contentLocalPath);
-        }
+		private void OnStaticContent(HttpEntityManager http, UriTemplateMatch match) {
+			var contentLocalPath = match.BoundVariables["remaining_path"];
+			ReplyWithContent(http, contentLocalPath);
+		}
 
-        private void ReplyWithContent(HttpEntityManager http, string contentLocalPath)
-        {
-            //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
-            if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
-                contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
+		private void ReplyWithContent(HttpEntityManager http, string contentLocalPath) {
+			//NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
+			if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
+				contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
 
-            //_logger.Trace("{contentLocalPath} requested from MiniWeb", contentLocalPath);
-            try
-            {
-                var extensionToContentType = new Dictionary<string, string>
-                {
-                    { ".png",  "image/png"} ,
-                    { ".svg",  "image/svg+xml"} ,
-                    { ".woff", "application/x-font-woff"} ,
-                    { ".woff2", "application/x-font-woff"} ,
-                    { ".ttf", "application/font-sfnt"} ,
-                    { ".jpg",  "image/jpeg"} ,
-                    { ".jpeg", "image/jpeg"} ,
-                    { ".css",  "text/css"} ,
-                    { ".htm",  "text/html"} ,
-                    { ".html", "text/html"} ,
-                    { ".js",   "application/javascript"} ,
-                    { ".json",   "application/json"} ,
-                    { ".ico",  "image/vnd.microsoft.icon"}
-                };
+			//_logger.Trace("{contentLocalPath} requested from MiniWeb", contentLocalPath);
+			try {
+				var extensionToContentType = new Dictionary<string, string> {
+					{".png", "image/png"},
+					{".svg", "image/svg+xml"},
+					{".woff", "application/x-font-woff"},
+					{".woff2", "application/x-font-woff"},
+					{".ttf", "application/font-sfnt"},
+					{".jpg", "image/jpeg"},
+					{".jpeg", "image/jpeg"},
+					{".css", "text/css"},
+					{".htm", "text/html"},
+					{".html", "text/html"},
+					{".js", "application/javascript"},
+					{".json", "application/json"},
+					{".ico", "image/vnd.microsoft.icon"}
+				};
 
-                var extension = Path.GetExtension(contentLocalPath);
-                var fullPath = Path.Combine(_fileSystemRoot, contentLocalPath);
+				var extension = Path.GetExtension(contentLocalPath);
+				var fullPath = Path.Combine(_fileSystemRoot, contentLocalPath);
 
-                string contentType;
-                if (string.IsNullOrEmpty(extension)
-                    || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
-                    || !File.Exists(fullPath))
-                {
-                    Logger.Info("Replying 404 for {contentLocalPath} ==> {fullPath}", contentLocalPath, fullPath);
-                    http.ReplyTextContent(
-                        "Not Found", 404, "Not Found", "text/plain", null,
-                        ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
-                }
-                else
-                {
-                    var config = GetWebPageConfig(contentType);
-                    var content = File.ReadAllBytes(fullPath);
+				string contentType;
+				if (string.IsNullOrEmpty(extension)
+				    || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
+				    || !File.Exists(fullPath)) {
+					Logger.Info("Replying 404 for {contentLocalPath} ==> {fullPath}", contentLocalPath, fullPath);
+					http.ReplyTextContent(
+						"Not Found", 404, "Not Found", "text/plain", null,
+						ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
+				} else {
+					var config = GetWebPageConfig(contentType);
+					var content = File.ReadAllBytes(fullPath);
 
-                    http.Reply(content,
-                                       config.Code,
-                                       config.Description,
-                                       config.ContentType,
-                                       config.Encoding,
-                                       config.Headers,
-                                       ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
-                }
-            }
-            catch (Exception ex)
-            {
-                http.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
-            }
-        }
+					http.Reply(content,
+						config.Code,
+						config.Description,
+						config.ContentType,
+						config.Encoding,
+						config.Headers,
+						ex => Logger.InfoException(ex, "Error while replying from MiniWeb"));
+				}
+			} catch (Exception ex) {
+				http.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null,
+					Console.WriteLine);
+			}
+		}
 
-        private static ResponseConfiguration GetWebPageConfig(string contentType)
-        {
-            var encoding = contentType.StartsWith("image") ? null : Helper.UTF8NoBom;
-            int? cacheSeconds =
+		private static ResponseConfiguration GetWebPageConfig(string contentType) {
+			var encoding = contentType.StartsWith("image") ? null : Helper.UTF8NoBom;
+			int? cacheSeconds =
 #if RELEASE || CACHE_WEB_CONTENT
                 60*60; // 1 hour
 #else
- null; // no caching
+				null; // no caching
 #endif
-            // ReSharper disable ExpressionIsAlwaysNull
-            return Configure.Ok(contentType, encoding, null, cacheSeconds, isCachePublic: true);
-            // ReSharper restore ExpressionIsAlwaysNull
-        }
+			// ReSharper disable ExpressionIsAlwaysNull
+			return Configure.Ok(contentType, encoding, null, cacheSeconds, isCachePublic: true);
+			// ReSharper restore ExpressionIsAlwaysNull
+		}
 
-        public static string GetWebRootFileSystemDirectory(string debugPath = null)
-        {
-            string fileSystemWebRoot;
-            try
-            {
-                if (!string.IsNullOrEmpty(debugPath))
-                {
-                    var sf = new StackFrame(0, true);
-                    var fileName = sf.GetFileName();
-                    var sourceWebRootDirectory = string.IsNullOrEmpty(fileName)
-                                                     ? ""
-                                                     : Path.GetFullPath(Path.Combine(fileName, @"..\..\..", debugPath));
-                    fileSystemWebRoot = Directory.Exists(sourceWebRootDirectory)
-                                            ? sourceWebRootDirectory
-                                            : Locations.WebContentDirectory;
-                }
-                else
-                {
-                    fileSystemWebRoot = Locations.WebContentDirectory;
-                }
-            }
-            catch (Exception)
-            {
-                fileSystemWebRoot = Locations.WebContentDirectory;
-            }
-            return fileSystemWebRoot;
-        }
-    }
+		public static string GetWebRootFileSystemDirectory(string debugPath = null) {
+			string fileSystemWebRoot;
+			try {
+				if (!string.IsNullOrEmpty(debugPath)) {
+					var sf = new StackFrame(0, true);
+					var fileName = sf.GetFileName();
+					var sourceWebRootDirectory = string.IsNullOrEmpty(fileName)
+						? ""
+						: Path.GetFullPath(Path.Combine(fileName, @"..\..\..", debugPath));
+					fileSystemWebRoot = Directory.Exists(sourceWebRootDirectory)
+						? sourceWebRootDirectory
+						: Locations.WebContentDirectory;
+				} else {
+					fileSystemWebRoot = Locations.WebContentDirectory;
+				}
+			} catch (Exception) {
+				fileSystemWebRoot = Locations.WebContentDirectory;
+			}
+
+			return fileSystemWebRoot;
+		}
+	}
 }

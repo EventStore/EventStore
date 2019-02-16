@@ -6,20 +6,15 @@ using System;
 using System.ComponentModel;
 using System.IO;
 
-namespace EventStore.Core.TransactionLog.Unbuffered
-{
-	public unsafe class NativeFileUnix : INativeFile
-	{
-		public uint GetDriveSectorSize(string path)
-		{
+namespace EventStore.Core.TransactionLog.Unbuffered {
+	public unsafe class NativeFileUnix : INativeFile {
+		public uint GetDriveSectorSize(string path) {
 			return 0;
 		}
 
-		public long GetPageSize(string path)
-		{
+		public long GetPageSize(string path) {
 			int r;
-			do
-			{
+			do {
 				r = (int)Syscall.sysconf(SysconfName._SC_PAGESIZE);
 			} while (UnixMarshal.ShouldRetrySyscall(r));
 
@@ -27,11 +22,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 			return r;
 		}
 
-		public void SetFileSize(SafeFileHandle handle, long count)
-		{
+		public void SetFileSize(SafeFileHandle handle, long count) {
 			int r;
-			do
-			{
+			do {
 				r = Syscall.ftruncate(handle.DangerousGetHandle().ToInt32(), count);
 			} while (UnixMarshal.ShouldRetrySyscall(r));
 
@@ -39,49 +32,40 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 			FSync(handle);
 		}
 
-		private static void FSync(SafeFileHandle handle)
-		{
+		private static void FSync(SafeFileHandle handle) {
 			Syscall.fsync(handle.DangerousGetHandle().ToInt32());
 		}
 
-		public void Write(SafeFileHandle handle, byte* buffer, uint count, ref int written)
-		{
+		public void Write(SafeFileHandle handle, byte* buffer, uint count, ref int written) {
 			int ret;
-			do
-			{
+			do {
 				ret = (int)Syscall.write(handle.DangerousGetHandle().ToInt32(), buffer, count);
 			} while (UnixMarshal.ShouldRetrySyscall(ret));
 
-			if (ret == -1)
-			{
+			if (ret == -1) {
 				UnixMarshal.ThrowExceptionForLastErrorIf(ret);
 			}
 
 			written = (int)count;
 		}
 
-		public int Read(SafeFileHandle handle, byte* buffer, int offset, int count)
-		{
+		public int Read(SafeFileHandle handle, byte* buffer, int offset, int count) {
 			int r;
-			do
-			{
+			do {
 				r = (int)Syscall.read(handle.DangerousGetHandle().ToInt32(), buffer, (ulong)count);
 			} while (UnixMarshal.ShouldRetrySyscall(r));
 
-			if (r == -1)
-			{
+			if (r == -1) {
 				UnixMarshal.ThrowExceptionForLastError();
 			}
 
 			return count;
 		}
 
-		public long GetFileSize(SafeFileHandle handle)
-		{
+		public long GetFileSize(SafeFileHandle handle) {
 			Stat s;
 			int r;
-			do
-			{
+			do {
 				r = Syscall.fstat(handle.DangerousGetHandle().ToInt32(), out s);
 			} while (UnixMarshal.ShouldRetrySyscall(r));
 
@@ -90,42 +74,35 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 		}
 
 		//TODO UNBUFF use FileAccess etc or do custom?
-		public SafeFileHandle Create(string path, FileAccess acc, FileShare readWrite, FileMode mode, int flags)
-		{
+		public SafeFileHandle Create(string path, FileAccess acc, FileShare readWrite, FileMode mode, int flags) {
 			//TODO convert flags or separate methods?
 			return new SafeFileHandle((IntPtr)0, true);
 		}
 
 
 		public SafeFileHandle CreateUnbufferedRW(string path, FileAccess acc, FileShare share, FileMode mode,
-			bool writeThrough)
-		{
+			bool writeThrough) {
 			//O_RDONLY is 0
 			var direct = Runtime.IsMacOS ? OpenFlags.O_RDONLY : OpenFlags.O_DIRECT;
 			var flags = GetFlags(acc, mode) | direct;
 			var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
-			if (han < 0)
-			{
+			if (han < 0) {
 				throw new Win32Exception();
 			}
 
 			var handle = new SafeFileHandle((IntPtr)han, true);
-			if (handle.IsInvalid)
-			{
+			if (handle.IsInvalid) {
 				throw new Exception("Invalid handle");
 			}
 
 			MacCaching.Disable(handle);
 
 			return handle;
-
 		}
 
-		private static OpenFlags GetFlags(FileAccess acc, FileMode mode)
-		{
+		private static OpenFlags GetFlags(FileAccess acc, FileMode mode) {
 			var flags = OpenFlags.O_RDONLY; //RDONLY is 0
-			switch (acc)
-			{
+			switch (acc) {
 				case FileAccess.Read:
 					flags |= OpenFlags.O_RDONLY;
 					break;
@@ -137,8 +114,7 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 					break;
 			}
 
-			switch (mode)
-			{
+			switch (mode) {
 				case FileMode.Append:
 					flags |= OpenFlags.O_APPEND;
 					break;
@@ -154,11 +130,9 @@ namespace EventStore.Core.TransactionLog.Unbuffered
 			return flags;
 		}
 
-		public void Seek(SafeFileHandle handle, long position, SeekOrigin origin)
-		{
+		public void Seek(SafeFileHandle handle, long position, SeekOrigin origin) {
 			int r;
-			do
-			{
+			do {
 				r = (int)Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, SeekFlags.SEEK_SET);
 			} while (UnixMarshal.ShouldRetrySyscall(r));
 

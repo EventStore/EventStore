@@ -1,7 +1,5 @@
-﻿namespace EventStore.Core.Messages
-{
-    public interface IQueueAffineMessage
-    {
-        int QueueId { get; }
-    }
+﻿namespace EventStore.Core.Messages {
+	public interface IQueueAffineMessage {
+		int QueueId { get; }
+	}
 }

@@ -1,46 +1,44 @@
 ﻿using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Services.TimerService
-{
-    public static class TimerMessage
-    {
-        public class Schedule : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Core.Services.TimerService {
+	public static class TimerMessage {
+		public class Schedule : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly TimeSpan TriggerAfter;
-            
-            public readonly IEnvelope Envelope;
-            public readonly Message ReplyMessage;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            private readonly Action _replyAction;
+			public readonly TimeSpan TriggerAfter;
 
-            public static Schedule Create<T>(TimeSpan triggerAfter, IEnvelope envelope, T replyMessage) where T : Message
-            {
-                return new Schedule(triggerAfter, envelope, replyMessage, () => envelope.ReplyWith(replyMessage));
-            }
+			public readonly IEnvelope Envelope;
+			public readonly Message ReplyMessage;
 
-            private Schedule(TimeSpan triggerAfter, IEnvelope envelope, Message replyMessage, Action replyAction)
-            {
-                if (envelope == null)
-                    throw new ArgumentNullException("envelope");
-                if (replyMessage == null)
-                    throw new ArgumentNullException("replyMessage");
-                if (replyAction == null) 
-                    throw new ArgumentNullException("replyAction");
+			private readonly Action _replyAction;
 
-                TriggerAfter = triggerAfter;
-                Envelope = envelope;
-                ReplyMessage = replyMessage;
-                _replyAction = replyAction;
-            }
+			public static Schedule Create<T>(TimeSpan triggerAfter, IEnvelope envelope, T replyMessage)
+				where T : Message {
+				return new Schedule(triggerAfter, envelope, replyMessage, () => envelope.ReplyWith(replyMessage));
+			}
 
-            public void Reply()
-            {
-                _replyAction();
-            }
-        }
-    }
+			private Schedule(TimeSpan triggerAfter, IEnvelope envelope, Message replyMessage, Action replyAction) {
+				if (envelope == null)
+					throw new ArgumentNullException("envelope");
+				if (replyMessage == null)
+					throw new ArgumentNullException("replyMessage");
+				if (replyAction == null)
+					throw new ArgumentNullException("replyAction");
+
+				TriggerAfter = triggerAfter;
+				Envelope = envelope;
+				ReplyMessage = replyMessage;
+				_replyAction = replyAction;
+			}
+
+			public void Reply() {
+				_replyAction();
+			}
+		}
+	}
 }

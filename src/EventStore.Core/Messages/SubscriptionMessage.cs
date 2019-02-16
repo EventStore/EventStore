@@ -1,42 +1,46 @@
 using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Messages
-{
-    public static class SubscriptionMessage
-    {
-        public class PollStream : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+namespace EventStore.Core.Messages {
+	public static class SubscriptionMessage {
+		public class PollStream : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
-            public readonly string StreamId;
-            public readonly long LastCommitPosition;
-            public readonly long? LastEventNumber;
-            public readonly DateTime ExpireAt;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly Message OriginalRequest;
+			public readonly string StreamId;
+			public readonly long LastCommitPosition;
+			public readonly long? LastEventNumber;
+			public readonly DateTime ExpireAt;
 
-            public PollStream(string streamId, long lastCommitPosition, long? lastEventNumber, DateTime expireAt, Message originalRequest)
-            {
-                StreamId = streamId;
-                LastCommitPosition = lastCommitPosition;
-                LastEventNumber = lastEventNumber;
-                ExpireAt = expireAt;
-                OriginalRequest = originalRequest;
-            }
-        }
+			public readonly Message OriginalRequest;
 
-        public class CheckPollTimeout: Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+			public PollStream(string streamId, long lastCommitPosition, long? lastEventNumber, DateTime expireAt,
+				Message originalRequest) {
+				StreamId = streamId;
+				LastCommitPosition = lastCommitPosition;
+				LastEventNumber = lastEventNumber;
+				ExpireAt = expireAt;
+				OriginalRequest = originalRequest;
+			}
+		}
 
-        public class PersistentSubscriptionTimerTick : Message
-        {
-            private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
-    }
+		public class CheckPollTimeout : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class PersistentSubscriptionTimerTick : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+	}
 }

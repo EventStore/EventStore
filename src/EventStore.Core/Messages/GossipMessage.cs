@@ -4,106 +4,110 @@ using System.Threading;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Messages
-{
-    public static partial class GossipMessage
-    {
-        public class RetrieveGossipSeedSources : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
-        }
+namespace EventStore.Core.Messages {
+	public static partial class GossipMessage {
+		public class RetrieveGossipSeedSources : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class GotGossipSeedSources : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
-            public readonly IPEndPoint[] GossipSeeds;
+		public class GotGossipSeedSources : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public GotGossipSeedSources(IPEndPoint[] gossipSeeds)
-            {
-                GossipSeeds = gossipSeeds;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class Gossip : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly IPEndPoint[] GossipSeeds;
 
-            public readonly int GossipRound;
+			public GotGossipSeedSources(IPEndPoint[] gossipSeeds) {
+				GossipSeeds = gossipSeeds;
+			}
+		}
 
-            public Gossip(int gossipRound)
-            {
-                GossipRound = gossipRound;
-            }
-        }
+		public class Gossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-        public class GossipReceived : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public readonly IEnvelope Envelope;
-            public readonly ClusterInfo ClusterInfo;
-            public readonly IPEndPoint Server;
+			public readonly int GossipRound;
 
-            public GossipReceived(IEnvelope envelope, ClusterInfo clusterInfo, IPEndPoint server)
-            {
-                Envelope = envelope;
-                ClusterInfo = clusterInfo;
-                Server = server;
-            }
-        }
+			public Gossip(int gossipRound) {
+				GossipRound = gossipRound;
+			}
+		}
 
-        public class SendGossip : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+		public class GossipReceived : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public readonly ClusterInfo ClusterInfo;
-            public readonly IPEndPoint ServerEndPoint;
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-            public SendGossip(ClusterInfo clusterInfo, IPEndPoint serverEndPoint)
-            {
-                ClusterInfo = clusterInfo;
-                ServerEndPoint = serverEndPoint;
-            }
-        }
+			public readonly IEnvelope Envelope;
+			public readonly ClusterInfo ClusterInfo;
+			public readonly IPEndPoint Server;
 
-        public class GossipUpdated: Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public GossipReceived(IEnvelope envelope, ClusterInfo clusterInfo, IPEndPoint server) {
+				Envelope = envelope;
+				ClusterInfo = clusterInfo;
+				Server = server;
+			}
+		}
 
-            public readonly ClusterInfo ClusterInfo;
+		public class SendGossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public GossipUpdated(ClusterInfo clusterInfo)
-            {
-                ClusterInfo = clusterInfo;
-            }
-        }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
-        public class GossipSendFailed : Message
-        {
-            private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-            public override int MsgTypeId { get { return TypeId; } }
+			public readonly ClusterInfo ClusterInfo;
+			public readonly IPEndPoint ServerEndPoint;
 
-            public readonly string Reason;
-            public readonly IPEndPoint Recipient;
+			public SendGossip(ClusterInfo clusterInfo, IPEndPoint serverEndPoint) {
+				ClusterInfo = clusterInfo;
+				ServerEndPoint = serverEndPoint;
+			}
+		}
 
-            public GossipSendFailed(string reason, IPEndPoint recipient)
-            {
-                Reason = reason;
-                Recipient = recipient;
-            }
+		public class GossipUpdated : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-            public override string ToString()
-            {
-                return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
-            }
-        }
-    }
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
 
+			public readonly ClusterInfo ClusterInfo;
+
+			public GossipUpdated(ClusterInfo clusterInfo) {
+				ClusterInfo = clusterInfo;
+			}
+		}
+
+		public class GossipSendFailed : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string Reason;
+			public readonly IPEndPoint Recipient;
+
+			public GossipSendFailed(string reason, IPEndPoint recipient) {
+				Reason = reason;
+				Recipient = recipient;
+			}
+
+			public override string ToString() {
+				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
+			}
+		}
+	}
 }

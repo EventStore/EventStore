@@ -6,92 +6,87 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.command_writer
-{
-    [TestFixture]
-    class when_handling_create_and_prepare_slave_message : specification_with_projection_manager_command_writer
-    {
-        private Guid _projectionId;
-        private Guid _workerId;
-        private Guid _masterWorkerId;
-        private Guid _masterCoreProjectionId;
-        private ProjectionConfig _config;
-        private ProjectionVersion _projectionVersion;
-        private string _projectionName;
-        private string _handlerType;
-        private string _query;
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.command_writer {
+	[TestFixture]
+	class when_handling_create_and_prepare_slave_message : specification_with_projection_manager_command_writer {
+		private Guid _projectionId;
+		private Guid _workerId;
+		private Guid _masterWorkerId;
+		private Guid _masterCoreProjectionId;
+		private ProjectionConfig _config;
+		private ProjectionVersion _projectionVersion;
+		private string _projectionName;
+		private string _handlerType;
+		private string _query;
 
-        protected override void Given()
-        {
-            _projectionId = Guid.NewGuid();
-            _workerId = Guid.NewGuid();
-            _masterWorkerId = Guid.NewGuid();
-            _masterCoreProjectionId = Guid.NewGuid();
-            _projectionName = "projection";
-            _handlerType = "JS";
-            _query = "from()";
+		protected override void Given() {
+			_projectionId = Guid.NewGuid();
+			_workerId = Guid.NewGuid();
+			_masterWorkerId = Guid.NewGuid();
+			_masterCoreProjectionId = Guid.NewGuid();
+			_projectionName = "projection";
+			_handlerType = "JS";
+			_query = "from()";
 
-            _config = new ProjectionConfig(
-                new OpenGenericPrincipal("user", "a", "b"),
-                1000,
-                100000,
-                2000,
-                200,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                10000,
-                1);
+			_config = new ProjectionConfig(
+				new OpenGenericPrincipal("user", "a", "b"),
+				1000,
+				100000,
+				2000,
+				200,
+				true,
+				true,
+				true,
+				true,
+				true,
+				true,
+				10000,
+				1);
+		}
 
-        }
+		protected override void When() {
+			_projectionVersion = new ProjectionVersion(1, 2, 3);
+			_sut.Handle(
+				new CoreProjectionManagementMessage.CreateAndPrepareSlave(
+					_projectionId,
+					_workerId,
+					_projectionName,
+					_projectionVersion,
+					_config,
+					_masterWorkerId,
+					_masterCoreProjectionId,
+					_handlerType,
+					_query));
+		}
 
-        protected override void When()
-        {
-            _projectionVersion = new ProjectionVersion(1, 2, 3);
-            _sut.Handle(
-                new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-                    _projectionId,
-                    _workerId,
-                    _projectionName,
-                    _projectionVersion,
-                    _config,
-                    _masterWorkerId,
-                    _masterCoreProjectionId,
-                    _handlerType,
-                    _query));
-        }
+		[Test]
+		public void publishes_create_and_prepare_slave_command() {
+			var command =
+				AssertParsedSingleCommand<CreateAndPrepareSlaveCommand>(
+					"$create-and-prepare-slave",
+					_workerId);
+			Assert.AreEqual(_projectionId.ToString("N"), command.Id);
+			Assert.AreEqual(_handlerType, command.HandlerType);
+			Assert.AreEqual(_projectionName, command.Name);
+			Assert.AreEqual(_query, command.Query);
+			Assert.AreEqual(
+				(PersistedProjectionVersion)_projectionVersion,
+				command.Version);
+			Assert.AreEqual(_config.CheckpointHandledThreshold, command.Config.CheckpointHandledThreshold);
+			Assert.AreEqual(_config.CheckpointUnhandledBytesThreshold,
+				command.Config.CheckpointUnhandledBytesThreshold);
+			Assert.AreEqual(_config.CheckpointsEnabled, command.Config.CheckpointsEnabled);
+			Assert.AreEqual(_config.CreateTempStreams, command.Config.CreateTempStreams);
+			Assert.AreEqual(_config.EmitEventEnabled, command.Config.EmitEventEnabled);
+			Assert.AreEqual(_config.IsSlaveProjection, command.Config.IsSlaveProjection);
+			Assert.AreEqual(_config.MaxWriteBatchLength, command.Config.MaxWriteBatchLength);
+			Assert.AreEqual(_config.PendingEventsThreshold, command.Config.PendingEventsThreshold);
+			Assert.AreEqual(_config.MaximumAllowedWritesInFlight, command.Config.MaximumAllowedWritesInFlight);
+			Assert.AreEqual(_config.RunAs.Identity.Name, command.Config.RunAs);
+			Assert.AreEqual(_config.StopOnEof, command.Config.StopOnEof);
 
-        [Test]
-        public void publishes_create_and_prepare_slave_command()
-        {
-            var command =
-                AssertParsedSingleCommand<CreateAndPrepareSlaveCommand>(
-                    "$create-and-prepare-slave",
-                    _workerId);
-            Assert.AreEqual(_projectionId.ToString("N"), command.Id);
-            Assert.AreEqual(_handlerType, command.HandlerType);
-            Assert.AreEqual(_projectionName, command.Name);
-            Assert.AreEqual(_query, command.Query);
-            Assert.AreEqual(
-                (PersistedProjectionVersion) _projectionVersion,
-                command.Version);
-            Assert.AreEqual(_config.CheckpointHandledThreshold, command.Config.CheckpointHandledThreshold);
-            Assert.AreEqual(_config.CheckpointUnhandledBytesThreshold, command.Config.CheckpointUnhandledBytesThreshold);
-            Assert.AreEqual(_config.CheckpointsEnabled, command.Config.CheckpointsEnabled);
-            Assert.AreEqual(_config.CreateTempStreams, command.Config.CreateTempStreams);
-            Assert.AreEqual(_config.EmitEventEnabled, command.Config.EmitEventEnabled);
-            Assert.AreEqual(_config.IsSlaveProjection, command.Config.IsSlaveProjection);
-            Assert.AreEqual(_config.MaxWriteBatchLength, command.Config.MaxWriteBatchLength);
-            Assert.AreEqual(_config.PendingEventsThreshold, command.Config.PendingEventsThreshold);
-            Assert.AreEqual(_config.MaximumAllowedWritesInFlight, command.Config.MaximumAllowedWritesInFlight);
-            Assert.AreEqual(_config.RunAs.Identity.Name, command.Config.RunAs);
-            Assert.AreEqual(_config.StopOnEof, command.Config.StopOnEof);
-
-            Assert.AreEqual(_masterCoreProjectionId.ToString("N"), command.MasterCoreProjectionId);
-            Assert.AreEqual(_masterWorkerId.ToString("N"), command.MasterWorkerId);
-        }
-    }
+			Assert.AreEqual(_masterCoreProjectionId.ToString("N"), command.MasterCoreProjectionId);
+			Assert.AreEqual(_masterWorkerId.ToString("N"), command.MasterWorkerId);
+		}
+	}
 }

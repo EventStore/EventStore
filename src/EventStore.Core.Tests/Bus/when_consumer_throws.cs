@@ -5,34 +5,29 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Bus
-{
-    [TestFixture, Category("bus")]
-    public abstract class when_consumer_throws : QueuedHandlerTestWithWaitingConsumer
-    {
-        protected when_consumer_throws(
-            Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
-            : base(queuedHandlerFactory)
-        {
-        }
+namespace EventStore.Core.Tests.Bus {
+	[TestFixture, Category("bus")]
+	public abstract class when_consumer_throws : QueuedHandlerTestWithWaitingConsumer {
+		protected when_consumer_throws(
+			Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+			: base(queuedHandlerFactory) {
+		}
 
-        public override void SetUp()
-        {
-            base.SetUp();
-        }
+		public override void SetUp() {
+			base.SetUp();
+		}
 
-        public override void TearDown()
-        {
-            Consumer.Dispose();
-            Queue.Stop();
-            base.TearDown();
-        }
+		public override void TearDown() {
+			Consumer.Dispose();
+			Queue.Stop();
+			base.TearDown();
+		}
 
-        [Test]
-        public void all_messages_in_the_queue_should_be_delivered()
-        {
+		[Test]
+		public void all_messages_in_the_queue_should_be_delivered() {
 #if DEBUG
-            Assert.Ignore("This test is not supported with DEBUG conditional since all exceptions are thrown in DEBUG builds.");
+			Assert.Ignore(
+				"This test is not supported with DEBUG conditional since all exceptions are thrown in DEBUG builds.");
 #else
             Consumer.SetWaitingCount(3);
 
@@ -50,24 +45,21 @@ namespace EventStore.Core.Tests.Bus
             Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<ExecutableTestMessage>());
             Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage2>());
 #endif
-        }
-    }
+		}
+	}
 
-    [TestFixture, Category("bus")]
-    public class when_consumer_throws_mres : when_consumer_throws
-    {
-        public when_consumer_throws_mres()
-            : base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout))
-        {
-        }
-    }
+	[TestFixture, Category("bus")]
+	public class when_consumer_throws_mres : when_consumer_throws {
+		public when_consumer_throws_mres()
+			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout)) {
+		}
+	}
 
-    [TestFixture, Category("bus")]
-    public class when_consumer_throws_autoreset : when_consumer_throws
-    {
-        public when_consumer_throws_autoreset()
-            : base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout))
-        {
-        }
-    }
+	[TestFixture, Category("bus")]
+	public class when_consumer_throws_autoreset : when_consumer_throws {
+		public when_consumer_throws_autoreset()
+			: base((consumer, name, timeout) =>
+				new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)) {
+		}
+	}
 }

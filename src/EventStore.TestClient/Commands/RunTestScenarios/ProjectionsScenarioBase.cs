@@ -4,184 +4,163 @@ using System.Net;
 using System.Threading;
 using EventStore.Transport.Http.Codecs;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
-{
-    internal abstract class ProjectionsScenarioBase : ScenarioBase
-    {
-        protected ProjectionsScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath, NodeConnectionInfo customNode)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath, customNode)
-        {
-        }
+namespace EventStore.TestClient.Commands.RunTestScenarios {
+	internal abstract class ProjectionsScenarioBase : ScenarioBase {
+		protected ProjectionsScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests,
+			int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath,
+			NodeConnectionInfo customNode)
+			: base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep,
+				dbParentPath, customNode) {
+		}
 
-        protected bool CheckProjectionState(string projectionName, string key, Func<string, bool> checkValue)
-        {
-            var state = GetProjectionState(projectionName);
-            string value;
-            return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
-        }
+		protected bool CheckProjectionState(string projectionName, string key, Func<string, bool> checkValue) {
+			var state = GetProjectionState(projectionName);
+			string value;
+			return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
+		}
 
-        protected T GetProjectionStateValue<T>(string projectionName, string key, Func<string, T> convert, T defaultValue)
-        {
-            var result = defaultValue;
+		protected T GetProjectionStateValue<T>(string projectionName, string key, Func<string, T> convert,
+			T defaultValue) {
+			var result = defaultValue;
 
-            var state = GetProjectionState(projectionName);
-            string value;
-            if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
-                result = convert(value);
+			var state = GetProjectionState(projectionName);
+			string value;
+			if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
+				result = convert(value);
 
-            return result;
-        }
+			return result;
+		}
 
-        protected bool GetProjectionIsRunning(string projectionName)
-        {
-            var dic = GetProjectionStatistics(projectionName);
+		protected bool GetProjectionIsRunning(string projectionName) {
+			var dic = GetProjectionStatistics(projectionName);
 
-            string value;
-            var isRunning = dic != null && dic.TryGetValue("status", out value) && value == "Running";
+			string value;
+			var isRunning = dic != null && dic.TryGetValue("status", out value) && value == "Running";
 
-            return isRunning;
-        }
+			return isRunning;
+		}
 
-        protected long GetProjectionPosition(string projectionName)
-        {
-            var dic = GetProjectionStatistics(projectionName);
+		protected long GetProjectionPosition(string projectionName) {
+			var dic = GetProjectionStatistics(projectionName);
 
-            long result = -1;
+			long result = -1;
 
-            string value;
-            if (dic != null && dic.TryGetValue("position", out value))
-            {
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    var subpositions = value.Split(':');
-                    var positionString = subpositions.Length == 2 ? subpositions[1] : value;
-                    result = long.Parse(positionString);
-                }
-                else
-                {
-                    result = -1;
-                }
-                return result;
-            }
+			string value;
+			if (dic != null && dic.TryGetValue("position", out value)) {
+				if (!string.IsNullOrWhiteSpace(value)) {
+					var subpositions = value.Split(':');
+					var positionString = subpositions.Length == 2 ? subpositions[1] : value;
+					result = long.Parse(positionString);
+				} else {
+					result = -1;
+				}
 
-            return result;
-        }
+				return result;
+			}
 
-        protected bool GetProjectionIsFaulted(string projectionName, out string reason)
-        {
-            var dic = GetProjectionStatistics(projectionName);
+			return result;
+		}
 
-            string status;
-            var isFaulted = dic != null && dic.TryGetValue("status", out status) && status.StartsWith("Faulted");
+		protected bool GetProjectionIsFaulted(string projectionName, out string reason) {
+			var dic = GetProjectionStatistics(projectionName);
 
-            if (isFaulted)
-                dic.TryGetValue("stateReason", out reason);
-            else
-                reason = null;
+			string status;
+			var isFaulted = dic != null && dic.TryGetValue("status", out status) && status.StartsWith("Faulted");
 
-            return isFaulted;
-        }
+			if (isFaulted)
+				dic.TryGetValue("stateReason", out reason);
+			else
+				reason = null;
 
-        private Dictionary<string, string> GetProjectionStatistics(string projectionName)
-        {
-            string rawState;
-            try
-            {
-                rawState = GetProjectionsManager().GetStatisticsAsync(projectionName, AdminCredentials).Result;
-            }
-            catch (Exception ex)
-            {
-                Log.InfoException(ex, "Failed to read projection statistics. Will continue.");
-                rawState = null;
-            }
+			return isFaulted;
+		}
 
-            Log.Info("Raw {projection} stats: {rawState}", projectionName, rawState);
+		private Dictionary<string, string> GetProjectionStatistics(string projectionName) {
+			string rawState;
+			try {
+				rawState = GetProjectionsManager().GetStatisticsAsync(projectionName, AdminCredentials).Result;
+			} catch (Exception ex) {
+				Log.InfoException(ex, "Failed to read projection statistics. Will continue.");
+				rawState = null;
+			}
 
-            if (string.IsNullOrEmpty(rawState))
-                return null;
+			Log.Info("Raw {projection} stats: {rawState}", projectionName, rawState);
 
-            if (rawState == "*** UNKNOWN ***")
-                return null;
+			if (string.IsNullOrEmpty(rawState))
+				return null;
 
-            var start = rawState.IndexOf('[');
-            var end = rawState.IndexOf(']');
+			if (rawState == "*** UNKNOWN ***")
+				return null;
 
-            if (start == -1 || end == -1)
-                return null;
+			var start = rawState.IndexOf('[');
+			var end = rawState.IndexOf(']');
 
-            var statDic = rawState.Substring(start + 1, end - start - 1);
+			if (start == -1 || end == -1)
+				return null;
 
-            var state = Codec.Json.From<Dictionary<string, string>>(statDic);
-            return state;
-        }
+			var statDic = rawState.Substring(start + 1, end - start - 1);
 
-        private Dictionary<string, string> GetProjectionState(string projectionName)
-        {
-            var rawState = GetProjectionStateSafe(projectionName);
+			var state = Codec.Json.From<Dictionary<string, string>>(statDic);
+			return state;
+		}
 
-            Log.Info("Raw {projection} state: {rawState}", projectionName, rawState);
+		private Dictionary<string, string> GetProjectionState(string projectionName) {
+			var rawState = GetProjectionStateSafe(projectionName);
 
-            if (string.IsNullOrEmpty(rawState))
-                return null;
+			Log.Info("Raw {projection} state: {rawState}", projectionName, rawState);
 
-            if (rawState == "*** UNKNOWN ***")
-                return null;
+			if (string.IsNullOrEmpty(rawState))
+				return null;
 
-            var state = Codec.Json.From<Dictionary<string, string>>(rawState);
-            return state;
-        }
+			if (rawState == "*** UNKNOWN ***")
+				return null;
 
-        private string GetProjectionStateSafe(string projectionName)
-        {
-            string rawState;
-            try
-            {
-                rawState = GetProjectionsManager().GetStateAsync(projectionName, AdminCredentials).Result;
-            }
-            catch (Exception ex)
-            {
-                rawState = null;
-                Log.InfoException(ex, "Failed to get projection state");
-            }
-            return rawState;
-        }
+			var state = Codec.Json.From<Dictionary<string, string>>(rawState);
+			return state;
+		}
 
-        protected void EnableProjectionByCategory()
-        {
-            const string byCategoryProjection = "$by_category";
+		private string GetProjectionStateSafe(string projectionName) {
+			string rawState;
+			try {
+				rawState = GetProjectionsManager().GetStateAsync(projectionName, AdminCredentials).Result;
+			} catch (Exception ex) {
+				rawState = null;
+				Log.InfoException(ex, "Failed to get projection state");
+			}
 
-            var retryCount = 0;
-            Exception exception = null;
-            while (retryCount < 5)
-            {
-                Thread.Sleep(250 * (retryCount * retryCount));
-                try
-                {
-                    var isRunning = GetProjectionIsRunning(byCategoryProjection);
+			return rawState;
+		}
 
-                    if (!isRunning)
-                    {
-                        Log.Debug("Enable *{projection}* projection", byCategoryProjection);
-                        GetProjectionsManager().EnableAsync(byCategoryProjection, AdminCredentials).Wait();
-                    }
-                    else
-                    {
-                        Log.Debug("Already enabled *{projection}* projection", byCategoryProjection);
-                    }
+		protected void EnableProjectionByCategory() {
+			const string byCategoryProjection = "$by_category";
 
-                    exception = null;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    exception = new ApplicationException("Failed to enable by_category.", ex);
-                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{retryCount}.", retryCount);
-                }
-                retryCount += 1;
-            }
+			var retryCount = 0;
+			Exception exception = null;
+			while (retryCount < 5) {
+				Thread.Sleep(250 * (retryCount * retryCount));
+				try {
+					var isRunning = GetProjectionIsRunning(byCategoryProjection);
 
-            if (exception != null)
-                throw exception;
-        }
-    }
+					if (!isRunning) {
+						Log.Debug("Enable *{projection}* projection", byCategoryProjection);
+						GetProjectionsManager().EnableAsync(byCategoryProjection, AdminCredentials).Wait();
+					} else {
+						Log.Debug("Already enabled *{projection}* projection", byCategoryProjection);
+					}
+
+					exception = null;
+					break;
+				} catch (Exception ex) {
+					exception = new ApplicationException("Failed to enable by_category.", ex);
+					Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{retryCount}.",
+						retryCount);
+				}
+
+				retryCount += 1;
+			}
+
+			if (exception != null)
+				throw exception;
+		}
+	}
 }

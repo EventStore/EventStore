@@ -3,41 +3,37 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-namespace EventStore.Core.Services.Transport.Http.Controllers
-{
-    public class RelLink : IXmlSerializable
-    {
-        public readonly string href;
-        public readonly string rel;
+namespace EventStore.Core.Services.Transport.Http.Controllers {
+	public class RelLink : IXmlSerializable {
+		public readonly string href;
+		public readonly string rel;
 
-        private RelLink() { }
-        public RelLink(string href, string rel)
-        {
-            this.href = href;
-            this.rel = rel;
-        }
+		private RelLink() {
+		}
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
+		public RelLink(string href, string rel) {
+			this.href = href;
+			this.rel = rel;
+		}
 
-        public void ReadXml(XmlReader reader)
-        {
-            throw new NotImplementedException("Rel links not deserialized.");
-        }
+		public XmlSchema GetSchema() {
+			return null;
+		}
 
-        public void WriteXml(XmlWriter writer)
-        {
-            if (string.IsNullOrEmpty(href))
-                throw new Exception("null href when serializing a rel link");
+		public void ReadXml(XmlReader reader) {
+			throw new NotImplementedException("Rel links not deserialized.");
+		}
 
-            writer.WriteStartElement("link");
-            writer.WriteAttributeString("href", href);
+		public void WriteXml(XmlWriter writer) {
+			if (string.IsNullOrEmpty(href))
+				throw new Exception("null href when serializing a rel link");
 
-            if (rel != null)
-                writer.WriteAttributeString("rel", rel);
-            writer.WriteEndElement();
-        }
-    }
+			writer.WriteStartElement("link");
+			writer.WriteAttributeString("href", href);
+
+			if (rel != null)
+				writer.WriteAttributeString("rel", rel);
+			writer.WriteEndElement();
+		}
+	}
 }

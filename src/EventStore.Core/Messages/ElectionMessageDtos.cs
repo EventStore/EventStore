@@ -1,188 +1,168 @@
 using System;
 
-namespace EventStore.Core.Messages
-{
-    public static class ElectionMessageDto
-    {
-        public class ViewChangeDto
-        {
-            public Guid ServerId { get; set; }
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
+namespace EventStore.Core.Messages {
+	public static class ElectionMessageDto {
+		public class ViewChangeDto {
+			public Guid ServerId { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
 
-            public int AttemptedView { get; set; }
+			public int AttemptedView { get; set; }
 
-            public ViewChangeDto()
-            {
-            }
+			public ViewChangeDto() {
+			}
 
-            public ViewChangeDto(ElectionMessage.ViewChange message)
-            {
-                ServerId = message.ServerId;
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
+			public ViewChangeDto(ElectionMessage.ViewChange message) {
+				ServerId = message.ServerId;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
 
-                AttemptedView = message.AttemptedView;
-            }
-        }
+				AttemptedView = message.AttemptedView;
+			}
+		}
 
-        public class ViewChangeProofDto
-        {
-            public Guid ServerId { get; set; }
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
-        
-            public int InstalledView { get; set; }
+		public class ViewChangeProofDto {
+			public Guid ServerId { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
 
-            public ViewChangeProofDto()
-            {
-            }
+			public int InstalledView { get; set; }
 
-            public ViewChangeProofDto(ElectionMessage.ViewChangeProof message)
-            {
-                ServerId = message.ServerId;
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
+			public ViewChangeProofDto() {
+			}
 
-                InstalledView = message.InstalledView;
-            }
-        }
+			public ViewChangeProofDto(ElectionMessage.ViewChangeProof message) {
+				ServerId = message.ServerId;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
 
-        public class PrepareDto
-        {
-            public Guid ServerId { get; set; }
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
+				InstalledView = message.InstalledView;
+			}
+		}
 
-            public int View { get; set; }
+		public class PrepareDto {
+			public Guid ServerId { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
 
-            public PrepareDto()
-            {
-            }
+			public int View { get; set; }
 
-            public PrepareDto(ElectionMessage.Prepare message)
-            {
-                ServerId = message.ServerId;
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
+			public PrepareDto() {
+			}
 
-                View = message.View;
-            }
-        }
+			public PrepareDto(ElectionMessage.Prepare message) {
+				ServerId = message.ServerId;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
 
-        public class PrepareOkDto
-        {
-            public Guid ServerId { get; set; }
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
+				View = message.View;
+			}
+		}
 
-            public int View { get; set; }
+		public class PrepareOkDto {
+			public Guid ServerId { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
 
-            public int EpochNumber { get; set; }
-            public long EpochPosition { get; set; }
-            public Guid EpochId { get; set; }
-            public long LastCommitPosition { get; set; }
-            public long WriterCheckpoint { get; set; }
-            public long ChaserCheckpoint { get; set; }
+			public int View { get; set; }
 
-            public int NodePriority { get; set; }
+			public int EpochNumber { get; set; }
+			public long EpochPosition { get; set; }
+			public Guid EpochId { get; set; }
+			public long LastCommitPosition { get; set; }
+			public long WriterCheckpoint { get; set; }
+			public long ChaserCheckpoint { get; set; }
 
-            public PrepareOkDto()
-            {
-            }
+			public int NodePriority { get; set; }
 
-            public PrepareOkDto(ElectionMessage.PrepareOk message)
-            {
-                ServerId = message.ServerId;
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
+			public PrepareOkDto() {
+			}
 
-                View = message.View;
+			public PrepareOkDto(ElectionMessage.PrepareOk message) {
+				ServerId = message.ServerId;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
 
-                EpochNumber = message.EpochNumber;
-                EpochPosition = message.EpochPosition;
-                EpochId = message.EpochId;
-                LastCommitPosition = message.LastCommitPosition;
-                WriterCheckpoint = message.WriterCheckpoint;
-                ChaserCheckpoint = message.ChaserCheckpoint;
+				View = message.View;
 
-                NodePriority = message.NodePriority;
-            }
-        }
+				EpochNumber = message.EpochNumber;
+				EpochPosition = message.EpochPosition;
+				EpochId = message.EpochId;
+				LastCommitPosition = message.LastCommitPosition;
+				WriterCheckpoint = message.WriterCheckpoint;
+				ChaserCheckpoint = message.ChaserCheckpoint;
+
+				NodePriority = message.NodePriority;
+			}
+		}
 
 
-        public class ProposalDto
-        {
-            public Guid ServerId { get; set; }
-            public Guid MasterId { get; set; }
+		public class ProposalDto {
+			public Guid ServerId { get; set; }
+			public Guid MasterId { get; set; }
 
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
-            public string MasterInternalHttpAddress { get; set; }
-            public int MasterInternalHttpPort { get; set; }
-            
-            public int View { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
+			public string MasterInternalHttpAddress { get; set; }
+			public int MasterInternalHttpPort { get; set; }
 
-            public long LastCommitPosition { get; set; }
-            public long WriterCheckpoint { get; set; }
-            public long ChaserCheckpoint { get; set; }
-            public int EpochNumber { get; set; }
-            public long EpochPosition { get; set; }
-            public Guid EpochId { get; set; }
+			public int View { get; set; }
 
-            public ProposalDto()
-            {
-            }
+			public long LastCommitPosition { get; set; }
+			public long WriterCheckpoint { get; set; }
+			public long ChaserCheckpoint { get; set; }
+			public int EpochNumber { get; set; }
+			public long EpochPosition { get; set; }
+			public Guid EpochId { get; set; }
 
-            public ProposalDto(ElectionMessage.Proposal message)
-            {
-                ServerId = message.ServerId;
-                MasterId = message.MasterId;
+			public ProposalDto() {
+			}
 
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
-                MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
-                MasterInternalHttpPort = message.MasterInternalHttp.Port;
+			public ProposalDto(ElectionMessage.Proposal message) {
+				ServerId = message.ServerId;
+				MasterId = message.MasterId;
 
-                View = message.View;
-                EpochNumber = message.EpochNumber;
-                EpochPosition = message.EpochPosition;
-                EpochId = message.EpochId;
-                LastCommitPosition = message.LastCommitPosition;
-                WriterCheckpoint = message.WriterCheckpoint;
-                ChaserCheckpoint = message.ChaserCheckpoint;
-            }
-        }
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
+				MasterInternalHttpPort = message.MasterInternalHttp.Port;
+
+				View = message.View;
+				EpochNumber = message.EpochNumber;
+				EpochPosition = message.EpochPosition;
+				EpochId = message.EpochId;
+				LastCommitPosition = message.LastCommitPosition;
+				WriterCheckpoint = message.WriterCheckpoint;
+				ChaserCheckpoint = message.ChaserCheckpoint;
+			}
+		}
 
 
-        public class AcceptDto
-        {
-            public Guid ServerId { get; set; }
-            public Guid MasterId { get; set; }
+		public class AcceptDto {
+			public Guid ServerId { get; set; }
+			public Guid MasterId { get; set; }
 
-            public string ServerInternalHttpAddress { get; set; }
-            public int ServerInternalHttpPort { get; set; }
-            public string MasterInternalHttpAddress { get; set; }
-            public int MasterInternalHttpPort { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
+			public string MasterInternalHttpAddress { get; set; }
+			public int MasterInternalHttpPort { get; set; }
 
-            public int View { get; set; }
+			public int View { get; set; }
 
-            public AcceptDto()
-            {
-            }
+			public AcceptDto() {
+			}
 
-            public AcceptDto(ElectionMessage.Accept message)
-            {
-                ServerId = message.ServerId;
-                MasterId = message.MasterId;
+			public AcceptDto(ElectionMessage.Accept message) {
+				ServerId = message.ServerId;
+				MasterId = message.MasterId;
 
-                ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-                ServerInternalHttpPort = message.ServerInternalHttp.Port;
-                MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
-                MasterInternalHttpPort = message.MasterInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
+				MasterInternalHttpPort = message.MasterInternalHttp.Port;
 
-                View = message.View;
-            }
-        }
-    }
+				View = message.View;
+			}
+		}
+	}
 }

@@ -4,7 +4,7 @@ resources:
 jobs:
 - job: windows_x64_debug
   displayName: 'Windows x64 Debug'
-  timeoutInMinutes: 20
+  timeoutInMinutes: 30
   pool:
     vmImage: 'vs2017-win2016'
   steps:
@@ -15,7 +15,7 @@ jobs:
     displayName: Compile
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
-        ForEach-Object { 
+        ForEach-Object {
           dotnet test -v normal -c Debug --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
         }
@@ -39,7 +39,7 @@ jobs:
 
 - job: windows_x64_release
   displayName: 'Windows x64 Release'
-  timeoutInMinutes: 20
+  timeoutInMinutes: 30
   pool:
     vmImage: 'vs2017-win2016'
   steps:
@@ -50,7 +50,7 @@ jobs:
     displayName: Compile
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
-        ForEach-Object { 
+        ForEach-Object {
           dotnet test -v normal -c Release --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
         }

@@ -4,287 +4,255 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Bus;
 
-namespace EventStore.Projections.Core.Services.Processing
-{
-    public class HeadingEventReader
-    {
-        private IEventReader _headEventReader;
-        private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
+namespace EventStore.Projections.Core.Services.Processing {
+	public class HeadingEventReader {
+		private IEventReader _headEventReader;
+		private TFPos _subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 
-        private abstract class Item
-        {
-            public readonly TFPos Position;
+		private abstract class Item {
+			public readonly TFPos Position;
 
-            protected Item(TFPos position)
-            {
-                Position = position;
-            }
+			protected Item(TFPos position) {
+				Position = position;
+			}
 
-            public abstract void Handle(IReaderSubscription subscription);
-        }
+			public abstract void Handle(IReaderSubscription subscription);
+		}
 
-        private class CommittedEventItem : Item
-        {
-            public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
+		private class CommittedEventItem : Item {
+			public readonly ReaderSubscriptionMessage.CommittedEventDistributed Message;
 
-            public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
-                : base(message.Data.Position)
-            {
-                Message = message;
-            }
+			public CommittedEventItem(ReaderSubscriptionMessage.CommittedEventDistributed message)
+				: base(message.Data.Position) {
+				Message = message;
+			}
 
-            public override void Handle(IReaderSubscription subscription)
-            {
-                subscription.Handle(Message);
-            }
+			public override void Handle(IReaderSubscription subscription) {
+				subscription.Handle(Message);
+			}
 
-            public override string ToString()
-            {
-                return string.Format(
-                    "{0} : {2}@{1}",
-                    Message.Data.EventType,
-                    Message.Data.PositionStreamId,
-                    Message.Data.PositionSequenceNumber);
-            }
-        }
+			public override string ToString() {
+				return string.Format(
+					"{0} : {2}@{1}",
+					Message.Data.EventType,
+					Message.Data.PositionStreamId,
+					Message.Data.PositionSequenceNumber);
+			}
+		}
 
-        private class PartitionDeletedItem : Item
-        {
-            public readonly ReaderSubscriptionMessage.EventReaderPartitionDeleted Message;
+		private class PartitionDeletedItem : Item {
+			public readonly ReaderSubscriptionMessage.EventReaderPartitionDeleted Message;
 
-            public PartitionDeletedItem(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-                : base(message.DeleteLinkOrEventPosition.Value)
-            {
-                Message = message;
-            }
+			public PartitionDeletedItem(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
+				: base(message.DeleteLinkOrEventPosition.Value) {
+				Message = message;
+			}
 
-            public override void Handle(IReaderSubscription subscription)
-            {
-                subscription.Handle(Message);
-            }
-        }
+			public override void Handle(IReaderSubscription subscription) {
+				subscription.Handle(Message);
+			}
+		}
 
-        private readonly Queue<Item> _lastMessages = new Queue<Item>();
+		private readonly Queue<Item> _lastMessages = new Queue<Item>();
 
-        private readonly int _eventCacheSize;
+		private readonly int _eventCacheSize;
 
-        private readonly Dictionary<Guid, IReaderSubscription> _headSubscribers =
-            new Dictionary<Guid, IReaderSubscription>();
+		private readonly Dictionary<Guid, IReaderSubscription> _headSubscribers =
+			new Dictionary<Guid, IReaderSubscription>();
 
-        private Guid _eventReaderId;
+		private Guid _eventReaderId;
 
-        private bool _started;
+		private bool _started;
 
-        private TFPos _lastEventPosition = new TFPos(0, -1);
-        private TFPos _lastDeletePosition = new TFPos(0, -1);
+		private TFPos _lastEventPosition = new TFPos(0, -1);
+		private TFPos _lastDeletePosition = new TFPos(0, -1);
 
-        private IPublisher _publisher;
+		private IPublisher _publisher;
 
-        public HeadingEventReader(int eventCacheSize, IPublisher publisher)
-        {
-            _eventCacheSize = eventCacheSize;
-            _publisher = publisher;
-        }
+		public HeadingEventReader(int eventCacheSize, IPublisher publisher) {
+			_eventCacheSize = eventCacheSize;
+			_publisher = publisher;
+		}
 
-        public bool Handle(ReaderSubscriptionMessage.CommittedEventDistributed message)
-        {
-            EnsureStarted();
-            if (message.CorrelationId != _eventReaderId)
-                return false;
-            if (message.Data == null)
-                return true;
+		public bool Handle(ReaderSubscriptionMessage.CommittedEventDistributed message) {
+			EnsureStarted();
+			if (message.CorrelationId != _eventReaderId)
+				return false;
+			if (message.Data == null)
+				return true;
 
-            ValidateEventOrder(message);
+			ValidateEventOrder(message);
 
-            CacheRecentMessage(message);
-            DistributeMessage(message);
-            return true;
-        }
+			CacheRecentMessage(message);
+			DistributeMessage(message);
+			return true;
+		}
 
-        public bool Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-        {
-            EnsureStarted();
-            if (message.CorrelationId != _eventReaderId)
-                return false;
+		public bool Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
+			EnsureStarted();
+			if (message.CorrelationId != _eventReaderId)
+				return false;
 
-            ValidateEventOrder(message);
+			ValidateEventOrder(message);
 
 
-            CacheRecentMessage(message);
-            DistributeMessage(message);
-            return true;
-        }
+			CacheRecentMessage(message);
+			DistributeMessage(message);
+			return true;
+		}
 
-        public bool Handle(ReaderSubscriptionMessage.EventReaderIdle message)
-        {
-            EnsureStarted();
-            if (message.CorrelationId != _eventReaderId)
-                return false;
-            DistributeMessage(message);
-            return true;
-        }
+		public bool Handle(ReaderSubscriptionMessage.EventReaderIdle message) {
+			EnsureStarted();
+			if (message.CorrelationId != _eventReaderId)
+				return false;
+			DistributeMessage(message);
+			return true;
+		}
 
-        private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message)
-        {
-            if (_lastEventPosition >= message.Data.Position || _lastDeletePosition > message.Data.Position)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Invalid committed event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
-                        _lastEventPosition, message.Data.Position, _lastEventPosition));
-            _lastEventPosition = message.Data.Position;
-        }
+		private void ValidateEventOrder(ReaderSubscriptionMessage.CommittedEventDistributed message) {
+			if (_lastEventPosition >= message.Data.Position || _lastDeletePosition > message.Data.Position)
+				throw new InvalidOperationException(
+					string.Format(
+						"Invalid committed event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
+						_lastEventPosition, message.Data.Position, _lastEventPosition));
+			_lastEventPosition = message.Data.Position;
+		}
 
-        private void ValidateEventOrder(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-        {
-            if (_lastEventPosition > message.DeleteLinkOrEventPosition.Value
-                || _lastDeletePosition >= message.DeleteLinkOrEventPosition.Value)
-                throw new InvalidOperationException(
-                    string.Format(
-                        "Invalid partition deleted event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
-                        _lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastEventPosition));
-            _lastDeletePosition = message.DeleteLinkOrEventPosition.Value;
-        }
+		private void ValidateEventOrder(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
+			if (_lastEventPosition > message.DeleteLinkOrEventPosition.Value
+			    || _lastDeletePosition >= message.DeleteLinkOrEventPosition.Value)
+				throw new InvalidOperationException(
+					string.Format(
+						"Invalid partition deleted event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
+						_lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastEventPosition));
+			_lastDeletePosition = message.DeleteLinkOrEventPosition.Value;
+		}
 
-        public void Start(Guid eventReaderId, IEventReader eventReader)
-        {
-            if (_started)
-                throw new InvalidOperationException("Already started");
-            _eventReaderId = eventReaderId;
-            _headEventReader = eventReader;
-            //Guid.Empty means head distribution point
-            _started = true; // started before resume due to old style test with immediate callback
-            _headEventReader.Resume();
-        }
+		public void Start(Guid eventReaderId, IEventReader eventReader) {
+			if (_started)
+				throw new InvalidOperationException("Already started");
+			_eventReaderId = eventReaderId;
+			_headEventReader = eventReader;
+			//Guid.Empty means head distribution point
+			_started = true; // started before resume due to old style test with immediate callback
+			_headEventReader.Resume();
+		}
 
-        public void Stop()
-        {
-            EnsureStarted();
-            _headEventReader.Pause();
-            _headEventReader = null;
-            _started = false;
-        }
+		public void Stop() {
+			EnsureStarted();
+			_headEventReader.Pause();
+			_headEventReader = null;
+			_started = false;
+		}
 
-        public bool TrySubscribe(
-            Guid projectionId, IReaderSubscription readerSubscription, long fromTransactionFilePosition)
-        {
-            EnsureStarted();
-            if (_headSubscribers.ContainsKey(projectionId))
-                throw new InvalidOperationException(
-                    string.Format("Projection '{0}' has been already subscribed", projectionId));
-            if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition)
-            {
-                if(!DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition))
-                {
-                    return false;
-                }
-                AddSubscriber(projectionId, readerSubscription);
-                return true;
-            }
-            return false;
-        }
+		public bool TrySubscribe(
+			Guid projectionId, IReaderSubscription readerSubscription, long fromTransactionFilePosition) {
+			EnsureStarted();
+			if (_headSubscribers.ContainsKey(projectionId))
+				throw new InvalidOperationException(
+					string.Format("Projection '{0}' has been already subscribed", projectionId));
+			if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition) {
+				if (!DispatchRecentMessagesTo(readerSubscription, fromTransactionFilePosition)) {
+					return false;
+				}
 
-        public void Unsubscribe(Guid projectionId)
-        {
-            EnsureStarted();
-            if (!_headSubscribers.ContainsKey(projectionId))
-                throw new InvalidOperationException(
-                    string.Format("Projection '{0}' has not been subscribed", projectionId));
-            _headSubscribers.Remove(projectionId);
-        }
+				AddSubscriber(projectionId, readerSubscription);
+				return true;
+			}
 
-        private bool DispatchRecentMessagesTo(IReaderSubscription subscription, long fromTransactionFilePosition)
-        {
-            foreach (var m in _lastMessages)
-            {
-                if (m.Position.CommitPosition >= fromTransactionFilePosition)
-                {
-                    try
-                    {
-                        m.Handle(subscription);
-                    }
-                    catch (Exception ex)
-                    {
-                        var item = m as CommittedEventItem;
-                        string message;
-                        if (item != null) {
-                            message = string.Format("The heading subscription failed to handle a recently cached event {0}:{1}@{2} because {3}",
-                                                        item.Message.Data.EventStreamId, item.Message.Data.EventType, item.Message.Data.PositionSequenceNumber, ex.Message);
-                        }else{
-                            message = string.Format("The heading subscription failed to handle a recently cached deleted event at position {0} because {1}",
-                                                        m.Position, ex.Message);
-                        }
-                        _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId, message));
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
+			return false;
+		}
 
-        private void DistributeMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
-        {
-            foreach (var subscriber in _headSubscribers.Values)
-            {
-                try
-                {
-                    subscriber.Handle(message);
-                }
-                catch (Exception ex)
-                {
-                    _publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscriber.SubscriptionId,
-                        string.Format("The heading subscription failed to handle an event {0}:{1}@{2} because {3}", message.Data.EventStreamId, message.Data.EventType, message.Data.PositionSequenceNumber, ex.Message)));
-                }
-            }
-        }
+		public void Unsubscribe(Guid projectionId) {
+			EnsureStarted();
+			if (!_headSubscribers.ContainsKey(projectionId))
+				throw new InvalidOperationException(
+					string.Format("Projection '{0}' has not been subscribed", projectionId));
+			_headSubscribers.Remove(projectionId);
+		}
 
-        private void DistributeMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-        {
-            foreach (var subscriber in _headSubscribers.Values)
-                subscriber.Handle(message);
-        }
+		private bool DispatchRecentMessagesTo(IReaderSubscription subscription, long fromTransactionFilePosition) {
+			foreach (var m in _lastMessages) {
+				if (m.Position.CommitPosition >= fromTransactionFilePosition) {
+					try {
+						m.Handle(subscription);
+					} catch (Exception ex) {
+						var item = m as CommittedEventItem;
+						string message;
+						if (item != null) {
+							message = string.Format(
+								"The heading subscription failed to handle a recently cached event {0}:{1}@{2} because {3}",
+								item.Message.Data.EventStreamId, item.Message.Data.EventType,
+								item.Message.Data.PositionSequenceNumber, ex.Message);
+						} else {
+							message = string.Format(
+								"The heading subscription failed to handle a recently cached deleted event at position {0} because {1}",
+								m.Position, ex.Message);
+						}
 
-        private void DistributeMessage(ReaderSubscriptionMessage.EventReaderIdle message)
-        {
-            foreach (var subscriber in _headSubscribers.Values)
-                subscriber.Handle(message);
-        }
+						_publisher.Publish(
+							new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId, message));
+						return false;
+					}
+				}
+			}
 
-        private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message)
-        {
-            _lastMessages.Enqueue(new CommittedEventItem(message));
-            CleanUpCache();
-        }
+			return true;
+		}
 
-        private void CacheRecentMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message)
-        {
-            _lastMessages.Enqueue(new PartitionDeletedItem(message));
-            CleanUpCache();
-        }
+		private void DistributeMessage(ReaderSubscriptionMessage.CommittedEventDistributed message) {
+			foreach (var subscriber in _headSubscribers.Values) {
+				try {
+					subscriber.Handle(message);
+				} catch (Exception ex) {
+					_publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscriber.SubscriptionId,
+						string.Format("The heading subscription failed to handle an event {0}:{1}@{2} because {3}",
+							message.Data.EventStreamId, message.Data.EventType, message.Data.PositionSequenceNumber,
+							ex.Message)));
+				}
+			}
+		}
 
-        private void CleanUpCache()
-        {
-            if (_lastMessages.Count > _eventCacheSize)
-            {
-                var removed = _lastMessages.Dequeue();
-                // as we may have multiple items at the same position it is important to 
-                // remove them together as we may subscribe in the middle otherwise
-                while (_lastMessages.Count > 0 && _lastMessages.Peek().Position == removed.Position)
-                    _lastMessages.Dequeue();
-            }
-            var lastAvailableCommittedEvent = _lastMessages.Peek();
-            _subscribeFromPosition = lastAvailableCommittedEvent.Position;
-        }
+		private void DistributeMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
+			foreach (var subscriber in _headSubscribers.Values)
+				subscriber.Handle(message);
+		}
 
-        private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription)
-        {
-            _headSubscribers.Add(publishWithCorrelationId, subscription);
-        }
+		private void DistributeMessage(ReaderSubscriptionMessage.EventReaderIdle message) {
+			foreach (var subscriber in _headSubscribers.Values)
+				subscriber.Handle(message);
+		}
 
-        private void EnsureStarted()
-        {
-            if (!_started)
-                throw new InvalidOperationException("Not started");
-        }
+		private void CacheRecentMessage(ReaderSubscriptionMessage.CommittedEventDistributed message) {
+			_lastMessages.Enqueue(new CommittedEventItem(message));
+			CleanUpCache();
+		}
 
-    }
+		private void CacheRecentMessage(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
+			_lastMessages.Enqueue(new PartitionDeletedItem(message));
+			CleanUpCache();
+		}
+
+		private void CleanUpCache() {
+			if (_lastMessages.Count > _eventCacheSize) {
+				var removed = _lastMessages.Dequeue();
+				// as we may have multiple items at the same position it is important to 
+				// remove them together as we may subscribe in the middle otherwise
+				while (_lastMessages.Count > 0 && _lastMessages.Peek().Position == removed.Position)
+					_lastMessages.Dequeue();
+			}
+
+			var lastAvailableCommittedEvent = _lastMessages.Peek();
+			_subscribeFromPosition = lastAvailableCommittedEvent.Position;
+		}
+
+		private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription) {
+			_headSubscribers.Add(publishWithCorrelationId, subscription);
+		}
+
+		private void EnsureStarted() {
+			if (!_started)
+				throw new InvalidOperationException("Not started");
+		}
+	}
 }

@@ -5,102 +5,96 @@ using System.Threading;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 
-namespace EventStore.TestClient.Commands
-{
-    internal class PingFloodProcessor : ICmdProcessor
-    {
-        private static readonly byte[] Payload = new byte[0];
+namespace EventStore.TestClient.Commands {
+	internal class PingFloodProcessor : ICmdProcessor {
+		private static readonly byte[] Payload = new byte[0];
 
-        public string Usage { get { return "PINGFL [<clients> <messages>]"; } }
-        public string Keyword { get { return "PINGFL"; } }
+		public string Usage {
+			get { return "PINGFL [<clients> <messages>]"; }
+		}
 
-        public bool Execute(CommandProcessorContext context, string[] args)
-        {
-            int clientsCnt = 1;
-            long requestsCnt = 1000000;
-            if (args.Length > 0)
-            {
-                if (args.Length != 2)
-                    return false;
-                try
-                {
-                    clientsCnt = int.Parse(args[0]);
-                    requestsCnt = long.Parse(args[1]);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
+		public string Keyword {
+			get { return "PINGFL"; }
+		}
 
-            PingFlood(context, clientsCnt, requestsCnt);
-            return true;
-        }
+		public bool Execute(CommandProcessorContext context, string[] args) {
+			int clientsCnt = 1;
+			long requestsCnt = 1000000;
+			if (args.Length > 0) {
+				if (args.Length != 2)
+					return false;
+				try {
+					clientsCnt = int.Parse(args[0]);
+					requestsCnt = long.Parse(args[1]);
+				} catch {
+					return false;
+				}
+			}
 
-        private void PingFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt)
-        {
-            context.IsAsync();
+			PingFlood(context, clientsCnt, requestsCnt);
+			return true;
+		}
 
-            var doneEvent = new ManualResetEventSlim(false);
-            var clients = new List<TcpTypedConnection<byte[]>>();
-            var threads = new List<Thread>();
-            long all = 0;
+		private void PingFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt) {
+			context.IsAsync();
 
-            for (int i = 0; i < clientsCnt; i++)
-            {
-                var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-                long received = 0;
-                long sent = 0;
-                var client = context.Client.CreateTcpConnection(
-                    context,
-                    (conn, msg) =>
-                    {
-                        Interlocked.Increment(ref received);
-                        var pongs = Interlocked.Increment(ref all);
-                        if (pongs % 10000 == 0) Console.Write('.');
-                        if (pongs == requestsCnt)
-                        {
-                            context.Success();
-                            doneEvent.Set();
-                        }
-                    },
-                    connectionClosed: (conn, err) => context.Fail(reason: "Connection was closed prematurely."));
-                clients.Add(client);
+			var doneEvent = new ManualResetEventSlim(false);
+			var clients = new List<TcpTypedConnection<byte[]>>();
+			var threads = new List<Thread>();
+			long all = 0;
 
-                threads.Add(new Thread(() =>
-                {
-                    for (int j = 0; j < count; ++j)
-                    {
-                        var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), Payload);
-                        client.EnqueueSend(package.AsByteArray());
-                       
-                        var localSent = Interlocked.Increment(ref sent);
-                        while (localSent - Interlocked.Read(ref received) > context.Client.Options.PingWindow/clientsCnt)
-                        {
-                            Thread.Sleep(1);
-                        }
-                    }
-                }) { IsBackground = true });
-            }
+			for (int i = 0; i < clientsCnt; i++) {
+				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
+				long received = 0;
+				long sent = 0;
+				var client = context.Client.CreateTcpConnection(
+					context,
+					(conn, msg) => {
+						Interlocked.Increment(ref received);
+						var pongs = Interlocked.Increment(ref all);
+						if (pongs % 10000 == 0) Console.Write('.');
+						if (pongs == requestsCnt) {
+							context.Success();
+							doneEvent.Set();
+						}
+					},
+					connectionClosed: (conn, err) => context.Fail(reason: "Connection was closed prematurely."));
+				clients.Add(client);
 
-            var sw = Stopwatch.StartNew();
-            threads.ForEach(thread => thread.Start());
-            doneEvent.Wait();
-            sw.Stop();
-            clients.ForEach(client => client.Close());
+				threads.Add(new Thread(() => {
+					for (int j = 0; j < count; ++j) {
+						var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), Payload);
+						client.EnqueueSend(package.AsByteArray());
 
-            var reqPerSec = (all + 0.0)/sw.ElapsedMilliseconds*1000;
-            context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
-            PerfUtils.LogData(Keyword,
-                              PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
-                                            PerfUtils.Col("requestsCnt", requestsCnt),
-                                            PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)));
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int)reqPerSec);
+						var localSent = Interlocked.Increment(ref sent);
+						while (localSent - Interlocked.Read(ref received) >
+						       context.Client.Options.PingWindow / clientsCnt) {
+							Thread.Sleep(1);
+						}
+					}
+				}) {IsBackground = true});
+			}
 
-            if (Interlocked.Read(ref all) == requestsCnt)
-                context.Success();
-            else
-                context.Fail();
-        }
-    }
+			var sw = Stopwatch.StartNew();
+			threads.ForEach(thread => thread.Start());
+			doneEvent.Wait();
+			sw.Stop();
+			clients.ForEach(client => client.Close());
+
+			var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
+			context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
+				sw.ElapsedMilliseconds, reqPerSec);
+			PerfUtils.LogData(Keyword,
+				PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
+					PerfUtils.Col("requestsCnt", requestsCnt),
+					PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)));
+			PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
+				(int)reqPerSec);
+
+			if (Interlocked.Read(ref all) == requestsCnt)
+				context.Success();
+			else
+				context.Fail();
+		}
+	}
 }

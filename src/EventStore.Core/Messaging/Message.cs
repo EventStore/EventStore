@@ -6,162 +6,151 @@ using System.Reflection;
 using System.Threading;
 using EventStore.Common.Log;
 
-namespace EventStore.Core.Messaging
-{
-    public abstract class Message
-    {
-        protected static int NextMsgId = -1;
-        private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-        public virtual int MsgTypeId { get { return TypeId; } }
-    }
+namespace EventStore.Core.Messaging {
+	public abstract class Message {
+		protected static int NextMsgId = -1;
+		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
-    public static class MessageHierarchy
-    {
-        private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
+		public virtual int MsgTypeId {
+			get { return TypeId; }
+		}
+	}
 
-        public static readonly Dictionary<Type, List<Type>> Descendants;
-        public static readonly int[][] ParentsByTypeId;
-        public static readonly int[][] DescendantsByTypeId;
-        public static readonly Dictionary<Type, int[]> DescendantsByType;
-        public static readonly Dictionary<Type, int> MsgTypeIdByType;
-        public static readonly int MaxMsgTypeId;
+	public static class MessageHierarchy {
+		private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
 
-        static MessageHierarchy()
-        {
-            var sw = Stopwatch.StartNew();
+		public static readonly Dictionary<Type, List<Type>> Descendants;
+		public static readonly int[][] ParentsByTypeId;
+		public static readonly int[][] DescendantsByTypeId;
+		public static readonly Dictionary<Type, int[]> DescendantsByType;
+		public static readonly Dictionary<Type, int> MsgTypeIdByType;
+		public static readonly int MaxMsgTypeId;
 
-            MsgTypeIdByType = new Dictionary<Type, int>();
-            var descendants = new Dictionary<int, List<int>>();
-            var parents = new Dictionary<int, List<int>>();
-            var rootMsgType = typeof(Message);
+		static MessageHierarchy() {
+			var sw = Stopwatch.StartNew();
 
-            Descendants = new Dictionary<Type, List<Type>>();
+			MsgTypeIdByType = new Dictionary<Type, int>();
+			var descendants = new Dictionary<int, List<int>>();
+			var parents = new Dictionary<int, List<int>>();
+			var rootMsgType = typeof(Message);
 
-            int msgTypeCount = 0;
-            foreach (var msgType in 
-                (from assembly in AppDomain.CurrentDomain.GetAssemblies()
-                 from type in LoadAvailableTypes(assembly)
-                 where rootMsgType.IsAssignableFrom(type)
-                 select type))
-            {
-                msgTypeCount += 1;
+			Descendants = new Dictionary<Type, List<Type>>();
 
-                var msgTypeId = GetMsgTypeId(msgType);
-                MsgTypeIdByType.Add(msgType, msgTypeId);
-                parents.Add(msgTypeId, new List<int>());
+			int msgTypeCount = 0;
+			foreach (var msgType in
+				(from assembly in AppDomain.CurrentDomain.GetAssemblies()
+					from type in LoadAvailableTypes(assembly)
+					where rootMsgType.IsAssignableFrom(type)
+					select type)) {
+				msgTypeCount += 1;
 
-                MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
-                //Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
+				var msgTypeId = GetMsgTypeId(msgType);
+				MsgTypeIdByType.Add(msgType, msgTypeId);
+				parents.Add(msgTypeId, new List<int>());
 
-                var type = msgType;
-                while (true)
-                {
-                    var typeId = GetMsgTypeId(type);
-                    parents[msgTypeId].Add(typeId);
-                    List<int> list;
-                    if (!descendants.TryGetValue(typeId, out list))
-                    {
-                        list = new List<int>();
-                        descendants.Add(typeId, list);
-                    }
-                    list.Add(msgTypeId);
+				MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
+				//Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
 
-                    List<Type> typeList;
-                    if (!Descendants.TryGetValue(type, out typeList))
-                    {
-                        typeList = new List<Type>();
-                        Descendants.Add(type, typeList);
-                    }
-                    typeList.Add(msgType);
+				var type = msgType;
+				while (true) {
+					var typeId = GetMsgTypeId(type);
+					parents[msgTypeId].Add(typeId);
+					List<int> list;
+					if (!descendants.TryGetValue(typeId, out list)) {
+						list = new List<int>();
+						descendants.Add(typeId, list);
+					}
 
-                    if (type == rootMsgType)
-                        break;
-                    type = type.BaseType;
-                };
-            }
+					list.Add(msgTypeId);
 
-            if (msgTypeCount - 1 != MaxMsgTypeId)
-            {
-                var wrongTypes = from typeId in MsgTypeIdByType
-                                 group typeId.Key by typeId.Value into g
-                                 where g.Count() > 1
-                                 select new
-                                 {
-                                         TypeId = g.Key,
-                                         MsgTypes = g.ToArray()
-                                 };
+					List<Type> typeList;
+					if (!Descendants.TryGetValue(type, out typeList)) {
+						typeList = new List<Type>();
+						Descendants.Add(type, typeList);
+					}
 
-                foreach (var wrongType in wrongTypes)
-                {
-                    Log.Fatal("MsgTypeId {typeId} is assigned to type: {messageTypes}",
-                              wrongType.TypeId,
-                              string.Join(", ", wrongType.MsgTypes.Select(x => x.Name)));
-                }
+					typeList.Add(msgType);
 
-                throw new Exception("Incorrect Message Type IDs setup.");
-            }
+					if (type == rootMsgType)
+						break;
+					type = type.BaseType;
+				}
 
-            DescendantsByTypeId = new int[MaxMsgTypeId + 1][];
-            ParentsByTypeId = new int[MaxMsgTypeId + 1][];
-            for (int i = 0; i <= MaxMsgTypeId; ++i)
-            {
-                var list = descendants[i];
-                DescendantsByTypeId[i] = new int[list.Count];
-                for (int j = 0; j < list.Count; ++j)
-                {
-                    DescendantsByTypeId[i][j] = list[j];
-                }
+				;
+			}
 
-                list = parents[i];
-                ParentsByTypeId[i] = new int[list.Count];
-                for (int j = 0; j < list.Count; ++j)
-                {
-                    ParentsByTypeId[i][j] = list[j];
-                }
-            }
-            DescendantsByType = new Dictionary<Type, int[]>();
-            foreach (var typeIdMap in MsgTypeIdByType)
-            {
-                DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
-            }
+			if (msgTypeCount - 1 != MaxMsgTypeId) {
+				var wrongTypes = from typeId in MsgTypeIdByType
+					group typeId.Key by typeId.Value
+					into g
+					where g.Count() > 1
+					select new {
+						TypeId = g.Key,
+						MsgTypes = g.ToArray()
+					};
 
-            Log.Trace("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
-        }
+				foreach (var wrongType in wrongTypes) {
+					Log.Fatal("MsgTypeId {typeId} is assigned to type: {messageTypes}",
+						wrongType.TypeId,
+						string.Join(", ", wrongType.MsgTypes.Select(x => x.Name)));
+				}
 
-        static Type[] LoadAvailableTypes(Assembly assembly)
-        {
-            try
-            {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                if(ex.LoaderExceptions.Length > 0)
-                    Log.Info("The exception(s) occured when scanning for message types: {e}",
-                        string.Join(",", ex.LoaderExceptions.Select(x => x.Message)));
-                else
-                {
-                    Log.InfoException(ex, "Exception while scanning for message types");
-                }
-                return ex.Types;
-            }
-        }
+				throw new Exception("Incorrect Message Type IDs setup.");
+			}
 
-        private static int GetMsgTypeId(Type msgType)
-        {
-            int typeId;
-            if (MsgTypeIdByType.TryGetValue(msgType, out typeId))
-                return typeId;
+			DescendantsByTypeId = new int[MaxMsgTypeId + 1][];
+			ParentsByTypeId = new int[MaxMsgTypeId + 1][];
+			for (int i = 0; i <= MaxMsgTypeId; ++i) {
+				var list = descendants[i];
+				DescendantsByTypeId[i] = new int[list.Count];
+				for (int j = 0; j < list.Count; ++j) {
+					DescendantsByTypeId[i][j] = list[j];
+				}
 
-            var msgTypeField = msgType.GetFields(BindingFlags.Static | BindingFlags.NonPublic).FirstOrDefault(x => x.Name == "TypeId");
-            if (msgTypeField == null)
-            {
-                Console.WriteLine("Message {0} doesn't have TypeId field!", msgType.Name);
-                throw new Exception(string.Format("Message {0} doesn't have TypeId field!", msgType.Name));
-            }
-            var msgTypeId = (int)msgTypeField.GetValue(null);
-            return msgTypeId;
-        }
-    }
+				list = parents[i];
+				ParentsByTypeId[i] = new int[list.Count];
+				for (int j = 0; j < list.Count; ++j) {
+					ParentsByTypeId[i][j] = list[j];
+				}
+			}
 
+			DescendantsByType = new Dictionary<Type, int[]>();
+			foreach (var typeIdMap in MsgTypeIdByType) {
+				DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
+			}
+
+			Log.Trace("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
+		}
+
+		static Type[] LoadAvailableTypes(Assembly assembly) {
+			try {
+				return assembly.GetTypes();
+			} catch (ReflectionTypeLoadException ex) {
+				if (ex.LoaderExceptions.Length > 0)
+					Log.Info("The exception(s) occured when scanning for message types: {e}",
+						string.Join(",", ex.LoaderExceptions.Select(x => x.Message)));
+				else {
+					Log.InfoException(ex, "Exception while scanning for message types");
+				}
+
+				return ex.Types;
+			}
+		}
+
+		private static int GetMsgTypeId(Type msgType) {
+			int typeId;
+			if (MsgTypeIdByType.TryGetValue(msgType, out typeId))
+				return typeId;
+
+			var msgTypeField = msgType.GetFields(BindingFlags.Static | BindingFlags.NonPublic)
+				.FirstOrDefault(x => x.Name == "TypeId");
+			if (msgTypeField == null) {
+				Console.WriteLine("Message {0} doesn't have TypeId field!", msgType.Name);
+				throw new Exception(string.Format("Message {0} doesn't have TypeId field!", msgType.Name));
+			}
+
+			var msgTypeId = (int)msgTypeField.GetValue(null);
+			return msgTypeId;
+		}
+	}
 }

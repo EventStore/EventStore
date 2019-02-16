@@ -1,7 +1,5 @@
-﻿namespace EventStore.Core
-{
-    public enum NodeSubsystems
-    {
-        Projections
-    }
+﻿namespace EventStore.Core {
+	public enum NodeSubsystems {
+		Projections
+	}
 }

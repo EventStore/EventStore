@@ -1,7 +1,5 @@
-namespace EventStore.Core.Index
-{
-    public interface IIndexFilenameProvider
-    {
-        string GetFilenameNewTable();
-    }
+namespace EventStore.Core.Index {
+	public interface IIndexFilenameProvider {
+		string GetFilenameNewTable();
+	}
 }

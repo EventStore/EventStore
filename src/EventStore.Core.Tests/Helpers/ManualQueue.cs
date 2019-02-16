@@ -5,91 +5,77 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
 
-namespace EventStore.Core.Tests.Helpers
-{
-    public class ManualQueue : IPublisher, IHandle<TimerMessage.Schedule>
-    {
-        private readonly Queue<Message> _queue = new Queue<Message>();
-        private readonly IBus _bus;
-        private readonly ITimeProvider _time;
-        private readonly List<InternalSchedule> _timerQueue = new List<InternalSchedule>();
-        private bool _timerDisabled;
+namespace EventStore.Core.Tests.Helpers {
+	public class ManualQueue : IPublisher, IHandle<TimerMessage.Schedule> {
+		private readonly Queue<Message> _queue = new Queue<Message>();
+		private readonly IBus _bus;
+		private readonly ITimeProvider _time;
+		private readonly List<InternalSchedule> _timerQueue = new List<InternalSchedule>();
+		private bool _timerDisabled;
 
-        public ManualQueue(IBus bus, ITimeProvider time)
-        {
-            _bus = bus;
-            _time = time;
-            _bus.Subscribe(this);
-        }
+		public ManualQueue(IBus bus, ITimeProvider time) {
+			_bus = bus;
+			_time = time;
+			_bus.Subscribe(this);
+		}
 
-        public void Publish(Message message)
-        {
-            _queue.Enqueue(message);
-        }
+		public void Publish(Message message) {
+			_queue.Enqueue(message);
+		}
 
-        public int Process()
-        {
-            ProcessTimer();
-            return ProcessNonTimer();
-        }
+		public int Process() {
+			ProcessTimer();
+			return ProcessNonTimer();
+		}
 
-        public int ProcessNonTimer()
-        {
-            var count = 0;
-            while (_queue.Count > 0)
-            {
-                var message = _queue.Dequeue();
-                _bus.Publish(message);
-                count++;
-                if (count > 1000)
-                    throw new Exception("Possible infinite message loop");
-            }
-            return count;
-        }
+		public int ProcessNonTimer() {
+			var count = 0;
+			while (_queue.Count > 0) {
+				var message = _queue.Dequeue();
+				_bus.Publish(message);
+				count++;
+				if (count > 1000)
+					throw new Exception("Possible infinite message loop");
+			}
 
-        public void ProcessTimer()
-        {
-            if (!_timerDisabled)
-            {
-                var orderedTimerMessages = _timerQueue.OrderBy(v => v.Scheduled.Add(v.Message.TriggerAfter)).ToArray();
-                _timerQueue.Clear();
-                foreach (var timerMessage in orderedTimerMessages)
-                {
-                    if (timerMessage.Scheduled.Add(timerMessage.Message.TriggerAfter) <= _time.Now)
-                        timerMessage.Message.Reply();
-                    else
-                        _timerQueue.Add(timerMessage);
-                }
-            }
-        }
+			return count;
+		}
 
-        public void DisableTimer()
-        {
-            _timerDisabled = true;
-        }
+		public void ProcessTimer() {
+			if (!_timerDisabled) {
+				var orderedTimerMessages = _timerQueue.OrderBy(v => v.Scheduled.Add(v.Message.TriggerAfter)).ToArray();
+				_timerQueue.Clear();
+				foreach (var timerMessage in orderedTimerMessages) {
+					if (timerMessage.Scheduled.Add(timerMessage.Message.TriggerAfter) <= _time.Now)
+						timerMessage.Message.Reply();
+					else
+						_timerQueue.Add(timerMessage);
+				}
+			}
+		}
 
-        public void EnableTimer(bool process = true)
-        {
-            _timerDisabled = false;
-            if (process)
-                Process();
-        }
+		public void DisableTimer() {
+			_timerDisabled = true;
+		}
 
-        private class InternalSchedule
-        {
-            public readonly TimerMessage.Schedule Message;
-            public readonly DateTime Scheduled;
+		public void EnableTimer(bool process = true) {
+			_timerDisabled = false;
+			if (process)
+				Process();
+		}
 
-            public InternalSchedule(TimerMessage.Schedule message, DateTime scheduled)
-            {
-                Message = message;
-                Scheduled = scheduled;
-            }
-        }
+		private class InternalSchedule {
+			public readonly TimerMessage.Schedule Message;
+			public readonly DateTime Scheduled;
 
-        public void Handle(TimerMessage.Schedule message)
-        {
-            _timerQueue.Add(new InternalSchedule(message, _time.Now));
-        }
-    }
+			public InternalSchedule(TimerMessage.Schedule message, DateTime scheduled) {
+				Message = message;
+				Scheduled = scheduled;
+			}
+		}
+
+		public void Handle(TimerMessage.Schedule message) {
+			_timerQueue.Add(new InternalSchedule(message, _time.Now));
+		}
+	}
 }

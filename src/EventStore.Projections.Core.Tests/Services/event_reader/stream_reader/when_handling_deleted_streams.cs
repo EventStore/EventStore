@@ -13,112 +13,118 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
-{
-    [TestFixture]
-    public class when_handling_deleted_streams : TestFixtureWithExistingEvents
-    {
-        private StreamEventReader _edp;
-        private string _streamName;
-        private Guid _distibutionPointCorrelationId;
-        private long _fromSequenceNumber = 10;
-        private FakeTimeProvider _fakeTimeProvider;
+namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
+	[TestFixture]
+	public class when_handling_deleted_streams : TestFixtureWithExistingEvents {
+		private StreamEventReader _edp;
+		private string _streamName;
+		private Guid _distibutionPointCorrelationId;
+		private long _fromSequenceNumber = 10;
+		private FakeTimeProvider _fakeTimeProvider;
 
-        protected override void Given()
-        {
-            TicksAreHandledImmediately();
-            _streamName = "stream1";
-            _fromSequenceNumber = 10;
-        }
+		protected override void Given() {
+			TicksAreHandledImmediately();
+			_streamName = "stream1";
+			_fromSequenceNumber = 10;
+		}
 
-        [SetUp]
-        public new void When()
-        {
-            _distibutionPointCorrelationId = Guid.NewGuid();
-            _fakeTimeProvider = new FakeTimeProvider();
-            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, null, _streamName, _fromSequenceNumber, _fakeTimeProvider, false, produceStreamDeletes: false);               
-            _edp.Resume();
-        }
+		[SetUp]
+		public new void When() {
+			_distibutionPointCorrelationId = Guid.NewGuid();
+			_fakeTimeProvider = new FakeTimeProvider();
+			_edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, null, _streamName, _fromSequenceNumber,
+				_fakeTimeProvider, false, produceStreamDeletes: false);
+			_edp.Resume();
+		}
 
-       private void HandleEvents(string stream, long[] eventNumbers){
-            string eventType = "event_type";
-            List<ResolvedEvent> events = new List<ResolvedEvent>();
+		private void HandleEvents(string stream, long[] eventNumbers) {
+			string eventType = "event_type";
+			List<ResolvedEvent> events = new List<ResolvedEvent>();
 
-            foreach(long eventNumber in eventNumbers){
-                events.Add(
-                    ResolvedEvent.ForUnresolvedEvent(
-                        new EventRecord(
-                            eventNumber, 50*(eventNumber+1), Guid.NewGuid(), Guid.NewGuid(), 50*(eventNumber+1), 0, stream, ExpectedVersion.Any, DateTime.UtcNow,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            eventType, new byte[] {0}, new byte[] {0}
-                        )
-                    )
-                );
-            }
+			foreach (long eventNumber in eventNumbers) {
+				events.Add(
+					ResolvedEvent.ForUnresolvedEvent(
+						new EventRecord(
+							eventNumber, 50 * (eventNumber + 1), Guid.NewGuid(), Guid.NewGuid(), 50 * (eventNumber + 1),
+							0, stream, ExpectedVersion.Any, DateTime.UtcNow,
+							PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+							eventType, new byte[] {0}, new byte[] {0}
+						)
+					)
+				);
+			}
 
-            long start, end;
-            if(eventNumbers.Length > 0){
-                start = eventNumbers[0];
-                end = eventNumbers[eventNumbers.Length-1];
-            }
-            else{
-                start = _fromSequenceNumber;
-                end = _fromSequenceNumber;
-            }
+			long start, end;
+			if (eventNumbers.Length > 0) {
+				start = eventNumbers[0];
+				end = eventNumbers[eventNumbers.Length - 1];
+			} else {
+				start = _fromSequenceNumber;
+				end = _fromSequenceNumber;
+			}
 
-            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == stream).CorrelationId;            
+			var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
+				.Last(x => x.EventStreamId == stream).CorrelationId;
 
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    correlationId, stream, start, 100, ReadStreamResult.Success,events.ToArray(), null, false, "", start+1, end, true, 200)
-            );            
-        
-        }
-        private void HandleEvents(string stream,long start,long end){
-            List<long> eventNumbers = new List<long>();
-            for(long i=start;i<=end;i++) eventNumbers.Add(i);
-            HandleEvents(stream,eventNumbers.ToArray());
-        }
+			_edp.Handle(
+				new ClientMessage.ReadStreamEventsForwardCompleted(
+					correlationId, stream, start, 100, ReadStreamResult.Success, events.ToArray(), null, false, "",
+					start + 1, end, true, 200)
+			);
+		}
 
-        private void HandleDeletedStream(string stream, long sequenceNumber, ReadStreamResult result){
-            var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last(x => x.EventStreamId == stream).CorrelationId;            
+		private void HandleEvents(string stream, long start, long end) {
+			List<long> eventNumbers = new List<long>();
+			for (long i = start; i <= end; i++) eventNumbers.Add(i);
+			HandleEvents(stream, eventNumbers.ToArray());
+		}
 
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    correlationId, stream, sequenceNumber, 100, result,new ResolvedEvent[]{}, null, false, "", -1, sequenceNumber, true, 200)
-            );            
-        }
+		private void HandleDeletedStream(string stream, long sequenceNumber, ReadStreamResult result) {
+			var correlationId = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
+				.Last(x => x.EventStreamId == stream).CorrelationId;
 
-        [Test]
-        public void when_no_stream_and_sequence_num_equal_to_minus_one_should_not_publish_partition_deleted_message()
-        {
-         HandleDeletedStream(_streamName,-1,ReadStreamResult.NoStream);
-         Assert.AreEqual(0,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
-        }
+			_edp.Handle(
+				new ClientMessage.ReadStreamEventsForwardCompleted(
+					correlationId, stream, sequenceNumber, 100, result, new ResolvedEvent[] { }, null, false, "", -1,
+					sequenceNumber, true, 200)
+			);
+		}
 
-        [Test]
-        public void when_no_stream_and_sequence_num_equal_to_zero_should_publish_partition_deleted_message()
-        {
-         HandleDeletedStream(_streamName,0,ReadStreamResult.NoStream);
-         Assert.AreEqual(1,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
-         Assert.AreEqual(_streamName,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First().Partition);
-        }
+		[Test]
+		public void when_no_stream_and_sequence_num_equal_to_minus_one_should_not_publish_partition_deleted_message() {
+			HandleDeletedStream(_streamName, -1, ReadStreamResult.NoStream);
+			Assert.AreEqual(0,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
+		}
 
-        [Test]
-        public void when_no_stream_and_sequence_num_greater_than_zero_should_publish_partition_deleted_message()
-        {
-         HandleDeletedStream(_streamName,100,ReadStreamResult.NoStream);
-         Assert.AreEqual(1,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
-         Assert.AreEqual(_streamName,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First().Partition);
-        }
+		[Test]
+		public void when_no_stream_and_sequence_num_equal_to_zero_should_publish_partition_deleted_message() {
+			HandleDeletedStream(_streamName, 0, ReadStreamResult.NoStream);
+			Assert.AreEqual(1,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
+			Assert.AreEqual(_streamName,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First()
+					.Partition);
+		}
 
-        [Test]
-        public void when_stream_deleted_should_publish_partition_deleted_message()
-        {
-         HandleDeletedStream(_streamName,0,ReadStreamResult.StreamDeleted);
-         Assert.AreEqual(1,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
-         Assert.AreEqual(_streamName,_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First().Partition);
-        }
-        
-    }
+		[Test]
+		public void when_no_stream_and_sequence_num_greater_than_zero_should_publish_partition_deleted_message() {
+			HandleDeletedStream(_streamName, 100, ReadStreamResult.NoStream);
+			Assert.AreEqual(1,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
+			Assert.AreEqual(_streamName,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First()
+					.Partition);
+		}
+
+		[Test]
+		public void when_stream_deleted_should_publish_partition_deleted_message() {
+			HandleDeletedStream(_streamName, 0, ReadStreamResult.StreamDeleted);
+			Assert.AreEqual(1,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().Count());
+			Assert.AreEqual(_streamName,
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderPartitionDeleted>().First()
+					.Partition);
+		}
+	}
 }
