@@ -134,6 +134,8 @@ namespace EventStore.Core {
 
 		private bool _gossipOnSingleNode;
 
+		protected bool _isPromotable;
+
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
 		protected VNodeBuilder() {
@@ -225,6 +227,12 @@ namespace EventStore.Core {
 			_faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			_reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			_initializationThreads = Opts.InitializationThreadsDefault;
+			_isPromotable = Opts.IsPromotableDefault;
+		}
+
+		public VNodeBuilder AsPromotable(bool value) {
+			_isPromotable = value;
+			return this;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1380,7 +1388,8 @@ namespace EventStore.Core {
 				_initializationThreads,
 				_faultOutOfOrderProjections,
 				_structuredLog,
-				_maxAutoMergeIndexLevel);
+				_maxAutoMergeIndexLevel,
+				_isPromotable);
 
 			var infoController = new InfoController(options, _projectionType);
 

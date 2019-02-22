@@ -135,6 +135,9 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.Shutdown) return;
 			if (_state == ElectionsState.ElectingLeader) return;
 
+			if (!_nodeInfo.IsPromotable)
+				Log.Trace("ELECTIONS: THIS NODE IS A NON PROMOTABLE CLONE");
+
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
 			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
@@ -264,9 +267,12 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.ElectingLeader) // install the view
 				ShiftToRegNonLeader();
 
-			var prepareOk = CreatePrepareOk(message.View);
-			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
-				DateTime.Now.Add(LeaderElectionProgressTimeout)));
+			if (_nodeInfo.IsPromotable)
+				_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, CreatePrepareOk(message.View), DateTime.Now.Add(LeaderElectionProgressTimeout)));
+			else {
+				Log.Info("ELECTIONS: I'm a NON PROMOTABLE CLONE and I can't be a candidate [{0}]", message.ServerInternalHttp);
+				_publisher.Publish(CreatePrepareKo(message.View));
+			}
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {
@@ -277,8 +283,20 @@ namespace EventStore.Core.Services {
 				ownInfo.NodePriority);
 		}
 
+		private ElectionMessage.PrepareKo CreatePrepareKo(int view) {
+			var ownInfo = GetOwnInfo();
+			return new ElectionMessage.PrepareKo(view, ownInfo.InstanceId, ownInfo.InternalHttp,
+				ownInfo.EpochNumber, ownInfo.EpochPosition, ownInfo.EpochId,
+				ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
+				ownInfo.NodePriority);
+		}
+
 		private void ShiftToRegNonLeader() {
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
+
+			// If I'm a NPC I can't set my state as leader and send proposals
+			if (!_nodeInfo.IsPromotable)
+				return;
 
 			_state = ElectionsState.NonLeader;
 			_lastInstalledView = _lastAttemptedView;

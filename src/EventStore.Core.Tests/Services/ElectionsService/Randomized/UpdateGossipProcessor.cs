@@ -74,7 +74,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 					_sendOverHttpProcessor.RegisterEndpointToSkip(memberInfo.ExternalTcpEndPoint, !memberInfo.IsAlive);
 				}
 
-				var updateGossipMessage = new GossipMessage.GossipUpdated(new ClusterInfo(updatedGossip));
+				var updateGossipMessage = new GossipMessage.GossipUpdated(new ClusterInfo(updatedGossip), 
+					new ClusterInfo(_initialGossip));
 
 				_enqueue(item, updateGossipMessage);
 				_previousGossip[item.EndPoint] = updatedGossip;

@@ -173,6 +173,7 @@ namespace EventStore.Core.Services.Monitoring {
 			switch (message.State) {
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
+				case VNodeState.NonPromotableClone:
 				case VNodeState.Slave:
 				case VNodeState.Master: {
 					SetStatsStreamMetadata();

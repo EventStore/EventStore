@@ -305,6 +305,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
+		[ArgDescription(Opts.IsPromotableDescr, Opts.ClusterGroup)]
+		public bool IsPromotable { get; set; }
+
 		public ClusterNodeOptions() {
 			Config = "";
 			Help = Opts.ShowHelpDefault;
@@ -426,6 +429,8 @@ namespace EventStore.ClusterNode {
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+
+			IsPromotable = Opts.IsPromotableDefault;
 		}
 	}
 }

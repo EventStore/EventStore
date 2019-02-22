@@ -113,15 +113,15 @@ namespace EventStore.Core.Services.VNode {
 				.InState(VNodeState.Unknown)
 				.WhenOther().ForwardTo(_outputBus)
 				.InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.PreMaster,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.NonPromotableClone)
 				.When<SystemMessage.BecomeUnknown>().Do(Handle)
 				.InAllStatesExcept(VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.Master)
+					VNodeState.Master, VNodeState.NonPromotableClone)
 				.When<ClientMessage.ReadRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InAllStatesExcept(VNodeState.Master,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.NonPromotableClone)
 				.When<ClientMessage.WriteRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InState(VNodeState.Master)
@@ -140,7 +140,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.UpdatePersistentSubscription>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeletePersistentSubscription>().ForwardTo(_outputBus)
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.Unknown)
+					VNodeState.Unknown, VNodeState.NonPromotableClone)
 				.When<ClientMessage.ReadEvent>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadStreamEventsForward>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadStreamEventsBackward>().Do(HandleAsNonMaster)
@@ -150,7 +150,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ConnectToPersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.UpdatePersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.DeletePersistentSubscription>().Do(HandleAsNonMaster)
-				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.NonPromotableClone)
 				.When<ClientMessage.WriteEvents>().Do(HandleAsNonMaster)
 				.When<ClientMessage.TransactionStart>().Do(HandleAsNonMaster)
 				.When<ClientMessage.TransactionWrite>().Do(HandleAsNonMaster)
@@ -172,11 +172,14 @@ namespace EventStore.Core.Services.VNode {
 				.When<ElectionMessage.ElectionsDone>().Do(Handle)
 				.InStates(VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.PreMaster, VNodeState.Master)
+					VNodeState.PreMaster, VNodeState.Master, VNodeState.NonPromotableClone)
 				.When<SystemMessage.BecomePreReplica>().Do(Handle)
 				.When<SystemMessage.BecomePreMaster>().Do(Handle)
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsNonMaster)
+				.When<SystemMessage.VNodeConnectionLost>().Do(Handle)
+				.InStates(VNodeState.NonPromotableClone)
+				.When<GossipMessage.GossipUpdated>().Do(HandleAsNonPromotableClone)
 				.When<SystemMessage.VNodeConnectionLost>().Do(Handle)
 				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreMaster)
 				.When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
@@ -195,13 +198,13 @@ namespace EventStore.Core.Services.VNode {
 				.When<ReplicationMessage.SubscribeToMaster>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscribed>().Ignore()
-				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.NonPromotableClone)
 				.When<ReplicationMessage.CreateChunk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.RawChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.DataChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.AckLogPosition>().ForwardTo(_outputBus)
 				.WhenOther().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.NonPromotableClone)
 				.When<ReplicationMessage.CreateChunk>().Ignore()
 				.When<ReplicationMessage.RawChunkBulk>().Ignore()
 				.When<ReplicationMessage.DataChunkBulk>().Ignore()
@@ -210,6 +213,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<ReplicationMessage.CloneAssignment>().Do(Handle)
 				.When<ReplicationMessage.SlaveAssignment>().Do(Handle)
 				.When<SystemMessage.BecomeClone>().Do(Handle)
+				.When<SystemMessage.BecomeNonPromotableClone>().Do(Handle)
 				.When<SystemMessage.BecomeSlave>().Do(Handle)
 				.InState(VNodeState.Clone)
 				.When<ReplicationMessage.SlaveAssignment>().Do(Handle)
@@ -317,6 +321,19 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 		}
 
+		private void Handle(SystemMessage.BecomeNonPromotableClone message) {
+			if (_master == null)
+				throw new Exception("_master == null");
+			if (_stateCorrelationId != message.CorrelationId)
+				return;
+
+			Log.Info("========== [{0}] IS NON PROMOTABLE CLONE... MASTER IS [{1},{2:B}]",
+				_nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
+
+			_state = VNodeState.NonPromotableClone;
+			_outputBus.Publish(message);
+		}
+
 		private void Handle(SystemMessage.BecomeSlave message) {
 			if (_master == null) throw new Exception("_master == null");
 			if (_stateCorrelationId != message.CorrelationId)
@@ -397,7 +414,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 			}
 
-			_master = VNodeInfoHelper.FromMemberInfo(message.Master);
+			_master = VNodeInfoHelper.FromMemberInfo(message.Master, true);
 			_subscriptionId = Guid.NewGuid();
 			_stateCorrelationId = Guid.NewGuid();
 			_outputBus.Publish(message);
@@ -641,6 +658,32 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 		}
 
+		private void HandleAsNonPromotableClone(GossipMessage.GossipUpdated message) {
+			if (_master == null)
+				throw new Exception("_master == null");
+			var master = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master.InstanceId);
+			if (master == null || !master.IsAlive) {
+				Log.Debug("There is NO MASTER or MASTER is DEAD according to GOSSIP. Starting new elections. MASTER: [{0}].", _master);
+				_mainQueue.Publish(new ElectionMessage.StartElections());
+			} else if (CantBePartOfQuorumIfNonPromotable(message.OldClusterInfo, message.ClusterInfo)) {
+				Log.Debug("I'm a NonPromotableClone and I can't be part of the quorum. Starting new elections. MASTER: [{0}].", _master);
+				_mainQueue.Publish(new ElectionMessage.StartElections());
+			}
+
+			_outputBus.Publish(message);
+		}
+
+		private bool CantBePartOfQuorumIfNonPromotable(ClusterInfo old, ClusterInfo current) {
+			if (_nodeInfo.IsPromotable)
+				return false;
+			var previousCandidates = old.Members.Count(a =>
+				a.IsAlive && (a.State != VNodeState.Clone || a.State != VNodeState.NonPromotableClone) && a.InstanceId != _nodeInfo.InstanceId);
+			var currentCandidates = current.Members.Count(a =>
+				a.IsAlive && (a.State != VNodeState.Clone || a.State != VNodeState.NonPromotableClone) && a.State != VNodeState.Master &&
+				a.InstanceId != _nodeInfo.InstanceId);
+			return previousCandidates > 0 && currentCandidates == 0;
+		}
+
 		private void Handle(SystemMessage.NoQuorumMessage message) {
 			Log.Info("=== NO QUORUM EMERGED WITHIN TIMEOUT... RETIRING...");
 			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
@@ -723,14 +766,21 @@ namespace EventStore.Core.Services.VNode {
 
 		private void Handle(ReplicationMessage.CloneAssignment message) {
 			if (IsLegitimateReplicationMessage(message)) {
-				Log.Info(
-					"========== [{internalHttp}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{masterId:B}].",
-					_nodeInfo.InternalHttp,
-					_master.InternalTcp,
-					_master.InternalSecureTcp == null ? "n/a" : _master.InternalSecureTcp.ToString(),
-					message.MasterId);
 				_outputBus.Publish(message);
-				_fsm.Handle(new SystemMessage.BecomeClone(_stateCorrelationId, _master));
+				if (_nodeInfo.IsPromotable) {
+					Log.Info("========== [{internalHttp}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{masterId:B}].",
+						_nodeInfo.InternalHttp,
+						_master.InternalTcp,
+						_master.InternalSecureTcp == null ? "n/a" : _master.InternalSecureTcp.ToString(),
+						message.MasterId);
+					_fsm.Handle(new SystemMessage.BecomeClone(_stateCorrelationId, _master));
+				} else {
+					Log.Info("========== [{0}] (NON PROMOTABLE) CLONE ASSIGNMENT RECEIVED FROM [{1},{2},{3:B}].",
+						_nodeInfo.InternalHttp,
+						_master.InternalTcp, _master.InternalSecureTcp == null ? "n/a" : _master.InternalSecureTcp.ToString(),
+						message.MasterId);
+					_fsm.Handle(new SystemMessage.BecomeNonPromotableClone(_stateCorrelationId, _master));
+				}
 			}
 		}
 

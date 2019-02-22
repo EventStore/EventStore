@@ -44,6 +44,7 @@ namespace EventStore.Core.Services {
 				case VNodeState.PreReplica:
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
+				case VNodeState.NonPromotableClone:
 				case VNodeState.Slave:
 					_masterInfo = ((SystemMessage.ReplicaStateMessage)message).Master;
 					break;

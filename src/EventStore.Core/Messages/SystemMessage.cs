@@ -209,6 +209,17 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class BecomeNonPromotableClone : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeNonPromotableClone(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.NonPromotableClone, master) {
+			}
+		}
+
 		public class BecomeSlave : ReplicaStateMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
