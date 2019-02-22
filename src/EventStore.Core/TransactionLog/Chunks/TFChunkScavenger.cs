@@ -15,6 +15,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Messages;
+using System.Threading;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
