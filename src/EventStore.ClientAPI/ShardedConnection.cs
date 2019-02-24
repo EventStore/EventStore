@@ -17,7 +17,7 @@ namespace EventStore.ClientAPI {
 	public class ShardedConnection : IEventStoreConnection {
 		
 		private readonly List<IEventStoreConnection> _internalConnections = new List<IEventStoreConnection>();
-		private string _name;
+		private readonly string _name;
 		private int _count;
 		private readonly IHashStream _hasher;
 
@@ -30,6 +30,8 @@ namespace EventStore.ClientAPI {
 		public ShardedConnection(string name, IEnumerable<IEventStoreConnection> connections) {
 			_internalConnections = connections.ToList();
 			_hasher = new StreamHasher();
+			_name = name;
+			_count = _internalConnections.Count;
 		}
 
 		private IEventStoreConnection GetConnection(string stream) {
@@ -43,7 +45,8 @@ namespace EventStore.ClientAPI {
 		public void Close() {
 			_internalConnections.ForEach(x => x.Close());
 		}
-
+		public ConnectionSettings Settings { get; }
+		
 		public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, UserCredentials userCredentials = null) {
 			return GetConnection(stream).DeleteStreamAsync(stream, expectedVersion, userCredentials);
 		}
@@ -77,7 +80,8 @@ namespace EventStore.ClientAPI {
 		}
 
 		public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null) {
-			throw new NotSupportedException();
+			//TODO revisit how to get connection here?
+			return GetConnection("foo").ContinueTransaction(transactionId, userCredentials);
 		}
 
 		public Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos, UserCredentials userCredentials = null) {
@@ -124,13 +128,15 @@ namespace EventStore.ClientAPI {
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
 			Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared, Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
 			bool autoAck = true) {
-			throw new NotImplementedException();
+			return GetConnection(stream).ConnectToPersistentSubscription(stream, groupName, eventAppeared,
+				subscriptionDropped, userCredentials, bufferSize);
 		}
 
 		public Task<EventStorePersistentSubscriptionBase> ConnectToPersistentSubscriptionAsync(string stream, string groupName, Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
 			Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int bufferSize = 10,
 			bool autoAck = true) {
-			throw new NotImplementedException();
+			return GetConnection(stream).ConnectToPersistentSubscriptionAsync(stream, groupName, eventAppeared,
+				subscriptionDropped, userCredentials);
 		}
 
 		public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? lastCheckpoint, CatchUpSubscriptionSettings settings,
@@ -141,16 +147,16 @@ namespace EventStore.ClientAPI {
 
 		public Task UpdatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
 			UserCredentials credentials) {
-			throw new NotImplementedException();
+			return GetConnection(stream).UpdatePersistentSubscriptionAsync(stream, groupName, settings, credentials);
 		}
 
 		public Task CreatePersistentSubscriptionAsync(string stream, string groupName, PersistentSubscriptionSettings settings,
 			UserCredentials credentials) {
-			throw new NotImplementedException();
+			return GetConnection(stream).CreatePersistentSubscriptionAsync(stream, groupName, settings, credentials);
 		}
 
 		public Task DeletePersistentSubscriptionAsync(string stream, string groupName, UserCredentials userCredentials = null) {
-			throw new NotImplementedException();
+			return GetConnection(stream).DeletePersistentSubscriptionAsync(stream, groupName, userCredentials);
 		}
 
 		public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, StreamMetadata metadata,
@@ -177,12 +183,94 @@ namespace EventStore.ClientAPI {
 			return SetSystemSettingsAsync(settings, userCredentials);
 		}
 
-		public event EventHandler<ClientConnectionEventArgs> Connected;
-		public event EventHandler<ClientConnectionEventArgs> Disconnected;
-		public event EventHandler<ClientReconnectingEventArgs> Reconnecting;
-		public event EventHandler<ClientClosedEventArgs> Closed;
-		public event EventHandler<ClientErrorEventArgs> ErrorOccurred;
-		public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed;
-		public ConnectionSettings Settings { get; }
+		public event EventHandler<ClientConnectionEventArgs> Connected {
+			add {
+				foreach (var c in _internalConnections) {
+					c.Connected += value;
+				} }
+			remove {
+				foreach (var c in _internalConnections) {
+					c.Connected -= value;
+				} }
+		}
+
+		private event EventHandler<ClientConnectionEventArgs> Disconnected;
+
+		event EventHandler<ClientConnectionEventArgs> IEventStoreConnection.Disconnected {
+			add {
+				foreach (var c in _internalConnections) {
+					c.Disconnected += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.Disconnected -= value;
+				}
+			}
+		}
+
+		public event EventHandler<ClientReconnectingEventArgs> Reconnecting {
+			add {
+				foreach (var c in _internalConnections) {
+					c.Reconnecting += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.Reconnecting -= value;
+				} 
+			}
+		}
+
+		private event EventHandler<ClientClosedEventArgs> Closed {
+			add {
+				foreach (var c in _internalConnections) {
+					c.Closed += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.Closed -= value;
+				}
+			}
+		}
+
+		event EventHandler<ClientClosedEventArgs> IEventStoreConnection.Closed {
+			add {
+				foreach (var c in _internalConnections) {
+					c.Closed += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.Closed -= value;
+				}
+			}
+		}
+
+		public event EventHandler<ClientErrorEventArgs> ErrorOccurred {
+			add {
+				foreach (var c in _internalConnections) {
+					c.ErrorOccurred += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.ErrorOccurred -= value;
+				}
+			}
+		}
+
+		public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed {
+			add {
+				foreach (var c in _internalConnections) {
+					c.AuthenticationFailed += value;
+				}
+			}
+			remove {
+				foreach (var c in _internalConnections) {
+					c.AuthenticationFailed -= value;
+				} }
+		}
 	}
 }
