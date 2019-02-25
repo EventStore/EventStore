@@ -164,8 +164,9 @@ namespace EventStore.Core
             // STORAGE SUBSYSTEM
             db.Open(vNodeSettings.VerifyDbHash);
             var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
+            var maxReaderCount = ESConsts.PTableMaxReaderCount + vNodeSettings.ReaderThreadsCount;
             var readerPool = new ObjectPool<ITransactionFileReader>(
-                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+                "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, maxReaderCount,
                 () => new TFChunkReader(db, db.Config.WriterCheckpoint, optimizeReadSideCache: db.Config.OptimizeReadSideCache));
             var tableIndex = new TableIndex(indexPath,
                                             new XXHashUnsafe(),
@@ -455,7 +456,7 @@ namespace EventStore.Core
 
             //TODO CC can have multiple threads working on subscription if partition
             var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus, vNodeSettings.AdditionalConsumerStrategies);
-            var persistentSubscription = new PersistentSubscriptionService(subscrQueue, readIndex, ioDispatcher, _mainQueue, consumerStrategyRegistry);
+            var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher, _mainQueue, consumerStrategyRegistry);
             perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
             perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
@@ -555,6 +556,7 @@ namespace EventStore.Core
             _mainQueue.Start();
             monitoringQueue.Start();
             subscrQueue.Start();
+            perSubscrQueue.Start();
 
             if (subsystems != null)
             {

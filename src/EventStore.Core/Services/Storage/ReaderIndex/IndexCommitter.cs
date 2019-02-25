@@ -226,6 +226,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 
+            if(!_indexRebuild)
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
                 _bus.Publish(
@@ -323,6 +324,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 
+            if(!_indexRebuild)
             for (int i = 0, n = indexEntries.Count; i < n; ++i)
             {
                 _bus.Publish(
