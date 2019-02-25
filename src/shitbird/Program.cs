@@ -15,9 +15,9 @@ namespace shitbird {
 			Console.WriteLine("gettt sharded connection");
 			var conn = new ShardedConnection("shitbird", new []{c1,c2});
 			Console.WriteLine("got sharded connection");
-			for (int i = 0; i < 1000; i++) {
+			for (var i = 0; i < 1000; i++) {
 				Console.WriteLine("writing " + i);
-				conn.AppendToStreamAsync("foo" + i, ExpectedVersion.Any,
+				conn.AppendToStreamAsync("foo-" + i, ExpectedVersion.Any,
 					new EventData(Guid.NewGuid(), "foo fighter", false, new byte[512], new byte[515])).Wait();
 			}
 		}

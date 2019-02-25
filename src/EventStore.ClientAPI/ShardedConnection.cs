@@ -35,7 +35,10 @@ namespace EventStore.ClientAPI {
 		}
 
 		private IEventStoreConnection GetConnection(string stream) {
-			int i = Math.Abs((_hasher.GetHashFor(stream) % _internalConnections.Count));
+			var hash = _hasher.GetHashFor(stream);
+			Console.WriteLine("stream is " + stream + " hash is " + hash);
+			var i = Math.Abs(hash) % _internalConnections.Count;
+			Console.WriteLine("using connection " + i);
 			return _internalConnections[i];
 		}
 		
@@ -125,7 +128,7 @@ namespace EventStore.ClientAPI {
 
 		public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			throw new NotImplementedException();
+			throw new Exception("not supported");
 		}
 
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
