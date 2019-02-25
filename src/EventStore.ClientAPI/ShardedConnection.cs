@@ -16,7 +16,7 @@ namespace EventStore.ClientAPI {
 	}
 	public class ShardedConnection : IEventStoreConnection {
 		
-		private readonly List<IEventStoreConnection> _internalConnections = new List<IEventStoreConnection>();
+		private readonly List<IEventStoreConnection> _internalConnections;
 		private readonly string _name;
 		private int _count;
 		private readonly IHashStream _hasher;
@@ -35,10 +35,12 @@ namespace EventStore.ClientAPI {
 		}
 
 		private IEventStoreConnection GetConnection(string stream) {
-			return _internalConnections[_hasher.GetHashFor(stream) % _internalConnections.Count - 1];
+			int i = Math.Abs((_hasher.GetHashFor(stream) % _internalConnections.Count));
+			return _internalConnections[i];
 		}
 		
 		public Task ConnectAsync() {
+			Console.WriteLine("connecting ...");
 			return new Task(v => _internalConnections.ForEach(x => x.ConnectAsync()), new object());
 		}
 
@@ -66,6 +68,7 @@ namespace EventStore.ClientAPI {
 
 		public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 			UserCredentials userCredentials = null) {
+			Console.WriteLine("append to " + GetConnection(stream));
 			return GetConnection(stream).AppendToStreamAsync(stream, expectedVersion, events, userCredentials);
 		}
 
