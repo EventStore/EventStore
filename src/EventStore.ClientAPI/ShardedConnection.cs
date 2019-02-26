@@ -36,14 +36,11 @@ namespace EventStore.ClientAPI {
 
 		private IEventStoreConnection GetConnection(string stream) {
 			var hash = _hasher.GetHashFor(stream);
-			Console.WriteLine("stream is " + stream + " hash is " + hash);
 			var i = Math.Abs(hash) % _internalConnections.Count;
-			Console.WriteLine("using connection " + i);
 			return _internalConnections[i];
 		}
 		
 		public Task ConnectAsync() {
-			Console.WriteLine("connecting ...");
 			return new Task(v => _internalConnections.ForEach(x => x.ConnectAsync()), new object());
 		}
 
