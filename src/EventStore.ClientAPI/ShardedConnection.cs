@@ -18,7 +18,7 @@ namespace EventStore.ClientAPI {
 		
 		private readonly List<IEventStoreConnection> _internalConnections;
 		private readonly string _name;
-		private int _count;
+		private readonly int _count;
 		private readonly IHashStream _hasher;
 
 		public void Dispose() {
