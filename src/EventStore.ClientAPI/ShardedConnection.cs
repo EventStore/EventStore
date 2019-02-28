@@ -14,6 +14,7 @@ namespace EventStore.ClientAPI {
 			return stream.GetHashCode();
 		}
 	}
+	
 	public class ShardedConnection : IEventStoreConnection {
 		
 		private readonly List<IEventStoreConnection> _internalConnections;
@@ -113,19 +114,22 @@ namespace EventStore.ClientAPI {
 
 		public Task<EventStoreSubscription> SubscribeToStreamAsync(string stream, bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			return GetConnection(stream).SubscribeToStreamAsync(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+			return GetConnection(stream)
+				.SubscribeToStreamAsync(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
 		}
 
 		public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream, long? lastCheckpoint,
 			CatchUpSubscriptionSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
-			return GetConnection(stream).SubscribeToStreamFrom(stream, lastCheckpoint, settings, eventAppeared,
-				liveProcessingStarted, subscriptionDropped, userCredentials);
+			return GetConnection(stream)
+				.SubscribeToStreamFrom(stream, lastCheckpoint, settings, eventAppeared,
+									   liveProcessingStarted, subscriptionDropped, userCredentials);
 		}
 
 		public Task<EventStoreSubscription> SubscribeToAllAsync(bool resolveLinkTos, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			throw new Exception("not supported");
+			return GetConnection("all")
+				.SubscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped, userCredentials);
 		}
 
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
@@ -196,8 +200,6 @@ namespace EventStore.ClientAPI {
 					c.Connected -= value;
 				} }
 		}
-
-		private event EventHandler<ClientConnectionEventArgs> Disconnected;
 
 		event EventHandler<ClientConnectionEventArgs> IEventStoreConnection.Disconnected {
 			add {
