@@ -162,10 +162,23 @@ namespace EventStore.Core.Services.Transport.Http {
 			if (obj is JObject || obj is JArray) {
 				isJson = true;
 				return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));
+			} else if(obj is string){
+				try{
+					var jsonObject = JsonConvert.DeserializeObject((string)obj);
+					if(jsonObject is JObject || jsonObject is JArray){
+						isJson = true;
+						return Helper.UTF8NoBom.GetBytes(Codec.Json.To(jsonObject));
+					}
+					else
+						throw new JsonException();
+				}
+				catch(JsonException){
+					isJson = false;
+					return Helper.UTF8NoBom.GetBytes((obj as string));
+				}
 			}
-
 			isJson = false;
-			return Helper.UTF8NoBom.GetBytes((obj as string) ?? string.Empty);
+			return Helper.UTF8NoBom.GetBytes(string.Empty);
 		}
 	}
 }
