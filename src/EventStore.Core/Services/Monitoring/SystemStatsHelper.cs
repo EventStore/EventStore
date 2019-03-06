@@ -10,6 +10,7 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
+using System.Threading;
 
 namespace EventStore.Core.Services.Monitoring {
 	public class SystemStatsHelper : IDisposable {
@@ -20,6 +21,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly string _dbPath;
 		private PerfCounterHelper _perfCounter;
 		private bool _giveup;
+	   Stopwatch sw = new Stopwatch();
 
 		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath) {
 			Ensure.NotNull(log, "log");
@@ -35,16 +37,25 @@ namespace EventStore.Core.Services.Monitoring {
 			var stats = new Dictionary<string, object>();
 			GetPerfCounterInformation(stats, 0);
 			var process = Process.GetCurrentProcess();
-
+			sw.Start();
 			var diskIo = DiskIo.GetDiskIo(process.Id, _log);
+			sw.Stop();
+			Console.WriteLine();
+			_log.Info("Time elapsed GetDiskIo: {0}", sw.Elapsed.TotalMilliseconds);
+			sw.Reset();
 			if (diskIo != null) {
 				stats["proc-diskIo-readBytes"] = diskIo.ReadBytes;
 				stats["proc-diskIo-writtenBytes"] = diskIo.WrittenBytes;
 				stats["proc-diskIo-readOps"] = diskIo.ReadOps;
 				stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
 			}
-
+			sw.Start();
 			var tcp = TcpConnectionMonitor.Default.GetTcpStats();
+			sw.Stop();
+			Console.WriteLine();
+			_log.Info("Time elapsed TcpConnectionMonitor: {0}", sw.Elapsed.TotalMilliseconds);
+			sw.Reset();
+
 			stats["proc-tcp-connections"] = tcp.Connections;
 			stats["proc-tcp-receivingSpeed"] = tcp.ReceivingSpeed;
 			stats["proc-tcp-sendingSpeed"] = tcp.SendingSpeed;
@@ -59,8 +70,12 @@ namespace EventStore.Core.Services.Monitoring {
 
 			stats["es-checksum"] = _writerCheckpoint.Read();
 			stats["es-checksumNonFlushed"] = _writerCheckpoint.ReadNonFlushed();
-
+			sw.Start();
 			var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
+			sw.Stop();
+			_log.Info("Time elapsed EsDriveInfo: {0}", sw.Elapsed.TotalMilliseconds);
+			sw.Reset();
+
 			if (drive != null) {
 				Func<string, string, string> driveStat = (diskName, stat) =>
 					string.Format("sys-drive-{0}-{1}", diskName.Replace("\\", "").Replace(":", ""), stat);
@@ -72,7 +87,11 @@ namespace EventStore.Core.Services.Monitoring {
 
 			Func<string, string, string> queueStat = (queueName, stat) =>
 				string.Format("es-queue-{0}-{1}", queueName, stat);
+			sw.Start();
 			var queues = QueueMonitor.Default.GetStats();
+			sw.Stop();
+			_log.Info("Time elapsed QueueMonitor GetStats: {0}: {0}", sw.Elapsed.TotalMilliseconds);
+			sw.Reset();
 			foreach (var queue in queues) {
 				stats[queueStat(queue.Name, "queueName")] = queue.Name;
 				stats[queueStat(queue.Name, "groupName")] = queue.GroupName ?? string.Empty;
@@ -106,9 +125,11 @@ namespace EventStore.Core.Services.Monitoring {
 			var process = Process.GetCurrentProcess();
 			try {
 				_perfCounter.RefreshInstanceName();
-
+				sw.Start();
 				var procCpuUsage = _perfCounter.GetProcCpuUsage();
-
+				sw.Stop();
+				_log.Info("Time elapsed GetProcCpuUsage: {0}", sw.Elapsed.TotalMilliseconds);
+				sw.Reset();
 				stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
 				stats["proc-id"] = process.Id;
 				stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
@@ -121,8 +142,12 @@ namespace EventStore.Core.Services.Monitoring {
 
 				stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
 				stats["sys-freeMem"] = GetFreeMem();
-
+				sw.Start();
 				var gcStats = _perfCounter.GetGcStats();
+				sw.Stop();
+				_log.Info("Time elapsed GetGcStats: {0}", sw.Elapsed.TotalMilliseconds);
+				sw.Reset();
+
 				stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
 				stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
 				stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
