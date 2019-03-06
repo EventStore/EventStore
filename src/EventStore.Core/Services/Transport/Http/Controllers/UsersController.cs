@@ -21,9 +21,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
+			RegisterUrlBased(service, "/users", HttpMethod.Get, GetUsers);
 			RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
 			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
 			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
+			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
 			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
 			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs);
 			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
