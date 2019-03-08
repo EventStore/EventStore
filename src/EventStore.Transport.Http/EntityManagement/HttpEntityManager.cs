@@ -113,6 +113,8 @@ namespace EventStore.Transport.Http.EntityManagement {
 		}
 
 		private void SetContentType(string contentType, Encoding encoding) {
+			if(contentType == null)
+				return;
 			try {
 				HttpEntity.Response.ContentType =
 					contentType + (encoding != null ? ("; charset=" + encoding.WebName) : "");
