@@ -181,7 +181,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					if (result == ConsumerPushResult.Sent) {
 						messagePointer.MarkSent();
 						MarkBeginProcessing(message);
-						_lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
+						if(!message.IsReplayedEvent)
+							_lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
 					} else if (result == ConsumerPushResult.Skipped) {
 						// The consumer strategy skipped the message so leave it in the buffer and continue.
 					} else if (result == ConsumerPushResult.NoMoreCapacity) {
@@ -213,8 +214,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				foreach (var messagePointer in _streamBuffer.Scan().Take(count)) {
 					messagePointer.MarkSent();
 					MarkBeginProcessing(messagePointer.Message);
-					_lastKnownMessage = Math.Max(_lastKnownMessage,
-						messagePointer.Message.ResolvedEvent.OriginalEventNumber);
+					if(!messagePointer.Message.IsReplayedEvent)
+						_lastKnownMessage = Math.Max(_lastKnownMessage,messagePointer.Message.ResolvedEvent.OriginalEventNumber);
 					yield return messagePointer.Message.ResolvedEvent;
 				}
 			}
