@@ -220,11 +220,23 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			messagePointer.MarkSent();
 		}
 
+		[Test]
 		public void lowest_retry_doesnt_assume_order() {
 			var buffer = new StreamBuffer(10, 10, -1, true);
 			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 4));
 			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 2));
 			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 3));
+			Assert.AreEqual(2, buffer.GetLowestRetry());
+		}
+
+		[Test]
+		public void lowest_retry_ignores_replayed_events() {
+			var buffer = new StreamBuffer(10, 10, -1, true);
+			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 4));
+			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 2));
+			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 3));
+			//add parked event
+			buffer.AddRetry(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "foo", "$persistentsubscription-foo::group-parked", 1), 0));
 			Assert.AreEqual(2, buffer.GetLowestRetry());
 		}
 
