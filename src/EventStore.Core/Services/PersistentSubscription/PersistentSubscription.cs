@@ -184,6 +184,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                     {
                         messagePointer.MarkSent();
                         MarkBeginProcessing(message);
+						if(!message.IsReplayedEvent)
                         _lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
                     }
                     else if (result == ConsumerPushResult.Skipped)
@@ -226,6 +227,7 @@ namespace EventStore.Core.Services.PersistentSubscription
                 {
                     messagePointer.MarkSent();
                     MarkBeginProcessing(messagePointer.Message);
+					if(!messagePointer.Message.IsReplayedEvent)
                     _lastKnownMessage = Math.Max(_lastKnownMessage, messagePointer.Message.ResolvedEvent.OriginalEventNumber);
                     yield return messagePointer.Message.ResolvedEvent;
                 }
