@@ -51,11 +51,11 @@ namespace EventStore.Projections.Core.Standard {
 			newSharedState = null;
 			emittedEvents = null;
 			newState = null;
-			string positionStreamId;
+			string deletedStreamId;
 			var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
-				data.PositionStreamId, data.EventType, data.Data, out positionStreamId);
+				data.PositionStreamId, data.EventType, data.Data, out deletedStreamId);
 
-			var category = _streamCategoryExtractor.GetCategoryByStreamId(positionStreamId);
+			var category = _streamCategoryExtractor.GetCategoryByStreamId(isStreamDeletedEvent?deletedStreamId:data.PositionStreamId);
 			if (category == null)
 				return true; // handled but not interesting
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Standard {
 				new EmittedEventEnvelope(
 					new EmittedLinkToWithRecategorization(
 						_categoryStreamPrefix + category, Guid.NewGuid(), linkTarget, eventPosition, expectedTag: null,
-						originalStreamId: positionStreamId, streamDeletedAt: isStreamDeletedEvent ? -1 : (int?)null))
+						originalStreamId: isStreamDeletedEvent?deletedStreamId:data.PositionStreamId, streamDeletedAt: isStreamDeletedEvent ? -1 : (int?)null))
 			};
 
 			return true;
