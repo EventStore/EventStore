@@ -208,7 +208,6 @@ namespace EventStore.ClusterNode {
 				.WithIndexMergeOptimization(options.OptimizeIndexMerge)
 				.WithSslTargetHost(options.SslTargetHost)
 				.RunProjections(options.RunProjections, options.ProjectionThreads, options.FaultOutOfOrderProjections)
-				.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
 				.WithTfCachedChunks(options.CachedChunks)
 				.WithTfChunksCacheSize(options.ChunksCacheSize)
 				.WithStatsStorage(StatsStorage.StreamAndFile)
@@ -225,6 +224,10 @@ namespace EventStore.ClusterNode {
 				.WithChunkInitialReaderCount(options.ChunkInitialReaderCount)
 				.WithInitializationThreads(options.InitializationThreads)
 				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel);
+
+			if (options.ProjectionsQueryExpiry > 0) {
+				builder.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry));
+			}
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);
