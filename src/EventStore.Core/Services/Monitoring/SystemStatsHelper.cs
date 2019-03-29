@@ -9,6 +9,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Native;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Monitoring {
@@ -165,7 +166,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private long GetFreeMemOnLinux() {
 			string meminfo = null;
 			try {
-				meminfo = ShellExecutor.GetOutput("free", "-b");
+				meminfo = ShellExecutorUnix.GetOutput("free", "-b");
 				var meminfolines = meminfo.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
 				var ourline = meminfolines[1];
 				var trimmedLine = SpacesRegex.Replace(ourline, " ");
@@ -181,7 +182,7 @@ namespace EventStore.Core.Services.Monitoring {
 		// http://www.cyberciti.biz/files/scripts/freebsd-memory.pl.txt
 		private long GetFreeMemOnBSD() {
 			try {
-				var sysctl = ShellExecutor.GetOutput("sysctl",
+				var sysctl = ShellExecutorUnix.GetOutput("sysctl",
 					"-n hw.physmem hw.pagesize vm.stats.vm.v_free_count vm.stats.vm.v_cache_count vm.stats.vm.v_inactive_count");
 				var sysctlStats = sysctl.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
 				long pageSize = long.Parse(sysctlStats[1]);
@@ -199,7 +200,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private long GetFreeMemOnOSX() {
 			int freePages = 0;
 			try {
-				var vmstat = ShellExecutor.GetOutput("vm_stat");
+				var vmstat = ShellExecutorUnix.GetOutput("vm_stat");
 				var sysctlStats = vmstat.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
 				foreach (var line in sysctlStats) {
 					var l = line.Substring(0, line.Length - 1);

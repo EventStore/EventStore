@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Utils;
+using EventStore.Native;
 
 namespace EventStore.Core.Services.Monitoring.Stats {
 	public class EsDriveInfo {
@@ -69,7 +70,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 
 			try {
 				if (!Directory.Exists(directory)) return null;
-				var driveInfo = ShellExecutor.GetOutput("df", string.Format("-P {0}", directory));
+				var driveInfo = ShellExecutorUnix.GetOutput("df", string.Format("-P {0}", directory));
 				var driveInfoLines =
 					driveInfo.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
 				if (driveInfoLines.Length == 0) return null;
