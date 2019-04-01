@@ -28,6 +28,7 @@ namespace EventStore.Native {
             if(pid == 0){ //child process
 				SetUlimitNOFILE(1024);
 
+				Syscall.close(readside); /*unused read side*/
 				var info = new ProcessStartInfo {
 					RedirectStandardOutput = true,
 					UseShellExecute = false,
@@ -45,12 +46,12 @@ namespace EventStore.Native {
                 var written = Syscall.write(writeside, bufptr, (ulong)res.Length);
 				Console.Out.WriteLine("Written bytes: {0}",written);
                 Syscall.close(writeside);
-				Syscall.exit(0);
-
 				Marshal.FreeHGlobal(bufptr);
+				Syscall.exit(0);
 				return null;
 			}
 			else{ //parent process
+				Syscall.close(writeside); /*unused write side*/
 				var bufptr = Marshal.AllocHGlobal(numBytesToRead);
 				var read = Syscall.read(readside, bufptr, (ulong)numBytesToRead);
 				Console.Out.WriteLine("Read bytes: {0}",read);
