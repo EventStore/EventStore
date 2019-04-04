@@ -181,17 +181,18 @@ namespace EventStore.ClientAPI {
 				Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName,
 					IsSubscribedToAll ? "<all>" : StreamId);
 			_connection.Connected -= OnReconnect;
-			RunSubscriptionAsync();
+			
+			RunSubscriptionAsync().ContinueWith(t => {
+					if (Verbose)
+						Log.Debug("Catch-up Subscription {0} to {1}: errored during reconnect...", SubscriptionName,
+							IsSubscribedToAll ? "<all>" : StreamId);
+					DropSubscription(SubscriptionDropReason.CatchUpError, t.Exception);
+
+			}, TaskContinuationOptions.OnlyOnFaulted);
 		}
 
 		private Task RunSubscriptionAsync() {
-			return LoadHistoricalEventsAsync().ContinueWith(t => {
-				if (Verbose)
-					Log.Debug("Catch-up Subscription {0} to {1}: errored...", SubscriptionName,
-						IsSubscribedToAll ? "<all>" : StreamId);
-				
-				DropSubscription(SubscriptionDropReason.Unknown, t.Exception);
-			}, TaskContinuationOptions.OnlyOnFaulted);
+			return LoadHistoricalEventsAsync();
 		}
 
 		private async Task LoadHistoricalEventsAsync() {
@@ -213,6 +214,7 @@ namespace EventStore.ClientAPI {
 					await SubscribeToStreamAsync().ConfigureAwait(false);
 				} catch (Exception ex) {
 					DropSubscription(SubscriptionDropReason.CatchUpError, ex);
+					throw;
 				}
 			} else {
 				DropSubscription(SubscriptionDropReason.UserInitiated, null);
