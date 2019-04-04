@@ -207,7 +207,6 @@ namespace EventStore.ClientAPI {
 					await SubscribeToStreamAsync().ConfigureAwait(false);
 				} catch (Exception ex) {
 					DropSubscription(SubscriptionDropReason.CatchUpError, ex);
-					throw;
 				}
 			} else {
 				DropSubscription(SubscriptionDropReason.UserInitiated, null);

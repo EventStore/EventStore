@@ -70,11 +70,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 				throw expectedException;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 		}
 
-		private void AssertStartFailsAndDropsSubscriptionWithException(ApplicationException expectedException) {
-			Assert.That(() => _subscription.StartAsync().Wait(TimeoutMs), Throws.TypeOf<AggregateException>());
+		private void AssertStartCompletesAndDropsSubscriptionWithException(ApplicationException expectedException) {
+			Assert.That(() => _subscription.StartAsync().Wait(TimeoutMs));
 			Assert.That(_isDropped);
 			Assert.That(_dropReason, Is.EqualTo(SubscriptionDropReason.CatchUpError));
 			Assert.That(_dropException, Is.SameAs(expectedException));
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				return taskCompletionSource.Task;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 		}
 
 		[Test]
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				}
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
@@ -168,7 +168,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				throw expectedException;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				return taskCompletionSource.Task;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
@@ -220,7 +220,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				return taskCompletionSource.Task;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
@@ -253,7 +253,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				return taskCompletionSource.Task;
 			});
 
-			AssertStartFailsAndDropsSubscriptionWithException(expectedException);
+			AssertStartCompletesAndDropsSubscriptionWithException(expectedException);
 			Assert.That(_raisedEvents.Count, Is.EqualTo(1));
 		}
 
