@@ -185,7 +185,13 @@ namespace EventStore.ClientAPI {
 		}
 
 		private Task RunSubscriptionAsync() {
-			return LoadHistoricalEventsAsync();
+			return LoadHistoricalEventsAsync().ContinueWith(t => {
+				if (Verbose)
+					Log.Debug("Catch-up Subscription {0} to {1}: errored...", SubscriptionName,
+						IsSubscribedToAll ? "<all>" : StreamId);
+				
+				DropSubscription(SubscriptionDropReason.Unknown, t.Exception);
+			}, TaskContinuationOptions.OnlyOnFaulted);
 		}
 
 		private async Task LoadHistoricalEventsAsync() {
@@ -207,7 +213,6 @@ namespace EventStore.ClientAPI {
 					await SubscribeToStreamAsync().ConfigureAwait(false);
 				} catch (Exception ex) {
 					DropSubscription(SubscriptionDropReason.CatchUpError, ex);
-					throw;
 				}
 			} else {
 				DropSubscription(SubscriptionDropReason.UserInitiated, null);
