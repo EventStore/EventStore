@@ -180,6 +180,9 @@ namespace EventStore.ClientAPI {
 			if (Verbose)
 				Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName,
 					IsSubscribedToAll ? "<all>" : StreamId);
+			Interlocked.Exchange(ref _dropData, null); //clear drop 
+			Interlocked.Exchange(ref _isDropped, 0);
+			
 			_connection.Connected -= OnReconnect;
 			RunSubscriptionAsync();
 		}
