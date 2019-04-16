@@ -161,10 +161,16 @@ namespace EventStore.ClientAPI
             EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
         }
 
-        private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs)
-        {
-            if (Verbose) Log.Debug("Catch-up Subscription {0} to {1}: recovering after reconnection.", SubscriptionName, IsSubscribedToAll ? "<all>" : StreamId);
-            if (Verbose) Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName, IsSubscribedToAll ? "<all>" : StreamId);
+		private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs) {
+			if (Verbose)
+				Log.Debug("Catch-up Subscription {0} to {1}: recovering after reconnection.", SubscriptionName,
+					IsSubscribedToAll ? "<all>" : StreamId);
+			if (Verbose)
+				Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName,
+					IsSubscribedToAll ? "<all>" : StreamId);
+			Interlocked.Exchange(ref _dropData, null); //clear drop 
+			Interlocked.Exchange(ref _isDropped, 0);
+			
             _connection.Connected -= OnReconnect;
             RunSubscriptionAsync();
         }
