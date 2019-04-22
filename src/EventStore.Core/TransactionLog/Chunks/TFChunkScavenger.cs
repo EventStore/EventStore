@@ -30,6 +30,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly int _threads;
 		private const int MaxRetryCount = 5;
 		internal const int MaxThreadCount = 4;
+		private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
 		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex tableIndex,
 			IReadIndex readIndex, long? maxChunkDataSize = null,
@@ -270,6 +271,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				} else {
 					var positionMapping = new List<PosMap>(filteredCount);
 
+					var lastFlushedPage = -1;
 					for (int i = 0; i < threadLocalCache.Records.Count; i++) {
 						ct.ThrowIfCancellationRequested();
 
@@ -279,6 +281,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						// Check log record, if not present then assume we can skip. 
 						if (recordReadResult.LogRecord != null)
 							positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
+
+						var currentPage = newChunk.RawWriterPosition / 4096;
+						if (currentPage - lastFlushedPage > FlushPageInterval) {
+							newChunk.Flush();
+							lastFlushedPage = currentPage;
+						}
 					}
 
 					newChunk.CompleteScavenge(positionMapping);
@@ -382,8 +390,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				var positionMapping = new List<PosMap>();
 				foreach (var oldChunk in oldChunks) {
+					var lastFlushedPage = -1;
 					TraverseChunkBasic(oldChunk, ct,
-						result => positionMapping.Add(WriteRecord(newChunk, result.LogRecord)));
+						result => {
+
+							positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
+
+							var currentPage = newChunk.RawWriterPosition / 4096;
+							if (currentPage - lastFlushedPage > FlushPageInterval) {
+								newChunk.Flush();
+								lastFlushedPage = currentPage;
+							}
+						});
 				}
 
 				newChunk.CompleteScavenge(positionMapping);
