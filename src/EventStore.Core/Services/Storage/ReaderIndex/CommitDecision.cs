@@ -7,6 +7,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         Deleted,
         Idempotent,
         CorruptedIdempotency,
-        InvalidTransaction
+		InvalidTransaction,
+		IdempotentNotReady
     }
 }
