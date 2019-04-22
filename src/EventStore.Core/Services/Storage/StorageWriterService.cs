@@ -533,6 +533,10 @@ namespace EventStore.Core.Services.Storage {
 				case CommitDecision.InvalidTransaction:
 					envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));
 					break;
+				case CommitDecision.IdempotentNotReady:
+					//just drop the write and wait for the client to retry
+					Log.Debug("Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.", result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
+					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
