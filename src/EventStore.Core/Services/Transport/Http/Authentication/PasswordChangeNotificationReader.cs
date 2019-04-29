@@ -86,7 +86,12 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
                             default:
                                 throw new NotSupportedException();
                         }
-                    });
+				},
+				() => {
+					_log.Warn("Timeout reading stream: {0}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
+					_ioDispatcher.Delay(TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
+				},
+				Guid.NewGuid());
         }
 
 
