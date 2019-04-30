@@ -13,7 +13,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>The client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.org/</Description>
     <PackageReleaseNotes>https://eventstore.org/blog/</PackageReleaseNotes>
-    <Copyright>Copyright 2012-2018 Event Store LLP</Copyright>
+    <Copyright>Copyright 2012-2019 Event Store LLP</Copyright>
     <PackageTags>eventstore client</PackageTags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
