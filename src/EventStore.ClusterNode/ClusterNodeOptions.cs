@@ -349,6 +349,7 @@ namespace EventStore.ClusterNode {
 			SkipDbVerify = Opts.SkipDbVerifyDefault;
 			RunProjections = Opts.RunProjectionsDefault;
 			ProjectionThreads = Opts.ProjectionThreadsDefault;
+			ProjectionsQueryExpiry = Opts.ProjectionsQueryExpiryDefault;
 			FaultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			WorkerThreads = Opts.WorkerThreadsDefault;
 			BetterOrdering = Opts.BetterOrderingDefault;
