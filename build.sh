@@ -3,7 +3,7 @@
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PRODUCTNAME="Event Store Open Source"
 COMPANYNAME="Event Store LLP"
-COPYRIGHT="Copyright 2018 Event Store LLP. All rights reserved."
+COPYRIGHT="Copyright 2019 Event Store LLP. All rights reserved."
 
 
 # ------------ End of configuration -------------
