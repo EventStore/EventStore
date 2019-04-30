@@ -159,6 +159,23 @@ namespace EventStore.ClientAPI.Projections {
 				userCredentials, HttpStatusCode.OK);
 		}
 
+		public Task<ProjectionConfig> GetConfig(EndPoint endPoint, string name, UserCredentials userCredentials = null,
+			string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendGet(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/config", name), userCredentials,
+				HttpStatusCode.OK)
+				.ContinueWith(x => {
+					if (x.IsFaulted) throw x.Exception;
+					var r = JObject.Parse(x.Result);
+					return r.ToObject<ProjectionConfig>();
+				});
+		}
+
+		public Task UpdateConfig(EndPoint endPoint, string name, ProjectionConfig config, UserCredentials userCredentials = null,
+			string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendPut(endPoint.ToHttpUrl(httpSchema, "/projection/{0}/config", name), JObject.FromObject(config).ToString(),
+				userCredentials, HttpStatusCode.OK);
+		}
+
 		private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode) {
 			var source = TaskCompletionSourceFactory.Create<string>();
 			_client.Get(url,
