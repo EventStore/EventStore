@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net471</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.11.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="NETStandard.Library" Version="2.0.0" />
+	</ItemGroup>
+</Project>
