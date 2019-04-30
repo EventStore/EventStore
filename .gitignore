@@ -1,4 +1,5 @@
 TestResult.xml
+/testResults
 *.nupkg
 /packages
 /Logs

@@ -7,7 +7,10 @@ Param(
     [string]$Configuration = "Release",
     [Parameter(HelpMessage="Build UI (yes,no)")]
     [ValidateSet("yes","no")]
-    [string]$BuildUI = "no"
+    [string]$BuildUI = "no",
+    [Parameter(HelpMessage="Run Tests (yes,no)")]
+    [ValidateSet("yes","no")]
+    [string]$RunTests = "no"
 )
 
 Function Write-Info {
@@ -181,6 +184,7 @@ Function Start-Build{
     Write-Info "Platform: $platform"
     Write-Info "Configuration: $Configuration"    
     Write-Info "Build UI: $BuildUI"
+    Write-Info "Run Tests: $RunTests"
 
     #Build Event Store UI
     if ($BuildUI -eq "yes") {
@@ -231,6 +235,13 @@ Function Start-Build{
 
         Write-Info "Reverting $versionInfoFile to original state."
         & { git checkout --quiet $versionInfoFile }
+    }
+    if($RunTests -eq "yes"){
+        (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
+        ForEach-Object {
+          dotnet test -v normal -c $Configuration --no-build --logger trx --results-directory testResults $_ -- RunConfiguration.TargetPlatform=x64
+          if (-Not $?) { throw "Exit code is $?" }
+        }
     }
 }
 
