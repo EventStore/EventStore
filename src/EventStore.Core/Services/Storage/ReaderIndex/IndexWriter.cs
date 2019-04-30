@@ -169,10 +169,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					first = false;
 				}
 
-				return first /* no data in transaction */
-					? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId))
-					: new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber,
-						endEventNumber, false);
+				if(first) /*no data in transaction*/
+					return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
+				else{
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= endEventNumber;
+					if(isReplicated)
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false);
+					else
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false);
+				}
 			}
 
 			if (expectedVersion < curVersion) {
@@ -202,10 +207,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						false);
 				}
 
-				return eventNumber == expectedVersion /* no data in transaction */
-					? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false)
-					: new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1,
-						eventNumber, false);
+				if(eventNumber == expectedVersion) /* no data in transaction */
+					return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
+				else{
+					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= eventNumber;
+					if(isReplicated)
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+					else
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+				}
 			}
 
 			if (expectedVersion > curVersion)
