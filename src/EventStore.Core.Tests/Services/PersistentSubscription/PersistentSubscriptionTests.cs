@@ -852,6 +852,75 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			sub.TryMarkCheckpoint(false);
 			Assert.AreEqual(1, cp);
 		}
+
+		[Test]
+		public void
+			subscription_ignores_replayed_events_when_checkpointing() {
+			long cp = -1;
+			var reader = new FakeCheckpointReader();
+			var messageParker = new FakeMessageParker();
+
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+					.WithEventLoader(new FakeStreamReader(x => { }))
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.WithMessageParker(messageParker)
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(1));
+			reader.Load(null);
+
+			var clientConnectionId = Guid.NewGuid();
+			var clientCorrelationId = Guid.NewGuid();
+			sub.AddClient(clientCorrelationId, clientConnectionId, new FakeEnvelope(), 10, "foo", "bar");
+
+			//handle event number 10@streamName
+			var readEventId = Guid.NewGuid();
+			sub.HandleReadCompleted(new[] {
+				Helper.BuildFakeEvent(readEventId, "type", "streamName", 10),
+			}, 11, true);
+
+			//get the message and acknowledge receipt
+			sub.GetNextNOrLessMessages(1).ToArray();
+			sub.AcknowledgeMessagesProcessed(clientCorrelationId, new[] {readEventId});
+
+			//mark checkpoint and verify that event 10 has been checkpointed
+			sub.TryMarkCheckpoint(false);
+			Assert.AreEqual(10, cp);
+
+			//park an event (this can be done earlier too)
+			var parkedEventId = Guid.NewGuid();
+			var parkedEvent = Helper.BuildFakeEvent(parkedEventId, "type", "$persistentsubscription-streamName::groupName-parked", 15);
+			messageParker.BeginParkMessage(parkedEvent, "parked", (ev,res)=>{});
+
+			//retry parked events (this sets correct _state flag so that we can call HandleParkedReadCompleted below)
+			sub.RetryAllParkedMessages();
+
+			//handle parked event 15@$persistentsubscription-streamName::groupName-parked
+			//this should send the parked event to the retry buffer. 
+			sub.HandleParkedReadCompleted(new[] {
+				parkedEvent,
+			},16,true,17);
+
+			//checkpoint should still be at 10.
+			sub.TryMarkCheckpoint(false);
+			Assert.AreEqual(10, cp);
+
+			//get the message, this should send the parked event to the outstanding message cache
+			sub.GetNextNOrLessMessages(1).ToArray();
+
+			//checkpoint should still be at 10.
+			sub.TryMarkCheckpoint(false);
+			Assert.AreEqual(10, cp);
+
+			//acknowledge receipt of message. the parked event is no longer in retry or outstanding message buffers
+			sub.AcknowledgeMessagesProcessed(clientCorrelationId, new[] {parkedEventId});
+
+			//checkpoint should still be at 10.
+			sub.TryMarkCheckpoint(false);
+			Assert.AreEqual(10, cp);
+		}
 	}
 
 	[TestFixture]

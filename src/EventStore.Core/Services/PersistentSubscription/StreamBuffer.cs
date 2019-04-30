@@ -134,8 +134,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public long GetLowestRetry() {
-			if (_retry.Count == 0) return long.MaxValue;
-			return _retry.Min(x => x.ResolvedEvent.OriginalEventNumber);
+			long result = long.MaxValue;
+			foreach(var x in _retry){
+				if(!x.IsReplayedEvent)
+					result = Math.Min(result, x.ResolvedEvent.OriginalEventNumber);
+			}
+			return result;
 		}
 
 		public struct OutstandingMessagePointer {
