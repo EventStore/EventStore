@@ -161,7 +161,7 @@ namespace EventStore.Core {
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", true,
-				TimeSpan.FromMilliseconds(100));
+				TimeSpan.FromMilliseconds(800));
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
