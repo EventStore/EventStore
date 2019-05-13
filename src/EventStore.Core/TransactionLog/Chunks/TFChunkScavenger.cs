@@ -32,6 +32,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly long _maxChunkDataSize;
         private readonly bool _unsafeIgnoreHardDeletes;
         private const int MaxRetryCount = 5;
+        private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
         public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IReadIndex readIndex,
                                 Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null, bool unsafeIgnoreHardDeletes=false)
@@ -236,21 +237,29 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
 
                 var positionMapping = new List<PosMap>();
+                var lastFlushedPage = -1;
                 foreach (var oldChunk in oldChunks)
                 {
                     TraverseChunk(oldChunk,
                                   (prepare, _) =>
                                   {
-                                      if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+                                      if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos)){
                                           positionMapping.Add(WriteRecord(newChunk, prepare));
+                                          FlushIfNewPage(ref lastFlushedPage, newChunk);
+                                      }
                                   },
                                   (commit, _) =>
                                   {
-                                      if (ShouldKeepCommit(commit, commits))
+                                      if (ShouldKeepCommit(commit, commits)){
                                           positionMapping.Add(WriteRecord(newChunk, commit));
+                                          FlushIfNewPage(ref lastFlushedPage, newChunk);
+                                      }
                                   },
                                   // we always keep system log records for now
-                                  (system, _) => positionMapping.Add(WriteRecord(newChunk, system)));
+                                  (system, _) => {
+                                      positionMapping.Add(WriteRecord(newChunk, system));
+                                      FlushIfNewPage(ref lastFlushedPage, newChunk);
+                                  });
                 }
                 newChunk.CompleteScavenge(positionMapping);
 
@@ -306,6 +315,15 @@ namespace EventStore.Core.TransactionLog.Chunks
                 DeleteTempChunk(tmpChunkPath, MaxRetryCount);
                 PublishChunksCompletedEvent(chunkStartNumber, chunkEndNumber, sw.Elapsed, false, 0, ex.Message);
                 return false;
+            }
+        }
+
+        private void FlushIfNewPage(ref int lastFlushedPage, TFChunk.TFChunk newChunk)
+        {
+            var currentPage = newChunk.RawWriterPosition / 4096;
+            if (currentPage - lastFlushedPage > FlushPageInterval) {
+                    newChunk.Flush();
+                    lastFlushedPage = currentPage;
             }
         }
 
