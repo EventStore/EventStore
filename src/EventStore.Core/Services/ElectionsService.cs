@@ -135,6 +135,9 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.Shutdown) return;
 			if (_state == ElectionsState.ElectingLeader) return;
 
+			if (_nodeInfo.IsReadReplica)
+				Log.Trace("ELECTIONS: THIS NODE IS A READ REPLICA");
+
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
 			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
@@ -264,9 +267,13 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.ElectingLeader) // install the view
 				ShiftToRegNonLeader();
 
-			var prepareOk = CreatePrepareOk(message.View);
-			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
-				DateTime.Now.Add(LeaderElectionProgressTimeout)));
+			if (!_nodeInfo.IsReadReplica) {
+				_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp,
+					CreatePrepareOk(message.View), DateTime.Now.Add(LeaderElectionProgressTimeout)));
+			} else {
+				Log.Info("ELECTIONS: I'm a READ REPLICA and I can't be a candidate [{0}]", message.ServerInternalHttp);
+				_publisher.Publish(CreatePrepareKo(message.View));
+			}
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {
@@ -277,9 +284,19 @@ namespace EventStore.Core.Services {
 				ownInfo.NodePriority);
 		}
 
+		private ElectionMessage.PrepareKo CreatePrepareKo(int view) {
+			var ownInfo = GetOwnInfo();
+			return new ElectionMessage.PrepareKo(view, ownInfo.InstanceId, ownInfo.InternalHttp,
+				ownInfo.EpochNumber, ownInfo.EpochPosition, ownInfo.EpochId,
+				ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
+				ownInfo.NodePriority);
+		}
+
 		private void ShiftToRegNonLeader() {
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
-
+			// If I'm a READ REPLICA I can't set my state as leader and send proposals
+			if (!_nodeInfo.IsReadReplica)
+				return;
 			_state = ElectionsState.NonLeader;
 			_lastInstalledView = _lastAttemptedView;
 		}
@@ -464,6 +481,7 @@ namespace EventStore.Core.Services {
 				var master = _servers.FirstOrDefault(x => x.InstanceId == _masterProposal.InstanceId);
 				if (master != null) {
 					_master = _masterProposal.InstanceId;
+					// TODO consider refactoring here when there is no quorum because ReadReplica nodes: stop this log and not publishing ElectionsDone
 					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED MASTER = {masterInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_masterProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedMaster = _master;

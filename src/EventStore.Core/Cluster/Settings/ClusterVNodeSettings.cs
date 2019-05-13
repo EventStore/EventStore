@@ -83,6 +83,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
 
+		public readonly bool IsReadReplica;
+
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
 			IPEndPoint internalSecureTcpEndPoint,
@@ -149,7 +151,8 @@ namespace EventStore.Core.Cluster.Settings {
 			int initializationThreads = 1,
 			bool faultOutOfOrderProjections = false,
 			bool structuredLog = false,
-			int maxAutoMergeIndexLevel = 1000) {
+			int maxAutoMergeIndexLevel = 1000,
+			bool isReadReplica = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -178,7 +181,8 @@ namespace EventStore.Core.Cluster.Settings {
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
-				internalHttpEndPoint, externalHttpEndPoint);
+				internalHttpEndPoint, externalHttpEndPoint,
+				isReadReplica);
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			IntHttpPrefixes = intHttpPrefixes;
 			ExtHttpPrefixes = extHttpPrefixes;
@@ -249,6 +253,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
+			IsReadReplica = isReadReplica;
 		}
 
 
@@ -293,7 +298,8 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "ChunkInitialReaderCount: {37}\n"
 			                     + "ReduceFileCachePressure: {38}\n"
 			                     + "InitializationThreads: {39}\n"
-			                     + "StructuredLog: {40}\n",
+			                     + "StructuredLog: {40}\n"
+			                     + "IsReadReplica: {41}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -312,7 +318,7 @@ namespace EventStore.Core.Cluster.Settings {
 				NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
 				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
-				ReduceFileCachePressure, InitializationThreads, StructuredLog);
+				ReduceFileCachePressure, InitializationThreads, StructuredLog, IsReadReplica);
 		}
 	}
 }

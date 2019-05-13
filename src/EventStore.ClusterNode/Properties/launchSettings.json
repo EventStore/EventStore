@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "EventStore.ClusterNode": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -360,6 +360,8 @@ namespace EventStore.Core.Util {
 		public const string GossipSeedDescr = "Endpoints for other cluster nodes from which to seed gossip";
 		public static readonly IPEndPoint[] GossipSeedDefault = new IPEndPoint[0];
 
+		public const string ReadReplicaDescr = "Whether or not this node is allowed to join into elections if true this node is just an async replica";
+		public static readonly bool ReadReplicaDefault = false;
 		/*
 		 *  MANAGER OPTIONS
 		 */

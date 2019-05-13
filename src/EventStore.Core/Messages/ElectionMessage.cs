@@ -205,6 +205,51 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class PrepareKo : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId { get { return TypeId; } }
+
+			public readonly int View;
+			public readonly Guid ServerId;
+			public readonly IPEndPoint ServerInternalHttp;
+			public readonly int EpochNumber;
+			public readonly long EpochPosition;
+			public readonly Guid EpochId;
+			public readonly long LastCommitPosition;
+			public readonly long WriterCheckpoint;
+			public readonly long ChaserCheckpoint;
+			public readonly int NodePriority;
+
+			public PrepareKo(int view,
+				Guid serverId,
+				IPEndPoint serverInternalHttp,
+				int epochNumber,
+				long epochPosition,
+				Guid epochId,
+				long lastCommitPosition,
+				long writerCheckpoint,
+				long chaserCheckpoint,
+				int nodePriority) {
+				View = view;
+				ServerId = serverId;
+				ServerInternalHttp = serverInternalHttp;
+				EpochNumber = epochNumber;
+				EpochPosition = epochPosition;
+				EpochId = epochId;
+				LastCommitPosition = lastCommitPosition;
+				WriterCheckpoint = writerCheckpoint;
+				ChaserCheckpoint = chaserCheckpoint;
+				NodePriority = nodePriority;
+			}
+
+			public override string ToString() {
+				return string.Format("---- PrepareKo (NPC): view {0}, serverId {1}, serverInternalHttp {2}, epochNumber {3}, " +
+				                     "epochPosition {4}, epochId {5}, lastCommitPosition {6}, writerCheckpoint {7}, chaserCheckpoint {8}, nodePriority: {9}",
+					View, ServerId, ServerInternalHttp, EpochNumber,
+					EpochPosition, EpochId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
+			}
+		}
+
 		public class Proposal : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 

@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
@@ -55,7 +57,7 @@ namespace EventStore.Core.Messages {
 
 			public GossipReceived(IEnvelope envelope, ClusterInfo clusterInfo, IPEndPoint server) {
 				Envelope = envelope;
-				ClusterInfo = clusterInfo;
+				ClusterInfo = AdaptNames(clusterInfo);
 				Server = server;
 			}
 		}
@@ -71,7 +73,7 @@ namespace EventStore.Core.Messages {
 			public readonly IPEndPoint ServerEndPoint;
 
 			public SendGossip(ClusterInfo clusterInfo, IPEndPoint serverEndPoint) {
-				ClusterInfo = clusterInfo;
+				ClusterInfo = AdaptNames(clusterInfo);
 				ServerEndPoint = serverEndPoint;
 			}
 		}
@@ -84,10 +86,27 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly ClusterInfo ClusterInfo;
+			public readonly ClusterInfo OldClusterInfo;
 
-			public GossipUpdated(ClusterInfo clusterInfo) {
+			public GossipUpdated(ClusterInfo clusterInfo, ClusterInfo oldClusterInfo) {
 				ClusterInfo = clusterInfo;
+				ClusterInfo = AdaptNames(clusterInfo);
+				OldClusterInfo = oldClusterInfo;
 			}
+		}
+
+		private static ClusterInfo AdaptNames(ClusterInfo cluster) {
+			var newOtherMembers = new List<MemberInfo>();
+			foreach (var memberInfo in cluster.Members) {
+				// TODO add a version in memberInfo to avoid adapt names for compatible nodes
+				if (memberInfo.State == VNodeState.ReadReplica) {
+					newOtherMembers.Add(memberInfo.Updated(VNodeState.Clone, memberInfo.IsAlive, memberInfo.LastCommitPosition,
+						memberInfo.WriterCheckpoint, memberInfo.ChaserCheckpoint));
+				} else {
+					newOtherMembers.Add(memberInfo);
+				}
+			}
+			return new ClusterInfo(newOtherMembers);
 		}
 
 		public class GossipSendFailed : Message {
