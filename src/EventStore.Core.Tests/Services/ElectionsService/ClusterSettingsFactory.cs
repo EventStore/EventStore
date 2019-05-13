@@ -78,12 +78,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			if (selfIndex < 0 || selfIndex >= nodesCount)
 				throw new ArgumentOutOfRangeException("selfIndex", "Index of self should be in range of created nodes");
 
-
 			var clusterManager = GetLoopbackForPort(ManagerPort);
 
 			var nodes = new List<ClusterVNodeSettings>();
 			for (var i = 0; i < nodesCount; i++) {
-				nodes.Add(i == selfIndex ? CreateVNode(i, false) : CreateVNode(i));
+				nodes.Add(i == selfIndex ? CreateVNode(i, true) : CreateVNode(i));
 			}
 
 			var self = nodes[selfIndex];

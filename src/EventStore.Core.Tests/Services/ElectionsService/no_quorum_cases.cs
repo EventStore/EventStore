@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[TestFixture]
-		public sealed class elections_service_should_not_elect_nonpromotableclone {
+		public sealed class elections_service_should_not_elect_readreplica {
 			private ElectionsServiceUnit _electionsUnit;
 			private const int SelfIndex = 0;
 			private const int View = 2;
