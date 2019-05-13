@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.PersistentSubscription
     {
         private readonly Dictionary<Guid, Tuple<DateTime, OutstandingMessage>> _outstandingRequests;
         private readonly SortedDictionary<Tuple<DateTime, RetryableMessage>, bool> _byTime;
-        private readonly SortedList<long, long> _bySequences;
+		private readonly SortedList<long, OutstandingMessage> _bySequences;
 
         public class ByTypeComparer : IComparer<Tuple<DateTime, RetryableMessage>>
         {
@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         {
             _outstandingRequests = new Dictionary<Guid, Tuple<DateTime, OutstandingMessage>>();
             _byTime = new SortedDictionary<Tuple<DateTime, RetryableMessage>, bool>(new ByTypeComparer());
-            _bySequences = new SortedList<long, long>();
+			_bySequences = new SortedList<long, OutstandingMessage>();
         }
 
         public int Count { get { return _outstandingRequests.Count; }}
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             if (_outstandingRequests.ContainsKey(message.EventId))
                 return StartMessageResult.SkippedDuplicate;
             _outstandingRequests[message.EventId] = new Tuple<DateTime, OutstandingMessage>(expires, message);
-            _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message.ResolvedEvent.OriginalEventNumber);
+            _bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message);
             _byTime.Add(new Tuple<DateTime, RetryableMessage>(expires, new RetryableMessage(message.EventId, expires)), false);
 
             return StartMessageResult.Success;
@@ -88,11 +88,13 @@ namespace EventStore.Core.Services.PersistentSubscription
             return _byTime.Keys;
         }
 
-        public long GetLowestPosition()
-        {
-            //TODO is there a better way of doing this?
-            if (_bySequences.Count == 0) return long.MaxValue;
-            return _bySequences.Values[0];
+		public long GetLowestPosition() {
+			var result = long.MaxValue;
+			foreach(var x in _bySequences){
+				if(!x.Value.IsReplayedEvent)
+					return x.Value.ResolvedEvent.OriginalEventNumber;
+			}
+			return result;
         }
 
         public bool GetMessageById(Guid id, out OutstandingMessage outstandingMessage)

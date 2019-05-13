@@ -50,6 +50,7 @@ namespace EventStore.Core.Services.Monitoring
         private SystemStatsHelper _systemStats;
 
         private string _lastWrittenCsvHeader;
+		private DateTime _lastCsvTimestamp = DateTime.UtcNow;
         private DateTime _lastStatsRequestTime = DateTime.UtcNow;
         private StatsContainer _memoizedStats;
         private readonly Timer _timer;
@@ -147,22 +148,45 @@ namespace EventStore.Core.Services.Monitoring
             return statsContainer;
         }
 
-        private void SaveStatsToCsvFile(Dictionary<string, object> rawStats)
-        {
+		private void SaveStatsToCsvFile(Dictionary<string, object> rawStats) {
+			var writeHeader = false;
             var header = StatsCsvEncoder.GetHeader(rawStats);
             if (header != _lastWrittenCsvHeader)
             {
                 _lastWrittenCsvHeader = header;
-                RegularLog.Info(Environment.NewLine);
-                RegularLog.Info(header);
+					writeHeader = true;
             }
 
             var line = StatsCsvEncoder.GetLine(rawStats);
+				var timestamp = GetTimestamp(line);
+				if(timestamp.HasValue){
+					if(timestamp.Value.Day != _lastCsvTimestamp.Day){
+						writeHeader = true;
+					}
+					_lastCsvTimestamp = timestamp.Value;
+				}
+
+				if(writeHeader){
+					RegularLog.Info(Environment.NewLine);
+					RegularLog.Info(header);
+				}
             RegularLog.Info(line);
         }
 
-        private void SaveStatsToStream(Dictionary<string, object> rawStats)
-        {
+        private DateTime? GetTimestamp(string line) {
+			var separatorIdx = line.IndexOf(',');
+			if(separatorIdx == -1)
+				return null;
+
+			try{
+				return DateTime.Parse(line.Substring(0, separatorIdx)).ToUniversalTime();
+			}
+			catch{
+				return null;
+			}
+        }
+
+        private void SaveStatsToStream(Dictionary<string, object> rawStats) {
             var data = rawStats.ToJsonBytes();
             var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
             var corrId = Guid.NewGuid();

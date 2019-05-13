@@ -360,7 +360,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // of pre-recorded order events recovered by checkpoint manager
             _expectedSubscriptionMessageSequenceNumber = 0;
             _currentSubscriptionId = coreProjection._projectionCorrelationId;
-            _subscriptionDispatcher.Subscribed(coreProjection._projectionCorrelationId, coreProjection);
+			_subscriptionDispatcher.Subscribed(coreProjection._projectionCorrelationId, this);
             _subscribed = true; // even if it is not a real subscription we need to unsubscribe 
 
         }

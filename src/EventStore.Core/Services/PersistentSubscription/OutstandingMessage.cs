@@ -9,6 +9,7 @@ namespace EventStore.Core.Services.PersistentSubscription
         public readonly PersistentSubscriptionClient HandlingClient;
         public readonly int RetryCount;
         public readonly Guid EventId;
+		public readonly bool IsReplayedEvent;
 
         public OutstandingMessage(Guid eventId, PersistentSubscriptionClient handlingClient, ResolvedEvent resolvedEvent, int retryCount) : this()
         {
@@ -16,6 +17,7 @@ namespace EventStore.Core.Services.PersistentSubscription
             HandlingClient = handlingClient;
             ResolvedEvent = resolvedEvent;
             RetryCount = retryCount;
+			IsReplayedEvent = resolvedEvent.OriginalStreamId.StartsWith("$persistentsubscription-") && resolvedEvent.OriginalStreamId.EndsWith("-parked");
         }
     }
 }

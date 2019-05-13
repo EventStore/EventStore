@@ -664,6 +664,13 @@
     <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\read_stream_events_backward_with_timeout_on_read.cs" />
     <Compile Include="Helpers\IODispatcherTests\ReadEventsTests\async_read_stream_events_backward_with_cancelled_read.cs" />
     <Compile Include="Helpers\IODispatcherTests\IODispatcherTestHelpers.cs" />
+    <Compile Include="Services\Storage\FakeInMemoryTFReader.cs" />
+    <Compile Include="Services\Storage\FakeInMemoryTableIndex.cs" />
+    <Compile Include="Services\Storage\Idempotency\when_writing_a_second_batch_of_events_after_the_first_batch_has_been_replicated.cs" />
+    <Compile Include="Services\Storage\Idempotency\when_writing_a_second_batch_of_events_after_the_first_batch_has_not_yet_been_replicated.cs" />
+    <Compile Include="Services\Storage\Idempotency\when_writing_a_second_event_after_the_first_event_has_been_replicated.cs" />
+    <Compile Include="Services\Storage\Idempotency\when_writing_a_second_event_after_the_first_event_has_not_yet_been_replicated.cs" />
+    <Compile Include="Services\Storage\WriteEventsToIndexScenario.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj">

@@ -245,17 +245,26 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
             }
 
-            TFChunk.TFChunk lastRemovedChunk = null;
-            for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1)
-            {
-                var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
-                if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk))
-                {
-                    oldChunk.MarkForDeletion();
+			TFChunk.TFChunk previousRemovedChunk = null;
+			for (int i = chunkStartNumber; i <= chunkEndNumber; i += 1) {
+				var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
+				if (!ReferenceEquals(previousRemovedChunk, oldChunk)) {
+					// Once we've swapped all entries for the previousRemovedChunk we can safely delete it.
+					if (previousRemovedChunk != null) {
+						previousRemovedChunk.MarkForDeletion();
+						Log.Info("{0} chunk #{1} is marked for deletion.", chunkExplanation,
+							previousRemovedChunk);
+					}
 
-                    Log.Info("{0} chunk #{1} is marked for deletion.", chunkExplanation, oldChunk);
-                }
-                lastRemovedChunk = oldChunk;
+					previousRemovedChunk = oldChunk;
+				}
+			}
+
+			if (previousRemovedChunk != null) {
+				// Delete the last chunk swapped out now it's fully replaced.
+				previousRemovedChunk.MarkForDeletion();
+				Log.Info("{0} chunk #{1} is marked for deletion.", chunkExplanation,
+					previousRemovedChunk);
             }
             return true;
         }
