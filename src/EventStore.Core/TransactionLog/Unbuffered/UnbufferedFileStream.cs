@@ -156,7 +156,8 @@ namespace EventStore.Core.TransactionLog.Unbuffered {
 			var aligned = GetLowestAlignment(value);
 			aligned = aligned == value ? aligned : aligned + _blockSize;
 			NativeFile.SetFileSize(_handle, aligned);
-			Seek(0, SeekOrigin.Begin);
+			if(Position > aligned)
+				Seek(aligned, SeekOrigin.Begin);
 		}
 
 		public override int Read(byte[] buffer, int offset, int count) {
