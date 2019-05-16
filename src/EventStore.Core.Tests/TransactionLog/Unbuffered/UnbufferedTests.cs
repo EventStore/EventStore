@@ -18,6 +18,195 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 		}
 
 		[Test]
+		public void when_expanding_an_aligned_file_by_one_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize + 4096); //expand file by 4KB
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
+		}
+
+		[Test]
+		public void when_expanding_an_aligned_file_by_one_byte_less_than_one_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize + 4095); //expand file by 4KB - 1
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
+		}
+
+		[Test]
+		public void when_expanding_an_aligned_file_by_one_byte_more_than_one_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize + 4097); //expand file by 4KB + 1
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize + 4096 * 2, new FileInfo(filename).Length); //file size should increase by 4KB x 2
+		}
+
+		[Test]
+		public void when_expanding_an_aligned_file_by_one_byte() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize + 1); //expand file by 1 byte
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
+		}
+
+		[Test]
+		public void when_truncating_an_aligned_file_by_one_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize - 4096); //truncate file by 4KB
+			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should decrease by 4KB
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
+		}
+
+		[Test]
+		public void when_truncating_an_aligned_file_by_one_page_and_position_one_page_from_eof() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(-4096, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize - 4096, stream.Position); //verify position
+			stream.SetLength(initialFileSize - 4096); //truncate file by 4KB
+			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
+		}
+
+		[Test]
+		public void when_truncating_an_aligned_file_by_one_byte_less_than_a_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize - 4095); //truncate file by 4KB - 1
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize, new FileInfo(filename).Length); //file size should not change
+		}
+
+		[Test]
+		public void when_truncating_an_aligned_file_by_one_byte_more_than_a_page() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize - 4097); //truncate file by 4KB + 1
+			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should decrease by 4KB 
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
+		}
+
+		[Test]
+		public void when_truncating_an_aligned_file_by_one_byte() {
+			var filename = GetFilePathFor(Guid.NewGuid().ToString());
+
+			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
+				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			
+			var initialFileSize = 4096 * 1024;
+			stream.SetLength(initialFileSize); //initial size of 4MB
+
+			stream.Seek(0, SeekOrigin.End);
+
+			Assert.AreEqual(initialFileSize, stream.Position); //verify position
+			stream.SetLength(initialFileSize - 1); //truncate file by 1 byte
+			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
+			
+			stream.Close();
+
+			Assert.AreEqual(initialFileSize, new FileInfo(filename).Length); //file size should not change
+		}
+
+		[Test]
 		public void when_writing_less_than_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
