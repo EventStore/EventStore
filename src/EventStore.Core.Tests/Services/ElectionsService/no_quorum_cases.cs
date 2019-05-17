@@ -131,12 +131,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			[SetUp]
 			public void SetUp() {
 				var clusterSettingsFactory = new ClusterSettingsFactory();
-				var clusterSettings = clusterSettingsFactory.GetClusterSettingsWithSelfAsReadReplica(SelfIndex, 3);
+				var clusterSettings = clusterSettingsFactory.GetClusterSettingsWithSelfAsReadReplica(SelfIndex, 3); 
 
 				_electionsUnit = new ElectionsServiceUnit(clusterSettings);
-				_electionsUnit.UpdateClusterMemberInfo(0, isAlive: true);
-				_electionsUnit.UpdateClusterMemberInfo(1, isAlive: true);
-				_electionsUnit.UpdateClusterMemberInfo(2, isAlive: false);
 
 				StartElections();
 				Prepare(SelfIndex, View);

@@ -295,7 +295,7 @@ namespace EventStore.Core.Services {
 		private void ShiftToRegNonLeader() {
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
 			// If I'm a READ REPLICA I can't set my state as leader and send proposals
-			if (!_nodeInfo.IsReadReplica)
+			if (_nodeInfo.IsReadReplica)
 				return;
 			_state = ElectionsState.NonLeader;
 			_lastInstalledView = _lastAttemptedView;
@@ -392,8 +392,8 @@ namespace EventStore.Core.Services {
 				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
 			if (master != null) {
 				if (candidate.InstanceId == master.InstanceId
-				    || candidate.EpochNumber > master.EpochNumber
-				    || (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
+					|| candidate.EpochNumber > master.EpochNumber
+					|| (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
 					return true;
 
 				Log.Debug(

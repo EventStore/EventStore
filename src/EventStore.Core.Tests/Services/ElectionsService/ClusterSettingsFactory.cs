@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		private static ClusterVNodeSettings CreateVNode(int nodeNumber, bool isReadReplica) {
 			int tcpIntPort = StartingPort + nodeNumber * 2,
-				tcpExtPort = tcpIntPort + 1,
+					tcpExtPort = tcpIntPort + 1,
 				httpIntPort = tcpIntPort + 10,
 				httpExtPort = tcpIntPort + 11;
 

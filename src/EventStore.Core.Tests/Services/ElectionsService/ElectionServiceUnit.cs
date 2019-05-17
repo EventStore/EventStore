@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				.Union(new[] {
 					MemberInfo.ForVNode(clusterSettings.Self.NodeInfo.InstanceId,
 						InitialDate,
-						VNodeState.Unknown,
+						clusterSettings.Self.NodeInfo.IsReadReplica ? VNodeState.ReadReplica : VNodeState.Unknown,
 						true,
 						clusterSettings.Self.NodeInfo.InternalTcp,
 						clusterSettings.Self.NodeInfo.InternalSecureTcp,

@@ -99,6 +99,7 @@ namespace EventStore.Core.Messages {
 			var newOtherMembers = new List<MemberInfo>();
 			foreach (var memberInfo in cluster.Members) {
 				// TODO add a version in memberInfo to avoid adapt names for compatible nodes
+				// Set state==clone if this node is ReadReplica to keep compatibility with older nodes
 				if (memberInfo.State == VNodeState.ReadReplica) {
 					newOtherMembers.Add(memberInfo.Updated(VNodeState.Clone, memberInfo.IsAlive, memberInfo.LastCommitPosition,
 						memberInfo.WriterCheckpoint, memberInfo.ChaserCheckpoint));
