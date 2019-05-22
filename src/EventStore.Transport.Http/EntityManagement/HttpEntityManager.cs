@@ -159,7 +159,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
                 HttpEntity.Response.AddHeader("Access-Control-Expose-Headers", "Location, ES-Position, ES-CurrentVersion");
                 if (HttpEntity.Response.StatusCode == HttpStatusCode.Unauthorized)
-                    HttpEntity.Response.AddHeader("WWW-Authenticate", "Basic realm=\"ES\"");
+                    HttpEntity.Response.AddHeader("WWW-Authenticate", "BasicCustom realm=\"ES\"");
             }
             catch (ObjectDisposedException)
             {
