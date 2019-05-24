@@ -271,7 +271,7 @@ namespace EventStore.Core.Services {
 				_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp,
 					CreatePrepareOk(message.View), DateTime.Now.Add(LeaderElectionProgressTimeout)));
 			} else {
-				Log.Info("ELECTIONS: I'm a READ REPLICA and I can't be a candidate [{0}]", message.ServerInternalHttp);
+				//Log.Debug("ELECTIONS: I'm a READ REPLICA and I can't be a candidate [{0}]", message.ServerInternalHttp);
 				_publisher.Publish(CreatePrepareKo(message.View));
 			}
 		}
@@ -293,10 +293,10 @@ namespace EventStore.Core.Services {
 		}
 
 		private void ShiftToRegNonLeader() {
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
 			// If I'm a READ REPLICA I can't set my state as leader and send proposals
 			if (_nodeInfo.IsReadReplica)
 				return;
+			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
 			_state = ElectionsState.NonLeader;
 			_lastInstalledView = _lastAttemptedView;
 		}

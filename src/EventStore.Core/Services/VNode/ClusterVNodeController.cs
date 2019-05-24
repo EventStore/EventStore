@@ -669,7 +669,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Debug("There is NO MASTER or MASTER is DEAD according to GOSSIP. Starting new elections. MASTER: [{0}].", _master);
 				_mainQueue.Publish(new ElectionMessage.StartElections());
 			} else if (CantBePartOfQuorumIfNonPromotable(message.OldClusterInfo, message.ClusterInfo)) {
-				Log.Debug("I'm a ReadReplica and I can't be part of the quorum. Starting new elections. MASTER: [{0}].", _master);
+				//Log.Debug("I'm a ReadReplica and I can't be part of the quorum. Starting new elections. MASTER: [{0}].", _master);
 				_mainQueue.Publish(new ElectionMessage.StartElections());
 			}
 
