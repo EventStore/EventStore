@@ -480,8 +480,9 @@ namespace EventStore.Core.Services {
 			if (_acceptsReceived.Add(message.ServerId) && _acceptsReceived.Count == _clusterSize / 2 + 1) {
 				var master = _servers.FirstOrDefault(x => x.InstanceId == _masterProposal.InstanceId);
 				if (master != null) {
+					if (_nodeInfo.IsReadReplica && _nodeInfo.InstanceId.Equals(_masterProposal.InstanceId)) 
+						return;
 					_master = _masterProposal.InstanceId;
-					// TODO consider refactoring here when there is no quorum because ReadReplica nodes: stop this log and not publishing ElectionsDone
 					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED MASTER = {masterInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_masterProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedMaster = _master;
