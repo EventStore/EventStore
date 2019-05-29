@@ -110,19 +110,7 @@ namespace EventStore.ClientAPI {
 					var clusterSettings = new ClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts,
 						uri.Port,
 						connectionSettings.GossipTimeout, connectionSettings.NodePreference);
-					Ensure.NotNull(connectionSettings, "connectionSettings");
-					Ensure.NotNull(clusterSettings, "clusterSettings");
-
-					var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
-						clusterSettings.ClusterDns,
-						clusterSettings.MaxDiscoverAttempts,
-						clusterSettings.ExternalGossipPort,
-						clusterSettings.GossipSeeds,
-						clusterSettings.GossipTimeout,
-						clusterSettings.NodePreference);
-
-					return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
-						connectionName);
+					return Create(connectionSettings, clusterSettings, connectionName);
 				}
 
 				if (scheme == "tcp") {
@@ -139,19 +127,7 @@ namespace EventStore.ClientAPI {
 					connectionSettings.MaxDiscoverAttempts,
 					connectionSettings.GossipTimeout,
 					connectionSettings.NodePreference);
-				Ensure.NotNull(connectionSettings, "connectionSettings");
-				Ensure.NotNull(clusterSettings, "clusterSettings");
-
-				var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
-					clusterSettings.ClusterDns,
-					clusterSettings.MaxDiscoverAttempts,
-					clusterSettings.ExternalGossipPort,
-					clusterSettings.GossipSeeds,
-					clusterSettings.GossipTimeout,
-					clusterSettings.NodePreference);
-
-				return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
-					connectionName);
+				return Create(connectionSettings, clusterSettings, connectionName);
 			}
 
 			throw new Exception($"Must specify uri or gossip seeds");
