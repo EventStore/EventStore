@@ -8,6 +8,7 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Util {
 	public class MiniWeb {

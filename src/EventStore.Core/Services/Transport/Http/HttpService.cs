@@ -11,6 +11,7 @@ using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public class HttpService : IHttpService,

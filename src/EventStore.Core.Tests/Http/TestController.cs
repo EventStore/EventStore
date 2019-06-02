@@ -6,6 +6,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Utils;
+using UriTemplateMatch = EventStore.UriTemplate.UriTemplateMatch;
 
 namespace EventStore.Core.Tests.Http {
 	public class TestController : CommunicationController {

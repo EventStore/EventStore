@@ -11,6 +11,7 @@ using EventStore.Transport.Http.EntityManagement;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,

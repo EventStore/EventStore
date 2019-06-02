@@ -14,6 +14,7 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public enum EmbedLevel {

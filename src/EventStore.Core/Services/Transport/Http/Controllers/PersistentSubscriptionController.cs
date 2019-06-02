@@ -13,6 +13,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Data;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Atom;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class PersistentSubscriptionController : CommunicationController {

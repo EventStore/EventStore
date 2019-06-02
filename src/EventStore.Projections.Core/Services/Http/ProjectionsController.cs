@@ -19,6 +19,7 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json.Linq;
 using EventStore.Projections.Core.Services.Management;
+using EventStore.UriTemplate;
 
 namespace EventStore.Projections.Core.Services.Http {
 	public class ProjectionsController : CommunicationController {

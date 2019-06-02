@@ -12,6 +12,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Unbuffered;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("EventStore.Core.Tests")]
 namespace EventStore.Core.Index {
 	public enum FileType : byte {
 		PTableFile = 1,

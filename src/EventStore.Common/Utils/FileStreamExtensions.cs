@@ -50,7 +50,7 @@ namespace EventStore.Common.Utils {
 								Marshal.GetLastWin32Error()));
 					};
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while compiling sneaky SafeFileHandle getter.");
+					//Log.ErrorException(exc, "Error while compiling sneaky SafeFileHandle getter.");
 					FlushSafe = f => f.Flush(flushToDisk: true);
 				}
 			}

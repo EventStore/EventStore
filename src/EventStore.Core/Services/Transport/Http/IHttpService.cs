@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Transport.Http.EntityManagement;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public interface IHttpController {

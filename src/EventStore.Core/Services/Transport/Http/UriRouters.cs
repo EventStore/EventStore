@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.EntityManagement;
+using EventStore.UriTemplate;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public interface IUriRouter {
@@ -121,12 +122,12 @@ namespace EventStore.Core.Services.Transport.Http {
 	internal class HttpRoute {
 		public readonly ControllerAction Action;
 		public readonly Func<HttpEntityManager, UriTemplateMatch, RequestParams> Handler;
-		public readonly UriTemplate UriTemplate;
+		public readonly UriTemplate.UriTemplate UriTemplate;
 
 		public HttpRoute(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler) {
 			Action = action;
 			Handler = handler;
-			UriTemplate = new UriTemplate(action.UriTemplate);
+			UriTemplate = new UriTemplate.UriTemplate(action.UriTemplate);
 		}
 	}
 }

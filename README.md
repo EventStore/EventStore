@@ -1,4 +1,4 @@
-# Event Store
+# Event Store (on .net core 2.2+)
 
 The open-source, functional database with Complex Event Processing in JavaScript.
 
@@ -24,32 +24,19 @@ We also host native packages for Linux on [Package Cloud](https://packagecloud.i
 
 ## Building Event Store
 
-Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine), it must be built for the platform on which you intend to run it.
+Event Store is written in a mixture of C#, C++ and JavaScript. It can run .NET Core v2.2+.
 
 ### Linux
 **Prerequisites**
-- [Mono 5.16.0](https://www.mono-project.com/download/)
-- [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
-
-**Required Environment Variables**
-```
-export FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-```
+- [.NET Core SDK 2.2](https://www.microsoft.com/net/download)
 
 ### Windows
 **Prerequisites**
-- [.NET Framework 4.7.1 (Developer Pack)](https://www.microsoft.com/net/download)
-- [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
+- [.NET Core SDK 2.2](https://www.microsoft.com/net/download)
 
 ### Mac OS X
 **Prerequisites**
-- [Mono 5.16.0](https://www.mono-project.com/download/)
-- [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
-
-**Required Environment Variables**
-```
-export FrameworkPathOverride=/Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api/
-```
+- [.NET Core SDK 2.2](https://www.microsoft.com/net/download)
 
 ### Build EventStore
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
@@ -59,12 +46,8 @@ dotnet build -c Release src/EventStore.sln
 
 To start a single node, you can then run:
 ```
-bin/Release/EventStore.ClusterNode/net471/EventStore.ClusterNode.exe --db ../db --log ../logs
+bin/Release/EventStore.ClusterNode/netcoreapp2.2/dotnet run EventStore.ClusterNode.dll --db ../db --log ../logs
 ```
-
-You'll need to launch the node with `mono` on Linux or Mac OS X.
-
-_Note: The build system has changed after version `4.1.1-hotfix1`, therefore the above instructions will not work for old releases._
 
 ### Running the tests
 You can launch the tests as follows:

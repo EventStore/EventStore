@@ -6,12 +6,12 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Other {
 	[TestFixture, Ignore("Until resolved in MONO")]
 	class when_matching_remaining_path {
-		private UriTemplate _urlTemplate;
-		private UriTemplateMatch _match;
+		private UriTemplate.UriTemplate _urlTemplate;
+		private UriTemplate.UriTemplateMatch _match;
 
 		[SetUp]
 		public void setup() {
-			_urlTemplate = new UriTemplate("/a/b/{*C}");
+			_urlTemplate = new UriTemplate.UriTemplate("/a/b/{*C}");
 			_match = _urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost/a/b/123"));
 		}
 
@@ -28,12 +28,12 @@ namespace EventStore.Projections.Core.Tests.Other {
 
 	[TestFixture, Ignore("Until resolved in MONO")]
 	class when_matching_remaining_multi_segment_path {
-		private UriTemplate _urlTemplate;
-		private UriTemplateMatch _match;
+		private UriTemplate.UriTemplate _urlTemplate;
+		private UriTemplate.UriTemplateMatch _match;
 
 		[SetUp]
 		public void setup() {
-			_urlTemplate = new UriTemplate("/a/b/{*C}");
+			_urlTemplate = new UriTemplate.UriTemplate("/a/b/{*C}");
 			_match = _urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost/a/b/123/456"));
 		}
 
@@ -51,12 +51,12 @@ namespace EventStore.Projections.Core.Tests.Other {
 
 	[TestFixture]
 	class when_matching_uri_with_missing_query_variable {
-		private UriTemplate _urlTemplate;
-		private UriTemplateMatch _match;
+		private UriTemplate.UriTemplate _urlTemplate;
+		private UriTemplate.UriTemplateMatch _match;
 
 		[SetUp]
 		public void setup() {
-			_urlTemplate = new UriTemplate("/a/b?c={C}");
+			_urlTemplate = new UriTemplate.UriTemplate("/a/b?c={C}");
 			_match = _urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost/a/b"));
 		}
 
@@ -106,10 +106,10 @@ namespace EventStore.Projections.Core.Tests.Other {
 					var unescaped = "/z" + i + "z/";
 					var escaped = "/z" + Uri.HexEscape(i) + "z/";
 
-					var unescapedTemplate = new UriTemplate(unescaped);
-					var escapedTemplate = new UriTemplate(escaped);
+					var unescapedTemplate = new UriTemplate.UriTemplate(unescaped);
+					var escapedTemplate = new UriTemplate.UriTemplate(escaped);
 
-					Func<string, UriTemplate, bool> m =
+					Func<string, UriTemplate.UriTemplate, bool> m =
 						(s, template) =>
 							template.Match(new Uri("http://localhost"), new Uri("http://localhost" + s)) != null;
 
@@ -146,13 +146,13 @@ namespace EventStore.Projections.Core.Tests.Other {
 		}
 
 		private static void Matches(string template, string candidate) {
-			var urlTemplate = new UriTemplate(template);
+			var urlTemplate = new UriTemplate.UriTemplate(template);
 			var match = urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost" + candidate));
 			Assert.IsNotNull(match);
 		}
 
 		private static void DoesNotMatch(string template, string candidate) {
-			var urlTemplate = new UriTemplate(template);
+			var urlTemplate = new UriTemplate.UriTemplate(template);
 			var match = urlTemplate.Match(new Uri("http://localhost"), new Uri("http://localhost" + candidate));
 			Assert.IsNull(match);
 		}

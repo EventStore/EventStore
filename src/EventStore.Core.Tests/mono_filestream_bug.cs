@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests {
 	public class mono_uritemplate_bug {
 		[Test]
 		public void when_validating_a_uri_template_with_url_encoded_chars() {
-			var template = new UriTemplate("/streams/$all?embed={embed}");
+			var template = new UriTemplate.UriTemplate("/streams/$all?embed={embed}");
 			var uri = new Uri("http://127.0.0.1/streams/$all");
 			var baseaddress = new Uri("http://127.0.0.1");
 			Assert.IsTrue(template.Match(baseaddress, uri) != null);

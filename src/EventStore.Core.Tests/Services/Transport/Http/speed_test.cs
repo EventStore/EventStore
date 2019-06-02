@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				});
 			}
 
-			var uriTemplate = new UriTemplate(route);
+			var uriTemplate = new UriTemplate.UriTemplate(route);
 			var bound = uriTemplate.BindByPosition(new Uri("http://localhost:12345/"),
 				Enumerable.Range(0,
 						uriTemplate.PathSegmentVariableNames.Count +
