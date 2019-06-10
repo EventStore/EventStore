@@ -32,9 +32,9 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		///</summary>
 		public readonly double SendingSpeed;
 
-		///<summary>
-		///Receiving speed in bytes per second
-		///</summary>
+		/// <summary>
+		/// Receiving speed in bytes per second
+		/// </summary>
 		public readonly double ReceivingSpeed;
 
 		///<summary>

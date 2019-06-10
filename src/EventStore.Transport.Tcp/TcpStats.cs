@@ -8,6 +8,9 @@ namespace EventStore.Transport.Tcp {
 		public readonly long SentBytesSinceLastRun;
 		public readonly long ReceivedBytesSinceLastRun;
 		public readonly double SendingSpeed;
+		/// <summary>
+		/// Receiving speed in bytes per second.
+		/// </summary>
 		public readonly double ReceivingSpeed;
 		public readonly long PendingSend;
 		public readonly long InSend;
