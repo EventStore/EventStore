@@ -71,6 +71,9 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly bool BetterOrdering;
 		public readonly string Index;
+		///<summary>
+		///Current thread count
+		///</summary>
 		public readonly int ReaderThreadsCount;
 		public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
 		public readonly bool AlwaysKeepScavenged;
