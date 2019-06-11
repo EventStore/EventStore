@@ -32,6 +32,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnPostMergeIndexes);
+			service.RegisterAction(
+				new ControllerAction("/admin/maintainance/enable", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
+				OnEnableMaintainance);
 		}
 
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
@@ -138,6 +141,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			);
 
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
+		}
+
+		private void OnEnableMaintainance(HttpEntityManager entity, UriTemplateMatch match) {
+			if (entity.User != null &&
+			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+				Log.Info("Request enable maintainance of node command has been received.");
+				// Publish(new ClientMessage.EnableMaintainance(exitProcess: true, shutdownHttp: true));
+				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+			} else {
+				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+			}
 		}
 
 		private void LogReplyError(Exception exc) {
