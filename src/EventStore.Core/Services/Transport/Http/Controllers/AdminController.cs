@@ -150,7 +150,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
 				Log.Info("Request enable maintainance of node command has been received.");
-				// Publish(new ClientMessage.EnableMaintainance(exitProcess: true, shutdownHttp: true));
+				Publish(new ClientMessage.EnableMaintainanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
@@ -161,7 +161,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
 				Log.Info("Request disable maintainance of node command has been received.");
-				// Publish(new ClientMessage.EnableMaintainance(exitProcess: true, shutdownHttp: true));
+				Publish(new ClientMessage.DisableMaintainanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
