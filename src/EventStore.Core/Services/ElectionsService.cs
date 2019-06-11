@@ -32,7 +32,9 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.Prepare>,
 		IHandle<ElectionMessage.PrepareOk>,
 		IHandle<ElectionMessage.Proposal>,
-		IHandle<ElectionMessage.Accept> {
+		IHandle<ElectionMessage.Accept>,
+		IHandle<ClientMessage.EnableMaintainanceMode>,
+		IHandle<ClientMessage.DisableMaintainanceMode> {
 		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
@@ -119,6 +121,18 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
+			subscriber.Subscribe<ClientMessage.EnableMaintainanceMode>(this);
+			subscriber.Subscribe<ClientMessage.DisableMaintainanceMode>(this);
+		}
+
+		public void Handle(ClientMessage.EnableMaintainanceMode message)
+		{
+			Log.Debug("from election: maintainance mode enabled");
+		}
+
+		public void Handle(ClientMessage.DisableMaintainanceMode message)
+		{
+			Log.Debug("from election: maintainance mode disabled");
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
