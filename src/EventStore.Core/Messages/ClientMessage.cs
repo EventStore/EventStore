@@ -1476,6 +1476,24 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class EnableMaintainanceMode : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class DisableMaintainanceMode : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
 		public class ScavengeDatabase : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
