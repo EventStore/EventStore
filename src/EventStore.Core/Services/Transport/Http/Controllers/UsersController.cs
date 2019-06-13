@@ -41,25 +41,39 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
 
-			var envelope = CreateSendToHttpWithConversionEnvelope(http,
+			if (http.User != null &&
+			    (http.User.IsInRole(SystemRoles.Admins) || http.User.IsInRole(SystemRoles.Operations)))
+			{
+				var envelope = CreateSendToHttpWithConversionEnvelope(http,
 				(UserManagementMessage.AllUserDetailsResult msg) =>
 					new UserManagementMessage.AllUserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
 
-			var message = new UserManagementMessage.GetAll(envelope, http.User);
-			Publish(message);
+				var message = new UserManagementMessage.GetAll(envelope, http.User);
+				 Publish(message);
+			}else
+			{
+				http.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+			}
 		}
-
 		private void GetUser(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
 
-			var envelope = CreateSendToHttpWithConversionEnvelope(http,
-				(UserManagementMessage.UserDetailsResult msg) =>
-					new UserManagementMessage.UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
+			if (http.User != null &&
+			    (http.User.IsInRole(SystemRoles.Admins) || http.User.IsInRole(SystemRoles.Operations)))
+			{
+				var envelope = CreateSendToHttpWithConversionEnvelope(http,
+					(UserManagementMessage.UserDetailsResult msg) =>
+						new UserManagementMessage.UserDetailsResultHttpFormatted(msg, s => MakeUrl(http, s)));
 
-			var login = match.BoundVariables["login"];
-			var message = new UserManagementMessage.Get(envelope, http.User, login);
-			Publish(message);
+				var login = match.BoundVariables["login"];
+				var message = new UserManagementMessage.Get(envelope, http.User, login);
+				 Publish(message);
+			}else
+			{
+				http.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+			}
+
 		}
 
 		private void GetCurrentUser(HttpEntityManager http, UriTemplateMatch match) {
@@ -93,6 +107,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var message = new UserManagementMessage.Create(
 						envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
 					Publish(message);
+					Console.WriteLine("User added!");
 				}, x => Log.DebugException(x, "Reply Text Content Failed."));
 		}
 
@@ -106,6 +121,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var data = http.RequestCodec.From<PutUserData>(s);
 					var message =
 						new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
+						Console.WriteLine("User Updated!");
 					Publish(message);
 				}, x => Log.DebugException(x, "Reply Text Content Failed."));
 		}

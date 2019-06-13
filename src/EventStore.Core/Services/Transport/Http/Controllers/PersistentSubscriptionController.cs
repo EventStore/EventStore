@@ -476,14 +476,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
-			var envelope = new SendToHttpEnvelope(
+
+			if (http.User != null &&
+			    (http.User.IsInRole(SystemRoles.Admins) || http.User.IsInRole(SystemRoles.Operations)))
+			{
+				var envelope = new SendToHttpEnvelope(
 				_networkSendQueue, http,
 				(args, message) =>
 					http.ResponseCodec.To(ToSummaryDto(http,
 						message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted).ToArray()),
 				(args, message) => StatsConfiguration(http, message));
-			var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
-			Publish(cmd);
+				var cmd = new MonitoringMessage.GetAllPersistentSubscriptionStats(envelope);
+				 Publish(cmd);
+			}else
+			{
+				http.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+			}
 		}
 
 		private void GetSubscriptionInfoForStream(HttpEntityManager http, UriTemplateMatch match) {

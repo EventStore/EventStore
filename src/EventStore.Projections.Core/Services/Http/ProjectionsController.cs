@@ -112,7 +112,14 @@ namespace EventStore.Projections.Core.Services.Http {
 		}
 
 		private void OnProjectionsGetAny(HttpEntityManager http, UriTemplateMatch match) {
-			ProjectionsGet(http, match, null);
+			if (http.User != null &&
+			    (http.User.IsInRole(SystemRoles.Admins) || http.User.IsInRole(SystemRoles.Operations)))
+			{
+				ProjectionsGet(http, match, null);
+			}else
+			{
+				http.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+			}
 		}
 
 		private void OnProjectionsGetAllNonTransient(HttpEntityManager http, UriTemplateMatch match) {
