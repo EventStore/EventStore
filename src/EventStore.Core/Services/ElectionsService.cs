@@ -51,6 +51,8 @@ namespace EventStore.Core.Services {
 		private readonly Func<long> _getLastCommitPosition;
 		private readonly int _nodePriority;
 
+		private bool _maintainanceMode = false;
+
 		private int _lastAttemptedView = -1;
 		private int _lastInstalledView = -1;
 		private ElectionsState _state = ElectionsState.Idle;
@@ -127,12 +129,20 @@ namespace EventStore.Core.Services {
 
 		public void Handle(ClientMessage.EnableMaintainanceMode message)
 		{
-			Log.Debug("from election: maintainance mode enabled");
+			if (!_maintainanceMode)
+			{
+				Log.Debug("from election: maintainance mode enabled");
+				_maintainanceMode = true;
+			}
 		}
 
 		public void Handle(ClientMessage.DisableMaintainanceMode message)
 		{
-			Log.Debug("from election: maintainance mode disabled");
+			if (_maintainanceMode)
+			{
+				Log.Debug("from election: maintainance mode disabled");
+				_maintainanceMode = false;
+			}
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -371,7 +381,7 @@ namespace EventStore.Core.Services {
 				}
 
 				var master = _servers.FirstOrDefault(x =>
-					x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+					x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _maintainanceMode == false);
 				if (master != null) {
 					return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
 						master.EpochNumber, master.EpochPosition, master.EpochId,
