@@ -6,7 +6,7 @@ namespace EventStore.Core.Services.Transport.Http {
 	public class ControllerAction {
 		public readonly string UriTemplate;
 		public readonly string HttpMethod;
-
+		public readonly AuthorizationLevel RequiredAuthorizationLevel;
 		public readonly ICodec[] SupportedRequestCodecs;
 		public readonly ICodec[] SupportedResponseCodecs;
 		public readonly ICodec DefaultResponseCodec;
@@ -26,6 +26,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			SupportedRequestCodecs = requestCodecs;
 			SupportedResponseCodecs = responseCodecs;
 			DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
+			RequiredAuthorizationLevel = AuthorizationLevel.None;
 		}
 
 		public bool Equals(ControllerAction other) {
