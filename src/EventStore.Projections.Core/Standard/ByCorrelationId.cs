@@ -79,7 +79,9 @@ namespace EventStore.Projections.Core.Standard {
 			newState = null;
 			if (data.EventStreamId != data.PositionStreamId)
 				return false;
-
+			if (data.EventType == SystemEventTypes.LinkTo)
+				return false;
+			
 			JObject metadata = null;
 
 			try {
@@ -103,12 +105,6 @@ namespace EventStore.Projections.Core.Standard {
 
 			var metadataDict = new Dictionary<string, string>();
 			metadataDict.Add("$eventTimestamp", "\"" + data.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ") + "\"");
-			if (data.EventType == SystemEventTypes.LinkTo) {
-				JObject linkObj = new JObject();
-				linkObj.Add("eventId", data.EventId);
-				linkObj.Add("metadata", metadata);
-				metadataDict.Add("$link", linkObj.ToJson());
-			}
 
 			var linkMetadata = new ExtraMetaData(metadataDict);
 
