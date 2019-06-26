@@ -31,22 +31,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected override void SubscribeCore(IHttpService service) {
 			service.RegisterAction(
-				new ControllerAction("/elections/viewchange", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/viewchange", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostViewChange);
 			service.RegisterAction(
-				new ControllerAction("/elections/viewchangeproof", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/viewchangeproof", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostViewChangeProof);
 			service.RegisterAction(
-				new ControllerAction("/elections/prepare", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/prepare", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostPrepare);
 			service.RegisterAction(
-				new ControllerAction("/elections/prepareok", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/prepareok", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostPrepareOk);
 			service.RegisterAction(
-				new ControllerAction("/elections/proposal", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/proposal", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostProposal);
 			service.RegisterAction(
-				new ControllerAction("/elections/accept", HttpMethod.Post, SupportedCodecs, SupportedCodecs),
+				new ControllerAction("/elections/accept", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostAccept);
 		}
 
