@@ -14,7 +14,8 @@ namespace EventStore.Core.Services.Transport.Http {
 		public ControllerAction(string uriTemplate,
 			string httpMethod,
 			ICodec[] requestCodecs,
-			ICodec[] responseCodecs) {
+			ICodec[] responseCodecs,
+			AuthorizationLevel requiredAuthorizationLevel) {
 			Ensure.NotNull(uriTemplate, "uriTemplate");
 			Ensure.NotNull(httpMethod, "httpMethod");
 			Ensure.NotNull(requestCodecs, "requestCodecs");
@@ -26,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			SupportedRequestCodecs = requestCodecs;
 			SupportedResponseCodecs = responseCodecs;
 			DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
-			RequiredAuthorizationLevel = AuthorizationLevel.None;
+			RequiredAuthorizationLevel = requiredAuthorizationLevel;
 		}
 
 		public bool Equals(ControllerAction other) {
