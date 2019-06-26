@@ -21,16 +21,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected override void SubscribeCore(IHttpService service) {
 			service.RegisterAction(
-				new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
+				new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnPostShutdown);
 			service.RegisterAction(
 				new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}",
-					HttpMethod.Post, Codec.NoCodecs, SupportedCodecs), OnPostScavenge);
+					HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops), OnPostScavenge);
 			service.RegisterAction(
 				new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs,
-					SupportedCodecs), OnStopScavenge);
+					SupportedCodecs, AuthorizationLevel.Ops), OnStopScavenge);
 			service.RegisterAction(
-				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
+				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnPostMergeIndexes);
 		}
 
