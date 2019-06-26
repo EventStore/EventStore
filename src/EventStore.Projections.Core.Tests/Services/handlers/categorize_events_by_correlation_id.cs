@@ -96,8 +96,8 @@ namespace EventStore.Projections.Core.Tests.Services.handlers {
 			}
 
 			[Test]
-			public void result_is_true() {
-				Assert.IsTrue(_result);
+			public void result_is_false() {
+				Assert.IsFalse(_result);
 			}
 
 			[Test]
@@ -106,39 +106,8 @@ namespace EventStore.Projections.Core.Tests.Services.handlers {
 			}
 
 			[Test]
-			public void emits_correct_link() {
-				Assert.NotNull(_emittedEvents);
-				Assert.AreEqual(1, _emittedEvents.Length);
-				var @event = _emittedEvents[0].Event;
-				Assert.AreEqual("$>", @event.EventType);
-				Assert.AreEqual("$bc-testing2", @event.StreamId);
-				Assert.AreEqual("10@cat1-stream1", @event.Data);
-
-				string eventTimestampJson = null;
-				string linkJson = null;
-				var extraMetadata = @event.ExtraMetaData();
-				foreach (var kvp in extraMetadata) {
-					switch (kvp.Key) {
-						case "$eventTimestamp":
-							eventTimestampJson = kvp.Value;
-							break;
-						case "$link":
-							linkJson = kvp.Value;
-							break;
-					}
-				}
-
-				Assert.NotNull(eventTimestampJson);
-				Assert.AreEqual("\"" + _dateTime.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ") + "\"", eventTimestampJson);
-
-				//the link's metadata should be copied to $link.metadata and id to $link.eventId
-				Assert.NotNull(linkJson);
-				var link = JObject.Parse(linkJson);
-				Assert.AreEqual(link.GetValue("eventId").ToObject<string>(), _eventId.ToString());
-
-				var linkMetadata = (JObject)link.GetValue("metadata");
-				Assert.AreEqual(linkMetadata.GetValue("$correlationId").ToObject<string>(), "testing2");
-				Assert.AreEqual(linkMetadata.GetValue("$whatever").ToObject<string>(), "hello");
+			public void does_not_emit_link() {
+				Assert.IsNull(_emittedEvents);
 			}
 		}
 
