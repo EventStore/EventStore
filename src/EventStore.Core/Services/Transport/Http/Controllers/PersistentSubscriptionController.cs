@@ -36,32 +36,32 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs);
+			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
-				DefaultCodecs);
+				DefaultCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs,
-				DefaultCodecs);
+				DefaultCodecs, AuthorizationLevel.Ops);
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription,
-				DefaultCodecs, DefaultCodecs);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, DeleteSubscription);
+				DefaultCodecs, DefaultCodecs, AuthorizationLevel.Ops);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, AuthorizationLevel.Ops, DeleteSubscription);
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetNextNMessages,
-				Codec.NoCodecs, AtomCodecs);
+				Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}/{subscription}?embed={embed}", HttpMethod.Get, GetNextNMessages,
-				Codec.NoCodecs, AtomCodecs);
+				Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}/{subscription}/{count}?embed={embed}", HttpMethod.Get,
-				GetNextNMessages, Codec.NoCodecs, AtomCodecs);
+				GetNextNMessages, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}/{subscription}/info", HttpMethod.Get, GetSubscriptionInfo,
-				Codec.NoCodecs, DefaultCodecs);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post,
+				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, AuthorizationLevel.User,
 				AckMessage);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action}",
-				HttpMethod.Post, NackMessage);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post,
+				HttpMethod.Post, AuthorizationLevel.User, NackMessage);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, AuthorizationLevel.User,
 				AckMessages);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action}",
-				HttpMethod.Post, NackMessages);
+				HttpMethod.Post, AuthorizationLevel.User, NackMessages);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post,
-				ReplayParkedMessages);
+				AuthorizationLevel.User, ReplayParkedMessages);
 		}
 
 		private static ClientMessages.NakAction GetNackAction(HttpEntityManager manager, UriTemplateMatch match,
