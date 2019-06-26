@@ -21,15 +21,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		protected override void SubscribeCore(IHttpService service) {
 			Ensure.NotNull(service, "service");
 
-			service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+			service.RegisterAction(new ControllerAction("/stats", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetFreshStats);
 			service.RegisterAction(
-				new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				new ControllerAction("/stats/replication", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetReplicationStats);
-			service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+			service.RegisterAction(new ControllerAction("/stats/tcp", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetTcpConnectionStats);
 			service.RegisterAction(
-				new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				new ControllerAction("/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetFreshStats);
 		}
 
