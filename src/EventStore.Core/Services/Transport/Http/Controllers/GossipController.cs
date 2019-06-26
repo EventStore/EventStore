@@ -33,11 +33,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			service.RegisterAction(new ControllerAction("/gossip", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+			service.RegisterAction(new ControllerAction("/gossip", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetGossip);
 			if (service.Accessibility == ServiceAccessibility.Private)
 				service.RegisterAction(
-					new ControllerAction("/gossip", HttpMethod.Post, SupportedCodecs, SupportedCodecs), OnPostGossip);
+					new ControllerAction("/gossip", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None), OnPostGossip);
 		}
 
 		public void SubscribeSenders(HttpMessagePipe pipe) {
