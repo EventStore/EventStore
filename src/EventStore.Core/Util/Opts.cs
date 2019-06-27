@@ -12,7 +12,7 @@ namespace EventStore.Core.Util {
 		public const string AppGroup = "Application Options";
 		public const string DbGroup = "Database Options";
 		public const string ProjectionsGroup = "Projections Options";
-		public const string AuthGroup = "Authentication Options";
+		public const string AuthGroup = "Authentication/Authorization Options";
 		public const string InterfacesGroup = "Interface Options";
 		public const string CertificatesGroup = "Certificate Options";
 		public const string ClusterGroup = "Cluster Options";
@@ -400,7 +400,7 @@ namespace EventStore.Core.Util {
 		public static readonly bool OptimizeIndexMergeDefault = false;
 
 		/*
-		 * Authentication Options
+		 * Authentication/Authorization Options
 		 */
 		public const string AuthenticationTypeDescr = "The type of authentication to use.";
 		public static readonly string AuthenticationTypeDefault = "internal";
@@ -409,6 +409,9 @@ namespace EventStore.Core.Util {
 			"Path to the configuration file for authentication configuration (if applicable).";
 
 		public static readonly string AuthenticationConfigFileDefault = string.Empty;
+
+		public const string DisableFirstLevelHttpAuthorizationDescr = "Disables first level authorization checks on all HTTP endpoints. This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.";
+		public static readonly bool DisableFirstLevelHttpAuthorizationDefault = false;
 
 		/*
 		 * Scavenge options

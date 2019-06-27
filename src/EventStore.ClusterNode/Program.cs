@@ -298,6 +298,8 @@ namespace EventStore.ClusterNode {
 				builder.ReduceFileCachePressure();
 			if (options.StructuredLog)
 				builder.WithStructuredLogging(options.StructuredLog);
+			if(options.DisableFirstLevelHttpAuthorization)
+				builder.DisableFirstLevelHttpAuthorization();
 
 			if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0) {
 				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
