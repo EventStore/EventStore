@@ -295,6 +295,7 @@ namespace EventStore.ClientAPI.Internal {
 						else {
 							RaiseReconnecting();
 							_operations.CheckTimeoutsAndRetry(_connection);
+							_subscriptions.CheckTimeoutsAndRetry(_connection);
 							DiscoverEndPoint(null);
 						}
 					}
