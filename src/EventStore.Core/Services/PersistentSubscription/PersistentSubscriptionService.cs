@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -118,6 +119,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_started = false;
 		}
 
+		public bool IsUserOpsOrAdmin(IPrincipal user){
+			return user != null && (user.IsInRole(SystemRoles.Admins) || user.IsInRole(SystemRoles.Operations));
+		}
+
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
 			if (!_started) return;
 			UnsubscribeFromStream(message.CorrelationId, true);
@@ -127,11 +132,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Creating persistent subscription {subscriptionKey}", key);
-			//TODO revisit for permissions. maybe make admin only?
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
-			if (!streamAccess.Granted) {
+			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(
 					message.CorrelationId,
 					ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied,
@@ -210,10 +212,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
-			if (!streamAccess.Granted) {
+			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(
 					message.CorrelationId,
 					ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied,
@@ -331,10 +331,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
-			if (!streamAccess.Granted) {
+			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(
 					message.CorrelationId,
 					ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied,
@@ -563,10 +561,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
-			if (!streamAccess.Granted) {
+			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
 					"You do not have permissions to replay messages"));
@@ -588,10 +584,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessage message) {
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			PersistentSubscription subscription;
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
 
-			if (!streamAccess.Granted) {
+			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
 					"You do not have permissions to replay messages"));
