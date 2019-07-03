@@ -17,6 +17,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
+using System.Threading.Tasks;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	[Category("ClientAPI")]
@@ -126,6 +127,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected void EnableStandardProjections() {
+			Task.Delay(4000).Wait(); /* workaround for race condition when a projection is in LoadStopped() state and it is enabled */
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -145,6 +147,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 		protected void EnableProjection(string name) {
 			_manager.EnableAsync(name, _admin).Wait();
+			Task.Delay(1000).Wait(); /* workaround for race condition when multiple projections are being enabled simultaneously */
 		}
 
 		protected void DisableProjection(string name) {
