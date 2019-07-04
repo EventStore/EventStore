@@ -1,0 +1,30 @@
+trigger:
+  branches:
+    include:
+    - v4-master
+
+jobs:
+- job: windows_release
+  displayName: 'Windows x64 Debug'
+  pool:
+    vmImage: 'vs2015-win2012r2'
+  steps:
+  
+  - task: PowerShell@2
+    displayName: Compile
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\scripts\build-windows\build.ps1'
+      arguments: 'quick -Platform x64 -SpecificVisualStudioVersion 2015 -Configuration release -Version ($env:SemanticVersion)'
+
+  - task: PowerShell@2
+    displayName: Package
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\scripts\package-windows\package-windows.ps1'
+      arguments: '-Version ($env:SemanticVersion)'
+      
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifacts
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/packages/'
+      ArtifactName: 'windows-x64'
+      publishLocation: 'Container'
