@@ -144,7 +144,8 @@ namespace EventStore.Core.Cluster {
 			long? lastCommitPosition = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
-			EpochRecord epoch = null) {
+			EpochRecord epoch = null,
+			int nodePriority = 0) {
 			return new MemberInfo(InstanceId,
 				DateTime.UtcNow,
 				state ?? State,
@@ -161,7 +162,7 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochPosition : EpochPosition,
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
-				NodePriority,
+				nodePriority,
 				IsReadOnlyReplica);
 		}
 
@@ -171,6 +172,7 @@ namespace EventStore.Core.Cluster {
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalHttpEndPoint, ExternalHttpEndPoint, TimeStamp);
 			return string.Format(
+				"Priority: " + NodePriority + 
 				"VND {0:B} <{1}> [{2}, {3}, {4}, {5}, {6}, {7}, {8}] {9}/{10}/{11}/E{12}@{13}:{14:B} | {15:yyyy-MM-dd HH:mm:ss.fff}",
 				InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 				InternalTcpEndPoint, InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),

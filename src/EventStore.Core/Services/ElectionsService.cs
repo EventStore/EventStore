@@ -49,7 +49,8 @@ namespace EventStore.Core.Services {
 		private readonly ICheckpoint _chaserCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
-		private readonly int _nodePriority;
+		private int _nodePriority;
+		private int tmp_nodePriority;
 
 		private bool _maintainanceMode = false;
 
@@ -132,7 +133,11 @@ namespace EventStore.Core.Services {
 			if (!_maintainanceMode)
 			{
 				Log.Debug("from election: maintainance mode enabled");
+				tmp_nodePriority = _nodePriority;
+				_nodePriority = int.MinValue;
 				_maintainanceMode = true;
+				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
+				Handle(new ElectionMessage.StartElections());
 			}
 		}
 
@@ -141,7 +146,9 @@ namespace EventStore.Core.Services {
 			if (_maintainanceMode)
 			{
 				Log.Debug("from election: maintainance mode disabled");
+				_nodePriority = tmp_nodePriority;
 				_maintainanceMode = false;
+				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 			}
 		}
 

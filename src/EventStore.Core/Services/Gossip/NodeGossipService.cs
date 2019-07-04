@@ -1,19 +1,24 @@
 using System;
+using EventStore.BufferManagement;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.Checkpoint;
 using System.Net;
 
 namespace EventStore.Core.Services.Gossip {
-	public class NodeGossipService : GossipServiceBase {
+	public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.UpdateNodePriority> {
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ICheckpoint _chaserCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
-		private readonly int _nodePriority;
+		private int _nodePriority;
+
+		private static readonly ILogger Log = LogManager.GetLoggerFor<BufferManager>();
 
 		public NodeGossipService(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
@@ -25,7 +30,8 @@ namespace EventStore.Core.Services.Gossip {
 			int nodePriority,
 			TimeSpan interval,
 			TimeSpan allowedTimeDifference)
-			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference) {
+			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference)
+			{
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 			Ensure.NotNull(epochManager, "epochManager");
@@ -68,7 +74,12 @@ namespace EventStore.Core.Services.Gossip {
 				lastCommitPosition: _getLastCommitPosition(),
 				writerCheckpoint: _writerCheckpoint.ReadNonFlushed(),
 				chaserCheckpoint: _chaserCheckpoint.ReadNonFlushed(),
-				epoch: _epochManager.GetLastEpoch());
+				epoch: _epochManager.GetLastEpoch(),
+				nodePriority: _nodePriority);
+		}
+
+		public void Handle(GossipMessage.UpdateNodePriority message) {
+			_nodePriority = message.NodePriority;
 		}
 	}
 }

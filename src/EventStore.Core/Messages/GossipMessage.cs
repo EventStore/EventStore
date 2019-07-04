@@ -109,5 +109,19 @@ namespace EventStore.Core.Messages {
 				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
 			}
 		}
+
+		public class UpdateNodePriority : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly int NodePriority;
+
+			public UpdateNodePriority(int priority) {
+				NodePriority = priority;
+			}
+		}
 	}
 }
