@@ -328,6 +328,22 @@ namespace EventStore.Projections.Core.Services.Management {
 							commandBody.IncludeDeleted));
 					break;
 				}
+				case "$post-batch": {
+					var commandBody = resolvedEvent.Event.Data.ParseJson<PostBatchCommand>();
+					var projections = new List<ProjectionManagementMessage.Command.PostBatch.ProjectionPost>();
+					foreach (var proj in commandBody.Projections) {
+						projections.Add(new ProjectionManagementMessage.Command.PostBatch.ProjectionPost(
+							proj.Mode, proj.RunAs, proj.Name, proj.HandlerType, proj.Query,
+							proj.Enabled, proj.CheckpointsEnabled,
+							proj.EmitEnabled, proj.EnableRunAs, proj.TrackEmittedStreams));
+					}
+					_publisher.Publish(
+						new ProjectionManagementMessage.Command.PostBatch(
+							new NoopEnvelope(),
+							commandBody.RunAs,
+							projections.ToArray()));
+					break;
+				}
 				case "$post": {
 					var commandBody = resolvedEvent.Event.Data.ParseJson<PostCommand>();
 					_publisher.Publish(

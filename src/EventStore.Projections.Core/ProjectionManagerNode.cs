@@ -79,6 +79,7 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe<SystemMessage.EpochWritten>(projectionManager);
 			if (runProjections >= ProjectionType.System) {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
+				mainBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Delete>(projectionManager);

@@ -45,8 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
 		public void it_should_write_the_system_projection_created_event() {
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count(x =>
 				x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream &&
-				x.Events[0].EventType == ProjectionEventTypes.ProjectionCreated &&
-				Helper.UTF8NoBom.GetString(x.Events[0].Data) == _systemProjectionName));
+				x.Events.All(e => e.EventType == ProjectionEventTypes.ProjectionCreated) &&
+				x.Events.Any(e => Helper.UTF8NoBom.GetString(e.Data) == _systemProjectionName)));
 		}
 	}
 
