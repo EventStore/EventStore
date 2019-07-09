@@ -1,0 +1,138 @@
+trigger:
+  branches:
+    include:
+    - v4-master
+
+jobs:
+- job: windows_Release
+  displayName: 'Windows x64 Release'
+  pool:
+    vmImage: 'vs2015-win2012r2'
+  steps:
+  
+  - task: PowerShell@2
+    displayName: Compile
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\scripts\build-windows\build.ps1'
+      arguments: 'quick -Platform x64 -SpecificVisualStudioVersion 2015 -Configuration Release -Version ($env:SemanticVersion)'
+
+  - task: PowerShell@2
+    displayName: Test Windows x64 Release
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\run_tests.ps1'
+      arguments: '-Version ($env:SemanticVersion)'
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'NUnit'
+      testResultsFiles: '**/TestResult.xml'
+      testRunTitle: 'Windows x64 Release Test Results'
+
+- job: windows_Debug
+  displayName: 'Windows x64 Debug'
+  pool:
+    vmImage: 'vs2015-win2012r2'
+  steps:
+  
+  - task: PowerShell@2
+    displayName: Compile
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\scripts\build-windows\build.ps1'
+      arguments: 'quick -Platform x64 -SpecificVisualStudioVersion 2015 -Configuration Debug -Version ($env:SemanticVersion)'
+
+  - task: PowerShell@2
+    displayName: Test Windows x64 Debug
+    inputs:
+      filePath: '$(Build.SourcesDirectory)\run_tests.ps1'
+      arguments: '-Version ($env:SemanticVersion)'
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'NUnit'
+      testResultsFiles: '**/TestResult.xml'
+      testRunTitle: 'Windows x64 Debug Test Results'
+
+
+- job: ubuntu1404_x64_release
+  displayName: 'Ubuntu 14.04 x64 Release'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - bash: docker pull eventstore/eventstore-v4-ci-ubuntu-14.04
+    displayName: Pull Docker image for build
+
+  - task: Docker@1
+    displayName: Compile in Ubuntu 14.04 Container
+    inputs:
+      command: 'Run an Image'
+      imageName: 'eventstore/eventstore-v4-ci-ubuntu-14.04'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        EventStoreBuildConfig=Release
+      containerCommand: /work/build.sh
+      workingDirectory: '/work'
+  
+  - task: Docker@1
+    displayName: Test in Ubuntu 14.04 Container
+    inputs:
+      command: 'Run an Image'
+      imageName: 'eventstore/eventstore-v4-ci-ubuntu-14.04'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        EventStoreBuildConfig=Release
+      containerCommand: /work/run_tc_tests.sh .
+      workingDirectory: '/work'
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'NUnit'
+      testResultsFiles: '**/TestResult.xml'
+      testRunTitle: ' Ubuntu 14.04 Release Test Results'
+
+- job: ubuntu1404_x64_debug
+  displayName: 'Ubuntu 14.04 x64 Debug'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - bash: docker pull eventstore/eventstore-v4-ci-ubuntu-14.04
+    displayName: Pull Docker image for build
+
+  - task: Docker@1
+    displayName: Compile in Ubuntu 14.04 Container
+    inputs:
+      command: 'Run an Image'
+      imageName: 'eventstore/eventstore-v4-ci-ubuntu-14.04'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        EventStoreBuildConfig=Debug
+      containerCommand: /work/build.sh
+      workingDirectory: '/work'
+  
+  - task: Docker@1
+    displayName: Test in Ubuntu 14.04 Container
+    inputs:
+      command: 'Run an Image'
+      imageName: 'eventstore/eventstore-v4-ci-ubuntu-14.04'
+      runInBackground: false
+      volumes: '$(Build.SourcesDirectory):/work'
+      envVars: |
+        EventStoreBuildConfig=Debug
+      containerCommand: /work/run_tc_tests.sh .
+      workingDirectory: '/work'
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'NUnit'
+      testResultsFiles: '**/TestResult.xml'
+      testRunTitle: ' Ubuntu 14.04 Debug Test Results'
