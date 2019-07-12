@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		public override void TestFixtureSetUp() {
 			base.TestFixtureSetUp();
 #if (!DEBUG)
-            throw new NotSupportedException("These tests require DEBUG conditional");
+            Assert.Ignore("These tests require DEBUG conditional");
 #else
 			QueueStatsCollector.InitializeIdleDetection();
 			_nodeEndpoints[0] = new Endpoints(
