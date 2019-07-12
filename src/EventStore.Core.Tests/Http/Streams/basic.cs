@@ -10,6 +10,7 @@ using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Linq;
 using System.Xml.Linq;
 using System.IO;
+using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace basic {
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_raw_json_without_eventtype : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_raw_json_without_eventtype : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -78,7 +79,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_to_idempotent_uri_as_events_array : HttpBehaviorSpecification {
+		public class when_posting_an_event_to_idempotent_uri_as_events_array : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_json_to_idempotent_uri_without_event_type : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_json_to_idempotent_uri_without_event_type : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -117,7 +118,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture]
-		public class when_posting_an_event_in_json_to_idempotent_uri_without_event_id : HttpBehaviorSpecification {
+		public class when_posting_an_event_in_json_to_idempotent_uri_without_event_id : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -153,7 +154,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_raw_json_without_eventid : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_raw_json_without_eventid : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -188,7 +189,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_posting_an_event_as_array_with_no_event_type : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_array_with_no_event_type : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -208,7 +209,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture]
-		public class when_posting_an_event_as_array : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_array : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -238,7 +239,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_event_as_array_to_stream_with_slash : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_array_to_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -275,7 +276,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_deleting_to_stream_with_slash : HttpBehaviorSpecification {
+		public class when_deleting_to_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -304,7 +305,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_getting_from_stream_with_slash : HttpBehaviorSpecification {
+		public class when_getting_from_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -333,7 +334,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_getting_from_all_stream_with_slash : HttpBehaviorSpecification {
+		public class when_getting_from_all_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -363,7 +364,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_getting_from_encoded_all_stream_with_slash : HttpBehaviorSpecification {
+		public class when_getting_from_encoded_all_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -393,7 +394,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_event_as_array_to_metadata_stream_with_slash : HttpBehaviorSpecification {
+		public class when_posting_an_event_as_array_to_metadata_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -425,7 +426,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture, Category("LongRunning")]
-		public class when_getting_from_metadata_stream_with_slash : HttpBehaviorSpecification {
+		public class when_getting_from_metadata_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -456,7 +457,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_event_without_EventId_as_array : HttpBehaviorSpecification {
+		public class when_posting_an_event_without_EventId_as_array : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -475,7 +476,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_event_without_EventType_as_array : HttpBehaviorSpecification {
+		public class when_posting_an_event_without_EventType_as_array : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -494,7 +495,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_event_with_date_time : HttpBehaviorSpecification {
+		public class when_posting_an_event_with_date_time : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -530,7 +531,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_posting_an_events_as_array : HttpBehaviorSpecification {
+		public class when_posting_an_events_as_array : with_admin_user {
 			private HttpWebResponse _response;
 
 			protected override void Given() {
@@ -562,7 +563,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		public abstract class HttpBehaviorSpecificationWithSingleEvent : HttpBehaviorSpecification {
+		public abstract class HttpBehaviorSpecificationWithSingleEvent : with_admin_user {
 			protected HttpWebResponse _response;
 
 			protected override void Given() {
@@ -578,7 +579,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		public class
 			when_requesting_a_single_event_that_is_deleted_linkto : HttpSpecificationWithLinkToToDeletedEvents {
 			protected override void When() {
-				Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+				Get("/streams/" + LinkedStreamName + "/0", "", "application/json", credentials: DefaultData.AdminNetworkCredentials);
 			}
 
 			[Test]
@@ -592,7 +593,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			when_requesting_a_single_event_that_is_maxcount_deleted_linkto :
 				SpecificationWithLinkToToMaxCountDeletedEvents {
 			protected override void When() {
-				Get("/streams/" + LinkedStreamName + "/0", "", "application/json");
+				Get("/streams/" + LinkedStreamName + "/0", "", "application/json", DefaultData.AdminNetworkCredentials);
 			}
 
 			[Test]
@@ -688,7 +689,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture]
-		public class when_requesting_a_single_raw_event_in_the_stream_as_raw : HttpBehaviorSpecification {
+		public class when_requesting_a_single_raw_event_in_the_stream_as_raw : with_admin_user {
 			protected HttpWebResponse _response;
 			protected byte[] _data;
 

@@ -77,11 +77,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		protected override void When() {
+			SetDefaultCredentials(null);
 			_response = MakeJsonPut(
 				"/subscriptions/stream/groupname337",
 				new {
 					ResolveLinkTos = true
-				}, null);
+				});
 		}
 
 		[TearDown]

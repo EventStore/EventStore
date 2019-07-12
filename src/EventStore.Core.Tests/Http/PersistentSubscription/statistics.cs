@@ -9,6 +9,7 @@ using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Xml.Linq;
 using System.Threading.Tasks;
+using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture, Category("LongRunning")]
@@ -73,14 +74,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	[TestFixture, Category("LongRunning")]
-	class when_getting_non_existent_single_statistics : HttpBehaviorSpecification {
+	class when_getting_non_existent_single_statistics : with_admin_user {
 		private HttpWebResponse _response;
 
 		protected override void Given() {
 		}
 
 		protected override void When() {
-			var request = CreateRequest("/subscriptions/fu/fubar", null, "GET", "text/xml", null);
+			var request = CreateRequest("/subscriptions/fu/fubar", null, "GET", "text/xml");
 			_response = GetRequestResponse(request);
 		}
 
@@ -91,7 +92,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	[TestFixture, Category("LongRunning")]
-	class when_getting_non_existent_stream_statistics : HttpBehaviorSpecification {
+	class when_getting_non_existent_stream_statistics : with_admin_user {
 		private HttpWebResponse _response;
 
 		protected override void Given() {
