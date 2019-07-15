@@ -137,6 +137,9 @@ namespace EventStore.Core.Services {
 				_nodePriority = int.MinValue;
 				_maintainanceMode = true;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
+
+				// _publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), _publishEnvelope, msg));
+
 				Handle(new ElectionMessage.StartElections());
 			}
 		}
@@ -398,17 +401,31 @@ namespace EventStore.Core.Services {
 			// 	}
 			// }
 
-			var best = _prepareOkReceived.Values
+			// var best = _prepareOkReceived.Values
+			// 	.OrderByDescending(x => x.EpochNumber)
+			// 	.ThenByDescending(x => x.LastCommitPosition)
+			// 	.ThenByDescending(x => x.WriterCheckpoint)
+			// 	.ThenByDescending(x => x.NodePriority)
+			// 	.ThenByDescending(x => x.ChaserCheckpoint)
+			// 	.ThenByDescending(x => x.ServerId)
+			// 	.FirstOrDefault();
+			// if (best == null)
+			// 	return null;
+			// return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
+			// 	best.EpochNumber, best.EpochPosition, best.EpochId,
+			// 	best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+
+			var best = _servers
 				.OrderByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.LastCommitPosition)
 				.ThenByDescending(x => x.WriterCheckpoint)
 				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ChaserCheckpoint)
-				.ThenByDescending(x => x.ServerId)
+				.ThenByDescending(x => x.InstanceId)
 				.FirstOrDefault();
 			if (best == null)
 				return null;
-			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
+			return new MasterCandidate(best.InstanceId, best.InternalHttpEndPoint,
 				best.EpochNumber, best.EpochPosition, best.EpochId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
