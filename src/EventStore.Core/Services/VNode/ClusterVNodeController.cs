@@ -778,7 +778,6 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void HandleAsMaster(GossipMessage.GossipUpdated message) {
-			Console.WriteLine("Master: " + message.ClusterInfo.ToString());
 			if (_master == null) throw new Exception("_master == null");
 			if (message.ClusterInfo.Members.Count(x => x.IsAlive && x.State == VNodeState.Master) > 1) {
 				Log.Debug("There are FEW MASTERS according to gossip, need to start elections. MASTER: [{master}]",
@@ -797,7 +796,6 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void HandleAsNonMaster(GossipMessage.GossipUpdated message) {
-			Console.WriteLine("Non-master: " + message.ClusterInfo.ToString());
 			if (_master == null) throw new Exception("_master == null");
 			var master = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master.InstanceId);
 			if (master == null || !master.IsAlive) {
