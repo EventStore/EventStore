@@ -172,7 +172,7 @@ namespace EventStore.Core.Cluster {
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalHttpEndPoint, ExternalHttpEndPoint, TimeStamp);
 			return string.Format(
-				"Priority: " + NodePriority + 
+				"Priority: " + NodePriority + " " + 
 				"VND {0:B} <{1}> [{2}, {3}, {4}, {5}, {6}, {7}, {8}] {9}/{10}/{11}/E{12}@{13}:{14:B} | {15:yyyy-MM-dd HH:mm:ss.fff}",
 				InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 				InternalTcpEndPoint, InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
