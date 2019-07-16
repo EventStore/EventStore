@@ -132,15 +132,11 @@ namespace EventStore.Core.Services {
 		{
 			if (!_maintainanceMode)
 			{
-				Log.Debug("from election: maintainance mode enabled");
+				Log.Debug("Maintainance mode enabled");
 				tmp_nodePriority = _nodePriority;
 				_nodePriority = int.MinValue;
 				_maintainanceMode = true;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
-
-				// _publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), _publishEnvelope, msg));
-
-				Handle(new ElectionMessage.StartElections());
 			}
 		}
 
@@ -148,11 +144,10 @@ namespace EventStore.Core.Services {
 		{
 			if (_maintainanceMode)
 			{
-				Log.Debug("from election: maintainance mode disabled");
+				Log.Debug("Maintainance mode disabled");
 				_nodePriority = tmp_nodePriority;
 				_maintainanceMode = false;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
-				Handle(new ElectionMessage.StartElections());
 			}
 		}
 
@@ -161,6 +156,13 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(GossipMessage.GossipUpdated message) {
+			var currentMaster = _servers.FirstOrDefault(x => x.InstanceId == _master);
+			var updatedMaster = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master);
+
+			if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority) {
+				_publisher.Publish(new ElectionMessage.StartElections());
+			}
+
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)
 				.Where(x => x.IsAlive)
 				.OrderByDescending(x => x.InternalHttpEndPoint, IPComparer)
@@ -335,7 +337,7 @@ namespace EventStore.Core.Services {
 			Log.Debug("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
 				FormatNodeInfo(msg.ServerInternalHttp, msg.ServerId,
 					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
-					msg.EpochNumber, msg.EpochPosition, msg.EpochId));
+					msg.EpochNumber, msg.EpochPosition, msg.EpochId, msg.NodePriority));
 
 			if (!_prepareOkReceived.ContainsKey(msg.ServerId)) {
 				_prepareOkReceived.Add(msg.ServerId, msg);
@@ -434,19 +436,19 @@ namespace EventStore.Core.Services {
 			MasterCandidate candidate) {
 			var master = _servers.FirstOrDefault(x =>
 				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			if (master != null) {
-				if (candidate.InstanceId == master.InstanceId
-				    || candidate.EpochNumber > master.EpochNumber
-				    || (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
-					return true;
+			// if (master != null) {
+			// 	if (candidate.InstanceId == master.InstanceId
+			// 	    || candidate.EpochNumber > master.EpochNumber
+			// 	    || (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
+			// 		return true;
 
-				Log.Debug(
-					"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
-					+ "PREVIOUS MASTER IS ALIVE: [{masterInternalHttp},{masterId:B}].",
-					view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
-					master.InternalHttpEndPoint, master.InstanceId);
-				return false;
-			}
+			// 	Log.Debug(
+			// 		"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
+			// 		+ "PREVIOUS MASTER IS ALIVE: [{masterInternalHttp},{masterId:B}].",
+			// 		view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
+			// 		master.InternalHttpEndPoint, master.InstanceId);
+			// 	return false;
+			// }
 
 			if (candidate.InstanceId == _nodeInfo.InstanceId)
 				return true;
@@ -548,16 +550,16 @@ namespace EventStore.Core.Services {
 		private static string FormatNodeInfo(MasterCandidate candidate) {
 			return FormatNodeInfo(candidate.InternalHttp, candidate.InstanceId,
 				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,
-				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId);
+				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId, candidate.NodePriority);
 		}
 
 		private static string FormatNodeInfo(IPEndPoint serverEndPoint, Guid serverId,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			int epochNumber, long epochPosition, Guid epochId) {
-			return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B})",
+			int epochNumber, long epochPosition, Guid epochId, int priority) {
+			return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B},Priority={8})",
 				serverEndPoint, serverId,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochNumber, epochPosition, epochId);
+				epochNumber, epochPosition, epochId, priority);
 		}
 
 		private class MasterCandidate {
