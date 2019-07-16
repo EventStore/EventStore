@@ -146,7 +146,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected void EnableProjection(string name) {
-			_manager.EnableAsync(name, _admin).Wait();
+			for(int i=1;i<=10;i++){
+				try{
+					_manager.EnableAsync(name, _admin).Wait();
+				}
+				catch(Exception e){
+					if(i==10) throw e;
+					Task.Delay(5000).Wait();
+				}
+			}
+
 			Task.Delay(1000).Wait(); /* workaround for race condition when multiple projections are being enabled simultaneously */
 		}
 
