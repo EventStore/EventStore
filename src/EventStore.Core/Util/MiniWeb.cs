@@ -29,7 +29,7 @@ namespace EventStore.Core.Util {
 			var pattern = _localWebRootPath + "/{*remaining_path}";
 			Logger.Trace("Binding MiniWeb to {path}", pattern);
 			service.RegisterAction(
-				new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}),
+				new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.None),
 				OnStaticContent);
 		}
 

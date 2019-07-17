@@ -9,10 +9,11 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using EventStore.Core.Services;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace append_to_stream {
-		public abstract class ExpectedVersionSpecification : HttpBehaviorSpecification {
+		public abstract class ExpectedVersionSpecification : with_admin_user {
 			public string WrongExpectedVersionDesc {
 				get { return "Wrong expected EventNumber"; }
 			}

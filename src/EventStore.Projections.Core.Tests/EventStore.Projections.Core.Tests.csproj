@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.ServiceModel" />
+		<Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />

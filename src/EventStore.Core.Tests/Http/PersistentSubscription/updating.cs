@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		protected override void When() {
+			SetDefaultCredentials(null);
 			_response = MakeJsonPost(
 				"/subscriptions/stream/groupname337",
 				new {

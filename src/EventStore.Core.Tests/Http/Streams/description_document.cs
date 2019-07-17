@@ -11,10 +11,12 @@ using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Services.Transport.Http;
 using System.Collections.Generic;
+using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
+
 	[TestFixture, Category("LongRunning")]
-	public class when_getting_a_stream_without_accept_header : HttpBehaviorSpecification {
+	public class when_getting_a_stream_without_accept_header : with_admin_user {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -39,7 +41,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture, Category("LongRunning")]
-	public class when_getting_a_stream_with_description_document_media_type : HttpBehaviorSpecification {
+	public class when_getting_a_stream_with_description_document_media_type : with_admin_user {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -64,7 +66,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture, Category("LongRunning")]
-	public class when_getting_description_document : HttpBehaviorSpecification {
+	public class when_getting_description_document : with_admin_user {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -117,7 +119,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture, Category("LongRunning")]
-	public class when_getting_description_document_and_subscription_exists_for_stream : HttpBehaviorSpecification {
+	public class when_getting_description_document_and_subscription_exists_for_stream : with_admin_user {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 		private JToken[] _subscriptions;

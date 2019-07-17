@@ -97,65 +97,65 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected override void SubscribeCore(IHttpService http) {
 			// STREAMS
-			Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs);
-			Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs);
+			Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/incoming/{guid}", HttpMethod.Post, PostEventsIdempotent,
-				AtomCodecsWithoutBatches, AtomCodecsWithoutBatches);
+				AtomCodecsWithoutBatches, AtomCodecsWithoutBatches, AuthorizationLevel.User);
 
-			Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs);
-			Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs);
-			Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs);
+			Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs);
+				AtomWithHtmlCodecs, AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/{event}?embed={embed}", HttpMethod.Get, GetStreamEvent, Codec.NoCodecs,
-				DefaultCodecs);
+				DefaultCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/{stream}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs);
+				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http, "/streams/{stream}/{event}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 
 			// METASTREAMS
-			Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs);
-			Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs);
+			Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent,
-				Codec.NoCodecs, DefaultCodecs);
+				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/{stream}/metadata/?embed={embed}", HttpMethod.Get, RedirectKeepVerb,
-				Codec.NoCodecs, DefaultCodecs);
+				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/{stream}/metadata/{event}?embed={embed}", HttpMethod.Get, GetMetastreamEvent,
-				Codec.NoCodecs, DefaultCodecs);
+				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/{stream}/metadata/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 
 			// $ALL
-			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs);
-			Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs);
+			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs);
+				AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs);
+				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/$all/{position}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http, "/streams/$all/{position}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/%24all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs);
+				AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/%24all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs);
+				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/%24all/{position}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs);
+				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 		}
 
 		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {

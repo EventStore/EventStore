@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
 			service.RegisterAction(
-				new ControllerAction("/histogram/{name}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+				new ControllerAction("/histogram/{name}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnGetHistogram);
 		}
 

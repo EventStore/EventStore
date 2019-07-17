@@ -17,6 +17,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
+using System.Threading.Tasks;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	[Category("ClientAPI")]
@@ -55,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		public override void TestFixtureSetUp() {
 			base.TestFixtureSetUp();
 #if (!DEBUG)
-            throw new NotSupportedException("These tests require DEBUG conditional");
+            Assert.Ignore("These tests require DEBUG conditional");
 #else
 			QueueStatsCollector.InitializeIdleDetection();
 			_nodeEndpoints[0] = new Endpoints(
@@ -126,6 +127,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected void EnableStandardProjections() {
+			Task.Delay(4000).Wait(); /* workaround for race condition when a projection is in LoadStopped() state and it is enabled */
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -144,7 +146,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected void EnableProjection(string name) {
-			_manager.EnableAsync(name, _admin).Wait();
+			for(int i=1;i<=10;i++){
+				try{
+					_manager.EnableAsync(name, _admin).Wait();
+				}
+				catch(Exception e){
+					if(i==10) throw e;
+					Task.Delay(5000).Wait();
+				}
+			}
+
+			Task.Delay(1000).Wait(); /* workaround for race condition when multiple projections are being enabled simultaneously */
 		}
 
 		protected void DisableProjection(string name) {

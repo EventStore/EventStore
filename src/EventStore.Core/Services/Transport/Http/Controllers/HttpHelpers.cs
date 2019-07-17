@@ -13,7 +13,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					fromUrl,
 					HttpMethod.Get,
 					Codec.NoCodecs,
-					new ICodec[] {Codec.ManualEncoding}),
+					new ICodec[] {Codec.ManualEncoding},
+					AuthorizationLevel.None),
 				(http, match) => http.ReplyTextContent(
 					"Moved", 302, "Found", "text/plain",
 					new[] {

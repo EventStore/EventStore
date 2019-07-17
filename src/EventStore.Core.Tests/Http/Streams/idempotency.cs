@@ -5,11 +5,12 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace idempotency {
 		[SetUpFixture]
-		abstract class HttpBehaviorSpecificationOfSuccessfulCreateEvent : HttpBehaviorSpecification {
+		abstract class HttpBehaviorSpecificationOfSuccessfulCreateEvent : with_admin_user {
 			protected HttpWebResponse _response;
 
 			[OneTimeSetUp]

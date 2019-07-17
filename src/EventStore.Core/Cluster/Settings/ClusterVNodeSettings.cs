@@ -46,6 +46,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly StatsStorage StatsStorage;
 
 		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
+		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
 		public bool AdminOnPublic;
@@ -149,7 +150,8 @@ namespace EventStore.Core.Cluster.Settings {
 			int initializationThreads = 1,
 			bool faultOutOfOrderProjections = false,
 			bool structuredLog = false,
-			int maxAutoMergeIndexLevel = 1000) {
+			int maxAutoMergeIndexLevel = 1000,
+			bool disableFirstLevelHttpAuthorization = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -212,6 +214,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StatsStorage = statsStorage;
 
 			AuthenticationProviderFactory = authenticationProviderFactory;
+			DisableFirstLevelHttpAuthorization = disableFirstLevelHttpAuthorization;
 
 			NodePriority = nodePriority;
 			DisableScavengeMerging = disableScavengeMerging;
@@ -293,7 +296,8 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "ChunkInitialReaderCount: {37}\n"
 			                     + "ReduceFileCachePressure: {38}\n"
 			                     + "InitializationThreads: {39}\n"
-			                     + "StructuredLog: {40}\n",
+			                     + "StructuredLog: {40}\n"
+								 + "DisableFirstLevelHttpAuthorization: {41}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -312,7 +316,8 @@ namespace EventStore.Core.Cluster.Settings {
 				NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
 				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
-				ReduceFileCachePressure, InitializationThreads, StructuredLog);
+				ReduceFileCachePressure, InitializationThreads, StructuredLog,
+				DisableFirstLevelHttpAuthorization);
 		}
 	}
 }

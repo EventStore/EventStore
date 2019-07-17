@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Http {
 		private void Register(
 			IHttpService service, string uriTemplate, Action<HttpEntityManager, UriTemplateMatch> handler,
 			string httpMethod = HttpMethod.Get) {
-			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.None);
 		}
 
 		private void Test1Handler(HttpEntityManager http, UriTemplateMatch match) {

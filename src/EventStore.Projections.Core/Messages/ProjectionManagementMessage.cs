@@ -647,8 +647,10 @@ namespace EventStore.Projections.Core.Messages {
 				Command.ControlMessage message, bool replace = false) {
 				if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
 				                                    && (message.RunAs == null || message.RunAs.Principal == null
-				                                                              || !message.RunAs.Principal.IsInRole(
-					                                                              SystemRoles.Admins))) {
+				                                                              || !(
+																					   message.RunAs.Principal.IsInRole(SystemRoles.Admins)
+																			  		|| message.RunAs.Principal.IsInRole(SystemRoles.Operations)
+																				  ))) {
 					message.Envelope.ReplyWith(new NotAuthorized());
 					return false;
 				}

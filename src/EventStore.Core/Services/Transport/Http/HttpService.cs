@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Principal;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -11,6 +12,7 @@ using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public class HttpService : IHttpService,
@@ -18,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<HttpMessage.PurgeTimedOutRequests> {
 		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-
+		private static readonly ILogger Log = LogManager.GetLoggerFor<HttpService>();
 		public bool IsListening {
 			get { return _server.IsListening; }
 		}
@@ -42,10 +44,11 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		private IPAddress _advertiseAsAddress;
 		private int _advertiseAsPort;
+		private bool _disableAuthorization;
 
 		public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
 			MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, IPAddress advertiseAsAddress,
-			int advertiseAsPort, params string[] prefixes) {
+			int advertiseAsPort, bool disableAuthorization, params string[] prefixes) {
 			Ensure.NotNull(inputBus, "inputBus");
 			Ensure.NotNull(uriRouter, "uriRouter");
 			Ensure.NotNull(prefixes, "prefixes");
@@ -63,6 +66,8 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			_advertiseAsAddress = advertiseAsAddress;
 			_advertiseAsPort = advertiseAsPort;
+
+			_disableAuthorization = disableAuthorization;
 		}
 
 		public static void CreateAndSubscribePipeline(IBus bus,
@@ -140,12 +145,34 @@ namespace EventStore.Core.Services.Transport.Http {
 			Ensure.NotNull(handler, "handler");
 
 			_uriRouter.RegisterAction(action, (man, match) => {
-				handler(man, match);
+				if(_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)){
+					handler(man, match);
+				} else{
+					man.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.Unauthorized, "Unauthorized", (exc)=>{
+						Log.Debug("Error while sending reply (http service): {exc}.", exc.Message);
+					});
+				}
 				return new RequestParams(ESConsts.HttpTimeout);
 			});
 		}
 
-		public List<UriToActionMatch> GetAllUriMatches(Uri uri) {
+        private bool Authorized(IPrincipal user, AuthorizationLevel requiredAuthorizationLevel)
+        {
+            switch(requiredAuthorizationLevel){
+				case AuthorizationLevel.None:
+					return true;
+				case AuthorizationLevel.User:
+					return user != null;
+				case AuthorizationLevel.Ops:
+					return user != null && (user.IsInRole(SystemRoles.Admins) || user.IsInRole(SystemRoles.Operations));
+				case AuthorizationLevel.Admin:
+					return user != null && user.IsInRole(SystemRoles.Admins);
+				default:
+					return false;
+			}
+        }
+
+        public List<UriToActionMatch> GetAllUriMatches(Uri uri) {
 			return _uriRouter.GetAllUriMatches(uri);
 		}
 	}

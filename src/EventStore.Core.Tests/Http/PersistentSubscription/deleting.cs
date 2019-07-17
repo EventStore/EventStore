@@ -61,6 +61,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		protected override void When() {
+			SetDefaultCredentials(null);
 			var req = CreateRequest("/subscriptions/stream/groupname156", "DELETE");
 			_response = GetRequestResponse(req);
 		}

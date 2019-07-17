@@ -21,20 +21,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			RegisterUrlBased(service, "/users", HttpMethod.Get, GetUsers);
-			RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
-			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
-			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
-			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
-			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
-			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, PostCommandEnable);
-			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, PostCommandDisable);
+			RegisterUrlBased(service, "/users", HttpMethod.Get, AuthorizationLevel.Admin, GetUsers);
+			RegisterUrlBased(service, "/users/", HttpMethod.Get, AuthorizationLevel.Admin, GetUsers);
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, AuthorizationLevel.Admin, GetUser);
+			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, AuthorizationLevel.User, GetCurrentUser);
+			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
+			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
+			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, AuthorizationLevel.Admin, DeleteUser);
+			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, AuthorizationLevel.Admin, PostCommandEnable);
+			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, AuthorizationLevel.Admin, PostCommandDisable);
 			Register(service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword,
-				DefaultCodecs, DefaultCodecs);
+				DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
 			Register(service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword,
-				DefaultCodecs, DefaultCodecs);
+				DefaultCodecs, DefaultCodecs, AuthorizationLevel.User);
 		}
 
 		private void GetUsers(HttpEntityManager http, UriTemplateMatch match) {

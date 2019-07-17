@@ -54,21 +54,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected void Register(IHttpService service, string uriTemplate, string httpMethod,
-			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs) {
-			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
+			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs, AuthorizationLevel requiredAuthorizationLevel) {
+			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, requiredAuthorizationLevel),
 				handler);
 		}
 
 		protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,
-			ICodec[] requestCodecs, ICodec[] responseCodecs) {
-			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
+			ICodec[] requestCodecs, ICodec[] responseCodecs, AuthorizationLevel requiredAuthorizationLevel) {
+			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, requiredAuthorizationLevel),
 				handler);
 		}
 
-		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod,
+		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod, AuthorizationLevel requiredAuthorizationLevel,
 			Action<HttpEntityManager, UriTemplateMatch> action) {
-			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
+			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, requiredAuthorizationLevel);
 		}
 
 		protected static string MakeUrl(HttpEntityManager http, string path) {

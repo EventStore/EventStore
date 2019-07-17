@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 							EventType = SystemEventTypes.StreamMetadata,
 							Data = new JRaw(jsonMetadata)
 						}
-					});
+					}, _admin);
 			}
 
 			[Test]
