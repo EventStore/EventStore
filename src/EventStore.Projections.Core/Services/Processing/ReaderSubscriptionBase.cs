@@ -238,10 +238,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			if (_stopOnEof) {
 				_eofReached = true;
-				_publisher.Publish(
-					new EventReaderSubscriptionMessage.NotAuthorized(
-						_subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
 			}
+			_publisher.Publish(
+				new EventReaderSubscriptionMessage.NotAuthorized(
+					_subscriptionId, _positionTracker.LastTag, _progress, _subscriptionMessageSequenceNumber++));
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderStarting message) {
