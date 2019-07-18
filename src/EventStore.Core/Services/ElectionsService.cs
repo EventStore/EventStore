@@ -384,62 +384,69 @@ namespace EventStore.Core.Services {
 		}
 
 		private MasterCandidate GetBestMasterCandidate() {
-			// if (_lastElectedMaster.HasValue) {
-			// 	ElectionMessage.PrepareOk masterMsg;
-			// 	if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
-			// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
-			// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-			// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
-			// 			masterMsg.NodePriority);
-			// 	}
 
-			// 	var master = _servers.FirstOrDefault(x =>
-			// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _maintainanceMode == false);
-			// 	if (master != null) {
-			// 		return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-			// 			master.EpochNumber, master.EpochPosition, master.EpochId,
-			// 			master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-			// 			master.NodePriority);
-			// 	}
-			// }
+			if (_servers.All(x => x.NodePriority == _servers.First().NodePriority)) {
 
-			// var best = _prepareOkReceived.Values
-			// 	.OrderByDescending(x => x.EpochNumber)
-			// 	.ThenByDescending(x => x.LastCommitPosition)
-			// 	.ThenByDescending(x => x.WriterCheckpoint)
-			// 	.ThenByDescending(x => x.NodePriority)
-			// 	.ThenByDescending(x => x.ChaserCheckpoint)
-			// 	.ThenByDescending(x => x.ServerId)
-			// 	.FirstOrDefault();
-			// if (best == null)
-			// 	return null;
-			// return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
-			// 	best.EpochNumber, best.EpochPosition, best.EpochId,
-			// 	best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+				// if (_lastElectedMaster.HasValue) {
+				// 	ElectionMessage.PrepareOk masterMsg;
+				// 	if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
+				// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
+				// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
+				// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+				// 			masterMsg.NodePriority);
+				// 	}
 
-			var best = _servers
-				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
-				.ThenByDescending(x => x.WriterCheckpoint)
-				.ThenByDescending(x => x.NodePriority)
-				.ThenByDescending(x => x.ChaserCheckpoint)
-				.ThenByDescending(x => x.InstanceId)
-				.FirstOrDefault();
-			if (best == null)
-				return null;
-			return new MasterCandidate(best.InstanceId, best.InternalHttpEndPoint,
-				best.EpochNumber, best.EpochPosition, best.EpochId,
-				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+				// 	var master = _servers.FirstOrDefault(x =>
+				// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _maintainanceMode == false);
+				// 	if (master != null) {
+				// 		return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+				// 			master.EpochNumber, master.EpochPosition, master.EpochId,
+				// 			master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+				// 			master.NodePriority);
+				// 	}
+				// }
+
+				var best = _prepareOkReceived.Values
+					.OrderByDescending(x => x.EpochNumber)
+					.ThenByDescending(x => x.LastCommitPosition)
+					.ThenByDescending(x => x.WriterCheckpoint)
+					.ThenByDescending(x => x.NodePriority)
+					.ThenByDescending(x => x.ChaserCheckpoint)
+					.ThenByDescending(x => x.ServerId)
+					.FirstOrDefault();
+				if (best == null)
+					return null;
+				return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
+					best.EpochNumber, best.EpochPosition, best.EpochId,
+					best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+			}
+			else
+			{
+				var best = _servers
+					.OrderByDescending(x => x.EpochNumber)
+					.ThenByDescending(x => x.LastCommitPosition)
+					.ThenByDescending(x => x.WriterCheckpoint)
+					.ThenByDescending(x => x.NodePriority)
+					.ThenByDescending(x => x.ChaserCheckpoint)
+					.ThenByDescending(x => x.InstanceId)
+					.FirstOrDefault();
+				if (best == null)
+					return null;
+				return new MasterCandidate(best.InstanceId, best.InternalHttpEndPoint,
+					best.EpochNumber, best.EpochPosition, best.EpochId,
+					best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+			}
 		}
 
 		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
 			MasterCandidate candidate) {
 			var master = _servers.FirstOrDefault(x =>
 				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+
 			// if (master != null) {
 			// 	if (candidate.InstanceId == master.InstanceId
-			// 	    || candidate.EpochNumber > master.EpochNumber
-			// 	    || (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
+			// 		|| candidate.EpochNumber > master.EpochNumber
+			// 		|| (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
 			// 		return true;
 
 			// 	Log.Debug(
