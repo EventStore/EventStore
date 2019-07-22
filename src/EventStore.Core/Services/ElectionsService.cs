@@ -33,8 +33,8 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.PrepareOk>,
 		IHandle<ElectionMessage.Proposal>,
 		IHandle<ElectionMessage.Accept>,
-		IHandle<ClientMessage.EnableMaintainanceMode>,
-		IHandle<ClientMessage.DisableMaintainanceMode> {
+		IHandle<ClientMessage.EnableMaintenanceMode>,
+		IHandle<ClientMessage.DisableMaintenanceMode> {
 		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
@@ -52,7 +52,7 @@ namespace EventStore.Core.Services {
 		private int _nodePriority;
 		private int tmp_nodePriority;
 
-		private bool _maintainanceMode = false;
+		private bool _maintenanceMode = false;
 
 		private int _lastAttemptedView = -1;
 		private int _lastInstalledView = -1;
@@ -124,29 +124,29 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
-			subscriber.Subscribe<ClientMessage.EnableMaintainanceMode>(this);
-			subscriber.Subscribe<ClientMessage.DisableMaintainanceMode>(this);
+			subscriber.Subscribe<ClientMessage.EnableMaintenanceMode>(this);
+			subscriber.Subscribe<ClientMessage.DisableMaintenanceMode>(this);
 		}
 
-		public void Handle(ClientMessage.EnableMaintainanceMode message)
+		public void Handle(ClientMessage.EnableMaintenanceMode message)
 		{
-			if (!_maintainanceMode)
+			if (!_maintenanceMode)
 			{
-				Log.Debug("Maintainance mode enabled");
+				Log.Debug("Maintenance mode enabled");
 				tmp_nodePriority = _nodePriority;
 				_nodePriority = int.MinValue;
-				_maintainanceMode = true;
+				_maintenanceMode = true;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 			}
 		}
 
-		public void Handle(ClientMessage.DisableMaintainanceMode message)
+		public void Handle(ClientMessage.DisableMaintenanceMode message)
 		{
-			if (_maintainanceMode)
+			if (_maintenanceMode)
 			{
-				Log.Debug("Maintainance mode disabled");
+				Log.Debug("Maintenance mode disabled");
 				_nodePriority = tmp_nodePriority;
-				_maintainanceMode = false;
+				_maintenanceMode = false;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 			}
 		}
@@ -384,58 +384,38 @@ namespace EventStore.Core.Services {
 		}
 
 		private MasterCandidate GetBestMasterCandidate() {
+			// if (_lastElectedMaster.HasValue) {
+			// 	ElectionMessage.PrepareOk masterMsg;
+			// 	if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
+			// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
+			// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
+			// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+			// 			masterMsg.NodePriority);
+			// 	}
 
-			if (_servers.All(x => x.NodePriority == _servers.First().NodePriority)) {
+			// 	var master = _servers.FirstOrDefault(x =>
+			// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+			// 	if (master != null) {
+			// 		return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+			// 			master.EpochNumber, master.EpochPosition, master.EpochId,
+			// 			master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+			// 			master.NodePriority);
+			// 	}
+			// }
 
-				// if (_lastElectedMaster.HasValue) {
-				// 	ElectionMessage.PrepareOk masterMsg;
-				// 	if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
-				// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
-				// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-				// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
-				// 			masterMsg.NodePriority);
-				// 	}
-
-				// 	var master = _servers.FirstOrDefault(x =>
-				// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _maintainanceMode == false);
-				// 	if (master != null) {
-				// 		return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-				// 			master.EpochNumber, master.EpochPosition, master.EpochId,
-				// 			master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-				// 			master.NodePriority);
-				// 	}
-				// }
-
-				var best = _prepareOkReceived.Values
-					.OrderByDescending(x => x.EpochNumber)
-					.ThenByDescending(x => x.LastCommitPosition)
-					.ThenByDescending(x => x.WriterCheckpoint)
-					.ThenByDescending(x => x.NodePriority)
-					.ThenByDescending(x => x.ChaserCheckpoint)
-					.ThenByDescending(x => x.ServerId)
-					.FirstOrDefault();
-				if (best == null)
-					return null;
-				return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
-					best.EpochNumber, best.EpochPosition, best.EpochId,
-					best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
-			}
-			else
-			{
-				var best = _servers
-					.OrderByDescending(x => x.EpochNumber)
-					.ThenByDescending(x => x.LastCommitPosition)
-					.ThenByDescending(x => x.WriterCheckpoint)
-					.ThenByDescending(x => x.NodePriority)
-					.ThenByDescending(x => x.ChaserCheckpoint)
-					.ThenByDescending(x => x.InstanceId)
-					.FirstOrDefault();
-				if (best == null)
-					return null;
-				return new MasterCandidate(best.InstanceId, best.InternalHttpEndPoint,
-					best.EpochNumber, best.EpochPosition, best.EpochId,
-					best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
-			}
+			var best = _prepareOkReceived.Values
+				.OrderByDescending(x => x.EpochNumber)
+				.ThenByDescending(x => x.LastCommitPosition)
+				.ThenByDescending(x => x.WriterCheckpoint)
+				.ThenByDescending(x => x.NodePriority)
+				.ThenByDescending(x => x.ChaserCheckpoint)
+				.ThenByDescending(x => x.ServerId)
+				.FirstOrDefault();
+			if (best == null)
+				return null;
+			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
+				best.EpochNumber, best.EpochPosition, best.EpochId,
+				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
 
 		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,

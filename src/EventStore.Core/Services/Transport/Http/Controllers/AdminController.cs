@@ -33,11 +33,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnPostMergeIndexes);
 			service.RegisterAction(
-				new ControllerAction("/admin/maintainance/enable", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
-				OnEnableMaintainance);
+				new ControllerAction("/admin/maintenance/enable", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
+				OnEnableMaintenance);
 			service.RegisterAction(
-				new ControllerAction("/admin/maintainance/disable", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs),
-				OnDisableMaintainance);
+				new ControllerAction("/admin/maintenance/disable", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
+				OnDisableMaintenance);
 		}
 
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
@@ -146,22 +146,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
 		}
 
-		private void OnEnableMaintainance(HttpEntityManager entity, UriTemplateMatch match) {
+		private void OnEnableMaintenance(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
-				Log.Info("Request enable maintainance of node command has been received.");
-				Publish(new ClientMessage.EnableMaintainanceMode());
+				Log.Info("Request enable maintenance of node command has been received.");
+				Publish(new ClientMessage.EnableMaintenanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}
 		}
 
-		private void OnDisableMaintainance(HttpEntityManager entity, UriTemplateMatch match) {
+		private void OnDisableMaintenance(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
-				Log.Info("Request disable maintainance of node command has been received.");
-				Publish(new ClientMessage.DisableMaintainanceMode());
+				Log.Info("Request disable maintenance of node command has been received.");
+				Publish(new ClientMessage.DisableMaintenanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);

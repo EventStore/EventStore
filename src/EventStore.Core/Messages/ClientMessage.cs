@@ -1476,7 +1476,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class EnableMaintainanceMode : Message
+		public class EnableMaintenanceMode : Message
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1485,7 +1485,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DisableMaintainanceMode : Message
+		public class DisableMaintenanceMode : Message
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
