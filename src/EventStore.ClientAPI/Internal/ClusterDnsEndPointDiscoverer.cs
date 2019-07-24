@@ -203,15 +203,19 @@ namespace EventStore.ClientAPI.Internal
                         result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
                         //_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
 					} catch (Exception e) {
-						if (e is AggregateException ae)
+						if (e is AggregateException){
+                            var ae = (AggregateException) e;
 							e = ae.Flatten();
+                        }
 						_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
                     }
                     completed.Set();
                 },
 				e => {
-					if (e is AggregateException ae)
+					if (e is AggregateException){
+                        var ae = (AggregateException) e;
 						e = ae.Flatten();
+                    }
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
                     completed.Set();
                 }, endPoint.HostHeader);
