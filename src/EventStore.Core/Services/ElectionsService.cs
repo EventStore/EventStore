@@ -68,6 +68,7 @@ namespace EventStore.Core.Services {
 		private MasterCandidate _masterProposal;
 		private Guid? _master;
 		private Guid? _lastElectedMaster;
+		private int _lastElectedMasterPriority;
 
 		private MemberInfo[] _servers;
 
@@ -421,21 +422,21 @@ namespace EventStore.Core.Services {
 		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
 			MasterCandidate candidate) {
 			var master = _servers.FirstOrDefault(x =>
-				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _lastElectedMasterPriority == x.NodePriority);
 
-			// if (master != null) {
-			// 	if (candidate.InstanceId == master.InstanceId
-			// 		|| candidate.EpochNumber > master.EpochNumber
-			// 		|| (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
-			// 		return true;
+			if (master != null) {
+				if (candidate.InstanceId == master.InstanceId
+					|| candidate.EpochNumber > master.EpochNumber
+					|| (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
+					return true;
 
-			// 	Log.Debug(
-			// 		"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
-			// 		+ "PREVIOUS MASTER IS ALIVE: [{masterInternalHttp},{masterId:B}].",
-			// 		view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
-			// 		master.InternalHttpEndPoint, master.InstanceId);
-			// 	return false;
-			// }
+				Log.Debug(
+					"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
+					+ "PREVIOUS MASTER IS ALIVE: [{masterInternalHttp},{masterId:B}].",
+					view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
+					master.InternalHttpEndPoint, master.InstanceId);
+				return false;
+			}
 
 			if (candidate.InstanceId == _nodeInfo.InstanceId)
 				return true;
@@ -517,6 +518,7 @@ namespace EventStore.Core.Services {
 					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED MASTER = {masterInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_masterProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedMaster = _master;
+					_lastElectedMasterPriority = _masterProposal.NodePriority;
 					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, master));
 				}
 			}
