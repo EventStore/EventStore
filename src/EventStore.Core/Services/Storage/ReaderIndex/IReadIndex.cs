@@ -3,44 +3,46 @@ using System.Security.Principal;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 
-namespace EventStore.Core.Services.Storage.ReaderIndex
-{
-    public interface IReadIndex
-    {
-        long LastCommitPosition { get; }
-        long LastReplicatedPosition { get; }
-        IIndexWriter IndexWriter { get; }
+namespace EventStore.Core.Services.Storage.ReaderIndex {
+	public interface IReadIndex {
+		long LastCommitPosition { get; }
+		long LastReplicatedPosition { get; }
+		IIndexWriter IndexWriter { get; }
 
-        void Init(long buildToPosition);
-        ReadIndexStats GetStatistics();
+		void Init(long buildToPosition);
+		ReadIndexStats GetStatistics();
 
-        IndexReadEventResult ReadEvent(string streamId, long eventNumber);
-        IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount);
-        IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount);
-        /// <summary>
-        /// Returns event records in the sequence they were committed into TF.
-        /// Positions is specified as pre-positions (pointer at the beginning of the record).
-        /// </summary>
-        IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
-        /// <summary>
-        /// Returns event records in the reverse sequence they were committed into TF.
-        /// Positions is specified as post-positions (pointer after the end of record).
-        /// </summary>
-        IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
-        /// <summary>
-        /// Returns event records whose eventType matches the given StringFilter in the sequence they were committed into TF.
-        /// Positions is specified as pre-positions (pointer at the beginning of the record).
-        /// </summary>
-        IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow, StringFilter allowedEventTypes);
+		IndexReadEventResult ReadEvent(string streamId, long eventNumber);
+		IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount);
+		IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount);
 
-        bool IsStreamDeleted(string streamId);
-        long GetStreamLastEventNumber(string streamId);
-        StreamMetadata GetStreamMetadata(string streamId);
+		/// <summary>
+		/// Returns event records in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
 
-        string GetEventStreamIdByTransactionId(long transactionId);
-        StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+		/// <summary>
+		/// Returns event records in the reverse sequence they were committed into TF.
+		/// Positions is specified as post-positions (pointer after the end of record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
-        void Close();
-        void Dispose();
-    }
+		/// <summary>
+		/// Returns event records whose eventType matches the given StringFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			StringFilter allowedEventTypes);
+
+		bool IsStreamDeleted(string streamId);
+		long GetStreamLastEventNumber(string streamId);
+		StreamMetadata GetStreamMetadata(string streamId);
+
+		string GetEventStreamIdByTransactionId(long transactionId);
+		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+
+		void Close();
+		void Dispose();
+	}
 }
