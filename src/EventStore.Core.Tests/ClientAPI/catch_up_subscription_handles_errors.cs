@@ -503,6 +503,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _readAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials);
 		}
 
+		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, StreamFilter streamFilter,
+			UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
 		public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();

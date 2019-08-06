@@ -344,10 +344,6 @@ namespace EventStore.Core.Services.Storage {
 					if (!access.Granted)
 						return NoData(msg, ReadAllResult.AccessDenied, pos, lastCommitPosition);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> mat-mcloughlin/BertschiAG-formatting-fix
 					var res = _readIndex.ReadAllEventsForward(pos, msg.MaxCount);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)

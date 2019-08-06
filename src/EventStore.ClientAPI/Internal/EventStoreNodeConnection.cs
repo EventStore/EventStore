@@ -229,6 +229,21 @@ namespace EventStore.ClientAPI.Internal {
 			return await source.Task.ConfigureAwait(false);
 		}
 
+		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
+			StreamFilter streamFilter, UserCredentials userCredentials = null) {
+			Ensure.Positive(maxCount, "maxCount");
+			Ensure.NotNull(streamFilter, nameof(streamFilter));
+			if (maxCount > ClientApiConstants.MaxReadSize)
+				throw new ArgumentException(string.Format(
+					"Count should be less than {0}. For larger reads you should page.",
+					ClientApiConstants.MaxReadSize));
+			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
+			var operation = new ReadAllEventsForwardFilteredOperation(Settings.Log, source, position, maxCount,
+				resolveLinkTos, Settings.RequireMaster, 1000, streamFilter.EventFilters, userCredentials);
+			await EnqueueOperation(operation).ConfigureAwait(false);
+			return await source.Task.ConfigureAwait(false);
+		}
+
 		public async Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount,
 			bool resolveLinkTos, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");

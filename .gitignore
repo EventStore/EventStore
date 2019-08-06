@@ -108,3 +108,5 @@ src/.vscode/
 
 #NCrunch
 _NCrunch_*/
+
+*.orig

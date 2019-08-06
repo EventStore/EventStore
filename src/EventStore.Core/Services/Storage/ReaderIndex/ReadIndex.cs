@@ -10,6 +10,7 @@ using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class ReadIndex : IDisposable, IReadIndex {

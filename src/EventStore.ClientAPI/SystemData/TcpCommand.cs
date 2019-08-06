@@ -47,6 +47,8 @@ namespace EventStore.ClientAPI.SystemData {
 		ReadAllEventsForwardCompleted = 0xB7,
 		ReadAllEventsBackward = 0xB8,
 		ReadAllEventsBackwardCompleted = 0xB9,
+		ReadAllEventsForwardFiltered = 0xBA,
+		ReadAllEventsForwardFilteredCompleted = 0xBB,
 
 		SubscribeToStream = 0xC0,
 		SubscriptionConfirmation = 0xC1,

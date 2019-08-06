@@ -126,7 +126,7 @@ namespace EventStore.Core.Util
 
             public static bool IsRegexString(string s)
             {
-                return !s.StartsWith("$", System.StringComparison.Ordinal) && !s.Equals(Regex.Escape(s));
+	            return !s.StartsWith("$", System.StringComparison.Ordinal) && !s.Equals(Regex.Escape(s));
             }
 
             public bool IsStringAllowed(string s)

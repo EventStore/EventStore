@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex : IReadIndex {
