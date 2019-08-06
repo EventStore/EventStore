@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -100,6 +101,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount) {
 			return _allReader.ReadAllEventsForward(pos, maxCount);
+		}
+
+		IndexReadAllFilteredResult IReadIndex.ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			StringFilter allowedEventTypes) {
+			return _allReader.ReadAllEventsForwardFiltered(pos, maxCount, maxSearchWindow, allowedEventTypes);
 		}
 
 		IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount) {
