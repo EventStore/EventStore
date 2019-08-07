@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Collections.Generic;
+using EventStore.ClientAPI;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader
@@ -23,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader
         {
             var expectedEventTypes = new StringFilter(new[] { "event-type" });
             var pos = new TFPos(this.firstEvent.LogPosition, this.firstEvent.LogPosition);
-            var result = ReadIndex.ReadAllEventsForwardFiltered(pos, 10, 10, expectedEventTypes);
+            var result = ReadIndex.ReadAllEventsForwardFiltered(pos, 10, 10, expectedEventTypes, new StringFilter(null));
             Assert.AreEqual(2, result.Records.Count);
         }
     }

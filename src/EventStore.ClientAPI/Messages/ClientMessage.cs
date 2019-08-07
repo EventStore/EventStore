@@ -673,12 +673,16 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(6, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
   
-    [ProtoMember(7, Name=@"allowed_event_types", DataFormat = DataFormat.Default)]
-    public readonly string[] AllowedEventTypes;
-  
+    [ProtoMember(7, Name=@"event_filters", DataFormat = DataFormat.Default)]
+    public readonly string[] EventFilters;
+
+    [ProtoMember(8, Name = @"stream_filters", DataFormat = DataFormat.Default)]
+    public readonly string[] StreamFilters;
+    
     private ReadAllEventsFiltered() {}
   
-    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, string[] allowedEventTypes)
+    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, 
+	    bool resolveLinkTos, bool requireMaster, string[] eventFilters, string[] streamFilters)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
@@ -686,7 +690,8 @@ namespace EventStore.ClientAPI.Messages
         MaxSearchWindow = maxSearchWindow;
         ResolveLinkTos = resolveLinkTos;
         RequireMaster = requireMaster;
-        AllowedEventTypes = allowedEventTypes;
+        EventFilters = eventFilters;
+        StreamFilters = streamFilters;
     }
   }
   

@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes);
+			StringFilter eventFilter, StringFilter streamFilter);
 
 		/// <summary>
 		/// Returns event records in the reverse sequence they were committed into TF.
@@ -46,13 +46,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, new StringFilter(null));
+			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, new StringFilter(null), new StringFilter(null));
 			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
 		}
 
 		public IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, allowedEventTypes);
+			StringFilter eventFilter, StringFilter streamFilter) {
+			var result = ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter, streamFilter);
 			return new IndexReadAllFilteredResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos,
 				result.IsEndOfStream);
 		}
@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private ReadAllEventsForwardRawResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes) {
+			StringFilter eventFilter, StringFilter streamFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
 			// in case we are at position after which there is no commit at all, in that case we have to force 
@@ -120,7 +120,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
 									prepare);
 								consideredEventsCount++;
-								if (allowedEventTypes.IsStringAllowed(prepare.EventType)) {
+								if (eventFilter.IsStringAllowed(prepare.EventType)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
 								}
 								nextPos = new TFPos(result.RecordPostPosition, 0);
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
 									consideredEventsCount++;
-									if (allowedEventTypes.IsStringAllowed(prepare.EventType)) {
+									if (eventFilter.IsStringAllowed(prepare.EventType)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 

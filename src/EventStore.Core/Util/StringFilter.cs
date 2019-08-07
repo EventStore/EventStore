@@ -95,7 +95,7 @@ namespace EventStore.Core.Util
 
             public bool IsStringAllowed(string s)
             {
-                return _expectedString.Equals(s);
+                return s.StartsWith(_expectedString);
             }
         }
 

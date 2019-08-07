@@ -903,7 +903,8 @@ namespace EventStore.Core.Messages {
 			public readonly bool ResolveLinkTos;
 			public readonly bool RequireMaster;
 			public readonly int MaxSearchWindow;
-			public readonly StringFilter AllowedEventTypes;
+			public readonly StringFilter EventFilter;
+			public readonly StringFilter StreamFilter;
 
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
@@ -912,7 +913,7 @@ namespace EventStore.Core.Messages {
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
 				bool requireMaster, int maxSearchWindow, long? validationTfLastCommitPosition,
 				IPrincipal user, TimeSpan? longPollTimeout = null,
-				StringFilter allowedEventTypes = null)
+				StringFilter eventFilter = null, StringFilter streamFilter = null)
 				: base(internalCorrId, correlationId, envelope, user) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
@@ -922,7 +923,8 @@ namespace EventStore.Core.Messages {
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 				LongPollTimeout = longPollTimeout;
 				MaxSearchWindow = maxSearchWindow;
-				AllowedEventTypes = allowedEventTypes;
+				EventFilter = eventFilter;
+				StreamFilter = streamFilter;
 			}
 		}
 

@@ -429,7 +429,7 @@ namespace EventStore.Core.Services.Storage {
 							lastCommitPosition);
 
 					var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
-						msg.AllowedEventTypes);
+						msg.EventFilter, msg.StreamFilter);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
 						return NoDataForFilteredCommand(msg, ReadAllFilteredResult.AccessDenied, pos,

@@ -239,7 +239,7 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsForwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, 1000, streamFilter.EventFilters, userCredentials);
+				resolveLinkTos, Settings.RequireMaster, 1000, streamFilter.EventFilters, streamFilter.StreamFilters, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
