@@ -24,7 +24,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		public StreamFilterBuilder ExcludeSystemEvents() {
-			_eventFilters.Append(@"^[^\$].*");
+			_eventFilters.Add(@"^[^\$].*");
 			return this;
 		}
 
