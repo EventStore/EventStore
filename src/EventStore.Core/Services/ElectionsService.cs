@@ -183,11 +183,12 @@ namespace EventStore.Core.Services {
 				}
 
 				if (eligible) {
+					Log.Info("Election was triggered");
 					_publisher.Publish(new ElectionMessage.StartElections());
 				}
 				else
 				{
-					Log.Info("Election trigger error: No node caught up yet.");
+					Log.Info("Election trigger error: No slave node caught up yet.");
 				}
 			}
 
@@ -412,24 +413,28 @@ namespace EventStore.Core.Services {
 		}
 
 		private MasterCandidate GetBestMasterCandidate() {
-			// if (_lastElectedMaster.HasValue) {
-			// 	ElectionMessage.PrepareOk masterMsg;
-			// 	if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
-			// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
-			// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-			// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
-			// 			masterMsg.NodePriority);
-			// 	}
+			var samePriority = _prepareOkReceived.Values.Select(x => x.NodePriority).Count() == 1;
 
-			// 	var master = _servers.FirstOrDefault(x =>
-			// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			// 	if (master != null) {
-			// 		return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-			// 			master.EpochNumber, master.EpochPosition, master.EpochId,
-			// 			master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-			// 			master.NodePriority);
-			// 	}
-			// }
+			if (_lastElectedMaster.HasValue) {
+				ElectionMessage.PrepareOk masterMsg;
+				if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)
+					&& (masterMsg.NodePriority == _lastElectedMasterPriority || samePriority)) {
+					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
+						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
+						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+						masterMsg.NodePriority);
+				}
+
+				// var master = _servers.FirstOrDefault(x =>
+				// 	x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+				// if (master != null
+				// 	&& (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
+				// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+				// 		master.EpochNumber, master.EpochPosition, master.EpochId,
+				// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+				// 		master.NodePriority);
+				// }
+			}
 
 			var best = _prepareOkReceived.Values
 				.OrderByDescending(x => x.EpochNumber)
@@ -441,6 +446,17 @@ namespace EventStore.Core.Services {
 				.FirstOrDefault();
 			if (best == null)
 				return null;
+
+			var master = _servers.FirstOrDefault(x =>
+					x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+			if (master != null && (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
+				Log.Info("Selecting master as the best");
+				return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+					master.EpochNumber, master.EpochPosition, master.EpochId,
+					master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+					master.NodePriority);
+			}
+			
 			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
 				best.EpochNumber, best.EpochPosition, best.EpochId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
