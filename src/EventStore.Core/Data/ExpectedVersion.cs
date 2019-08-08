@@ -4,7 +4,6 @@ namespace EventStore.Core.Data {
 
 		public const long NoStream = -1;
 
-		//public const int EmptyStream = 0;
 		public const long Invalid = -3;
 		public const long StreamExists = -4;
 	}

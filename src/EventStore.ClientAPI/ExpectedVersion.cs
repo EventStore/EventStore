@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.ClientAPI {
 	/// <summary>
 	/// Constants used for expected version control
@@ -27,6 +29,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// The stream should exist but be empty when writing. If it does not exist or is not empty treat that as a concurrency problem.
 		/// </summary>
+		[Obsolete("ExpectedVersion.EmptyStream has been deprecated. Use ExpectedVersion.NoStream instead")]
 		public const int EmptyStream = -1;
 
 		/// <summary>
