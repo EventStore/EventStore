@@ -2,166 +2,134 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace EventStore.Core.Util
-{
-    /// <summary>
-    /// This class can answer the question, if a given string is a member of a list of strings. 
-    /// 
-    /// Internally it uses different strategies based on the number of strings it has to compare. 
-    /// </summary>
-    public class StringFilter
-    {
-        private interface IFilterStrategy
-        {
-            bool IsStringAllowed(string s);
-        }
+namespace EventStore.Core.Util {
+	/// <summary>
+	/// This class can answer the question, if a given string is a member of a list of strings. 
+	/// 
+	/// Internally it uses different strategies based on the number of strings it has to compare. 
+	/// </summary>
+	public class StringFilter {
+		private interface IFilterStrategy {
+			bool IsStringAllowed(string s);
+		}
 
-        private readonly IFilterStrategy _strategy;
+		private readonly IFilterStrategy _strategy;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:EventStore.Core.Util.StringFilter"/> class.
-        /// </summary>
-        /// <param name="allowedStrings">Allowed strings. If null or empty, all strings are considered valid by <see cref="IsStringAllowed(string)"/></param>
-        public StringFilter(IReadOnlyList<string> allowedStrings)
-        {
-            if (allowedStrings == null || allowedStrings.Count == 0)
-            {
-                _strategy = new AlwaysAllowStrategy();
-            }
-            else
-            {
-                var plainStrings = new List<string>();
-                var regexes = new List<Regex>();
+		/// <summary>
+		/// Initializes a new instance of the <see cref="T:EventStore.Core.Util.StringFilter"/> class.
+		/// </summary>
+		/// <param name="allowedStrings">Allowed strings. If null or empty, all strings are considered valid by <see cref="IsStringAllowed(string)"/></param>
+		public StringFilter(IReadOnlyList<string> allowedStrings) {
+			if (allowedStrings == null || allowedStrings.Count == 0) {
+				_strategy = new AlwaysAllowStrategy();
+			} else {
+				var plainStrings = new List<string>();
+				var regexes = new List<Regex>();
 
-                foreach (var str in allowedStrings)
-                {
-                    if (RegexCollectionStrategy.IsRegexString(str))
-                    {
-                        regexes.Add(new Regex(str, RegexOptions.Compiled));
-                    }
-                    else
-                    {
-                        plainStrings.Add(str);
-                    }
-                }
-                var strategies = new List<IFilterStrategy>();
+				foreach (var str in allowedStrings) {
+					if (RegexCollectionStrategy.IsRegexString(str)) {
+						regexes.Add(new Regex(str, RegexOptions.Compiled));
+					} else {
+						plainStrings.Add(str);
+					}
+				}
 
-                if (plainStrings.Count == 1)
-                {
-                    strategies.Add(new SingleStringStrategy(plainStrings[0]));
-                }
-                else if (plainStrings.Count > 1)
-                {
-                    strategies.Add(new PlainStringCollectionStrategy(plainStrings));
-                }
+				var strategies = new List<IFilterStrategy>();
 
-                if (regexes.Count != 0)
-                {
-                    strategies.Add(new RegexCollectionStrategy(regexes));
-                }
+				if (plainStrings.Count == 1) {
+					strategies.Add(new SingleStringStrategy(plainStrings[0]));
+				} else if (plainStrings.Count > 1) {
+					strategies.Add(new PlainStringCollectionStrategy(plainStrings));
+				}
 
-                _strategy = new MultiStrategyStrategy(strategies);
-            }
-        }
+				if (regexes.Count != 0) {
+					strategies.Add(new RegexCollectionStrategy(regexes));
+				}
 
-        /// <summary>
-        /// Returns true, if the given string is part of the list of strings passed to the constructor. 
-        /// 
-        /// If the constructor was given an empty list, all strings are considered to be allowed. 
-        /// </summary>
-        /// <returns><c>true</c>, if string is allowed, <c>false</c> otherwise.</returns>
-        /// <param name="s">String to check</param>
-        public bool IsStringAllowed(string s)
-        {
-            return _strategy.IsStringAllowed(s);
-        }
+				_strategy = new MultiStrategyStrategy(strategies);
+			}
+		}
 
-        private class AlwaysAllowStrategy : IFilterStrategy
-        {
-            public bool IsStringAllowed(string s)
-            {
-                return true;
-            }
-        }
+		/// <summary>
+		/// Returns true, if the given string is part of the list of strings passed to the constructor. 
+		/// 
+		/// If the constructor was given an empty list, all strings are considered to be allowed. 
+		/// </summary>
+		/// <returns><c>true</c>, if string is allowed, <c>false</c> otherwise.</returns>
+		/// <param name="s">String to check</param>
+		public bool IsStringAllowed(string s) {
+			return _strategy.IsStringAllowed(s);
+		}
 
-        private class SingleStringStrategy : IFilterStrategy
-        {
-            private readonly string _expectedString;
+		private class AlwaysAllowStrategy : IFilterStrategy {
+			public bool IsStringAllowed(string s) {
+				return true;
+			}
+		}
 
-            public SingleStringStrategy(string expectedString)
-            {
-                _expectedString = expectedString;
-            }
+		private class SingleStringStrategy : IFilterStrategy {
+			private readonly string _expectedString;
 
-            public bool IsStringAllowed(string s)
-            {
-                return s.StartsWith(_expectedString);
-            }
-        }
+			public SingleStringStrategy(string expectedString) {
+				_expectedString = expectedString;
+			}
 
-        private class PlainStringCollectionStrategy : IFilterStrategy
-        {
-            private readonly Regex _allowedStringsRegex;
+			public bool IsStringAllowed(string s) {
+				return s.StartsWith(_expectedString);
+			}
+		}
 
-            public PlainStringCollectionStrategy(IEnumerable<string> allowedStrings)
-            {
-                var filters = allowedStrings.Select(Regex.Escape);
-                _allowedStringsRegex = new Regex("^" + string.Join("|", filters) + "$", RegexOptions.Compiled);
-            }
+		private class PlainStringCollectionStrategy : IFilterStrategy {
+			private readonly Regex _allowedStringsRegex;
 
-            public bool IsStringAllowed(string s)
-            {
-                return _allowedStringsRegex.IsMatch(s);
-            }
-        }
+			public PlainStringCollectionStrategy(IEnumerable<string> allowedStrings) {
+				var filters = allowedStrings.Select(Regex.Escape);
+				_allowedStringsRegex = new Regex("^" + string.Join("|", filters) + "$", RegexOptions.Compiled);
+			}
 
-        private class RegexCollectionStrategy : IFilterStrategy
-        {
-            private readonly List<Regex> regexes;
+			public bool IsStringAllowed(string s) {
+				return _allowedStringsRegex.IsMatch(s);
+			}
+		}
 
-            public RegexCollectionStrategy(List<Regex> regexes)
-            {
-                this.regexes = regexes;
-            }
+		private class RegexCollectionStrategy : IFilterStrategy {
+			private readonly List<Regex> _regexes;
 
-            public static bool IsRegexString(string s)
-            {
-	            return !s.StartsWith("$", System.StringComparison.Ordinal) && !s.Equals(Regex.Escape(s));
-            }
+			public RegexCollectionStrategy(List<Regex> regexes) {
+				_regexes = regexes;
+			}
 
-            public bool IsStringAllowed(string s)
-            {
-                foreach(var regex in regexes)
-                {
-                    if(regex.IsMatch(s))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
+			public static bool IsRegexString(string s) {
+				return !s.StartsWith("$", System.StringComparison.Ordinal) && !s.Equals(Regex.Escape(s));
+			}
 
-        private class MultiStrategyStrategy : IFilterStrategy
-        {
-            private readonly List<IFilterStrategy> strategies;
+			public bool IsStringAllowed(string s) {
+				foreach (var regex in _regexes) {
+					if (regex.IsMatch(s)) {
+						return true;
+					}
+				}
 
-            public MultiStrategyStrategy(List<IFilterStrategy> strategies)
-            {
-                this.strategies = strategies;
-            }
+				return false;
+			}
+		}
 
-            public bool IsStringAllowed(string s)
-            {
-                foreach(var strat in strategies)
-                {
-                    if (strat.IsStringAllowed(s))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
-    }
+		private class MultiStrategyStrategy : IFilterStrategy {
+			private readonly List<IFilterStrategy> _strategies;
+
+			public MultiStrategyStrategy(List<IFilterStrategy> strategies) {
+				_strategies = strategies;
+			}
+
+			public bool IsStringAllowed(string s) {
+				foreach (var strat in _strategies) {
+					if (strat.IsStringAllowed(s)) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+		}
+	}
 }

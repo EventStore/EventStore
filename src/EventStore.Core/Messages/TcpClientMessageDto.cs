@@ -676,7 +676,7 @@ namespace EventStore.Core.Messages
     [ProtoMember(7, Name=@"event_filters", DataFormat = DataFormat.Default)]
     public readonly string[] EventFilters;
 
-    [ProtoMember(7, Name=@"stream_filters", DataFormat = DataFormat.Default)]
+    [ProtoMember(8, Name=@"stream_filters", DataFormat = DataFormat.Default)]
     public readonly string[] StreamFilters;
     
     private ReadAllEventsFiltered() {}

@@ -120,7 +120,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
 									prepare);
 								consideredEventsCount++;
-								if (eventFilter.IsStringAllowed(prepare.EventType)) {
+								if (eventFilter.IsStringAllowed(prepare.EventType) && streamFilter.IsStringAllowed(prepare.EventStreamId)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
 								}
 								nextPos = new TFPos(result.RecordPostPosition, 0);
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
 									consideredEventsCount++;
-									if (eventFilter.IsStringAllowed(prepare.EventType)) {
+									if (eventFilter.IsStringAllowed(prepare.EventType) && streamFilter.IsStringAllowed(prepare.EventStreamId)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
