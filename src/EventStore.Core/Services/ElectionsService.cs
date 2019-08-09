@@ -390,7 +390,7 @@ namespace EventStore.Core.Services {
 			_acceptsReceived.Clear();
 			_masterProposal = null;
 
-			var master = GetBestMasterCandidate();
+			var master = GetBestMasterCandidate(_prepareOkReceived);
 			if (master == null) {
 				Log.Trace("ELECTIONS: (V={lastAttemptedView}) NO MASTER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
@@ -412,31 +412,31 @@ namespace EventStore.Core.Services {
 			SendToAllExceptMe(proposal);
 		}
 
-		private MasterCandidate GetBestMasterCandidate() {
-			var samePriority = _prepareOkReceived.Values.Select(x => x.NodePriority).Count() == 1;
+		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received) {
+			var samePriority = received.Values.Select(x => x.NodePriority).Count() == 1;
 
-			if (_lastElectedMaster.HasValue) {
-				ElectionMessage.PrepareOk masterMsg;
-				if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)
-					&& (masterMsg.NodePriority == _lastElectedMasterPriority || samePriority)) {
-					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
-						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
-						masterMsg.NodePriority);
-				}
+			// if (_lastElectedMaster.HasValue) {
+			// 	ElectionMessage.PrepareOk masterMsg;
+			// 	if (prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)
+			// 		&& (masterMsg.NodePriority == _lastElectedMasterPriority || samePriority)) {
+			// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
+			// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
+			// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+			// 			masterMsg.NodePriority);
+			// 	}
 
-				// var master = _servers.FirstOrDefault(x =>
-				// 	x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-				// if (master != null
-				// 	&& (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
-				// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-				// 		master.EpochNumber, master.EpochPosition, master.EpochId,
-				// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-				// 		master.NodePriority);
-				// }
-			}
+			// 	// var master = _servers.FirstOrDefault(x =>
+			// 	// 	x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+			// 	// if (master != null
+			// 	// 	&& (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
+			// 	// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+			// 	// 		master.EpochNumber, master.EpochPosition, master.EpochId,
+			// 	// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+			// 	// 		master.NodePriority);
+			// 	// }
+			// }
 
-			var best = _prepareOkReceived.Values
+			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.LastCommitPosition)
 				.ThenByDescending(x => x.WriterCheckpoint)
@@ -447,25 +447,25 @@ namespace EventStore.Core.Services {
 			if (best == null)
 				return null;
 
-			var master = _servers.FirstOrDefault(x =>
-					x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			if (master != null && (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
-				Log.Info("Selecting master as the best");
-				return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-					master.EpochNumber, master.EpochPosition, master.EpochId,
-					master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-					master.NodePriority);
-			}
+			// var master = _servers.FirstOrDefault(x =>
+			// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+			// if (master != null && (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
+			// 	Log.Info("Selecting master as the best");
+			// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+			// 		master.EpochNumber, master.EpochPosition, master.EpochId,
+			// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+			// 		master.NodePriority);
+			// }
 			
 			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
 				best.EpochNumber, best.EpochPosition, best.EpochId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
 
-		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
-			MasterCandidate candidate) {
-			var master = _servers.FirstOrDefault(x =>
-				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master && _lastElectedMasterPriority == x.NodePriority);
+		public static bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
+			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, int lastElectedMasterPriority, VNodeInfo nodeInfo, MasterCandidate ownInfo) {
+			var master = servers.FirstOrDefault(x =>
+				x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master && lastElectedMasterPriority == x.NodePriority);
 
 			if (master != null) {
 				if (candidate.InstanceId == master.InstanceId
@@ -481,10 +481,10 @@ namespace EventStore.Core.Services {
 				return false;
 			}
 
-			if (candidate.InstanceId == _nodeInfo.InstanceId)
+			if (candidate.InstanceId == nodeInfo.InstanceId)
 				return true;
 
-			var ownInfo = GetOwnInfo();
+			// var ownInfo = GetOwnInfo();
 			if (!IsCandidateGoodEnough(candidate, ownInfo)) {
 				Log.Debug(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. ME={ownInfo}.",
@@ -496,7 +496,7 @@ namespace EventStore.Core.Services {
 			return true;
 		}
 
-		private bool IsCandidateGoodEnough(MasterCandidate candidate, MasterCandidate ownInfo) {
+		private static bool IsCandidateGoodEnough(MasterCandidate candidate, MasterCandidate ownInfo) {
 			if (candidate.EpochNumber != ownInfo.EpochNumber)
 				return candidate.EpochNumber > ownInfo.EpochNumber;
 			if (candidate.LastCommitPosition != ownInfo.LastCommitPosition)
@@ -519,7 +519,9 @@ namespace EventStore.Core.Services {
 			var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
 				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, 0);
-			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId, candidate))
+			var ownInfo = GetOwnInfo();
+			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
+									candidate, _servers, _lastElectedMaster, _lastElectedMasterPriority, _nodeInfo, ownInfo))
 				return;
 
 			Log.Debug(
@@ -594,7 +596,7 @@ namespace EventStore.Core.Services {
 				epochNumber, epochPosition, epochId, priority);
 		}
 
-		private class MasterCandidate {
+		public class MasterCandidate {
 			public readonly Guid InstanceId;
 			public readonly IPEndPoint InternalHttp;
 
