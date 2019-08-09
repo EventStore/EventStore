@@ -465,6 +465,11 @@ namespace EventStore.ClientAPI.Embedded {
 			return source.Task;
 		}
 
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, StreamFilter streamFilter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
 
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
 			string stream, string groupName,

@@ -9,6 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services {
 	public enum SubscriptionDropReason {
@@ -23,6 +24,7 @@ namespace EventStore.Core.Services {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<ClientMessage.SubscribeToStream>,
+		IHandle<ClientMessage.SubscribeToStreamFiltered>,
 		IHandle<ClientMessage.UnsubscribeFromStream>,
 		IHandle<SubscriptionMessage.PollStream>,
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
@@ -110,7 +112,28 @@ namespace EventStore.Core.Services {
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
 				var lastCommitPos = _readIndex.LastCommitPosition;
 				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
+					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, new StringFilter(null), new StringFilter(null));
+				var subscribedMessage =
+					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+				msg.Envelope.ReplyWith(subscribedMessage);
+			} else {
+				msg.Envelope.ReplyWith(
+					new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
+			}
+		}
+
+		public void Handle(ClientMessage.SubscribeToStreamFiltered msg) {
+			var streamAccess = _readIndex.CheckStreamAccess(
+				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read,
+				msg.User);
+
+			if (streamAccess.Granted) {
+				var lastEventNumber = msg.EventStreamId.IsEmptyString()
+					? (long?)null
+					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
+				var lastCommitPos = _readIndex.LastCommitPosition;
+				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
+					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter, msg.StreamFilter);
 				var subscribedMessage =
 					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
 				msg.Envelope.ReplyWith(subscribedMessage);
@@ -125,7 +148,8 @@ namespace EventStore.Core.Services {
 		}
 
 		private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
-			string eventStreamId, bool resolveLinkTos, long lastCommitPosition, long? lastEventNumber) {
+			string eventStreamId, bool resolveLinkTos, long lastCommitPosition, long? lastEventNumber,
+			StringFilter eventFilter, StringFilter streamFilter) {
 			List<Subscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
 				subscribers = new List<Subscription>();
@@ -139,7 +163,7 @@ namespace EventStore.Core.Services {
 				eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
 				resolveLinkTos,
 				lastCommitPosition,
-				lastEventNumber ?? -1);
+				lastEventNumber ?? -1, eventFilter, streamFilter);
 			subscribers.Add(subscription);
 			_subscriptionsById[correlationId] = subscription;
 		}
@@ -267,7 +291,10 @@ namespace EventStore.Core.Services {
 					// resolve event if has not been previously resolved
 					resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
 
-				subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
+				if (subscr.EventFilter.IsStringAllowed(pair.Event.EventType) && subscr.StreamFilter.IsStringAllowed(pair.Event.EventStreamId)) {
+					subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
+				}
+				
 			}
 
 			return resolvedEvent;
@@ -328,13 +355,18 @@ namespace EventStore.Core.Services {
 			public readonly long LastCommitPosition;
 			public readonly long LastEventNumber;
 
+			public readonly StringFilter EventFilter;
+			public readonly StringFilter StreamFilter;
+
 			public Subscription(Guid correlationId,
 				IEnvelope envelope,
 				Guid connectionId,
 				string eventStreamId,
 				bool resolveLinkTos,
 				long lastCommitPosition,
-				long lastEventNumber) {
+				long lastEventNumber,
+				StringFilter eventFilter,
+				StringFilter streamFilter) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				ConnectionId = connectionId;
@@ -343,6 +375,9 @@ namespace EventStore.Core.Services {
 				ResolveLinkTos = resolveLinkTos;
 				LastCommitPosition = lastCommitPosition;
 				LastEventNumber = lastEventNumber;
+
+				EventFilter = eventFilter;
+				StreamFilter = streamFilter;
 			}
 		}
 

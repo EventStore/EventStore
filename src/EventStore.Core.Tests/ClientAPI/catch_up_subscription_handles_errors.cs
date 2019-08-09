@@ -561,6 +561,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _subscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped);
 		}
 
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, StreamFilter streamFilter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(string stream, string groupName,
 			Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
 			Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,

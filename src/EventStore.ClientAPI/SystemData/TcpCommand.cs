@@ -66,6 +66,7 @@ namespace EventStore.ClientAPI.SystemData {
 		PersistentSubscriptionNakEvents = 0xCD,
 		UpdatePersistentSubscription = 0xCE,
 		UpdatePersistentSubscriptionCompleted = 0xCF,
+		SubscribeToStreamFiltered = 0xD2,
 
 		ScavengeDatabase = 0xD0,
 		ScavengeDatabaseCompleted = 0xD1,

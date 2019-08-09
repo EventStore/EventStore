@@ -1169,6 +1169,32 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"SubscribeToStreamFiltered")]
+  public partial class SubscribeToStreamFiltered
+  {
+	  [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+	  public readonly string EventStreamId;
+  
+	  [ProtoMember(2, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+	  public readonly bool ResolveLinkTos;
+	  
+	  [ProtoMember(3, Name=@"event_filters", DataFormat = DataFormat.Default)]
+	  public readonly string[] EventFilters;
+
+	  [ProtoMember(4, Name = @"stream_filters", DataFormat = DataFormat.Default)]
+	  public readonly string[] StreamFilters;
+
+	  private SubscribeToStreamFiltered() {}
+  
+	  public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, string[] eventFilters, string[] streamFilters)
+	  {
+		  EventStreamId = eventStreamId;
+		  ResolveLinkTos = resolveLinkTos;
+		  EventFilters = eventFilters;
+		  StreamFilters = streamFilters;
+	  }
+  }
+  
   [Serializable, ProtoContract(Name=@"SubscriptionConfirmation")]
   public partial class SubscriptionConfirmation
   {

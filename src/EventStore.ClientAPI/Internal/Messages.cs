@@ -110,6 +110,44 @@ namespace EventStore.ClientAPI.Internal {
 			Timeout = timeout;
 		}
 	}
+	
+	internal class StartFilteredSubscriptionMessage : Message {
+		public readonly TaskCompletionSource<EventStoreSubscription> Source;
+
+		public readonly string StreamId;
+		public readonly bool ResolveLinkTos;
+		public readonly StreamFilter StreamFilter;
+		public readonly UserCredentials UserCredentials;
+		public readonly Func<EventStoreSubscription, ResolvedEvent, Task> EventAppeared;
+		public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
+
+		public readonly int MaxRetries;
+		public readonly TimeSpan Timeout;
+
+		public StartFilteredSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source,
+			string streamId,
+			bool resolveLinkTos,
+			StreamFilter streamFilter,
+			UserCredentials userCredentials,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
+			int maxRetries,
+			TimeSpan timeout) {
+			Ensure.NotNull(source, "source");
+			Ensure.NotNull(streamFilter, nameof(streamFilter));
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+
+			Source = source;
+			StreamId = streamId;
+			StreamFilter = streamFilter;
+			ResolveLinkTos = resolveLinkTos;
+			UserCredentials = userCredentials;
+			EventAppeared = eventAppeared;
+			SubscriptionDropped = subscriptionDropped;
+			MaxRetries = maxRetries;
+			Timeout = timeout;
+		}
+	}
 
 	internal class StartPersistentSubscriptionMessage : Message {
 		public readonly TaskCompletionSource<PersistentEventStoreSubscription> Source;

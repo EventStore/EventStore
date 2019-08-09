@@ -48,4 +48,26 @@ namespace EventStore.ClientAPI.ClientOperations {
 			return new VolatileEventStoreSubscription(this, _streamId, lastCommitPosition, lastEventNumber);
 		}
 	}
+
+	internal class VolatileFilteredSubscriptionOperation : VolatileSubscriptionOperation {
+		private readonly StreamFilter _streamFilter;
+
+		public VolatileFilteredSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source,
+			string streamId, bool resolveLinkTos, StreamFilter streamFilter, UserCredentials userCredentials,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging,
+			Func<TcpPackageConnection> getConnection) :
+			base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped,
+				verboseLogging, getConnection) {
+			_streamFilter = streamFilter;
+		}
+
+		protected override TcpPackage CreateSubscriptionPackage() {
+			var dto = new ClientMessage.SubscribeToStreamFiltered(_streamId, _resolveLinkTos, _streamFilter.EventFilters, _streamFilter.StreamFilters);
+			return new TcpPackage(
+				TcpCommand.SubscribeToStreamFiltered, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+				_correlationId, _userCredentials != null ? _userCredentials.Username : null,
+				_userCredentials != null ? _userCredentials.Password : null, dto.Serialize());
+		}
+	}
 }

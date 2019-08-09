@@ -1435,6 +1435,31 @@ namespace EventStore.Core.Messages {
 				ResolveLinkTos = resolveLinkTos;
 			}
 		}
+		
+		public class SubscribeToStreamFiltered : ReadRequestMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid ConnectionId;
+			public readonly string EventStreamId; // should be empty to subscribe to all
+			public readonly bool ResolveLinkTos;
+			public readonly StringFilter EventFilter;
+			public readonly StringFilter StreamFilter;
+
+			public SubscribeToStreamFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
+				string eventStreamId, bool resolveLinkTos, IPrincipal user, StringFilter eventFilter, StringFilter streamFilter)
+				: base(internalCorrId, correlationId, envelope, user) {
+				Ensure.NotEmptyGuid(connectionId, "connectionId");
+				ConnectionId = connectionId;
+				EventStreamId = eventStreamId;
+				ResolveLinkTos = resolveLinkTos;
+				EventFilter = eventFilter;
+				StreamFilter = streamFilter;
+			}
+		}
 
 		public class UnsubscribeFromStream : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

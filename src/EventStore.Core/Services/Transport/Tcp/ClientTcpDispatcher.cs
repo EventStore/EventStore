@@ -69,6 +69,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream, ClientVersion.V2);
+			AddUnwrapper(TcpCommand.SubscribeToStreamFiltered, UnwrapSubscribeToStreamFiltered, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream, ClientVersion.V2);
 
 			AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream, ClientVersion.V2);
@@ -495,6 +496,23 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return new ClientMessage.SubscribeToStream(Guid.NewGuid(), package.CorrelationId, envelope,
 				connection.ConnectionId, dto.EventStreamId??string.Empty /*workaround to allow proto3 clients*/, dto.ResolveLinkTos, user);
 		}
+		
+		private ClientMessage.SubscribeToStreamFiltered UnwrapSubscribeToStreamFiltered(TcpPackage package,
+			IEnvelope envelope,
+			IPrincipal user,
+			string login,
+			string pass,
+			TcpConnectionManager connection) {
+			var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToStreamFiltered>();
+			if (dto == null) return null;
+			
+			StringFilter eventFilter = new StringFilter(dto.EventFilters);
+			StringFilter streamFilter = new StringFilter(dto.StreamFilters);
+			
+			return new ClientMessage.SubscribeToStreamFiltered(Guid.NewGuid(), package.CorrelationId, envelope,
+				connection.ConnectionId, dto.EventStreamId??string.Empty /*workaround to allow proto3 clients*/, dto.ResolveLinkTos, user, eventFilter, streamFilter);
+		}
+		
 
 		private ClientMessage.UnsubscribeFromStream UnwrapUnsubscribeFromStream(TcpPackage package, IEnvelope envelope,
 			IPrincipal user) {

@@ -332,6 +332,22 @@ namespace EventStore.ClientAPI.Internal {
 				Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}
+		
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
+			bool resolveLinkTos,
+			StreamFilter streamFilter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(streamFilter, nameof(streamFilter));
+
+			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
+			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos, streamFilter, userCredentials,
+				eventAppeared, subscriptionDropped,
+				Settings.MaxRetries, Settings.OperationTimeout));
+			return source.Task;
+		}
 
 		public EventStoreAllCatchUpSubscription SubscribeToAllFrom(
 			Position? lastCheckpoint,
