@@ -160,37 +160,43 @@ namespace EventStore.Core.Services {
 			var currentMaster = _servers.FirstOrDefault(x => x.InstanceId == _master);
 			var updatedMaster = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master);
 
-			if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority) 
+			if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority)
 			{
-				var best = message.ClusterInfo.Members
-				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
-				.ThenByDescending(x => x.WriterCheckpoint)
-				.ThenByDescending(x => x.ChaserCheckpoint)
-				.ThenByDescending(x => x.NodePriority)
-				.ThenByDescending(x => x.InstanceId)
-				.ToArray();
-
-				bool eligible = false;
-
-				for (int i = 0; i < best.Length; i++)
-				{
-					if (_master != null && best[i].InstanceId != _master && best[i].LastCommitPosition >= updatedMaster.LastCommitPosition && best[i].WriterCheckpoint >= updatedMaster.WriterCheckpoint)
-					{
-						eligible = true;
-						break;
-					}
-				}
-
-				if (eligible) {
-					Log.Info("Election was triggered");
-					_publisher.Publish(new ElectionMessage.StartElections());
-				}
-				else
-				{
-					Log.Info("Election trigger error: No slave node caught up yet.");
-				}
+				Log.Info($"Master Priority has changed. Triggering elections. Current Priority: {currentMaster.NodePriority} | Updated Priority: {updatedMaster.NodePriority}");
+				_publisher.Publish(new ElectionMessage.StartElections());
 			}
+
+			// if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority) 
+			// {
+			// 	var best = message.ClusterInfo.Members
+			// 	.OrderByDescending(x => x.EpochNumber)
+			// 	.ThenByDescending(x => x.LastCommitPosition)
+			// 	.ThenByDescending(x => x.WriterCheckpoint)
+			// 	.ThenByDescending(x => x.ChaserCheckpoint)
+			// 	.ThenByDescending(x => x.NodePriority)
+			// 	.ThenByDescending(x => x.InstanceId)
+			// 	.ToArray();
+
+			// 	bool eligible = false;
+
+			// 	for (int i = 0; i < best.Length; i++)
+			// 	{
+			// 		if (_master != null && best[i].InstanceId != _master && best[i].LastCommitPosition >= updatedMaster.LastCommitPosition && best[i].WriterCheckpoint >= updatedMaster.WriterCheckpoint)
+			// 		{
+			// 			eligible = true;
+			// 			break;
+			// 		}
+			// 	}
+
+			// 	if (eligible) {
+			// 		Log.Info("Election was triggered");
+			// 		_publisher.Publish(new ElectionMessage.StartElections());
+			// 	}
+			// 	else
+			// 	{
+			// 		Log.Info("Election trigger error: No slave node caught up yet.");
+			// 	}
+			// }
 
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)
 				.Where(x => x.IsAlive)
