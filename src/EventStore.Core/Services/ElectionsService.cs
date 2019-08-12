@@ -417,7 +417,7 @@ namespace EventStore.Core.Services {
 				master.InstanceId, master.InternalHttp,
 				_lastInstalledView,
 				master.EpochNumber, master.EpochPosition, master.EpochId,
-				master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint);
+				master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint, master.NodePriority);
 			Handle(new ElectionMessage.Accept(_nodeInfo.InstanceId, _nodeInfo.InternalHttp,
 				master.InstanceId, master.InternalHttp, _lastInstalledView));
 			SendToAllExceptMe(proposal);
@@ -519,18 +519,22 @@ namespace EventStore.Core.Services {
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
 			if (_servers.All(x => x.InstanceId != message.MasterId)) return;
 
+			var ownInfo = GetOwnInfo();
+			if (message.MasterId == _nodeInfo.InstanceId && message.NodePriority != ownInfo.NodePriority)
+				return;
+
 			var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
 				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
-			var ownInfo = GetOwnInfo();
+			
 			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
 									candidate, _servers, _lastElectedMaster, _lastElectedMasterPriority, _nodeInfo, ownInfo))
 				return;
 
 			Log.Debug(
-				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttp},{serverId:B}] M={candidateInfo}. ME={ownInfo}.",
+				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttp},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
 				_lastAttemptedView,
-				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()));
+				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()), message.NodePriority);
 
 			if (_masterProposal == null) {
 				_masterProposal = candidate;
