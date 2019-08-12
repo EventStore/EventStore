@@ -397,8 +397,8 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Connecting:
 				case ConnectionState.Connected:
 					var operation = new VolatileFilteredSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId,
-						msg.ResolveLinkTos, msg.StreamFilter,
-						msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped,
+						msg.ResolveLinkTos, msg.SendCheckpointMessageCount, msg.StreamFilter,
+						msg.UserCredentials, msg.EventAppeared, msg.CheckpointRead, msg.SubscriptionDropped,
 						_settings.VerboseLogging, () => _connection);
 					LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation,
 						msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");

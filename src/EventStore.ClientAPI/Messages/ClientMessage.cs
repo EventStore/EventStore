@@ -679,6 +679,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, Name = @"stream_filters", DataFormat = DataFormat.Default)]
     public readonly string[] StreamFilters;
     
+    
+    
     private ReadAllEventsFiltered() {}
   
     public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, 
@@ -1183,15 +1185,20 @@ namespace EventStore.ClientAPI.Messages
 
 	  [ProtoMember(4, Name = @"stream_filters", DataFormat = DataFormat.Default)]
 	  public readonly string[] StreamFilters;
+	  
+	  [ProtoMember(5, IsRequired = true, Name=@"send_checkpoint_message_count", DataFormat = DataFormat.Default)]
+	  public readonly int SendCheckpointMessageCount;
 
 	  private SubscribeToStreamFiltered() {}
   
-	  public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, string[] eventFilters, string[] streamFilters)
+	  public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, string[] eventFilters, string[] streamFilters,
+		  int sendCheckpointMessageCount)
 	  {
 		  EventStreamId = eventStreamId;
 		  ResolveLinkTos = resolveLinkTos;
 		  EventFilters = eventFilters;
 		  StreamFilters = streamFilters;
+		  SendCheckpointMessageCount = sendCheckpointMessageCount;
 	  }
   }
   
@@ -1225,6 +1232,23 @@ namespace EventStore.ClientAPI.Messages
     {
         Event = @event;
     }
+  }
+  
+  [Serializable, ProtoContract(Name=@"CheckpointRead")]
+  public partial class CheckpointRead 
+  { 
+	  [ProtoMember(1, IsRequired = true, Name=@"commitPosition", DataFormat = DataFormat.Default)]
+	  public readonly long CommitPosition;
+  
+	  [ProtoMember(2, IsRequired = true, Name=@"preparePosition", DataFormat = DataFormat.Default)]
+	  public readonly long PreparePosition;
+
+	  private CheckpointRead() { }
+
+	  public CheckpointRead(long commitPosition, long preparePosition) {
+		  CommitPosition = commitPosition;
+		  PreparePosition = preparePosition;
+	  }
   }
   
   [Serializable, ProtoContract(Name=@"UnsubscribeFromStream")]

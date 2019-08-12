@@ -19,6 +19,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+
+
 		public partial class EventRecord {
 			public EventRecord(Data.EventRecord eventRecord) {
 				EventStreamId = eventRecord.EventStreamId;

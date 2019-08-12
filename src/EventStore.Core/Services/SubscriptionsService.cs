@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -112,7 +113,7 @@ namespace EventStore.Core.Services {
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
 				var lastCommitPos = _readIndex.LastCommitPosition;
 				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, new StringFilter(null), new StringFilter(null));
+					msg.ResolveLinkTos, lastCommitPos, lastEventNumber);
 				var subscribedMessage =
 					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
 				msg.Envelope.ReplyWith(subscribedMessage);
@@ -133,7 +134,8 @@ namespace EventStore.Core.Services {
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
 				var lastCommitPos = _readIndex.LastCommitPosition;
 				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter, msg.StreamFilter);
+					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter, msg.StreamFilter,
+					msg.SendCheckpointMessageCount);
 				var subscribedMessage =
 					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
 				msg.Envelope.ReplyWith(subscribedMessage);
@@ -149,7 +151,7 @@ namespace EventStore.Core.Services {
 
 		private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
 			string eventStreamId, bool resolveLinkTos, long lastCommitPosition, long? lastEventNumber,
-			StringFilter eventFilter, StringFilter streamFilter) {
+			StringFilter eventFilter = null, StringFilter streamFilter = null, int? sendCheckpointMessageCount = null) {
 			List<Subscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
 				subscribers = new List<Subscription>();
@@ -163,7 +165,10 @@ namespace EventStore.Core.Services {
 				eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
 				resolveLinkTos,
 				lastCommitPosition,
-				lastEventNumber ?? -1, eventFilter, streamFilter);
+				lastEventNumber ?? -1,
+				eventFilter ?? new StringFilter(null),
+				streamFilter ?? new StringFilter(null),
+				sendCheckpointMessageCount);
 			subscribers.Add(subscription);
 			_subscriptionsById[correlationId] = subscription;
 		}
@@ -291,10 +296,22 @@ namespace EventStore.Core.Services {
 					// resolve event if has not been previously resolved
 					resolvedEvent = pair = resolvedEvent ?? ResolveLinkToEvent(evnt, commitPosition);
 
-				if (subscr.EventFilter.IsStringAllowed(pair.Event.EventType) && subscr.StreamFilter.IsStringAllowed(pair.Event.EventStreamId)) {
+				if (subscr.EventFilter.IsStringAllowed(pair.Event.EventType) &&
+				    subscr.StreamFilter.IsStringAllowed(pair.Event.EventStreamId)) {
 					subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
+					
+					//subscr.Envelope.
 				}
-				
+
+				subscr.SendCheckpointMessageCurrent++;
+
+
+				if (subscr.SendCheckpointMessageCount != null &&
+				    subscr.SendCheckpointMessageCurrent >= subscr.SendCheckpointMessageCount) {
+					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointRead(subscr.CorrelationId,
+						pair.OriginalPosition));
+			subscr.SendCheckpointMessageCurrent = 0;
+				}
 			}
 
 			return resolvedEvent;
@@ -358,6 +375,9 @@ namespace EventStore.Core.Services {
 			public readonly StringFilter EventFilter;
 			public readonly StringFilter StreamFilter;
 
+			public readonly int? SendCheckpointMessageCount;
+			public int SendCheckpointMessageCurrent = 0;
+
 			public Subscription(Guid correlationId,
 				IEnvelope envelope,
 				Guid connectionId,
@@ -366,7 +386,8 @@ namespace EventStore.Core.Services {
 				long lastCommitPosition,
 				long lastEventNumber,
 				StringFilter eventFilter,
-				StringFilter streamFilter) {
+				StringFilter streamFilter,
+				int? sendCheckpointMessageCount) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				ConnectionId = connectionId;
@@ -378,6 +399,8 @@ namespace EventStore.Core.Services {
 
 				EventFilter = eventFilter;
 				StreamFilter = streamFilter;
+
+				SendCheckpointMessageCount = sendCheckpointMessageCount;
 			}
 		}
 

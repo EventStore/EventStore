@@ -337,14 +337,17 @@ namespace EventStore.ClientAPI.Internal {
 			bool resolveLinkTos,
 			StreamFilter streamFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-			UserCredentials userCredentials = null) {
+			UserCredentials userCredentials = null,
+			int sendCheckpointMessageCount = 100) {
 			Ensure.NotNull(eventAppeared, "eventAppeared");
 			Ensure.NotNull(streamFilter, nameof(streamFilter));
+			Ensure.Positive(sendCheckpointMessageCount, nameof(sendCheckpointMessageCount));
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
-			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos, streamFilter, userCredentials,
-				eventAppeared, subscriptionDropped,
+			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos, sendCheckpointMessageCount, streamFilter, userCredentials,
+				eventAppeared, checkpointRead, subscriptionDropped,
 				Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}

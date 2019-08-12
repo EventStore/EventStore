@@ -116,9 +116,11 @@ namespace EventStore.ClientAPI.Internal {
 
 		public readonly string StreamId;
 		public readonly bool ResolveLinkTos;
+		public readonly int SendCheckpointMessageCount;
 		public readonly StreamFilter StreamFilter;
 		public readonly UserCredentials UserCredentials;
 		public readonly Func<EventStoreSubscription, ResolvedEvent, Task> EventAppeared;
+		public readonly Func<EventStoreSubscription, Position, Task> CheckpointRead;
 		public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
 
 		public readonly int MaxRetries;
@@ -127,9 +129,11 @@ namespace EventStore.ClientAPI.Internal {
 		public StartFilteredSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source,
 			string streamId,
 			bool resolveLinkTos,
+			int sendCheckpointMessageCount,	
 			StreamFilter streamFilter,
 			UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
 			int maxRetries,
 			TimeSpan timeout) {
@@ -143,9 +147,11 @@ namespace EventStore.ClientAPI.Internal {
 			ResolveLinkTos = resolveLinkTos;
 			UserCredentials = userCredentials;
 			EventAppeared = eventAppeared;
+			CheckpointRead = checkpointRead;
 			SubscriptionDropped = subscriptionDropped;
 			MaxRetries = maxRetries;
 			Timeout = timeout;
+			SendCheckpointMessageCount = sendCheckpointMessageCount;
 		}
 	}
 

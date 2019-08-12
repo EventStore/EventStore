@@ -326,8 +326,10 @@ namespace EventStore.ClientAPI {
 			bool resolveLinkTos,
 			StreamFilter streamFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-			UserCredentials userCredentials = null);
+			UserCredentials userCredentials = null,
+			int sendCheckpointMessageCount = 100);
 
 		/// <summary>
 		/// Subscribes to a persistent subscription (competing consumer) on an event store.

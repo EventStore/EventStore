@@ -1448,9 +1448,11 @@ namespace EventStore.Core.Messages {
 			public readonly bool ResolveLinkTos;
 			public readonly StringFilter EventFilter;
 			public readonly StringFilter StreamFilter;
+			public readonly int SendCheckpointMessageCount;
 
 			public SubscribeToStreamFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
-				string eventStreamId, bool resolveLinkTos, IPrincipal user, StringFilter eventFilter, StringFilter streamFilter)
+				string eventStreamId, bool resolveLinkTos, IPrincipal user, StringFilter eventFilter, StringFilter streamFilter,
+				int sendCheckpointMessageCount)
 				: base(internalCorrId, correlationId, envelope, user) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 				ConnectionId = connectionId;
@@ -1458,6 +1460,7 @@ namespace EventStore.Core.Messages {
 				ResolveLinkTos = resolveLinkTos;
 				EventFilter = eventFilter;
 				StreamFilter = streamFilter;
+				SendCheckpointMessageCount = sendCheckpointMessageCount;
 			}
 		}
 
@@ -1504,6 +1507,22 @@ namespace EventStore.Core.Messages {
 			public StreamEventAppeared(Guid correlationId, ResolvedEvent @event) {
 				CorrelationId = correlationId;
 				Event = @event;
+			}
+		}
+		
+		public class CheckpointRead : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+			public readonly TFPos? Position;
+
+			public CheckpointRead(Guid correlationId, TFPos? position) {
+				CorrelationId = correlationId;
+				Position = position;
 			}
 		}
 

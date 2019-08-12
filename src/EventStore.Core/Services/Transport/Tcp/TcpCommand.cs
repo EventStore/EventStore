@@ -67,6 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		UpdatePersistentSubscription = 0xCE,
 		UpdatePersistentSubscriptionCompleted = 0xCF,
 		SubscribeToStreamFiltered = 0xD2,
+		CheckpointRead = 0xD3,
 
 		ScavengeDatabase = 0xD0,
 		ScavengeDatabaseResponse = 0xD1,

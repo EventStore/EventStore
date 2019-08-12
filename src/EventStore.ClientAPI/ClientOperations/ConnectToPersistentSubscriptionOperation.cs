@@ -22,7 +22,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			Action<PersistentEventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
 			bool verboseLogging, Func<TcpPackageConnection> getConnection)
 			: base(log, source, streamId, false, userCredentials, eventAppeared, subscriptionDropped, verboseLogging,
-				getConnection) {
+				getConnection, null) {
 			_groupName = groupName;
 			_bufferSize = bufferSize;
 		}

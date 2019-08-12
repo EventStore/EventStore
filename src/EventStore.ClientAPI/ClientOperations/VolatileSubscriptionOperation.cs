@@ -11,9 +11,9 @@ namespace EventStore.ClientAPI.ClientOperations {
 			string streamId, bool resolveLinkTos, UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging,
-			Func<TcpPackageConnection> getConnection)
+			Func<TcpPackageConnection> getConnection, Func<EventStoreSubscription, Position, Task> checkpointRead = null)
 			: base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped,
-				verboseLogging, getConnection) {
+				verboseLogging, getConnection, checkpointRead) {
 		}
 
 		protected override TcpPackage CreateSubscriptionPackage() {
@@ -39,6 +39,13 @@ namespace EventStore.ClientAPI.ClientOperations {
 				return true;
 			}
 
+			if (package.Command == TcpCommand.CheckpointRead) {
+				var dto = package.Data.Deserialize<ClientMessage.CheckpointRead>();
+				CheckpointRead(new Position(dto.CommitPosition, dto.PreparePosition));
+				result = new InspectionResult(InspectionDecision.DoNothing, "CheckpointRead");
+				return true;
+			}
+
 			result = null;
 			return false;
 		}
@@ -51,19 +58,23 @@ namespace EventStore.ClientAPI.ClientOperations {
 
 	internal class VolatileFilteredSubscriptionOperation : VolatileSubscriptionOperation {
 		private readonly StreamFilter _streamFilter;
+		private readonly int _sendCheckpointMessageCount;
 
 		public VolatileFilteredSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source,
-			string streamId, bool resolveLinkTos, StreamFilter streamFilter, UserCredentials userCredentials,
+			string streamId, bool resolveLinkTos, int sendCheckpointMessageCount, StreamFilter streamFilter, UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging,
 			Func<TcpPackageConnection> getConnection) :
 			base(log, source, streamId, resolveLinkTos, userCredentials, eventAppeared, subscriptionDropped,
-				verboseLogging, getConnection) {
+				verboseLogging, getConnection, checkpointRead) {
 			_streamFilter = streamFilter;
+			_sendCheckpointMessageCount = sendCheckpointMessageCount;
 		}
 
 		protected override TcpPackage CreateSubscriptionPackage() {
-			var dto = new ClientMessage.SubscribeToStreamFiltered(_streamId, _resolveLinkTos, _streamFilter.EventFilters, _streamFilter.StreamFilters);
+			var dto = new ClientMessage.SubscribeToStreamFiltered(_streamId, _resolveLinkTos,
+				_streamFilter.EventFilters, _streamFilter.StreamFilters, _sendCheckpointMessageCount);
 			return new TcpPackage(
 				TcpCommand.SubscribeToStreamFiltered, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
 				_correlationId, _userCredentials != null ? _userCredentials.Username : null,
