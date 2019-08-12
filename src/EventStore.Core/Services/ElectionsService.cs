@@ -521,7 +521,7 @@ namespace EventStore.Core.Services {
 
 			var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
-				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, 0);
+				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
 			var ownInfo = GetOwnInfo();
 			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
 									candidate, _servers, _lastElectedMaster, _lastElectedMasterPriority, _nodeInfo, ownInfo))

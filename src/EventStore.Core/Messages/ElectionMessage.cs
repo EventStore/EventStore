@@ -224,10 +224,11 @@ namespace EventStore.Core.Messages {
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
+			public readonly int NodePriority;
 
 			public Proposal(Guid serverId, IPEndPoint serverInternalHttp, Guid masterId, IPEndPoint masterInternalHttp,
 				int view, int epochNumber, long epochPosition, Guid epochId,
-				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint) {
+				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority) {
 				ServerId = serverId;
 				ServerInternalHttp = serverInternalHttp;
 				MasterId = masterId;
@@ -239,6 +240,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
+				NodePriority = nodePriority;
 			}
 
 			public Proposal(ElectionMessageDto.ProposalDto dto) {
@@ -260,10 +262,10 @@ namespace EventStore.Core.Messages {
 			public override string ToString() {
 				return string.Format(
 					"---- Proposal: serverId {0}, serverInternalHttp {1}, masterId {2}, masterInternalHttp {3}, "
-					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B}",
+					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B}, NodePriority {11}",
 					ServerId, ServerInternalHttp, MasterId, MasterInternalHttp,
 					View, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
-					EpochNumber, EpochPosition, EpochId);
+					EpochNumber, EpochPosition, EpochId, NodePriority);
 			}
 		}
 
