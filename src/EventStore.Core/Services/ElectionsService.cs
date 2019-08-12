@@ -162,8 +162,13 @@ namespace EventStore.Core.Services {
 
 			if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority)
 			{
-				Log.Info($"Master Priority has changed. Triggering elections. Current Priority: {currentMaster.NodePriority} | Updated Priority: {updatedMaster.NodePriority}");
-				_publisher.Publish(new ElectionMessage.StartElections());
+				var candidateExists = message.ClusterInfo.Members.Any(x => x.InstanceId != currentMaster.InstanceId && x.NodePriority > updatedMaster.NodePriority);
+
+				if (candidateExists)
+				{
+					Log.Info($"Master Priority has changed. Triggering elections. Current Priority: {currentMaster.NodePriority} | Updated Priority: {updatedMaster.NodePriority}");
+					_publisher.Publish(new ElectionMessage.StartElections());
+				}
 			}
 
 			// if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority) 
@@ -396,7 +401,7 @@ namespace EventStore.Core.Services {
 			_acceptsReceived.Clear();
 			_masterProposal = null;
 
-			var master = GetBestMasterCandidate(_prepareOkReceived);
+			var master = GetBestMasterCandidate(_prepareOkReceived, _servers, _lastElectedMaster, _lastElectedMasterPriority);
 			if (master == null) {
 				Log.Trace("ELECTIONS: (V={lastAttemptedView}) NO MASTER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
@@ -418,29 +423,30 @@ namespace EventStore.Core.Services {
 			SendToAllExceptMe(proposal);
 		}
 
-		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received) {
-			var samePriority = received.Values.Select(x => x.NodePriority).Count() == 1;
+		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received, MemberInfo[] servers, Guid? lastElectedMaster, int lastElectedMasterPriority) {
+			var samePriority = received.Values.Select(x => x.NodePriority).Distinct().Count() == 1;
 
-			// if (_lastElectedMaster.HasValue) {
-			// 	ElectionMessage.PrepareOk masterMsg;
-			// 	if (prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)
-			// 		&& (masterMsg.NodePriority == _lastElectedMasterPriority || samePriority)) {
-			// 		return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
-			// 			masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
-			// 			masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
-			// 			masterMsg.NodePriority);
-			// 	}
+			if (lastElectedMaster.HasValue) {
+				if (received.TryGetValue(lastElectedMaster.Value, out var masterMsg)
+					&& (masterMsg.NodePriority >= lastElectedMasterPriority || samePriority)) {
 
-			// 	// var master = _servers.FirstOrDefault(x =>
-			// 	// 	x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			// 	// if (master != null
-			// 	// 	&& (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
-			// 	// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-			// 	// 		master.EpochNumber, master.EpochPosition, master.EpochId,
-			// 	// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-			// 	// 		master.NodePriority);
-			// 	// }
-			// }
+					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
+						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
+						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
+						masterMsg.NodePriority);
+				}
+
+				var master = servers.FirstOrDefault(x =>
+					x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
+
+				if (master != null && (master.NodePriority >= lastElectedMasterPriority || samePriority)) {
+
+					return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
+						master.EpochNumber, master.EpochPosition, master.EpochId,
+						master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
+						master.NodePriority);
+				}
+			}
 
 			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber)
@@ -450,18 +456,9 @@ namespace EventStore.Core.Services {
 				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ServerId)
 				.FirstOrDefault();
-			if (best == null)
+			if (best == null) {
 				return null;
-
-			// var master = _servers.FirstOrDefault(x =>
-			// 		x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			// if (master != null && (master.NodePriority == _lastElectedMasterPriority || samePriority)) {
-			// 	Log.Info("Selecting master as the best");
-			// 	return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
-			// 		master.EpochNumber, master.EpochPosition, master.EpochId,
-			// 		master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
-			// 		master.NodePriority);
-			// }
+			}
 			
 			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
 				best.EpochNumber, best.EpochPosition, best.EpochId,

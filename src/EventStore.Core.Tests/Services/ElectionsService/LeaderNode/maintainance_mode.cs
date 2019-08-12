@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			ElectionsInstance[] instances,
 			MemberInfo[] initialGossip,
 			Dictionary<IPEndPoint, MemberInfo[]> previousGossip) {
-                Console.WriteLine("Are we running?");
+                TestContext.Progress.WriteLine("Are we running?");
 			if(iteration == 1){
                 var previous = previousGossip[item.EndPoint];
                 return previous.Select(x => {
