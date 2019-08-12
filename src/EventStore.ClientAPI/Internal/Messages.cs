@@ -117,7 +117,7 @@ namespace EventStore.ClientAPI.Internal {
 		public readonly string StreamId;
 		public readonly bool ResolveLinkTos;
 		public readonly int SendCheckpointMessageCount;
-		public readonly StreamFilter StreamFilter;
+		public readonly EventFilter StreamFilter;
 		public readonly UserCredentials UserCredentials;
 		public readonly Func<EventStoreSubscription, ResolvedEvent, Task> EventAppeared;
 		public readonly Func<EventStoreSubscription, Position, Task> CheckpointRead;
@@ -130,7 +130,7 @@ namespace EventStore.ClientAPI.Internal {
 			string streamId,
 			bool resolveLinkTos,
 			int sendCheckpointMessageCount,	
-			StreamFilter streamFilter,
+			EventFilter streamFilter,
 			UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,

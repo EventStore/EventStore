@@ -230,7 +230,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			StreamFilter streamFilter, UserCredentials userCredentials = null) {
+			EventFilter streamFilter, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
 			Ensure.NotNull(streamFilter, nameof(streamFilter));
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -335,7 +335,7 @@ namespace EventStore.ClientAPI.Internal {
 		
 		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
 			bool resolveLinkTos,
-			StreamFilter streamFilter,
+			EventFilter streamFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,

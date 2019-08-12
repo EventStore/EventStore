@@ -503,7 +503,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _readAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials);
 		}
 
-		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, StreamFilter streamFilter,
+		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, EventFilter eventFilter,
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
@@ -561,7 +561,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _subscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped);
 		}
 
-		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, StreamFilter streamFilter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, EventFilter eventFilter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int sendCheckpointMessageCount = 100) {
 			throw new NotImplementedException();

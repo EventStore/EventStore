@@ -57,11 +57,11 @@ namespace EventStore.ClientAPI.ClientOperations {
 	}
 
 	internal class VolatileFilteredSubscriptionOperation : VolatileSubscriptionOperation {
-		private readonly StreamFilter _streamFilter;
+		private readonly EventFilter _streamFilter;
 		private readonly int _sendCheckpointMessageCount;
 
 		public VolatileFilteredSubscriptionOperation(ILogger log, TaskCompletionSource<EventStoreSubscription> source,
-			string streamId, bool resolveLinkTos, int sendCheckpointMessageCount, StreamFilter streamFilter, UserCredentials userCredentials,
+			string streamId, bool resolveLinkTos, int sendCheckpointMessageCount, EventFilter streamFilter, UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, bool verboseLogging,

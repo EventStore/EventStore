@@ -224,7 +224,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
 		Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			StreamFilter streamFilter, UserCredentials userCredentials = null);
+			EventFilter streamFilter, UserCredentials userCredentials = null);
 
 		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).
@@ -324,7 +324,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
 		Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
 			bool resolveLinkTos,
-			StreamFilter streamFilter,
+			EventFilter streamFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,

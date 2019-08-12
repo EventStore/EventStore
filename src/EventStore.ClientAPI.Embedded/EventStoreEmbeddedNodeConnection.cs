@@ -367,7 +367,7 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, StreamFilter streamFilter,
+			bool resolveLinkTos, EventFilter eventFilter,
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
@@ -466,7 +466,7 @@ namespace EventStore.ClientAPI.Embedded {
 			return source.Task;
 		}
 
-		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, StreamFilter streamFilter,
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, EventFilter eventFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointRead,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
