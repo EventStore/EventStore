@@ -220,11 +220,16 @@ namespace EventStore.ClientAPI {
 		/// <param name="position">The position to start reading from.</param>
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="allowedStrings"></param>
+		/// <param name="eventFilter">Allows the returned events to be filtered based upon event type or stream name.</param>
+		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		/// <remarks>
+		/// Because the events are filtered it is possible that empty slices may be returned if no events have
+		/// been found within the searchWindow
+		/// </remarks>
 		Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			EventFilter streamFilter, UserCredentials userCredentials = null);
+			EventFilter eventFilter, int maxSearchWindow = 1000, UserCredentials userCredentials = null);
 
 		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).

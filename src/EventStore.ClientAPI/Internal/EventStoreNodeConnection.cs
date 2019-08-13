@@ -229,17 +229,25 @@ namespace EventStore.ClientAPI.Internal {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			EventFilter streamFilter, UserCredentials userCredentials = null) {
+		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
+			bool resolveLinkTos,
+			EventFilter streamFilter, int maxSearchWindow = 1000, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
+			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
 			Ensure.NotNull(streamFilter, nameof(streamFilter));
+
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
 					ClientApiConstants.MaxReadSize));
+
+			if (maxCount > maxSearchWindow)
+				throw new ArgumentException($"Count should be less than the search window of {maxSearchWindow}");
+
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsForwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, 1000, streamFilter.EventFilters, streamFilter.StreamFilters, userCredentials);
+				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, streamFilter.EventFilters, streamFilter.StreamFilters,
+				userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -332,7 +340,7 @@ namespace EventStore.ClientAPI.Internal {
 				Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}
-		
+
 		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
 			bool resolveLinkTos,
 			EventFilter streamFilter,
@@ -346,7 +354,8 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.Positive(sendCheckpointMessageCount, nameof(sendCheckpointMessageCount));
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
-			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos, sendCheckpointMessageCount, streamFilter, userCredentials,
+			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos,
+				sendCheckpointMessageCount, streamFilter, userCredentials,
 				eventAppeared, checkpointRead, subscriptionDropped,
 				Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;

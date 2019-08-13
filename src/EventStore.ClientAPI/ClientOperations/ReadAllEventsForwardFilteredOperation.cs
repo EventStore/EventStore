@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			return new AllEventsSlice(ReadDirection.Forward,
 				new Position(response.CommitPosition, response.PreparePosition),
 				new Position(response.NextCommitPosition, response.NextPreparePosition),
-				response.Events);
+				response.Events, response.IsEndOfStream);
 		}
 
 		public override string ToString() {

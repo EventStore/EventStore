@@ -367,7 +367,7 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, EventFilter eventFilter,
+			bool resolveLinkTos, EventFilter eventFilter, int maxSearchWindow = 1000,
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}

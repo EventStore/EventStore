@@ -31,7 +31,11 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		public bool IsEndOfStream {
 			get;
-			set;
+		}
+
+		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,
+			ClientMessage.ResolvedEvent[] events) 
+		: this(readDirection, fromPosition, nextPosition, events, events.Length == 0) {
 		}
 
 		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,

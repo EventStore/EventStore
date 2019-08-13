@@ -504,7 +504,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, EventFilter eventFilter,
-			UserCredentials userCredentials = null) {
+			int maxSearchWindow = 1000, UserCredentials userCredentials = null ) {
 			throw new NotImplementedException();
 		}
 
