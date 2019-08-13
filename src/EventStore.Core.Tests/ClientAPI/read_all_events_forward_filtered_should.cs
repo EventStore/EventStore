@@ -129,4 +129,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 				read.Select(x => x.Event).ToArray()));
 		}
 	}
+
+	internal static class EventDataExtensions {
+		internal static List<EventData> EvenEvents(this List<EventData> ed) => ed.Where((c, i) => i % 2 == 0).ToList();
+
+		internal static List<EventData> OddEvents(this List<EventData> ed) => ed.Where((c, i) => i % 2 != 0).ToList();
+	}
 }

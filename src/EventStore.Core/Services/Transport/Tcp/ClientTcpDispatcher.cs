@@ -67,6 +67,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.ReadAllEventsForwardFiltered, UnwrapReadAllEventsForwardFiltered, ClientVersion.V2);
 			AddWrapper<ClientMessage.ReadAllEventsForwardFilteredCompleted>(WrapReadAllEventsForwardFilteredCompleted,
 				ClientVersion.V2);
+			
+			AddUnwrapper(TcpCommand.ReadAllEventsBackwardFiltered, UnwrapReadAllEventsBackwardFiltered, ClientVersion.V2);
+			AddWrapper<ClientMessage.ReadAllEventsBackwardFilteredCompleted>(WrapReadAllEventsBackwardFilteredCompleted,
+				ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.SubscribeToStreamFiltered, UnwrapSubscribeToStreamFiltered, ClientVersion.V2);
@@ -475,6 +479,33 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, msg.IsEndOfStream,
 				(TcpClientMessageDto.ReadAllEventsFilteredCompleted.ReadAllFilteredResult)msg.Result, msg.Error);
 			return new TcpPackage(TcpCommand.ReadAllEventsForwardFilteredCompleted, msg.CorrelationId, dto.Serialize());
+		}
+		
+		private static ClientMessage.ReadAllEventsBackwardFiltered UnwrapReadAllEventsBackwardFiltered(TcpPackage package,
+			IEnvelope envelope, IPrincipal user) {
+			var dto = package.Data.Deserialize<TcpClientMessageDto.ReadAllEventsFiltered>();
+			if (dto == null) return null;
+
+			StringFilter eventFilter = new StringFilter(dto.EventFilters);
+			StringFilter streamFilter = new StringFilter(dto.StreamFilters);
+			
+			int maxSearchWindow = dto.MaxCount;
+			if (dto.MaxSearchWindow.HasValue) {
+				maxSearchWindow = dto.MaxSearchWindow.GetValueOrDefault();
+			}
+
+			return new ClientMessage.ReadAllEventsBackwardFiltered(Guid.NewGuid(), package.CorrelationId, envelope,
+				dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
+				dto.ResolveLinkTos, dto.RequireMaster, maxSearchWindow, null, user, null, eventFilter, streamFilter);
+		}
+
+		private static TcpPackage WrapReadAllEventsBackwardFilteredCompleted(
+			ClientMessage.ReadAllEventsBackwardFilteredCompleted msg) {
+			var dto = new TcpClientMessageDto.ReadAllEventsFilteredCompleted(
+				msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition, ConvertToResolvedEvents(msg.Events),
+				msg.NextPos.CommitPosition, msg.NextPos.PreparePosition, msg.IsEndOfStream,
+				(TcpClientMessageDto.ReadAllEventsFilteredCompleted.ReadAllFilteredResult)msg.Result, msg.Error);
+			return new TcpPackage(TcpCommand.ReadAllEventsBackwardFilteredCompleted, msg.CorrelationId, dto.Serialize());
 		}
 
 		private static TcpClientMessageDto.ResolvedEvent[] ConvertToResolvedEvents(ResolvedEvent[] events) {

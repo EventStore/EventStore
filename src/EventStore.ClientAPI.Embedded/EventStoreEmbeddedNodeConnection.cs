@@ -394,6 +394,11 @@ namespace EventStore.ClientAPI.Embedded {
 			return source.Task;
 		}
 
+		public Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, EventFilter eventFilter,
+			int maxSearchWindow = 1000, UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
 		public Task<EventStoreSubscription> SubscribeToStreamAsync(
 			string stream,
 			bool resolveLinkTos,

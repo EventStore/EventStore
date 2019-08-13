@@ -113,6 +113,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _allReader.ReadAllEventsBackward(pos, maxCount);
 		}
 
+		IndexReadAllFilteredResult IReadIndex.ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			StringFilter eventFilter, StringFilter streamFilter) {
+			return _allReader.ReadAllEventsBackwardFiltered(pos, maxCount, maxSearchWindow, eventFilter, streamFilter);
+		}
+
 		ReadIndexStats IReadIndex.GetStatistics() {
 			return new ReadIndexStats(Interlocked.Read(ref TFChunkReader.CachedReads),
 				Interlocked.Read(ref TFChunkReader.NotCachedReads),

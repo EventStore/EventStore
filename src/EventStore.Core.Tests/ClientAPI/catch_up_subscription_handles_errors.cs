@@ -513,6 +513,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			throw new NotImplementedException();
 		}
 
+		public Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos, EventFilter eventFilter,
+			int maxSearchWindow = 1000, UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
 		public void HandleSubscribeToStreamAsync(
 			Func<string, Func<EventStoreSubscription, ResolvedEvent, Task>,
 					Action<EventStoreSubscription, SubscriptionDropReason, Exception>, Task<EventStoreSubscription>>
