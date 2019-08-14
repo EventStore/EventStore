@@ -88,6 +88,7 @@ namespace EventStore.Core.Services.Replication {
 			switch (message.State) {
 				case VNodeState.Initializing:
 				case VNodeState.Unknown:
+				case VNodeState.ReadOnlyMasterless:
 				case VNodeState.PreMaster:
 				case VNodeState.Master:
 				case VNodeState.ShuttingDown:
@@ -100,9 +101,15 @@ namespace EventStore.Core.Services.Replication {
 					ConnectToMaster(m.Master);
 					break;
 				}
+				case VNodeState.PreReadOnlyReplica: {
+					var m = (SystemMessage.BecomePreReadOnlyReplica)message;
+					ConnectToMaster(m.Master);
+					break;
+				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave: {
+				case VNodeState.Slave:
+				case VNodeState.ReadOnlyReplica:  {
 					// nothing changed, essentially
 					break;
 				}
@@ -132,7 +139,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		private void ConnectToMaster(VNodeInfo master) {
-			Debug.Assert(_state == VNodeState.PreReplica);
+			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
 			var masterEndPoint = GetMasterEndPoint(master, _useSsl);
 
@@ -168,9 +175,9 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationMessage.SubscribeToMaster message) {
-			if (_state != VNodeState.PreReplica)
-				throw new Exception(string.Format("_state is {0}, but is expected to be {1}", _state,
-					VNodeState.PreReplica));
+			if (_state != VNodeState.PreReplica && _state != VNodeState.PreReadOnlyReplica)
+				throw new Exception(string.Format("_state is {0}, but is expected to be {1} or {2}", _state,
+					VNodeState.PreReplica, VNodeState.PreReadOnlyReplica));
 
 			var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
 			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
@@ -188,7 +195,7 @@ namespace EventStore.Core.Services.Replication {
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
 					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
-					message.MasterId, message.SubscriptionId, isPromotable: true));
+					message.MasterId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
 		}
 
 		public void Handle(ReplicationMessage.AckLogPosition message) {
@@ -218,10 +225,15 @@ namespace EventStore.Core.Services.Replication {
 						SendTcpMessage(_connection, message.Message);
 					break;
 				}
-
+				case VNodeState.PreReadOnlyReplica: {
+					if (_connection != null)
+						SendTcpMessage(_connection, message.Message);
+					break;
+				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave: {
+				case VNodeState.Slave:
+				case VNodeState.ReadOnlyReplica:  {
 					Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
 					SendTcpMessage(_connection, message.Message);
 					break;

@@ -171,6 +171,8 @@ namespace EventStore.ClusterNode {
 			VNodeBuilder builder;
 			if (options.ClusterSize > 1) {
 				builder = ClusterVNodeBuilder.AsClusterMember(options.ClusterSize);
+				if (options.ReadOnlyReplica)
+					builder.EnableReadOnlyReplica();
 			} else {
 				builder = ClusterVNodeBuilder.AsSingleNode();
 			}

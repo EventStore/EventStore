@@ -346,6 +346,7 @@ message NotHandled {
 		NotReady = 0;
 		TooBusy = 1;
 		NotMaster = 2;
+		IsReadOnly = 3;
 	}
 	
 	required NotHandledReason reason = 1;
