@@ -308,7 +308,7 @@ namespace EventStore.Core.Services {
 
 				if (subscr.SendCheckpointMessageCount != null &&
 				    subscr.SendCheckpointMessageCurrent >= subscr.SendCheckpointMessageCount) {
-					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointRead(subscr.CorrelationId,
+					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId,
 						pair.OriginalPosition));
 			subscr.SendCheckpointMessageCurrent = 0;
 				}

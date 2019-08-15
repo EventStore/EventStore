@@ -1234,8 +1234,8 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"CheckpointRead")]
-  public partial class CheckpointRead 
+  [Serializable, ProtoContract(Name=@"CheckpointReached")]
+  public partial class CheckpointReached 
   { 
 	  [ProtoMember(1, IsRequired = true, Name=@"commitPosition", DataFormat = DataFormat.Default)]
 	  public readonly long CommitPosition;
@@ -1243,9 +1243,9 @@ namespace EventStore.ClientAPI.Messages
 	  [ProtoMember(2, IsRequired = true, Name=@"preparePosition", DataFormat = DataFormat.Default)]
 	  public readonly long PreparePosition;
 
-	  private CheckpointRead() { }
+	  private CheckpointReached() { }
 
-	  public CheckpointRead(long commitPosition, long preparePosition) {
+	  public CheckpointReached(long commitPosition, long preparePosition) {
 		  CommitPosition = commitPosition;
 		  PreparePosition = preparePosition;
 	  }

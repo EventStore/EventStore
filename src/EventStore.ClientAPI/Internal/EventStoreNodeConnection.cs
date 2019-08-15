@@ -365,7 +365,7 @@ namespace EventStore.ClientAPI.Internal {
 			bool resolveLinkTos,
 			EventFilter streamFilter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointRead,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null,
 			int sendCheckpointMessageCount = 100) {
@@ -376,7 +376,7 @@ namespace EventStore.ClientAPI.Internal {
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
 			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos,
 				sendCheckpointMessageCount, streamFilter, userCredentials,
-				eventAppeared, checkpointRead, subscriptionDropped,
+				eventAppeared, checkpointReached, subscriptionDropped,
 				Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}

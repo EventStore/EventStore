@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream, ClientVersion.V2);
 			AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared, ClientVersion.V2);
-			AddWrapper<ClientMessage.CheckpointRead>(WrapCheckpointRead, ClientVersion.V2);
+			AddWrapper<ClientMessage.CheckpointReached>(WrapCheckpointReached, ClientVersion.V2);
 			AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.CreatePersistentSubscription, UnwrapCreatePersistentSubscription, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.DeletePersistentSubscription, UnwrapDeletePersistentSubscription, ClientVersion.V2);
@@ -688,9 +688,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return new TcpPackage(TcpCommand.StreamEventAppeared, msg.CorrelationId, dto.Serialize());
 		}
 		
-		private TcpPackage WrapCheckpointRead(ClientMessage.CheckpointRead msg) {
-			var dto = new TcpClientMessageDto.CheckpointRead(msg.Position.Value.CommitPosition, msg.Position.Value.PreparePosition);
-			return new TcpPackage(TcpCommand.CheckpointRead, msg.CorrelationId, dto.Serialize());
+		private TcpPackage WrapCheckpointReached(ClientMessage.CheckpointReached msg) {
+			var dto = new TcpClientMessageDto.CheckpointReached(msg.Position.Value.CommitPosition, msg.Position.Value.PreparePosition);
+			return new TcpPackage(TcpCommand.CheckpointReached, msg.CorrelationId, dto.Serialize());
 		}
 
 		private TcpPackage WrapSubscriptionDropped(ClientMessage.SubscriptionDropped msg) {

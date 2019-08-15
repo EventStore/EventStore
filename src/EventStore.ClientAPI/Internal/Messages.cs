@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.Internal {
 		public readonly EventFilter StreamFilter;
 		public readonly UserCredentials UserCredentials;
 		public readonly Func<EventStoreSubscription, ResolvedEvent, Task> EventAppeared;
-		public readonly Func<EventStoreSubscription, Position, Task> CheckpointRead;
+		public readonly Func<EventStoreSubscription, Position, Task> CheckpointReached;
 		public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
 
 		public readonly int MaxRetries;
@@ -133,7 +133,7 @@ namespace EventStore.ClientAPI.Internal {
 			EventFilter streamFilter,
 			UserCredentials userCredentials,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointRead,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
 			int maxRetries,
 			TimeSpan timeout) {
@@ -147,7 +147,7 @@ namespace EventStore.ClientAPI.Internal {
 			ResolveLinkTos = resolveLinkTos;
 			UserCredentials = userCredentials;
 			EventAppeared = eventAppeared;
-			CheckpointRead = checkpointRead;
+			CheckpointReached = checkpointReached;
 			SubscriptionDropped = subscriptionDropped;
 			MaxRetries = maxRetries;
 			Timeout = timeout;

@@ -29,7 +29,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 		protected readonly bool _resolveLinkTos;
 		protected readonly UserCredentials _userCredentials;
 		protected readonly Func<T, TE, Task> _eventAppeared;
-		protected readonly Func<T, Position, Task> _checkpointRead;
+		protected readonly Func<T, Position, Task> _checkpointReached;
 		private readonly Action<T, SubscriptionDropReason, Exception> _subscriptionDropped;
 		private readonly bool _verboseLogging;
 		protected readonly Func<TcpPackageConnection> _getConnection;
@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			Action<T, SubscriptionDropReason, Exception> subscriptionDropped,
 			bool verboseLogging,
 			Func<TcpPackageConnection> getConnection,
-			Func<T, Position, Task> checkpointRead) {
+			Func<T, Position, Task> checkpointReached) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(source, "source");
 			Ensure.NotNull(eventAppeared, "eventAppeared");
@@ -64,7 +64,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			_subscriptionDropped = subscriptionDropped ?? ((x, y, z) => { });
 			_verboseLogging = verboseLogging;
 			_getConnection = getConnection;
-			_checkpointRead = checkpointRead;
+			_checkpointReached = checkpointReached;
 		}
 
 		protected void EnqueueSend(TcpPackage package) {
@@ -256,7 +256,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			ExecuteActionAsync(() => _eventAppeared(_subscription, e));
 		}
 		
-		protected void CheckpointRead(Position position) {
+		protected void CheckpointReached(Position position) {
 			if (_unsubscribed != 0)
 				return;
 
@@ -266,8 +266,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 				_log.Debug("Subscription {0:B} to {1}: checkpoint read @{2}.",
 					_correlationId, _streamId == string.Empty ? "<all>" : _streamId,position);
 
-			if (_checkpointRead != null) {
-				ExecuteActionAsync(() => _checkpointRead(_subscription, position));
+			if (_checkpointReached != null) {
+				ExecuteActionAsync(() => _checkpointReached(_subscription, position));
 			}
 		}
 

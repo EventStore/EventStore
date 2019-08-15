@@ -567,7 +567,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, EventFilter eventFilter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointRead,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null, int sendCheckpointMessageCount = 100) {
 			throw new NotImplementedException();
 		}
