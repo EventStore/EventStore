@@ -6,12 +6,11 @@ using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class read_all_events_forward_filtered_should : SpecificationWithMiniNode {
+	public class read_all_events_backward_filtered_should : SpecificationWithMiniNode {
 		private List<EventData> _testEvents;
 
 		protected override void When() {
@@ -20,15 +19,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 					DefaultData.AdminCredentials)
 				.Wait();
 
-			_testEvents = Enumerable
-				.Range(0, 10)
-				.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "AEvent"))
+			_testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "AEvent"))
 				.ToList();
-
 			_testEvents.AddRange(
-				Enumerable
-					.Range(0, 10)
-					.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "BEvent")).ToList());
+				Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "BEvent"))
+					.ToList());
 
 			_conn.AppendToStreamAsync("stream-a", ExpectedVersion.EmptyStream, _testEvents.EvenEvents()).Wait();
 			_conn.AppendToStreamAsync("stream-b", ExpectedVersion.EmptyStream, _testEvents.OddEvents()).Wait();
@@ -41,9 +36,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.WithStreamPrefixFilter("stream-a")
 				.Build();
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter).Result;
+			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 1000, false, filter).Result;
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.EvenEvents().ToArray(),
+				_testEvents.EvenEvents().ReverseEvents(),
 				read.Events.Select(x => x.Event).ToArray()));
 		}
 
@@ -55,7 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Build();
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter).Result;
+			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 1000, false, filter).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -68,9 +63,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.WithStreamFilter(new Regex(@"^.*m-b.*$"))
 				.Build();
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter).Result;
+			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 1000, false, filter).Result;
 			Assert.That(EventDataComparer.Equal(
-				_testEvents.OddEvents().ToArray(),
+				_testEvents.OddEvents().ReverseEvents(),
 				read.Events.Select(x => x.Event).ToArray()));
 		}
 
@@ -82,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Build();
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter).Result;
+			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 1000, false, filter).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -96,49 +91,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Build();
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter).Result;
+			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 1000, false, filter).Result;
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
-
-		[Test, Category("LongRunning")]
-		public void handle_long_gaps_between_events() {
-			var aEvents = Enumerable.Range(0, 10000)
-				.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "DEvent"))
-				.ToList();
-			var cEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "EEvent"))
-				.ToList();
-
-			_conn.AppendToStreamAsync("stream-longgap", ExpectedVersion.Any, aEvents).Wait();
-			_conn.AppendToStreamAsync("stream-longgap", ExpectedVersion.Any, cEvents).Wait();
-
-			var filter = EventFilter
-				.Create()
-				.WithEventPrefixFilter("EE")
-				.Build();
-
-			var sliceStart = Position.Start;
-			var read = new List<ResolvedEvent>();
-			AllEventsSlice slice;
-
-			do {
-				slice = _conn.ReadAllEventsForwardFilteredAsync(sliceStart, 4096, false, filter, maxSearchWindow: 4096)
-					.GetAwaiter()
-					.GetResult();
-				read.AddRange(slice.Events);
-				sliceStart = slice.NextPosition;
-			} while (!slice.IsEndOfStream);
-
-			Assert.That(EventDataComparer.Equal(
-				cEvents.ToArray(),
-				read.Select(x => x.Event).ToArray()));
-		}
-	}
-
-	internal static class EventDataExtensions {
-		internal static List<EventData> EvenEvents(this List<EventData> ed) => ed.Where((c, i) => i % 2 == 0).ToList();
-
-		internal static List<EventData> OddEvents(this List<EventData> ed) => ed.Where((c, i) => i % 2 != 0).ToList();
-
-		internal static EventData[] ReverseEvents(this List<EventData> ed) => ed.ToArray().Reverse().ToArray();
 	}
 }
