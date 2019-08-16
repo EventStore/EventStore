@@ -26,6 +26,8 @@ We also host native packages for Linux on [Package Cloud](https://packagecloud.i
 
 Event Store is written in a mixture of C#, C++ and JavaScript. It can run either on Mono or .NET, however because it contains platform specific code (including hosting the V8 JavaScript engine), it must be built for the platform on which you intend to run it.
 
+> **Note:** make sure to use the specified versions.
+
 ### Linux
 **Prerequisites**
 - [Mono 5.16.0](https://www.mono-project.com/download/)
@@ -40,6 +42,17 @@ export FrameworkPathOverride=/usr/lib/mono/4.7.1-api
 **Prerequisites**
 - [.NET Framework 4.7.1 (Developer Pack)](https://www.microsoft.com/net/download)
 - [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
+
+
+You can also install the prerequisites using [Chocolatey](https://chocolatey.org/):
+
+```
+choco install netfx-4.7.1-devpack
+```
+
+```
+choco install dotnetcore-sdk --version 2.1.402
+```
 
 ### Mac OS X
 **Prerequisites**
@@ -57,14 +70,28 @@ Once you've installed the prerequisites for your system, you can launch a `Relea
 dotnet build -c Release src/EventStore.sln
 ```
 
-To start a single node, you can then run:
+To start a single node, run:
 ```
 bin/Release/EventStore.ClusterNode/net471/EventStore.ClusterNode.exe --db ../db --log ../logs
 ```
 
 You'll need to launch the node with `mono` on Linux or Mac OS X.
 
-_Note: The build system has changed after version `4.1.1-hotfix1`, therefore the above instructions will not work for old releases._
+> **Note:** The build system has changed after version `4.1.1-hotfix1`, therefore the above instructions will not work for old releases.
+
+### Troubleshooting
+
+#### Windows
+
+_Error:_  
+The reference assemblies for framework ".NETFramework,Version=v4.7.1" were not found.
+_Solution:_  
+Use the FrameworkPathOverride option.
+```
+dotnet build -c Release src/EventStore.sln -p:FrameworkPathOverride="<your reference assembly location>"
+```
+You reference assembly location may be similar to `C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.1`.
+
 
 ### Running the tests
 You can launch the tests as follows:
