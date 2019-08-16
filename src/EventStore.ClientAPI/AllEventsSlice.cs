@@ -35,7 +35,7 @@ namespace EventStore.ClientAPI {
 
 		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,
 			ClientMessage.ResolvedEvent[] events) 
-		: this(readDirection, fromPosition, nextPosition, events, events?.Length == 0) {
+		: this(readDirection, fromPosition, nextPosition, events, events == null || events.Length == 0) {
 		}
 
 		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,
