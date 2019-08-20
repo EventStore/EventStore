@@ -146,8 +146,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var x = TestEvent.NewTestEvent();
 				var events = new[] {x, x, x, x, x, x};
 				Assert.AreEqual(5,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result.NextExpectedVersion);
-				var f = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result;
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result.NextExpectedVersion);
+				var f = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result;
 				Assert.AreEqual(5, f.NextExpectedVersion);
 			}
 		}
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append =
@@ -175,7 +175,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_return_log_position_when_writing";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var result = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent())
+				var result = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent())
 					.Result;
 				Assert.IsTrue(0 < result.LogPosition.PreparePosition);
 				Assert.IsTrue(0 < result.LogPosition.CommitPosition);
@@ -190,7 +190,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 
 				try {
-					store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
+					store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true).Wait();
 				} catch (Exception exc) {
 					Console.WriteLine(exc);
 					Assert.Fail();
@@ -209,7 +209,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append = store.AppendToStreamAsync(stream, 5, new[] {TestEvent.NewTestEvent()});
@@ -224,7 +224,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_append_with_correct_exp_ver_to_existing_stream";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+				store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 				var append = store.AppendToStreamAsync(stream, 0, new[] {TestEvent.NewTestEvent()});
 				Assert.DoesNotThrow(append.Wait);
@@ -238,7 +238,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 				Assert.AreEqual(0,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result
 						.NextExpectedVersion);
 				Assert.AreEqual(1,
 					store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Result
@@ -268,7 +268,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_append_with_stream_exists_exp_ver_to_existing_stream";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+				store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 				var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists,
 					new[] {TestEvent.NewTestEvent()});
@@ -331,7 +331,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists,
@@ -348,7 +348,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: false);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append = store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists,
@@ -366,7 +366,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
 				Assert.AreEqual(99,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result.NextExpectedVersion);
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result.NextExpectedVersion);
 			}
 		}
 
@@ -486,7 +486,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append =
@@ -502,7 +502,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {TestEvent.NewTestEvent()});
@@ -517,7 +517,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var append = store.AppendToStreamAsync(stream, 5, new[] {TestEvent.NewTestEvent()});
@@ -532,7 +532,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 				Assert.AreEqual(0,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result
 						.NextExpectedVersion);
 				Assert.AreEqual(1,
 					store.AppendToStreamAsync(stream, 0, TestEvent.NewTestEvent()).Result.NextExpectedVersion);
@@ -545,7 +545,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 				Assert.AreEqual(0,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result
 						.NextExpectedVersion);
 				Assert.AreEqual(1,
 					store.AppendToStreamAsync(stream, ExpectedVersion.Any, TestEvent.NewTestEvent()).Result
@@ -558,7 +558,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_return_log_position_when_writing";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var result = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent())
+				var result = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent())
 					.Result;
 				Assert.IsTrue(0 < result.LogPosition.PreparePosition);
 				Assert.IsTrue(0 < result.LogPosition.CommitPosition);
@@ -571,7 +571,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 				Assert.AreEqual(0,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result
 						.NextExpectedVersion);
 
 				var append = store.AppendToStreamAsync(stream, 1, new[] {TestEvent.NewTestEvent()});
@@ -591,7 +591,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
 				Assert.AreEqual(99,
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, events).Result.NextExpectedVersion);
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events).Result.NextExpectedVersion);
 			}
 		}
 	}

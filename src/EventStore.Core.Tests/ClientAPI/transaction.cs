@@ -191,8 +191,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_committing_with_bad";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result) {
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()})
+				using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result) {
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] {TestEvent.NewTestEvent()})
 						.Wait();
 					transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
 					Assert.That(() => transaction.CommitAsync().Wait(),
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
 				using (var transaction = store.StartTransactionAsync(stream, 0).Result) {
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()})
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] {TestEvent.NewTestEvent()})
 						.Wait();
 					transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
 					Assert.AreEqual(1, transaction.CommitAsync().Result.NextExpectedVersion);
@@ -222,9 +222,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_on_commit_stream_was_deleted";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream).Result) {
+				using (var transaction = store.StartTransactionAsync(stream, ExpectedVersion.NoStream).Result) {
 					transaction.WriteAsync(TestEvent.NewTestEvent()).Wait();
-					store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
+					store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true).Wait();
 					Assert.That(() => transaction.CommitAsync().Wait(),
 						Throws.Exception.TypeOf<AggregateException>().With.InnerException
 							.TypeOf<StreamDeletedException>());

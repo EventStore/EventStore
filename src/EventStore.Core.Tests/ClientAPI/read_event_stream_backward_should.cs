@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "read_event_stream_backward_should_notify_using_status_code_if_stream_was_deleted";
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1, resolveLinkTos: false);
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString()))
 					.ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, 1, 5, resolveLinkTos: false);
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString()))
 					.ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, testEvents.Length,
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, 7, 1, resolveLinkTos: false);
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString()))
 					.ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.Start, 1, resolveLinkTos: false);
@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1, resolveLinkTos: false);
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 
 				var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+				var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, testEvents);
 				Assert.DoesNotThrow(write10.Wait);
 
 				var read = store.ReadStreamEventsBackwardAsync(stream, 3, 2, resolveLinkTos: false);

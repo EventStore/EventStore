@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void when_getting_metadata_for_an_existing_stream_and_no_metadata_exists() {
 			const string stream = "when_getting_metadata_for_an_existing_stream_and_no_metadata_exists";
 
-			_connection.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+			_connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 			var meta = _connection.GetStreamMetadataAsRawBytesAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);

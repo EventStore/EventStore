@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				store.ConnectAsync().Wait();
 				//Write event to stream 1
 				Assert.AreEqual(0,
-					store.AppendToStreamAsync(stream1, ExpectedVersion.EmptyStream,
+					store.AppendToStreamAsync(stream1, ExpectedVersion.NoStream,
 						new EventData(Guid.NewGuid(), "TestEvent", true, null, null)).Result.NextExpectedVersion);
 				//Write 100 events to stream 2 which will have the same hash as stream 1.
 				for (int i = 0; i < 100; i++) {

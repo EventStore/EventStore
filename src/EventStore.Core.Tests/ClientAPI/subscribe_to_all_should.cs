@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					return Task.CompletedTask;
 				}, (s, r, e) => dropped.Signal()).Result) {
 					var create =
-						store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent());
+						store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
 					Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
 					Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						return Task.CompletedTask;
 					},
 					(s, r, e) => dropped.Signal()).Result) {
-					var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+					var delete = store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 					Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
 					Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event didn't fire in time.");

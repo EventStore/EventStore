@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
 			using (var connection = BuildConnection(_node)) {
 				connection.ConnectAsync().Wait();
-				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 			}
 		}
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				connection.ConnectAsync().Wait();
 
 				var result = connection
-					.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Result;
+					.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result;
 				var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true).Result;
 
 				Assert.IsTrue(0 < result.LogPosition.PreparePosition);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var connection = BuildConnection(_node)) {
 				connection.ConnectAsync().Wait();
 
-				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true);
+				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 				Assert.DoesNotThrow(delete.Wait);
 
 				var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);

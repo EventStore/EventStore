@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void setting_empty_metadata_works() {
 			const string stream = "setting_empty_metadata_works";
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, StreamMetadata.Create()).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, StreamMetadata.Create()).Wait();
 
 			var meta = _connection.GetStreamMetadataAsRawBytesAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "setting_metadata_few_times_returns_last_metadata_info";
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream = "setting_metadata_for_not_existing_stream_works";
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -138,11 +138,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void setting_metadata_for_existing_stream_works() {
 			const string stream = "setting_metadata_for_existing_stream_works";
 
-			_connection.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+			_connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -189,9 +189,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
-			_connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
+			_connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -231,7 +231,7 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                            }
                                                       }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, rawMeta).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -284,7 +284,7 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                                                                        ""subProperty"": 999
                                                                                                  }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -321,7 +321,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.SetDeleteRoles(new[] {"d1", "d2", "d3", "d4"})
 				.SetMetadataWriteRoles(new[] {"mw1", "mw2"});
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, metadata).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
@@ -349,7 +349,7 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                            }
                                                       }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.EmptyStream, rawMeta).Wait();
+			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta).Wait();
 
 			var meta = _connection.GetStreamMetadataAsync(stream).Result;
 			Assert.AreEqual(stream, meta.Stream);
