@@ -33,12 +33,6 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 - [Mono 5.16.0](https://www.mono-project.com/download/)
 - [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
 
-On Ubuntu 18+ you need libcurl13:
-```
-sudo apt-get install libcurl3
-```
-Note that this removes libcurl4, which may prevent other applications running.
-
 **Required Environment Variables**
 ```
 export FrameworkPathOverride=/usr/lib/mono/4.7.1-api
@@ -98,6 +92,17 @@ Use the FrameworkPathOverride option.
 dotnet build -c Release src/EventStore.sln -p:FrameworkPathOverride="<your reference assembly location>"
 ```
 You reference assembly location may be similar to `C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.1`.
+
+#### Linux
+
+_Error:_  
+error MSB4018: The "Microsoft.Build.Tasks.Git.LocateRepository" task failed unexpectedly.  
+_Solution:_  
+On Ubuntu 18+ you need libcurl3:
+```
+sudo apt-get install libcurl3
+```
+Note that this removes libcurl4, which may prevent other applications running.
 
 
 ### Running the tests
