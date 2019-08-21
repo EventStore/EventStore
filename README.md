@@ -8,7 +8,7 @@ This is the repository for the open source version of Event Store, which include
 
 Information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://eventstore.org/support.
 
-## CI Status
+## CI status
 [![Build Status](https://dev.azure.com/EventStoreOSS/EventStore/_apis/build/status/EventStore.EventStore?branchName=master)](https://dev.azure.com/EventStoreOSS/EventStore/_build/latest?definitionId=2)
 
 ## Documentation
@@ -17,7 +17,7 @@ Documentation for Event Store can be found [here](https://eventstore.org/docs/)
 ## Community
 We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel [here](http://ddd-cqrs-es.herokuapp.com/).
 
-## Release Packages
+## Release packages
 The latest release packages are hosted in the downloads section on the [Event Store Website](https://eventstore.org/downloads/)
 
 We also host native packages for Linux on [Package Cloud](https://packagecloud.io/EventStore/EventStore-OSS) and Windows packages can be installed via [Chocolatey](https://chocolatey.org/packages/eventstore-oss) (4.0.0 onwards only).
@@ -33,10 +33,17 @@ Event Store is written in a mixture of C#, C++ and JavaScript. It can run either
 - [Mono 5.16.0](https://www.mono-project.com/download/)
 - [.NET Core SDK 2.1.402](https://www.microsoft.com/net/download)
 
+On Ubuntu 18+ you need libcurl13:
+```
+sudo apt-get install libcurl3
+```
+Note that this removes libcurl4, which may prevent other applications running.
+
 **Required Environment Variables**
 ```
 export FrameworkPathOverride=/usr/lib/mono/4.7.1-api
 ```
+
 
 ### Windows
 **Prerequisites**
