@@ -55,15 +55,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return _hash.Values;
 		}
 
-		public void RemoveProcessingMessages(Guid correlationId, Guid[] processedEventIds) {
-			PersistentSubscriptionClient client;
-			if (!_hash.TryGetValue(correlationId, out client)) return;
-			client.RemoveFromProcessing(processedEventIds);
-		}
-
-		public void RemoveProcessingMessage(Guid eventId) {
+		public void RemoveProcessingMessages(params Guid[] processedEventIds) {
 			foreach (var client in _hash.Values) {
-				if (client.RemoveFromProcessing(new[] {eventId})) return;
+				client.RemoveFromProcessing(processedEventIds);
 			}
 		}
 	}
