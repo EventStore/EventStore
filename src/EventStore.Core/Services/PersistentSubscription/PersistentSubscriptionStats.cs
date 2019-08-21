@@ -94,7 +94,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				RetryBufferCount = _parent._streamBuffer.RetryBufferCount,
 				LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
 				ExtraStatistics = _settings.ExtraStatistics,
-				TotalInFlightMessages = _parent.OutstandingMessageCount,
+				TotalInFlightMessages = totalInflight,
+				OutstandingMessagesCount = _parent.OutstandingMessageCount,
 				NamedConsumerStrategy = _settings.ConsumerStrategy.Name,
 				MaxSubscriberCount = _settings.MaxSubscriberCount
 			};

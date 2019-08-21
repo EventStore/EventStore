@@ -305,7 +305,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void AcknowledgeMessagesProcessed(Guid correlationId, Guid[] processedEventIds) {
 			lock (_lock) {
-				RemoveProcessingMessages(correlationId, processedEventIds);
+				RemoveProcessingMessages(processedEventIds);
 				TryMarkCheckpoint(false);
 				TryReadingNewBatch();
 				TryPushingMessagesToClients();
@@ -321,7 +321,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					HandleNackedMessage(action, id, reason);
 				}
 
-				RemoveProcessingMessages(correlationId, processedEventIds);
+				RemoveProcessingMessages(processedEventIds);
 				TryMarkCheckpoint(false);
 				TryReadingNewBatch();
 				TryPushingMessagesToClients();
@@ -377,7 +377,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 				lock (_lock) {
 					_outstandingMessages.Remove(e.OriginalEvent.EventId);
-					_pushClients.RemoveProcessingMessage(e.OriginalEvent.EventId);
+					_pushClients.RemoveProcessingMessages(e.OriginalEvent.EventId);
 					TryPushingMessagesToClients();
 				}
 			});
@@ -456,8 +456,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			//TODO CC Stop subscription?
 		}
 
-		private void RemoveProcessingMessages(Guid correlationId, Guid[] processedEventIds) {
-			_pushClients.RemoveProcessingMessages(correlationId, processedEventIds);
+		private void RemoveProcessingMessages(Guid[] processedEventIds) {
+			_pushClients.RemoveProcessingMessages(processedEventIds);
 			foreach (var id in processedEventIds) {
 				_outstandingMessages.Remove(id);
 			}
@@ -492,7 +492,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Log.Debug("Retrying message {subscriptionId} {stream}/{eventNumber}", SubscriptionId,
 				@event.OriginalStreamId, @event.OriginalEventNumber);
 			_outstandingMessages.Remove(@event.OriginalEvent.EventId);
-			_pushClients.RemoveProcessingMessage(@event.OriginalEvent.EventId);
+			_pushClients.RemoveProcessingMessages(@event.OriginalEvent.EventId);
 			_streamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1));
 		}
 

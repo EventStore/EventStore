@@ -120,6 +120,7 @@ namespace EventStore.Core.Messages {
 			public long LiveBufferCount { get; set; }
 			public int RetryBufferCount { get; set; }
 			public int TotalInFlightMessages { get; set; }
+			public int OutstandingMessagesCount { get; set; }
 			public string NamedConsumerStrategy { get; set; }
 			public int MaxSubscriberCount { get; set; }
 		}
