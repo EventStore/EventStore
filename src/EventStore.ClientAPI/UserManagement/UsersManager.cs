@@ -13,7 +13,7 @@ namespace EventStore.ClientAPI.UserManagement {
 	public class UsersManager {
 		private readonly UsersClient _client;
 
-		private readonly IPEndPoint _httpEndPoint;
+		private readonly EndPoint _httpEndPoint;
 
 		/// <summary>
 		/// Creates a new instance of <see cref="UsersManager"/>.
@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI.UserManagement {
 		/// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
 		/// <param name="operationTimeout"></param>
-		public UsersManager(ILogger log, IPEndPoint httpEndPoint, TimeSpan operationTimeout) {
+		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
