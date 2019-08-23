@@ -94,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private bool _started;
 		private bool _projectionsStarted;
 		private long _projectionsRegistrationExpectedVersion = 0;
+		private HashSet<string> _projectionsRegistrationState = new HashSet<string>();
 		private readonly PublishEnvelope _publishEnvelope;
 
 		private readonly
@@ -260,7 +261,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					message.Envelope.ReplyWith(
 						new ProjectionManagementMessage.OperationFailed("Projection name is required"));
 				} else {
-					if (_projections.ContainsKey(projection.Name)) {
+					if (_projectionsRegistrationState.Contains(projection.Name)) {
 						duplicateNames.Add(projection.Name);
 					}
 				}
@@ -625,6 +626,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					_awaitingSlaveProjections.Remove(message.Id); // if any disconnected in error
 					_projections.Remove(message.Name);
 					_projectionsMap.Remove(message.Id);
+					_projectionsRegistrationState.Remove(message.Name);
 					_projectionsRegistrationExpectedVersion = expVer;
 				});
 		}
@@ -789,6 +791,9 @@ namespace EventStore.Projections.Core.Services.Management {
 				(LogManager.StructuredLog ? "{@projections}" : "{projections}"),
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
 				LogManager.StructuredLog ? (object)projections : (object)String.Join(", ", projections));
+
+			foreach(var projection in projections)
+				_projectionsRegistrationState.Add(projection);
 
 			//create any missing system projections
 			CreateSystemProjections(registeredProjections.Select(x => x.Key).ToList());
@@ -975,6 +980,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			IEnvelope envelope, int retryCount = ProjectionCreationRetryCount) {
 
 			if (completed.Result == OperationResult.Success) {
+				foreach(var kvp in newProjections)
+					_projectionsRegistrationState.Add(kvp.Key);
 				ReadProjectionsList(
 					new Dictionary<string, long>(),
 					r => StartNewlyRegisteredProjections(r, newProjections, OnProjectionsRegistrationCaughtUp, envelope),
