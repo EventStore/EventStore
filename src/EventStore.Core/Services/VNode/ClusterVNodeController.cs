@@ -98,8 +98,8 @@ namespace EventStore.Core.Services.VNode {
 			var stm = new VNodeFSMBuilder(() => _state)
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>()
-				.Do(m => Application.Exit(ExitCode.Error,
-					string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name)))
+				.Do(m => {} /* Application.Exit(ExitCode.Error,
+					string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name))*/)
 				.When<UserManagementMessage.UserManagementServiceInitialized>().Do(Handle)
 				.When<SystemMessage.SubSystemInitialized>().Do(Handle)
 				.When<SystemMessage.SystemCoreReady>().Do(Handle)

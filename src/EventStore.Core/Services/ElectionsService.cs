@@ -469,6 +469,13 @@ namespace EventStore.Core.Services {
 					_lastElectedMaster = _master;
 					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, master));
 				}
+
+				if(master.InstanceId == _nodeInfo.InstanceId){
+					_publisher.Publish(TimerMessage.Schedule.Create(
+						TimeSpan.FromMilliseconds(10000),
+						_publisherEnvelope,
+						new SystemMessage.BecomeUnknown(Guid.NewGuid())));
+				}
 			}
 		}
 
