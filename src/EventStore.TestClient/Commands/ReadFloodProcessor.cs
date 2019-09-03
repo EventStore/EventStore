@@ -16,8 +16,6 @@ namespace EventStore.TestClient.Commands {
 			get { return "RDFL"; }
 		}
 
-		private RequestMonitor _monitor = new RequestMonitor();
-
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			int clientsCnt = 1;
 			long requestsCnt = 5000;
@@ -40,12 +38,13 @@ namespace EventStore.TestClient.Commands {
 				}
 			}
 
-			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireMaster);
+			RequestMonitor monitor = new RequestMonitor();
+			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireMaster, monitor);
 			return true;
 		}
 
 		private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt,
-			bool resolveLinkTos, bool requireMaster) {
+			bool resolveLinkTos, bool requireMaster, RequestMonitor monitor) {
 			context.IsAsync();
 
 			var clients = new List<TcpTypedConnection<byte[]>>();
@@ -68,7 +67,7 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-						_monitor.EndOperation(pkg.CorrelationId);
+						monitor.EndOperation(pkg.CorrelationId);
 						if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success) {
 							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
 						} else {
@@ -97,7 +96,7 @@ namespace EventStore.TestClient.Commands {
 						var corrId = Guid.NewGuid();
 						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireMaster);
 						var package = new TcpPackage(TcpCommand.ReadEvent, corrId, read.Serialize());
-						_monitor.StartOperation(corrId);
+						monitor.StartOperation(corrId);
 						client.EnqueueSend(package.AsByteArray());
 
 						var localSent = Interlocked.Increment(ref sent);
@@ -121,7 +120,7 @@ namespace EventStore.TestClient.Commands {
 				Interlocked.Read(ref fail));
 			context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
 				sw.ElapsedMilliseconds, reqPerSec);
-			_monitor.GetMeasurementDetails();
+			monitor.GetMeasurementDetails();
 			PerfUtils.LogData(Keyword,
 				PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
 					PerfUtils.Col("requestsCnt", requestsCnt),
