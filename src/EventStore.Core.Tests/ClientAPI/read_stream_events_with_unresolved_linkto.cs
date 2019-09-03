@@ -22,9 +22,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Wait();
 
 			_testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-			_conn.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, _testEvents).Wait();
+			_conn.AppendToStreamAsync("stream", ExpectedVersion.NoStream, _testEvents).Wait();
 			_conn.AppendToStreamAsync(
-					"links", ExpectedVersion.EmptyStream,
+					"links", ExpectedVersion.NoStream,
 					new EventData(
 						Guid.NewGuid(), EventStore.ClientAPI.Common.SystemEventTypes.LinkTo, false,
 						Encoding.UTF8.GetBytes("0@stream"), null))

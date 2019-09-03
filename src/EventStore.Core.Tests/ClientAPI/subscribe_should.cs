@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					appeared.Signal();
 					return Task.CompletedTask;
 				}, (s, r, e) => dropped.Signal()).Result) {
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 					Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
 				}
 			}
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					appeared.Signal();
 					return Task.CompletedTask;
 				}, (s, r, e) => dropped.Signal()).Result) {
-					store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+					store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 					Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
 				}
 			}
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						return Task.CompletedTask;
 					},
 					(s, r, e) => dropped.Signal()).Result) {
-					store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream, hardDelete: true).Wait();
+					store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true).Wait();
 					Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
 				}
 			}

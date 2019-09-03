@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 					Assert.That(
 						() => connection
-							.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, TestEvent.NewTestEvent())
+							.AppendToStreamAsync("stream", ExpectedVersion.NoStream, TestEvent.NewTestEvent())
 							.Wait(),
 						Throws.Exception.InstanceOf<AggregateException>()
 							.With.InnerException.InstanceOf<InvalidOperationException>());

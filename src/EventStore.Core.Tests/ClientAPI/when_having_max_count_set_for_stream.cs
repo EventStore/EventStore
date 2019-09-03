@@ -22,11 +22,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_connection = TestConnection.Create(_node.TcpEndPoint);
 			_connection.ConnectAsync().Wait();
 
-			_connection.SetStreamMetadataAsync(Stream, ExpectedVersion.EmptyStream,
+			_connection.SetStreamMetadataAsync(Stream, ExpectedVersion.NoStream,
 				StreamMetadata.Build().SetMaxCount(3)).Wait();
 
 			_testEvents = Enumerable.Range(0, 5).Select(x => TestEvent.NewTestEvent(data: x.ToString())).ToArray();
-			_connection.AppendToStreamAsync(Stream, ExpectedVersion.EmptyStream, _testEvents).Wait();
+			_connection.AppendToStreamAsync(Stream, ExpectedVersion.NoStream, _testEvents).Wait();
 		}
 
 		[TearDown]

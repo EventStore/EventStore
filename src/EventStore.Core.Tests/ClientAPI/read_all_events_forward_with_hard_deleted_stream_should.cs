@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Wait();
 
 			_testEvents = Enumerable.Range(0, 20).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-			_conn.AppendToStreamAsync("stream", ExpectedVersion.EmptyStream, _testEvents).Wait();
+			_conn.AppendToStreamAsync("stream", ExpectedVersion.NoStream, _testEvents).Wait();
 			_conn.DeleteStreamAsync("stream", ExpectedVersion.Any, hardDelete: true).Wait();
 		}
 

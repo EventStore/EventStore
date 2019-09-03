@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_ => Log.Info("Live processing started."),
 					(_, __, ___) => dropped.Signal());
 
-				store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+				store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 				if (!appeared.Wait(Timeout)) {
 					Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_ => Log.Info("Live processing started."),
 					(x, y, z) => dropped2.Set());
 
-				store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, TestEvent.NewTestEvent()).Wait();
+				store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
 
 				if (!appeared.Wait(Timeout)) {
 					Assert.IsFalse(dropped1.Wait(0), "Subscription1 was dropped prematurely.");
