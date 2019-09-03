@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("EventStore.Rags")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Event Store LLP")]
+[assembly: AssemblyCompany("Event Store Ltd")]
 [assembly: AssemblyProduct("EventStore.Rags")]
-[assembly: AssemblyCopyright("Copyright © Event Store LLP. All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright © Event Store Ltd. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

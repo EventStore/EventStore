@@ -15,7 +15,7 @@
 #define EVENTSTORE_FILEVERSION_STR "0.0.0.0"
 #define EVENTSTORE_FILEVERSION 0,0,0,0
 #define EVENTSTORE_COMMITNUMBER_STR "0.0.0.0.projections@ca77a64828e0a45c11922f08f5da0ce9ffceead2@Tue, 3 Dec 2013 10:47:57 +0200"
-#define EVENTSTORE_COPYRIGHT_STR "Copyright 2012 Event Store LLP. All rights reserved."
+#define EVENTSTORE_COPYRIGHT_STR "Copyright 2012 Event Store Ltd. All rights reserved."
 
 
 
@@ -46,7 +46,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
 			VALUE "Comments", EVENTSTORE_COMMITNUMBER_STR
-			VALUE "CompanyName", "Event Store LLP"
+			VALUE "CompanyName", "Event Store Ltd"
             VALUE "FileDescription", "Event Store Projections - V8 Integration"
             VALUE "FileVersion", EVENTSTORE_FILEVERSION_STR
             VALUE "InternalName", "EventStore.Projections.V8Integration"

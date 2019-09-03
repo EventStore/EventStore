@@ -164,8 +164,8 @@ Function Start-Build{
 
     #Configuration
     $productName = "Event Store Open Source"
-    $companyName = "Event Store LLP"
-    $copyright = "Copyright 2019 Event Store LLP. All rights reserved."
+    $companyName = "Event Store Ltd"
+    $copyright = "Copyright 2019 Event Store Ltd. All rights reserved."
     $platform = "x64"
 
     $baseDirectory = $PSScriptRoot
