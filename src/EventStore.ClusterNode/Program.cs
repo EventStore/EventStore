@@ -356,6 +356,12 @@ namespace EventStore.ClusterNode {
 				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
 			builder.WithAuthenticationProvider(authenticationProviderFactory);
+			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
+
+			foreach(var subsystemFactory in subsystemFactories){
+				var subsystem = subsystemFactory.Create(options.Config);
+				builder.AddCustomSubsystem(subsystem);
+			}
 
 			return builder.Build(options, consumerStrategyFactories);
 		}
@@ -411,6 +417,25 @@ namespace EventStore.ClusterNode {
 			}
 
 			return factory();
+		}
+
+		private static ISubsystemFactory[] GetPlugInSubsystemFactories(
+			CompositionContainer plugInContainer) {
+			var allPlugins = plugInContainer.GetExports<ISubsystemPlugin>();
+
+			var strategyFactories = new List<ISubsystemFactory>();
+
+			foreach (var potentialPlugin in allPlugins) {
+				try {
+					var plugin = potentialPlugin.Value;
+					Log.Info("Loaded subsystem plugin: {plugin} version {version}", plugin.Name, plugin.Version);
+					strategyFactories.Add(plugin.GetSubsystemFactory());
+				} catch (CompositionException ex) {
+					Log.ErrorException(ex, "Error loading subsystem plugin.");
+				}
+			}
+
+			return strategyFactories.ToArray();
 		}
 
 		private static CompositionContainer FindPlugins() {
