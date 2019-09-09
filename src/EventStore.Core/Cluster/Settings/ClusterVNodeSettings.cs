@@ -60,6 +60,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly TimeSpan ExtTcpHeartbeatTimeout;
 		public readonly TimeSpan ExtTcpHeartbeatInterval;
 		public readonly int ConnectionPendingSendBytesThreshold;
+		public readonly int ConnectionQueueSizeThreshold;
 		public readonly bool UnsafeIgnoreHardDeletes;
 		public readonly bool VerifyDbHash;
 		public readonly int MaxMemtableEntryCount;
@@ -133,6 +134,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool disableHTTPCaching,
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
+			int connectionQueueSizeThreshold,
 			int chunkInitialReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
@@ -230,6 +232,7 @@ namespace EventStore.Core.Cluster.Settings {
 			ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
 			ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
 			ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+			ConnectionQueueSizeThreshold = connectionQueueSizeThreshold;
 			ChunkInitialReaderCount = chunkInitialReaderCount;
 
 			VerifyDbHash = verifyDbHash;
@@ -253,7 +256,6 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
 		}
-
 
 		public override string ToString() {
 			return string.Format("InstanceId: {0}\n"

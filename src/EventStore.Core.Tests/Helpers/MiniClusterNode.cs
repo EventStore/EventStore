@@ -104,6 +104,7 @@ namespace EventStore.Core.Tests.Helpers {
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
+				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
 				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
 
 			Log.Info(

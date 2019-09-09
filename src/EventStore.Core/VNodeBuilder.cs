@@ -91,6 +91,7 @@ namespace EventStore.Core {
 		protected TimeSpan _extTcpHeartbeatTimeout;
 		protected TimeSpan _extTcpHeartbeatInterval;
 		protected int _connectionPendingSendBytesThreshold;
+		protected int _connectionQueueSizeThreshold;
 
 		protected bool _skipVerifyDbHashes;
 		protected int _maxMemtableSize;
@@ -202,6 +203,7 @@ namespace EventStore.Core {
 			_extTcpHeartbeatInterval = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatIntervalDefault);
 			_extTcpHeartbeatTimeout = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatTimeoutDefault);
 			_connectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+			_connectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
 
 			_skipVerifyDbHashes = Opts.SkipDbVerifyDefault;
 			_maxMemtableSize = Opts.MaxMemtableSizeDefault;
@@ -741,6 +743,16 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithConnectionPendingSendBytesThreshold(int connectionPendingSendBytesThreshold) {
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+			return this;
+		}
+		
+		/// <summary>
+		/// Sets the maximum number of connection operations allowed before a connection is closed.
+		/// </summary>
+		/// <param name="connectionQueueSizeThreshold">The number of connection operations allowed</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithConnectionQueueSizeThreshold(int connectionQueueSizeThreshold) {
+			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
 			return this;
 		}
 
@@ -1374,6 +1386,7 @@ namespace EventStore.Core {
 				_disableHTTPCaching,
 				_logHttpRequests,
 				_connectionPendingSendBytesThreshold,
+				_connectionQueueSizeThreshold,
 				_chunkInitialReaderCount,
 				_index,
 				_enableHistograms,
