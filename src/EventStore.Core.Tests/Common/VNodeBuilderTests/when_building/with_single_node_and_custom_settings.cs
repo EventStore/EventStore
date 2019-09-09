@@ -693,4 +693,18 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(_threshold, _settings.ConnectionPendingSendBytesThreshold);
 		}
 	}
+	
+	[TestFixture]
+	public class with_connection_queue_size_threshold : SingleNodeScenario {
+		private int _threshold = 2000;
+
+		public override void Given() {
+			_builder.WithConnectionQueueSizeThreshold(_threshold);
+		}
+
+		[Test]
+		public void should_set_connection_queue_size_threshold() {
+			Assert.AreEqual(_threshold, _settings.ConnectionQueueSizeThreshold);
+		}
+	}
 }

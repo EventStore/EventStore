@@ -40,7 +40,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
 				false, false,
-				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ChunkInitialReaderCountDefault);
+				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
+				Opts.ChunkInitialReaderCountDefault);
 
 			return vnode;
 		}

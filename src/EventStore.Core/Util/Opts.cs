@@ -72,6 +72,11 @@ namespace EventStore.Core.Util {
 			"The maximum number of pending send bytes allowed before a connection is closed.";
 
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
+		
+		public const string ConnectionQueueSizeThresholdDescr =
+			"The maximum number of pending connection operations allowed before a connection is closed.";
+
+		public const int ConnectionQueueSizeThresholdDefault = 50000;
 
 		public const string GossipOnSingleNodeDescr =
 			"When enabled tells a single node to run gossip as if it is a cluster";
