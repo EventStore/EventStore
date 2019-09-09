@@ -32,5 +32,6 @@ namespace EventStore.Core.Settings {
 		public static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);
 
 		public const int UnrestrictedPendingSendBytes = 0;
+		public const int MaxConnectionQueueSize = 50000;
 	}
 }

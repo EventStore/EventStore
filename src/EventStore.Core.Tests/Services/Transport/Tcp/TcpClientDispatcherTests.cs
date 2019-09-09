@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				Opts.ConnectionPendingSendBytesThresholdDefault);
+				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault);
 		}
 
 		[Test]
