@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -13,6 +12,7 @@ using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Formatting;
 using EventStore.Transport.Tcp.Framing;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
+using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.TestClient {
 	public class Client {
@@ -47,6 +47,7 @@ namespace EventStore.TestClient {
 			InteractiveMode = options.Command.IsEmpty();
 
 			RegisterProcessors();
+
 		}
 
 		private void RegisterProcessors() {
