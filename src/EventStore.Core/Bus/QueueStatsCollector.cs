@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Net.Configuration;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
@@ -290,10 +289,10 @@ namespace EventStore.Core.Bus {
 				var successes = 0;
 				while (successes < 2) {
 					while (_nonIdle > 0 || _totalLength > 0 ||
-					       (waitForCheckpoints && (AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
-					                                                          || AreCheckpointsDifferent(2) ||
-					                                                          AnyCheckpointsDifferent()))
-					       || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0)) {
+						   (waitForCheckpoints && (AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
+																			  || AreCheckpointsDifferent(2) ||
+																			  AnyCheckpointsDifferent()))
+						   || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0)) {
 						if (!Monitor.Wait(_notifyIdleLock, 100)) {
 							Console.WriteLine("Waiting for IDLE state...");
 							counter++;
@@ -312,8 +311,8 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 		private static bool AreCheckpointsDifferent(int index) {
 			return _writerCheckpoint[index] != null && _chaserCheckpoint[index] != null
-			                                        && _writerCheckpoint[index].ReadNonFlushed() !=
-			                                        _chaserCheckpoint[index].Read();
+													&& _writerCheckpoint[index].ReadNonFlushed() !=
+													_chaserCheckpoint[index].Read();
 		}
 
 		private static bool AnyCheckpointsDifferent() {

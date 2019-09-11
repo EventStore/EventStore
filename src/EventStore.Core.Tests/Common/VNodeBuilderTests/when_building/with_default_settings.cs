@@ -30,8 +30,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2112), _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2113), _settings.NodeInfo.ExternalHttp);
 
-			var intHttpPrefixes = new List<string> {"http://127.0.0.1:2112/", "http://localhost:2112/"};
-			var extHttpPrefixes = new List<string> {"http://127.0.0.1:2113/", "http://localhost:2113/"};
+			var intHttpPrefixes = new List<string> { "http://127.0.0.1:2112/" };
+			var extHttpPrefixes = new List<string> { "http://127.0.0.1:2113/" };
 			CollectionAssert.AreEqual(intHttpPrefixes, _settings.IntHttpPrefixes);
 			CollectionAssert.AreEqual(extHttpPrefixes, _settings.ExtHttpPrefixes);
 		}
@@ -112,8 +112,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(internalHttp, _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(externalHttp, _settings.NodeInfo.ExternalHttp);
 
-			var intHttpPrefixes = new List<string> {"http://127.0.0.1:2112/", "http://localhost:2112/"};
-			var extHttpPrefixes = new List<string> {"http://127.0.0.1:2113/", "http://localhost:2113/"};
+			var intHttpPrefixes = new List<string> { "http://127.0.0.1:2112/" };
+			var extHttpPrefixes = new List<string> { "http://127.0.0.1:2113/" };
 
 			CollectionAssert.AreEqual(intHttpPrefixes, _settings.IntHttpPrefixes);
 			CollectionAssert.AreEqual(extHttpPrefixes, _settings.ExtHttpPrefixes);

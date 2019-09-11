@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Common.Utils;
@@ -16,13 +17,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private IEventStoreConnection _connection;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 
 			_connection = BuildConnection(_node);
-			_connection.ConnectAsync().Wait();
+			await _connection.ConnectAsync();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
@@ -30,19 +31,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_connection.Close();
-			_node.Shutdown();
-			base.TestFixtureTearDown();
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 
 		[Test]
-		public void setting_empty_metadata_works() {
+		public async Task setting_empty_metadata_works() {
 			const string stream = "setting_empty_metadata_works";
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, StreamMetadata.Create()).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, StreamMetadata.Create());
 
-			var meta = _connection.GetStreamMetadataAsRawBytesAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsRawBytesAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -50,13 +51,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_metadata_few_times_returns_last_metadata_info() {
+		public async Task setting_metadata_few_times_returns_last_metadata_info() {
 			const string stream = "setting_metadata_few_times_returns_last_metadata_info";
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -67,9 +68,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24,
 				TimeSpan.FromSeconds(0xDABACABAD));
-			_connection.SetStreamMetadataAsync(stream, 0, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, 0, metadata);
 
-			meta = _connection.GetStreamMetadataAsync(stream).Result;
+			meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(1, meta.MetastreamVersion);
@@ -80,21 +81,20 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void trying_to_set_metadata_with_wrong_expected_version_fails() {
+		public async Task trying_to_set_metadata_with_wrong_expected_version_fails() {
 			const string stream = "trying_to_set_metadata_with_wrong_expected_version_fails";
-			Assert.That(() => _connection.SetStreamMetadataAsync(stream, 2, StreamMetadata.Create()).Result,
-				Throws.Exception.InstanceOf<AggregateException>()
-					.With.InnerException.InstanceOf<WrongExpectedVersionException>());
+			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
+				_connection.SetStreamMetadataAsync(stream, 2, StreamMetadata.Create()));
 		}
 
 		[Test]
-		public void setting_metadata_with_expected_version_any_works() {
+		public async Task setting_metadata_with_expected_version_any_works() {
 			const string stream = "setting_metadata_with_expected_version_any_works";
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -105,9 +105,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			metadata = StreamMetadata.Create(37, TimeSpan.FromSeconds(0xBEEFDEAD), 24,
 				TimeSpan.FromSeconds(0xDABACABAD));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.Any, metadata);
 
-			meta = _connection.GetStreamMetadataAsync(stream).Result;
+			meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(1, meta.MetastreamVersion);
@@ -118,13 +118,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_metadata_for_not_existing_stream_works() {
+		public async Task setting_metadata_for_not_existing_stream_works() {
 			const string stream = "setting_metadata_for_not_existing_stream_works";
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -135,16 +135,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_metadata_for_existing_stream_works() {
+		public async Task setting_metadata_for_existing_stream_works() {
 			const string stream = "setting_metadata_for_existing_stream_works";
 
-			_connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Wait();
+			await _connection.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
 
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -155,10 +155,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void getting_metadata_for_nonexisting_stream_returns_empty_stream_metadata() {
+		public async Task getting_metadata_for_nonexisting_stream_returns_empty_stream_metadata() {
 			const string stream = "getting_metadata_for_nonexisting_stream_returns_empty_stream_metadata";
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(-1, meta.MetastreamVersion);
@@ -169,10 +169,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Ignore("You can't get stream metadata for metastream through ClientAPI")]
-		public void getting_metadata_for_metastream_returns_correct_metadata() {
+		public async Task getting_metadata_for_metastream_returns_correct_metadata() {
 			const string stream = "$$getting_metadata_for_metastream_returns_correct_metadata";
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(-1, meta.MetastreamVersion);
@@ -183,17 +183,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion() {
+		public async Task getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion() {
 			const string stream =
 				"getting_metadata_for_deleted_stream_returns_empty_stream_metadata_and_signals_stream_deletion";
 
 			var metadata =
 				StreamMetadata.Create(17, TimeSpan.FromSeconds(0xDEADBEEF), 10, TimeSpan.FromSeconds(0xABACABA));
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			_connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true).Wait();
+			await _connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(true, meta.IsStreamDeleted);
 			Assert.AreEqual(EventNumber.DeletedStream, meta.MetastreamVersion);
@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_correctly_formatted_metadata_as_raw_allows_to_read_it_as_structured_metadata() {
+		public async Task setting_correctly_formatted_metadata_as_raw_allows_to_read_it_as_structured_metadata() {
 			const string stream =
 				"setting_correctly_formatted_metadata_as_raw_allows_to_read_it_as_structured_metadata";
 
@@ -231,9 +231,9 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                            }
                                                       }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -247,7 +247,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			Assert.AreEqual("writeRole", meta.StreamMetadata.Acl.WriteRole);
 			Assert.AreEqual("deleteRole", meta.StreamMetadata.Acl.DeleteRole);
 			// meta role removed to allow reading
-//            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
+			//            Assert.AreEqual("metaReadRole", meta.StreamMetadata.Acl.MetaReadRole);
 			Assert.AreEqual("metaWriteRole", meta.StreamMetadata.Acl.MetaWriteRole);
 
 			Assert.AreEqual("a string", meta.StreamMetadata.GetValue<string>("customString"));
@@ -260,7 +260,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_structured_metadata_with_custom_properties_returns_them_untouched() {
+		public async Task setting_structured_metadata_with_custom_properties_returns_them_untouched() {
 			const string stream = "setting_structured_metadata_with_custom_properties_returns_them_untouched";
 
 			StreamMetadata metadata = StreamMetadata.Build()
@@ -284,9 +284,9 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                                                                        ""subProperty"": 999
                                                                                                  }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
@@ -312,31 +312,31 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void setting_structured_metadata_with_multiple_roles_can_be_read_back() {
+		public async Task setting_structured_metadata_with_multiple_roles_can_be_read_back() {
 			const string stream = "setting_structured_metadata_with_multiple_roles_can_be_read_back";
 
 			StreamMetadata metadata = StreamMetadata.Build()
-				.SetReadRoles(new[] {"r1", "r2", "r3"})
-				.SetWriteRoles(new[] {"w1", "w2"})
-				.SetDeleteRoles(new[] {"d1", "d2", "d3", "d4"})
-				.SetMetadataWriteRoles(new[] {"mw1", "mw2"});
+				.SetReadRoles(new[] { "r1", "r2", "r3" })
+				.SetWriteRoles(new[] { "w1", "w2" })
+				.SetDeleteRoles(new[] { "d1", "d2", "d3", "d4" })
+				.SetMetadataWriteRoles(new[] { "mw1", "mw2" });
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, metadata);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
 
 			Assert.NotNull(meta.StreamMetadata.Acl);
-			Assert.AreEqual(new[] {"r1", "r2", "r3"}, meta.StreamMetadata.Acl.ReadRoles);
-			Assert.AreEqual(new[] {"w1", "w2"}, meta.StreamMetadata.Acl.WriteRoles);
-			Assert.AreEqual(new[] {"d1", "d2", "d3", "d4"}, meta.StreamMetadata.Acl.DeleteRoles);
-			Assert.AreEqual(new[] {"mw1", "mw2"}, meta.StreamMetadata.Acl.MetaWriteRoles);
+			Assert.AreEqual(new[] { "r1", "r2", "r3" }, meta.StreamMetadata.Acl.ReadRoles);
+			Assert.AreEqual(new[] { "w1", "w2" }, meta.StreamMetadata.Acl.WriteRoles);
+			Assert.AreEqual(new[] { "d1", "d2", "d3", "d4" }, meta.StreamMetadata.Acl.DeleteRoles);
+			Assert.AreEqual(new[] { "mw1", "mw2" }, meta.StreamMetadata.Acl.MetaWriteRoles);
 		}
 
 		[Test]
-		public void setting_correct_metadata_with_multiple_roles_in_acl_allows_to_read_it_as_structured_metadata() {
+		public async Task setting_correct_metadata_with_multiple_roles_in_acl_allows_to_read_it_as_structured_metadata() {
 			const string stream =
 				"setting_correct_metadata_with_multiple_roles_in_acl_allows_to_read_it_as_structured_metadata";
 
@@ -349,18 +349,18 @@ namespace EventStore.Core.Tests.ClientAPI {
                                                            }
                                                       }");
 
-			_connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta).Wait();
+			await _connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream, rawMeta);
 
-			var meta = _connection.GetStreamMetadataAsync(stream).Result;
+			var meta = await _connection.GetStreamMetadataAsync(stream);
 			Assert.AreEqual(stream, meta.Stream);
 			Assert.AreEqual(false, meta.IsStreamDeleted);
 			Assert.AreEqual(0, meta.MetastreamVersion);
 
 			Assert.NotNull(meta.StreamMetadata.Acl);
-			Assert.AreEqual(new[] {"r1", "r2", "r3"}, meta.StreamMetadata.Acl.ReadRoles);
-			Assert.AreEqual(new[] {"w1", "w2"}, meta.StreamMetadata.Acl.WriteRoles);
-			Assert.AreEqual(new[] {"d1", "d2", "d3", "d4"}, meta.StreamMetadata.Acl.DeleteRoles);
-			Assert.AreEqual(new[] {"mw1", "mw2"}, meta.StreamMetadata.Acl.MetaWriteRoles);
+			Assert.AreEqual(new[] { "r1", "r2", "r3" }, meta.StreamMetadata.Acl.ReadRoles);
+			Assert.AreEqual(new[] { "w1", "w2" }, meta.StreamMetadata.Acl.WriteRoles);
+			Assert.AreEqual(new[] { "d1", "d2", "d3", "d4" }, meta.StreamMetadata.Acl.DeleteRoles);
+			Assert.AreEqual(new[] { "mw1", "mw2" }, meta.StreamMetadata.Acl.MetaWriteRoles);
 		}
 	}
 }

@@ -11,10 +11,10 @@ namespace EventStore.Core.Services.Transport.Http.Messages {
 		}
 
 		public readonly IPublisher NextStagePublisher;
-		public readonly HttpService HttpService;
+		public readonly IHttpService HttpService;
 		public readonly HttpEntity Entity;
 
-		public IncomingHttpRequestMessage(HttpService httpService, HttpEntity entity, IPublisher nextStagePublisher) {
+		public IncomingHttpRequestMessage(IHttpService httpService, HttpEntity entity, IPublisher nextStagePublisher) {
 			HttpService = httpService;
 			Entity = entity;
 			NextStagePublisher = nextStagePublisher;

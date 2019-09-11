@@ -6,8 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using EventStore.ClientAPI;
@@ -25,68 +28,58 @@ namespace EventStore.Core.Tests.Http {
 	public abstract class HttpBehaviorSpecification : SpecificationWithDirectoryPerTestFixture {
 		protected MiniNode _node;
 		protected IEventStoreConnection _connection;
-		protected HttpWebResponse _lastResponse;
+		protected HttpResponseMessage _lastResponse;
 		protected string _lastResponseBody;
 		protected byte[] _lastResponseBytes;
 		protected JsonException _lastJsonException;
 
-		private System.Collections.Generic.List<HttpWebResponse> _allResponses =
-			new System.Collections.Generic.List<HttpWebResponse>();
+		private readonly System.Collections.Generic.List<HttpResponseMessage> _allResponses =
+			new System.Collections.Generic.List<HttpResponseMessage>();
 
-		private Func<HttpWebResponse, byte[]> _dumpResponse;
-		private Func<HttpWebResponse, int> _dumpResponse2;
-		private Func<HttpWebRequest, byte[]> _dumpRequest;
-		private Func<HttpWebRequest, byte[]> _dumpRequest2;
+		private Func<HttpResponseMessage, byte[]> _dumpResponse;
+		private Func<HttpResponseMessage, int> _dumpResponse2;
+		private Func<HttpRequestMessage, byte[]> _dumpRequest;
+		private Func<HttpRequestMessage, byte[]> _dumpRequest2;
 		private string _tag;
-		private bool _createdMiniNode;
-		private ICredentials _defaultCredentials = null;
+		private NetworkCredential _defaultCredentials = null;
+		protected HttpClient _client;
 
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			Helper.EatException(() => _dumpResponse = CreateDumpResponse());
 			Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
 			Helper.EatException(() => _dumpRequest = CreateDumpRequest());
 			Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
 
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 
-			_createdMiniNode = false;
-			if (SetUpFixture._connection != null && SetUpFixture._node != null) {
-				_tag = "_" + (++SetUpFixture._counter);
-				_node = SetUpFixture._node;
-				_connection = SetUpFixture._connection;
-			} else {
-				_createdMiniNode = true;
-				_tag = "_1";
-				_node = CreateMiniNode();
-				_node.Start();
+			_node = CreateMiniNode();
+			await _node.Start();
 
-				_connection = TestConnection.Create(_node.TcpEndPoint);
-				_connection.ConnectAsync().Wait();
-			}
+			_connection = TestConnection.Create(_node.TcpEndPoint);
+			await _connection.ConnectAsync();
 
 			_lastResponse = null;
 			_lastResponseBody = null;
 			_lastResponseBytes = null;
 			_lastJsonException = null;
+			_client = new HttpClient(new HttpClientHandler {
+				AllowAutoRedirect = false
+			}) {
+				BaseAddress = new UriBuilder {
+					Host = _node.ExtHttpEndPoint.Address.ToString(),
+					Port = _node.ExtHttpEndPoint.Port
+				}.Uri
+			};
 			try {
-				Given();
-				When();
-			} catch {
-				if (_createdMiniNode) {
-					if (_connection != null)
-						try {
-							_connection.Close();
-						} catch {
-						}
+				await Given().WithTimeout();
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
+			}
 
-					if (_node != null)
-						try {
-							_node.Shutdown();
-						} catch {
-						}
-				}
-
-				throw;
+			try {
+				await When().WithTimeout();
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
 			}
 		}
 
@@ -114,54 +107,40 @@ namespace EventStore.Core.Tests.Http {
 			return false;
 		}
 
-		public override void TestFixtureTearDown() {
-			if (_createdMiniNode) {
-				_connection.Close();
-				_node.Shutdown();
-			}
-
-			base.TestFixtureTearDown();
+		public override async Task TestFixtureTearDown() {
+			_connection.Close();
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 			foreach (var response in _allResponses) {
-				if (response != null)
-					response.Close();
+				response?.Dispose();
 			}
+			_client?.Dispose();
 		}
 
-		protected HttpWebRequest CreateRequest(
-			string path, string extra, string method, string contentType, ICredentials credentials = null,
+		protected HttpRequestMessage CreateRequest(
+			string path, string extra, string method, string contentType, NetworkCredential credentials = null,
 			NameValueCollection headers = null) {
-			credentials = credentials??_defaultCredentials;
+			credentials ??= _defaultCredentials;
 			var uri = MakeUrl(path, extra);
-			var request = WebRequest.Create(uri);
-			var httpWebRequest = (HttpWebRequest)request;
+			var httpWebRequest = new HttpRequestMessage(new System.Net.Http.HttpMethod(method), uri);
 			if (headers != null) {
-				httpWebRequest.Headers.Add(headers);
+				foreach (var key in headers.AllKeys) {
+					httpWebRequest.Headers.Add(key, headers.GetValues(key));
+				}
 			}
-
-			httpWebRequest.ConnectionGroupName = TestStream;
-			httpWebRequest.Method = method;
-			httpWebRequest.ContentType = contentType;
-			httpWebRequest.UseDefaultCredentials = false;
 			if (credentials != null) {
-				httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
+				httpWebRequest.Headers.Add("authorization", $"Basic {GetAuthorizationHeader(credentials)}");
 			}
 
 			return httpWebRequest;
 		}
 
-		protected HttpWebRequest CreateRequest(string path, string method, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var httpWebRequest = (HttpWebRequest)WebRequest.Create(MakeUrl(path));
-			httpWebRequest.Method = method;
-			httpWebRequest.UseDefaultCredentials = false;
-			if (credentials != null) {
-				httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
-			}
+		protected HttpRequestMessage CreateRequest(string path, string method, NetworkCredential credentials = null,
+			string extra = null)
+			=> CreateRequest(path, extra, method, null, credentials);
 
-			return httpWebRequest;
-		}
+		protected static string GetAuthorizationHeader(NetworkCredential credentials)
+			=> Convert.ToBase64String(Encoding.ASCII.GetBytes($"{credentials.UserName}:{credentials.Password}"));
 
 		protected Uri MakeUrl(string path, string extra = "") {
 			var supplied = string.IsNullOrWhiteSpace(extra)
@@ -175,176 +154,162 @@ namespace EventStore.Core.Tests.Http {
 			var x = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path);
 			x.Query = extra;
 			Console.WriteLine(new string('*', 50) + Environment.NewLine + path + Environment.NewLine + extra +
-			                  Environment.NewLine + x.Uri + Environment.NewLine + new string('*', 50));
+							  Environment.NewLine + x.Uri + Environment.NewLine + new string('*', 50));
 
 			return x.Uri;
 		}
 
-		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeJsonPut<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
 
-		protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeJsonPost<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRawJsonPostRequest(path, "POST", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
-			var response = GetRequestResponse(request);
-			return response;
+		protected Task<HttpResponseMessage> MakeArrayEventsPost<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected HttpWebResponse MakeRawJsonPost<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeRawJsonPost<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRawJsonPostRequest(path, "POST", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
-			_lastResponse = GetRequestResponse(request);
+		protected async Task<JObject> MakeJsonPostWithJsonResponse<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRawJsonPostRequest(path, "POST", body, credentials, extra);
+			_lastResponse = await GetRequestResponse(request);
 			var memoryStream = new MemoryStream();
-			_lastResponse.GetResponseStream().CopyTo(memoryStream);
+			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
 			try {
 				return _lastResponseBody.ParseJson<JObject>();
 			} catch (JsonException ex) {
 				_lastJsonException = ex;
-				return default(JObject);
+				return default;
 			}
 		}
 
-		protected JObject MakeJsonEventsPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
-			_lastResponse = GetRequestResponse(request);
+		protected async Task<JObject> MakeJsonEventsPostWithJsonResponse<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials, extra);
+			_lastResponse = await GetRequestResponse(request);
 			var memoryStream = new MemoryStream();
-			_lastResponse.GetResponseStream().CopyTo(memoryStream);
+			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
 			try {
 				return _lastResponseBody.ParseJson<JObject>();
 			} catch (JsonException ex) {
 				_lastJsonException = ex;
-				return default(JObject);
+				return default;
 			}
 		}
 
 
-		protected HttpWebResponse MakeEventsJsonPut<T>(string path, T body, ICredentials credentials) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeEventsJsonPut<T>(string path, T body, NetworkCredential credentials, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected HttpWebResponse MakeRawJsonPut<T>(string path, T body, ICredentials credentials) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeRawJsonPut<T>(string path, T body, NetworkCredential credentials, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected HttpWebResponse MakeDelete(string path, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "DELETE", credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakeDelete(string path, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRequest(path, "DELETE", credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected HttpWebResponse MakePost(string path, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateJsonPostRequest(path, credentials);
-			var httpWebResponse = GetRequestResponse(request);
-			return httpWebResponse;
+		protected Task<HttpResponseMessage> MakePost(string path, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateJsonPostRequest(path, credentials, extra);
+			return GetRequestResponse(request);
 		}
 
-		protected XDocument GetAtomXml(Uri uri, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			Get(uri.ToString(), "", ContentType.Atom, credentials);
+		protected async Task<XDocument> GetAtomXml(Uri uri, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			await Get(uri.ToString(), extra, ContentType.Atom, credentials);
 			return XDocument.Parse(_lastResponseBody);
 		}
 
-		protected XDocument GetXml(Uri uri, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			Get(uri.ToString(), "", ContentType.Xml, credentials);
+		protected async Task<XDocument> GetXml(Uri uri, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			await Get(uri.ToString(), null, ContentType.Xml, credentials);
 			return XDocument.Parse(_lastResponseBody);
 		}
 
-		protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null,
-			NameValueCollection headers = null) {
-			credentials = credentials??_defaultCredentials;
-			Get(path, "", accept, credentials, headers: headers);
+		protected async Task<T> GetJson<T>(string path, string accept = null, NetworkCredential credentials = null,
+			NameValueCollection headers = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			await Get(path, extra, accept, credentials, headers: headers);
 			try {
 				return _lastResponseBody.ParseJson<T>();
 			} catch (JsonException ex) {
 				_lastJsonException = ex;
-				return default(T);
+				return default;
 			}
 		}
 
-		protected T GetJson2<T>(string path, string extra, string accept = null, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			Get(path, extra, accept, credentials);
+		protected async Task<T> GetJson2<T>(string path, string extra, string accept = null, NetworkCredential credentials = null) {
+			credentials ??= _defaultCredentials;
+			await Get(path, extra, accept, credentials);
 			try {
 				return _lastResponseBody.ParseJson<T>();
 			} catch (JsonException ex) {
 				_lastJsonException = ex;
-				return default(T);
+				return default;
 			}
 		}
 
-		protected T GetJsonWithoutAcceptHeader<T>(string path) {
+		protected async Task<T> GetJsonWithoutAcceptHeader<T>(string path) {
 			var request = CreateRequest(path, "", "GET", null);
-			_lastResponse = GetRequestResponse(request);
+			_lastResponse = await GetRequestResponse(request);
 			var memoryStream = new MemoryStream();
-			_lastResponse.GetResponseStream().CopyTo(memoryStream);
+			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
 			try {
 				return _lastResponseBody.ParseJson<T>();
 			} catch (JsonException ex) {
 				_lastJsonException = ex;
-				return default(T);
+				return default;
 			}
 		}
 
-		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null,
+		protected async Task Get(string path, string extra, string accept = null, NetworkCredential credentials = null,
 			bool setAcceptHeader = true, NameValueCollection headers = null) {
-			credentials = credentials??_defaultCredentials;
+			credentials = credentials ?? _defaultCredentials;
 			var request = CreateRequest(path, extra, "GET", null, credentials, headers);
 			if (setAcceptHeader) {
-				request.Accept = accept ?? "application/json";
+				request.Headers.Add("accept", accept ?? "application/json");
 			}
 
-			_lastResponse = GetRequestResponse(request);
+			_lastResponse = await GetRequestResponse(request);
 			var memoryStream = new MemoryStream();
-			_lastResponse.GetResponseStream().CopyTo(memoryStream);
+			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBytes = bytes;
 			_lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
 		}
 
-		protected HttpWebResponse GetRequestResponse(HttpWebRequest request) {
-			HttpWebResponse response;
-			try {
-				response = (HttpWebResponse)request.GetResponse();
-				_allResponses.Add(response);
-			} catch (WebException ex) {
-				response = (HttpWebResponse)ex.Response;
-				_allResponses.Add(response);
-			}
+		protected async Task<HttpResponseMessage> GetRequestResponse(HttpRequestMessage request) {
+			var response = await _client.SendAsync(request);
+			_allResponses.Add(response);
 
 			if (_dumpRequest != null) {
 				var bytes = _dumpRequest(request);
@@ -374,37 +339,41 @@ namespace EventStore.Core.Tests.Http {
 			return index < 0 ? bytes.Length : index;
 		}
 
-		protected HttpWebRequest CreateEventsJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "", method, "application/vnd.eventstore.events+json", credentials);
-			request.GetRequestStream().WriteJson(body);
+		protected HttpRequestMessage CreateEventsJsonPostRequest<T>(
+			string path, string method, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials = credentials ?? _defaultCredentials;
+			var request = CreateRequest(path, extra, method, "application/vnd.eventstore.events+json", credentials);
+			request.Content = new ByteArrayContent(body.ToJsonBytes()) {
+				Headers = { ContentType = new MediaTypeHeaderValue("application/vnd.eventstore.events+json") }
+			};
 			return request;
 		}
 
-		protected HttpWebRequest CreateRawJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "", method, "application/json", credentials);
-			request.GetRequestStream().WriteJson(body);
+		protected HttpRequestMessage CreateRawJsonPostRequest<T>(
+			string path, string method, T body, NetworkCredential credentials = null, string extra = null) {
+			credentials ??= _defaultCredentials;
+			var request = CreateRequest(path, extra, method, "application/json", credentials);
+			request.Content = new ByteArrayContent(body.ToJsonBytes()) {
+				Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+			};
 			return request;
 		}
-		private HttpWebRequest CreateJsonPostRequest(string path, ICredentials credentials = null) {
-			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "POST", credentials);
-			request.ContentLength = 0;
+		private HttpRequestMessage CreateJsonPostRequest(string path, NetworkCredential credentials = null, string extra = null) {
+			credentials = credentials ?? _defaultCredentials;
+			var request = CreateRequest(path, "POST", credentials, extra);
+
 			return request;
 		}
-		protected void SetDefaultCredentials(ICredentials credentials){
+		protected void SetDefaultCredentials(NetworkCredential credentials) {
 			_defaultCredentials = credentials;
 		}
 
-		protected abstract void Given();
-		protected abstract void When();
+		protected abstract Task Given();
+		protected abstract Task When();
 
-		private static Func<HttpWebResponse, byte[]> CreateDumpResponse() {
-			var r = Expression.Parameter(typeof(HttpWebResponse), "r");
-			var piCoreResponseData = typeof(HttpWebResponse).GetProperty(
+		private static Func<HttpResponseMessage, byte[]> CreateDumpResponse() {
+			var r = Expression.Parameter(typeof(HttpResponseMessage), "r");
+			var piCoreResponseData = typeof(HttpResponseMessage).GetProperty(
 				"CoreResponseData",
 				BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy |
 				BindingFlags.Instance);
@@ -417,13 +386,13 @@ namespace EventStore.Core.Tests.Http {
 			var body = Expression.Field(
 				Expression.Convert(Expression.Field(Expression.Property(r, piCoreResponseData), fim_ConnectStream),
 					connectStreamType), fim_ReadBuffer);
-			var debugExpression = Expression.Lambda<Func<HttpWebResponse, byte[]>>(body, r);
+			var debugExpression = Expression.Lambda<Func<HttpResponseMessage, byte[]>>(body, r);
 			return debugExpression.Compile();
 		}
 
-		private static Func<HttpWebResponse, int> CreateDumpResponse2() {
-			var r = Expression.Parameter(typeof(HttpWebResponse), "r");
-			var piCoreResponseData = typeof(HttpWebResponse).GetProperty(
+		private static Func<HttpResponseMessage, int> CreateDumpResponse2() {
+			var r = Expression.Parameter(typeof(HttpResponseMessage), "r");
+			var piCoreResponseData = typeof(HttpResponseMessage).GetProperty(
 				"CoreResponseData",
 				BindingFlags.GetProperty | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy |
 				BindingFlags.Instance);
@@ -440,23 +409,23 @@ namespace EventStore.Core.Tests.Http {
 					connectStreamType);
 			var body = Expression.Add(Expression.Field(stream, fim_ReadOffset),
 				Expression.Field(stream, fim_ReadBufferSize));
-			var debugExpression = Expression.Lambda<Func<HttpWebResponse, int>>(body, r);
+			var debugExpression = Expression.Lambda<Func<HttpResponseMessage, int>>(body, r);
 			return debugExpression.Compile();
 		}
 
-		private static Func<HttpWebRequest, byte[]> CreateDumpRequest() {
-			var r = Expression.Parameter(typeof(HttpWebRequest), "r");
-			var fi_WriteBuffer = typeof(HttpWebRequest).GetField("_WriteBuffer",
+		private static Func<HttpRequestMessage, byte[]> CreateDumpRequest() {
+			var r = Expression.Parameter(typeof(HttpRequestMessage), "r");
+			var fi_WriteBuffer = typeof(HttpRequestMessage).GetField("_WriteBuffer",
 				BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy |
 				BindingFlags.Instance);
 			var body = Expression.Field(r, fi_WriteBuffer);
-			var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
+			var debugExpression = Expression.Lambda<Func<HttpRequestMessage, byte[]>>(body, r);
 			return debugExpression.Compile();
 		}
 
-		private static Func<HttpWebRequest, byte[]> CreateDumpRequest2() {
-			var r = Expression.Parameter(typeof(HttpWebRequest), "r");
-			var fi_SubmitWriteStream = typeof(HttpWebRequest).GetField(
+		private static Func<HttpRequestMessage, byte[]> CreateDumpRequest2() {
+			var r = Expression.Parameter(typeof(HttpRequestMessage), "r");
+			var fi_SubmitWriteStream = typeof(HttpRequestMessage).GetField(
 				"_SubmitWriteStream",
 				BindingFlags.GetField | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy
 				| BindingFlags.Instance);
@@ -488,7 +457,7 @@ namespace EventStore.Core.Tests.Http {
 				Expression.Condition(
 					Expression.ReferenceNotEqual(headChunk, Expression.Constant(null, headChunk.Type)),
 					Expression.Field(headChunk, piBuffer), Expression.Constant(null, piBuffer.FieldType));
-			var debugExpression = Expression.Lambda<Func<HttpWebRequest, byte[]>>(body, r);
+			var debugExpression = Expression.Lambda<Func<HttpRequestMessage, byte[]>>(body, r);
 			return debugExpression.Compile();
 		}
 	}

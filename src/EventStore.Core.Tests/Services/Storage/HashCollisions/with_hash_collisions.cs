@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests;
 using NUnit.Framework;
@@ -51,9 +52,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			System.Threading.Thread.Sleep(500);
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 	}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -25,8 +26,6 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
-		private static bool _running;
-
 		public static int RunCount = 0;
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
@@ -47,6 +46,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
 
+		private readonly List<int> _usedPorts = new List<int>();
+
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
 			ISubsystem[] subsystems = null,
@@ -58,20 +59,24 @@ namespace EventStore.Core.Tests.Helpers {
 			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
-			if (_running) throw new Exception("Previous MiniNode is still running!!!");
-			_running = true;
 
 			RunningTime.Start();
 			RunCount += 1;
 
 			IPAddress ip = IPAddress.Loopback; //GetLocalIp();
 
-			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
-			int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
-			int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
-			int intTcpPort = PortsHelper.GetAvailablePort(ip);
-			int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
-			int intHttpPort = PortsHelper.GetAvailablePort(ip);
+			int GetAvailablePort(IPAddress ipAddress) {
+				var port = PortsHelper.GetAvailablePort(ipAddress);
+				_usedPorts.Add(port);
+				return port;
+			}
+
+			int extTcpPort = tcpPort ?? GetAvailablePort(ip);
+			int extSecTcpPort = tcpSecPort ?? GetAvailablePort(ip);
+			int extHttpPort = httpPort ?? GetAvailablePort(ip);
+			int intTcpPort = GetAvailablePort(ip);
+			int intSecTcpPort = GetAvailablePort(ip);
+			int intHttpPort = GetAvailablePort(ip);
 
 			if (String.IsNullOrEmpty(dbPath)) {
 				DbPath = Path.Combine(pathname,
@@ -98,7 +103,9 @@ namespace EventStore.Core.Tests.Helpers {
 				.WithExternalTcpOn(TcpEndPoint)
 				.WithExternalSecureTcpOn(TcpSecEndPoint)
 				.WithInternalHttpOn(IntHttpEndPoint)
+				.AddInternalHttpPrefix($"http://{IntHttpEndPoint.Address}:{IntHttpEndPoint.Port}/")
 				.WithExternalHttpOn(ExtHttpEndPoint)
+				.AddExternalHttpPrefix($"http://{ExtHttpEndPoint.Address}:{ExtHttpEndPoint.Port}/")
 				.WithTfChunkSize(chunkSize ?? ChunkSize)
 				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
 				.WithServerCertificate(ssl_connections.GetCertificate())
@@ -119,7 +126,8 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseExternalIPAs(advertisedExtIPAddress)
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
-				.WithIndexBitnessVersion(indexBitnessVersion);
+				.WithIndexBitnessVersion(indexBitnessVersion)
+				.DontAddInterfacePrefixes();
 
 			if (enableTrustedAuth)
 				builder.EnableTrustedAuth();
@@ -135,13 +143,13 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 
 			Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
-			         + "{5,-25} {6} ({7})\n"
-			         + "{8,-25} {9} ({10}-bit)\n"
-			         + "{11,-25} {12}\n"
-			         + "{13,-25} {14}\n"
-			         + "{15,-25} {16}\n"
-			         + "{17,-25} {18}\n"
-			         + "{19,-25} {20}\n\n",
+					 + "{5,-25} {6} ({7})\n"
+					 + "{8,-25} {9} ({10}-bit)\n"
+					 + "{11,-25} {12}\n"
+					 + "{13,-25} {14}\n"
+					 + "{15,-25} {16}\n"
+					 + "{17,-25} {18}\n"
+					 + "{19,-25} {20}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
 				"OS:", OS.OsFlavor, Environment.OSVersion,
 				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,
@@ -160,40 +168,26 @@ namespace EventStore.Core.Tests.Helpers {
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 		}
 
-		public void Start() {
-			var monitorTcs = new TaskCompletionSource<object>();
-			MonitorFailures(monitorTcs);
-			StartMiniNode(monitorTcs.Task).Wait();
-			ContinueMonitoringFailures(monitorTcs);
+		public async Task Start() {
+			StartingTime.Start();
+
+			await Node.StartAndWaitUntilReady().WithTimeout(TimeSpan.FromSeconds(60)).ConfigureAwait(false); //starts the node
+
+			StartingTime.Stop();
+			Log.Info("MiniNode successfully started!");
 		}
 
-		private Task StartMiniNode(Task monitorFailuresTask) {
+		private async Task StartMiniNode(Task monitorFailuresTask) {
 			StartingTime.Start();
 
 			var startNodeTask = Node.StartAndWaitUntilReady(); //starts the node
-			var startupTimeoutTask = Task.Delay(TimeSpan.FromSeconds(60)); //startup timeout of 60s
 
-			return Task.WhenAny(
+			await Task.WhenAny(
 				monitorFailuresTask,
-				startNodeTask,
-				startupTimeoutTask
-			).ContinueWith((t) => {
-				StartingTime.Stop();
-				if (monitorFailuresTask.IsCompleted) {
-					if (monitorFailuresTask.Exception != null)
-						throw monitorFailuresTask.Exception;
-					else {
-						throw new ApplicationException(
-							"Monitor Failures task completed but no exceptions were thrown.");
-					}
-				} else if (startupTimeoutTask.IsCompleted) {
-					throw new TimeoutException("MiniNode has not started in 60 seconds.");
-				} else if (startNodeTask.IsCompleted) {
-					if (t.Status != TaskStatus.RanToCompletion)
-						throw new ApplicationException("MiniNode has not properly started.");
-					Log.Info("MiniNode successfully started!");
-				}
-			});
+				startNodeTask
+			).WithTimeout(TimeSpan.FromSeconds(60)); //startup timeout of 60s
+			StartingTime.Stop();
+			Log.Info("MiniNode successfully started!");
 		}
 
 		public void MonitorFailures(TaskCompletionSource<object> tcs) {
@@ -225,28 +219,22 @@ namespace EventStore.Core.Tests.Helpers {
 			});
 		}
 
-		public void Shutdown(bool keepDb = false, bool keepPorts = false) {
-			StoppingTime.Start();
+		public async Task Shutdown(bool keepDb = false) {
+			try {
+				StoppingTime.Start();
 
-			if (!Node.Stop(TimeSpan.FromSeconds(20), true, true))
-				throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
+				await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
-			if (!keepPorts) {
-				PortsHelper.ReturnPort(TcpEndPoint.Port);
-				PortsHelper.ReturnPort(TcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(IntHttpEndPoint.Port);
-				PortsHelper.ReturnPort(ExtHttpEndPoint.Port);
-				PortsHelper.ReturnPort(IntTcpEndPoint.Port);
-				PortsHelper.ReturnPort(IntSecTcpEndPoint.Port);
+				if (!keepDb)
+					TryDeleteDirectory(DbPath);
+
+				StoppingTime.Stop();
+				RunningTime.Stop();
+			} finally {
+				foreach (var port in _usedPorts) {
+					PortsHelper.ReturnPort(port);
+				}
 			}
-
-			if (!keepDb)
-				TryDeleteDirectory(DbPath);
-
-			StoppingTime.Stop();
-			RunningTime.Stop();
-
-			_running = false;
 		}
 
 		private void TryDeleteDirectory(string directory) {

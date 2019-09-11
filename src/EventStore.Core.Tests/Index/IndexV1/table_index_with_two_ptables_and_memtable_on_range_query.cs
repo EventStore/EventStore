@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
@@ -29,8 +30,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
@@ -69,14 +70,14 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			// memtable
 			_tableIndex.Add(0, "4", 0, 0xFF01);
 
-			Thread.Sleep(500);
+			await Task.Delay(500);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		private ulong GetHash(string streamId) {

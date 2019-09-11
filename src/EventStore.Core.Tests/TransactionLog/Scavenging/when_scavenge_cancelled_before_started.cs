@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
@@ -6,10 +7,10 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture]
 	class when_scavenge_cancelled_before_started : ScavengeLifeCycleScenario {
-		protected override void When() {
+		protected override async Task When() {
 			var cancellationTokenSource = new CancellationTokenSource();
 			cancellationTokenSource.Cancel();
-			TfChunkScavenger.Scavenge(false, true, 0, cancellationTokenSource.Token).Wait();
+			await TfChunkScavenger.Scavenge(false, true, 0, cancellationTokenSource.Token);
 		}
 
 		[Test]

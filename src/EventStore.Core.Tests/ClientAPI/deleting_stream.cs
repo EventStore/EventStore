@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -11,16 +11,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private MiniNode _node;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			_node.Shutdown();
-			base.TestFixtureTearDown();
+		public override async Task TestFixtureTearDown() {
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 
 		virtual protected IEventStoreConnection BuildConnection(MiniNode node) {
@@ -29,49 +29,45 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		[Category("Network")]
-		public void which_doesnt_exists_should_success_when_passed_empty_stream_expected_version() {
+		public async Task which_doesnt_exists_should_success_when_passed_empty_stream_expected_version() {
 			const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
-				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
-				Assert.DoesNotThrow(delete.Wait);
+				await connection.ConnectAsync();
+				await connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 			}
 		}
 
 		[Test]
 		[Category("Network")]
-		public void which_doesnt_exists_should_success_when_passed_any_for_expected_version() {
+		public async Task which_doesnt_exists_should_success_when_passed_any_for_expected_version() {
 			const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
+				await connection.ConnectAsync();
 
-				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
-				Assert.DoesNotThrow(delete.Wait);
+				await connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
 			}
 		}
 
 		[Test]
 		[Category("Network")]
-		public void with_invalid_expected_version_should_fail() {
+		public async Task with_invalid_expected_version_should_fail() {
 			const string stream = "with_invalid_expected_version_should_fail";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
+				await connection.ConnectAsync();
 
-				var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true);
-				Assert.That(() => delete.Wait(),
-					Throws.Exception.TypeOf<AggregateException>().With.InnerException
-						.TypeOf<WrongExpectedVersionException>());
+				await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
+					connection.DeleteStreamAsync(stream, 1, hardDelete: true));
 			}
 		}
 
-		public void should_return_log_position_when_writing() {
+		public async Task should_return_log_position_when_writing() {
 			const string stream = "delete_should_return_log_position_when_writing";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
+				await connection.ConnectAsync();
 
-				var result = connection
-					.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent()).Result;
-				var delete = connection.DeleteStreamAsync(stream, 1, hardDelete: true).Result;
+				var result = await connection
+					.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
+				var delete = await connection.DeleteStreamAsync(stream, 1, hardDelete: true);
 
 				Assert.IsTrue(0 < result.LogPosition.PreparePosition);
 				Assert.IsTrue(0 < result.LogPosition.CommitPosition);
@@ -80,17 +76,15 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		[Category("Network")]
-		public void which_was_already_deleted_should_fail() {
+		public async Task which_was_already_deleted_should_fail() {
 			const string stream = "which_was_allready_deleted_should_fail";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
+				await connection.ConnectAsync();
 
-				var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
-				Assert.DoesNotThrow(delete.Wait);
+				await connection.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: true);
 
-				var secondDelete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true);
-				Assert.That(() => secondDelete.Wait(),
-					Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
+				await AssertEx.ThrowsAsync<StreamDeletedException>(
+					() => connection.DeleteStreamAsync(stream, ExpectedVersion.Any, hardDelete: true));
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
@@ -7,7 +8,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture]
 	class when_scavenge_throws_exception_processing_chunk : ScavengeLifeCycleScenario {
-		protected override void When() {
+		protected override Task When() {
 			var cancellationTokenSource = new CancellationTokenSource();
 
 			Log.ChunkScavenged += (sender, args) => {
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 					throw new Exception("Expected exception.");
 			};
 
-			TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token).Wait();
+			return TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token);
 		}
 
 		[Test]

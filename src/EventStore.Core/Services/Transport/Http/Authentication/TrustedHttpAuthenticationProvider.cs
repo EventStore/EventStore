@@ -6,7 +6,7 @@ using EventStore.Core.Services.Transport.Http.Messages;
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class TrustedHttpAuthenticationProvider : HttpAuthenticationProvider {
 		public override bool Authenticate(IncomingHttpRequestMessage message) {
-			var header = message.Entity.Request.Headers[SystemHeaders.TrustedAuth];
+			var header = message.Entity.Request.GetHeaderValues(SystemHeaders.TrustedAuth);
 			if (!string.IsNullOrEmpty(header)) {
 				var principal = CreatePrincipal(header);
 				if (principal != null)
@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 					roles[i] = roles[i].Trim();
 				return new OpenGenericPrincipal(new GenericIdentity(login), roles);
 			} else {
-				return new OpenGenericPrincipal(new GenericIdentity(login), new[] {login});
+				return new OpenGenericPrincipal(new GenericIdentity(login), new[] { login });
 			}
 		}
 	}

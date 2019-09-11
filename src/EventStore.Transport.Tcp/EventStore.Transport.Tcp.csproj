@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>

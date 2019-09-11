@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
@@ -23,8 +24,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_skipIndexVerify = skipIndexVerify;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex(PathName, lowHasher, highHasher,
@@ -37,9 +38,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_tableIndex.Initialize(long.MaxValue);
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

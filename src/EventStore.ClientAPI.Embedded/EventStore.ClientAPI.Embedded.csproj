@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <Platform>x64</Platform>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
@@ -33,7 +33,7 @@
     <PackageReference Include="NLog" Version="4.5.10" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="YamlDotNet" Version="5.2.1" />
-    <!-- This has intentionally not been included since Mono.Posix never required at runtime on Windows. On Linux/Mac, Mono.Posix.dll exists as part of the mono runtime -->
+		<!-- This has intentionally not been included since Mono.Posix never required at runtime on Windows. On Linux/Mac, Mono.Posix.dll exists as part of the mono runtime -->
     <!-- <PackageReference Include="Mono.Posix" Version="5.4.0.201" /> -->
   </ItemGroup>
   <ItemGroup>

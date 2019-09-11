@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using EventStore.ClientAPI;
@@ -14,21 +15,21 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _streamName;
 		private string _query;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			_query = CreateStandardQuery(_streamName);
 		}
 
-		public override void When() {
-			_projManager.CreateOneTimeAsync(_query, _credentials).Wait();
+		public override Task When() {
+			return _projManager.CreateOneTimeAsync(_query, _credentials);
 		}
 
 		[Test]
-		public void should_create_projection() {
-			var projections = _projManager.ListOneTimeAsync(_credentials).Result;
+		public async Task should_create_projection() {
+			var projections = await _projManager.ListOneTimeAsync(_credentials);
 			Assert.AreEqual(1, projections.Count);
 		}
 	}
@@ -40,22 +41,22 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _projectionName;
 		private string _query;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 			_projectionName = "when_creating_transient_projection";
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			_query = CreateStandardQuery(_streamName);
 		}
 
-		public override void When() {
-			_projManager.CreateTransientAsync(_projectionName, _query, _credentials).Wait();
+		public override Task When() {
+			return _projManager.CreateTransientAsync(_projectionName, _query, _credentials);
 		}
 
 		[Test]
-		public void should_create_projection() {
-			var status = _projManager.GetStatusAsync(_projectionName, _credentials).Result;
+		public async Task should_create_projection() {
+			var status = await _projManager.GetStatusAsync(_projectionName, _credentials);
 			Assert.IsNotEmpty(status);
 		}
 	}
@@ -69,32 +70,32 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _query;
 		private string _projectionId;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 			_projectionName = "when_creating_continuous_projection";
 			_emittedStreamName = "emittedStream-" + Guid.NewGuid().ToString();
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			_query = CreateEmittingQuery(_streamName, _emittedStreamName);
 		}
 
-		public override void When() {
-			_projManager.CreateContinuousAsync(_projectionName, _query, _credentials).Wait();
+		public override Task When() {
+			return _projManager.CreateContinuousAsync(_projectionName, _query, _credentials);
 		}
 
 		[Test]
-		public void should_create_projection() {
-			var allProjections = _projManager.ListContinuousAsync(_credentials).Result;
+		public async Task should_create_projection() {
+			var allProjections = await _projManager.ListContinuousAsync(_credentials);
 			var proj = allProjections.FirstOrDefault(x => x.EffectiveName == _projectionName);
 			_projectionId = proj.Name;
 			Assert.IsNotNull(proj);
 		}
 
 		[Test]
-		public void should_have_turn_on_emit_to_stream() {
-			var events = _connection
-				.ReadEventAsync(string.Format("$projections-{0}", _projectionId), 0, true, _credentials).Result;
+		public async Task should_have_turn_on_emit_to_stream() {
+			var events = await _connection
+				.ReadEventAsync(string.Format("$projections-{0}", _projectionId), 0, true, _credentials);
 			var data = System.Text.Encoding.UTF8.GetString(events.Event.Value.Event.Data);
 			var eventData = data.ParseJson<JObject>();
 			Assert.IsTrue((bool)eventData["emitEnabled"]);
@@ -111,31 +112,31 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _query;
 		private string _projectionId;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 			_projectionName = "when_creating_continuous_projection_with_track_emitted_streams";
 			_emittedStreamName = "emittedStream-" + Guid.NewGuid().ToString();
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
 
 			_query = CreateEmittingQuery(_streamName, _emittedStreamName);
 		}
 
-		public override void When() {
-			_projManager.CreateContinuousAsync(_projectionName, _query, true, _credentials).Wait();
+		public override Task When() {
+			return _projManager.CreateContinuousAsync(_projectionName, _query, true, _credentials);
 		}
 
 		[Test]
-		public void should_create_projection() {
-			var allProjections = _projManager.ListContinuousAsync(_credentials).Result;
+		public async Task should_create_projection() {
+			var allProjections = await _projManager.ListContinuousAsync(_credentials);
 			var proj = allProjections.FirstOrDefault(x => x.EffectiveName == _projectionName);
 			_projectionId = proj.Name;
 			Assert.IsNotNull(proj);
 		}
 
 		[Test]
-		public void should_enable_track_emitted_streams() {
-			var events = _connection
-				.ReadEventAsync(string.Format("$projections-{0}", _projectionId), 0, true, _credentials).Result;
+		public async Task should_enable_track_emitted_streams() {
+			var events = await _connection
+				.ReadEventAsync(string.Format("$projections-{0}", _projectionId), 0, true, _credentials);
 			var data = System.Text.Encoding.UTF8.GetString(events.Event.Value.Event.Data);
 			var eventData = data.ParseJson<JObject>();
 			Assert.IsTrue((bool)eventData["trackEmittedStreams"]);
@@ -149,24 +150,24 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _projectionName;
 		private string _query;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 			_projectionName = "when_disabling_projection";
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			_query = CreateStandardQuery(_streamName);
 
-			_projManager.CreateContinuousAsync(_projectionName, _query, _credentials).Wait();
+			await _projManager.CreateContinuousAsync(_projectionName, _query, _credentials);
 		}
 
-		public override void When() {
-			_projManager.DisableAsync(_projectionName, _credentials).Wait();
+		public override Task When() {
+			return _projManager.DisableAsync(_projectionName, _credentials);
 		}
 
 		[Test]
-		public void should_stop_the_projection() {
-			var projectionStatus = _projManager.GetStatusAsync(_projectionName, _credentials).Result;
+		public async Task should_stop_the_projection() {
+			var projectionStatus = await _projManager.GetStatusAsync(_projectionName, _credentials);
 			var status = projectionStatus.ParseJson<JObject>()["status"].ToString();
 			Assert.IsTrue(status.Contains("Stopped"));
 		}
@@ -179,25 +180,25 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _projectionName;
 		private string _query;
 
-		public override void Given() {
+		public override async Task Given() {
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 			_projectionName = "when_enabling_projections";
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			_query = CreateStandardQuery(_streamName);
 
-			_projManager.CreateContinuousAsync(_projectionName, _query, _credentials).Wait();
-			_projManager.DisableAsync(_projectionName, _credentials).Wait();
+			await _projManager.CreateContinuousAsync(_projectionName, _query, _credentials);
+			await _projManager.DisableAsync(_projectionName, _credentials);
 		}
 
-		public override void When() {
-			_projManager.EnableAsync(_projectionName, _credentials).Wait();
+		public override Task When() {
+			return _projManager.EnableAsync(_projectionName, _credentials);
 		}
 
 		[Test]
-		public void should_reenable_projection() {
-			var projectionStatus = _projManager.GetStatusAsync(_projectionName, _credentials).Result;
+		public async Task should_reenable_projection() {
+			var projectionStatus = await _projManager.GetStatusAsync(_projectionName, _credentials);
 			var status = projectionStatus.ParseJson<JObject>()["status"].ToString();
 			Assert.IsTrue(status.Contains("Running"));
 		}
@@ -208,12 +209,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	public class when_listing_the_projections : SpecificationWithNodeAndProjectionsManager {
 		private List<ProjectionDetails> _result;
 
-		public override void Given() {
-			CreateContinuousProjection(Guid.NewGuid().ToString());
+		public override Task Given() {
+			return CreateContinuousProjection(Guid.NewGuid().ToString());
 		}
 
-		public override void When() {
-			_result = _projManager.ListAllAsync(_credentials).Result.ToList();
+		public override async Task When() {
+			_result = await _projManager.ListAllAsync(_credentials);
 		}
 
 		[Test]
@@ -227,12 +228,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	public class when_listing_one_time_projections : SpecificationWithNodeAndProjectionsManager {
 		private List<ProjectionDetails> _result;
 
-		public override void Given() {
-			CreateOneTimeProjection();
+		public override Task Given() {
+			return CreateOneTimeProjection();
 		}
 
-		public override void When() {
-			_result = _projManager.ListOneTimeAsync(_credentials).Result.ToList();
+		public override async Task When() {
+			_result = (await _projManager.ListOneTimeAsync(_credentials)).ToList();
 		}
 
 		[Test]
@@ -247,13 +248,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private List<ProjectionDetails> _result;
 		private string _projectionName;
 
-		public override void Given() {
+		public override Task Given() {
 			_projectionName = Guid.NewGuid().ToString();
-			CreateContinuousProjection(_projectionName);
+			return CreateContinuousProjection(_projectionName);
 		}
 
-		public override void When() {
-			_result = _projManager.ListContinuousAsync(_credentials).Result.ToList();
+		public override async Task When() {
+			_result = (await _projManager.ListContinuousAsync(_credentials)).ToList();
 		}
 
 		[Test]
@@ -269,40 +270,40 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _streamName;
 		private string _query;
 
-		public override void Given() {
+		public override async Task Given() {
 			_projectionName = "when_getting_projection_information";
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 		}
 
-		public override void When() {
+		public override Task When() {
 			_query = CreateStandardQuery(_streamName);
-			_projManager.CreateContinuousAsync(_projectionName, _query, _credentials).Wait();
+			return _projManager.CreateContinuousAsync(_projectionName, _query, _credentials);
 		}
 
 		[Test]
-		public void should_be_able_to_get_the_projection_state() {
-			var state = _projManager.GetStateAsync(_projectionName, _credentials).Result;
+		public async Task should_be_able_to_get_the_projection_state() {
+			var state = await _projManager.GetStateAsync(_projectionName, _credentials);
 			Assert.IsNotEmpty(state);
 		}
 
 		[Test]
-		public void should_be_able_to_get_the_projection_status() {
-			var status = _projManager.GetStatusAsync(_projectionName, _credentials).Result;
+		public async Task should_be_able_to_get_the_projection_status() {
+			var status = await _projManager.GetStatusAsync(_projectionName, _credentials);
 			Assert.IsNotEmpty(status);
 		}
 
 		[Test]
-		public void should_be_able_to_get_the_projection_result() {
-			var result = _projManager.GetResultAsync(_projectionName, _credentials).Result;
+		public async Task should_be_able_to_get_the_projection_result() {
+			var result = await _projManager.GetResultAsync(_projectionName, _credentials);
 			Assert.AreEqual("{\"count\":1}", result);
 		}
 
 		[Test]
-		public void should_be_able_to_get_the_projection_query() {
-			var query = _projManager.GetQueryAsync(_projectionName, _credentials).Result;
+		public async Task should_be_able_to_get_the_projection_query() {
+			var query = await _projManager.GetQueryAsync(_projectionName, _credentials);
 			Assert.AreEqual(_query, query);
 		}
 	}
@@ -314,25 +315,25 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private string _streamName;
 		private string _newQuery;
 
-		public override void Given() {
+		public override async Task Given() {
 			_projectionName = "when_updating_a_projection_query";
 			_streamName = "test-stream-" + Guid.NewGuid().ToString();
 
-			PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
-			PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"1\"}");
+			await PostEvent(_streamName, "testEvent", "{\"A\":\"2\"}");
 
 			var origQuery = CreateStandardQuery(_streamName);
 			_newQuery = CreateStandardQuery("DifferentStream");
-			_projManager.CreateContinuousAsync(_projectionName, origQuery, _credentials).Wait();
+			await _projManager.CreateContinuousAsync(_projectionName, origQuery, _credentials);
 		}
 
-		public override void When() {
-			_projManager.UpdateQueryAsync(_projectionName, _newQuery, _credentials).Wait();
+		public override Task When() {
+			return _projManager.UpdateQueryAsync(_projectionName, _newQuery, _credentials);
 		}
 
 		[Test]
-		public void should_update_the_projection_query() {
-			var query = _projManager.GetQueryAsync(_projectionName, _credentials).Result;
+		public async Task should_update_the_projection_query() {
+			var query = await _projManager.GetQueryAsync(_projectionName, _credentials);
 			Assert.AreEqual(_newQuery, query);
 		}
 	}

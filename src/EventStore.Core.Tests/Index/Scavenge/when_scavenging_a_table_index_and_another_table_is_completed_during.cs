@@ -21,8 +21,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		private FakeTFScavengerLog _log;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
 
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			// Release the scavenge process
 			scavengeBlocker.Set();
-			task.Wait();
+			await task;
 
 			// Check it's loadable.
 			_tableIndex.Close(false);
@@ -82,10 +82,10 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

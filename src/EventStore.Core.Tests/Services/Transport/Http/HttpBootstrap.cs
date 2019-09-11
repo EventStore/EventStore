@@ -6,23 +6,23 @@ using EventStore.Core.Tests.Fakes;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class HttpBootstrap {
-		public static void Subscribe(IBus bus, HttpService service) {
+		public static void Subscribe(IBus bus, IHttpService service) {
 			bus.Subscribe<SystemMessage.SystemInit>(service);
 			bus.Subscribe<SystemMessage.BecomeShuttingDown>(service);
 			bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(service);
 		}
 
-		public static void Unsubscribe(IBus bus, HttpService service) {
+		public static void Unsubscribe(IBus bus, IHttpService service) {
 			bus.Unsubscribe<SystemMessage.SystemInit>(service);
 			bus.Unsubscribe<SystemMessage.BecomeShuttingDown>(service);
 			bus.Unsubscribe<HttpMessage.PurgeTimedOutRequests>(service);
 		}
 
-		public static void RegisterPing(HttpService service) {
+		public static void RegisterPing(IHttpService service) {
 			service.SetupController(new PingController());
 		}
 
-		public static void RegisterStat(HttpService service) {
+		public static void RegisterStat(IHttpService service) {
 			service.SetupController(new StatController(new FakePublisher(), new FakePublisher()));
 		}
 	}

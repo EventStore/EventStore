@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -11,8 +12,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		private string _expectedOutputFile;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var table = new HashListMemTable(PTableVersions.IndexV4, maxSize: 20);
 			table.Add(0x010100000000, 0, 1);
@@ -40,10 +41,10 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_oldTable.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

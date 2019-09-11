@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace EventStore.BufferManagement.Tests {
@@ -92,7 +93,7 @@ namespace EventStore.BufferManagement.Tests {
 		[Test]
 		public void should_throw_argumentnullexception_if_null_buffer() {
 			BufferManager manager = new BufferManager(10, 1000, 0);
-			Assert.Throws<ArgumentNullException>(() => { manager.CheckIn(null); });
+			Assert.Throws<ArgumentNullException>(() => { manager.CheckIn((IEnumerable<ArraySegment<byte>>)null); });
 		}
 
 		[Test]

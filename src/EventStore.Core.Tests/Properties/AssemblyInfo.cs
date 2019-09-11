@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using EventStore.Core.Tests;
+using NUnit.Framework;
 
 [assembly: AssemblyTitle("EventStore.Core.Tests")]
 [assembly: AssemblyDescription("")]
@@ -17,5 +19,4 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: Guid("1596e010-9891-4859-b842-b91aa7eab42d")]
 
-[assembly: NUnit.Framework.Category("All")]
-[assembly: NUnit.Framework.Timeout(2 * 60 * 1000)]
+[assembly: Category("All")]

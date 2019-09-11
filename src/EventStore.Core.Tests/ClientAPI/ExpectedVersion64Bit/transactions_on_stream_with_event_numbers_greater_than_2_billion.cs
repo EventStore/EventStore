@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 using EventStore.Core.Data;
@@ -20,25 +21,25 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_r5 = WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000));
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
-			_store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
+			await _store.ConnectAsync();
+			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
-		public void should_be_able_to_append_to_stream_in_a_transaction() {
+		public async Task should_be_able_to_append_to_stream_in_a_transaction() {
 			var evnt1 = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
 			var evnt2 = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
 
-			var transaction = _store.StartTransactionAsync(StreamName, intMaxValue + 5, DefaultData.AdminCredentials)
-				.Result;
-			transaction.WriteAsync(evnt1).Wait();
-			transaction.WriteAsync(evnt2).Wait();
-			transaction.CommitAsync().Wait();
+			var transaction = await _store.StartTransactionAsync(StreamName, intMaxValue + 5, DefaultData.AdminCredentials)
+;
+			await transaction.WriteAsync(evnt1);
+			await transaction.WriteAsync(evnt2);
+			await transaction.CommitAsync();
 
-			var records = _store.ReadStreamEventsForwardAsync(StreamName, intMaxValue, 10, false).Result;
+			var records = await _store.ReadStreamEventsForwardAsync(StreamName, intMaxValue, 10, false);
 			Assert.AreEqual(7, records.Events.Length);
 			Assert.AreEqual(_r1.EventId, records.Events[0].Event.EventId);
 			Assert.AreEqual(_r2.EventId, records.Events[1].Event.EventId);

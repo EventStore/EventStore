@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -11,6 +10,7 @@ using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using Microsoft.Extensions.Primitives;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http {
@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			ProcessRequest(message.HttpService, message.Entity);
 		}
 
-		private void ProcessRequest(HttpService httpService, HttpEntity httpEntity) {
+		private void ProcessRequest(IHttpService httpService, HttpEntity httpEntity) {
 			var request = httpEntity.Request;
 			try {
 				var allMatches = httpService.GetAllUriMatches(request.Url);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					}
 				}
 
-				ICodec responseCodec = SelectResponseCodec(request.QueryString,
+				ICodec responseCodec = SelectResponseCodec(request,
 					request.AcceptTypes,
 					match.ControllerAction.SupportedResponseCodecs,
 					match.ControllerAction.DefaultResponseCodec);
@@ -175,7 +175,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			}
 		}
 
-		private ICodec SelectResponseCodec(NameValueCollection query, string[] acceptTypes, ICodec[] supported,
+		private ICodec SelectResponseCodec(IHttpRequest query, string[] acceptTypes, ICodec[] supported,
 			ICodec @default) {
 			var requestedFormat = GetFormatOrDefault(query);
 			if (requestedFormat == null && acceptTypes.IsEmpty())
@@ -191,11 +191,13 @@ namespace EventStore.Core.Services.Transport.Http {
 				.FirstOrDefault(corresponding => corresponding != null);
 		}
 
-		private string GetFormatOrDefault(NameValueCollection query) {
-			var format = (query != null && query.Count > 0) ? query.Get("format") : null;
-			if (format == null)
-				return null;
-			switch (format.ToLower()) {
+		private static string GetFormatOrDefault(IHttpRequest request) {
+			var format = request.GetQueryStringValues("format").FirstOrDefault()?.ToLower();
+
+			switch (format) {
+				case null:
+				case "":
+					return null;
 				case "json":
 					return ContentType.Json;
 				case "text":

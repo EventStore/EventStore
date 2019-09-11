@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -12,8 +13,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		private TFChunkDbConfig _config;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_config = TFChunkHelper.CreateDbConfig(PathName, 11111, 5500, 5500, 5757, 1000);
 
@@ -29,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			using (var db = new TFChunkDb(_config)) {
 				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 			}
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000003.000000")));
 			Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

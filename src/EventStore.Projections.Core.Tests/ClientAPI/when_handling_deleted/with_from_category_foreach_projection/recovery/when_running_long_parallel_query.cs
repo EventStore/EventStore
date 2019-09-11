@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 
@@ -11,20 +12,20 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 			return 2;
 		}
 
-		protected override void Given() {
-			base.Given();
+		protected override async Task Given() {
+			await base.Given();
 			for (var i = 0; i <= 900; i++) {
 				for (var j = 0; j < 10; j++) {
-					PostEvent("stream-" + i, "type" + (j % 2 + 1), "{}");
+					await PostEvent("stream-" + i, "type" + (j % 2 + 1), "{}");
 				}
 			}
 
 			WaitIdle();
 		}
 
-		protected override void When() {
-			base.When();
-			PostQuery(@"
+		protected override async Task When() {
+			await base.When();
+			await PostQuery(@"
 fromCategory('stream').foreachStream().when({
     $init: function(){return {a:0}},
     type1: function(s,e){s.a++},
@@ -35,18 +36,18 @@ fromCategory('stream').foreachStream().when({
 		}
 
 		[Test, Category("Network"), Category("LongRunning")]
-		public void produces_correct_result() {
-			AssertStreamTail("$projections-query-stream-1-result", "Result:{\"a\":10}");
-			AssertStreamTail("$projections-query-stream-2-result", "Result:{\"a\":10}");
-			AssertStreamTail("$projections-query-stream-3-result", "Result:{\"a\":10}");
-			DumpStreams();
+		public async Task produces_correct_result() {
+			await AssertStreamTail("$projections-query-stream-1-result", "Result:{\"a\":10}");
+			await AssertStreamTail("$projections-query-stream-2-result", "Result:{\"a\":10}");
+			await AssertStreamTail("$projections-query-stream-3-result", "Result:{\"a\":10}");
+			await DumpStreamsAsync();
 		}
 
-		private void DumpStreams() {
+		private async Task DumpStreamsAsync() {
 #if DEBUG
-			var result = _conn.ReadAllEventsForwardAsync(Position.Start, 4096, false, _admin).Result;
+			var result = await _conn.ReadAllEventsForwardAsync(Position.Start, 4096, false, _admin);
 			var top = result.Events.GroupBy(v => v.OriginalStreamId)
-				.Select(v => new {v.Key, Count = v.Count()})
+				.Select(v => new { v.Key, Count = v.Count() })
 				.OrderByDescending(v => v.Count);
 			foreach (var s in top.Take(50)) {
 				Trace.WriteLine(s.Count.ToString("0000") + " - " + s.Key);
@@ -55,7 +56,7 @@ fromCategory('stream').foreachStream().when({
 			Trace.WriteLine("==============");
 
 			var topE = result.Events.GroupBy(v => v.Event.EventType)
-				.Select(v => new {v.Key, Count = v.Count(), Events = v})
+				.Select(v => new { v.Key, Count = v.Count(), Events = v })
 				.OrderByDescending(v => v.Count);
 			foreach (
 				var e in
