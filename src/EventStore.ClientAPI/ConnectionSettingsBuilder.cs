@@ -4,6 +4,7 @@ using System.Net;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -40,9 +41,15 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Master;
+		private IHttpClient _customHttpClient = null;
 
 
 		internal ConnectionSettingsBuilder() {
+		}
+
+		public ConnectionSettingsBuilder UseCustomHttpClient(IHttpClient client) {
+			_customHttpClient = client;
+			return this;
 		}
 
 		/// <summary>
@@ -329,7 +336,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Whether to randomly choose a node that's alive from the known nodes. 
+		/// Whether to randomly choose a node that's alive from the known nodes.
 		/// </summary>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferRandomNode() {
@@ -338,7 +345,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+		/// Whether to prioritize choosing a slave node that's alive from the known nodes.
 		/// </summary>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferSlaveNode() {
@@ -348,11 +355,11 @@ namespace EventStore.ClientAPI {
 
 		/// <summary>
 		/// Sets the well-known port on which the cluster gossip is taking place.
-		/// 
+		///
 		/// If you are using the commercial edition of Event Store HA, with Manager nodes in
 		/// place, this should be the port number of the External HTTP port on which the
 		/// managers are running.
-		/// 
+		///
 		/// If you are using the open source edition of Event Store HA, this should be the
 		/// External HTTP port that the nodes are running on. If you cannot use a well-known
 		/// port for this across all nodes, you can instead use gossip seed discovery and set
@@ -368,7 +375,7 @@ namespace EventStore.ClientAPI {
 
 		/// <summary>
 		/// Sets gossip seed endpoints for the client.
-		/// 
+		///
 		/// <note>
 		/// This should be the external HTTP endpoint of the server, as it is required
 		/// for the client to exchange gossip with the server. The standard port is 2113.
@@ -381,10 +388,29 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds) {
+			return SetGossipSeedEndPoints(false, gossipSeeds);
+		}
+
+		/// <summary>
+		/// Sets gossip seed endpoints for the client.
+		///
+		/// <note>
+		/// This should be the external HTTP endpoint of the server, as it is required
+		/// for the client to exchange gossip with the server. The standard port is 2113.
+		/// </note>
+		///
+		/// If the server requires a specific Host header to be sent as part of the gossip
+		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
+		/// </summary>
+		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
+		/// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
+		public ConnectionSettingsBuilder SetGossipSeedEndPoints(bool seedOverTls, params IPEndPoint[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
 				throw new ArgumentException("Empty FakeDnsEntries collection.");
 
-			_gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x)).ToArray();
+			_gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x, seedOverTls: seedOverTls)).ToArray();
 
 			return this;
 		}
@@ -442,7 +468,8 @@ namespace EventStore.ClientAPI {
 				_maxDiscoverAttempts,
 				_gossipExternalHttpPort,
 				_gossipTimeout,
-				_nodePreference);
+				_nodePreference,
+				_customHttpClient);
 		}
 	}
 }
