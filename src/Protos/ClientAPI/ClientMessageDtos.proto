@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 package EventStore.Client.Messages;
 
 enum OperationResult
@@ -196,6 +198,24 @@ message ReadAllEventsCompleted {
 	optional string error = 7;
 }
 
+message Filter{
+
+	enum FilterContext {
+        StreamId = 0;
+		EventType = 1;
+
+    }
+
+	enum FilterType {
+        Regex = 0;
+		Prefix = 1;
+    }
+
+    required FilterContext context = 1;    
+    required FilterType type = 2;    
+    repeated string data = 3;    
+}
+
 message ReadAllEventsFiltered {
     required int64 commit_position = 1;
     required int64 prepare_position = 2;
@@ -203,7 +223,7 @@ message ReadAllEventsFiltered {
     optional int32 max_search_window = 4;
     required bool resolve_link_tos = 5;
     required bool require_master = 6;
-    repeated string allowed_event_types = 7;
+    required Filter filter = 7;
 }
 
 message ReadAllEventsFilteredCompleted {

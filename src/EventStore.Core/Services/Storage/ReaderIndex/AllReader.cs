@@ -18,17 +18,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
 
 		/// <summary>
-		/// Returns event records whose eventType matches the given <see cref="StringFilter"/> in the sequence they were committed into TF.
+		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes);
+			IEventFilter eventFilter);
 
 		/// <summary>
 		/// Returns event records in the reverse sequence they were committed into TF.
 		/// Positions is specified as post-positions (pointer after the end of record).
 		/// </summary>
 		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
+
+		/// <summary>
+		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllFilteredResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
 	}
 
 	public class AllReader : IAllReader {
@@ -46,38 +53,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, new StringFilter(null));
+			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.Get(null));
 			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
 		}
 
 		public IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, allowedEventTypes);
+			IEventFilter eventFilter) {
+			var result = ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
 			return new IndexReadAllFilteredResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos,
 				result.IsEndOfStream);
 		}
 
-		private struct ReadAllEventsForwardRawResult {
-			public readonly List<CommitEventRecord> Records;
-			public readonly TFPos CurrentPos;
-			public readonly TFPos NextPos;
-			public readonly TFPos PrevPos;
-			public readonly bool IsEndOfStream;
 
-			public ReadAllEventsForwardRawResult(List<CommitEventRecord> records, TFPos currentPos, TFPos nextPos,
-				TFPos prevPos, bool isEndOfStream) {
-				Ensure.NotNull(records, "records");
-
-				Records = records;
-				CurrentPos = currentPos;
-				NextPos = nextPos;
-				PrevPos = prevPos;
-				IsEndOfStream = isEndOfStream;
-			}
-		}
-
-		private ReadAllEventsForwardRawResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes) {
+		private ReadAllEventsRawResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
 			// in case we are at position after which there is no commit at all, in that case we have to force 
@@ -120,7 +109,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
 									prepare);
 								consideredEventsCount++;
-								if (allowedEventTypes.IsStringAllowed(prepare.EventType)) {
+								if (eventFilter.IsEventAllowed(prepare)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
 								}
 
@@ -161,7 +150,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
 									consideredEventsCount++;
-									if (allowedEventTypes.IsStringAllowed(prepare.EventType)) {
+									if (eventFilter.IsEventAllowed(prepare)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
@@ -176,13 +165,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 							break;
 						}
+
 						default:
 							throw new Exception(string.Format("Unexpected log record type: {0}.",
 								result.LogRecord.RecordType));
 					}
 				}
 
-				return new ReadAllEventsForwardRawResult(records, pos, nextPos, prevPos, reachedEndOfStream);
+				return new ReadAllEventsRawResult(records, pos, nextPos, prevPos, reachedEndOfStream);
 			}
 		}
 
@@ -193,17 +183,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
+			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.Get(null));
+			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
+		}
+
+		public IndexReadAllFilteredResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
+			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
+			return new IndexReadAllFilteredResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos,
+				result.IsEndOfStream);
+		}
+
+		private ReadAllEventsRawResult ReadAllEventsBackwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
 			// in case we are at position after which there is no commit at all, in that case we have to force 
 			// PreparePosition to 0, so if you decide to read backwards from PrevPos, 
 			// you will receive all prepares.
 			var prevPos = new TFPos(pos.CommitPosition, 0);
-			long count = 0;
+			var consideredEventsCount = 0L;
 			bool firstCommit = true;
+			var reachedEndOfStream = false;
 			using (var reader = _backend.BorrowReader()) {
 				long nextCommitPostPos = pos.CommitPosition;
-				while (count < maxCount) {
+				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
 					reader.Reposition(nextCommitPostPos);
 
 					SeqReadResult result;
@@ -211,8 +215,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						// skip until commit
 					}
 
-					if (!result.Success) // no more records in TF
+					if (!result.Success) {
+						// no more records in TF
+						reachedEndOfStream = true;
 						break;
+					}
 
 					nextCommitPostPos = result.RecordPrePosition;
 
@@ -232,8 +239,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
 								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
 									prepare);
-								records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
-								count++;
+								consideredEventsCount++;
+
+								if (eventFilter.IsEventAllowed(prepare)) {
+									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+								}
 
 								// for backward pass we allow read the same commit, but force to skip last read prepare
 								// so we put post-position of commit and pre-position of prepare
@@ -256,7 +266,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							var commitPostPos = result.RecordPostPosition;
 							// as we don't know exact position of the last record of transaction,
 							// we have to sequentially scan backwards, so no need to reposition
-							while (count < maxCount) {
+							while (consideredEventsCount < maxCount) {
 								result = reader.TryReadPrev();
 								if (!result.Success) // no more records in TF
 									break;
@@ -277,8 +287,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
-									records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
-									count++;
+									consideredEventsCount++;
+
+									if (eventFilter.IsEventAllowed(prepare)) {
+										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
+									}
 
 									// for backward pass we allow read the same commit, but force to skip last read prepare
 									// so we put post-position of commit and pre-position of prepare
@@ -298,7 +311,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
-				return new IndexReadAllResult(records, pos, nextPos, prevPos);
+				return new ReadAllEventsRawResult(records, pos, nextPos, prevPos, reachedEndOfStream);
 			}
 		}
 
@@ -306,6 +319,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return rec.RecordType == LogRecordType.Commit
 			       || (rec.RecordType == LogRecordType.Prepare &&
 			           ((PrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
+		}
+
+		private struct ReadAllEventsRawResult {
+			public readonly List<CommitEventRecord> Records;
+			public readonly TFPos CurrentPos;
+			public readonly TFPos NextPos;
+			public readonly TFPos PrevPos;
+			public readonly bool IsEndOfStream;
+
+			public ReadAllEventsRawResult(List<CommitEventRecord> records, TFPos currentPos, TFPos nextPos,
+				TFPos prevPos, bool isEndOfStream) {
+				Ensure.NotNull(records, "records");
+
+				Records = records;
+				CurrentPos = currentPos;
+				NextPos = nextPos;
+				PrevPos = prevPos;
+				IsEndOfStream = isEndOfStream;
+			}
 		}
 	}
 }

@@ -902,16 +902,15 @@ namespace EventStore.Core.Messages {
 			public readonly bool ResolveLinkTos;
 			public readonly bool RequireMaster;
 			public readonly int MaxSearchWindow;
-			public readonly StringFilter AllowedEventTypes;
+			public readonly IEventFilter EventFilter;
 
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
 
 			public ReadAllEventsForwardFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-				bool requireMaster, int maxSearchWindow, long? validationTfLastCommitPosition,
-				IPrincipal user, TimeSpan? longPollTimeout = null,
-				StringFilter allowedEventTypes = null)
+				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster,
+				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, IPrincipal user,
+				TimeSpan? longPollTimeout = null)
 				: base(internalCorrId, correlationId, envelope, user) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
@@ -921,7 +920,7 @@ namespace EventStore.Core.Messages {
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 				LongPollTimeout = longPollTimeout;
 				MaxSearchWindow = maxSearchWindow;
-				AllowedEventTypes = allowedEventTypes;
+				EventFilter = eventFilter;
 			}
 		}
 
@@ -947,6 +946,85 @@ namespace EventStore.Core.Messages {
 			public readonly bool IsEndOfStream;
 
 			public ReadAllEventsForwardFilteredCompleted(Guid correlationId, ReadAllFilteredResult result, string error,
+				ResolvedEvent[] events,
+				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
+				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
+				bool isEndOfStream) {
+				Ensure.NotNull(events, "events");
+
+				CorrelationId = correlationId;
+				Result = result;
+				Error = error;
+				Events = events;
+				StreamMetadata = streamMetadata;
+				IsCachePublic = isCachePublic;
+				MaxCount = maxCount;
+				CurrentPos = currentPos;
+				NextPos = nextPos;
+				PrevPos = prevPos;
+				TfLastCommitPosition = tfLastCommitPosition;
+				IsEndOfStream = isEndOfStream;
+			}
+		}
+		
+		public class ReadAllEventsBackwardFiltered : ReadRequestMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly long CommitPosition;
+			public readonly long PreparePosition;
+			public readonly int MaxCount;
+			public readonly bool ResolveLinkTos;
+			public readonly bool RequireMaster;
+			public readonly int MaxSearchWindow;
+			public readonly IEventFilter EventFilter;
+
+			public readonly long? ValidationTfLastCommitPosition;
+			public readonly TimeSpan? LongPollTimeout;
+
+			public ReadAllEventsBackwardFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster,
+				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, IPrincipal user,
+				TimeSpan? longPollTimeout = null)
+				: base(internalCorrId, correlationId, envelope, user) {
+				CommitPosition = commitPosition;
+				PreparePosition = preparePosition;
+				MaxCount = maxCount;
+				ResolveLinkTos = resolveLinkTos;
+				RequireMaster = requireMaster;
+				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+				LongPollTimeout = longPollTimeout;
+				MaxSearchWindow = maxSearchWindow;
+				EventFilter = eventFilter;
+			}
+		}
+		
+		public class ReadAllEventsBackwardFilteredCompleted : ReadResponseMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+
+			public readonly ReadAllFilteredResult Result;
+			public readonly string Error;
+
+			public readonly ResolvedEvent[] Events;
+			public readonly StreamMetadata StreamMetadata;
+			public readonly bool IsCachePublic;
+			public readonly int MaxCount;
+			public readonly TFPos CurrentPos;
+			public readonly TFPos NextPos;
+			public readonly TFPos PrevPos;
+			public readonly long TfLastCommitPosition;
+			public readonly bool IsEndOfStream;
+
+			public ReadAllEventsBackwardFilteredCompleted(Guid correlationId, ReadAllFilteredResult result, string error,
 				ResolvedEvent[] events,
 				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,

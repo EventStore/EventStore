@@ -652,6 +652,50 @@ namespace EventStore.Core.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"Filter")]
+  public partial class Filter
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"context", DataFormat = DataFormat.TwosComplement)]
+    public readonly Filter.FilterContext Context;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"type", DataFormat = DataFormat.TwosComplement)]
+    public readonly Filter.FilterType Type;
+  
+    [ProtoMember(3, Name=@"data", DataFormat = DataFormat.Default)]
+    public readonly string[] Data;
+  
+    [ProtoContract(Name=@"FilterContext")]
+    public enum FilterContext
+    {
+            
+      [ProtoEnum(Name=@"StreamId", Value=0)]
+      StreamId = 0,
+            
+      [ProtoEnum(Name=@"EventType", Value=1)]
+      EventType = 1
+    }
+  
+    [ProtoContract(Name=@"FilterType")]
+    public enum FilterType
+    {
+            
+      [ProtoEnum(Name=@"Regex", Value=0)]
+      Regex = 0,
+            
+      [ProtoEnum(Name=@"Prefix", Value=1)]
+      Prefix = 1
+    }
+  
+    private Filter() {}
+  
+    public Filter(Filter.FilterContext context, Filter.FilterType type, string[] data)
+    {
+        Context = context;
+        Type = type;
+        Data = data;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"ReadAllEventsFiltered")]
   public partial class ReadAllEventsFiltered
   {
@@ -673,12 +717,12 @@ namespace EventStore.Core.Messages
     [ProtoMember(6, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
     public readonly bool RequireMaster;
   
-    [ProtoMember(7, Name=@"allowed_event_types", DataFormat = DataFormat.Default)]
-    public readonly string[] AllowedEventTypes;
+    [ProtoMember(7, IsRequired = true, Name=@"filter", DataFormat = DataFormat.Default)]
+    public readonly Filter Filter;
   
     private ReadAllEventsFiltered() {}
   
-    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, string[] allowedEventTypes)
+    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, Filter filter)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
@@ -686,7 +730,7 @@ namespace EventStore.Core.Messages
         MaxSearchWindow = maxSearchWindow;
         ResolveLinkTos = resolveLinkTos;
         RequireMaster = requireMaster;
-        AllowedEventTypes = allowedEventTypes;
+        Filter = filter;
     }
   }
   
