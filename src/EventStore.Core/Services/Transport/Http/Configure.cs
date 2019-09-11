@@ -261,6 +261,35 @@ namespace EventStore.Core.Services.Transport.Http {
 				return HandleNotHandled(entity.RequestedUrl, notHandled);
 			return InternalServerError();
 		}
+		
+		public static ResponseConfiguration ReadAllEventsBackwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+			Message message, bool headOfTf) {
+			var msg = message as ClientMessage.ReadAllEventsBackwardFilteredCompleted;
+			if (msg != null) {
+				switch (msg.Result) {
+					case ReadAllFilteredResult.Success:
+						var codec = entity.ResponseCodec;
+						if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfLastCommitPosition)
+							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+					case ReadAllFilteredResult.NotModified:
+						return NotModified();
+					case ReadAllFilteredResult.Error:
+						return InternalServerError(msg.Error);
+					case ReadAllFilteredResult.AccessDenied:
+						return Unauthorized();
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
+
+			var notHandled = message as ClientMessage.NotHandled;
+			if (notHandled != null)
+				return HandleNotHandled(entity.RequestedUrl, notHandled);
+			return InternalServerError();
+		}
 
 		public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
@@ -279,6 +308,35 @@ namespace EventStore.Core.Services.Transport.Http {
 					case ReadAllResult.Error:
 						return InternalServerError(msg.Error);
 					case ReadAllResult.AccessDenied:
+						return Unauthorized();
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
+
+			var notHandled = message as ClientMessage.NotHandled;
+			if (notHandled != null)
+				return HandleNotHandled(entity.RequestedUrl, notHandled);
+			return InternalServerError();
+		}
+		
+		public static ResponseConfiguration ReadAllEventsForwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+			Message message, bool headOfTf) {
+			var msg = message as ClientMessage.ReadAllEventsForwardFilteredCompleted;
+			if (msg != null) {
+				switch (msg.Result) {
+					case ReadAllFilteredResult.Success:
+						var codec = entity.ResponseCodec;
+						if (!headOfTf && msg.Events.Length == msg.MaxCount)
+							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+					case ReadAllFilteredResult.NotModified:
+						return NotModified();
+					case ReadAllFilteredResult.Error:
+						return InternalServerError(msg.Error);
+					case ReadAllFilteredResult.AccessDenied:
 						return Unauthorized();
 					default:
 						throw new ArgumentOutOfRangeException();

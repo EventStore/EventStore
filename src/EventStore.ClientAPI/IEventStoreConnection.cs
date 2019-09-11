@@ -215,6 +215,19 @@ namespace EventStore.ClientAPI {
 			UserCredentials userCredentials = null);
 
 		/// <summary>
+		/// Asynchronously reads all events in the node forward (e.g. beginning to end). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
+
+		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).
 		/// </summary>
 		/// <param name="position">The position to start reading from.</param>
@@ -224,6 +237,19 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
 		Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 			UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node backwards (e.g. end to beginning). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
 
 		/// <summary>
 		/// Asynchronously subscribes to a single event stream. New events

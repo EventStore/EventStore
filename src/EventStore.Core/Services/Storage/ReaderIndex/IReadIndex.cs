@@ -29,11 +29,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
 		/// <summary>
-		/// Returns event records whose eventType matches the given StringFilter in the sequence they were committed into TF.
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
 		IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
-			StringFilter allowedEventTypes);
+			IEventFilter eventFilter);
+
+		/// <summary>
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllFilteredResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
 
 		bool IsStreamDeleted(string streamId);
 		long GetStreamLastEventNumber(string streamId);
