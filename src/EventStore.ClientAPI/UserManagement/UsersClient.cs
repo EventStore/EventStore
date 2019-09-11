@@ -12,13 +12,13 @@ using EventStore.ClientAPI.Common.Utils.Threading;
 
 namespace EventStore.ClientAPI.UserManagement {
 	internal class UsersClient {
-		private readonly HttpAsyncClient _client;
+		private readonly IHttpClient _client;
 
 		private readonly TimeSpan _operationTimeout;
 
-		public UsersClient(ILogger log, TimeSpan operationTimeout) {
+		public UsersClient(ILogger log, TimeSpan operationTimeout, IHttpClient client) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout);
+			_client = client ?? new HttpAsyncClient(_operationTimeout);
 		}
 
 		public Task Enable(EndPoint endPoint, string login, UserCredentials userCredentials = null) {

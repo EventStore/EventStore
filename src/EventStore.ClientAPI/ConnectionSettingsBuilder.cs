@@ -4,6 +4,7 @@ using System.Net;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -40,9 +41,15 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Master;
+		private IHttpClient _customHttpClient = null;
 
 
 		internal ConnectionSettingsBuilder() {
+		}
+
+		public ConnectionSettingsBuilder UseCustomHttpClient(IHttpClient client) {
+			_customHttpClient = client;
+			return this;
 		}
 
 		/// <summary>
@@ -442,7 +449,8 @@ namespace EventStore.ClientAPI {
 				_maxDiscoverAttempts,
 				_gossipExternalHttpPort,
 				_gossipTimeout,
-				_nodePreference);
+				_nodePreference,
+				_customHttpClient);
 		}
 	}
 }

@@ -103,7 +103,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
 						connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
-						connectionSettings.NodePreference);
+						connectionSettings.NodePreference, connectionSettings.CustomHttpClient);
 				}
 
 				if (scheme == "discover") {
@@ -191,7 +191,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Creates a new <see cref="IEventStoreConnection"/> to EventStore cluster 
+		/// Creates a new <see cref="IEventStoreConnection"/> to EventStore cluster
 		/// using specific <see cref="ConnectionSettings"/> and <see cref="ClusterSettings"/>
 		/// </summary>
 		/// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>

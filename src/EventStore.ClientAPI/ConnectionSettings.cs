@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -32,6 +33,11 @@ namespace EventStore.ClientAPI {
 		/// The <see cref="ILogger"/> that this connection will use.
 		/// </summary>
 		public readonly ILogger Log;
+
+		/// <summary>
+		/// Allows overriding the HTTPClient <see cref="IHttpClient"/>
+		/// </summary>
+		public IHttpClient CustomHttpClient { get; set; }
 
 		/// <summary>
 		/// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.
@@ -144,7 +150,7 @@ namespace EventStore.ClientAPI {
 		public readonly TimeSpan GossipTimeout;
 
 		/// <summary>
-		/// Whether to randomly choose a node that's alive from the known nodes. 
+		/// Whether to randomly choose a node that's alive from the known nodes.
 		/// </summary>
 		public readonly NodePreference NodePreference;
 
@@ -177,7 +183,9 @@ namespace EventStore.ClientAPI {
 			int maxDiscoverAttempts,
 			int externalGossipPort,
 			TimeSpan gossipTimeout,
-			NodePreference nodePreference) {
+			NodePreference nodePreference,
+			IHttpClient customHttpClient) {
+
 			Ensure.NotNull(log, "log");
 			Ensure.Positive(maxQueueSize, "maxQueueSize");
 			Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
@@ -190,6 +198,7 @@ namespace EventStore.ClientAPI {
 						maxRetries));
 			if (useSslConnection)
 				Ensure.NotNullOrEmpty(targetHost, "targetHost");
+
 			Log = log;
 			VerboseLogging = verboseLogging;
 			MaxQueueSize = maxQueueSize;
@@ -216,6 +225,7 @@ namespace EventStore.ClientAPI {
 			ExternalGossipPort = externalGossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
+			CustomHttpClient = customHttpClient;
 		}
 	}
 }
