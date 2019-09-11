@@ -16,7 +16,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void BeginLoadState(string subscriptionId, Action<long?> onStateLoaded) {
 			var subscriptionStateStream = "$persistentsubscription-" + subscriptionId + "-checkpoint";
 			_ioDispatcher.ReadBackward(subscriptionStateStream, -1, 1, false, SystemAccount.Principal,
-				new ResponseHandler(onStateLoaded).LoadStateCompleted);
+				new ResponseHandler(onStateLoaded).LoadStateCompleted,
+				() => BeginLoadState(subscriptionId, onStateLoaded), Guid.NewGuid());
 		}
 
 		private class ResponseHandler {
