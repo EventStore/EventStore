@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 using EventStore.Core.Data;
@@ -22,23 +23,23 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_r5 = WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000));
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
-			_store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
+			await _store.ConnectAsync();
+			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
-		public void read_forward_from_zero() {
-			var result = _store.ReadStreamEventsForwardAsync(StreamName, 0, 100, false).Result;
+		public async Task read_forward_from_zero() {
+			var result = await _store.ReadStreamEventsForwardAsync(StreamName, 0, 100, false);
 			Assert.AreEqual(0, result.Events.Length);
 			Assert.AreEqual(intMaxValue + 1, result.NextEventNumber);
 		}
 
 		[Test]
-		public void should_be_able_to_read_stream_forward() {
-			var result = _store.ReadStreamEventsForwardAsync(StreamName, intMaxValue, 100, false).Result;
+		public async Task should_be_able_to_read_stream_forward() {
+			var result = await _store.ReadStreamEventsForwardAsync(StreamName, intMaxValue, 100, false);
 			Assert.AreEqual(5, result.Events.Count());
 			Assert.AreEqual(_r1.EventId, result.Events[0].Event.EventId);
 			Assert.AreEqual(_r2.EventId, result.Events[1].Event.EventId);
@@ -48,8 +49,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_stream_backward() {
-			var result = _store.ReadStreamEventsBackwardAsync(StreamName, intMaxValue + 6, 100, false).Result;
+		public async Task should_be_able_to_read_stream_backward() {
+			var result = await _store.ReadStreamEventsBackwardAsync(StreamName, intMaxValue + 6, 100, false);
 			Assert.AreEqual(5, result.Events.Count());
 			Assert.AreEqual(_r5.EventId, result.Events[0].Event.EventId);
 			Assert.AreEqual(_r4.EventId, result.Events[1].Event.EventId);
@@ -59,32 +60,32 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_each_event() {
-			var record = _store.ReadEventAsync(StreamName, intMaxValue + 1, false).Result;
+		public async Task should_be_able_to_read_each_event() {
+			var record = await _store.ReadEventAsync(StreamName, intMaxValue + 1, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
 			Assert.AreEqual(_r1.EventId, record.Event.Value.Event.EventId);
 
-			record = _store.ReadEventAsync(StreamName, intMaxValue + 2, false).Result;
+			record = await _store.ReadEventAsync(StreamName, intMaxValue + 2, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
 			Assert.AreEqual(_r2.EventId, record.Event.Value.Event.EventId);
 
-			record = _store.ReadEventAsync(StreamName, intMaxValue + 3, false).Result;
+			record = await _store.ReadEventAsync(StreamName, intMaxValue + 3, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
 			Assert.AreEqual(_r3.EventId, record.Event.Value.Event.EventId);
 
-			record = _store.ReadEventAsync(StreamName, intMaxValue + 4, false).Result;
+			record = await _store.ReadEventAsync(StreamName, intMaxValue + 4, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
 			Assert.AreEqual(_r4.EventId, record.Event.Value.Event.EventId);
 
-			record = _store.ReadEventAsync(StreamName, intMaxValue + 5, false).Result;
+			record = await _store.ReadEventAsync(StreamName, intMaxValue + 5, false);
 			Assert.AreEqual(EventReadStatus.Success, record.Status);
 			Assert.AreEqual(_r5.EventId, record.Event.Value.Event.EventId);
 		}
 
 		[Test]
-		public void should_be_able_to_read_all_forward() {
-			var result = _store.ReadAllEventsForwardAsync(Position.Start, 100, false, DefaultData.AdminCredentials)
-				.Result;
+		public async Task should_be_able_to_read_all_forward() {
+			var result = await _store.ReadAllEventsForwardAsync(Position.Start, 100, false, DefaultData.AdminCredentials)
+;
 			Assert.IsTrue(result.Events.Count() > 5);
 
 			var records = result.Events.Where(x => x.OriginalStreamId == StreamName).ToList();
@@ -96,9 +97,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_all_backward() {
-			var result = _store.ReadAllEventsBackwardAsync(Position.End, 100, false, DefaultData.AdminCredentials)
-				.Result;
+		public async Task should_be_able_to_read_all_backward() {
+			var result = await _store.ReadAllEventsBackwardAsync(Position.End, 100, false, DefaultData.AdminCredentials)
+;
 			Assert.IsTrue(result.Events.Count() > 5);
 
 			var records = result.Events.Where(x => x.OriginalStreamId == StreamName).ToList();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
@@ -16,16 +17,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private MiniNode _node;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 		}
 
 		[TearDown]
-		public override void TearDown() {
-			_node.Shutdown();
-			base.TearDown();
+		public override async Task TearDown() {
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
@@ -33,12 +34,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]
-		public void should_be_preserved_with_all_possible_write_and_read_methods() {
+		public async Task should_be_preserved_with_all_possible_write_and_read_methods() {
 			const string stream = "should_be_preserved_with_all_possible_write_methods";
 			using (var connection = BuildConnection(_node)) {
-				connection.ConnectAsync().Wait();
+				await connection.ConnectAsync();
 
-				connection.AppendToStreamAsync(
+				await connection.AppendToStreamAsync(
 						stream,
 						ExpectedVersion.Any,
 						new EventData(Guid.NewGuid(), "some-type", true,
@@ -47,19 +48,18 @@ namespace EventStore.Core.Tests.ClientAPI {
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
 						new EventData(Guid.NewGuid(), "some-type", true,
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")))
-					.Wait();
+							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
 
-				using (var transaction = connection.StartTransactionAsync(stream, ExpectedVersion.Any).Result) {
-					transaction.WriteAsync(
+				using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
+					await transaction.WriteAsync(
 						new EventData(Guid.NewGuid(), "some-type", true,
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
 						new EventData(Guid.NewGuid(), "some-type", true, null,
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
 						new EventData(Guid.NewGuid(), "some-type", true,
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"))).Wait();
-					transaction.CommitAsync().Wait();
+							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+					await transaction.CommitAsync();
 				}
 
 				var done = new ManualResetEventSlim();

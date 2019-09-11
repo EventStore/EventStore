@@ -30,16 +30,16 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_event1Id = event1.EventId;
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
+			await _store.ConnectAsync();
 
-			_store.SubscribeToStreamAsync(_linkedStreamName, true, HandleEvent).Wait();
-			_store.AppendToStreamAsync(_linkedStreamName, ExpectedVersion.NoStream,
+			await _store.SubscribeToStreamAsync(_linkedStreamName, true, HandleEvent);
+			await _store.AppendToStreamAsync(_linkedStreamName, ExpectedVersion.NoStream,
 				new EventData(Guid.NewGuid(),
 					SystemEventTypes.LinkTo, false, Helper.UTF8NoBom.GetBytes(
 						string.Format("{0}@{1}", intMaxValue + 1, StreamName)
-					), null)).Wait();
+					), null));
 		}
 
 		private Task HandleEvent(EventStoreSubscription sub, ResolvedEvent resolvedEvent) {

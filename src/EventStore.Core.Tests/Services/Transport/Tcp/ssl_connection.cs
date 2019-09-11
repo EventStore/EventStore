@@ -24,6 +24,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			_port = PortsHelper.GetAvailablePort(_ip);
 		}
 
+		[TearDown]
+		public void TearDown() => PortsHelper.ReturnPort(_port);
+
 		[Test]
 		public void should_connect_to_each_other_and_send_data() {
 			var serverEndPoint = new IPEndPoint(_ip, _port);
@@ -41,7 +44,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert,
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
-				if (ssl.IsClosed) done.Set();
+				if (ssl.IsClosed)
+					done.Set();
 
 				Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback = null;
 				callback = (x, y) => {
@@ -71,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				TcpConnectionManager.ConnectionTimeout,
 				conn => {
 					Log.Info("Sending bytes...");
-					conn.EnqueueSend(new[] {new ArraySegment<byte>(sent)});
+					conn.EnqueueSend(new[] { new ArraySegment<byte>(sent) });
 				},
 				(conn, err) => {
 					Log.Error("Connecting failed: {0}.", err);
@@ -96,11 +100,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				stream.CopyTo(mem);
 				return new X509Certificate2(mem.ToArray(), "1111");
 			}
-		}
-
-		[TearDown]
-		public virtual void TearDown() {
-			PortsHelper.ReturnPort(_port);
 		}
 	}
 }

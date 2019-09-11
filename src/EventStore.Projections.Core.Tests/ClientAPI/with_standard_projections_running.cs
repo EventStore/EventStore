@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Services.Processing;
@@ -10,15 +11,15 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 	namespace with_standard_projections_running {
 		public abstract class when_deleting_stream_base : specification_with_standard_projections_runnning {
 			[Test, Category("Network")]
-			public void streams_stream_exists() {
+			public async Task streams_stream_exists() {
 				Assert.AreEqual(
 					SliceReadStatus.Success,
-					_conn.ReadStreamEventsForwardAsync("$streams", 0, 10, false, _admin).Result.Status);
+					(await _conn.ReadStreamEventsForwardAsync("$streams", 0, 10, false, _admin)).Status);
 			}
 
 			[Test, Category("Network")]
-			public void deleted_stream_events_are_indexed() {
-				var slice = _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin).Result;
+			public async Task deleted_stream_events_are_indexed() {
+				var slice = await _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin);
 				Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
 				Assert.AreEqual(3, slice.Events.Length);
@@ -34,30 +35,30 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			}
 
 			[Test, Category("Network")]
-			public void deleted_stream_events_are_indexed_as_deleted() {
-				var slice = _conn.ReadStreamEventsForwardAsync("$et-$deleted", 0, 10, true, _admin).Result;
+			public async Task deleted_stream_events_are_indexed_as_deleted() {
+				var slice = await _conn.ReadStreamEventsForwardAsync("$et-$deleted", 0, 10, true, _admin);
 				Assert.AreEqual(SliceReadStatus.Success, slice.Status);
 
 				Assert.AreEqual(1, slice.Events.Length);
 			}
 
-			protected override void When() {
-				base.When();
-				var r1 = _conn.AppendToStreamAsync(
+			protected override async Task When() {
+				await base.When();
+				var r1 = await _conn.AppendToStreamAsync(
 						"cat-1", ExpectedVersion.NoStream, _admin,
 						new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null))
-					.Result;
+					;
 
-				var r2 = _conn.AppendToStreamAsync(
-						"cat-1", r1.NextExpectedVersion, _admin,
-						new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null))
-					.Result;
+				var r2 = await _conn.AppendToStreamAsync(
+					"cat-1", r1.NextExpectedVersion, _admin,
+					new EventData(Guid.NewGuid(), "type1", true, Encoding.UTF8.GetBytes("{}"), null));
 
-				_conn.DeleteStreamAsync("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(), _admin)
-					.Wait();
+				await _conn.DeleteStreamAsync("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(),
+						_admin)
+					;
 				QueueStatsCollector.WaitIdle();
 				if (!GivenStandardProjectionsRunning()) {
-					EnableStandardProjections();
+					await EnableStandardProjections();
 					WaitIdle();
 				}
 			}

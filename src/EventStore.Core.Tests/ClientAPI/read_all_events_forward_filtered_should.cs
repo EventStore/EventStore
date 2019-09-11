@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -13,11 +14,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class read_all_events_forward_filtered_should : SpecificationWithMiniNode {
 		private List<EventData> _testEvents;
 
-		protected override void When() {
-			_conn.SetStreamMetadataAsync("$all", -1,
+		protected override async Task When() {
+			await _conn.SetStreamMetadataAsync("$all", -1,
 					StreamMetadata.Build().SetReadRole(SystemRoles.All),
-					DefaultData.AdminCredentials)
-				.Wait();
+					DefaultData.AdminCredentials);
 
 			_testEvents = Enumerable
 				.Range(0, 10)
@@ -29,8 +29,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 					.Range(0, 10)
 					.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "BEvent")).ToList());
 
-			_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents()).Wait();
-			_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents()).Wait();
+			await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+			await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
 		}
 
 		[Test, Category("LongRunning")]

@@ -1,4 +1,5 @@
-﻿using EventStore.Common.Utils;
+﻿using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -32,8 +33,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_metastreamMaxCount = metastreamMaxCount;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
@@ -68,10 +69,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			DbRes.Db.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 	}
 }

@@ -22,23 +22,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private IEventStoreConnection _conn;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 
 			_conn = BuildConnection(_node);
-			_conn.ConnectAsync().Wait();
-			_conn.SetStreamMetadataAsync("$all", -1,
+			await _conn.ConnectAsync();
+			await _conn.SetStreamMetadataAsync("$all", -1,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All),
-				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
+				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override async Task TearDown() {
 			_conn.Close();
-			_node.Shutdown();
-			base.TearDown();
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
@@ -46,9 +46,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void call_dropped_callback_after_stop_method_call() {
+		public async Task call_dropped_callback_after_stop_method_call() {
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
 				var dropped = new CountdownEvent(1);
 				var subscription = store.SubscribeToAllFrom(null,
@@ -64,12 +64,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void call_dropped_callback_when_an_error_occurs_while_processing_an_event() {
+		public async Task call_dropped_callback_when_an_error_occurs_while_processing_an_event() {
 			const string stream = "call_dropped_callback_when_an_error_occurs_while_processing_an_event";
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				store.AppendToStreamAsync(stream, ExpectedVersion.Any,
-					new EventData(Guid.NewGuid(), "event", false, new byte[3], null)).Wait();
+				await store.ConnectAsync();
+				await store.AppendToStreamAsync(stream, ExpectedVersion.Any,
+					new EventData(Guid.NewGuid(), "event", false, new byte[3], null));
 
 				var dropped = new CountdownEvent(1);
 				store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
@@ -81,9 +81,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void be_able_to_subscribe_to_empty_db() {
+		public async Task be_able_to_subscribe_to_empty_db() {
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 				var appeared = new ManualResetEventSlim(false);
 				var dropped = new CountdownEvent(1);
 
@@ -97,9 +97,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_ => Log.Info("Live processing started."),
 					(_, __, ___) => dropped.Signal());
 
-				Thread.Sleep(100); // give time for first pull phase
-				store.SubscribeToAllAsync(false, (s, x) => Task.CompletedTask, (s, r, e) => { }).Wait();
-				Thread.Sleep(100);
+				await Task.Delay(100); // give time for first pull phase
+				await store.SubscribeToAllAsync(false, (s, x) => Task.CompletedTask, (s, r, e) => { });
+				await Task.Delay(100);
 
 				Assert.IsFalse(appeared.Wait(0), "Some event appeared.");
 				Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
@@ -109,17 +109,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void read_all_existing_events_and_keep_listening_to_new_ones() {
+		public async Task read_all_existing_events_and_keep_listening_to_new_ones() {
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
 				var events = new List<ResolvedEvent>();
 				var appeared = new CountdownEvent(20);
 				var dropped = new CountdownEvent(1);
 
 				for (int i = 0; i < 10; ++i) {
-					store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
+					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
+						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
 				var subscription = store.SubscribeToAllFrom(null,
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_ => Log.Info("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				for (int i = 10; i < 20; ++i) {
-					store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
+					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
+						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
 				if (!appeared.Wait(Timeout)) {
@@ -156,20 +156,20 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void filter_events_and_keep_listening_to_new_ones() {
+		public async Task filter_events_and_keep_listening_to_new_ones() {
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
 				var events = new List<ResolvedEvent>();
 				var appeared = new CountdownEvent(10);
 				var dropped = new CountdownEvent(1);
 
 				for (int i = 0; i < 10; ++i) {
-					store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
+					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
+						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
-				var allSlice = store.ReadAllEventsForwardAsync(Position.Start, 100, false).Result;
+				var allSlice = await store.ReadAllEventsForwardAsync(Position.Start, 100, false);
 				var lastEvent = allSlice.Events.Last();
 
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
@@ -186,8 +186,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 					});
 
 				for (int i = 10; i < 20; ++i) {
-					store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
+					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
+						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
 				Log.Info("Waiting for events...");
@@ -211,20 +211,20 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void filter_events_and_work_if_nothing_was_written_after_subscription() {
+		public async Task filter_events_and_work_if_nothing_was_written_after_subscription() {
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
 				var events = new List<ResolvedEvent>();
 				var appeared = new CountdownEvent(1);
 				var dropped = new CountdownEvent(1);
 
 				for (int i = 0; i < 10; ++i) {
-					store.AppendToStreamAsync("stream-" + i.ToString(), -1,
-						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null)).Wait();
+					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
+						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
-				var allSlice = store.ReadAllEventsForwardAsync(Position.Start, 100, false).Result;
+				var allSlice = await store.ReadAllEventsForwardAsync(Position.Start, 100, false);
 				var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
 
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,

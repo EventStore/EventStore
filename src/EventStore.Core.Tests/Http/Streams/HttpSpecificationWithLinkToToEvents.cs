@@ -1,8 +1,8 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams {
@@ -11,31 +11,28 @@ namespace EventStore.Core.Tests.Http.Streams {
 		protected string StreamName;
 		protected string Stream2Name;
 
-		protected override void Given() {
+		protected override async Task Given() {
 			var creds = DefaultData.AdminCredentials;
 			LinkedStreamName = Guid.NewGuid().ToString();
 			StreamName = Guid.NewGuid().ToString();
 			Stream2Name = Guid.NewGuid().ToString();
 			using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
-				conn.ConnectAsync().Wait();
-				conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+				await conn.ConnectAsync();
+				await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-							new byte[0]))
-					.Wait();
-				conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+							new byte[0]));
+				await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-							new byte[0]))
-					.Wait();
-				conn.AppendToStreamAsync(Stream2Name, ExpectedVersion.Any, creds,
-						new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
-							new byte[0]))
-					.Wait();
-				conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+							new byte[0]));
+				await conn.AppendToStreamAsync(Stream2Name, ExpectedVersion.Any, creds,
+					new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
+						new byte[0]));
+				await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
 					new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-						Encoding.UTF8.GetBytes("0@" + Stream2Name), new byte[0])).Wait();
-				conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+						Encoding.UTF8.GetBytes("0@" + Stream2Name), new byte[0]));
+				await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
 					new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-						Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])).Wait();
+						Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0]));
 			}
 		}
 	}

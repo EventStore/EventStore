@@ -38,6 +38,7 @@ namespace EventStore.ClientAPI.Internal {
 		private ConnectionState _state = ConnectionState.Init;
 		private ConnectingPhase _connectingPhase = ConnectingPhase.Invalid;
 		private int _wasConnected;
+		private int _wasClosed;
 
 		private int _packageNumber;
 		private TcpPackageConnection _connection;
@@ -73,7 +74,8 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		public void EnqueueMessage(Message message) {
-			if (_settings.VerboseLogging && message != TimerTickMessage) LogDebug("enqueueing message {0}.", message);
+			if (_settings.VerboseLogging && message != TimerTickMessage)
+				LogDebug("enqueueing message {0}.", message);
 			_queue.EnqueueMessage(message);
 		}
 
@@ -85,30 +87,35 @@ namespace EventStore.ClientAPI.Internal {
 
 			switch (_state) {
 				case ConnectionState.Init: {
-					_endPointDiscoverer = endPointDiscoverer;
-					_state = ConnectionState.Connecting;
-					_connectingPhase = ConnectingPhase.Reconnecting;
-					DiscoverEndPoint(task);
-					break;
-				}
+						_endPointDiscoverer = endPointDiscoverer;
+						_state = ConnectionState.Connecting;
+						_connectingPhase = ConnectingPhase.Reconnecting;
+						DiscoverEndPoint(task);
+						break;
+					}
 				case ConnectionState.Connecting:
 				case ConnectionState.Connected: {
-					task.SetException(new InvalidOperationException(
-						string.Format("EventStoreConnection '{0}' is already active.", _esConnection.ConnectionName)));
-					break;
-				}
+						task.SetException(new InvalidOperationException(
+							string.Format("EventStoreConnection '{0}' is already active.", _esConnection.ConnectionName)));
+						break;
+					}
 				case ConnectionState.Closed:
 					task.SetException(new ObjectDisposedException(_esConnection.ConnectionName));
 					break;
-				default: throw new Exception(string.Format("Unknown state: {0}", _state));
+				default:
+					task.SetException(new Exception(string.Format("Unknown state: {0}", _state)));
+					break;
 			}
+
 		}
 
 		private void DiscoverEndPoint(TaskCompletionSource<object> completionTask) {
 			LogDebug("DiscoverEndPoint");
 
-			if (_state != ConnectionState.Connecting) return;
-			if (_connectingPhase != ConnectingPhase.Reconnecting) return;
+			if (_state != ConnectionState.Connecting)
+				return;
+			if (_connectingPhase != ConnectingPhase.Reconnecting)
+				return;
 
 			_connectingPhase = ConnectingPhase.EndPointDiscovery;
 
@@ -138,8 +145,15 @@ namespace EventStore.ClientAPI.Internal {
 
 			LogDebug("EstablishTcpConnection to [{0}]", endPoint);
 
-			if (_state != ConnectionState.Connecting) return;
-			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) return;
+			if (_state != ConnectionState.Connecting) {
+				LogDebug("EstablishTcpConnection to [{0}] skipped because expected state 'Connecting', was '{1}'", endPoint, _state);
+				return;
+			}
+
+			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) {
+				LogDebug("EstablishTcpConnection to [{0}] skipped because expected connecting phase 'EndPointDiscovery', was '{1}'", endPoint, _connectingPhase);
+				return;
+			}
 
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
@@ -158,8 +172,10 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void TcpConnectionError(TcpPackageConnection connection, Exception exception) {
-			if (_connection != connection) return;
-			if (_state == ConnectionState.Closed) return;
+			if (_connection != connection)
+				return;
+			if (_state == ConnectionState.Closed)
+				return;
 
 			LogDebug("TcpConnectionError connId {0:B}, exc {1}.", connection.ConnectionId, exception);
 			CloseConnection("TCP connection error occurred.", exception);
@@ -195,14 +211,19 @@ namespace EventStore.ClientAPI.Internal {
 				return;
 			}
 
+			if (Interlocked.CompareExchange(ref _wasClosed, 1, 0) != 0) {
+				LogDebug("CloseTcpConnection IGNORED because was closed");
+				return;
+			}
+
 			LogDebug("CloseTcpConnection");
 			_connection.Close(reason);
 			TcpConnectionClosed(_connection);
-			_connection = null;
 		}
 
 		private void TcpConnectionClosed(TcpPackageConnection connection) {
-			if (_state == ConnectionState.Init) throw new Exception();
+			if (_state == ConnectionState.Init)
+				throw new Exception();
 			if (_state == ConnectionState.Closed || _connection != connection) {
 				LogDebug(
 					"IGNORED (_state: {0}, _conn.ID: {1:B}, conn.ID: {2:B}): TCP connection to [{3}, L{4}] closed.",
@@ -261,6 +282,10 @@ namespace EventStore.ClientAPI.Internal {
 
 			_identifyInfo = new IdentifyInfo(Guid.NewGuid(), _stopwatch.Elapsed);
 			var dto = new ClientMessage.IdentifyClient(ClientVersion, _esConnection.ConnectionName);
+			if (_settings.VerboseLogging) {
+				_settings.Log.Debug($"IdentifyClient; Client Version: {ClientVersion}, ConnectionName: {_esConnection.ConnectionName}, ");
+			}
+
 			_connection.EnqueueSend(new TcpPackage(TcpCommand.IdentifyClient, _identifyInfo.CorrelationId,
 				dto.Serialize()));
 		}
@@ -284,63 +309,63 @@ namespace EventStore.ClientAPI.Internal {
 
 		private void TimerTick() {
 			switch (_state) {
-				case ConnectionState.Init: break;
+				case ConnectionState.Init:
+					break;
 				case ConnectionState.Connecting: {
-					if (_connectingPhase == ConnectingPhase.Reconnecting &&
-					    _stopwatch.Elapsed - _reconnInfo.TimeStamp >= _settings.ReconnectionDelay) {
-						LogDebug("TimerTick checking reconnection...");
+						if (_connectingPhase == ConnectingPhase.Reconnecting &&
+							_stopwatch.Elapsed - _reconnInfo.TimeStamp >= _settings.ReconnectionDelay) {
+							LogDebug("TimerTick checking reconnection...");
 
-						_reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt + 1, _stopwatch.Elapsed);
-						if (_settings.MaxReconnections >= 0 &&
-						    _reconnInfo.ReconnectionAttempt > _settings.MaxReconnections)
-							CloseConnection("Reconnection limit reached.");
-						else {
-							RaiseReconnecting();
+							_reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt + 1, _stopwatch.Elapsed);
+							if (_settings.MaxReconnections >= 0 &&
+								_reconnInfo.ReconnectionAttempt > _settings.MaxReconnections)
+								CloseConnection("Reconnection limit reached.");
+							else {
+								RaiseReconnecting();
+								_operations.CheckTimeoutsAndRetry(_connection);
+								_subscriptions.CheckTimeoutsAndRetry(_connection);
+								DiscoverEndPoint(null);
+							}
+						}
+
+						if (_connectingPhase == ConnectingPhase.Authentication &&
+							_stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout) {
+							RaiseAuthenticationFailed("Authentication timed out.");
+							GoToIdentifyState();
+						}
+
+						if (_connectingPhase == ConnectingPhase.Identification &&
+							_stopwatch.Elapsed - _identifyInfo.TimeStamp >= _settings.OperationTimeout) {
+							const string msg = "Timed out waiting for client to be identified";
+							LogDebug(msg);
+							CloseTcpConnection(msg);
+						}
+
+						if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
+							ManageHeartbeats();
+						break;
+					}
+				case ConnectionState.Connected: {
+						// operations timeouts are checked only if connection is established and check period time passed
+						if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod) {
 							_operations.CheckTimeoutsAndRetry(_connection);
 							_subscriptions.CheckTimeoutsAndRetry(_connection);
-							DiscoverEndPoint(null);
+							_lastTimeoutsTimeStamp = _stopwatch.Elapsed;
 						}
-					}
 
-					if (_connectingPhase == ConnectingPhase.Authentication &&
-					    _stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout) {
-						RaiseAuthenticationFailed("Authentication timed out.");
-						GoToIdentifyState();
-					}
-
-					if (_connectingPhase == ConnectingPhase.Identification &&
-					    _stopwatch.Elapsed - _identifyInfo.TimeStamp >= _settings.OperationTimeout) {
-						const string msg = "Timed out waiting for client to be identified";
-						LogDebug(msg);
-						CloseTcpConnection(msg);
-					}
-
-					if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
 						ManageHeartbeats();
-					break;
-				}
-				case ConnectionState.Connected: {
-					// operations timeouts are checked only if connection is established and check period time passed
-					if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod) {
-						// On mono even impossible connection first says that it is established
-						// so clearing of reconnection count on ConnectionEstablished event causes infinite reconnections.
-						// So we reset reconnection count to zero on each timeout check period when connection is established
-						_reconnInfo = new ReconnectionInfo(0, _stopwatch.Elapsed);
-						_operations.CheckTimeoutsAndRetry(_connection);
-						_subscriptions.CheckTimeoutsAndRetry(_connection);
-						_lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+						break;
 					}
-
-					ManageHeartbeats();
+				case ConnectionState.Closed:
 					break;
-				}
-				case ConnectionState.Closed: break;
-				default: throw new Exception(string.Format("Unknown state: {0}.", _state));
+				default:
+					throw new Exception(string.Format("Unknown state: {0}.", _state));
 			}
 		}
 
 		private void ManageHeartbeats() {
-			if (_connection == null) throw new Exception();
+			if (_connection == null)
+				throw new Exception();
 
 			var timeout = _heartbeatInfo.IsIntervalStage ? _settings.HeartbeatInterval : _settings.HeartbeatTimeout;
 			if (_stopwatch.Elapsed - _heartbeatInfo.TimeStamp < timeout)
@@ -386,7 +411,8 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Closed:
 					operation.Fail(new ObjectDisposedException(_esConnection.ConnectionName));
 					break;
-				default: throw new Exception(string.Format("Unknown state: {0}.", _state));
+				default:
+					throw new Exception(string.Format("Unknown state: {0}.", _state));
 			}
 		}
 
@@ -413,7 +439,8 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Closed:
 					msg.Source.SetException(new ObjectDisposedException(_esConnection.ConnectionName));
 					break;
-				default: throw new Exception(string.Format("Unknown state: {0}.", _state));
+				default:
+					throw new Exception(string.Format("Unknown state: {0}.", _state));
 			}
 		}
 
@@ -467,7 +494,8 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Closed:
 					msg.Source.SetException(new ObjectDisposedException(_esConnection.ConnectionName));
 					break;
-				default: throw new Exception(string.Format("Unknown state: {0}.", _state));
+				default:
+					throw new Exception(string.Format("Unknown state: {0}.", _state));
 			}
 		}
 
@@ -492,8 +520,8 @@ namespace EventStore.ClientAPI.Internal {
 
 			if (package.Command == TcpCommand.Authenticated || package.Command == TcpCommand.NotAuthenticated) {
 				if (_state == ConnectionState.Connecting
-				    && _connectingPhase == ConnectingPhase.Authentication
-				    && _authInfo.CorrelationId == package.CorrelationId) {
+					&& _connectingPhase == ConnectingPhase.Authentication
+					&& _authInfo.CorrelationId == package.CorrelationId) {
 					if (package.Command == TcpCommand.NotAuthenticated)
 						RaiseAuthenticationFailed("Not authenticated");
 
@@ -504,7 +532,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			if (package.Command == TcpCommand.ClientIdentified) {
 				if (_state == ConnectionState.Connecting
-				    && _identifyInfo.CorrelationId == package.CorrelationId) {
+					&& _identifyInfo.CorrelationId == package.CorrelationId) {
 					GoToConnectedState();
 					return;
 				}
@@ -527,7 +555,8 @@ namespace EventStore.ClientAPI.Internal {
 				LogDebug("HandleTcpPackage OPERATION DECISION {0} ({1}), {2}", result.Decision, result.Description,
 					operation);
 				switch (result.Decision) {
-					case InspectionDecision.DoNothing: break;
+					case InspectionDecision.DoNothing:
+						break;
 					case InspectionDecision.EndOperation:
 						_operations.RemoveOperation(operation);
 						break;
@@ -543,7 +572,8 @@ namespace EventStore.ClientAPI.Internal {
 							new OperationNotSupportedException(operation.Operation.GetType().Name, result.Description));
 						_operations.RemoveOperation(operation);
 						break;
-					default: throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
+					default:
+						throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
 				}
 
 				if (_state == ConnectionState.Connected)
@@ -553,7 +583,8 @@ namespace EventStore.ClientAPI.Internal {
 				LogDebug("HandleTcpPackage SUBSCRIPTION DECISION {0} ({1}), {2}", result.Decision, result.Description,
 					subscription);
 				switch (result.Decision) {
-					case InspectionDecision.DoNothing: break;
+					case InspectionDecision.DoNothing:
+						break;
 					case InspectionDecision.EndOperation:
 						_subscriptions.RemoveSubscription(subscription);
 						break;
@@ -567,7 +598,8 @@ namespace EventStore.ClientAPI.Internal {
 					case InspectionDecision.Subscribed:
 						subscription.IsSubscribed = true;
 						break;
-					default: throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
+					default:
+						throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
 				}
 			} else {
 				LogDebug("HandleTcpPackage UNMAPPED PACKAGE with CorrelationId {0:B}, Command: {1}",
@@ -590,7 +622,8 @@ namespace EventStore.ClientAPI.Internal {
 			var msg = string.Format(
 				"EventStoreConnection '{0}': going to reconnect to [{1}]. Current endpoint: [{2}, L{3}].",
 				_esConnection.ConnectionName, endPoint, _connection.RemoteEndPoint, _connection.LocalEndPoint);
-			if (_settings.VerboseLogging) _settings.Log.Info(msg);
+			if (_settings.VerboseLogging)
+				_settings.Log.Info(msg);
 			CloseTcpConnection(msg);
 
 			_state = ConnectionState.Connecting;

@@ -17,7 +17,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
 
 		[Test]
 		public void it_works() {
-			Assert.Pass();
 		}
 	}
 }

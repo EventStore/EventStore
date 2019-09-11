@@ -1,4 +1,5 @@
-﻿using EventStore.ClientAPI;
+﻿using System.Threading.Tasks;
+using EventStore.ClientAPI;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
@@ -6,8 +7,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class read_event_of_linkto_to_deleted_event : SpecificationWithLinkToToDeletedEvents {
 		private EventReadResult _read;
 
-		protected override void When() {
-			_read = _conn.ReadEventAsync(LinkedStreamName, 0, true).Result;
+		protected override async Task When() {
+			_read = await _conn.ReadEventAsync(LinkedStreamName, 0, true);
 		}
 
 		[Test]
@@ -30,8 +31,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class read_allevents_backward_with_linkto_deleted_event : SpecificationWithLinkToToDeletedEvents {
 		private StreamEventsSlice _read;
 
-		protected override void When() {
-			_read = _conn.ReadStreamEventsBackwardAsync(LinkedStreamName, 0, 1, true, null).Result;
+		protected override async Task When() {
+			_read = await _conn.ReadStreamEventsBackwardAsync(LinkedStreamName, 0, 1, true, null);
 		}
 
 		[Test]

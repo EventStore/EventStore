@@ -8,6 +8,7 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
@@ -49,8 +50,8 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 #if DEBUG
 			QueueStatsCollector.InitializeIdleDetection();
@@ -69,13 +70,13 @@ namespace EventStore.Core.Tests.Integration {
 				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
 
 			_nodeCreationFactory.Add(0, (wait) => CreateNode(0,
-				_nodeEndpoints[0], new IPEndPoint[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp},
+				_nodeEndpoints[0], new IPEndPoint[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp },
 				wait));
 			_nodeCreationFactory.Add(1, (wait) => CreateNode(1,
-				_nodeEndpoints[1], new IPEndPoint[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp},
+				_nodeEndpoints[1], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp },
 				wait));
 			_nodeCreationFactory.Add(2, (wait) => CreateNode(2,
-				_nodeEndpoints[2], new IPEndPoint[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp},
+				_nodeEndpoints[2], new IPEndPoint[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp },
 				wait));
 
 			_nodes[0] = _nodeCreationFactory[0](true);
@@ -88,15 +89,15 @@ namespace EventStore.Core.Tests.Integration {
 			_nodes[1].Start();
 			_nodes[2].Start();
 
-			WaitHandle.WaitAll(new[] {_nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent});
+			WaitHandle.WaitAll(new[] { _nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent });
 			QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
 
 			_conn = CreateConnection();
-			_conn.ConnectAsync().Wait();
+			await _conn.ConnectAsync();
 
 			QueueStatsCollector.WaitIdle();
 
-			Given();
+			await Given();
 		}
 
 		protected virtual IEventStoreConnection CreateConnection() {
@@ -106,17 +107,10 @@ namespace EventStore.Core.Tests.Integration {
 		protected virtual void BeforeNodesStart() {
 		}
 
-		protected virtual void Given() {
-		}
+		protected virtual Task Given() => Task.CompletedTask;
 
-		protected void ShutdownNode(int nodeNum) {
-			_nodes[nodeNum].Shutdown(keepDb: true, keepPorts: true);
-		}
-
-		protected void StartNode(int nodeNum) {
-			_nodes[nodeNum] = _nodeCreationFactory[nodeNum](false);
-			_nodes[nodeNum].Start();
-			WaitHandle.WaitAll(new[] {_nodes[nodeNum].StartedEvent});
+		protected Task ShutdownNode(int nodeNum) {
+			return _nodes[nodeNum].Shutdown(keepDb: true);
 		}
 
 		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
@@ -131,19 +125,19 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			for (var i = 0; i < _portsUsed.Count; i++) {
-				PortsHelper.ReturnPort(_portsUsed[i]);
-			}
-
+		public override async Task TestFixtureTearDown() {
 			_conn.Close();
-			_nodes[0].Shutdown();
-			_nodes[1].Shutdown();
-			_nodes[2].Shutdown();
+			await Task.WhenAll(
+				_nodes[0].Shutdown(),
+				_nodes[1].Shutdown(),
+				_nodes[2].Shutdown());
 #if DEBUG
 			QueueStatsCollector.DisableIdleDetection();
 #endif
-			base.TestFixtureTearDown();
+			foreach (var port in _portsUsed) {
+				PortsHelper.ReturnPort(port);
+			}
+			await base.TestFixtureTearDown();
 		}
 
 		protected static void WaitIdle() {

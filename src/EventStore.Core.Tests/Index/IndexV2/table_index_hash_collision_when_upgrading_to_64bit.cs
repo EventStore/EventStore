@@ -5,6 +5,7 @@ using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Index.IndexV2 {
@@ -29,8 +30,8 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
@@ -78,14 +79,14 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			_tableIndex.Add(1, "LPN-FC002_LPK51001", 4, 9);
 			_tableIndex.Add(1, "account--696193173", 4, 10);
 
-			Thread.Sleep(500);
+			await Task.Delay(500);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

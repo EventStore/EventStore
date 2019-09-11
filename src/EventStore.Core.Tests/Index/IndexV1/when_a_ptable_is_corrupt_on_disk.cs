@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -21,8 +22,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_filename = GetTempFilePath();
 			_copiedfilename = GetTempFilePath();
@@ -39,11 +40,11 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override Task TearDown() {
 			_table.MarkForDestruction();
 			_table.WaitForDisposal(1000);
 
-			base.TearDown();
+			return base.TearDown();
 		}
 
 		[Test]

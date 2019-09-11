@@ -7,7 +7,7 @@ namespace EventStore.Core.Authentication {
 		IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, ISubscriber mainBus,
 			IPublisher workersQueue, InMemoryBus[] workerBusses);
 
-		void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService,
+		void RegisterHttpControllers(IHttpService externalHttpService, IHttpService internalHttpService,
 			HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue);
 	}
 }

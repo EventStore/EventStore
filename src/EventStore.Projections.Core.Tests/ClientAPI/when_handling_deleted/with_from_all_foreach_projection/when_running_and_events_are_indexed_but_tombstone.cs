@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_all_foreach_projection {
 	[TestFixture]
@@ -7,34 +8,34 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 			return false;
 		}
 
-		protected override void Given() {
-			base.Given();
-			PostEvent("stream-1", "type1", "{}");
-			PostEvent("stream-1", "type2", "{}");
-			PostEvent("stream-2", "type1", "{}");
-			PostEvent("stream-2", "type2", "{}");
+		protected override async Task Given() {
+			await base.Given();
+			await PostEvent("stream-1", "type1", "{}");
+			await PostEvent("stream-1", "type2", "{}");
+			await PostEvent("stream-2", "type1", "{}");
+			await PostEvent("stream-2", "type2", "{}");
 			WaitIdle();
-			EnableStandardProjections();
+			await EnableStandardProjections();
 			WaitIdle();
-			DisableStandardProjections();
+			await DisableStandardProjections();
 			WaitIdle();
 
 			// required to flush index checkpoint
 			{
-				EnableStandardProjections();
+				await EnableStandardProjections();
 				WaitIdle();
-				DisableStandardProjections();
+				await DisableStandardProjections();
 				WaitIdle();
 			}
 
 
-			HardDeleteStream("stream-1");
+			await HardDeleteStream("stream-1");
 			WaitIdle();
 		}
 
-		protected override void When() {
-			base.When();
-			PostProjection(@"
+		protected override async Task When() {
+			await base.When();
+			await PostProjection(@"
 fromAll().foreachStream().when({
     $init: function(){return {}},
     type1: function(s,e){s.a=1},
@@ -46,8 +47,8 @@ fromAll().foreachStream().when({
 		}
 
 		[Test, Category("Network")]
-		public void receives_deleted_notification() {
-			AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"deleted\":1}");
+		public async Task receives_deleted_notification() {
+			await AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"deleted\":1}");
 		}
 	}
 }

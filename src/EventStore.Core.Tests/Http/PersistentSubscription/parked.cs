@@ -22,12 +22,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private Guid _eventIdToPark;
 		private Guid _parkedEventId;
 		private List<JToken> _entries;
-		private AutoResetEvent _eventParked = new AutoResetEvent(false);
+		private readonly TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-		protected override void Given() {
+		protected override async Task Given() {
 			NumberOfEventsToCreate = 1;
-			base.Given();
-			var json = GetJson2<JObject>(
+			await base.Given();
+			var json = await GetJson2<JObject>(
 				SubscriptionPath + "/1", "embed=rich",
 				ContentType.CompetingJson,
 				_admin);
@@ -37,24 +37,24 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			_eventIdToPark = Guid.Parse(_entries[0]["eventId"].ToString());
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			var parkedStreamId = String.Format("$persistentsubscription-{0}::{1}-parked", TestStreamName, GroupName);
 
-			_connection.SubscribeToStreamAsync(parkedStreamId, true, (x, y) => {
-					_parkedEventId = y.Event.EventId;
-					_eventParked.Set();
-					return Task.CompletedTask;
-				},
+			await _connection.SubscribeToStreamAsync(parkedStreamId, true, (x, y) => {
+				_parkedEventId = y.Event.EventId;
+				_eventParked.TrySetResult(true);
+				return Task.CompletedTask;
+			},
 				(x, y, z) => { },
-				DefaultData.AdminCredentials).Wait();
+				DefaultData.AdminCredentials);
 
-			var response = MakePost(_nackLink, _admin);
+			var response = await MakePost(_nackLink, _admin);
 			Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
 		}
 
 		[Test]
-		public void should_have_parked_the_event() {
-			Assert.IsTrue(_eventParked.WaitOne(TimeSpan.FromSeconds(5)));
+		public async Task should_have_parked_the_event() {
+			await _eventParked.Task.WithTimeout(5000);
 			Assert.AreEqual(_eventIdToPark, _parkedEventId);
 		}
 	}
@@ -66,13 +66,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		private string _subscriptionParkedStream;
 		private Guid _writeCorrelationId;
-		private ManualResetEvent _eventParked = new ManualResetEvent(false);
+		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_connection.Close();
 			_connection.Dispose();
 			NumberOfEventsToCreate = 1;
-			base.Given();
+			await base.Given();
 
 			_subscriptionParkedStream =
 				"$persistentsubscription-" + TestStream.Substring(9) + "::" + GroupName + "-parked";
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
 			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(Handle));
 
-			var json = GetJson2<JObject>(
+			var json = await GetJson2<JObject>(
 				SubscriptionPath + "/1", "embed=rich",
 				ContentType.CompetingJson,
 				_admin);
@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			_eventIdToPark = Guid.Parse(_entries[0]["eventId"].ToString());
 
 			//Park the message
-			var response = MakePost(_nackLink, _admin);
+			var response = await MakePost(_nackLink, _admin);
 			Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
 		}
 
@@ -105,20 +105,18 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		private void Handle(StorageMessage.CommitReplicated msg) {
 			if (msg.CorrelationId == _writeCorrelationId) {
-				_eventParked.Set();
+				_eventParked.TrySetResult(true);
 			}
 		}
 
-		protected override void When() {
-			if (!_eventParked.WaitOne(TimeSpan.FromSeconds(10))) {
-				Assert.Fail("Timed out waiting for event to be written to the parked stream");
-			}
+		protected override async Task When() {
+			await _eventParked.Task.WithTimeout(10000);
 
-			var response = MakePost(SubscriptionPath + "/replayParked", _admin);
+			var response = await MakePost(SubscriptionPath + "/replayParked", _admin);
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
 			for (var i = 0; i < 10; i++) {
-				var json = GetJson2<JObject>(
+				var json = await GetJson2<JObject>(
 					SubscriptionPath + "/1", "embed=rich",
 					ContentType.CompetingJson,
 					_admin);
@@ -132,7 +130,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				}
 
 				Console.WriteLine("Received no entries. Attempt {0} of 10", i + 1);
-				Thread.Sleep(TimeSpan.FromSeconds(1));
+				await Task.Delay(TimeSpan.FromSeconds(1));
 			}
 		}
 

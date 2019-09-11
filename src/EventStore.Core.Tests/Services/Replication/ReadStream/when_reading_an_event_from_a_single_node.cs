@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -36,23 +37,23 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			}
 		}
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_expectedNumberOfRoleAssignments.Wait(5000);
 
 			_liveNode = GetMaster();
 			Assert.IsNotNull(_liveNode, "Could not get master node");
 
-			var events = new Event[] {new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0])};
+			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
 			var writeResult = ReplicationTestHelper.WriteEvent(_liveNode, events, _streamId);
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 			_commitPosition = writeResult.CommitPosition;
 
 			var slaves = GetSlaves();
 			foreach (var s in slaves) {
-				ShutdownNode(s.DebugIndex);
+				await ShutdownNode(s.DebugIndex);
 			}
 
-			base.Given();
+			await base.Given();
 		}
 
 		[Test]

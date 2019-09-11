@@ -53,10 +53,14 @@ namespace EventStore.ClientAPI.ClientOperations {
 				}
 
 				switch (package.Command) {
-					case TcpCommand.NotAuthenticated: return InspectNotAuthenticated(package);
-					case TcpCommand.BadRequest: return InspectBadRequest(package);
-					case TcpCommand.NotHandled: return InspectNotHandled(package);
-					default: return InspectUnexpectedCommand(package, _responseCommand);
+					case TcpCommand.NotAuthenticated:
+						return InspectNotAuthenticated(package);
+					case TcpCommand.BadRequest:
+						return InspectBadRequest(package);
+					case TcpCommand.NotHandled:
+						return InspectNotHandled(package);
+					default:
+						return InspectUnexpectedCommand(package, _responseCommand);
 				}
 			} catch (Exception e) {
 				Fail(e);
@@ -66,18 +70,20 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected void Succeed() {
-			if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0) {
-				if (_response != null)
-					_source.SetResult(TransformResponse(_response));
-				else
-					_source.SetException(new NoResultException());
+			var response = _response;
+			if (response != null) {
+				try {
+					_source.TrySetResult(TransformResponse(response));
+				} catch (Exception ex) {
+					_source.TrySetException(ex);
+				}
+			} else {
+				_source.TrySetException(new NoResultException());
 			}
 		}
 
 		public void Fail(Exception exception) {
-			if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0) {
-				_source.SetException(exception);
-			}
+			_source.TrySetException(exception);
 		}
 
 		public InspectionResult InspectNotAuthenticated(TcpPackage package) {
