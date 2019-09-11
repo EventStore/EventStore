@@ -56,7 +56,7 @@ namespace EventStore.Core.Authentication {
 			return provider;
 		}
 
-		public void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService,
+		public void RegisterHttpControllers(IHttpService externalHttpService, IHttpService internalHttpService,
 			HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue) {
 			var usersController = new UsersController(httpSendService, mainQueue, networkSendQueue);
 			externalHttpService.SetupController(usersController);

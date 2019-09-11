@@ -4,8 +4,6 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Net;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -16,8 +14,7 @@ using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
-using System.Net.NetworkInformation;
-using EventStore.Core.Data;
+using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.ClusterNode {
@@ -26,10 +23,12 @@ namespace EventStore.ClusterNode {
 		private ExclusiveDbLock _dbLock;
 		private ClusterNodeMutex _clusterNodeMutex;
 
-		public static void Main(string[] args) {
-			Console.CancelKeyPress += delegate { Environment.Exit((int)ExitCode.Success); };
+		public static Task<int> Main(string[] args) {
+			Console.CancelKeyPress += delegate {
+				Application.Exit(0, "Cancelled.");
+			};
 			var p = new Program();
-			p.Run(args);
+			return p.Run(args);
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -85,7 +84,7 @@ namespace EventStore.ClusterNode {
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
-				if(Runtime.IsWindows)
+				if (Runtime.IsWindows)
 					absolutePath = absolutePath.ToLower();
 
 				_dbLock = new ExclusiveDbLock(absolutePath);
@@ -101,14 +100,14 @@ namespace EventStore.ClusterNode {
 			if (!opts.DiscoverViaDns && opts.GossipSeed.Length == 0) {
 				if (opts.ClusterSize == 1) {
 					Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
-					         + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
-					         + "using the `GossipSeed` option.");
+							 + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
+							 + "using the `GossipSeed` option.");
 				}
 			}
 
 			var runProjections = opts.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
-				? new[] {NodeSubsystems.Projections}
+				? new[] { NodeSubsystems.Projections }
 				: new NodeSubsystems[0];
 			_node = BuildNode(opts);
 			RegisterWebControllers(enabledNodeSubsystems, opts);
@@ -127,7 +126,8 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static int GetQuorumSize(int clusterSize) {
-			if (clusterSize == 1) return 1;
+			if (clusterSize == 1)
+				return 1;
 			return clusterSize / 2 + 1;
 		}
 
@@ -306,7 +306,7 @@ namespace EventStore.ClusterNode {
 				builder.ReduceFileCachePressure();
 			if (options.StructuredLog)
 				builder.WithStructuredLogging(options.StructuredLog);
-			if(options.DisableFirstLevelHttpAuthorization)
+			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 
 			if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0) {
@@ -410,7 +410,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		public override void Stop() {
-			_node.StopNonblocking(true, true);
+			Task.Run(() => _node.Stop());
 		}
 
 		protected override void OnProgramExit() {

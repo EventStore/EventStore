@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http {
@@ -16,10 +19,16 @@ namespace EventStore.Core.Services.Transport.Http {
 
 	public interface IHttpService {
 		ServiceAccessibility Accessibility { get; }
+		bool IsListening { get; }
+
+		List<UriToActionMatch> GetAllUriMatches(Uri uri);
+		void SetupController(IHttpController controller);
 
 		void RegisterCustomAction(ControllerAction action,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
 
 		void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler);
+
+		void Shutdown();
 	}
 }

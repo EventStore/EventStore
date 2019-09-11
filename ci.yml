@@ -14,6 +14,12 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   steps:
+  - task: UseDotNet@1
+    displayName: 'Install .NET Core 3.x SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.0.100'
+      includePreviewVersions: true
   - powershell: |
       dotnet build -c $(Configuration) src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -22,7 +28,7 @@ jobs:
   - powershell: |
       (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
         ForEach-Object {
-          dotnet test -v normal -c $(Configuration) --no-build --logger trx $_ -- RunConfiguration.TargetPlatform=x64
+          dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
         }
     workingDirectory: $(Build.SourcesDirectory)
@@ -40,7 +46,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net471-$(Configuration) 
+      artifactName: windows-netcoreapp3-$(Configuration)
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: macos_x64
@@ -51,25 +57,25 @@ jobs:
       RELEASE:
         Configuration: release
   displayName: 'macOS x64'
-  timeoutInMinutes: 20
+  timeoutInMinutes: 30
   pool:
     vmImage: 'macOS 10.13'
   steps:
-  - bash: . '$(Build.SourcesDirectory)/ci/ap-setup-osx.sh'
-    displayName: Setup
+  - task: UseDotNet@1
+    displayName: 'Install .NET Core 3.x SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.0.100'
+      includePreviewVersions: true
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
-    env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
     displayName: Compile
-  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx
-    env:
-      FrameworkPathOverride: /Library/Frameworks/Mono.framework/Versions/5.16.0/lib/mono/4.7.1-api
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
     condition: succeededOrFailed()
     inputs:
-      testRunTitle: "MacOS 10.13 (Mono 5.16)"
+      testRunTitle: "MacOS 10.13"
       platform: "MacOS 10.13"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
@@ -77,63 +83,8 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-mono516-$(Configuration) 
+      artifactName: macos-netcoreapp3-{{ variables['Configuration'] }}
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
-
-- job: centos_x64
-  strategy:
-    matrix:
-      DEBUG:
-        Configuration: debug
-      RELEASE:
-        Configuration: release
-
-  displayName: Centos 7 x64
-  timeoutInMinutes: 20
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-    - bash: docker pull eventstore/eventstore-ci-centos7:latest
-      displayName: Pull Docker image for build
-      failOnStderr: false
-    - task: Docker@1
-      displayName: Compile in CentOS 7 Container
-      inputs:
-        command: 'run'
-        imageName: 'eventstore/eventstore-ci-centos7:latest'
-        runInBackground: false
-        volumes: '$(Build.SourcesDirectory):/work'
-        envVars: |
-          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-          EventStoreBuildConfig=$(Configuration)
-        containerCommand: ci/ap-build-linux.sh
-        workingDirectory: '/work'
-    - task: Docker@1
-      displayName: Test in CentOS 7 Container
-      inputs:
-        command: run
-        imageName: eventstore/eventstore-ci-centos7:latest
-        runInBackground: false
-        volumes: '$(Build.SourcesDirectory):/work'
-        envVars: |
-          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-          EventStoreBuildConfig=$(Configuration)
-        containerCommand: ci/ap-test-linux.sh
-        workingDirectory: '/work'
-    - task: PublishTestResults@2
-      displayName: Publish Test Results
-      condition: succeededOrFailed()
-      inputs:
-        testRunTitle: "Centos 7 (Mono 5.16)"
-        platform: "Centos 7"
-        testRunner: VSTest
-        testResultsFiles: '**/*.trx'
-    - task: PublishBuildArtifacts@1
-      condition: eq(variables['System.PullRequest.IsFork'], 'False')
-      displayName: Publish Artifacts
-      inputs:
-        artifactName: centos7-mono516-${{ variables['Configuration'] }}
-        pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: ubuntu_x64
   strategy:
@@ -143,49 +94,32 @@ jobs:
       RELEASE:
         Configuration: release
 
-  displayName: Ubuntu 14.04 x64
-  timeoutInMinutes: 20
+  displayName: Ubuntu 16.04 x64
+  timeoutInMinutes: 30
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
-    - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
-      displayName: Pull Docker image for build
-      failOnStderr: false
-    - task: Docker@1
-      displayName: Compile in Ubuntu 14.04 Container
-      inputs:
-        command: 'run'
-        imageName: 'eventstore/eventstore-ci-ubuntu-14.04:latest'
-        runInBackground: false
-        volumes: '$(Build.SourcesDirectory):/work'
-        envVars: |
-          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-          EventStoreBuildConfig=$(Configuration)
-        containerCommand: ci/ap-build-linux.sh
-        workingDirectory: '/work'
-    - task: Docker@1
-      displayName: Test in Ubuntu 14.04 Container
-      inputs:
-        command: run
-        imageName: eventstore/eventstore-ci-ubuntu-14.04:latest
-        runInBackground: false
-        volumes: '$(Build.SourcesDirectory):/work'
-        envVars: |
-          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-          EventStoreBuildConfig=$(Configuration)
-        containerCommand: ci/ap-test-linux.sh
-        workingDirectory: '/work'
-    - task: PublishTestResults@2
-      displayName: Publish Test Results
-      condition: succeededOrFailed()
-      inputs:
-        testRunTitle: "Ubuntu 14.04 (Mono 5.16)"
-        platform: "Ubuntu 14.04"
-        testRunner: VSTest
-        testResultsFiles: '**/*.trx'
-    - task: PublishBuildArtifacts@1
-      condition: eq(variables['System.PullRequest.IsFork'], 'False')
-      displayName: Publish Artifacts
-      inputs:
-        artifactName: ubuntu1404-mono516-${{ variables['Configuration'] }}
-        pathToPublish: '$(Build.SourcesDirectory)/bin/'
+  - task: UseDotNet@1
+    displayName: 'Install .NET Core 3.x SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.0.100'
+      includePreviewVersions: true
+  - bash: dotnet build -c $(Configuration) src/EventStore.sln
+    displayName: Compile
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
+    displayName: Run Tests
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testRunTitle: "Ubuntu 16.04"
+      platform: "Ubuntu 16.04"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+  - task: PublishBuildArtifacts@1
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
+    displayName: Publish Artifacts
+    inputs:
+      artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
+      pathToPublish: '$(Build.SourcesDirectory)/bin/'

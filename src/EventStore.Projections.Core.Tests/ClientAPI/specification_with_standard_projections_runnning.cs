@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
@@ -19,63 +21,21 @@ using EventStore.ClientAPI.Projections;
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
 	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode _node;
+		private MiniNode _node;
 		protected IEventStoreConnection _conn;
-		protected ProjectionsSubsystem _projections;
+		private ProjectionsSubsystem _projections;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 		protected QueryManager _queryManager;
+		private Task _projectionsCreated;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 #if (!DEBUG)
             Assert.Ignore("These tests require DEBUG conditional");
 #else
 			QueueStatsCollector.InitializeIdleDetection();
-			CreateNode();
-			try {
-				_conn = EventStoreConnection.Create(_node.TcpEndPoint);
-				_conn.ConnectAsync().Wait();
-
-				_manager = new ProjectionsManager(
-					new ConsoleLogger(),
-					_node.ExtHttpEndPoint,
-					TimeSpan.FromMilliseconds(20000));
-
-				_queryManager = new QueryManager(
-					new ConsoleLogger(),
-					_node.ExtHttpEndPoint,
-					TimeSpan.FromMilliseconds(20000),
-					TimeSpan.FromMilliseconds(20000));
-
-				WaitIdle();
-
-				if (GivenStandardProjectionsRunning())
-					EnableStandardProjections();
-
-				QueueStatsCollector.WaitIdle();
-				Given();
-				When();
-			} catch {
-				try {
-					if (_conn != null)
-						_conn.Close();
-				} catch {
-				}
-
-				try {
-					if (_node != null)
-						_node.Shutdown();
-				} catch {
-				}
-
-				throw;
-			}
-#endif
-		}
-
-		private void CreateNode() {
 			var projectionWorkerThreadCount = GivenWorkerThreadCount();
 			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
 				startStandardProjections: false,
@@ -84,7 +44,44 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			_node = new MiniNode(
 				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] {_projections});
-			_node.Start();
+			_projectionsCreated = SystemProjections.Created(_projections.MasterMainBus);
+
+			await _node.Start();
+			_conn = EventStoreConnection.Create(_node.TcpEndPoint);
+			await _conn.ConnectAsync();
+
+			_manager = new ProjectionsManager(
+				new ConsoleLogger(),
+				_node.ExtHttpEndPoint,
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
+
+			_queryManager = new QueryManager(
+				new ConsoleLogger(),
+				_node.ExtHttpEndPoint,
+				TimeSpan.FromMilliseconds(20000),
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
+
+			WaitIdle();
+
+			if (GivenStandardProjectionsRunning())
+				await EnableStandardProjections();
+
+			QueueStatsCollector.WaitIdle();
+			try {
+				await Given().WithTimeout(TimeSpan.FromSeconds(10));
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
+			}
+
+			try {
+				await When().WithTimeout(TimeSpan.FromSeconds(10));
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
+			}
+
+#endif
 		}
 
 		protected virtual int GivenWorkerThreadCount() {
@@ -92,68 +89,66 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		[TearDown]
-		public void PostTestAsserts() {
-			var all = _manager.ListAllAsync(_admin).Result;
+		public async Task PostTestAsserts() {
+			var all = await _manager.ListAllAsync(_admin);
 			if (all.Any(p => p.Name == "Faulted"))
 				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
 		}
 
-		protected void EnableStandardProjections() {
-			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
-			EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
-			EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
-			EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
+		protected async Task EnableStandardProjections() {
+			await _projectionsCreated;
+			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
+			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
+			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
+			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
 		}
 
-		protected void DisableStandardProjections() {
-			DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
-			DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
-			DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
-			DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
+		protected async Task DisableStandardProjections() {
+			await DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
+			await DisableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
+			await DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
+			await DisableProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection);
 		}
 
 		protected virtual bool GivenStandardProjectionsRunning() {
 			return true;
 		}
 
-		protected void EnableProjection(string name) {
-			_manager.EnableAsync(name, _admin).Wait();
+		protected Task EnableProjection(string name) {
+			return _manager.EnableAsync(name, _admin);
 		}
 
-		protected void DisableProjection(string name) {
-			_manager.DisableAsync(name, _admin).Wait();
+		protected Task DisableProjection(string name) {
+			return _manager.DisableAsync(name, _admin);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			if (_conn != null)
 				_conn.Close();
 
 			if (_node != null)
-				_node.Shutdown();
+				await _node.Shutdown();
 #if DEBUG
 			QueueStatsCollector.DisableIdleDetection();
 #endif
-			base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
-		protected virtual void When() {
+		protected virtual Task When() => Task.CompletedTask;
+
+		protected virtual Task Given() => Task.CompletedTask;
+
+		protected Task PostEvent(string stream, string eventType, string data) {
+			return _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, CreateEvent(eventType, data));
 		}
 
-		protected virtual void Given() {
+		protected Task HardDeleteStream(string stream) {
+			return _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, true, _admin);
 		}
 
-		protected void PostEvent(string stream, string eventType, string data) {
-			_conn.AppendToStreamAsync(stream, ExpectedVersion.Any,
-				new[] {event_by_type_index.with_existing_events.CreateEvent(eventType, data)}).Wait();
-		}
-
-		protected void HardDeleteStream(string stream) {
-			_conn.DeleteStreamAsync(stream, ExpectedVersion.Any, true, _admin).Wait();
-		}
-
-		protected void SoftDeleteStream(string stream) {
-			_conn.DeleteStreamAsync(stream, ExpectedVersion.Any, false, _admin).Wait();
+		protected Task SoftDeleteStream(string stream) {
+			return _conn.DeleteStreamAsync(stream, ExpectedVersion.Any, false, _admin);
 		}
 
 		protected static EventData CreateEvent(string type, string data) {
@@ -164,10 +159,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			QueueStatsCollector.WaitIdle(multiplier: multiplier);
 		}
 
-		[Conditional("DEBUG")]
-		protected void AssertStreamTail(string streamId, params string[] events) {
+		protected async Task AssertStreamTail(string streamId, params string[] events) {
 #if DEBUG
-			var result = _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin).Result;
+			await Task.Delay(TimeSpan.FromMilliseconds(500));
+			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin);
 			switch (result.Status) {
 				case SliceReadStatus.StreamDeleted:
 					Assert.Fail("Stream '{0}' is deleted", streamId);
@@ -197,10 +192,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #endif
 		}
 
-		[Conditional("DEBUG")]
-		protected void DumpStream(string streamId) {
+		protected async Task DumpStream(string streamId) {
 #if DEBUG
-			var result = _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin).Result;
+			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin);
 			switch (result.Status) {
 				case SliceReadStatus.StreamDeleted:
 					Assert.Fail("Stream '{0}' is deleted", streamId);
@@ -245,13 +239,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 #endif
 
-		protected void PostProjection(string query) {
-			_manager.CreateContinuousAsync("test-projection", query, _admin).Wait();
+		protected async Task PostProjection(string query) {
+			await _manager.CreateContinuousAsync("test-projection", query, _admin);
 			WaitIdle();
 		}
 
-		protected void PostQuery(string query) {
-			_manager.CreateTransientAsync("query", query, _admin).Wait();
+		protected async Task PostQuery(string query) {
+			await _manager.CreateTransientAsync("query", query, _admin);
 			WaitIdle();
 		}
 	}

@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_all_foreach_projection.recovery {
 	[TestFixture]
@@ -7,16 +8,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 			return false;
 		}
 
-		protected override void Given() {
-			base.Given();
-			PostEvent("stream-1", "type1", "{}");
-			PostEvent("stream-1", "type2", "{}");
-			PostEvent("stream-2", "type1", "{}");
-			PostEvent("stream-2", "type2", "{}");
+		protected override async Task Given() {
+			await base.Given();
+			await PostEvent("stream-1", "type1", "{}");
+			await PostEvent("stream-1", "type2", "{}");
+			await PostEvent("stream-2", "type1", "{}");
+			await PostEvent("stream-2", "type2", "{}");
 			WaitIdle();
-			EnableStandardProjections();
+			await EnableStandardProjections();
 			WaitIdle();
-			PostProjection(@"
+			await PostProjection(@"
 fromAll().foreachStream().when({
     $init: function(){return {a:0}},
     type1: function(s,e){s.a++},
@@ -25,26 +26,26 @@ fromAll().foreachStream().when({
 }).outputState();
 ");
 			WaitIdle();
-			HardDeleteStream("stream-1");
+			await HardDeleteStream("stream-1");
 			WaitIdle();
-			DisableStandardProjections();
+			await DisableStandardProjections();
 			WaitIdle();
-			EnableStandardProjections();
+			await EnableStandardProjections();
 			WaitIdle();
 		}
 
-		protected override void When() {
-			base.When();
-			_manager.AbortAsync("test-projection", _admin).Wait();
+		protected override async Task When() {
+			await base.When();
+			await _manager.AbortAsync("test-projection", _admin);
 			WaitIdle();
-			_manager.EnableAsync("test-projection", _admin).Wait();
+			await _manager.EnableAsync("test-projection", _admin);
 			WaitIdle();
 		}
 
 		[Test, Category("Network")]
-		public void receives_deleted_notification() {
-			AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
-			AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":2}");
+		public async Task receives_deleted_notification() {
+			await AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"a\":2,\"deleted\":1}");
+			await AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":2}");
 		}
 	}
 }

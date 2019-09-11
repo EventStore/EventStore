@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -85,6 +86,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
+		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -155,7 +157,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
-			bool readOnlyReplica = false) {
+			bool readOnlyReplica = false,
+			Func<HttpMessageHandler> createHttpMessageHandler = null) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -259,50 +262,51 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
+			CreateHttpMessageHandler = createHttpMessageHandler;
 		}
 
 		public override string ToString() {
 			return string.Format("InstanceId: {0}\n"
-			                     + "InternalTcp: {1}\n"
-			                     + "InternalSecureTcp: {2}\n"
-			                     + "ExternalTcp: {3}\n"
-			                     + "ExternalSecureTcp: {4}\n"
-			                     + "InternalHttp: {5}\n"
-			                     + "ExternalHttp: {6}\n"
-			                     + "IntHttpPrefixes: {7}\n"
-			                     + "ExtHttpPrefixes: {8}\n"
-			                     + "EnableTrustedAuth: {9}\n"
-			                     + "Certificate: {10}\n"
-			                     + "LogHttpRequests: {11}\n"
-			                     + "WorkerThreads: {12}\n"
-			                     + "DiscoverViaDns: {13}\n"
-			                     + "ClusterDns: {14}\n"
-			                     + "GossipSeeds: {15}\n"
-			                     + "ClusterNodeCount: {16}\n"
-			                     + "MinFlushDelay: {17}\n"
-			                     + "PrepareAckCount: {18}\n"
-			                     + "CommitAckCount: {19}\n"
-			                     + "PrepareTimeout: {20}\n"
-			                     + "CommitTimeout: {21}\n"
-			                     + "UseSsl: {22}\n"
-			                     + "SslTargetHost: {23}\n"
-			                     + "SslValidateServer: {24}\n"
-			                     + "StatsPeriod: {25}\n"
-			                     + "StatsStorage: {26}\n"
-			                     + "AuthenticationProviderFactory Type: {27}\n"
-			                     + "NodePriority: {28}"
-			                     + "GossipInterval: {29}\n"
-			                     + "GossipAllowedTimeDifference: {30}\n"
-			                     + "GossipTimeout: {31}\n"
-			                     + "HistogramEnabled: {32}\n"
-			                     + "HTTPCachingDisabled: {33}\n"
-			                     + "IndexPath: {34}\n"
-			                     + "ScavengeHistoryMaxAge: {35}\n"
-			                     + "ConnectionPendingSendBytesThreshold: {36}\n"
-			                     + "ChunkInitialReaderCount: {37}\n"
-			                     + "ReduceFileCachePressure: {38}\n"
-			                     + "InitializationThreads: {39}\n"
-			                     + "StructuredLog: {40}\n"
+								 + "InternalTcp: {1}\n"
+								 + "InternalSecureTcp: {2}\n"
+								 + "ExternalTcp: {3}\n"
+								 + "ExternalSecureTcp: {4}\n"
+								 + "InternalHttp: {5}\n"
+								 + "ExternalHttp: {6}\n"
+								 + "IntHttpPrefixes: {7}\n"
+								 + "ExtHttpPrefixes: {8}\n"
+								 + "EnableTrustedAuth: {9}\n"
+								 + "Certificate: {10}\n"
+								 + "LogHttpRequests: {11}\n"
+								 + "WorkerThreads: {12}\n"
+								 + "DiscoverViaDns: {13}\n"
+								 + "ClusterDns: {14}\n"
+								 + "GossipSeeds: {15}\n"
+								 + "ClusterNodeCount: {16}\n"
+								 + "MinFlushDelay: {17}\n"
+								 + "PrepareAckCount: {18}\n"
+								 + "CommitAckCount: {19}\n"
+								 + "PrepareTimeout: {20}\n"
+								 + "CommitTimeout: {21}\n"
+								 + "UseSsl: {22}\n"
+								 + "SslTargetHost: {23}\n"
+								 + "SslValidateServer: {24}\n"
+								 + "StatsPeriod: {25}\n"
+								 + "StatsStorage: {26}\n"
+								 + "AuthenticationProviderFactory Type: {27}\n"
+								 + "NodePriority: {28}"
+								 + "GossipInterval: {29}\n"
+								 + "GossipAllowedTimeDifference: {30}\n"
+								 + "GossipTimeout: {31}\n"
+								 + "HistogramEnabled: {32}\n"
+								 + "HTTPCachingDisabled: {33}\n"
+								 + "IndexPath: {34}\n"
+								 + "ScavengeHistoryMaxAge: {35}\n"
+								 + "ConnectionPendingSendBytesThreshold: {36}\n"
+								 + "ChunkInitialReaderCount: {37}\n"
+								 + "ReduceFileCachePressure: {38}\n"
+								 + "InitializationThreads: {39}\n"
+								 + "StructuredLog: {40}\n"
 								 + "DisableFirstLevelHttpAuthorization: {41}\n"
 								 + "ReadOnlyReplica: {42}\n",
 				NodeInfo.InstanceId,

@@ -10,16 +10,18 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.whe
 		private CountdownEvent _eventAppeared = new CountdownEvent(1);
 		private UserCredentials _credentials = new UserCredentials("admin", "changeit");
 
-		protected override void Given() {
+		protected override TimeSpan Timeout { get; } = TimeSpan.FromSeconds(10);
+
+		protected override Task Given() {
 			_trackEmittedStreams = false;
-			base.Given();
+			return base.Given();
 		}
 
-		protected override void When() {
-			var sub = _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
+		protected override async Task When() {
+			var sub = await _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
 				_eventAppeared.Signal();
 				return Task.CompletedTask;
-			}, userCredentials: _credentials).Result;
+			}, userCredentials: _credentials);
 
 			_emittedStreamsTracker.TrackEmittedStream(new EmittedEvent[] {
 				new EmittedDataEvent(
@@ -32,9 +34,9 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.whe
 		}
 
 		[Test]
-		public void should_write_a_stream_tracked_event() {
-			var result = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 200,
-				false, _credentials).Result;
+		public async Task should_write_a_stream_tracked_event() {
+			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 200,
+				false, _credentials);
 			Assert.AreEqual(0, result.Events.Length);
 			Assert.AreEqual(1, _eventAppeared.CurrentCount); //no event appeared should get through
 		}

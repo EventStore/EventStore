@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common;
@@ -89,23 +90,23 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, params EventData[] events) {
-// ReSharper disable RedundantArgumentDefaultValue
-// ReSharper disable RedundantCast
+			// ReSharper disable RedundantArgumentDefaultValue
+			// ReSharper disable RedundantCast
 			return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, null);
-// ReSharper restore RedundantCast
-// ReSharper restore RedundantArgumentDefaultValue
+			// ReSharper restore RedundantCast
+			// ReSharper restore RedundantArgumentDefaultValue
 		}
 
 		public Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion,
 			UserCredentials userCredentials, params EventData[] events) {
-// ReSharper disable RedundantCast
+			// ReSharper disable RedundantCast
 			return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>)events, userCredentials);
-// ReSharper restore RedundantCast
+			// ReSharper restore RedundantCast
 		}
 
 		public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion,
 			IEnumerable<EventData> events, UserCredentials userCredentials = null) {
-// ReSharper disable PossibleMultipleEnumeration
+			// ReSharper disable PossibleMultipleEnumeration
 			Ensure.NotNullOrEmpty(stream, "stream");
 			Ensure.NotNull(events, "events");
 
@@ -114,7 +115,7 @@ namespace EventStore.ClientAPI.Internal {
 				stream, expectedVersion, events, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
-// ReSharper restore PossibleMultipleEnumeration
+			// ReSharper restore PossibleMultipleEnumeration
 		}
 
 		public async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(string stream, long expectedVersion,
@@ -150,7 +151,7 @@ namespace EventStore.ClientAPI.Internal {
 
 		async Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction,
 			IEnumerable<EventData> events, UserCredentials userCredentials) {
-// ReSharper disable PossibleMultipleEnumeration
+			// ReSharper disable PossibleMultipleEnumeration
 			Ensure.NotNull(transaction, "transaction");
 			Ensure.NotNull(events, "events");
 
@@ -159,7 +160,7 @@ namespace EventStore.ClientAPI.Internal {
 				transaction.TransactionId, events, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			await source.Task.ConfigureAwait(false);
-// ReSharper restore PossibleMultipleEnumeration
+			// ReSharper restore PossibleMultipleEnumeration
 		}
 
 		async Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(
@@ -177,7 +178,8 @@ namespace EventStore.ClientAPI.Internal {
 		public async Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNullOrEmpty(stream, "stream");
-			if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
+			if (eventNumber < -1)
+				throw new ArgumentOutOfRangeException(nameof(eventNumber));
 			var source = TaskCompletionSourceFactory.Create<EventReadResult>();
 			var operation = new ReadEventOperation(Settings.Log, source, stream, eventNumber, resolveLinkTos,
 				Settings.RequireMaster, userCredentials);
@@ -504,18 +506,18 @@ namespace EventStore.ClientAPI.Internal {
 			await source.Task.ConfigureAwait(false);
 		}
 
-/*
+		/*
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(groupName, "groupName");
-            Ensure.NotNull(settings, "settings");
-            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
-            return source.Task;
-        }
+				public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+				{
+					Ensure.NotNullOrEmpty(groupName, "groupName");
+					Ensure.NotNull(settings, "settings");
+					var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+					EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
+					return source.Task;
+				}
 
-*/
+		*/
 		public async Task DeletePersistentSubscriptionAsync(string stream, string groupName,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNullOrEmpty(stream, "stream");
@@ -526,17 +528,17 @@ namespace EventStore.ClientAPI.Internal {
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			await source.Task.ConfigureAwait(false);
 		}
-/*
+		/*
 
-        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(groupName, "groupName");
-            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
-            return source.Task;
-        }
+				public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
+				{
+					Ensure.NotNullOrEmpty(groupName, "groupName");
+					var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+					EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
+					return source.Task;
+				}
 
-*/
+		*/
 
 		public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion,
 			StreamMetadata metadata, UserCredentials userCredentials = null) {
@@ -559,50 +561,45 @@ namespace EventStore.ClientAPI.Internal {
 				Settings.RequireMaster,
 				SystemStreams.MetastreamOf(stream),
 				expectedMetastreamVersion,
-				new[] {metaevent},
+				new[] { metaevent },
 				userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public Task<StreamMetadataResult>
-			GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
-			return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t => {
-				if (t.Exception != null)
-					throw t.Exception.InnerException;
-				var res = t.Result;
-				if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
-					return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion,
-						StreamMetadata.Create());
-				var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
-				return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
-			});
+		public async Task<StreamMetadataResult> GetStreamMetadataAsync(
+			string stream, UserCredentials userCredentials = null) {
+			var res = await GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ConfigureAwait(false);
+
+			if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
+				return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion,
+					StreamMetadata.Create());
+			var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
+			return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
 		}
 
-		public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream,
-			UserCredentials userCredentials = null) {
-			return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t => {
-				if (t.Exception != null)
-					throw t.Exception.InnerException;
+		public async Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(
+			string stream, UserCredentials userCredentials = null) {
+			var res = await ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials)
+				.ConfigureAwait(false);
 
-				var res = t.Result;
-				switch (res.Status) {
-					case EventReadStatus.Success:
-						if (res.Event == null) throw new Exception("Event is null while operation result is Success.");
-						var evnt = res.Event.Value.OriginalEvent;
-						if (evnt == null) return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-						return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
-					case EventReadStatus.NotFound:
-					case EventReadStatus.NoStream:
+			switch (res.Status) {
+				case EventReadStatus.Success:
+					if (res.Event == null)
+						throw new Exception("Event is null while operation result is Success.");
+					var evnt = res.Event.Value.OriginalEvent;
+					if (evnt == null)
 						return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-					case EventReadStatus.StreamDeleted:
-						return new RawStreamMetadataResult(stream, true, long.MaxValue, Empty.ByteArray);
-					default:
-						throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.",
-							res.Status));
-				}
-			});
+					return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
+				case EventReadStatus.NotFound:
+				case EventReadStatus.NoStream:
+					return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
+				case EventReadStatus.StreamDeleted:
+					return new RawStreamMetadataResult(stream, true, long.MaxValue, Empty.ByteArray);
+				default:
+					throw new ArgumentOutOfRangeException($"Unexpected ReadEventResult: {res.Status}.");
+			}
 		}
 
 		public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null) {

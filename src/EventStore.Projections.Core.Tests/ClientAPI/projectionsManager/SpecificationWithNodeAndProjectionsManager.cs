@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Projections;
@@ -10,14 +11,11 @@ using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
 using EventStore.Core.Util;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
@@ -32,78 +30,43 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		private ProjectionsSubsystem _projectionsSubsystem;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_credentials = new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword);
-			var createdMiniNode = false;
-			_timeout = TimeSpan.FromSeconds(10);
+			_timeout = TimeSpan.FromSeconds(20);
 			// Check if a node is running in ProjectionsManagerTestSuiteMarkerBase
-			if (SetUpFixture.Connection != null && SetUpFixture.Node != null) {
-				_tag = "_" + (++SetUpFixture.Counter);
-				_node = SetUpFixture.Node;
-				_connection = SetUpFixture.Connection;
-			} else {
-				createdMiniNode = true;
-				_tag = "_1";
-				
-				_node = CreateNode();
-				
-				// System projections are created and put into the stopped state when they're ready.
-				// NOTE: If this specification is changed to allow setting the 'startStandardProjections' option,
-				// this will need to be updated to take that into account.
-				_systemProjectionsCreated = new CountdownEvent(_systemProjections.Count()); 
-				_projectionsSubsystem.MasterMainBus.Subscribe(new AdHocHandler<CoreProjectionStatusMessage.Stopped>(msg => {
-					if (_systemProjections.Contains(msg.Name)
-					    && _systemProjectionsCreated.CurrentCount > 0)
-							_systemProjectionsCreated.Signal();
-				}));
-				
-				_node.Start();
+			_tag = "_1";
 
-				if(!_systemProjectionsCreated.Wait(TimeSpan.FromSeconds(10)))
-					Assert.Fail("Timed out waiting for standard projections to be written");
+			_node = CreateNode();
+			await _node.Start();
 
-				_connection = TestConnection.Create(_node.TcpEndPoint);
-				_connection.ConnectAsync().Wait();
+			_connection = TestConnection.Create(_node.TcpEndPoint);
+			await _connection.ConnectAsync();
+
+			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.ExtHttpEndPoint, _timeout, _node.HttpMessageHandler);
+			try {
+				await Given().WithTimeout(_timeout);
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
 			}
 
 			try {
-				_projManager = new ProjectionsManager(new ConsoleLogger(), _node.ExtHttpEndPoint, _timeout);
-				Given();
-				When();
-			} catch {
-				if (createdMiniNode) {
-					if (_connection != null) {
-						try {
-							_connection.Close();
-						} catch {
-						}
-					}
-
-					if (_node != null) {
-						try {
-							_node.Shutdown();
-						} catch {
-						}
-					}
-				}
-
-				throw;
+				await When().WithTimeout(_timeout);
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
 			}
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			if (SetUpFixture.Connection == null || SetUpFixture.Node == null) {
-				_connection.Close();
-				_node.Shutdown();
-			}
+		public override async Task TestFixtureTearDown() {
+			_connection.Close();
+			await _node.Shutdown();
 
-			base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 
-		public abstract void Given();
-		public abstract void When();
+		public abstract Task Given();
+		public abstract Task When();
 
 		protected MiniNode CreateNode() {
 			_projectionsSubsystem = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
@@ -119,18 +82,18 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			return new EventData(Guid.NewGuid(), eventType, true, Encoding.UTF8.GetBytes(data), null);
 		}
 
-		protected void PostEvent(string stream, string eventType, string data) {
-			_connection.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] {CreateEvent(eventType, data)}).Wait();
+		protected Task PostEvent(string stream, string eventType, string data) {
+			return _connection.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { CreateEvent(eventType, data) });
 		}
 
-		protected void CreateOneTimeProjection() {
+		protected Task CreateOneTimeProjection() {
 			var query = CreateStandardQuery(Guid.NewGuid().ToString());
-			_projManager.CreateOneTimeAsync(query, _credentials).Wait();
+			return _projManager.CreateOneTimeAsync(query, _credentials);
 		}
 
-		protected void CreateContinuousProjection(string projectionName) {
+		protected Task CreateContinuousProjection(string projectionName) {
 			var query = CreateStandardQuery(Guid.NewGuid().ToString());
-			_projManager.CreateContinuousAsync(projectionName, query, _credentials).Wait();
+			return _projManager.CreateContinuousAsync(projectionName, query, _credentials);
 		}
 
 		protected string CreateStandardQuery(string stream) {

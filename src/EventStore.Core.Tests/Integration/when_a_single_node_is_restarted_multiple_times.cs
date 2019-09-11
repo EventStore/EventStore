@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture, Category("LongRunning")]
@@ -13,20 +14,22 @@ namespace EventStore.Core.Tests.Integration {
 		private const int _numberOfNodeStarts = 5;
 		private readonly AutoResetEvent _waitForStart = new AutoResetEvent(false);
 
+		protected override TimeSpan Timeout { get; } = TimeSpan.FromMinutes(1);
+
 		protected override void BeforeNodeStarts() {
 			_node.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(Handle));
 			base.BeforeNodeStarts();
 		}
 
-		protected override void Given() {
+		protected override async Task Given() {
 			for (int i = 0; i < _numberOfNodeStarts - 1; i++) {
 				_waitForStart.WaitOne(5000);
-				ShutdownNode();
-				StartNode();
+				await ShutdownNode();
+				await StartNode();
 			}
 
 			_waitForStart.WaitOne(5000);
-			base.Given();
+			await base.Given();
 		}
 
 		private void Handle(SystemMessage.EpochWritten msg) {

@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private IPEndPoint[] _gossipSeeds;
 
 		public override void Given() {
-			var baseAddress = IPAddress.Parse("192.168.1.10");
+			var baseAddress = IPAddress.Parse("127.0.1.10");
 			_gossipSeeds = new IPEndPoint[] {
 				new IPEndPoint(baseAddress, 1111),
 				new IPEndPoint(baseAddress, 1112)
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private IPEndPoint[] _gossipSeeds;
 
 		public override void Given() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
-			_gossipSeeds = new IPEndPoint[] {new IPEndPoint(baseIpAddress, 2112), new IPEndPoint(baseIpAddress, 3112)};
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
+			_gossipSeeds = new IPEndPoint[] { new IPEndPoint(baseIpAddress, 2112), new IPEndPoint(baseIpAddress, 3112) };
 			_builder.WithGossipSeeds(_gossipSeeds);
 		}
 

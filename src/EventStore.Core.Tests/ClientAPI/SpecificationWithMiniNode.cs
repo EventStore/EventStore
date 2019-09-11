@@ -1,4 +1,6 @@
+using System;
 using System.Net;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
@@ -9,33 +11,43 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected MiniNode _node;
 		protected IEventStoreConnection _conn;
 		protected IPEndPoint _HttpEndPoint;
+		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(3);
 
-		protected virtual void Given() {
-		}
+		protected virtual Task Given() => Task.CompletedTask;
 
-		protected abstract void When();
+		protected abstract Task When();
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
 			return TestConnection.Create(node.TcpEndPoint);
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 			_HttpEndPoint = _node.ExtHttpEndPoint;
 			_conn = BuildConnection(_node);
-			_conn.ConnectAsync().Wait();
-			Given();
-			When();
+			await _conn.ConnectAsync();
+
+			try {
+				await Given().WithTimeout(Timeout);
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
+			}
+
+			try {
+				await When().WithTimeout(Timeout);
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
+			}
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_conn.Close();
-			_node.Shutdown();
-			base.TestFixtureTearDown();
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 	}
 }

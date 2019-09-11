@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -53,11 +54,11 @@ namespace EventStore.Core {
 			get { return _mainBus; }
 		}
 
-		public HttpService InternalHttpService {
+		public IHttpService InternalHttpService {
 			get { return _internalHttpService; }
 		}
 
-		public HttpService ExternalHttpService {
+		public IHttpService ExternalHttpService {
 			get { return _externalHttpService; }
 		}
 
@@ -83,16 +84,17 @@ namespace EventStore.Core {
 
 		private readonly ClusterVNodeController _controller;
 		private readonly TimerService _timerService;
-		private readonly HttpService _internalHttpService;
-		private readonly HttpService _externalHttpService;
+		private readonly KestrelHttpService _internalHttpService;
+		private readonly KestrelHttpService _externalHttpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
-		private readonly ManualResetEvent _shutdownEvent = new ManualResetEvent(false);
+		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
+		private readonly HttpMessageHandler _httpMessageHandler;
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		public IEnumerable<Task> Tasks {
@@ -105,7 +107,8 @@ namespace EventStore.Core {
 
 		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
 			EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
-			if (handler != null) handler(this, e);
+			if (handler != null)
+				handler(this, e);
 		}
 
 
@@ -125,6 +128,7 @@ namespace EventStore.Core {
 			var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_mainBus = new InMemoryBus("MainBus");
+			_httpMessageHandler = vNodeSettings.CreateHttpMessageHandler?.Invoke();
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -374,19 +378,21 @@ namespace EventStore.Core {
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching);
-			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
+			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout, _httpMessageHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var electController = new ElectController(_mainQueue);
+			var electController = new ElectController(_mainQueue, _httpMessageHandler);
 
 			// HTTP SENDERS
 			gossipController.SubscribeSenders(httpPipe);
 			electController.SubscribeSenders(httpPipe);
 
 			// EXTERNAL HTTP
-			_externalHttpService = new HttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-				_workersHandler, vNodeSettings.LogHttpRequests, vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs, vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.ExtHttpPrefixes);
+			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+				_workersHandler, vNodeSettings.LogHttpRequests,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
+				vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.ExtHttpPrefixes);
 			_externalHttpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)
 				_externalHttpService.SetupController(adminController);
@@ -404,10 +410,12 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
 			// INTERNAL HTTP
 			if (!isSingleNode) {
-				_internalHttpService = new HttpService(ServiceAccessibility.Private, _mainQueue, new TrieUriRouter(),
+				_internalHttpService = new KestrelHttpService(ServiceAccessibility.Private, _mainQueue,
+					new TrieUriRouter(),
 					_workersHandler, vNodeSettings.LogHttpRequests,
 					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
-					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs, vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.IntHttpPrefixes);
+					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs,
+					vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.IntHttpPrefixes);
 				_internalHttpService.SetupController(adminController);
 				_internalHttpService.SetupController(pingController);
 				_internalHttpService.SetupController(infoController);
@@ -642,8 +650,8 @@ namespace EventStore.Core {
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
 					var http = isSingleNode
-						? new[] {_externalHttpService}
-						: new[] {_internalHttpService, _externalHttpService};
+						? new[] { _externalHttpService }
+						: new[] { _internalHttpService, _externalHttpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler));
 				}
@@ -660,21 +668,17 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public void StopNonblocking(bool exitProcess, bool shutdownHttp) {
-			_mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess, shutdownHttp));
 
-			if (_subsystems == null) return;
-			foreach (var subsystem in _subsystems)
-				subsystem.Stop();
-		}
+		public async Task Stop() {
+			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
-		public bool Stop() {
-			return Stop(TimeSpan.FromSeconds(15), false, true);
-		}
+			if (_subsystems != null) {
+				foreach (var subsystem in _subsystems) {
+					subsystem.Stop();
+				}
+			}
 
-		public bool Stop(TimeSpan timeout, bool exitProcess, bool shutdownHttp) {
-			StopNonblocking(exitProcess, shutdownHttp);
-			return _shutdownEvent.WaitOne(timeout);
+			await _shutdownSource.Task.ConfigureAwait(false);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -682,7 +686,8 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
-			_shutdownEvent.Set();
+			_httpMessageHandler?.Dispose();
+			_shutdownSource.TrySetResult(true);
 		}
 
 		public void AddTasks(IEnumerable<Task> tasks) {
@@ -714,7 +719,7 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public Task<ClusterVNode> StartAndWaitUntilReady() {
+		public async Task<ClusterVNode> StartAndWaitUntilReady() {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
@@ -722,7 +727,7 @@ namespace EventStore.Core {
 
 			Start();
 
-			return tcs.Task;
+			return await tcs.Task.ConfigureAwait(false);
 		}
 
 		public override string ToString() {

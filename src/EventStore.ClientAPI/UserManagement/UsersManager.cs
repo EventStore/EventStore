@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -24,11 +25,11 @@ namespace EventStore.ClientAPI.UserManagement {
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
 		/// <param name="operationTimeout"></param>
 		/// <param name="tlsTerminatedEndpoint"></param>
-		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout, bool tlsTerminatedEndpoint = false, IHttpClient client = null) {
+		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout, bool tlsTerminatedEndpoint = false, HttpMessageHandler httpMessageHandler = null) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-			_client = new UsersClient(log, operationTimeout, client);
+			_client = new UsersClient(log, operationTimeout, httpMessageHandler);
 			_httpEndPoint = httpEndPoint;
 			_httpSchema = tlsTerminatedEndpoint ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA;
 		}

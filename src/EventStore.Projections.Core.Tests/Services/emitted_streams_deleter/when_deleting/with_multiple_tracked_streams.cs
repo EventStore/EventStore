@@ -16,19 +16,19 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		private string _testStreamFormat = "test_stream_{0}";
 		private EventStore.ClientAPI.SystemData.UserCredentials _credentials;
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_credentials = new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit");
 			_eventAppeared = new CountdownEvent(_numberOfTrackedEvents);
 			_onDeleteStreamCompleted = () => { _resetEvent.Set(); };
-			base.Given();
+			await base.Given();
 
-			var sub = _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
+			var sub = await _conn.SubscribeToStreamAsync(_projectionNamesBuilder.GetEmittedStreamsName(), true, (s, evnt) => {
 				_eventAppeared.Signal();
 				return Task.CompletedTask;
-			}, userCredentials: _credentials).Result;
+			}, userCredentials: _credentials);
 
 			for (int i = 0; i < _numberOfTrackedEvents; i++) {
-				_conn.AppendToStreamAsync(String.Format(_testStreamFormat, i), ExpectedVersion.Any,
+				await _conn.AppendToStreamAsync(String.Format(_testStreamFormat, i), ExpectedVersion.Any,
 					new EventData(Guid.NewGuid(), "type1", true, Helper.UTF8NoBom.GetBytes("data"), null));
 				_emittedStreamsTracker.TrackEmittedStream(new EmittedEvent[] {
 					new EmittedDataEvent(
@@ -42,42 +42,42 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 			}
 
 			var emittedStreamResult =
-				_conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0,
-					_numberOfTrackedEvents, false, _credentials).Result;
+				await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0,
+					_numberOfTrackedEvents, false, _credentials);
 			Assert.AreEqual(_numberOfTrackedEvents, emittedStreamResult.Events.Length);
 			Assert.AreEqual(SliceReadStatus.Success, emittedStreamResult.Status);
 		}
 
-		protected override void When() {
+		protected override Task When() {
 			_emittedStreamsDeleter.DeleteEmittedStreams(_onDeleteStreamCompleted);
 			if (!_resetEvent.WaitOne(TimeSpan.FromSeconds(10))) {
 				throw new Exception("Timed out waiting callback.");
 			}
 
-			;
+			return Task.CompletedTask;
 		}
 
 		[Test]
-		public void should_have_deleted_the_tracked_emitted_streams() {
+		public async Task should_have_deleted_the_tracked_emitted_streams() {
 			for (int i = 0; i < _numberOfTrackedEvents; i++) {
-				var result = _conn.ReadStreamEventsForwardAsync(String.Format(_testStreamFormat, i), 0, 1, false,
-					new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit")).Result;
+				var result = await _conn.ReadStreamEventsForwardAsync(String.Format(_testStreamFormat, i), 0, 1, false,
+					new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
 				Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 			}
 		}
 
 
 		[Test]
-		public void should_have_deleted_the_checkpoint_stream() {
-			var result = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(),
-				0, 1, false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit")).Result;
+		public async Task should_have_deleted_the_checkpoint_stream() {
+			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsCheckpointName(),
+				0, 1, false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
 			Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 		}
 
 		[Test]
-		public void should_have_deleted_the_emitted_streams_stream() {
-			var result = _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1,
-				false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit")).Result;
+		public async Task should_have_deleted_the_emitted_streams_stream() {
+			var result = await _conn.ReadStreamEventsForwardAsync(_projectionNamesBuilder.GetEmittedStreamsName(), 0, 1,
+				false, new EventStore.ClientAPI.SystemData.UserCredentials("admin", "changeit"));
 			Assert.AreEqual(SliceReadStatus.StreamNotFound, result.Status);
 		}
 	}

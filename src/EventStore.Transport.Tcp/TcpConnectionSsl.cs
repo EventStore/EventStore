@@ -126,7 +126,7 @@ namespace EventStore.Transport.Tcp {
 
 				_sslStream = new SslStream(new NetworkStream(socket, true), false);
 				try {
-					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Default;
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11;
 					_sslStream.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, true,
 						OnEndAuthenticateAsServer, _sslStream);
 				} catch (AuthenticationException exc) {
@@ -314,8 +314,10 @@ namespace EventStore.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_streamLock) {
-				if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+				if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated)
+					return;
+				if (TcpConnectionMonitor.Default.IsSendBlocked())
+					return;
 				_isSending = true;
 			}
 
@@ -470,8 +472,8 @@ namespace EventStore.Transport.Tcp {
 
 				Interlocked.Exchange(ref _receiveHandling, 0);
 			} while (!_receiveQueue.IsEmpty
-			         && _receiveCallback != null
-			         && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
+					 && _receiveCallback != null
+					 && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
 		}
 
 		public void Close(string reason) {

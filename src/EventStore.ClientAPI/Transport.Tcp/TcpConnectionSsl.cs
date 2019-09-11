@@ -219,8 +219,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_streamLock) {
-				if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+				if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated)
+					return;
+				if (TcpConnectionMonitor.Default.IsSendBlocked())
+					return;
 				_isSending = true;
 			}
 
@@ -365,8 +367,8 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 				Interlocked.Exchange(ref _receiveHandling, 0);
 			} while (!_receiveQueue.IsEmpty
-			         && _receiveCallback != null
-			         && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
+					 && _receiveCallback != null
+					 && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
 		}
 
 		public void Close(string reason) {
@@ -386,11 +388,9 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			_log.Info("Receive calls: {0}, callbacks: {1}", ReceiveCalls, ReceiveCallbacks);
 			_log.Info("Close reason: [{0}] {1}", socketError, reason);
 
-			if (_sslStream != null)
-				Helper.EatException(() => _sslStream.Close());
+			Helper.EatException(() => _sslStream?.Close());
 
-			if (_onConnectionClosed != null)
-				_onConnectionClosed(this, socketError);
+			_onConnectionClosed?.Invoke(this, socketError);
 		}
 
 		public override string ToString() {

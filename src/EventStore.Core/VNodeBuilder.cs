@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
@@ -137,6 +138,7 @@ namespace EventStore.Core {
 		private bool _gossipOnSingleNode;
 
 		private bool _readOnlyReplica;
+		private Func<HttpMessageHandler> _createHttpMessageHandler;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -749,7 +751,7 @@ namespace EventStore.Core {
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			return this;
 		}
-		
+
 		/// <summary>
 		/// Sets the maximum number of connection operations allowed before a connection is closed.
 		/// </summary>
@@ -999,8 +1001,7 @@ namespace EventStore.Core {
 		/// Disables first level authorization checks on all HTTP endpoints.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableFirstLevelHttpAuthorization()
-		{
+		public VNodeBuilder DisableFirstLevelHttpAuthorization() {
 			_disableFirstLevelHttpAuthorization = true;
 			return this;
 		}
@@ -1225,6 +1226,26 @@ namespace EventStore.Core {
 			return this;
 		}
 
+		/// Use Kestrel
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder UseKestrel() {
+			_useKestrel = true;
+
+			return this;
+		}
+
+		/// <summary>
+		/// Determines the factory used to create the <see cref="HttpMessageHandler"/> used by internal http communications. Used for testing.
+		/// </summary>
+		/// <param name="createHttpMessageHandler">the <see cref="HttpMessageHandler"/> factory.</param>
+		/// <returns></returns>
+		public VNodeBuilder WithHttpMessageHandlerFactory(Func<HttpMessageHandler> createHttpMessageHandler) {
+			_createHttpMessageHandler = createHttpMessageHandler;
+
+			return this;
+		}
+
 		private void EnsureHttpPrefixes() {
 			if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
 				_intHttpPrefixes = new List<string>();
@@ -1232,7 +1253,7 @@ namespace EventStore.Core {
 				_extHttpPrefixes = new List<string>();
 
 			if ((_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-			     _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
+				 _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
 				if (_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
 					_intHttpPrefixes.Add(String.Format("http://*:{0}/", _internalHttp.Port));
 				}
@@ -1246,20 +1267,8 @@ namespace EventStore.Core {
 					_intHttpPrefixes.Add(intHttpPrefixToAdd);
 				}
 
-				intHttpPrefixToAdd = String.Format("http://localhost:{0}/", _internalHttp.Port);
-				if (_internalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
 				var extHttpPrefixToAdd = String.Format("http://{0}:{1}/", _externalHttp.Address, _externalHttp.Port);
 				if (!_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-
-				extHttpPrefixToAdd = String.Format("http://localhost:{0}/", _externalHttp.Port);
-				if (_externalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
 					_extHttpPrefixes.Add(extHttpPrefixToAdd);
 				}
 			}
@@ -1271,7 +1280,7 @@ namespace EventStore.Core {
 				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
 
 				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
+					 _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
@@ -1421,7 +1430,8 @@ namespace EventStore.Core {
 				_structuredLog,
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
-				_readOnlyReplica);
+				_readOnlyReplica,
+				_createHttpMessageHandler);
 
 			var infoController = new InfoController(options, _projectionType);
 
@@ -1452,7 +1462,7 @@ namespace EventStore.Core {
 			} else {
 				if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1) {
 					throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					                    + "Specify gossip seeds using the `GossipSeed` option.");
+										+ "Specify gossip seeds using the `GossipSeed` option.");
 				}
 
 				if (_gossipSeeds == null)
@@ -1507,19 +1517,19 @@ namespace EventStore.Core {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				if (Runtime.IsMono) {
-					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true,
-						initValue: -1);
-				} else {
+				if (!Runtime.IsMono) {
 					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
 						initValue: -1);
 					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
 						cached: true, initValue: -1);
+				} else {
+					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true,
+						initValue: -1);
 				}
 			}
 

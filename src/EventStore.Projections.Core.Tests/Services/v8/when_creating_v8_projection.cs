@@ -191,8 +191,6 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 				} catch (Js1Exception) {
 				}
 			}
-
-			Assert.Pass();
 		}
 	}
 }

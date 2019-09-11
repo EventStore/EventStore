@@ -70,6 +70,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			_disableAuthorization = disableAuthorization;
 		}
 
+		// TODO: JPB this doesn't really belong here but no idea where to move it to...
 		public static void CreateAndSubscribePipeline(IBus bus,
 			HttpAuthenticationProvider[] httpAuthenticationProviders) {
 			Ensure.NotNull(bus, "bus");
@@ -107,8 +108,14 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context) {
-			var entity = new HttpEntity(context.Request, context.Response, context.User, _logHttpRequests,
-				_advertiseAsAddress, _advertiseAsPort);
+			var request = new HttpListenerRequestAdapter(context.Request);
+			var response = new HttpListenerResponseAdapter(context.Response);
+			var entity = new HttpEntity(request,
+				response, context.User, _logHttpRequests,
+				_advertiseAsAddress, _advertiseAsPort, () => {
+					response.OutputStream.Close();
+					response.Close();
+				});
 			_requestsMultiHandler.Handle(new IncomingHttpRequestMessage(this, entity, _requestsMultiHandler));
 		}
 
@@ -145,10 +152,10 @@ namespace EventStore.Core.Services.Transport.Http {
 			Ensure.NotNull(handler, "handler");
 
 			_uriRouter.RegisterAction(action, (man, match) => {
-				if(_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)){
+				if (_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)) {
 					handler(man, match);
-				} else{
-					man.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.Unauthorized, "Unauthorized", (exc)=>{
+				} else {
+					man.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.Unauthorized, "Unauthorized", (exc) => {
 						Log.Debug("Error while sending reply (http service): {exc}.", exc.Message);
 					});
 				}
@@ -156,9 +163,8 @@ namespace EventStore.Core.Services.Transport.Http {
 			});
 		}
 
-        private bool Authorized(IPrincipal user, AuthorizationLevel requiredAuthorizationLevel)
-        {
-            switch(requiredAuthorizationLevel){
+		private bool Authorized(IPrincipal user, AuthorizationLevel requiredAuthorizationLevel) {
+			switch (requiredAuthorizationLevel) {
 				case AuthorizationLevel.None:
 					return true;
 				case AuthorizationLevel.User:
@@ -170,9 +176,9 @@ namespace EventStore.Core.Services.Transport.Http {
 				default:
 					return false;
 			}
-        }
+		}
 
-        public List<UriToActionMatch> GetAllUriMatches(Uri uri) {
+		public List<UriToActionMatch> GetAllUriMatches(Uri uri) {
 			return _uriRouter.GetAllUriMatches(uri);
 		}
 	}

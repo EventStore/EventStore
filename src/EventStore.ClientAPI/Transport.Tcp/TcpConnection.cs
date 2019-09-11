@@ -4,9 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using System.Collections.Concurrent;
 using EventStore.ClientAPI.Common.Utils.Threading;
 
 namespace EventStore.ClientAPI.Transport.Tcp {
@@ -26,7 +24,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Action<ITcpConnection, SocketError> onConnectionFailed,
 			Action<ITcpConnection, SocketError> onConnectionClosed) {
 			var connection = new TcpConnection(log, connectionId, remoteEndPoint, onConnectionClosed);
-// ReSharper disable ImplicitlyCapturedClosure
+			// ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
 				(_, socket) => {
 					connection.InitSocket(socket);
@@ -37,7 +35,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					if (onConnectionFailed != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionFailed(connection, socketError));
 				}, connection, connectionTimeout);
-// ReSharper restore ImplicitlyCapturedClosure
+			// ReSharper restore ImplicitlyCapturedClosure
 			return connection;
 		}
 
@@ -85,12 +83,12 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			InitConnectionBase(socket);
 			//_log.Info("TcpConnection::InitSocket[{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
 			lock (_sendLock) {
-				_socket = socket;
+				Volatile.Write(ref _socket, socket);
 				try {
 					socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
-					_socket = null;
+					Volatile.Write(ref _socket, null);
 					return;
 				}
 
@@ -125,8 +123,11 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+				var socket = Volatile.Read(ref _socket);
+				if (_isSending || _sendQueue.IsEmpty || socket == null)
+					return;
+				if (TcpConnectionMonitor.Default.IsSendBlocked())
+					return;
 				_isSending = true;
 			}
 
@@ -281,10 +282,13 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			_log.Info("Receive calls: {0}, callbacks: {1}", ReceiveCalls, ReceiveCallbacks);
 			_log.Info("Close reason: [{0}] {1}", socketError, reason);
 
-			if (_socket != null) {
-				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
-				Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-				_socket = null;
+			var socket = Volatile.Read(ref _socket);
+			if (socket != null) {
+				using (socket) {
+					Helper.EatException(() => socket.Shutdown(SocketShutdown.Both));
+					Helper.EatException(() => socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+					Volatile.Write(ref _socket, null);
+				}
 			}
 
 			lock (_sendLock) {
@@ -292,8 +296,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					ReturnSendingSocketArgs();
 			}
 
-			if (_onConnectionClosed != null)
-				_onConnectionClosed(this, socketError);
+			_onConnectionClosed?.Invoke(this, socketError);
 		}
 
 		private void ReturnSendingSocketArgs() {

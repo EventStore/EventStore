@@ -12,6 +12,10 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
@@ -131,11 +135,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			IPublisher inputBus = new NoopPublisher();
 			var bus = InMemoryBus.CreateTest();
 			var queue = new QueuedHandlerThreadPool(bus, "Test", true, TimeSpan.FromMilliseconds(50));
-			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
-			var providers = new HttpAuthenticationProvider[] {new AnonymousHttpAuthenticationProvider()};
-			var httpService = new HttpService(ServiceAccessibility.Public, inputBus,
+			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] { queue }, null);
+			var providers = new HttpAuthenticationProvider[] { new AnonymousHttpAuthenticationProvider() };
+			var httpService = new KestrelHttpService(ServiceAccessibility.Public, inputBus,
 				new TrieUriRouter(), multiQueuedHandler, false, null, 0, false, "http://localhost:12345/");
 			HttpService.CreateAndSubscribePipeline(bus, providers);
+
+			using var server = new TestServer(new WebHostBuilder().UseStartup(new HttpServiceStartup(httpService)));
+			using var httpMessageHandler = server.CreateHandler();
 
 			var fakeController = new FakeController(iterations, null);
 			httpService.SetupController(fakeController);
@@ -146,7 +153,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var sw = Stopwatch.StartNew();
 
 			var timeout = TimeSpan.FromMilliseconds(10000);
-			var httpClient = new HttpAsyncClient(timeout);
+			var httpClient = new HttpAsyncClient(timeout, httpMessageHandler);
 			for (int i = 0; i < iterations; ++i) {
 				var route = fakeController.BoundRoutes[rnd.Next(0, fakeController.BoundRoutes.Count)];
 
@@ -200,6 +207,17 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 			Console.WriteLine("{0} request done in {1} ({2:0.00} per sec)", iterations, sw.Elapsed,
 				1000.0 * iterations / sw.ElapsedMilliseconds);
+		}
+
+		class HttpServiceStartup : IStartup {
+			private readonly KestrelHttpService _httpService;
+
+			public HttpServiceStartup(KestrelHttpService httpService) {
+				_httpService = httpService;
+			}
+			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
+
+			public void Configure(IApplicationBuilder app) => app.Use(_httpService.MidFunc);
 		}
 	}
 }

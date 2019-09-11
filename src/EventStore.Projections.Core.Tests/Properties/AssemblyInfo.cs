@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
+using NUnit.Framework;
 
 [assembly: AssemblyTitle("EventStore.Projections.Core.Tests")]
 [assembly: AssemblyDescription("")]
@@ -16,5 +17,3 @@ using System.Runtime.InteropServices;
 
 [assembly: ComVisible(false)]
 [assembly: Guid("000aa1a5-5e87-4404-a909-49d3f8878f00")]
-
-[assembly: NUnit.Framework.Timeout(2 * 60 * 1000)]

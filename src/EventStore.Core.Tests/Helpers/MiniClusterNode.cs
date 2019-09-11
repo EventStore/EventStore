@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -23,6 +24,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
+using Microsoft.AspNetCore.Hosting;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -49,9 +51,12 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly TFChunkDb Db;
 		private readonly string _dbPath;
 		private readonly bool _isReadOnlyReplica;
-		public ManualResetEvent StartedEvent;
+		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
+
+		public Task Started => _started.Task;
 
 		public VNodeState NodeState = VNodeState.Unknown;
+		private readonly IWebHost _host;
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
@@ -90,8 +95,8 @@ namespace EventStore.Core.Tests.Helpers {
 					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
 					InternalHttpEndPoint, ExternalHttpEndPoint,
 					null, null, 0, 0),
-				new[] {InternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)},
-				new[] {ExternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)}, enableTrustedAuth,
+				new[] { InternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA) },
+				new[] { ExternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA) }, enableTrustedAuth,
 				ssl_connections.GetCertificate(), 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
@@ -125,50 +130,50 @@ namespace EventStore.Core.Tests.Helpers {
 				infoController: new InfoController(null, ProjectionType.None), subsystems: subsystems,
 				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
+
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(InternalHttpEndPoint);
+					o.Listen(ExternalHttpEndPoint);
+				})
+				.UseStartup(new MiniNode.ClusterVNodeStartup(Node))
+				.Build();
 		}
 
 		public void Start() {
 			StartingTime.Start();
 
-			StartedEvent = new ManualResetEvent(false);
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = _isReadOnlyReplica ?
-					VNodeState.ReadOnlyMasterless : VNodeState.Unknown; }));
+				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+					NodeState = _isReadOnlyReplica ?
+VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
+				}));
 			if (!_isReadOnlyReplica) {
 				Node.MainBus.Subscribe(
 					new AdHocHandler<SystemMessage.BecomeMaster>(m => {
 						NodeState = VNodeState.Master;
-						StartedEvent.Set();
+						_started.TrySetResult(true);
 					}));
 				Node.MainBus.Subscribe(
 					new AdHocHandler<SystemMessage.BecomeSlave>(m => {
 						NodeState = VNodeState.Slave;
-						StartedEvent.Set();
+						_started.TrySetResult(true);
 					}));
 			} else {
 				Node.MainBus.Subscribe(
 					new AdHocHandler<SystemMessage.BecomeReadOnlyReplica>(m => {
 						NodeState = VNodeState.ReadOnlyReplica;
-						StartedEvent.Set();
+						_started.TrySetResult(true);
 					}));
 			}
+			_host.Start();
 			Node.Start();
 		}
 
-		public void Shutdown(bool keepDb = false, bool keepPorts = false) {
+		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			if (!Node.Stop(TimeSpan.FromSeconds(20), false, true))
-				throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
-
-			if (!keepPorts) {
-				PortsHelper.ReturnPort(InternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(InternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(InternalHttpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalHttpEndPoint.Port);
-			}
-
+			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20));
+			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);
 

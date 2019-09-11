@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
@@ -9,14 +10,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture, Category("LongRunning")]
 	class when_deleting_non_existing_subscription : with_admin_user {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 
-		protected override void Given() {
-		}
+		protected override Task Given() => Task.CompletedTask;
 
-		protected override void When() {
+		protected override async Task When() {
 			var req = CreateRequest("/subscriptions/stream/groupname158", "DELETE", _admin);
-			_response = GetRequestResponse(req);
+			_response = await GetRequestResponse(req);
 		}
 
 		[Test]
@@ -27,19 +27,19 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_deleting_an_existing_subscription : with_admin_user {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 
-		protected override void Given() {
-			_response = MakeJsonPut(
+		protected override async Task Given() {
+			_response = await MakeJsonPut(
 				"/subscriptions/stream/groupname156",
 				new {
 					ResolveLinkTos = true
 				}, _admin);
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			var req = CreateRequest("/subscriptions/stream/groupname156", "DELETE", _admin);
-			_response = GetRequestResponse(req);
+			_response = await GetRequestResponse(req);
 		}
 
 		[Test]
@@ -50,20 +50,20 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_deleting_an_existing_subscription_without_permissions : with_admin_user {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 
-		protected override void Given() {
-			_response = MakeJsonPut(
+		protected override async Task Given() {
+			_response = await MakeJsonPut(
 				"/subscriptions/stream/groupname156",
 				new {
 					ResolveLinkTos = true
 				}, _admin);
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			SetDefaultCredentials(null);
 			var req = CreateRequest("/subscriptions/stream/groupname156", "DELETE");
-			_response = GetRequestResponse(req);
+			_response = await GetRequestResponse(req);
 		}
 
 		[Test]
@@ -74,15 +74,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_deleting_an_existing_subscription_with_subscribers : with_admin_user {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 		private const string _stream = "astreamname";
 		private readonly string _groupName = Guid.NewGuid().ToString();
 		private SubscriptionDropReason _reason;
 		private Exception _exception;
 		private readonly AutoResetEvent _dropped = new AutoResetEvent(false);
 
-		protected override void Given() {
-			_response = MakeJsonPut(
+		protected override async Task Given() {
+			_response = await MakeJsonPut(
 				string.Format("/subscriptions/{0}/{1}", _stream, _groupName),
 				new {
 					ResolveLinkTos = true
@@ -95,9 +95,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				});
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			var req = CreateRequest(string.Format("/subscriptions/{0}/{1}", _stream, _groupName), "DELETE", _admin);
-			_response = GetRequestResponse(req);
+			_response = await GetRequestResponse(req);
 		}
 
 		[Test]
