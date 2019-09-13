@@ -5,5 +5,12 @@
 		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
 		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
 		<IntermediateOutputPath>$(MSBuildThisFileDirectory)\..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+		<Authors>Event Store Ltd</Authors>
+		<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
+		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
+		<PackageIconUrl>https://eventstore.com/images/ouro.svg</PackageIconUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
+		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
 	</PropertyGroup>
 </Project>

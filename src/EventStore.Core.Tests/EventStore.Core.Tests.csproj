@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net471</TargetFramework>
     <Platform>x64</Platform>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

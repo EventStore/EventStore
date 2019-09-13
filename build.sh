@@ -116,16 +116,6 @@ function checkParams() {
     echo "FrameworkPathOverride set to: $FrameworkPathOverride"
 }
 
-function revertVersionFiles() {
-    files=$( find . -name "AssemblyInfo.cs" )
-
-    for file in $files
-    do
-        git checkout "$file"
-        echo "Reverted $file"
-    done
-}
-
 function revertVersionInfo() {
     files=$( find . -name "VersionInfo.cs" )
 
@@ -137,53 +127,9 @@ function revertVersionInfo() {
 }
 
 function err() {
-    revertVersionFiles
     revertVersionInfo
     echo "FAILED. See earlier messages"
     exit 1
-}
-
-function patchVersionFiles {
-    branchName=$(git rev-parse --abbrev-ref HEAD)
-    commitHashAndTime=$(git log -n1 --pretty=format:"%H@%aD" HEAD)
-
-    newAssemblyVersion="[assembly: AssemblyVersion(\"$VERSIONSTRING\")]"
-    newAssemblyFileVersion="[assembly: AssemblyFileVersion(\"$VERSIONSTRING\")]"
-    newAssemblyVersionInformational="[assembly: AssemblyInformationalVersion(\"$VERSIONSTRING.$branchName@$commitHashAndTime\")]"
-    newAssemblyProductName="[assembly: AssemblyProduct(\"$PRODUCTNAME\")]"
-    newAssemblyCopyright="[assembly: AssemblyCopyright(\"$COPYRIGHT\")]"
-    newAssemblyCompany="[assembly: AssemblyCompany(\"$COMPANYNAME\")]"
-
-    assemblyVersionPattern='.*AssemblyVersion(.*'
-    assemblyFileVersionPattern='.*AssemblyFileVersion(.*'
-    assemblyVersionInformationalPattern='.*AssemblyInformationalVersion(.*'
-    assemblyProductNamePattern='.*AssemblyProduct(.*'
-    assemblyCopyrightPattern='.*AssemblyCopyright(.*'
-    assemblyCompanyPattern='.*AssemblyCompany(.*'
-
-    files=$( find . -name "AssemblyInfo.cs" )
-
-    for file in $files
-    do
-        tempfile="$file.tmp"
-        sed -e "s/$assemblyVersionPattern/$newAssemblyVersion/g" \
-            -e "s/$assemblyFileVersionPattern/$newAssemblyFileVersion/g" \
-            -e "s/$assemblyVersionInformationalPattern/$newAssemblyVersionInformational/g" \
-            -e "s/$assemblyProductNamePattern/$newAssemblyProductName/g" \
-            -e "s/$assemblyCopyrightPattern/$newAssemblyCopyright/g" \
-            -e "s/$assemblyCompanyPattern/$newAssemblyCompany/g" \
-            "$file" > "$tempfile" || err
-
-        mv "$tempfile" "$file"
-
-        if grep "AssemblyInformationalVersion" "$file" > /dev/null ; then
-            echo "Patched $file with version information"
-        else
-            echo " " >> "$file"
-            echo "$newAssemblyVersionInformational" >> "$file"
-            echo "Patched $file with version information"
-        fi
-    done
 }
 
 function patchVersionInfo {
@@ -240,11 +186,9 @@ function buildUI {
 }
 
 function buildEventStore {
-    patchVersionFiles
     patchVersionInfo
     rm -rf bin/
-    dotnet build -c $CONFIGURATION src/EventStore.sln || err
-    revertVersionFiles
+    dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING src/EventStore.sln || err
     revertVersionInfo
 }
 

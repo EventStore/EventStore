@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net471</TargetFramework>
     <Platform>x64</Platform>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
