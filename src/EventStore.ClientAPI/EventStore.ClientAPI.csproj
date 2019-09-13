@@ -25,9 +25,6 @@
       <PackageReference Include="System.Net.Requests" Version="4.3.0" />
       <PackageReference Include="System.Net.Security" Version="4.3.2" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties" />
-  </ItemGroup>
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>EventStore.Core.Tests</_Parameter1>
