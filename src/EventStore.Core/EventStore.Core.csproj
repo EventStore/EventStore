@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<Platform>x64</Platform>
-		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 	<ItemGroup>
@@ -37,5 +37,10 @@
 						LinkBase="Services/Transport/Grpc"
 						ProtoRoot="../Protos/Grpc"/>
 		<Compile Include="../EventStore.Grpc.Common/*.cs" LinkBase="Services/Transport/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>EventStore.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 </Project>
