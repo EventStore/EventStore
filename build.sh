@@ -188,7 +188,7 @@ function buildUI {
 function buildEventStore {
     patchVersionInfo
     rm -rf bin/
-    dotnet build -c $CONFIGURATION src/EventStore.sln || err
+    dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING src/EventStore.sln || err
     revertVersionFiles
     revertVersionInfo
 }
