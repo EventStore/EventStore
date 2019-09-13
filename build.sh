@@ -189,7 +189,6 @@ function buildEventStore {
     patchVersionInfo
     rm -rf bin/
     dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING src/EventStore.sln || err
-    revertVersionFiles
     revertVersionInfo
 }
 
