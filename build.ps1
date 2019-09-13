@@ -75,12 +75,6 @@ Function Exec
     }
 }
 
-Function Get-GitCommitHashAndTimestamp
-{
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
-    return $lastCommitLog
-}
-
 Function Get-GitCommitHash
 {
     $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
