@@ -20,60 +20,6 @@ Function Write-Info {
     }
 }
 
-Function Patch-AssemblyInfo {
-    Param(
-        [Parameter(Mandatory=$true)]
-        [string]$assemblyInfoFilePath,
-        [Parameter(Mandatory=$true)]
-        [string]$version,
-        [Parameter(Mandatory=$true)]
-        [string]$fileVersion,
-        [Parameter(Mandatory=$true)]
-        [string]$branch,
-        [Parameter(Mandatory=$true)]
-        [string]$commitHashAndTimestamp,
-        [Parameter(Mandatory=$true)]
-        [string]$productName,
-        [Parameter(Mandatory=$true)]
-        [string]$companyName,
-        [Parameter()][string]$copyright
-    )
-    Process {
-        $newAssemblyVersion = 'AssemblyVersion("' + $version + '")'
-        $newAssemblyFileVersion = 'AssemblyFileVersion("' + $fileVersion + '")'
-        $newAssemblyVersionInformational = 'AssemblyInformationalVersion("' + $version + '.' + $branch + '@' + $commitHashAndTimestamp + '")'
-        $newAssemblyProductName = 'AssemblyProduct("' + $productName + '")'
-        $newAssemblyCopyright = 'AssemblyCopyright("'+ $copyright + '")'
-        $newAssemblyCompany = 'AssemblyCompany("' + $companyName + '")'
-
-        $assemblyVersionPattern = 'AssemblyVersion\(".*"\)'
-        $assemblyFileVersionPattern = 'AssemblyFileVersion\(".*"\)'
-        $assemblyVersionInformationalPattern = 'AssemblyInformationalVersion\(".*"\)'
-        $assemblyProductNamePattern = 'AssemblyProduct\(".*"\)'
-        $assemblyCopyrightPattern = 'AssemblyCopyright\(".*"\)'
-        $assemblyCompanyPattern = 'AssemblyCompany\(".*"\)'
-
-        $edited = (Get-Content $assemblyInfoFilePath) | ForEach-Object {
-            % {$_ -replace "\/\*+.*\*+\/", "" } |
-            % {$_ -replace "\/\/+.*$", "" } |
-            % {$_ -replace "\/\*+.*$", "" } |
-            % {$_ -replace "^.*\*+\/\b*$", "" } |
-            % {$_ -replace $assemblyVersionPattern, $newAssemblyVersion } |
-            % {$_ -replace $assemblyFileVersionPattern, $newAssemblyFileVersion } |
-            % {$_ -replace $assemblyVersionInformationalPattern, $newAssemblyVersionInformational } |
-            % {$_ -replace $assemblyProductNamePattern, $newAssemblyProductName } |
-            % {$_ -replace $assemblyCopyrightPattern, $newAssemblyCopyright } |
-            % {$_ -replace $assemblyCompanyPattern, $newAssemblyCompany }
-        }
-
-        if (!(($edited -match $assemblyVersionInformationalPattern) -ne "")) {
-            $edited += "[assembly: $newAssemblyVersionInformational]"
-        }
-
-        Set-Content -Path $assemblyInfoFilePath -Value $edited
-    }
-}
-
 Function Patch-VersionInfo {
     Param(
         [Parameter(Mandatory=$true)]
@@ -129,12 +75,6 @@ Function Exec
     }
 }
 
-Function Get-GitCommitHashAndTimestamp
-{
-    $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H@%aD HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
-    return $lastCommitLog
-}
-
 Function Get-GitCommitHash
 {
     $lastCommitLog = Exec { git log --max-count=1 --pretty=format:%H HEAD } "Cannot execute git log. Ensure that the current directory is a git repository and that git is available on PATH."
@@ -163,9 +103,6 @@ Function Start-Build{
     if(!$PSScriptRoot) { $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent }
 
     #Configuration
-    $productName = "Event Store Open Source"
-    $companyName = "Event Store LLP"
-    $copyright = "Copyright 2019 Event Store LLP. All rights reserved."
     $platform = "x64"
 
     $baseDirectory = $PSScriptRoot
@@ -208,31 +145,17 @@ Function Start-Build{
     #Build Event Store (Patch AssemblyInfo, Build, Revert AssemblyInfo)
     Remove-Item -Force -Recurse $binDirectory -ErrorAction SilentlyContinue > $null
 
-    $commitHashAndTimestamp = Get-GitCommitHashAndTimestamp
     $commitHash = Get-GitCommitHash
     $timestamp = Get-GitTimestamp
     $branchName = Get-GitBranchOrTag
     
-    $assemblyInfos = Get-ChildItem -Recurse -Filter AssemblyInfo.cs
     $versionInfoFile = Resolve-Path (Join-Path $srcDirectory (Join-Path "EventStore.Common" (Join-Path "Utils" "VersionInfo.cs"))) -Relative
     try {
-        foreach ($assemblyInfo in $assemblyInfos) {
-            $path = Resolve-Path $assemblyInfo.FullName -Relative
-            Write-Info "Patching $path with product information."
-            Patch-AssemblyInfo $path $Version $Version $branchName $commitHashAndTimestamp $productName $companyName $copyright
-        }
-
         Write-Info "Patching $versionInfoFile with product information."
         Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
-        Exec { dotnet build -c $configuration $eventStoreSolution }
+        Exec { dotnet build -c $configuration /p:Version=$Version $eventStoreSolution }
     } finally {
-        foreach ($assemblyInfo in $assemblyInfos) {
-            $path = Resolve-Path $assemblyInfo.FullName -Relative
-            Write-Info "Reverting $path to original state."
-            & { git checkout --quiet $path }
-        }
-
         Write-Info "Reverting $versionInfoFile to original state."
         & { git checkout --quiet $versionInfoFile }
     }
