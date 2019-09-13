@@ -1,4 +1,4 @@
-# Event Store
+# Event   Store
 
 The open-source, functional database with Complex Event Processing in JavaScript.
 
