@@ -8,6 +8,8 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - powershell: |
       dotnet build -c Debug src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -43,6 +45,8 @@ jobs:
   pool:
     vmImage: 'vs2017-win2016'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - powershell: |
       dotnet build -c Release src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -78,6 +82,8 @@ jobs:
   pool:
     vmImage: 'macOS 10.13'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: . '$(Build.SourcesDirectory)/ci/ap-setup-osx.sh'
     displayName: Setup
   - bash: dotnet build -c Debug src/EventStore.sln
@@ -109,6 +115,8 @@ jobs:
   pool:
     vmImage: 'macOS 10.13'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: . '$(Build.SourcesDirectory)/ci/ap-setup-osx.sh'
     displayName: Setup
   - bash: dotnet build -c Release src/EventStore.sln
@@ -140,6 +148,8 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: docker pull eventstore/eventstore-ci-centos7:latest
     displayName: Pull Docker image for build
     failOnStderr: false
@@ -188,6 +198,8 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: docker pull eventstore/eventstore-ci-centos7:latest
     displayName: Pull Docker image for build
     failOnStderr: false
@@ -236,6 +248,8 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
     displayName: Pull Docker image for build
     failOnStderr: false
@@ -284,6 +298,8 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
+  - checkout: self 
+    fetchDepth: 1
   - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
     displayName: Pull Docker image for build
     failOnStderr: false
