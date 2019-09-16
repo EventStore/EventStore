@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageParker(new FakeMessageParker())
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
 			Assert.AreEqual(1, envelope.Replies.Count);
 		}
@@ -148,8 +148,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.PreferRoundRobin()
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope2, 10, "foo", "bar");
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1));
 			Assert.AreEqual(1, envelope1.Replies.Count);
@@ -170,8 +170,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.PreferDispatchToSingle()
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope2, 10, "foo", "bar");
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 1));
 			Assert.AreEqual(2, envelope1.Replies.Count);
@@ -190,7 +190,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageParker(new FakeMessageParker())
 					.StartFromBeginning());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			sub.HandleReadCompleted(new[] {Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0)}, 1, false);
 			Assert.AreEqual(1, envelope1.Replies.Count);
 		}
@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageParker(new FakeMessageParker())
 					.StartFromBeginning());
 			Assert.DoesNotThrow(() => {
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 				sub.HandleReadCompleted(new[] {Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0)}, 1,
 					false);
 			});
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageParker(new FakeMessageParker())
 					.StartFromBeginning());
 			Assert.DoesNotThrow(() => {
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 				sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0));
 			});
 		}
@@ -245,8 +245,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.PreferRoundRobin()
 					.StartFromBeginning());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope2, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -272,8 +272,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.PreferDispatchToSingle()
 					.StartFromBeginning());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope2, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope2, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -333,7 +333,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//a subscriber coming in a while later, should receive all 3 events
 			await Task.Delay(500).ContinueWith((action) => {
 				//add a subscriber
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
+				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 
 				//all 3 events should be received by the subscriber
 				Assert.AreEqual(3, envelope.Replies.Count);
@@ -487,8 +487,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(20));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id, "type", "streamName", 0),
@@ -515,8 +515,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(20));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id, "type", "streamName", 0),
@@ -542,8 +542,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -571,8 +571,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -601,8 +601,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id, "type", "streamName", 0),
@@ -631,8 +631,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			var id3 = Guid.NewGuid();
@@ -663,8 +663,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			var id3 = Guid.NewGuid();
@@ -696,8 +696,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			var id3 = Guid.NewGuid();
@@ -727,8 +727,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(5));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -758,8 +758,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(5));
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -821,7 +821,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
-			sub.AddClient(clientCorrelationId, clientConnectionId, new FakeEnvelope(), 10, "foo", "bar");
+			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 10, "foo", "bar");
 
 			//send events 1-3, ACK event 1 only and Mark checkpoint
 			sub.HandleReadCompleted(new[] {
@@ -873,7 +873,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
-			sub.AddClient(clientCorrelationId, clientConnectionId, new FakeEnvelope(), 10, "foo", "bar");
+			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 10, "foo", "bar");
 
 			//handle event number 10@streamName
 			var readEventId = Guid.NewGuid();
@@ -898,7 +898,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			sub.RetryAllParkedMessages();
 
 			//handle parked event 15@$persistentsubscription-streamName::groupName-parked
-			//this should send the parked event to the retry buffer. 
+			//this should send the parked event to the retry buffer.
 			sub.HandleParkedReadCompleted(new[] {
 				parkedEvent,
 			},16,true,17);
@@ -997,7 +997,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning()
 					.WithMessageTimeoutOf(TimeSpan.FromSeconds(3)));
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -1025,8 +1025,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning()
 					.WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 1, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 1, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 1, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 1, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -1116,7 +1116,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMaxRetriesOf(0)
 					.WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id1, "type", "streamName", 0),
@@ -1144,7 +1144,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMaxRetriesOf(0)
 					.WithMessageTimeoutOf(TimeSpan.FromSeconds(1)));
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -1176,7 +1176,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageTimeoutOf(TimeSpan.Zero)
 					.StartFromBeginning());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 2, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 2, "foo", "bar");
 
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 0),
@@ -1216,7 +1216,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning()
 					.DontTimeoutMessages());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
@@ -1247,7 +1247,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id1, "type", "streamName", 0),
@@ -1273,7 +1273,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id1, "type", "streamName", 0),
@@ -1298,7 +1298,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id1, "type", "streamName", 0),
@@ -1323,7 +1323,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			sub.HandleReadCompleted(new[] {
 				Helper.BuildFakeEvent(id1, "type", "streamName", 0),
@@ -1351,7 +1351,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 10, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
 			var id1 = Guid.NewGuid();
 			var ev = Helper.BuildFakeEvent(id1, "type", "streamName", 0);
 			sub.HandleReadCompleted(new[] {
@@ -1387,7 +1387,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			var corrid = Guid.NewGuid();
-			sub.AddClient(corrid, Guid.NewGuid(), envelope1, 1, "foo", "bar");
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 1, "foo", "bar");
 
 			var id1 = Guid.NewGuid();
 			var id2 = Guid.NewGuid();
@@ -1420,7 +1420,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.WithMessageParker(new FakeMessageParker())
 					.WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
 
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), new FakeEnvelope(), 1, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", new FakeEnvelope(), 1, "foo", "bar");
 			Assert.IsTrue(sub.HasClients);
 			Assert.AreEqual(1, sub.ClientCount);
 		}
@@ -1445,9 +1445,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			fakeCheckpointReader.Load(null);
 
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
 			var client2Id = Guid.NewGuid();
-			sub.AddClient(client2Id, Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(client2Id, Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 
 			Assert.IsTrue(sub.HasClients);
@@ -1484,9 +1484,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			fakeCheckpointReader.Load(null);
 
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
 			var connectionId = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), connectionId, client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), connectionId, "connection-2", client2Envelope, 10, "foo", "bar");
 
 			Assert.IsTrue(sub.HasClients);
 			Assert.AreEqual(2, sub.ClientCount);

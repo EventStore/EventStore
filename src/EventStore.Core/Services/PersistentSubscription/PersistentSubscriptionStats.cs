@@ -66,7 +66,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					InFlightMessages = conn.InflightMessages,
 					AvailableSlots = conn.AvailableSlots,
 					CountSinceLastMeasurement = connLastItems,
-					ObservedMeasurements = stats
+					ObservedMeasurements = stats,
+					ConnectionName = conn.ConnectionName,
 				});
 			}
 

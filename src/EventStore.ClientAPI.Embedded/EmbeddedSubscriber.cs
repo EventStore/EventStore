@@ -17,14 +17,16 @@ namespace EventStore.ClientAPI.Embedded {
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly ILogger _log;
 		private readonly Guid _connectionId;
+		private readonly string _connectionName;
 
 
 		public EmbeddedSubscriber(IPublisher publisher, IAuthenticationProvider authenticationProvider, ILogger log,
-			Guid connectionId) {
+			Guid connectionId, string connectionName) {
 			_publisher = publisher;
 			_authenticationProvider = authenticationProvider;
 			_log = log;
 			_connectionId = connectionId;
+			_connectionName = connectionName;
 			_subscriptions = new EmbeddedSubcriptionsManager();
 		}
 
@@ -87,7 +89,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries,
 			TimeSpan operationTimeout) {
-			var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, source,
+			var subscription = new EmbeddedPersistentSubscription(_log, _publisher, _connectionId, _connectionName, source,
 				subscriptionId, streamId, userCredentials, _authenticationProvider, bufferSize, eventAppeared,
 				subscriptionDropped, maxRetries, operationTimeout);
 
