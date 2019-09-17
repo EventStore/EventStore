@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 	[TestFixture]
-	public class elections_service_3_nodes_one_goes_into_maintainence_mode {
+	public class elections_service_3_nodes_one_goes_into_maintenance_mode {
 		private RandomizedElectionsAndGossipTestCase _randomCase;
 
 		[SetUp]
