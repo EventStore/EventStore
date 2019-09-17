@@ -134,194 +134,112 @@ jobs:
       artifactName: macos-mono516-release
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
-- job: centos7_x64_debug
-  displayName: 'Centos 7 x64 Debug'
-  timeoutInMinutes: 20
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - bash: docker pull eventstore/eventstore-ci-centos7:latest
-    displayName: Pull Docker image for build
-    failOnStderr: false
-  - task: Docker@1
-    displayName: Compile in CentOS 7 Container
-    inputs:
-      command: 'run'
-      imageName: 'eventstore/eventstore-ci-centos7:latest'
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Debug
-      containerCommand: ci/ap-build-linux.sh
-      workingDirectory: '/work'
-  - task: Docker@1
-    displayName: Test in CentOS 7 Container
-    inputs:
-      command: run
-      imageName: eventstore/eventstore-ci-centos7:latest
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Debug
-      containerCommand: ci/ap-test-linux.sh
-      workingDirectory: '/work'
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Centos 7 (Mono 5.16)"
-      platform: "Centos 7"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: centos7-mono516-debug
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+- job: centos_x64
+  strategy:
+    matrix:
+      DEBUG:
+        Configuration: debug
+      RELEASE:
+        Configuration: release
 
-- job: centos7_x64_release
-  displayName: 'Centos 7 x64 Release'
+  displayName: Centos 7 x64
   timeoutInMinutes: 20
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
-  - bash: docker pull eventstore/eventstore-ci-centos7:latest
-    displayName: Pull Docker image for build
-    failOnStderr: false
-  - task: Docker@1
-    displayName: Compile in CentOS 7 Container
-    inputs:
-      command: 'run'
-      imageName: 'eventstore/eventstore-ci-centos7:latest'
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Release
-      containerCommand: ci/ap-build-linux.sh
-      workingDirectory: '/work'
-  - task: Docker@1
-    displayName: Test in CentOS 7 Container
-    inputs:
-      command: run
-      imageName: eventstore/eventstore-ci-centos7:latest
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Release
-      containerCommand: ci/ap-test-linux.sh
-      workingDirectory: '/work'
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Centos 7 (Mono 5.16)"
-      platform: "Centos 7"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: centos7-mono516-release
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+    - bash: docker pull eventstore/eventstore-ci-centos7:latest
+      displayName: Pull Docker image for build
+      failOnStderr: false
+    - task: Docker@1
+      displayName: Compile in CentOS 7 Container
+      inputs:
+        command: 'run'
+        imageName: 'eventstore/eventstore-ci-centos7:latest'
+        runInBackground: false
+        volumes: '$(Build.SourcesDirectory):/work'
+        envVars: |
+          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
+          EventStoreBuildConfig=$(Configuration)
+        containerCommand: ci/ap-build-linux.sh
+        workingDirectory: '/work'
+    - task: Docker@1
+      displayName: Test in CentOS 7 Container
+      inputs:
+        command: run
+        imageName: eventstore/eventstore-ci-centos7:latest
+        runInBackground: false
+        volumes: '$(Build.SourcesDirectory):/work'
+        envVars: |
+          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
+          EventStoreBuildConfig=$(Configuration)
+        containerCommand: ci/ap-test-linux.sh
+        workingDirectory: '/work'
+    - task: PublishTestResults@2
+      displayName: Publish Test Results
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: "Centos 7 (Mono 5.16)"
+        platform: "Centos 7"
+        testRunner: VSTest
+        testResultsFiles: '**/*.trx'
+    - task: PublishBuildArtifacts@1
+      condition: eq(variables['System.PullRequest.IsFork'], 'False')
+      displayName: Publish Artifacts
+      inputs:
+        artifactName: centos7-mono516-${{ variables['Configuration'] }}
+        pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
-- job: ubuntu1404_x64_debug
-  displayName: 'Ubuntu 14.04 x64 Debug'
-  timeoutInMinutes: 20
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
-    displayName: Pull Docker image for build
-    failOnStderr: false
-  - task: Docker@1
-    displayName: Compile in Ubuntu 14.04 Container
-    inputs:
-      command: 'run'
-      imageName: 'eventstore/eventstore-ci-ubuntu-14.04:latest'
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Debug
-      containerCommand: ci/ap-build-linux.sh
-      workingDirectory: '/work'
-  - task: Docker@1
-    displayName: Test in Ubuntu 14.04 Container
-    inputs:
-      command: run
-      imageName: eventstore/eventstore-ci-ubuntu-14.04:latest
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Debug
-      containerCommand: ci/ap-test-linux.sh
-      workingDirectory: '/work'
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Ubuntu 14.04 (Mono 5.16)"
-      platform: "Ubuntu 14.04"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: ubuntu1404-mono516-debug
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+- job: ubuntu_x64
+  strategy:
+    matrix:
+      DEBUG:
+        Configuration: debug
+      RELEASE:
+        Configuration: release
 
-- job: ubuntu1404_x64_release
-  displayName: 'Ubuntu 14.04 x64 Release'
+  displayName: Ubuntu 14.04 x64
   timeoutInMinutes: 20
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
-  - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
-    displayName: Pull Docker image for build
-    failOnStderr: false
-  - task: Docker@1
-    displayName: Compile in Ubuntu 14.04 Container
-    inputs:
-      command: 'run'
-      imageName: 'eventstore/eventstore-ci-ubuntu-14.04:latest'
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Release
-      containerCommand: ci/ap-build-linux.sh
-      workingDirectory: '/work'
-  - task: Docker@1
-    displayName: Test in Ubuntu 14.04 Container
-    inputs:
-      command: run
-      imageName: eventstore/eventstore-ci-ubuntu-14.04:latest
-      runInBackground: false
-      volumes: '$(Build.SourcesDirectory):/work'
-      envVars: |
-        FrameworkPathOverride=/usr/lib/mono/4.7.1-api
-        EventStoreBuildConfig=Release
-      containerCommand: ci/ap-test-linux.sh
-      workingDirectory: '/work'
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Ubuntu 14.04 (Mono 5.16)"
-      platform: "Ubuntu 14.04"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: ubuntu1404-mono516-release
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+    - bash: docker pull eventstore/eventstore-ci-ubuntu-14.04:latest
+      displayName: Pull Docker image for build
+      failOnStderr: false
+    - task: Docker@1
+      displayName: Compile in Ubuntu 14.04 Container
+      inputs:
+        command: 'run'
+        imageName: 'eventstore/eventstore-ci-ubuntu-14.04:latest'
+        runInBackground: false
+        volumes: '$(Build.SourcesDirectory):/work'
+        envVars: |
+          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
+          EventStoreBuildConfig=$(Configuration)
+        containerCommand: ci/ap-build-linux.sh
+        workingDirectory: '/work'
+    - task: Docker@1
+      displayName: Test in Ubuntu 14.04 Container
+      inputs:
+        command: run
+        imageName: eventstore/eventstore-ci-ubuntu-14.04:latest
+        runInBackground: false
+        volumes: '$(Build.SourcesDirectory):/work'
+        envVars: |
+          FrameworkPathOverride=/usr/lib/mono/4.7.1-api
+          EventStoreBuildConfig=$(Configuration)
+        containerCommand: ci/ap-test-linux.sh
+        workingDirectory: '/work'
+    - task: PublishTestResults@2
+      displayName: Publish Test Results
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: "Ubuntu 14.04 (Mono 5.16)"
+        platform: "Ubuntu 14.04"
+        testRunner: VSTest
+        testResultsFiles: '**/*.trx'
+    - task: PublishBuildArtifacts@1
+      condition: eq(variables['System.PullRequest.IsFork'], 'False')
+      displayName: Publish Artifacts
+      inputs:
+        artifactName: ubuntu1404-mono516-${{ variables['Configuration'] }}
+        pathToPublish: '$(Build.SourcesDirectory)/bin/'
