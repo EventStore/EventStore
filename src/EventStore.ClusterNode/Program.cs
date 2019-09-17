@@ -168,6 +168,11 @@ namespace EventStore.ClusterNode {
 						"Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
 			}
 
+			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
+				throw new Exception(
+					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
+			}
+
 			VNodeBuilder builder;
 			if (options.ClusterSize > 1) {
 				builder = ClusterVNodeBuilder.AsClusterMember(options.ClusterSize);
