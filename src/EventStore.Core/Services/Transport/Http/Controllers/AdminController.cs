@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnEnableMaintenance(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
-				Log.Info("Request enable maintenance of node command has been received.");
+				Log.Info("Request to enable maintenance mode for node has been received.");
 				Publish(new ClientMessage.EnableMaintenanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnDisableMaintenance(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
-				Log.Info("Request disable maintenance of node command has been received.");
+				Log.Info("Request to disable maintenance mode for node has been received.");
 				Publish(new ClientMessage.DisableMaintenanceMode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
