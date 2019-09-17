@@ -40,7 +40,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: windows-net471-{{ variables['Configuration'] }}
+      artifactName: windows-net471-$(Configuration) 
       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: macos_x64
@@ -77,7 +77,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-mono516-{{ variables['Configuration'] }}
+      artifactName: macos-mono516-$(Configuration) 
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: centos_x64
