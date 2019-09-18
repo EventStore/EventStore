@@ -156,5 +156,10 @@ namespace EventStore.Core.Services {
 		/// Designed to be used with indexes such as the category projection.
 		/// </summary>
 		public const string Pinned = "Pinned";
+
+		/// <summary>
+		/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis. 
+		/// </summary>
+		public const string PinnedByCorrelation = "PinnedByCorrelation";
 	}
 }

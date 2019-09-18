@@ -11,7 +11,6 @@ using EventStore.Common.Utils;
 namespace EventStore.Projections.Core.Standard {
 	public class ByCorrelationId : IProjectionStateHandler {
 		private readonly string _corrIdStreamPrefix;
-		private readonly string _correlationIdProperty = "$correlationId";
 
 		public ByCorrelationId(string source, Action<string, object[]> logger) {
 			if (!string.IsNullOrWhiteSpace(source)) {
@@ -21,7 +20,7 @@ namespace EventStore.Projections.Core.Standard {
 						"Could not parse projection source. Please make sure the source is a valid JSON string with a property: 'correlationIdProperty' having a string value");
 				}
 
-				_correlationIdProperty = correlationIdProperty;
+				CorrelationIdPropertyContext.CorrelationIdProperty = correlationIdProperty;
 			}
 
 			_corrIdStreamPrefix = "$bc-";
@@ -88,10 +87,10 @@ namespace EventStore.Projections.Core.Standard {
 				return false;
 			}
 
-			if (metadata[_correlationIdProperty] == null)
+			if (metadata[CorrelationIdPropertyContext.CorrelationIdProperty] == null)
 				return false;
 
-			string correlationId = metadata[_correlationIdProperty].Value<string>();
+			string correlationId = metadata[CorrelationIdPropertyContext.CorrelationIdProperty].Value<string>();
 			if (correlationId == null)
 				return false;
 
