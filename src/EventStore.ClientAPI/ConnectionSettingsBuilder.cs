@@ -359,6 +359,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferReadOnlyReplica() {
 			_nodePreference = NodePreference.ReadOnlyReplica;
+			_requireMaster = false;
 			return this;
 		}
 
