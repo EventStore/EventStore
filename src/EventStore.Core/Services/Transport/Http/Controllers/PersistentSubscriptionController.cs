@@ -680,7 +680,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 							TotalItemsProcessed = connection.TotalItems,
 							AvailableSlots = connection.AvailableSlots,
 							InFlightMessages = connection.InFlightMessages,
-							ExtraStatistics = connection.ObservedMeasurements ?? new List<Measurement>()
+							ExtraStatistics = connection.ObservedMeasurements ?? new List<Measurement>(),
+							ConnectionName = connection.ConnectionName,
 						});
 					}
 				}
@@ -803,6 +804,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public List<Measurement> ExtraStatistics { get; set; }
 			public int AvailableSlots { get; set; }
 			public int InFlightMessages { get; set; }
+			public string ConnectionName { get; set; }
 		}
 	}
 }

@@ -77,7 +77,7 @@ namespace EventStore.ClientAPI.Embedded {
 			_authenticationProvider = authenticationProvider;
 			_subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
 			_subscriptions =
-				new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId);
+				new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId, connectionName);
 
 			_subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);

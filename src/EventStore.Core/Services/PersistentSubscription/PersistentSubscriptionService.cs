@@ -445,7 +445,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					lastEventNumber);
 			message.Envelope.ReplyWith(subscribedMessage);
 			var name = message.User == null ? "anonymous" : message.User.Identity.Name;
-			subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope,
+			subscription.AddClient(message.CorrelationId, message.ConnectionId, message.ConnectionName, message.Envelope,
 				message.AllowedInFlightMessages, name, message.From);
 		}
 
