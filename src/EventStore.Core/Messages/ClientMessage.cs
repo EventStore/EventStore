@@ -1052,6 +1052,7 @@ namespace EventStore.Core.Messages {
 			public override int MsgTypeId { get { return TypeId; } }
 
 			public readonly Guid ConnectionId;
+			public readonly string ConnectionName;
 			public readonly string SubscriptionId;
 			public readonly string EventStreamId;
 			public readonly int AllowedInFlightMessages;
@@ -1059,6 +1060,7 @@ namespace EventStore.Core.Messages {
 
 			public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				Guid connectionId,
+				string connectionName,
 				string subscriptionId, string eventStreamId, int allowedInFlightMessages, string from, IPrincipal user)
 				: base(internalCorrId, correlationId, envelope, user) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
@@ -1066,6 +1068,7 @@ namespace EventStore.Core.Messages {
 				Ensure.Nonnegative(allowedInFlightMessages, "AllowedInFlightMessages");
 				SubscriptionId = subscriptionId;
 				ConnectionId = connectionId;
+				ConnectionName = connectionName;
 				AllowedInFlightMessages = allowedInFlightMessages;
 				EventStreamId = eventStreamId;
 				From = from;
