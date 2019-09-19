@@ -99,18 +99,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_members = members;
 		}
 
-		[Test]
-		public void Foo() {
-
-			foreach (var node in _nodes.Reverse()) {
-				node.Value.Publish(new SystemMessage.SystemInit());
-				node.Value.Publish(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
-			}
-			_fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(250));
-			_scheduler.TriggerProcessing();
-		}
-
-
 		public void Handle(HttpMessage.SendOverHttp message) {
 			if (_nodes.TryGetValue(message.EndPoint, out var node)) {
 				TestContext.WriteLine($"Sending {message.Message} to {message.EndPoint}");
@@ -145,76 +133,124 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		static IEnumerable<TestCase> CreateCases() {
             //Basic cases
-            yield return new TestCase(2, 0);
+            yield return new TestCase {
+	            ExpectedMasterCandidateNode = 2,
+	            ProposingNode = 0,
+            };
 
-            yield return new TestCase(0, 0, 
-	            nodePriorities: new int[]{3, 2, 1});
+            yield return new TestCase {
+	            ExpectedMasterCandidateNode = 0,
+	            ProposingNode = 0,
+	            NodePriorities = new[] {3, 2, 1}
+            };
 
             //maintenance checks
-            yield return new TestCase(1, 0,
-	            nodePriorities: new[] {0, 0, int.MinValue},
-				lastElectedMaster: 2);
+            yield return new TestCase {
+	            ExpectedMasterCandidateNode = 1,
+	            ProposingNode = 0,
+	            NodePriorities = new[] {0, 0, int.MinValue},
+	            LastElectedMaster = 2
+            };
 
 			//Node behind
-			yield return new TestCase(0, 0, 
-	            commitPositions: new long[] {1, 0, 1},
-	            nodePriorities: new[] {0, 0, int.MinValue},
-				lastElectedMaster: 2);
-            yield return new TestCase(1, 0,
-	            writerCheckpoints: new long[] {0, 1, 1}, 
-	            nodePriorities: new[] {0, 0, int.MinValue},
-				lastElectedMaster: 2);
-            yield return new TestCase(0, 0,
-	            chaserCheckpoints: new long[] {1, 0, 1}, 
-	            nodePriorities: new[] {0, 0, int.MinValue},
-				lastElectedMaster: 2);
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				CommitPositions = new long[] {1, 0, 1},
+				NodePriorities = new[] {0, 0, int.MinValue},
+				LastElectedMaster = 2
+			};
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 1,
+				ProposingNode = 0,
+				WriterCheckpoints = new long[] {0, 1, 1},
+				NodePriorities = new[] {0, 0, int.MinValue},
+				LastElectedMaster = 2
+			};
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				ChaserCheckpoints = new long[] {1, 0, 1},
+				NodePriorities = new[] {0, 0, int.MinValue},
+				LastElectedMaster = 2
+			};
 
 			// All nodes behind
-			yield return new TestCase(0, 0,
-				commitPositions: new long[] { 1, 0, 0 },
-				nodePriorities: new[] { int.MinValue, 0, 0 },
-				lastElectedMaster: 0);
-			yield return new TestCase(1, 0,
-				writerCheckpoints: new long[] { 0, 1, 0 },
-				nodePriorities: new[] { 0, int.MinValue, 0 },
-				lastElectedMaster: 1);
-			yield return new TestCase(2, 0,
-				chaserCheckpoints: new long[] { 0, 0, 1 },
-				nodePriorities: new[] { 0, 0, int.MinValue },
-				lastElectedMaster: 2);
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				CommitPositions = new long[] {1, 0, 0},
+				NodePriorities = new[] {int.MinValue, 0, 0},
+				LastElectedMaster = 0
+			};
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 1,
+				ProposingNode = 0,
+				WriterCheckpoints = new long[] {0, 1, 0},
+				NodePriorities = new[] {0, int.MinValue, 0},
+				LastElectedMaster = 1
+			};
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+				ChaserCheckpoints = new long[] {0, 0, 1},
+				NodePriorities = new[] {0, 0, int.MinValue},
+				LastElectedMaster = 2
+			};
 
 			//2 nodes in maintenance
-			yield return new TestCase(0, 0,
-				nodePriorities: new[] { 0, int.MinValue, int.MinValue },
-				lastElectedMaster: 1);
+			yield return new TestCase{
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				NodePriorities= new[] { 0, int.MinValue, int.MinValue },
+				LastElectedMaster= 1
+			};
 
-            yield return new TestCase(1, 0,
-	            nodePriorities: new[] {int.MinValue,0,  int.MinValue},
-				lastElectedMaster: 0);
+            yield return new TestCase{
+				ExpectedMasterCandidateNode = 1,
+				ProposingNode = 0,
+	            NodePriorities= new[] {int.MinValue,0,  int.MinValue},
+				LastElectedMaster= 0
+            };
 
-            yield return new TestCase(2, 0,
-	            nodePriorities: new[] {int.MinValue, int.MinValue, 0},
-				lastElectedMaster: 1);
+            yield return new TestCase{
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+	            NodePriorities= new[] {int.MinValue, int.MinValue, 0},
+				LastElectedMaster= 1
+            };
 
             //and non maintenance mode behind
-            yield return new TestCase(2, 0,
-	            commitPositions: new long[] {1, 0, 1},
-	            nodePriorities: new[] {int.MinValue, 0,  int.MinValue},
-				lastElectedMaster: 0);
-            yield return new TestCase(2, 0,
-	            writerCheckpoints: new long[] {1, 0, 1},
-	            nodePriorities: new[] {int.MinValue, 0,  int.MinValue},
-				lastElectedMaster: 0);
-            yield return new TestCase(2, 0,
-	            chaserCheckpoints: new long[] {1, 0, 1}, 
-	            nodePriorities: new[] {int.MinValue, 0,  int.MinValue},
-				lastElectedMaster: 0);
+            yield return new TestCase{
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+	            CommitPositions= new long[] {1, 0, 1},
+	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
+				LastElectedMaster= 0
+            };
+            yield return new TestCase{
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+	            WriterCheckpoints= new long[] {1, 0, 1},
+	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
+				LastElectedMaster= 0
+            };
+            yield return new TestCase{
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+	            ChaserCheckpoints= new long[] {1, 0, 1}, 
+	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
+				LastElectedMaster= 0
+            };
 
 			// all 3 nodes on maintenance
-			yield return new TestCase(0, 0,
-	            nodePriorities: new[] {int.MinValue, int.MinValue, int.MinValue},
-				lastElectedMaster: 0,
-				lastElectedMasterPriority: 0);
+			yield return new TestCase{
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+	            NodePriorities= new[] {int.MinValue, int.MinValue, int.MinValue},
+				LastElectedMaster= 0,
+				LastElectedMasterPriority= 0
+			};
 		}
 
 		[Test, TestCaseSource(nameof(TestCases))]
@@ -228,7 +264,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority = i => tc.NodePriorities[i];
 
 			for (int index = 0; index < 3; index++) {
-				TestContext.Progress.WriteLine("");
 				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, nodePriority);
 				var pok = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, nodePriority);
 				prepareOks.Add(pok.ServerId, pok);
@@ -300,33 +335,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
         public class TestCase {
 			private readonly string _name;
-			public int ExpectedMasterCandidateNode { get; }
-			public int ProposingNode { get; }
-			public int? LastElectedMaster { get; }
-			public int LastElectedMasterPriority { get; }
-			public long[] CommitPositions { get; }
-			public long[] WriterCheckpoints { get; }
-			public long[] ChaserCheckpoints { get; }
-			public int[] NodePriorities { get; }
-
-			public TestCase(int expectedMasterCandidateNode, int proposingNode,
-				long[] commitPositions = null,
-				long[] writerCheckpoints = null,
-				long[] chaserCheckpoints = null,
-				int[] nodePriorities = null,
-				int? lastElectedMaster = null,
-				int lastElectedMasterPriority = 0) {
-				_name = GenerateName(expectedMasterCandidateNode, commitPositions, writerCheckpoints, chaserCheckpoints, nodePriorities);
-				ExpectedMasterCandidateNode = expectedMasterCandidateNode;
-				ProposingNode = proposingNode;
-				CommitPositions = commitPositions ?? new[] { 1L, 1, 1 };
-				WriterCheckpoints = writerCheckpoints ?? new[] { 1L, 1, 1 };
-				ChaserCheckpoints = chaserCheckpoints ?? new[] { 1L, 1, 1 };
-				NodePriorities = nodePriorities ??  new []{1,1,1};
-				LastElectedMaster = lastElectedMaster;
-				LastElectedMasterPriority = lastElectedMasterPriority;
-			}
-
+			public int ExpectedMasterCandidateNode { get; set; }
+			public int ProposingNode { get; set; }
+			public int? LastElectedMaster { get; set; }
+			public int LastElectedMasterPriority { get; set; }
+			public long[] CommitPositions { get; set; } = {1L, 1, 1};
+			public long[] WriterCheckpoints { get; set; } = {1L, 1, 1};
+			public long[] ChaserCheckpoints { get; set; } = {1L, 1, 1};
+			public int[] NodePriorities { get; set; } = {1, 1, 1};
 			private static string GenerateName(int expectedMasterCandidateNode, long[] commitPositions, long[] writerCheckpoints,
 				long[] chaserCheckpoints, int[] nodePriorities)
 			{
@@ -371,7 +387,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			}
 
 			public override string ToString() {
-				return _name;
+				return GenerateName(ExpectedMasterCandidateNode, CommitPositions, WriterCheckpoints, ChaserCheckpoints, NodePriorities);
 			}
 		}
 	}
