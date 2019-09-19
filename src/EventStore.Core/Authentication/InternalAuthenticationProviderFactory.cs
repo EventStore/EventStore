@@ -46,6 +46,7 @@ namespace EventStore.Core.Authentication {
 			mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
 			mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
 			mainBus.Subscribe<SystemMessage.BecomeMaster>(userManagement);
+			mainBus.Subscribe<SystemMessage.BecomeSlave>(userManagement);
 
 			var provider =
 				new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount);
