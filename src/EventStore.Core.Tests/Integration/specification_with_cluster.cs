@@ -91,12 +91,16 @@ namespace EventStore.Core.Tests.Integration {
 			WaitHandle.WaitAll(new[] {_nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent});
 			QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
 
-			_conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
+			_conn = CreateConnection();
 			_conn.ConnectAsync().Wait();
 
 			QueueStatsCollector.WaitIdle();
 
 			Given();
+		}
+
+		protected virtual IEventStoreConnection CreateConnection() {
+			return EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
 		}
 
 		protected virtual void BeforeNodesStart() {
@@ -115,7 +119,7 @@ namespace EventStore.Core.Tests.Integration {
 			WaitHandle.WaitAll(new[] {_nodes[nodeNum].StartedEvent});
 		}
 
-		private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
+		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
 			var node = new MiniClusterNode(
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
 				endpoints.ExternalTcp,

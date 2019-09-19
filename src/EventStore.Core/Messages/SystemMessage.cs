@@ -220,6 +220,43 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class BecomeReadOnlyMasterless : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyMasterless (Guid correlationId)
+				: base(correlationId, VNodeState.ReadOnlyMasterless) {
+			}
+		}
+
+		public class BecomePreReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomePreReadOnlyReplica(Guid correlationId, VNodeInfo master)
+				: base(correlationId, VNodeState.PreReadOnlyReplica, master) {
+			}
+		}
+
+		public class BecomeReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyReplica(Guid correlationId, VNodeInfo master)
+				: base(correlationId, VNodeState.ReadOnlyReplica, master) {
+			}
+		}
+
+
 		public class ServiceShutdown : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

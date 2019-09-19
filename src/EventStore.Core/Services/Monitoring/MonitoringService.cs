@@ -201,6 +201,7 @@ namespace EventStore.Core.Services.Monitoring {
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
 				case VNodeState.Slave:
+				case VNodeState.ReadOnlyReplica:
 				case VNodeState.Master: {
 					SetStatsStreamMetadata();
 					break;

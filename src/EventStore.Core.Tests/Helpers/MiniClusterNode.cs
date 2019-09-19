@@ -48,6 +48,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		private readonly string _dbPath;
+		private readonly bool _isReadOnlyReplica;
 		public ManualResetEvent StartedEvent;
 
 		public VNodeState NodeState = VNodeState.Unknown;
@@ -57,7 +58,7 @@ namespace EventStore.Core.Tests.Helpers {
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false) {
+			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -105,7 +106,8 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
+				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault, readOnlyReplica: readOnlyReplica);
+			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Info(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -130,18 +132,26 @@ namespace EventStore.Core.Tests.Helpers {
 
 			StartedEvent = new ManualResetEvent(false);
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = VNodeState.Unknown; }));
-			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeMaster>(m => {
-					NodeState = VNodeState.Master;
-					StartedEvent.Set();
-				}));
-			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeSlave>(m => {
-					NodeState = VNodeState.Slave;
-					StartedEvent.Set();
-				}));
-
+				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = _isReadOnlyReplica ?
+					VNodeState.ReadOnlyMasterless : VNodeState.Unknown; }));
+			if (!_isReadOnlyReplica) {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeMaster>(m => {
+						NodeState = VNodeState.Master;
+						StartedEvent.Set();
+					}));
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeSlave>(m => {
+						NodeState = VNodeState.Slave;
+						StartedEvent.Set();
+					}));
+			} else {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeReadOnlyReplica>(m => {
+						NodeState = VNodeState.ReadOnlyReplica;
+						StartedEvent.Set();
+					}));
+			}
 			Node.Start();
 		}
 

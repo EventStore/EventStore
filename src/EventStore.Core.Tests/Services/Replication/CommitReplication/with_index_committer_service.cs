@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			var masterIPEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 			_service.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
-				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint)));
+				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false)));
 		}
 	}
 

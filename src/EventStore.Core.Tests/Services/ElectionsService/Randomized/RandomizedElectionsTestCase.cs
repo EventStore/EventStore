@@ -33,6 +33,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 		private readonly List<ElectionsInstance> _instances = new List<ElectionsInstance>();
 
+		private readonly bool _isReadOnlyReplica;
+
 		public RandomizedElectionsTestCase(int maxIterCnt,
 			int instancesCnt,
 			double httpLossProbability,
@@ -40,7 +42,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			int httpMaxDelay,
 			int timerMinDelay,
 			int timerMaxDelay,
-			int? rndSeed = null) {
+			int? rndSeed = null,
+			bool isReadOnlyReplica = false) {
 			RndSeed = rndSeed ?? Math.Abs(Environment.TickCount);
 			Rnd = new Random(RndSeed);
 
@@ -51,6 +54,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			HttpMaxDelay = httpMaxDelay;
 			_timerMinDelay = timerMinDelay;
 			_timerMaxDelay = timerMaxDelay;
+			_isReadOnlyReplica = isReadOnlyReplica;
 
 			Runner = new RandomTestRunner(_maxIterCnt);
 			Logger = new ElectionsLogger();
@@ -64,7 +68,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				var outputBus = new InMemoryBus(string.Format("ELECTIONS-OUTPUT-BUS-{0}", i));
 				var endPoint = new IPEndPoint(BaseEndPoint.Address, BaseEndPoint.Port + i);
 				var nodeInfo = new VNodeInfo(Guid.NewGuid(), 0, endPoint, endPoint, endPoint, endPoint, endPoint,
-					endPoint);
+					endPoint, false);
 				_instances.Add(new ElectionsInstance(nodeInfo.InstanceId, endPoint, inputBus, outputBus));
 
 				sendOverHttpHandler.RegisterEndPoint(endPoint, inputBus);
@@ -109,7 +113,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			List<ElectionsInstance> allInstances) {
 			var members = allInstances.Select(
 				x => MemberInfo.ForVNode(x.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-					x.EndPoint, null, x.EndPoint, null, x.EndPoint, x.EndPoint, -1, 0, 0, -1, -1, Guid.Empty, 0));
+					x.EndPoint, null, x.EndPoint, null, x.EndPoint, x.EndPoint, -1, 0, 0, -1, -1, Guid.Empty, 0, false));
 			var gossip = new GossipMessage.GossipUpdated(new ClusterInfo(members.ToArray()));
 			return gossip;
 		}
