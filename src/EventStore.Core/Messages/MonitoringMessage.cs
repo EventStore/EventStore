@@ -134,6 +134,7 @@ namespace EventStore.Core.Messages {
 			public List<Measurement> ObservedMeasurements { get; set; }
 			public int AvailableSlots { get; set; }
 			public int InFlightMessages { get; set; }
+			public string ConnectionName { get; set; }
 		}
 
 		public class GetFreshStats : Message {
