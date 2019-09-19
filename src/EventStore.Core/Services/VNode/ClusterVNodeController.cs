@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -10,6 +11,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.VNode {
@@ -107,21 +109,24 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.SystemInit>().Do(Handle)
 				.When<SystemMessage.SystemStart>().Do(Handle)
 				.When<SystemMessage.ServiceInitialized>().Do(Handle)
+				.When<SystemMessage.BecomeReadOnlyMasterless>().Do(Handle)
 				.When<ClientMessage.ScavengeDatabase>().Ignore()
 				.When<ClientMessage.StopDatabaseScavenge>().Ignore()
 				.WhenOther().ForwardTo(_outputBus)
-				.InState(VNodeState.Unknown)
+				.InStates(VNodeState.Unknown, VNodeState.ReadOnlyMasterless)
 				.WhenOther().ForwardTo(_outputBus)
 				.InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.PreMaster,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
 				.When<SystemMessage.BecomeUnknown>().Do(Handle)
 				.InAllStatesExcept(VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.Master)
+					VNodeState.Master, VNodeState.ReadOnlyMasterless,
+					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InAllStatesExcept(VNodeState.Master,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
+					VNodeState.ReadOnlyReplica, VNodeState.PreReadOnlyReplica)
 				.When<ClientMessage.WriteRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InState(VNodeState.Master)
@@ -140,7 +145,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.UpdatePersistentSubscription>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeletePersistentSubscription>().ForwardTo(_outputBus)
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.Unknown)
+					VNodeState.Unknown, VNodeState.ReadOnlyMasterless,
+					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadEvent>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadStreamEventsForward>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadStreamEventsBackward>().Do(HandleAsNonMaster)
@@ -150,7 +156,16 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ConnectToPersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.UpdatePersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.DeletePersistentSubscription>().Do(HandleAsNonMaster)
-				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InStates(VNodeState.ReadOnlyMasterless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
+				.When<ClientMessage.WriteEvents>().Do(HandleAsReadOnlyReplica)
+				.When<ClientMessage.TransactionStart>().Do(HandleAsReadOnlyReplica)
+				.When<ClientMessage.TransactionWrite>().Do(HandleAsReadOnlyReplica)
+				.When<ClientMessage.TransactionCommit>().Do(HandleAsReadOnlyReplica)
+				.When<ClientMessage.DeleteStream>().Do(HandleAsReadOnlyReplica)
+				.When<SystemMessage.VNodeConnectionLost>().Do(HandleAsReadOnlyReplica)
+				.When<ElectionMessage.ElectionsDone>().Do(HandleAsReadOnlyReplica)
+				.When<SystemMessage.BecomePreReadOnlyReplica>().Do(Handle)
+				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone,VNodeState.Slave)
 				.When<ClientMessage.WriteEvents>().Do(HandleAsNonMaster)
 				.When<ClientMessage.TransactionStart>().Do(HandleAsNonMaster)
 				.When<ClientMessage.TransactionWrite>().Do(HandleAsNonMaster)
@@ -168,7 +183,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.TransactionWriteCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionCommitCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeleteStreamCompleted>().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+				.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown,
+				VNodeState.ReadOnlyMasterless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ElectionMessage.ElectionsDone>().Do(Handle)
 				.InStates(VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
@@ -178,10 +194,10 @@ namespace EventStore.Core.Services.VNode {
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsNonMaster)
 				.When<SystemMessage.VNodeConnectionLost>().Do(Handle)
-				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreMaster)
+				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreMaster, VNodeState.PreReadOnlyReplica)
 				.When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
 				.When<SystemMessage.ChaserCaughtUp>().Ignore()
-				.InState(VNodeState.PreReplica)
+				.InStates(VNodeState.PreReplica, VNodeState.PreReadOnlyReplica)
 				.When<SystemMessage.BecomeCatchingUp>().Do(Handle)
 				.When<SystemMessage.WaitForChaserToCatchUp>().Do(Handle)
 				.When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreReplica)
@@ -190,18 +206,18 @@ namespace EventStore.Core.Services.VNode {
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle)
 				.When<ReplicationMessage.ReplicaSubscribed>().Do(Handle)
 				.WhenOther().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.PreReplica)
+				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreReadOnlyReplica)
 				.When<ReplicationMessage.ReconnectToMaster>().Ignore()
 				.When<ReplicationMessage.SubscribeToMaster>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscribed>().Ignore()
-				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.ReadOnlyReplica)
 				.When<ReplicationMessage.CreateChunk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.RawChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.DataChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.AckLogPosition>().ForwardTo(_outputBus)
 				.WhenOther().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.ReadOnlyReplica)
 				.When<ReplicationMessage.CreateChunk>().Ignore()
 				.When<ReplicationMessage.RawChunkBulk>().Ignore()
 				.When<ReplicationMessage.DataChunkBulk>().Ignore()
@@ -217,6 +233,11 @@ namespace EventStore.Core.Services.VNode {
 				.InState(VNodeState.Slave)
 				.When<ReplicationMessage.CloneAssignment>().Do(Handle)
 				.When<SystemMessage.BecomeClone>().Do(Handle)
+				.InStates(VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
+				.When<GossipMessage.GossipUpdated>().Do(HandleAsReadOnlyReplica)
+				.When<SystemMessage.BecomeReadOnlyMasterless>().Do(Handle)
+				.InState(VNodeState.PreReadOnlyReplica)
+				.When<SystemMessage.BecomeReadOnlyReplica>().Do(Handle)
 				.InStates(VNodeState.PreMaster, VNodeState.Master)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsMaster)
 				.When<ReplicationMessage.ReplicaSubscriptionRequest>().ForwardTo(_outputBus)
@@ -270,7 +291,11 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(SystemMessage.SystemStart message) {
 			Log.Info("========== [{internalHttp}] SYSTEM START...", _nodeInfo.InternalHttp);
 			_outputBus.Publish(message);
-			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			if (_nodeInfo.IsReadOnlyReplica) {
+				_fsm.Handle(new SystemMessage.BecomeReadOnlyMasterless(Guid.NewGuid()));
+			} else {
+				_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			}
 		}
 
 		private void Handle(SystemMessage.BecomeUnknown message) {
@@ -291,6 +316,19 @@ namespace EventStore.Core.Services.VNode {
 				"========== [{internalHttp}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... MASTER IS [{masterInternalHttp},{masterId:B}]",
 				_nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
 			_state = VNodeState.PreReplica;
+			_outputBus.Publish(message);
+			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
+		}
+
+		private void Handle(SystemMessage.BecomePreReadOnlyReplica message) {
+			if (_master == null) throw new Exception("_master == null");
+			if (_stateCorrelationId != message.CorrelationId)
+				return;
+
+			Log.Info(
+				"========== [{internalHttp}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... MASTER IS [{masterInternalHttp},{masterId:B}]",
+				_nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
+			_state = VNodeState.PreReadOnlyReplica;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
@@ -325,6 +363,25 @@ namespace EventStore.Core.Services.VNode {
 			Log.Info("========== [{internalHttp}] IS SLAVE... MASTER IS [{masterInternalHttp},{masterId:B}]",
 				_nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
 			_state = VNodeState.Slave;
+			_outputBus.Publish(message);
+		}
+
+		private void Handle(SystemMessage.BecomeReadOnlyMasterless message) {
+			Log.Info("========== [{internalHttp}] IS READ ONLY REPLICA WITH UNKNOWN MASTER...", _nodeInfo.InternalHttp);
+			_state = VNodeState.ReadOnlyMasterless;
+			_master = null;
+			_outputBus.Publish(message);
+			_mainQueue.Publish(new ElectionMessage.StartElections());
+		}
+
+		private void Handle(SystemMessage.BecomeReadOnlyReplica message) {
+			if (_master == null) throw new Exception("_master == null");
+			if (_stateCorrelationId != message.CorrelationId)
+				return;
+
+			Log.Info("========== [{internalHttp}] IS READ ONLY REPLICA... MASTER IS [{masterInternalHttp},{masterId:B}]",
+				_nodeInfo.InternalHttp, _master.InternalHttp, _master.InstanceId);
+			_state = VNodeState.ReadOnlyReplica;
 			_outputBus.Publish(message);
 		}
 
@@ -405,6 +462,16 @@ namespace EventStore.Core.Services.VNode {
 				_fsm.Handle(new SystemMessage.BecomePreMaster(_stateCorrelationId));
 			else
 				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _master));
+		}
+
+		private void HandleAsReadOnlyReplica(ElectionMessage.ElectionsDone message) {
+			_master = VNodeInfoHelper.FromMemberInfo(message.Master);
+			_subscriptionId = Guid.NewGuid();
+			_stateCorrelationId = Guid.NewGuid();
+			_outputBus.Publish(message);
+			if (_master != null) {
+				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _master));
+			}
 		}
 
 		private void Handle(SystemMessage.ServiceInitialized message) {
@@ -598,6 +665,89 @@ namespace EventStore.Core.Services.VNode {
 						master.ExternalHttp)));
 		}
 
+		private void HandleAsReadOnlyReplica(ClientMessage.WriteEvents message) {
+			if (message.RequireMaster) {
+				DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+				return;
+			}
+			if (message.User != SystemAccount.Principal) {
+				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
+				return;
+			}
+
+			var timeoutMessage = new ClientMessage.WriteEventsCompleted(
+				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout");
+			ForwardRequest(message, timeoutMessage);
+		}
+
+		private void HandleAsReadOnlyReplica(ClientMessage.TransactionStart message) {
+			if (message.RequireMaster) {
+				DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+				return;
+			}
+			if (message.User != SystemAccount.Principal) {
+				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
+				return;
+			}
+			var timeoutMessage = new ClientMessage.TransactionStartCompleted(
+				message.CorrelationId, -1, OperationResult.ForwardTimeout, "Forwarding timeout");
+			ForwardRequest(message, timeoutMessage);
+		}
+			
+		private void HandleAsReadOnlyReplica(ClientMessage.TransactionWrite message) {
+			if (message.RequireMaster) {
+				DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+				return;
+			}
+			if (message.User != SystemAccount.Principal) {
+				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
+				return;
+			}
+
+			var timeoutMessage = new ClientMessage.TransactionWriteCompleted(
+				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
+			ForwardRequest(message, timeoutMessage);
+		}
+
+		private void HandleAsReadOnlyReplica(ClientMessage.TransactionCommit message) {
+			if (message.RequireMaster) {
+				DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+				return;
+			}
+			if (message.User != SystemAccount.Principal) {
+				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
+				return;
+			}
+
+			var timeoutMessage = new ClientMessage.TransactionCommitCompleted(
+				message.CorrelationId, message.TransactionId, OperationResult.ForwardTimeout, "Forwarding timeout");
+			ForwardRequest(message, timeoutMessage);
+		}
+
+		private void HandleAsReadOnlyReplica(ClientMessage.DeleteStream message) {
+			if (message.RequireMaster) {
+				DenyRequestBecauseNotMaster(message.CorrelationId, message.Envelope);
+				return;
+			}
+			if (message.User != SystemAccount.Principal) {
+				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
+				return;
+			} 
+			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
+				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1);
+			ForwardRequest(message, timeoutMessage);
+		}
+
+		private void DenyRequestBecauseReadOnly(Guid correlationId, IEnvelope envelope) {
+			var master = _master ?? _nodeInfo;
+			envelope.ReplyWith(
+				new ClientMessage.NotHandled(correlationId,
+					TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly,
+					new TcpClientMessageDto.NotHandled.MasterInfo(master.ExternalTcp,
+						master.ExternalSecureTcp,
+						master.ExternalHttp)));
+		}
+
 		private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId) {
 			envelope.ReplyWith(new ClientMessage.NotHandled(correlationId,
 				TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, null));
@@ -615,6 +765,18 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 		}
 
+		private void HandleAsReadOnlyReplica(SystemMessage.VNodeConnectionLost message) {
+			if (_master != null && _master.Is(message.VNodeEndPoint)) // master connection failed
+			{
+				var msg = _state == VNodeState.PreReadOnlyReplica
+					? (Message)new ReplicationMessage.ReconnectToMaster(_stateCorrelationId, _master)
+					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _master);
+				_mainQueue.Publish(TimerMessage.Schedule.Create(MasterReconnectionDelay, _publishEnvelope, msg));
+			}
+
+			_outputBus.Publish(message);
+		}
+
 		private void HandleAsMaster(GossipMessage.GossipUpdated message) {
 			if (_master == null) throw new Exception("_master == null");
 			if (message.ClusterInfo.Members.Count(x => x.IsAlive && x.State == VNodeState.Master) > 1) {
@@ -625,6 +787,11 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(new ElectionMessage.StartElections());
 			}
 
+			_outputBus.Publish(message);
+		}
+
+		private void HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message) {
+			if (_master == null) throw new Exception("_master == null");
 			_outputBus.Publish(message);
 		}
 
@@ -699,7 +866,11 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(ReplicationMessage.ReplicaSubscribed message) {
 			if (IsLegitimateReplicationMessage(message)) {
 				_outputBus.Publish(message);
-				_fsm.Handle(new SystemMessage.BecomeCatchingUp(_stateCorrelationId, _master));
+				if (_nodeInfo.IsReadOnlyReplica) {
+					_fsm.Handle(new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _master));
+				} else {
+					_fsm.Handle(new SystemMessage.BecomeCatchingUp(_stateCorrelationId, _master));
+				}
 			}
 		}
 

@@ -56,6 +56,19 @@ namespace EventStore.Core.Services.Transport.Http {
 				new KeyValuePair<string, string>("Location", forwardUri.ToString()));
 		}
 
+		public static ResponseConfiguration DenyRequestBecauseReadOnly(Uri originalUrl, string targetHost, int targetPort) {
+			var srcBase =
+				new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, originalUrl.Host, originalUrl.Port),
+					UriKind.Absolute);
+			var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort),
+				UriKind.Absolute);
+			var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
+			return new ResponseConfiguration(HttpStatusCode.InternalServerError,
+				"Operation Not Supported on Read Only Replica", "text/plain",
+				Helper.UTF8NoBom,
+				new KeyValuePair<string, string>("Location", forwardUri.ToString()));
+		}
+
 		public static ResponseConfiguration NotFound() {
 			return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
 		}
@@ -367,6 +380,12 @@ namespace EventStore.Core.Services.Transport.Http {
 					if (masterInfo == null)
 						return InternalServerError("No master info available in response");
 					return TemporaryRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+				}
+				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
+					var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
+					if (masterInfo == null)
+						return InternalServerError("No master info available in response");
+					return DenyRequestBecauseReadOnly(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
 				}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));

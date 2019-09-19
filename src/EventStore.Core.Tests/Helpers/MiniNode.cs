@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Helpers {
 			IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0,
 			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
-			string dbPath = "") {
+			string dbPath = "", bool isReadOnlyReplica = false) {
 			if (_running) throw new Exception("Previous MiniNode is still running!!!");
 			_running = true;
 
@@ -125,6 +125,8 @@ namespace EventStore.Core.Tests.Helpers {
 				builder.EnableTrustedAuth();
 			if (disableFlushToDisk)
 				builder.WithUnsafeDisableFlushToDisk();
+			if (isReadOnlyReplica)
+				builder.EnableReadOnlyReplica();
 
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {

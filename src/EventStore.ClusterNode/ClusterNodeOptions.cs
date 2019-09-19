@@ -286,6 +286,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
 		public int GossipTimeoutMs { get; set; }
 
+		[ArgDescription(Opts.ReadOnlyReplicaDescr, Opts.ClusterGroup)]
+		public bool ReadOnlyReplica { get; set; }
+
 		[ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
 		public bool EnableHistograms { get; set; }
 
@@ -343,6 +346,7 @@ namespace EventStore.ClusterNode {
 			ClusterDns = Opts.ClusterDnsDefault;
 			ClusterGossipPort = Opts.ClusterGossipPortDefault;
 			GossipSeed = Opts.GossipSeedDefault;
+			ReadOnlyReplica = Opts.ReadOnlyReplicaDefault;
 
 			StatsPeriodSec = Opts.StatsPeriodDefault;
 

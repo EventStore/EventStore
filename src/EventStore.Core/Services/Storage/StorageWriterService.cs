@@ -197,7 +197,9 @@ namespace EventStore.Core.Services.Storage {
 
 		void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
 			// if we are in states, that doesn't need to wait for chaser, ignore
-			if (_vnodeState != VNodeState.PreMaster && _vnodeState != VNodeState.PreReplica)
+			if (_vnodeState != VNodeState.PreMaster &&
+				_vnodeState != VNodeState.PreReplica &&
+				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
 			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed())

@@ -102,7 +102,8 @@ namespace EventStore.Core.Services {
 					nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
 					nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
-					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority)
+					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
+					nodeInfo.IsReadOnlyReplica)
 			};
 		}
 
@@ -134,6 +135,9 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.StartElections message) {
 			if (_state == ElectionsState.Shutdown) return;
 			if (_state == ElectionsState.ElectingLeader) return;
+
+			if (_nodeInfo.IsReadOnlyReplica)
+				Log.Trace("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -264,6 +268,10 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.ElectingLeader) // install the view
 				ShiftToRegNonLeader();
 
+			if (_nodeInfo.IsReadOnlyReplica) {
+				Log.Info("ELECTIONS: READ ONLY REPLICA CAN'T BE A CANDIDATE [{0}]", message.ServerInternalHttp);
+				return;
+			}
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
 				DateTime.Now.Add(LeaderElectionProgressTimeout)));
@@ -302,6 +310,10 @@ namespace EventStore.Core.Services {
 		}
 
 		private void ShiftToRegLeader() {
+			if (_nodeInfo.IsReadOnlyReplica) {
+				Log.Debug("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.", _lastAttemptedView);
+				return;
+			}
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_LEADER.", _lastAttemptedView);
 
 			_state = ElectionsState.Leader;

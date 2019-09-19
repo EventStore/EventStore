@@ -84,6 +84,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
+		public readonly bool ReadOnlyReplica;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -153,7 +154,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool faultOutOfOrderProjections = false,
 			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
-			bool disableFirstLevelHttpAuthorization = false) {
+			bool disableFirstLevelHttpAuthorization = false,
+			bool readOnlyReplica = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -182,7 +184,8 @@ namespace EventStore.Core.Cluster.Settings {
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
-				internalHttpEndPoint, externalHttpEndPoint);
+				internalHttpEndPoint, externalHttpEndPoint,
+				readOnlyReplica);
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			IntHttpPrefixes = intHttpPrefixes;
 			ExtHttpPrefixes = extHttpPrefixes;
@@ -255,6 +258,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
+			ReadOnlyReplica = readOnlyReplica;
 		}
 
 		public override string ToString() {
@@ -299,7 +303,8 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "ReduceFileCachePressure: {38}\n"
 			                     + "InitializationThreads: {39}\n"
 			                     + "StructuredLog: {40}\n"
-								 + "DisableFirstLevelHttpAuthorization: {41}\n",
+								 + "DisableFirstLevelHttpAuthorization: {41}\n"
+								 + "ReadOnlyReplica: {42}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -319,7 +324,7 @@ namespace EventStore.Core.Cluster.Settings {
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
 				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
 				ReduceFileCachePressure, InitializationThreads, StructuredLog,
-				DisableFirstLevelHttpAuthorization);
+				DisableFirstLevelHttpAuthorization, ReadOnlyReplica);
 		}
 	}
 }

@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			return new[] {
 				MemberInfo.ForVNode(instance.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
 					instance.EndPoint, null, instance.EndPoint, null, instance.EndPoint, instance.EndPoint,
-					-1, 0, 0, -1, -1, Guid.Empty, 0)
+					-1, 0, 0, -1, -1, Guid.Empty, 0, false)
 			};
 		}
 
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				return instances.Select((x, i) =>
 					MemberInfo.ForVNode(x.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
 						x.EndPoint, null, x.EndPoint, null, x.EndPoint, x.EndPoint,
-						-1, 0, 0, -1, -1, Guid.Empty, 0)).ToArray();
+						-1, 0, 0, -1, -1, Guid.Empty, 0, false)).ToArray();
 			}
 
 			return null;

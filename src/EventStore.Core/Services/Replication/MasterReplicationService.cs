@@ -514,7 +514,7 @@ namespace EventStore.Core.Services.Replication {
 		private void ManageNoQuorumDetection() {
 			if (_state == VNodeState.Master) {
 				var now = _stopwatch.Elapsed;
-				if (_subscriptions.Count >= _clusterSize / 2) // everything is ok
+				if (_subscriptions.Count(x => x.Value.IsPromotable) >= _clusterSize / 2) // everything is ok
 					_noQuorumTimestamp = TimeSpan.Zero;
 				else {
 					if (_noQuorumTimestamp == TimeSpan.Zero) {
