@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		private MemberInfo[] CreateInitialGossip(ElectionsInstance _, ElectionsInstance[] allInstances) {
             return allInstances.Select(instance => MemberInfo.ForVNode(instance.InstanceId, DateTime.UtcNow, VNodeState.Unknown, true,
 					instance.EndPoint, null, instance.EndPoint, null, instance.EndPoint, instance.EndPoint,
-					-1, 0, 0, -1, -1, Guid.Empty, 0)).ToArray();
+					-1, 0, 0, -1, -1, Guid.Empty, 0, false)).ToArray();
 		}
 
 		private MemberInfo[] CreateUpdatedGossip(int iteration,

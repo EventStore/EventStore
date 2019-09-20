@@ -40,10 +40,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				seeds.Add(endPoint);
 				var instanceId = Guid.Parse($"101EFD13-F9CD-49BE-9C6D-E6AF9AF5540{i}");
 				members.Add(MemberInfo.ForVNode(instanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-					endPoint, null, endPoint, null, endPoint, endPoint, -1, 0, 0, -1, -1, Guid.Empty, 0)
+					endPoint, null, endPoint, null, endPoint, endPoint, -1, 0, 0, -1, -1, Guid.Empty, 0, false)
 				);
 				var nodeInfo = new VNodeInfo(instanceId, 0, endPoint, endPoint, endPoint, endPoint, endPoint,
-					endPoint);
+					endPoint, false);
 				_fakeTimeProvider = new FakeTimeProvider();
 				_scheduler = new FakeScheduler(new FakeTimer(), _fakeTimeProvider);
 				var timerService = new TimerService(_scheduler);
@@ -309,7 +309,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		static VNodeInfo FromMember(int index, MemberInfo[] members) {
-			return new VNodeInfo(members[index].InstanceId, 1, members[index].InternalTcpEndPoint, members[index].InternalSecureTcpEndPoint, members[index].ExternalTcpEndPoint, members[index].ExternalSecureTcpEndPoint, members[index].InternalHttpEndPoint, members[index].ExternalHttpEndPoint);
+			return new VNodeInfo(members[index].InstanceId, 1, members[index].InternalTcpEndPoint, members[index].InternalSecureTcpEndPoint, members[index].ExternalTcpEndPoint, members[index].ExternalSecureTcpEndPoint, members[index].InternalHttpEndPoint, members[index].ExternalHttpEndPoint, false);
 		}
 
 		static MemberInfo CreateMemberInfo(int i, Guid epochId, Func<int, long> lastCommitPosition,
@@ -318,7 +318,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Slave, true, ep, ep, ep, ep, ep, ep, lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i));
+			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Slave, true, ep, ep, ep, ep, ep, ep, lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
 		}
 
 		private static IPEndPoint EndpointForNode(int i) {
