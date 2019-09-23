@@ -47,44 +47,81 @@
 
   		[Test, Category("LongRunning")]
  		public void handle_paging_between_events_forward() {
-            var filter = Filter.EventType.Prefix("CE");
-
+	        var numberOfEmptySlicesRead = 0;
+	        
+	        var filter = Filter.EventType.Prefix("CE");
   			var sliceStart = Position.Start;
  			var read = new List<ResolvedEvent>();
  			AllEventsSlice slice;
 
   			do {
- 				slice = _conn.ReadAllEventsForwardFilteredAsync(sliceStart, 4096, false, filter, maxSearchWindow: 4096)
+ 				slice = _conn.ReadAllEventsForwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
  					.GetAwaiter()
  					.GetResult();
- 				read.AddRange(slice.Events);
+
+                if (slice.Events.Length == 0) {
+	                numberOfEmptySlicesRead++;
+                } else {
+	                read.AddRange(slice.Events);
+                }
  				sliceStart = slice.NextPosition;
  			} while (!slice.IsEndOfStream);
 
   			Assert.That(EventDataComparer.Equal(
  				_testEventsC.ToArray(),
  				read.Select(x => x.Event).ToArray()));
+            
+            Assert.AreEqual(100, numberOfEmptySlicesRead);
  		}
         
         [Test, Category("LongRunning")]
         public void handle_paging_between_events_backward() {
-	        var filter = Filter.EventType.Prefix("AE");
+	        var numberOfEmptySlicesRead = 0;
 
+	        var filter = Filter.EventType.Prefix("AE");
 	        var sliceStart = Position.End;
 	        var read = new List<ResolvedEvent>();
 	        AllEventsSlice slice;
 
 	        do {
-		        slice = _conn.ReadAllEventsBackwardFilteredAsync(sliceStart, 4096, false, filter, maxSearchWindow: 4096)
+		        slice = _conn.ReadAllEventsBackwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
 			        .GetAwaiter()
 			        .GetResult();
-		        read.AddRange(slice.Events);
+		        if (slice.Events.Length == 0) {
+			        numberOfEmptySlicesRead++;
+		        } else {
+			        read.AddRange(slice.Events);
+		        }
 		        sliceStart = slice.NextPosition;
 	        } while (!slice.IsEndOfStream);
 
 	        Assert.That(EventDataComparer.Equal(
 		        _testEventsA.ReverseEvents(),
 		        read.Select(x => x.Event).ToArray()));
+	        
+	        Assert.AreEqual(100, numberOfEmptySlicesRead);
+        }
+        
+        [Test, Category("LongRunning")]
+        public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
+	        var filter = Filter.EventType.Prefix("BE");
+
+	        var slice = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
+			        .GetAwaiter()
+			        .GetResult();
+        
+	        Assert.AreEqual(2, slice.Events.Length); // Includes system events at start of stream
+        }
+        
+        [Test, Category("LongRunning")]
+        public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_backward() {
+	        var filter = Filter.EventType.Prefix("BE");
+
+	        var slice = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
+		        .GetAwaiter()
+		        .GetResult();
+        
+	        Assert.AreEqual(10, slice.Events.Length); // Includes system events
         }
  	}
  }
