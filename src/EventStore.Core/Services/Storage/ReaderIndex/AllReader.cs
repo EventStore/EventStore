@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
@@ -53,7 +51,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.Get(null));
+			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.None);
 			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
 		}
 
@@ -183,7 +181,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.Get(null));
+			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
 			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
 		}
 
