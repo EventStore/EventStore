@@ -368,8 +368,14 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+
 			Ensure.Positive(maxCount, "maxCount");
+			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+			Ensure.NotNull(filter, nameof(filter));
+			
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -394,7 +400,7 @@ namespace EventStore.ClientAPI.Embedded {
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
 					new ClientMessage.ReadAllEventsForwardFiltered(corrId, corrId, envelope,
 						position.CommitPosition,
-						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindow, null,
+						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindowInternal, null,
 						EventFilter.Get(serverFilter), user));
 			return source.Task;
 		}
@@ -418,9 +424,14 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter,
-			int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+
 			Ensure.Positive(maxCount, "maxCount");
+			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+			Ensure.NotNull(filter, nameof(filter));
+			
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -443,7 +454,7 @@ namespace EventStore.ClientAPI.Embedded {
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
 					new ClientMessage.ReadAllEventsBackwardFiltered(corrId, corrId, envelope,
 						position.CommitPosition,
-						position.PreparePosition, maxCount, resolveLinkTos, false, maxCount, null,
+						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindowInternal, null,
 						EventFilter.Get(serverFilter), user));
 			return source.Task;
 		}

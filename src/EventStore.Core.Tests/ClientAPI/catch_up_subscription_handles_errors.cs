@@ -504,8 +504,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter,
-			int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
@@ -515,8 +514,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		public Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter,
-			int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 

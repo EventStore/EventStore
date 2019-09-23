@@ -230,10 +230,12 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+
 			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
+			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -243,7 +245,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsForwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
+				resolveLinkTos, Settings.RequireMaster, maxSearchWindowInternal, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -264,11 +266,12 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		public async Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter,
-			int maxSearchWindow, UserCredentials userCredentials = null) {
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+			
 			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
+			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -278,7 +281,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsBackwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
+				resolveLinkTos, Settings.RequireMaster, maxSearchWindowInternal, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
