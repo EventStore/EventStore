@@ -375,7 +375,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
 			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
-			
+
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -431,7 +431,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
 			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
-			
+
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -527,6 +527,15 @@ namespace EventStore.ClientAPI.Embedded {
 			_subscriptions.StartSubscription(corrId, source, string.Empty,
 				GetUserCredentials(_settings, userCredentials), resolveLinkTos, eventAppeared, subscriptionDropped);
 			return source.Task;
+		}
+
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
 		}
 
 

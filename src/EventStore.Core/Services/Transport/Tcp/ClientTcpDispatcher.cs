@@ -74,7 +74,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream, ClientVersion.V2);
+			AddUnwrapper(TcpCommand.SubscribeToStreamFiltered, UnwrapSubscribeToStreamFiltered, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream, ClientVersion.V2);
+
+			AddWrapper<ClientMessage.CheckpointRead>(WrapCheckpointRead, ClientVersion.V2);
 
 			AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream, ClientVersion.V2);
 			AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared, ClientVersion.V2);
@@ -125,6 +128,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				ClientVersion.V1);
 			AddWrapper<ClientMessage.PersistentSubscriptionStreamEventAppeared>(
 				WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
+		}
+
+		private TcpPackage WrapCheckpointRead(ClientMessage.CheckpointRead msg) {
+			var dto = new TcpClientMessageDto.CheckpointRead(msg.Position.Value.CommitPosition,
+				msg.Position.Value.PreparePosition);
+			return new TcpPackage(TcpCommand.CheckpointRead, msg.CorrelationId, dto.Serialize());
 		}
 
 		private static Message UnwrapPing(TcpPackage package, IEnvelope envelope) {
@@ -526,6 +535,22 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			if (dto == null) return null;
 			return new ClientMessage.SubscribeToStream(Guid.NewGuid(), package.CorrelationId, envelope,
 				connection.ConnectionId, dto.EventStreamId, dto.ResolveLinkTos, user);
+		}
+
+		private ClientMessage.SubscribeToStreamFiltered UnwrapSubscribeToStreamFiltered(TcpPackage package,
+			IEnvelope envelope,
+			IPrincipal user,
+			string login,
+			string pass,
+			TcpConnectionManager connection) {
+			var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToStreamFiltered>();
+			if (dto == null) return null;
+
+			IEventFilter eventFilter = EventFilter.Get(dto.Filter);
+
+			return new ClientMessage.SubscribeToStreamFiltered(Guid.NewGuid(), package.CorrelationId, envelope,
+				connection.ConnectionId, dto.EventStreamId, dto.ResolveLinkTos, user, eventFilter,
+				dto.CheckpointInterval);
 		}
 
 		private ClientMessage.UnsubscribeFromStream UnwrapUnsubscribeFromStream(TcpPackage package, IEnvelope envelope,

@@ -268,7 +268,7 @@ namespace EventStore.ClientAPI.Internal {
 		public async Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
 			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
 			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
-			
+
 			Ensure.Positive(maxCount, "maxCount");
 			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
 			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
@@ -359,6 +359,21 @@ namespace EventStore.ClientAPI.Internal {
 			_handler.EnqueueMessage(new StartSubscriptionMessage(source, string.Empty, resolveLinkTos, userCredentials,
 				eventAppeared, subscriptionDropped,
 				Settings.MaxRetries, Settings.OperationTimeout));
+			return source.Task;
+		}
+
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(filter, nameof(filter));
+
+			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
+			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos,
+				checkpointInterval, filter, userCredentials, eventAppeared, checkpointReached,
+				subscriptionDropped, Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}
 
