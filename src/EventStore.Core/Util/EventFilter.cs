@@ -10,6 +10,8 @@ namespace EventStore.Core.Util {
 	}
 	
 	public class EventFilter {
+		
+		public static IEventFilter None => new AlwaysAllowStrategy();
 	
 		public static IEventFilter Get(TcpClientMessageDto.Filter filter) {
 			if (filter == null || filter.Data.Length == 0) {
