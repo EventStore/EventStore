@@ -159,18 +159,13 @@ namespace EventStore.Core.Services {
 		public void Handle(GossipMessage.GossipUpdated message) {
 			var currentMaster = _servers.FirstOrDefault(x => x.InstanceId == _master);
 			var updatedMaster = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master);
-
-			if (currentMaster != null && updatedMaster != null && currentMaster.NodePriority != updatedMaster.NodePriority)
-			{
-				var candidateExists = message.ClusterInfo.Members.Any(x => x.InstanceId != currentMaster.InstanceId && x.NodePriority > updatedMaster.NodePriority);
-
-				if (candidateExists)
-				{
-					Log.Info($"Master Priority has changed. Triggering elections. Current Priority: {currentMaster.NodePriority} | Updated Priority: {updatedMaster.NodePriority}");
-					_publisher.Publish(new ElectionMessage.StartElections());
-				}
+			
+			if (currentMaster != null && updatedMaster != null &&
+			    currentMaster.NodePriority != updatedMaster.NodePriority) {
+				Log.Info($"Master's priority has changed. Deposing master. (New:{currentMaster}, Old:{updatedMaster})");
+				_publisher.Publish(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 			}
-
+			
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)
 				.Where(x => x.IsAlive)
 				.OrderByDescending(x => x.InternalHttpEndPoint, IPComparer)
