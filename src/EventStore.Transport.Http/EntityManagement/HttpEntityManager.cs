@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.BufferManagement;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -26,7 +27,6 @@ namespace EventStore.Transport.Http.EntityManagement {
 		private int _processing;
 		private readonly string[] _allowedMethods;
 		private readonly Action<HttpEntity> _onRequestSatisfied;
-		private Stream _currentOutputStream;
 		private AsyncQueuedBufferWriter _asyncWriter;
 		private readonly ICodec _requestCodec;
 		private readonly ICodec _responseCodec;
@@ -215,18 +215,17 @@ namespace EventStore.Transport.Http.EntityManagement {
 			Ensure.NotNull(onError, "onError");
 			Ensure.NotNull(onCompleted, "onCompleted");
 
-			_currentOutputStream = HttpEntity.Response.OutputStream;
-			ContinueWriteResponseAsync(response, () => { }, onError, onCompleted);
-		}
-
-		private void DisposeStreamAndCloseConnection(string message) {
-			IOStreams.SafelyDispose(_currentOutputStream);
-			_currentOutputStream = null;
-			CloseConnection(e => Log.Debug(message + "\nException: {e}", e.Message));
+			Task.Run(async () => {
+				try {
+					await HttpEntity.Response.OutputStream.WriteAsync(response);
+					onCompleted();
+				} catch (Exception ex) {
+					onError(ex);
+				}
+			});
 		}
 
 		public void EndReply() {
-			EndWriteResponse();
 		}
 
 		public void Reply(
@@ -238,7 +237,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 				return;
 
 			if (response == null || response.Length == 0) {
-				LogResponse(new byte[0]);
+				LogResponse(Array.Empty<byte>());
 				SetResponseLength(0);
 				_onComplete();
 				CloseConnection(onError);
@@ -247,9 +246,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 				if (!string.IsNullOrEmpty(_responseContentEncoding))
 					response = CompressResponse(response, _responseContentEncoding);
 				SetResponseLength(response.Length);
-				BeginWriteResponse();
-				ContinueWriteResponseAsync(response, () => { }, onError, () => { });
-				EndWriteResponse();
+				ContinueReply(response, onError, _onComplete);
 			}
 		}
 
@@ -315,30 +312,6 @@ namespace EventStore.Transport.Http.EntityManagement {
 			}
 		}
 
-		private void EndWriteResponse() {
-			_asyncWriter.AppendDispose(exception => { });
-		}
-
-		private void BeginWriteResponse() {
-			_currentOutputStream = HttpEntity.Response.OutputStream;
-		}
-
-		private void ContinueWriteResponseAsync(
-			byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted) {
-			if (_asyncWriter == null)
-				_asyncWriter = new AsyncQueuedBufferWriter(
-					_currentOutputStream, () => DisposeStreamAndCloseConnection("Close connection error"));
-
-			_asyncWriter.Append(
-				response, errorIfAny => {
-					if (errorIfAny == null)
-						onSuccess();
-					else
-						onError(errorIfAny);
-					onCompleted();
-				});
-		}
-
 		private void RequestRead(AsyncStreamCopier<ManagerOperationState> copier) {
 			var state = copier.AsyncState;
 
@@ -399,7 +372,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 				}
 
 				Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n" +
-						  (LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}"
+				          (LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}"
 					, DateTime.Now
 					, HttpEntity.Request.RemoteEndPoint.ToString()
 					, HttpEntity.Request.HttpMethod
@@ -435,7 +408,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public static byte[] CompressResponse(byte[] response, string compressionAlgorithm) {
 			if (string.IsNullOrEmpty(compressionAlgorithm) ||
-				!SupportedCompressionAlgorithms.Contains(compressionAlgorithm))
+			    !SupportedCompressionAlgorithms.Contains(compressionAlgorithm))
 				return response;
 
 			MemoryStream outputStream;

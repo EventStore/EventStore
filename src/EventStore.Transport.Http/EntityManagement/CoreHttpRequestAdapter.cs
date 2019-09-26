@@ -24,7 +24,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public Stream InputStream => _inner.Body;
 
-		public string RawUrl => _inner.HttpContext.Features.Get<IHttpRequestFeature>().RawTarget;
+		public string RawUrl => _inner.Path + (_inner.QueryString.HasValue ? _inner.QueryString.Value : null);
 
 		public IPEndPoint RemoteEndPoint => new IPEndPoint(
 			_inner.HttpContext.Connection.RemoteIpAddress, _inner.HttpContext.Connection.RemotePort);
