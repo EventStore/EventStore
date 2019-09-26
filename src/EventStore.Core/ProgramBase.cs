@@ -18,22 +18,19 @@ namespace EventStore.Core {
 		protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
 
-		private int _exitCode;
-		private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
 		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
+		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
 
 		protected abstract string GetLogsDirectory(TOptions options);
 		protected abstract bool GetIsStructuredLog(TOptions options);
 		protected abstract string GetComponentName(TOptions options);
 
 		protected abstract void Create(TOptions options);
-		protected abstract void Start();
-		public abstract void Stop();
+		protected abstract Task Start();
+		public abstract Task Stop();
 
-		public async Task<int> Run(string[] args) {
-			Application.RegisterExitAction(Exit);
+		protected ProgramBase(string[] args) {
 			try {
-
 				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
 				if (options.Help) {
@@ -42,12 +39,10 @@ namespace EventStore.Core {
 				} else if (options.Version) {
 					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
-					return 0;
 				} else {
 					PreInit(options);
 					Init(options);
 					Create(options);
-					Start();
 				}
 			} catch (OptionException exc) {
 				Console.Error.WriteLine("Error while parsing options:");
@@ -55,7 +50,7 @@ namespace EventStore.Core {
 				Console.Error.WriteLine();
 				Console.Error.WriteLine("Options:");
 				Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
-				return 1;
+				_startupSource.SetException(exc);
 			} catch (ApplicationInitializationException ex) {
 				var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
 				if (LogManager.Initialized) {
@@ -63,8 +58,7 @@ namespace EventStore.Core {
 				} else {
 					Console.Error.WriteLine(msg);
 				}
-
-				return 1;
+				_startupSource.SetException(ex);
 			} catch (Exception ex) {
 				var msg = "Unhandled exception while starting application:";
 				if (LogManager.Initialized) {
@@ -74,13 +68,30 @@ namespace EventStore.Core {
 					Console.Error.WriteLine(msg);
 					Console.Error.WriteLine(FormatExceptionMessage(ex));
 				}
-
-				return 1;
+				_startupSource.SetException(ex);
 			} finally {
 				Log.Flush();
 			}
+		}
 
-			return await _exitSource.Task;
+		public async Task<int> Run() {
+			Application.RegisterExitAction(Exit);
+			try {
+				await Task.WhenAny(_startupSource.Task, Start());
+				var exitCode = await _exitSource.Task;
+				await Stop();
+
+				return exitCode;
+			} catch (Exception ex) {
+				if (LogManager.Initialized) {
+					Log.FatalException(ex, "{e}", FormatExceptionMessage(ex));
+				} else {
+					Console.Error.WriteLine(ex.Message);
+					Console.Error.WriteLine(FormatExceptionMessage(ex));
+				}
+				
+				return 1;
+			}
 		}
 
 		protected virtual void PreInit(TOptions options) {

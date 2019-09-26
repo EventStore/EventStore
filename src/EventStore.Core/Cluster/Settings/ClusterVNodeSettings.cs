@@ -14,8 +14,6 @@ namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
 		public readonly VNodeInfo NodeInfo;
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
-		public readonly string[] IntHttpPrefixes;
-		public readonly string[] ExtHttpPrefixes;
 		public readonly bool EnableTrustedAuth;
 		public readonly X509Certificate2 Certificate;
 		public readonly int WorkerThreads;
@@ -85,7 +83,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
-		public readonly bool UseKestrel;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -95,8 +92,6 @@ namespace EventStore.Core.Cluster.Settings {
 			IPEndPoint internalHttpEndPoint,
 			IPEndPoint externalHttpEndPoint,
 			GossipAdvertiseInfo gossipAdvertiseInfo,
-			string[] intHttpPrefixes,
-			string[] extHttpPrefixes,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
 			int workerThreads,
@@ -156,15 +151,12 @@ namespace EventStore.Core.Cluster.Settings {
 			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
-			bool readOnlyReplica = false,
-			bool useKestrel = false) {
+			bool readOnlyReplica = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-			Ensure.NotNull(intHttpPrefixes, "intHttpPrefixes");
-			Ensure.NotNull(extHttpPrefixes, "extHttpPrefixes");
 			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
 				Ensure.NotNull(certificate, "certificate");
 			Ensure.Positive(workerThreads, "workerThreads");
@@ -189,8 +181,6 @@ namespace EventStore.Core.Cluster.Settings {
 				internalHttpEndPoint, externalHttpEndPoint,
 				readOnlyReplica);
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
-			IntHttpPrefixes = intHttpPrefixes;
-			ExtHttpPrefixes = extHttpPrefixes;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
 			WorkerThreads = workerThreads;
@@ -261,73 +251,34 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
-			UseKestrel = useKestrel;
 		}
 
-		public override string ToString() {
-			return string.Format("InstanceId: {0}\n"
-								 + "InternalTcp: {1}\n"
-								 + "InternalSecureTcp: {2}\n"
-								 + "ExternalTcp: {3}\n"
-								 + "ExternalSecureTcp: {4}\n"
-								 + "InternalHttp: {5}\n"
-								 + "ExternalHttp: {6}\n"
-								 + "IntHttpPrefixes: {7}\n"
-								 + "ExtHttpPrefixes: {8}\n"
-								 + "EnableTrustedAuth: {9}\n"
-								 + "Certificate: {10}\n"
-								 + "LogHttpRequests: {11}\n"
-								 + "WorkerThreads: {12}\n"
-								 + "DiscoverViaDns: {13}\n"
-								 + "ClusterDns: {14}\n"
-								 + "GossipSeeds: {15}\n"
-								 + "ClusterNodeCount: {16}\n"
-								 + "MinFlushDelay: {17}\n"
-								 + "PrepareAckCount: {18}\n"
-								 + "CommitAckCount: {19}\n"
-								 + "PrepareTimeout: {20}\n"
-								 + "CommitTimeout: {21}\n"
-								 + "UseSsl: {22}\n"
-								 + "SslTargetHost: {23}\n"
-								 + "SslValidateServer: {24}\n"
-								 + "StatsPeriod: {25}\n"
-								 + "StatsStorage: {26}\n"
-								 + "AuthenticationProviderFactory Type: {27}\n"
-								 + "NodePriority: {28}"
-								 + "GossipInterval: {29}\n"
-								 + "GossipAllowedTimeDifference: {30}\n"
-								 + "GossipTimeout: {31}\n"
-								 + "HistogramEnabled: {32}\n"
-								 + "HTTPCachingDisabled: {33}\n"
-								 + "IndexPath: {34}\n"
-								 + "ScavengeHistoryMaxAge: {35}\n"
-								 + "ConnectionPendingSendBytesThreshold: {36}\n"
-								 + "ChunkInitialReaderCount: {37}\n"
-								 + "ReduceFileCachePressure: {38}\n"
-								 + "InitializationThreads: {39}\n"
-								 + "StructuredLog: {40}\n"
-								 + "DisableFirstLevelHttpAuthorization: {41}\n"
-								 + "ReadOnlyReplica: {42}\n",
-				NodeInfo.InstanceId,
-				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
-				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
-				NodeInfo.InternalHttp, NodeInfo.ExternalHttp,
-				string.Join(", ", IntHttpPrefixes),
-				string.Join(", ", ExtHttpPrefixes),
-				EnableTrustedAuth,
-				Certificate == null ? "n/a" : Certificate.ToString(true),
-				LogHttpRequests,
-				WorkerThreads, DiscoverViaDns, ClusterDns,
-				string.Join(",", GossipSeeds.Select(x => x.ToString())),
-				ClusterNodeCount, MinFlushDelay,
-				PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
-				UseSsl, SslTargetHost, SslValidateServer,
-				StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-				NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
-				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
-				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
-				ReduceFileCachePressure, InitializationThreads, StructuredLog,
-				DisableFirstLevelHttpAuthorization, ReadOnlyReplica);
-		}
+		public override string ToString() =>
+			$"InstanceId: {NodeInfo.InstanceId}\n" + $"InternalTcp: {NodeInfo.InternalTcp}\n" +
+			$"InternalSecureTcp: {NodeInfo.InternalSecureTcp}\n" + $"ExternalTcp: {NodeInfo.ExternalTcp}\n" +
+			$"ExternalSecureTcp: {NodeInfo.ExternalSecureTcp}\n" + $"InternalHttp: {NodeInfo.InternalHttp}\n" +
+			$"ExternalHttp: {NodeInfo.ExternalHttp}\n" +
+			$"EnableTrustedAuth: {EnableTrustedAuth}\n" +
+			$"Certificate: {(Certificate == null ? "n/a" : Certificate.ToString(true))}\n" +
+			$"LogHttpRequests: {LogHttpRequests}\n" + $"WorkerThreads: {WorkerThreads}\n" +
+			$"DiscoverViaDns: {DiscoverViaDns}\n" + $"ClusterDns: {ClusterDns}\n" +
+			$"GossipSeeds: {string.Join(",", GossipSeeds.Select(x => x.ToString()))}\n" +
+			$"ClusterNodeCount: {ClusterNodeCount}\n" + $"MinFlushDelay: {MinFlushDelay}\n" +
+			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
+			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" + $"UseSsl: {UseSsl}\n" +
+			$"SslTargetHost: {SslTargetHost}\n" + $"SslValidateServer: {SslValidateServer}\n" +
+			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
+			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
+			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +
+			$"GossipAllowedTimeDifference: {GossipAllowedTimeDifference}\n" +
+			$"GossipTimeout: {GossipTimeout}\n" + $"HistogramEnabled: {EnableHistograms}\n" +
+			$"HTTPCachingDisabled: {DisableHTTPCaching}\n" + $"IndexPath: {Index}\n" +
+			$"ScavengeHistoryMaxAge: {ScavengeHistoryMaxAge}\n" +
+			$"ConnectionPendingSendBytesThreshold: {ConnectionPendingSendBytesThreshold}\n" +
+			$"ChunkInitialReaderCount: {ChunkInitialReaderCount}\n" +
+			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
+			$"InitializationThreads: {InitializationThreads}\n" + $"StructuredLog: {StructuredLog}\n" +
+			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
+			$"ReadOnlyReplica: {ReadOnlyReplica}\n";
 	}
 }

@@ -36,20 +36,11 @@ namespace EventStore.Core.Tests.Http {
 		private readonly System.Collections.Generic.List<HttpResponseMessage> _allResponses =
 			new System.Collections.Generic.List<HttpResponseMessage>();
 
-		private Func<HttpResponseMessage, byte[]> _dumpResponse;
-		private Func<HttpResponseMessage, int> _dumpResponse2;
-		private Func<HttpRequestMessage, byte[]> _dumpRequest;
-		private Func<HttpRequestMessage, byte[]> _dumpRequest2;
 		private string _tag;
 		private NetworkCredential _defaultCredentials = null;
-		protected HttpClient _client;
+		protected HttpClient _client => _node.HttpClient;
 
 		public override async Task TestFixtureSetUp() {
-			Helper.EatException(() => _dumpResponse = CreateDumpResponse());
-			Helper.EatException(() => _dumpResponse2 = CreateDumpResponse2());
-			Helper.EatException(() => _dumpRequest = CreateDumpRequest());
-			Helper.EatException(() => _dumpRequest2 = CreateDumpRequest2());
-
 			await base.TestFixtureSetUp();
 
 			_node = CreateMiniNode();
@@ -62,14 +53,6 @@ namespace EventStore.Core.Tests.Http {
 			_lastResponseBody = null;
 			_lastResponseBytes = null;
 			_lastJsonException = null;
-			_client = new HttpClient(new HttpClientHandler {
-				AllowAutoRedirect = false
-			}) {
-				BaseAddress = new UriBuilder {
-					Host = _node.ExtHttpEndPoint.Address.ToString(),
-					Port = _node.ExtHttpEndPoint.Port
-				}.Uri
-			};
 			try {
 				await Given().WithTimeout();
 			} catch (Exception ex) {
@@ -114,7 +97,6 @@ namespace EventStore.Core.Tests.Http {
 			foreach (var response in _allResponses) {
 				response?.Dispose();
 			}
-			_client?.Dispose();
 		}
 
 		protected HttpRequestMessage CreateRequest(
@@ -311,7 +293,7 @@ namespace EventStore.Core.Tests.Http {
 			var response = await _client.SendAsync(request);
 			_allResponses.Add(response);
 
-			if (_dumpRequest != null) {
+			/*if (_dumpRequest != null) {
 				var bytes = _dumpRequest(request);
 				if (bytes != null)
 					Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, GetBytesLength(bytes)).TrimEnd('\0'));
@@ -329,7 +311,7 @@ namespace EventStore.Core.Tests.Http {
 				var len = _dumpResponse2(response);
 				if (bytes != null)
 					Console.WriteLine(Encoding.ASCII.GetString(bytes, 0, len).TrimEnd('\0'));
-			}
+			}*/
 
 			return response;
 		}

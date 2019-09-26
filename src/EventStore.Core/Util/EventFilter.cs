@@ -5,35 +5,45 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 
 namespace EventStore.Core.Util {
-	public interface IEventFilter {
-		bool IsEventAllowed(EventRecord eventRecord);
-	}
-	
-	public class EventFilter {
-		
+	public static class EventFilter {
 		public static IEventFilter None => new AlwaysAllowStrategy();
-	
+
+		public static class StreamName {
+			public static IEventFilter Prefixes(params string[] prefixes)
+				=> new StreamIdPrefixStrategy(prefixes);
+
+			public static IEventFilter Regex(string regex)
+				=> new StreamIdRegexStrategy(regex);
+		}
+
+		public static class EventType {
+			public static IEventFilter Prefixes(params string[] prefixes)
+				=> new EventTypePrefixStrategy(prefixes);
+
+			public static IEventFilter Regex(string regex)
+				=> new EventTypeRegexStrategy(regex);
+		}
+
 		public static IEventFilter Get(TcpClientMessageDto.Filter filter) {
 			if (filter == null || filter.Data.Length == 0) {
 				return new AlwaysAllowStrategy();
 			}
 
-			switch (filter.Context) {
-				case TcpClientMessageDto.Filter.FilterContext.EventType
-					when filter.Type == TcpClientMessageDto.Filter.FilterType.Prefix:
-					return new EventTypePrefixStrategy(filter.Data);
-				case TcpClientMessageDto.Filter.FilterContext.EventType
-					when filter.Type == TcpClientMessageDto.Filter.FilterType.Regex:
-					return new EventTypeRegexStrategy(filter.Data[0]);
-				case TcpClientMessageDto.Filter.FilterContext.StreamId
-					when filter.Type == TcpClientMessageDto.Filter.FilterType.Prefix:
-					return new StreamIdPrefixStrategy(filter.Data);
-				case TcpClientMessageDto.Filter.FilterContext.StreamId
-					when filter.Type == TcpClientMessageDto.Filter.FilterType.Regex:
-					return new StreamIdRegexStrategy(filter.Data[0]);
-			}
-			
-			throw new Exception(); // Invalid filter
+			return filter.Context switch {
+				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
+				                                                        TcpClientMessageDto.Filter.FilterType.Prefix =>
+				EventType.Prefixes(filter.Data),
+				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
+				                                                        TcpClientMessageDto.Filter.FilterType.Regex =>
+				EventType.Regex(filter.Data[0]),
+				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
+				                                                       TcpClientMessageDto.Filter.FilterType.Prefix =>
+				StreamName.Prefixes(filter.Data),
+				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
+				                                                       TcpClientMessageDto.Filter.FilterType.Regex =>
+				StreamName.Regex(filter.Data[0]),
+				_ => throw new Exception() // Invalid filter
+			};
 		}
 
 		private class AlwaysAllowStrategy : IEventFilter {
@@ -82,32 +92,33 @@ namespace EventStore.Core.Util {
 				_expectedRegex.Match(eventRecord.EventStreamId).Success;
 		}
 
-		public static (bool Success, string Reason) TryParse(string context, string type, string data, out IEventFilter filter) {
+		public static (bool Success, string Reason) TryParse(string context, string type, string data,
+			out IEventFilter filter) {
 			TcpClientMessageDto.Filter.FilterContext parsedContext;
 			switch (context) {
 				case "eventtype":
-					parsedContext =  TcpClientMessageDto.Filter.FilterContext.EventType;
+					parsedContext = TcpClientMessageDto.Filter.FilterContext.EventType;
 					break;
 				case "streamid":
 					parsedContext = TcpClientMessageDto.Filter.FilterContext.StreamId;
 					break;
 				default:
 					filter = null;
-					var names = string.Join(", ",Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterContext)));
+					var names = string.Join(", ", Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterContext)));
 					return (false, $"Invalid context please provide one of the following: {names}.");
 			}
-			
+
 			TcpClientMessageDto.Filter.FilterType parsedType;
 			switch (type) {
 				case "regex":
-					parsedType =  TcpClientMessageDto.Filter.FilterType.Regex;
+					parsedType = TcpClientMessageDto.Filter.FilterType.Regex;
 					break;
 				case "prefix":
 					parsedType = TcpClientMessageDto.Filter.FilterType.Prefix;
 					break;
 				default:
 					filter = null;
-					var names = string.Join(", ",Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterType)));
+					var names = string.Join(", ", Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterType)));
 					return (false, $"Invalid type please provide one of the following: {names}.");
 			}
 
@@ -115,15 +126,15 @@ namespace EventStore.Core.Util {
 				filter = null;
 				return (false, "Please provide a comma delimited list of data with at least one item.");
 			}
-			
+
 			if (parsedType == TcpClientMessageDto.Filter.FilterType.Regex) {
 				filter = Get(new TcpClientMessageDto.Filter(parsedContext, parsedType, new[] {data}));
 				return (true, null);
 			}
 
-			filter = Get(new TcpClientMessageDto.Filter(parsedContext, parsedType, data.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)));
+			filter = Get(new TcpClientMessageDto.Filter(parsedContext, parsedType,
+				data.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)));
 			return (true, null);
-
 		}
 	}
 }

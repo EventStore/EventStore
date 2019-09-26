@@ -9,6 +9,10 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class PortableServer {
@@ -24,7 +28,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private IHttpService _service;
 		private MultiQueuedHandler _multiQueuedHandler;
 		private HttpAsyncClient _client;
-		private TimeSpan _timeout;
+		private readonly TimeSpan _timeout;
+		private readonly TestServer _server;
+
 
 		private readonly IPEndPoint _serverEndPoint;
 
@@ -32,10 +38,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			Ensure.NotNull(serverEndPoint, "serverEndPoint");
 			_serverEndPoint = serverEndPoint;
 			_timeout = TimeSpan.FromMilliseconds(timeout);
+			_server = new TestServer(new WebHostBuilder().UseStartup(new NoOpStartup()));
 		}
 
 		public void SetUp() {
-			_bus = new InMemoryBus(string.Format("bus_{0}", _serverEndPoint.Port));
+			_bus = new InMemoryBus($"bus_{_serverEndPoint.Port}");
 
 			{
 				var pipelineBus = InMemoryBus.CreateTest();
@@ -46,8 +53,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 					{new AnonymousHttpAuthenticationProvider()};
 
 				_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
-					_multiQueuedHandler, false, null, 0, false, _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA));
-				HttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
+					_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
+				KestrelHttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
 				_client = new HttpAsyncClient(_timeout);
 			}
 
@@ -60,6 +67,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_service.Shutdown();
 			_client.Dispose();
 			_multiQueuedHandler.Stop();
+			_server.Dispose();
 		}
 
 		public void Publish(Message message) {
@@ -90,6 +98,13 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 			signal.WaitOne();
 			return new Tuple<bool, string>(success, error);
+		}
+
+		class NoOpStartup : IStartup {
+			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
+
+			public void Configure(IApplicationBuilder app) {
+			}
 		}
 	}
 }

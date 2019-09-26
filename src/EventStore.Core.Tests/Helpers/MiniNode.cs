@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -23,6 +24,12 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Transport.Grpc;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -45,8 +52,10 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
+		public readonly HttpClient HttpClient;
 
 		private readonly List<int> _usedPorts = new List<int>();
+		private TestServer _kestrelTestServer;
 
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
@@ -59,7 +68,6 @@ namespace EventStore.Core.Tests.Helpers {
 			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
-
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -103,9 +111,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.WithExternalTcpOn(TcpEndPoint)
 				.WithExternalSecureTcpOn(TcpSecEndPoint)
 				.WithInternalHttpOn(IntHttpEndPoint)
-				.AddInternalHttpPrefix($"http://{IntHttpEndPoint.Address}:{IntHttpEndPoint.Port}/")
 				.WithExternalHttpOn(ExtHttpEndPoint)
-				.AddExternalHttpPrefix($"http://{ExtHttpEndPoint.Address}:{ExtHttpEndPoint.Port}/")
 				.WithTfChunkSize(chunkSize ?? ChunkSize)
 				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
 				.WithServerCertificate(ssl_connections.GetCertificate())
@@ -126,8 +132,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseExternalIPAs(advertisedExtIPAddress)
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
-				.WithIndexBitnessVersion(indexBitnessVersion)
-				.DontAddInterfacePrefixes();
+				.WithIndexBitnessVersion(indexBitnessVersion);
 
 			if (enableTrustedAuth)
 				builder.EnableTrustedAuth();
@@ -165,13 +170,19 @@ namespace EventStore.Core.Tests.Helpers {
 			Node = builder.Build();
 			Db = ((TestVNodeBuilder)builder).GetDb();
 
+			_kestrelTestServer = new TestServer(new WebHostBuilder()
+				.UseKestrel()
+				.UseStartup(new ClusterVNodeStartup(Node)));
+			HttpClient = new HttpClient(_kestrelTestServer.CreateHandler());
+
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 		}
 
 		public async Task Start() {
 			StartingTime.Start();
 
-			await Node.StartAndWaitUntilReady().WithTimeout(TimeSpan.FromSeconds(60)).ConfigureAwait(false); //starts the node
+			await Node.StartAndWaitUntilReady().WithTimeout(TimeSpan.FromSeconds(60))
+				.ConfigureAwait(false); //starts the node
 
 			StartingTime.Stop();
 			Log.Info("MiniNode successfully started!");
@@ -223,6 +234,8 @@ namespace EventStore.Core.Tests.Helpers {
 			try {
 				StoppingTime.Start();
 
+				_kestrelTestServer.Dispose();
+				HttpClient.Dispose();
 				await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
 				if (!keepDb)
@@ -250,5 +263,33 @@ namespace EventStore.Core.Tests.Helpers {
 			var host = Dns.GetHostEntry(Dns.GetHostName());
 			return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
 		}
+
+		public class ClusterVNodeStartup : IStartup {
+			private readonly ClusterVNode _node;
+
+			public ClusterVNodeStartup(ClusterVNode node) {
+				if (node == null) {
+					throw new ArgumentNullException(nameof(node));
+				}
+
+				_node = node;
+			}
+
+			public IServiceProvider ConfigureServices(IServiceCollection services) => services
+				.AddRouting()
+				.AddSingleton(_node)
+				.BuildServiceProvider();
+
+			public void Configure(IApplicationBuilder app) =>
+				app.UseRouting()
+					.Use(_node.InternalHttp)
+					.Use(_node.ExternalHttp);
+		}
+	}
+
+	internal static class WebHostBuilderExtensions {
+		public static IWebHostBuilder UseStartup(this IWebHostBuilder builder, IStartup startup)
+			=> builder
+				.ConfigureServices(services => services.AddSingleton(startup));
 	}
 }

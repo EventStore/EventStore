@@ -32,12 +32,14 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.PersistentSubscription;
-using System.Threading;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
-using System.Collections;
-using System.Diagnostics;
+using MidFunc = System.Func<
+	Microsoft.AspNetCore.Http.HttpContext,
+	System.Func<System.Threading.Tasks.Task>,
+	System.Threading.Tasks.Task
+>;
 
 namespace EventStore.Core {
 	public class ClusterVNode :
@@ -53,13 +55,20 @@ namespace EventStore.Core {
 			get { return _mainBus; }
 		}
 
+		[Obsolete]
 		public IHttpService InternalHttpService {
 			get { return _internalHttpService; }
 		}
 
+		[Obsolete]
 		public IHttpService ExternalHttpService {
 			get { return _externalHttpService; }
 		}
+
+		public MidFunc InternalHttp => _internalHttpService?.MidFunc ?? ((context, next) => next());
+		public MidFunc ExternalHttp => _externalHttpService.MidFunc;
+
+		public IReadIndex ReadIndex => _readIndex;
 
 		public TimerService TimerService {
 			get { return _timerService; }
@@ -89,7 +98,7 @@ namespace EventStore.Core {
 		private readonly ISubsystem[] _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
-
+		private readonly IReadIndex _readIndex;
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
@@ -231,6 +240,7 @@ namespace EventStore.Core {
 				vNodeSettings.HashCollisionReadLimit,
 				vNodeSettings.SkipIndexScanOnReads,
 				db.Config.ReplicationCheckpoint);
+			_readIndex = readIndex;
 			var writer = new TFChunkWriter(db);
 			var epochManager = new EpochManager(_mainQueue,
 				ESConsts.CachedEpochCount,
@@ -389,7 +399,8 @@ namespace EventStore.Core {
 				_workersHandler, vNodeSettings.LogHttpRequests,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
-				vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.ExtHttpPrefixes);
+				vNodeSettings.DisableFirstLevelHttpAuthorization,
+				vNodeSettings.NodeInfo.ExternalHttp);
 			_externalHttpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)
 				_externalHttpService.SetupController(adminController);
@@ -412,7 +423,8 @@ namespace EventStore.Core {
 					_workersHandler, vNodeSettings.LogHttpRequests,
 					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
 					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs,
-					vNodeSettings.DisableFirstLevelHttpAuthorization, vNodeSettings.IntHttpPrefixes);
+					vNodeSettings.DisableFirstLevelHttpAuthorization,
+					vNodeSettings.NodeInfo.InternalHttp);
 				_internalHttpService.SetupController(adminController);
 				_internalHttpService.SetupController(pingController);
 				_internalHttpService.SetupController(infoController);
@@ -423,7 +435,7 @@ namespace EventStore.Core {
 				_internalHttpService.SetupController(histogramController);
 				_internalHttpService.SetupController(persistentSubscriptionController);
 			}
-
+			
 			// Authentication plugin HTTP
 			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService,
 				_internalHttpService, httpSendService, _mainQueue, _workersHandler);
@@ -434,7 +446,7 @@ namespace EventStore.Core {
 			}
 
 			SubscribeWorkers(bus => {
-				HttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray());
+				KestrelHttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray());
 			});
 
 			// REQUEST FORWARDING
@@ -636,7 +648,8 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
 			}
-
+			
+			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
 			AddTask(monitoringQueue.Start());

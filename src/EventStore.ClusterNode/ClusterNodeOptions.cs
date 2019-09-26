@@ -202,17 +202,8 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.FaultOutOfOrderProjectionsDescr, Opts.ProjectionsGroup)]
 		public bool FaultOutOfOrderProjections { get; set; }
 
-		[ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
-		public string[] IntHttpPrefixes { get; set; }
-
-		[ArgDescription(Opts.ExtHttpPrefixesDescr, Opts.InterfacesGroup)]
-		public string[] ExtHttpPrefixes { get; set; }
-
 		[ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
 		public bool EnableTrustedAuth { get; set; }
-
-		[ArgDescription(Opts.AddInterfacePrefixesDescr, Opts.InterfacesGroup)]
-		public bool AddInterfacePrefixes { get; set; }
 
 		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
 		public string CertificateStoreLocation { get; set; }
@@ -363,10 +354,7 @@ namespace EventStore.ClusterNode {
 			WorkerThreads = Opts.WorkerThreadsDefault;
 			BetterOrdering = Opts.BetterOrderingDefault;
 
-			IntHttpPrefixes = Opts.IntHttpPrefixesDefault;
-			ExtHttpPrefixes = Opts.ExtHttpPrefixesDefault;
 			EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
-			AddInterfacePrefixes = Opts.AddInterfacePrefixesDefault;
 
 			ExtTcpHeartbeatTimeout = Opts.ExtTcpHeartbeatTimeoutDefault;
 			IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;

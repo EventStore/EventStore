@@ -18,6 +18,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
+using Microsoft.AspNetCore.Hosting;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -45,9 +46,6 @@ namespace EventStore.Core {
 		protected IPEndPoint _internalHttp;
 		protected IPEndPoint _externalHttp;
 
-		protected List<string> _intHttpPrefixes;
-		protected List<string> _extHttpPrefixes;
-		protected bool _addInterfacePrefixes;
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
 		protected int _workerThreads;
@@ -137,7 +135,7 @@ namespace EventStore.Core {
 		private bool _gossipOnSingleNode;
 
 		private bool _readOnlyReplica;
-		private bool _useKestrel;
+		private IWebHost _host;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -161,9 +159,6 @@ namespace EventStore.Core {
 			_externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
 			_internalHttp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalHttpPortDefault);
 
-			_intHttpPrefixes = new List<string>();
-			_extHttpPrefixes = new List<string>();
-			_addInterfacePrefixes = true;
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
 			_certificate = null;
@@ -658,36 +653,7 @@ namespace EventStore.Core {
 			_workerThreads = count;
 			return this;
 		}
-
-		/// <summary>
-		/// Adds a http prefix for the internal http endpoint
-		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddInternalHttpPrefix(string prefix) {
-			_intHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Adds a http prefix for the external http endpoint
-		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddExternalHttpPrefix(string prefix) {
-			_extHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix)
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DontAddInterfacePrefixes() {
-			_addInterfacePrefixes = false;
-			return this;
-		}
-
+		
 		/// <summary>
 		/// Sets the Server SSL Certificate to be loaded from a file
 		/// </summary>
@@ -1225,51 +1191,15 @@ namespace EventStore.Core {
 			return this;
 		}
 
-		/// Use Kestrel
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder UseKestrel() {
-			_useKestrel = true;
-
-			return this;
-		}
-
 		/// <summary>
-		/// Use Http Listener
+		/// 
 		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder UseHttpListener() {
-			_useKestrel = false;
+		/// <param name="host"></param>
+		/// <returns></returns>
+		public VNodeBuilder UseWebHost(IWebHost host) {
+			_host = host;
 
 			return this;
-		}
-
-		private void EnsureHttpPrefixes() {
-			if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-				_intHttpPrefixes = new List<string>();
-			if (_extHttpPrefixes == null || _extHttpPrefixes.IsEmpty())
-				_extHttpPrefixes = new List<string>();
-
-			if ((_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				 _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
-				if (_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_intHttpPrefixes.Add(String.Format("http://*:{0}/", _internalHttp.Port));
-				}
-
-				if (_externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_extHttpPrefixes.Add(String.Format("http://*:{0}/", _externalHttp.Port));
-				}
-			} else if (_addInterfacePrefixes) {
-				var intHttpPrefixToAdd = String.Format("http://{0}:{1}/", _internalHttp.Address, _internalHttp.Port);
-				if (!_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
-				var extHttpPrefixToAdd = String.Format("http://{0}:{1}/", _externalHttp.Address, _externalHttp.Port);
-				if (!_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-			}
 		}
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
@@ -1278,7 +1208,7 @@ namespace EventStore.Core {
 				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
 
 				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-					 _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
+				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
@@ -1338,7 +1268,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
 		public ClusterVNode Build(IOptions options = null,
 			IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null) {
-			EnsureHttpPrefixes();
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
@@ -1366,8 +1295,6 @@ namespace EventStore.Core {
 				_internalHttp,
 				_externalHttp,
 				_gossipAdvertiseInfo,
-				_intHttpPrefixes.ToArray(),
-				_extHttpPrefixes.ToArray(),
 				_enableTrustedAuth,
 				_certificate,
 				_workerThreads,
@@ -1428,8 +1355,7 @@ namespace EventStore.Core {
 				_structuredLog,
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
-				_readOnlyReplica,
-				_useKestrel);
+				_readOnlyReplica);
 
 			var infoController = new InfoController(options, _projectionType);
 
