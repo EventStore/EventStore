@@ -10,6 +10,10 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class PortableServer {
@@ -26,8 +30,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private MultiQueuedHandler _multiQueuedHandler;
 		private HttpAsyncClient _client;
 		private readonly TimeSpan _timeout;
-		private TestServer _server;
-
 		private readonly IPEndPoint _serverEndPoint;
 		private TestServer _server;
 		private HttpMessageHandler _httpMessageHandler;

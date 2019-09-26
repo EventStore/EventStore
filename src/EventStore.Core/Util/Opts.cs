@@ -113,9 +113,6 @@ namespace EventStore.Core.Util {
 		public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the HTTP";
 		public const bool EnableTrustedAuthDefault = false;
 
-		public const string AddInterfacePrefixesDescr = "Add interface prefixes";
-		public const bool AddInterfacePrefixesDefault = true;
-
 		public const string MaxMemTableSizeDescr = "Adjusts the maximum size of a mem table.";
 		public const int MaxMemtableSizeDefault = 1000000;
 
@@ -165,12 +162,6 @@ namespace EventStore.Core.Util {
 
 		public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
 		public const int WorkerThreadsDefault = 5;
-
-		public const string IntHttpPrefixesDescr = "The prefixes that the internal HTTP server should respond to.";
-		public static readonly string[] IntHttpPrefixesDefault = new string[0];
-
-		public const string ExtHttpPrefixesDescr = "The prefixes that the external HTTP server should respond to.";
-		public static readonly string[] ExtHttpPrefixesDefault = new string[0];
 
 		public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
 		public static readonly bool UnsafeIgnoreHardDeleteDefault = false;

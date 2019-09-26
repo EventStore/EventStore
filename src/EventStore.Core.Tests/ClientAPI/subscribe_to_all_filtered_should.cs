@@ -23,16 +23,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private List<EventData> _fakeSystemEvents;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 
 			_conn = BuildConnection(_node);
-			_conn.ConnectAsync().Wait();
-			_conn.SetStreamMetadataAsync("$all", -1,
+			await _conn.ConnectAsync();
+			await _conn.SetStreamMetadataAsync("$all", -1,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All),
-				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
+				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 
 			_testEvents = Enumerable
 				.Range(0, 5)
@@ -243,10 +243,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override async Task TearDown() {
 			_conn.Close();
-			_node.Shutdown();
-			base.TearDown();
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {

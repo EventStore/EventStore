@@ -104,15 +104,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		private void Register(string route, string verb) {
 			if (_router == null) {
-				_http.RegisterAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None), (x, y) => {
-					x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
-					CountdownEvent.Signal();
-				});
+				_http.RegisterAction(
+					new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
+					(x, y) => {
+						x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
+						CountdownEvent.Signal();
+					});
 			} else {
-				_router.RegisterAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None), (x, y) => {
-					CountdownEvent.Signal();
-					return new RequestParams(TimeSpan.Zero);
-				});
+				_router.RegisterAction(
+					new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
+					(x, y) => {
+						CountdownEvent.Signal();
+						return new RequestParams(TimeSpan.Zero);
+					});
 			}
 
 			var uriTemplate = new UriTemplate(route);
@@ -138,8 +142,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] { queue }, null);
 			var providers = new HttpAuthenticationProvider[] { new AnonymousHttpAuthenticationProvider() };
 			var httpService = new KestrelHttpService(ServiceAccessibility.Public, inputBus,
-				new TrieUriRouter(), multiQueuedHandler, false, null, 0, false, "http://localhost:12345/");
-			HttpService.CreateAndSubscribePipeline(bus, providers);
+				new TrieUriRouter(), multiQueuedHandler, false, null, 0, false);
+			KestrelHttpService.CreateAndSubscribePipeline(bus, providers);
 
 			using var server = new TestServer(new WebHostBuilder().UseStartup(new HttpServiceStartup(httpService)));
 			using var httpMessageHandler = server.CreateHandler();

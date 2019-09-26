@@ -18,22 +18,20 @@ namespace EventStore.Core {
 		protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
 
-		private int _exitCode;
-		private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
 		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
+		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
 
 		protected abstract string GetLogsDirectory(TOptions options);
 		protected abstract bool GetIsStructuredLog(TOptions options);
 		protected abstract string GetComponentName(TOptions options);
 
 		protected abstract void Create(TOptions options);
-		protected abstract void Start();
-		public abstract void Stop();
+		protected abstract Task Start();
+		public abstract Task Stop();
 
 		protected ProgramBase(string[] args) {
 			Application.RegisterExitAction(Exit);
 			try {
-
 				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
 				if (options.Help) {
@@ -42,12 +40,10 @@ namespace EventStore.Core {
 				} else if (options.Version) {
 					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
-					return 0;
 				} else {
 					PreInit(options);
 					Init(options);
 					Create(options);
-					Start();
 				}
 			} catch (OptionException exc) {
 				Console.Error.WriteLine("Error while parsing options:");
@@ -55,7 +51,7 @@ namespace EventStore.Core {
 				Console.Error.WriteLine();
 				Console.Error.WriteLine("Options:");
 				Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
-				return 1;
+				_startupSource.SetException(exc);
 			} catch (ApplicationInitializationException ex) {
 				var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
 				if (LogManager.Initialized) {
@@ -63,8 +59,7 @@ namespace EventStore.Core {
 				} else {
 					Console.Error.WriteLine(msg);
 				}
-
-				return 1;
+				_startupSource.SetException(ex);
 			} catch (Exception ex) {
 				var msg = "Unhandled exception while starting application:";
 				if (LogManager.Initialized) {
@@ -74,8 +69,7 @@ namespace EventStore.Core {
 					Console.Error.WriteLine(msg);
 					Console.Error.WriteLine(FormatExceptionMessage(ex));
 				}
-
-				return 1;
+				_startupSource.SetException(ex);
 			} finally {
 				Log.Flush();
 			}

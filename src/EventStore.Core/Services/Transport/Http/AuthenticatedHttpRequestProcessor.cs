@@ -106,8 +106,8 @@ namespace EventStore.Core.Services.Transport.Http {
 					InternalServerError(httpEntity);
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Unhandled exception while processing HTTP request at [{listenPrefixes}].",
-					string.Join(", ", httpService.ListenPrefixes));
+				Log.ErrorException(exc, "Unhandled exception while processing HTTP request at {url}.",
+					httpEntity.RequestedUrl);
 				InternalServerError(httpEntity);
 			}
 

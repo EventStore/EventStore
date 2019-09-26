@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_conn.Close();
+			_conn?.Close();
 			await _node.Shutdown();
 			await base.TestFixtureTearDown();
 		}

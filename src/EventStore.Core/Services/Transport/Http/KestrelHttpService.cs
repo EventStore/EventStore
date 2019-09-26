@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -12,16 +13,14 @@ using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Log;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using EventStore.Core.Services.Transport.Http.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
+using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-
 
 namespace EventStore.Core.Services.Transport.Http {
 	public class KestrelHttpService : IHttpService,
@@ -31,9 +30,9 @@ namespace EventStore.Core.Services.Transport.Http {
 		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 		private static readonly ILogger Log = LogManager.GetLoggerFor<KestrelHttpService>();
 
-		public IEnumerable<string> ListenPrefixes { get; }
 		public ServiceAccessibility Accessibility => _accessibility;
 		public bool IsListening => _isListening;
+		public IEnumerable<IPEndPoint> EndPoints { get; }
 
 		private readonly ServiceAccessibility _accessibility;
 		private readonly IPublisher _inputBus;
@@ -46,16 +45,15 @@ namespace EventStore.Core.Services.Transport.Http {
 		private readonly IPAddress _advertiseAsAddress;
 		private readonly int _advertiseAsPort;
 		private readonly bool _disableAuthorization;
-		private readonly IWebHost _host;
 
 		private bool _isListening;
 
 		public KestrelHttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
 			MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, IPAddress advertiseAsAddress,
-			int advertiseAsPort, bool disableAuthorization, params string[] prefixes) {
+			int advertiseAsPort, bool disableAuthorization, params IPEndPoint[] endPoints) {
 			Ensure.NotNull(inputBus, nameof(inputBus));
 			Ensure.NotNull(uriRouter, nameof(uriRouter));
-			Ensure.NotNull(prefixes, nameof(prefixes));
+			Ensure.NotNull(endPoints, nameof(endPoints));
 
 			_accessibility = accessibility;
 			_inputBus = inputBus;
@@ -69,24 +67,11 @@ namespace EventStore.Core.Services.Transport.Http {
 			_advertiseAsPort = advertiseAsPort;
 
 			_disableAuthorization = disableAuthorization;
-			ListenPrefixes = prefixes;
 
-			_host = new WebHostBuilder()
-				.UseStartup(new EventStoreStartup(this))
-				.UseKestrel()
-				.UseUrls(prefixes)
-				.Build();
+			EndPoints = endPoints;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			try {
-				_host.Start();
-			} catch (Exception ex) {
-				Application.Exit(ExitCode.Error,
-					$"HTTP async server failed to start listening at [{string.Join(", ", ListenPrefixes)}].");
-				return;
-			}
-
 			_inputBus.Publish(
 				TimerMessage.Schedule.Create(
 					UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
@@ -98,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				Shutdown();
 			_inputBus.Publish(
 				new SystemMessage.ServiceShutdown(
-					$"HttpServer [{string.Join(", ", ListenPrefixes)}]"));
+					$"HttpServer [{String.Join(", ", EndPoints)}]"));
 		}
 
 		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
@@ -113,6 +98,10 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		private Task RequestReceived(HttpContext context, Func<Task> next) {
+			if (EndPoints.All(e => e.Port != context.Request.Host.Port)) {
+				return next();
+			}
+
 			var tcs = new TaskCompletionSource<bool>();
 			var entity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
 				new CoreHttpResponseAdapter(context.Response), context.User, _logHttpRequests,
@@ -148,7 +137,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				if (_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)) {
 					handler(man, match);
 				} else {
-					man.ReplyStatus(EventStore.Transport.Http.HttpStatusCode.Unauthorized, "Unauthorized", (exc) => {
+					man.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", (exc) => {
 						Log.Debug("Error while sending reply (http service): {exc}.", exc.Message);
 					});
 				}
@@ -174,23 +163,20 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => _uriRouter.GetAllUriMatches(uri);
 
-		private class EventStoreStartup : IStartup {
-			private readonly KestrelHttpService _httpService;
+		public static void CreateAndSubscribePipeline(IBus bus,
+			HttpAuthenticationProvider[] httpAuthenticationProviders) {
+			Ensure.NotNull(bus, "bus");
+			Ensure.NotNull(httpAuthenticationProviders, "httpAuthenticationProviders");
 
-			public EventStoreStartup(KestrelHttpService httpService) {
-				_httpService = httpService;
-			}
+			// ReSharper disable RedundantTypeArgumentsOfMethod
+			var requestAuthenticationManager =
+				new IncomingHttpRequestAuthenticationManager(httpAuthenticationProviders);
+			bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
+			// ReSharper restore RedundantTypeArgumentsOfMethod
 
-			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
-
-			public void Configure(IApplicationBuilder app) {
-				app.Use(_httpService.RequestReceived);
-				var lifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-
-				lifetime.ApplicationStarted.Register(_httpService.OnStartup);
-				lifetime.ApplicationStopping.Register(_httpService.OnShutdown);
-			}
+			var requestProcessor = new AuthenticatedHttpRequestProcessor();
+			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
+			bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
 		}
-
 	}
 }

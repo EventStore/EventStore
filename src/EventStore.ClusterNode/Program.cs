@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -16,19 +17,25 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using Microsoft.AspNetCore.Hosting;
+using NLog.Web;
 
 namespace EventStore.ClusterNode {
 	public class Program : ProgramBase<ClusterNodeOptions> {
 		private ClusterVNode _node;
 		private ExclusiveDbLock _dbLock;
 		private ClusterNodeMutex _clusterNodeMutex;
+		private IWebHost _host;
 
 		public static Task<int> Main(string[] args) {
 			Console.CancelKeyPress += delegate {
 				Application.Exit(0, "Cancelled.");
 			};
-			var p = new Program();
-			return p.Run(args);
+			var p = new Program(args);
+			return p.Run();
+		}
+
+		private Program(string[] args) : base(args) {	
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -100,17 +107,31 @@ namespace EventStore.ClusterNode {
 			if (!opts.DiscoverViaDns && opts.GossipSeed.Length == 0) {
 				if (opts.ClusterSize == 1) {
 					Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
-							 + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
-							 + "using the `GossipSeed` option.");
+					         + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
+					         + "using the `GossipSeed` option.");
 				}
 			}
 
 			var runProjections = opts.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
-				? new[] { NodeSubsystems.Projections }
+				? new[] {NodeSubsystems.Projections}
 				: new NodeSubsystems[0];
 			_node = BuildNode(opts);
+
 			RegisterWebControllers(enabledNodeSubsystems, opts);
+
+			// TODO(jen20): ABSOLUTELY remove this before merging the `grpc` branch. This is solely for
+			// 			 	interim testing. Load a development certificate and use it for Kestrel.
+			var unsafeDevCert = new X509Certificate2("dev-cert.pfx", "", X509KeyStorageFlags.MachineKeySet);
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(opts.IntIp, opts.IntHttpPort);
+					o.Listen(opts.ExtIp, opts.ExtHttpPort,
+						listenOptions => listenOptions.UseHttps(unsafeDevCert));
+				})
+				.UseStartup(new ClusterVNodeStartup(_node))
+				.UseNLog()
+				.Build();
 		}
 
 		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options) {
@@ -246,20 +267,8 @@ namespace EventStore.ClusterNode {
 			else
 				builder.DisableDnsDiscovery();
 
-			if (!options.AddInterfacePrefixes) {
-				builder.DontAddInterfacePrefixes();
-			}
-
 			if (options.GossipOnSingleNode) {
 				builder.GossipAsSingleNode();
-			}
-
-			foreach (var prefix in options.IntHttpPrefixes) {
-				builder.AddInternalHttpPrefix(prefix);
-			}
-
-			foreach (var prefix in options.ExtHttpPrefixes) {
-				builder.AddExternalHttpPrefix(prefix);
 			}
 
 			if (options.EnableTrustedAuth)
@@ -405,12 +414,12 @@ namespace EventStore.ClusterNode {
 			return new CompositionContainer(catalog);
 		}
 
-		protected override void Start() {
-			_node.Start();
+		protected override Task Start() {
+			return Task.WhenAll(_node.StartAndWaitUntilReady(), _host.StartAsync());
 		}
 
-		public override void Stop() {
-			Task.Run(() => _node.Stop());
+		public override Task Stop() {
+			return Task.WhenAll(_node.Stop(), _host.StopAsync());
 		}
 
 		protected override void OnProgramExit() {

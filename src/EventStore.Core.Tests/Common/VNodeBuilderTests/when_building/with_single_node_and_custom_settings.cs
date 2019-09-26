@@ -436,18 +436,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_set_external_tcp_endpoint() {
 			Assert.AreEqual(_externalTcp, _settings.NodeInfo.ExternalTcp);
 		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			var internalHttpPrefix = string.Format("http://{0}/", _internalHttp);
-			CollectionAssert.AreEqual(new string[] { internalHttpPrefix }, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			var externalHttpPrefix = string.Format("http://{0}/", _externalHttp);
-			CollectionAssert.AreEqual(new string[] { externalHttpPrefix }, _settings.ExtHttpPrefixes);
-		}
 	}
 
 	[TestFixture]
@@ -471,21 +459,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_extLoopbackPrefix = string.Format("http://{0}/", new IPEndPoint(IPAddress.Loopback, extPort));
 
 			_builder.WithInternalHttpOn(internalHttp)
-				.WithExternalHttpOn(externalHttp)
-				.AddInternalHttpPrefix(_intPrefix)
-				.AddInternalHttpPrefix(_intLoopbackPrefix)
-				.AddExternalHttpPrefix(_extPrefix)
-				.AddExternalHttpPrefix(_extLoopbackPrefix);
-		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			CollectionAssert.AreEqual(new string[] { _intPrefix, _intLoopbackPrefix }, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			CollectionAssert.AreEqual(new string[] { _extPrefix, _extLoopbackPrefix }, _settings.ExtHttpPrefixes);
+				.WithExternalHttpOn(externalHttp);
 		}
 	}
 
@@ -506,53 +480,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalHttpOn(_externalHttp)
 				.WithExternalTcpOn(_externalTcp)
 				.WithInternalTcpOn(_internalTcp);
-		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			var internalHttpPrefixes = new List<string> {
-				string.Format("http://{0}/", _internalHttp)
-			};
-			CollectionAssert.AreEqual(internalHttpPrefixes, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			var externalHttpPrefixes = new List<string> {
-				string.Format("http://{0}/", _externalHttp)
-			};
-			CollectionAssert.AreEqual(externalHttpPrefixes, _settings.ExtHttpPrefixes);
-		}
-	}
-
-	[TestFixture]
-	public class with_dont_add_interface_prefixes : SingleNodeScenario {
-		private IPEndPoint _internalHttp;
-		private IPEndPoint _externalHttp;
-		private IPEndPoint _internalTcp;
-		private IPEndPoint _externalTcp;
-
-		public override void Given() {
-			var baseIpAddress = IPAddress.Loopback;
-			_internalHttp = new IPEndPoint(baseIpAddress, 1112);
-			_externalHttp = new IPEndPoint(baseIpAddress, 1113);
-			_internalTcp = new IPEndPoint(baseIpAddress, 1114);
-			_externalTcp = new IPEndPoint(baseIpAddress, 1115);
-			_builder.WithInternalHttpOn(_internalHttp)
-				.WithExternalHttpOn(_externalHttp)
-				.WithExternalTcpOn(_externalTcp)
-				.WithInternalTcpOn(_internalTcp)
-				.DontAddInterfacePrefixes();
-		}
-
-		[Test]
-		public void should_set_no_internal_http_prefixes() {
-			CollectionAssert.IsEmpty(_settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_no_external_http_prefixes() {
-			CollectionAssert.IsEmpty(_settings.ExtHttpPrefixes);
 		}
 	}
 
