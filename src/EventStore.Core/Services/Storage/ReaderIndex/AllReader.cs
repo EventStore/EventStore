@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 
 		/// <summary>
@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllFilteredResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 	}
 
@@ -51,19 +51,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.None);
-			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
+			return ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.None);
 		}
 
-		public IndexReadAllFilteredResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		public IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
-			var result = ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
-			return new IndexReadAllFilteredResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos,
-				result.IsEndOfStream);
+			return ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
 		}
 
 
-		private ReadAllEventsRawResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
+		private IndexReadAllResult ReadAllEventsForwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
@@ -170,7 +167,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
-				return new ReadAllEventsRawResult(records, pos, nextPos, prevPos, reachedEndOfStream);
+				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream);
 			}
 		}
 
@@ -181,18 +178,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
-			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
-			return new IndexReadAllResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos);
+			return ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
 		}
 
-		public IndexReadAllFilteredResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		public IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
-			var result = ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
-			return new IndexReadAllFilteredResult(result.Records, result.CurrentPos, result.NextPos, result.PrevPos,
-				result.IsEndOfStream);
+			return ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
 		}
 
-		private ReadAllEventsRawResult ReadAllEventsBackwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
+		private IndexReadAllResult ReadAllEventsBackwardInternal(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			var records = new List<CommitEventRecord>();
 			var nextPos = pos;
@@ -309,7 +303,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
-				return new ReadAllEventsRawResult(records, pos, nextPos, prevPos, reachedEndOfStream);
+				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream);
 			}
 		}
 
@@ -317,25 +311,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return rec.RecordType == LogRecordType.Commit
 			       || (rec.RecordType == LogRecordType.Prepare &&
 			           ((PrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
-		}
-
-		private struct ReadAllEventsRawResult {
-			public readonly List<CommitEventRecord> Records;
-			public readonly TFPos CurrentPos;
-			public readonly TFPos NextPos;
-			public readonly TFPos PrevPos;
-			public readonly bool IsEndOfStream;
-
-			public ReadAllEventsRawResult(List<CommitEventRecord> records, TFPos currentPos, TFPos nextPos,
-				TFPos prevPos, bool isEndOfStream) {
-				Ensure.NotNull(records, "records");
-
-				Records = records;
-				CurrentPos = currentPos;
-				NextPos = nextPos;
-				PrevPos = prevPos;
-				IsEndOfStream = isEndOfStream;
-			}
 		}
 	}
 }
