@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Storage {
 		private const int MaxPageSize = 4096;
 		private const string _readerReadHistogram = "reader-readevent";
 		private const string _readerStreamRangeHistogram = "reader-streamrange";
+		private const string _readerLinkToHistogram = "reader-linkto";
 		private const string _readerAllRangeHistogram = "reader-allrange";
 		private DateTime? _lastExpireTime = null;
 		private long _expiredBatchCount = 0;
@@ -71,7 +72,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			using (HistogramService.Measure(_readerStreamRangeHistogram)) {
+			using (HistogramService.Measure(msg.ResolveLinkTos == true ? _readerLinkToHistogram : _readerStreamRangeHistogram)) {
 				var res = ReadStreamEventsForward(msg);
 				switch (res.Result) {
 					case ReadStreamResult.Success:
@@ -206,7 +207,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward(
 			ClientMessage.ReadStreamEventsForward msg) {
-			using (HistogramService.Measure(_readerStreamRangeHistogram)) {
+			using (HistogramService.Measure(msg.ResolveLinkTos == true ? _readerLinkToHistogram : _readerStreamRangeHistogram)) {
 				var lastCommitPosition = _readIndex.LastReplicatedPosition;
 				try {
 					if (msg.MaxCount > MaxPageSize) {
@@ -243,7 +244,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward(
 			ClientMessage.ReadStreamEventsBackward msg) {
-			using (HistogramService.Measure(_readerStreamRangeHistogram)) {
+			using (HistogramService.Measure(msg.ResolveLinkTos == true ? _readerLinkToHistogram : _readerStreamRangeHistogram)) {
 				var lastCommitPosition = _readIndex.LastReplicatedPosition;
 				try {
 					if (msg.MaxCount > MaxPageSize) {

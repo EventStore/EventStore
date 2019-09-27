@@ -54,6 +54,7 @@ namespace EventStore.Core.Services.Histograms {
 			CreateHistogram("reader-readevent");
 			CreateHistogram("reader-streamrange");
 			CreateHistogram("reader-allrange");
+			CreateHistogram("reader-linkto");
 			CreateHistogram("request-manager");
 			CreateHistogram("tcp-send");
 			CreateHistogram("http-send");
