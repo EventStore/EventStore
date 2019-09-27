@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28803.156
+# Visual Studio 15
+VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.BufferManagement", "EventStore.BufferManagement\EventStore.BufferManagement.csproj", "{C7B79854-21DB-48A9-89E3-136404F13DF5}"
 EndProject

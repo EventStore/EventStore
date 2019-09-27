@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "EventStore.ClusterNode": {
-      "commandName": "Project",
-      "commandLineArgs": "--db C:\\EventStore\\db --log ./logs --run-projections=all --int-tcp-heartbeat-timeout 30000 --ext-tcp-heartbeat-timeout 30000 --unbuffered=True"
-    }
-  }
-}
