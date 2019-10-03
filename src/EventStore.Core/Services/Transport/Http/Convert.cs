@@ -18,6 +18,7 @@ using System.Xml.Serialization;
 namespace EventStore.Core.Services.Transport.Http {
 	public static class Convert {
 		private static readonly string AllEscaped = Uri.EscapeDataString("$all");
+		private static readonly string AllFilteredEscaped = "%24all/filtered";
 
 		public static FeedElement ToStreamEventForwardFeed(ClientMessage.ReadStreamEventsForwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
@@ -144,6 +145,40 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			return feed;
 		}
+		
+		public static FeedElement ToAllEventsForwardFilteredFeed(ClientMessage.ReadAllEventsForwardFilteredCompleted msg,
+			Uri requestedUrl, EmbedLevel embedContent) {
+			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
+			var feed = new FeedElement();
+			feed.SetTitle("All events");
+			feed.SetId(self);
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
+				? msg.Events[msg.Events.Length - 1].Event.TimeStamp
+				: DateTime.MinValue.ToUniversalTime());
+			feed.SetAuthor(AtomSpecs.Author);
+
+			feed.AddLink("self", self);
+			feed.AddLink("first",
+				HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+			if (msg.CurrentPos.CommitPosition != 0) {
+				feed.AddLink("last",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
+						new TFPos(0, 0).AsString(), msg.MaxCount));
+				feed.AddLink("next",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
+						msg.MaxCount));
+			}
+
+			if (!msg.IsEndOfStream || msg.Events.Length > 0)
+				feed.AddLink("previous",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
+						msg.MaxCount));
+			for (int i = msg.Events.Length - 1; i >= 0; --i) {
+				feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
+			}
+
+			return feed;
+		}
 
 		public static FeedElement ToAllEventsBackwardFeed(ClientMessage.ReadAllEventsBackwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
@@ -172,6 +207,39 @@ namespace EventStore.Core.Services.Transport.Http {
 				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllEscaped, msg.PrevPos.AsString(),
 					msg.MaxCount));
 			feed.AddLink("metadata", HostName.Combine(requestedUrl, "/streams/{0}/metadata", AllEscaped));
+			for (int i = 0; i < msg.Events.Length; ++i) {
+				feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
+			}
+
+			return feed;
+		}
+		
+		public static FeedElement ToAllEventsBackwardFilteredFeed(ClientMessage.ReadAllEventsBackwardFilteredCompleted msg,
+			Uri requestedUrl, EmbedLevel embedContent) {
+			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
+			var feed = new FeedElement();
+			feed.SetTitle(string.Format("All events"));
+			feed.SetId(self);
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
+				? msg.Events[0].Event.TimeStamp
+				: DateTime.MinValue.ToUniversalTime());
+			feed.SetAuthor(AtomSpecs.Author);
+
+			feed.AddLink("self", self);
+			feed.AddLink("first",
+				HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+			if (!msg.IsEndOfStream) {
+				feed.AddLink("last",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
+						new TFPos(0, 0).AsString(), msg.MaxCount));
+				feed.AddLink("next",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
+						msg.MaxCount));
+			}
+
+			feed.AddLink("previous",
+				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
+					msg.MaxCount));
 			for (int i = 0; i < msg.Events.Length; ++i) {
 				feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
 			}

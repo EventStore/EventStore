@@ -14,6 +14,7 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public enum EmbedLevel {
@@ -97,15 +98,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected override void SubscribeCore(IHttpService http) {
 			// STREAMS
-			Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
-			Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs,
+				AuthorizationLevel.User);
+			Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs,
+				AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/incoming/{guid}", HttpMethod.Post, PostEventsIdempotent,
 				AtomCodecsWithoutBatches, AtomCodecsWithoutBatches, AuthorizationLevel.User);
 
-			Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
-			Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
-			Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs,
+				AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs,
+				AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs,
+				AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs,
 				AtomWithHtmlCodecs, AuthorizationLevel.User);
@@ -120,8 +126,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 
 			// METASTREAMS
-			Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
-			Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs,
+				AuthorizationLevel.User);
+			Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs,
+				AuthorizationLevel.User);
 
 			Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent,
 				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
@@ -137,9 +145,48 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get,
 				GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 
+			// $ALL Filtered
+			const string querystring =
+				"?embed={embed}&context={context}&type={type}&data={data}&exclude-system-events={exclude-system-events}";
+			
+			Register(http,
+				"/streams/$all/filtered" + querystring,
+				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
+				AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http,
+				"/streams/$all/filtered/{position}/{count}" + querystring,
+				HttpMethod.Get, GetAllEventsBackwardFiltered,
+				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http,
+				"/streams/$all/filtered/{position}/backward/{count}" + querystring,
+				HttpMethod.Get,
+				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			RegisterCustom(http,
+				"/streams/$all/filtered/{position}/forward/{count}" + querystring,
+				HttpMethod.Get,
+				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http,
+				"/streams/%24all/filtered" + querystring,
+				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
+				AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http,
+				"/streams/%24all/filtered/{position}/{count}" + querystring,
+				HttpMethod.Get, GetAllEventsBackwardFiltered,
+				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http,
+				"/streams/%24all/filtered/{position}/backward/{count}" + querystring,
+				HttpMethod.Get,
+				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			RegisterCustom(http,
+				"/streams/%24all/filtered/{position}/forward/{count}" + querystring,
+				HttpMethod.Get,
+				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+
 			// $ALL
-			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
-			Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs,
+				AuthorizationLevel.User);
+			Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs,
+				AuthorizationLevel.User);
 			Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs,
 				AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward,
@@ -625,6 +672,50 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				requireMaster, true, GetETagTFPosition(manager), manager.User));
 		}
 
+		private void GetAllEventsBackwardFiltered(HttpEntityManager manager, UriTemplateMatch match) {
+			var pos = match.BoundVariables["position"];
+			var cnt = match.BoundVariables["count"];
+
+			var (success, errorMessage) = GetFilterFromQueryString(match, out var filter);
+			if (!success) {
+				SendBadRequest(manager, errorMessage);
+				return;
+			}
+	
+			TFPos position = TFPos.HeadOfTf;
+			int count = AtomSpecs.FeedPageSize;
+			var embed = GetEmbedLevel(manager, match);
+
+			if (pos != null && pos != "head"
+			                && (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 ||
+			                    position.CommitPosition < 0)) {
+				SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
+				return;
+			}
+
+			if (cnt.IsNotEmptyString() && (!int.TryParse(cnt, out count) || count <= 0)) {
+				SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
+				return;
+			}
+
+			bool requireMaster;
+			if (!GetRequireMaster(manager, out requireMaster)) {
+				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+				return;
+			}
+
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				manager,
+				(args, msg) => Format.ReadAllEventsBackwardFilteredCompleted(args, msg, embed),
+				(args, msg) => Configure.ReadAllEventsBackwardFilteredCompleted(args, msg, position == TFPos.HeadOfTf));
+			var corrId = Guid.NewGuid();
+			Publish(new ClientMessage.ReadAllEventsBackwardFiltered(corrId, corrId, envelope,
+				position.CommitPosition, position.PreparePosition, count,
+				requireMaster, true, count, GetETagTFPosition(manager), filter, manager.User));
+		}
+
+		
+
 		private RequestParams GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match) {
 			var pos = match.BoundVariables["position"];
 			var cnt = match.BoundVariables["count"];
@@ -657,7 +748,83 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
 		}
 
+		private RequestParams GetAllEventsForwardFiltered(HttpEntityManager manager, UriTemplateMatch match) {
+			var pos = match.BoundVariables["position"];
+			var cnt = match.BoundVariables["count"];
+
+			var (success, errorMessage) = GetFilterFromQueryString(match, out var filter);
+			if (!success) {
+				return SendBadRequest(manager, errorMessage);
+			}
+
+			TFPos position;
+			int count;
+			var embed = GetEmbedLevel(manager, match);
+
+			if (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 || position.CommitPosition < 0)
+				return SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
+			if (!int.TryParse(cnt, out count) || count <= 0)
+				return SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
+			bool requireMaster;
+			if (!GetRequireMaster(manager, out requireMaster))
+				return SendBadRequest(manager,
+					string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
+			TimeSpan? longPollTimeout;
+			if (!GetLongPoll(manager, out longPollTimeout))
+				return SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.LongPoll));
+
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				manager,
+				(args, msg) => Format.ReadAllEventsForwardFilteredCompleted(args, msg, embed),
+				(args, msg) => Configure.ReadAllEventsForwardFilteredCompleted(args, msg, headOfTf: false));
+			var corrId = Guid.NewGuid();
+			Publish(new ClientMessage.ReadAllEventsForwardFiltered(corrId, corrId, envelope,
+				position.CommitPosition, position.PreparePosition, count, true,
+				requireMaster, 1000, GetETagTFPosition(manager), filter, manager.User,
+				longPollTimeout));
+			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
+		}
+
 		// HELPERS
+		private (bool Success, string ErrorMessage) GetFilterFromQueryString(UriTemplateMatch match, out IEventFilter filter)
+		{
+			var context = match.BoundVariables["context"];
+			var type = match.BoundVariables["type"];
+			var data = match.BoundVariables["data"];
+			var excludeSystemEvents = match.BoundVariables["exclude-system-events"];
+
+			if (excludeSystemEvents != null)
+			{
+				if (!bool.TryParse(excludeSystemEvents, out var parsedExcludeSystemEvents))
+				{
+					filter = null;
+					return (false, "exclude-sytem-events should have a value of true.");
+				}
+
+				if (parsedExcludeSystemEvents == false)
+				{
+					filter = null;
+					return (false, "exclude-sytem-events should have a value of true.");
+				}
+
+				filter = EventFilter.Get(new TcpClientMessageDto.Filter(
+					TcpClientMessageDto.Filter.FilterContext.EventType,
+					TcpClientMessageDto.Filter.FilterType.Regex,
+					new[] {@"^[^\$].*"}
+				));
+				
+				return (true, null);
+			}
+
+			var parsedFilterResult = EventFilter.TryParse(context, type, data, out filter);
+			if (!parsedFilterResult.Success)
+			{
+				return (false, parsedFilterResult.Reason);
+			}
+			
+			return (true, null);
+		}
+		
 		private bool GetExpectedVersion(HttpEntityManager manager, out long expectedVersion) {
 			var expVer = manager.HttpEntity.Request.Headers[SystemHeaders.ExpectedVersion];
 			if (expVer == null) {

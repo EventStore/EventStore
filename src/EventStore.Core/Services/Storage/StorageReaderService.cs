@@ -43,6 +43,8 @@ namespace EventStore.Core.Services.Storage {
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsBackward>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsForwardFiltered>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsBackwardFiltered>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.CheckStreamAccess>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.BatchLogExpiredMessages>(readerWorkers[i]);
 			}
@@ -61,6 +63,8 @@ namespace EventStore.Core.Services.Storage {
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForwardFiltered, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackwardFiltered, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.CheckStreamAccess, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.BatchLogExpiredMessages, Message>());
 		}

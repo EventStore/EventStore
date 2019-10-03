@@ -47,6 +47,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		ReadAllEventsForwardCompleted = 0xB7,
 		ReadAllEventsBackward = 0xB8,
 		ReadAllEventsBackwardCompleted = 0xB9,
+		ReadAllEventsForwardFiltered = 0xBA,
+		ReadAllEventsForwardFilteredCompleted = 0xBB,
+		ReadAllEventsBackwardFiltered = 0xBC,
+		ReadAllEventsBackwardFilteredCompleted = 0xBE,
 
 		SubscribeToStream = 0xC0,
 		SubscriptionConfirmation = 0xC1,

@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Data;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IReadIndex {
@@ -25,6 +27,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Positions is specified as post-positions (pointer after the end of record).
 		/// </summary>
 		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
+
+		/// <summary>
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
+
+		/// <summary>
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
 
 		bool IsStreamDeleted(string streamId);
 		long GetStreamLastEventNumber(string streamId);
