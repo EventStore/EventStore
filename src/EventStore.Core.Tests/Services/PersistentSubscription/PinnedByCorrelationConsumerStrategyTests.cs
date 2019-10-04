@@ -55,8 +55,8 @@
 					.StartFromCurrent());
 
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(
 				Helper.BuildFakeEventWithMetadata(Guid.NewGuid(), "type", "streamName-1", 0, metaData));
@@ -104,8 +104,8 @@
 					.StartFromCurrent());
 
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			CorrelationIdPropertyContext.CorrelationIdProperty = "$correlationId2";
 
