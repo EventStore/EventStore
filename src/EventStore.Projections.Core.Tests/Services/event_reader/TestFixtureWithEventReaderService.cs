@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			GivenAdditionalServices();
 
 
-			_bus.Publish(new ReaderCoreServiceMessage.StartReader());
+			_bus.Publish(new ReaderCoreServiceMessage.StartReader(Guid.NewGuid()));
 
 			WhenLoop();
 		}

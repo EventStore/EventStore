@@ -1,16 +1,12 @@
 using System;
-using System.Linq;
 using NUnit.Framework;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Options;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using System.Collections.Generic;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 	[TestFixture]
@@ -26,14 +22,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			queues = new List<FakePublisher>() {new FakePublisher()}.ToArray();
 			publisher = new FakePublisher();
 
+			var instanceCorrelationId = Guid.NewGuid();
 			_coordinator =
 				new ProjectionCoreCoordinator(ProjectionType.None, timeoutScheduler, queues, publisher, envelope);
-			_coordinator.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-			_coordinator.Handle(new SystemMessage.SystemCoreReady());
-			_coordinator.Handle(new SystemMessage.EpochWritten(new EpochRecord(0, 0, Guid.NewGuid(), 0, DateTime.Now)));
+
+			// Start components
+			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(instanceCorrelationId));
+
+			// start sub components
+			_coordinator.Handle(
+				new ProjectionCoreServiceMessage.SubComponentStarted(EventReaderCoreService.SubComponentName,
+					instanceCorrelationId));
 
 			//force stop
-			_coordinator.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));
 		}
 
 		[Test]

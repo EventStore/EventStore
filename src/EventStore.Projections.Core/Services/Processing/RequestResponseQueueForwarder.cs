@@ -74,14 +74,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 		void IHandle<ProjectionCoreServiceMessage.SubComponentStarted>.Handle(
 			ProjectionCoreServiceMessage.SubComponentStarted message) {
 			_externalRequestQueue.Publish(
-				new ProjectionCoreServiceMessage.SubComponentStarted(message.SubComponent)
+				new ProjectionCoreServiceMessage.SubComponentStarted(message.SubComponent, message.InstanceCorrelationId)
 			);
 		}
 
 		void IHandle<ProjectionCoreServiceMessage.SubComponentStopped>.Handle(
 			ProjectionCoreServiceMessage.SubComponentStopped message) {
 			_externalRequestQueue.Publish(
-				new ProjectionCoreServiceMessage.SubComponentStopped(message.SubComponent)
+				new ProjectionCoreServiceMessage.SubComponentStopped(message.SubComponent, message.QueueId)
 			);
 		}
 	}

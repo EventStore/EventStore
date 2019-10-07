@@ -50,6 +50,8 @@ namespace EventStore.Projections.Core.Services.Http {
 
 			Register(service, "/projections",
 				HttpMethod.Get, OnProjections, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.User);
+			Register(service, "/projections/restart",
+				HttpMethod.Post, OnProjectionsRestart, new ICodec[] { Codec.ManualEncoding}, SupportedCodecs, AuthorizationLevel.Admin);
 			Register(service, "/projections/any",
 				HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.User);
 			Register(service, "/projections/all-non-transient",
@@ -109,6 +111,27 @@ namespace EventStore.Projections.Core.Services.Http {
 					new KeyValuePair<string, string>(
 						"Location", new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
 				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+		}
+
+		private void OnProjectionsRestart(HttpEntityManager http, UriTemplateMatch match) {
+			if (_httpForwarder.ForwardRequest(http))
+				return;
+
+			var envelope = new SendToHttpEnvelope(_networkSendQueue, http,
+				(e, message) => e.ResponseCodec.To("Restarting"),
+				(e, message) => {
+					switch (message) {
+						case ProjectionSubsystemMessage.SubsystemRestarting _:
+							return Configure.Ok(e.ResponseCodec.ContentType);
+						case ProjectionSubsystemMessage.InvalidSubsystemRestart fail:
+							return Configure.BadRequest
+								($"Projection Subsystem cannot be restarted as it is in the wrong state: {fail.SubsystemState}");
+						default:
+							return Configure.InternalServerError();
+					}
+				}
+			);
+			Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 		}
 
 		private void OnProjectionsGetAny(HttpEntityManager http, UriTemplateMatch match) {
