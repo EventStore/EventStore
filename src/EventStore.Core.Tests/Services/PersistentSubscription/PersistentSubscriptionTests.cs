@@ -1586,10 +1586,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	public static class Helper {
 		public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version) {
+			return BuildFakeEventWithMetadata(id, type, stream, version, new byte[0]);
+		}
+
+		public static ResolvedEvent BuildFakeEventWithMetadata(Guid id, string type, string stream, long version, byte[] metaData) {
 			return
 				ResolvedEvent.ForUnresolvedEvent(new EventRecord(version, 1234567, Guid.NewGuid(), id, 1234567, 1234,
 					stream, version,
-					DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], new byte[0]));
+					DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], metaData));
 		}
 
 		public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev,
