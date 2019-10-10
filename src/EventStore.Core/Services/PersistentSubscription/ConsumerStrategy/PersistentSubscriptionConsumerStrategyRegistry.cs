@@ -22,6 +22,8 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 				(subId, queue, bus) => new DispatchToSinglePersistentSubscriptionConsumerStrategy()));
 			Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.Pinned,
 				(subId, queue, bus) => new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe())));
+			Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.PinnedByCorrelation,
+				(subId, queue, bus) => new PinnedByCorrelationPersistentSubscriptionConsumerStrategy(new XXHashUnsafe())));
 
 			foreach (var consumerStrategyFactory in additionalConsumerStrategies) {
 				Register(consumerStrategyFactory);
