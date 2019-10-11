@@ -132,9 +132,9 @@ namespace EventStore.ClientAPI.Internal {
 			Func<EventStoreSubscription, Position, Task> checkpointReached,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries,
 			TimeSpan timeout) {
-			Ensure.NotNull(source, "source");
+			Ensure.NotNull(source, nameof(source));
 			Ensure.NotNull(filter, nameof(filter));
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			Source = source;
 			StreamId = streamId;

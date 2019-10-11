@@ -367,7 +367,7 @@ namespace EventStore.ClientAPI.Internal {
 			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
