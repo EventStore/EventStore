@@ -208,6 +208,10 @@ namespace EventStore.ClusterNode {
 			} else {
 				builder = builder.RunOnDisk(options.Db);
 			}
+			
+			// TODO(jen20): ABSOLUTELY remove this before merging the `grpc` branch. This is solely for
+			// 			 	interim testing. Load a development certificate and use it for Kestrel.
+			var unsafeDevCert = new X509Certificate2("dev-cert.pfx", "", X509KeyStorageFlags.MachineKeySet);
 
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
