@@ -83,9 +83,11 @@ namespace EventStore.ClientAPI.Embedded {
 			_subscriptionBus.Subscribe<ClientMessage.SubscriptionConfirmation>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.SubscriptionDropped>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.StreamEventAppeared>(_subscriptions);
+			_subscriptionBus.Subscribe<ClientMessage.CheckpointReached>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionConfirmation>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionStreamEventAppeared>(_subscriptions);
 			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
+			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStreamFiltered>(_publisher.Publish));
 			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
 			_subscriptionBus.Subscribe(
 				new AdHocHandler<ClientMessage.ConnectToPersistentSubscription>(_publisher.Publish));
@@ -386,15 +388,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			Guid corrId = Guid.NewGuid();
 
-			var serverContext = filter.Value.Context == Messages.ClientMessage.Filter.FilterContext.StreamId
-				? TcpClientMessageDto.Filter.FilterContext.StreamId
-				: TcpClientMessageDto.Filter.FilterContext.EventType;
-
-			var serverType = filter.Value.Type == Messages.ClientMessage.Filter.FilterType.Prefix
-				? TcpClientMessageDto.Filter.FilterType.Prefix
-				: TcpClientMessageDto.Filter.FilterType.Regex;
-
-			var serverFilter = new TcpClientMessageDto.Filter(serverContext, serverType, filter.Value.Data);
+			var serverFilter = ConvertToServerFilter(filter);
 
 			_publisher.PublishWithAuthentication(_authenticationProvider,
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
@@ -440,15 +434,7 @@ namespace EventStore.ClientAPI.Embedded {
 			var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsBackwardFiltered(source));
 			Guid corrId = Guid.NewGuid();
 
-			var serverContext = filter.Value.Context == Messages.ClientMessage.Filter.FilterContext.StreamId
-				? TcpClientMessageDto.Filter.FilterContext.StreamId
-				: TcpClientMessageDto.Filter.FilterContext.EventType;
-
-			var serverType = filter.Value.Type == Messages.ClientMessage.Filter.FilterType.Prefix
-				? TcpClientMessageDto.Filter.FilterType.Prefix
-				: TcpClientMessageDto.Filter.FilterType.Regex;
-
-			var serverFilter = new TcpClientMessageDto.Filter(serverContext, serverType, filter.Value.Data);
+			var serverFilter = ConvertToServerFilter(filter);
 
 			_publisher.PublishWithAuthentication(_authenticationProvider,
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
@@ -535,7 +521,19 @@ namespace EventStore.ClientAPI.Embedded {
 			int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			throw new NotImplementedException();
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+			Ensure.NotNull(filter, nameof(filter));
+
+			var source =
+				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			var serverFilter = ConvertToServerFilter(filter);
+
+			Guid corrId = Guid.NewGuid();
+			_subscriptions.StartFilteredSubscription(corrId, source, string.Empty,
+				GetUserCredentials(_settings, userCredentials), resolveLinkTos, serverFilter, eventAppeared,
+				checkpointReached, checkpointInterval, subscriptionDropped);
+			return source.Task;
 		}
 
 
@@ -847,6 +845,19 @@ namespace EventStore.ClientAPI.Embedded {
 
 		private UserCredentials GetUserCredentials(ConnectionSettings settings, UserCredentials givenCredentials) {
 			return givenCredentials ?? settings.DefaultUserCredentials;
+		}
+
+		private static TcpClientMessageDto.Filter ConvertToServerFilter(Filter filter) {
+			var serverContext = filter.Value.Context == Messages.ClientMessage.Filter.FilterContext.StreamId
+				? TcpClientMessageDto.Filter.FilterContext.StreamId
+				: TcpClientMessageDto.Filter.FilterContext.EventType;
+
+			var serverType = filter.Value.Type == Messages.ClientMessage.Filter.FilterType.Prefix
+				? TcpClientMessageDto.Filter.FilterType.Prefix
+				: TcpClientMessageDto.Filter.FilterType.Regex;
+
+			var serverFilter = new TcpClientMessageDto.Filter(serverContext, serverType, filter.Value.Data);
+			return serverFilter;
 		}
 	}
 }
