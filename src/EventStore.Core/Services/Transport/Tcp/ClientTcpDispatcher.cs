@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.SubscribeToStreamFiltered, UnwrapSubscribeToStreamFiltered, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream, ClientVersion.V2);
 
-			AddWrapper<ClientMessage.CheckpointRead>(WrapCheckpointRead, ClientVersion.V2);
+			AddWrapper<ClientMessage.CheckpointReached>(WrapCheckpointRead, ClientVersion.V2);
 
 			AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream, ClientVersion.V2);
 			AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared, ClientVersion.V2);
@@ -130,10 +130,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
 		}
 
-		private TcpPackage WrapCheckpointRead(ClientMessage.CheckpointRead msg) {
-			var dto = new TcpClientMessageDto.CheckpointRead(msg.Position.Value.CommitPosition,
+		private TcpPackage WrapCheckpointRead(ClientMessage.CheckpointReached msg) {
+			var dto = new TcpClientMessageDto.CheckpointReached(msg.Position.Value.CommitPosition,
 				msg.Position.Value.PreparePosition);
-			return new TcpPackage(TcpCommand.CheckpointRead, msg.CorrelationId, dto.Serialize());
+			return new TcpPackage(TcpCommand.CheckpointReached, msg.CorrelationId, dto.Serialize());
 		}
 
 		private static Message UnwrapPing(TcpPackage package, IEnvelope envelope) {

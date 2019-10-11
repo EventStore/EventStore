@@ -12,7 +12,7 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture, Category("ClientAPI"), Category("LongRunning"), NonParallelizable]
 	public class subscribe_to_all_filtered_should : SpecificationWithDirectory {
 		private const int Timeout = 10000;
 
@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void calls_checkpoint_reached_according_to_send_checkpoint_message_count() {
+		public void calls_checkpoint_reached_according_to_torsend_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {

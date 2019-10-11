@@ -331,7 +331,7 @@ namespace EventStore.ClientAPI {
 		/// will be pushed to the client. Filters events based upon the passed in filter.
 		/// </summary>
 		/// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
-		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="checkpointReached">
 		/// A Task invoked and await when a checkpoint is reached.

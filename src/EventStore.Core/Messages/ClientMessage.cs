@@ -1535,7 +1535,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		public class CheckpointRead : Message {
+		public class CheckpointReached : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1545,7 +1545,7 @@ namespace EventStore.Core.Messages {
 			public readonly Guid CorrelationId;
 			public readonly TFPos? Position;
 
-			public CheckpointRead(Guid correlationId, TFPos? position) {
+			public CheckpointReached(Guid correlationId, TFPos? position) {
 				CorrelationId = correlationId;
 				Position = position;
 			}

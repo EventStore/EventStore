@@ -39,8 +39,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override bool InspectPackage(TcpPackage package, out InspectionResult result) {
-			if (package.Command == TcpCommand.CheckpointRead) {
-				var dto = package.Data.Deserialize<ClientMessage.CheckpointRead>();
+			if (package.Command == TcpCommand.CheckpointReached) {
+				var dto = package.Data.Deserialize<ClientMessage.CheckpointReached>();
 				CheckpointReached(new Position(dto.CommitPosition, dto.PreparePosition));
 				result = new InspectionResult(InspectionDecision.DoNothing, "CheckpointRead");
 				return true;
@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			return base.InspectPackage(package, out result);
 		}
 
-		protected void CheckpointReached(Position position) {
+		private void CheckpointReached(Position position) {
 			if (_unsubscribed != 0)
 				return;
 

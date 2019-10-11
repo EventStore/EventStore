@@ -302,7 +302,7 @@ namespace EventStore.Core.Services {
 
 				if (subscr.CheckpointInterval != null &&
 				    subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
-					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointRead(subscr.CorrelationId,
+					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId,
 						pair.OriginalPosition));
 					subscr.CheckpointIntervalCurrent = 0;
 				}

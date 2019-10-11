@@ -372,7 +372,7 @@ message SubscribeToStreamFiltered {
 	required int32 checkpoint_interval = 4;
 }
 
-message CheckpointRead {
+message CheckpointReached {
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
 }
