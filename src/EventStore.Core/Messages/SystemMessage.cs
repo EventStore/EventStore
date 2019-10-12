@@ -77,6 +77,22 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 		}
+		
+		public class InitiateMasterResignation : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+		
+		public class RequestQueueDrained : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
 		public abstract class StateChangeMessage : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -155,6 +171,18 @@ namespace EventStore.Core.Messages {
 
 			public BecomeUnknown(Guid correlationId)
 				: base(correlationId, VNodeState.Unknown) {
+			}
+		}
+
+		public class BecomeResigningMaster : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeResigningMaster(Guid correlationId)
+				: base(correlationId, VNodeState.ResigningMaster) {
 			}
 		}
 

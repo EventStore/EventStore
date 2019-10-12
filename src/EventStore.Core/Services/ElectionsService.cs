@@ -50,7 +50,7 @@ namespace EventStore.Core.Services {
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
-		private int tmp_nodePriority;
+		private int _originalNodePriority;
 
 		private bool _maintenanceMode = false;
 
@@ -134,7 +134,7 @@ namespace EventStore.Core.Services {
 			if (!_maintenanceMode)
 			{
 				Log.Debug("Maintenance mode enabled");
-				tmp_nodePriority = _nodePriority;
+				_originalNodePriority = _nodePriority;
 				_nodePriority = int.MinValue;
 				_maintenanceMode = true;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
@@ -146,7 +146,7 @@ namespace EventStore.Core.Services {
 			if (_maintenanceMode)
 			{
 				Log.Debug("Maintenance mode disabled");
-				_nodePriority = tmp_nodePriority;
+				_nodePriority = _originalNodePriority;
 				_maintenanceMode = false;
 				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 			}
@@ -161,9 +161,10 @@ namespace EventStore.Core.Services {
 			var updatedMaster = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master);
 			
 			if (currentMaster != null && updatedMaster != null &&
-			    currentMaster.NodePriority != updatedMaster.NodePriority) {
+			    currentMaster.NodePriority != updatedMaster.NodePriority &&
+			    _nodeInfo.InstanceId == currentMaster.InstanceId) {
 				Log.Info($"Master's priority has changed. Deposing master. (New:{currentMaster}, Old:{updatedMaster})");
-				_publisher.Publish(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
 			}
 			
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)

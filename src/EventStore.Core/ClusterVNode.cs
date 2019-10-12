@@ -450,6 +450,7 @@ namespace EventStore.Core {
 				vNodeSettings.CommitTimeout,
 				vNodeSettings.BetterOrdering);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);

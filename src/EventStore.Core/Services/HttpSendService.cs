@@ -53,6 +53,7 @@ namespace EventStore.Core.Services {
 				case VNodeState.Unknown:
 				case VNodeState.PreMaster:
 				case VNodeState.Master:
+				case VNodeState.ResigningMaster:
 				case VNodeState.Manager:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown:
