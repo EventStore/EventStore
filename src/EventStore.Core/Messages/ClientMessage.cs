@@ -1476,16 +1476,22 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class EnableMaintenanceMode : Message
+		public class SetNodePriority : Message
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
+
+			public readonly int NodePriority;
+
+			public SetNodePriority(int nodePriority) {
+				NodePriority = nodePriority;
+			}
 		}
 
-		public class DisableMaintenanceMode : Message
+		public class ResignNode : Message
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

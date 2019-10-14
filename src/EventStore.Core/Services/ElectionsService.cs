@@ -33,8 +33,8 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.PrepareOk>,
 		IHandle<ElectionMessage.Proposal>,
 		IHandle<ElectionMessage.Accept>,
-		IHandle<ClientMessage.EnableMaintenanceMode>,
-		IHandle<ClientMessage.DisableMaintenanceMode> {
+		IHandle<ClientMessage.SetNodePriority>,
+		IHandle<ClientMessage.ResignNode> {
 		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
@@ -50,9 +50,6 @@ namespace EventStore.Core.Services {
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
-		private int _originalNodePriority;
-
-		private bool _maintenanceMode = false;
 
 		private int _lastAttemptedView = -1;
 		private int _lastInstalledView = -1;
@@ -125,30 +122,24 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
-			subscriber.Subscribe<ClientMessage.EnableMaintenanceMode>(this);
-			subscriber.Subscribe<ClientMessage.DisableMaintenanceMode>(this);
+			subscriber.Subscribe<ClientMessage.SetNodePriority>(this);
+			subscriber.Subscribe<ClientMessage.ResignNode>(this);
 		}
 
-		public void Handle(ClientMessage.EnableMaintenanceMode message)
+		public void Handle(ClientMessage.SetNodePriority message)
 		{
-			if (!_maintenanceMode)
-			{
-				Log.Debug("Maintenance mode enabled");
-				_originalNodePriority = _nodePriority;
-				_nodePriority = int.MinValue;
-				_maintenanceMode = true;
-				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
-			}
+			Log.Debug("Setting Node Priority to {nodePriority}.", message.NodePriority);
+			_nodePriority = message.NodePriority;
+			_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 		}
 
-		public void Handle(ClientMessage.DisableMaintenanceMode message)
+		public void Handle(ClientMessage.ResignNode message)
 		{
-			if (_maintenanceMode)
-			{
-				Log.Debug("Maintenance mode disabled");
-				_nodePriority = _originalNodePriority;
-				_maintenanceMode = false;
-				_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
+			if (_master != null && _nodeInfo.InstanceId == _master) {
+				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
+				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
+			} else {
+				Log.Info("ELECTIONS: ONLY MASTER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}
 		}
 
@@ -157,16 +148,6 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(GossipMessage.GossipUpdated message) {
-			var currentMaster = _servers.FirstOrDefault(x => x.InstanceId == _master);
-			var updatedMaster = message.ClusterInfo.Members.FirstOrDefault(x => x.InstanceId == _master);
-			
-			if (currentMaster != null && updatedMaster != null &&
-			    currentMaster.NodePriority != updatedMaster.NodePriority &&
-			    _nodeInfo.InstanceId == currentMaster.InstanceId) {
-				Log.Info($"Master's priority has changed. Deposing master. (New:{currentMaster}, Old:{updatedMaster})");
-				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
-			}
-			
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)
 				.Where(x => x.IsAlive)
 				.OrderByDescending(x => x.InternalHttpEndPoint, IPComparer)
