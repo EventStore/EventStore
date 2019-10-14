@@ -50,6 +50,7 @@ using MidFunc = System.Func<
 namespace EventStore.Core {
 	public class ClusterVNode :
 		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 		private static readonly PathString PersistentSegment = "/event_store.grpc.persistent_subscriptions.PersistentSubscriptions";
@@ -215,6 +216,7 @@ namespace EventStore.Core {
 
 			//SELF
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -728,7 +730,6 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-
 		public async Task Stop() {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
@@ -743,6 +744,12 @@ namespace EventStore.Core {
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			OnNodeStatusChanged(new VNodeStatusChangeArgs(message.State));
+		}
+
+		public void Handle(SystemMessage.BecomeShuttingDown message) {
+			if (_subsystems == null) return;
+			foreach (var subsystem in _subsystems)
+				subsystem.Stop();
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
