@@ -424,7 +424,15 @@ namespace EventStore.ClusterNode {
 
 			if (Directory.Exists(Locations.PluginsDirectory)) {
 				Log.Info("Plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+
+				Log.Info("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
 				catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
+
+				foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*", SearchOption.TopDirectoryOnly))
+				{
+					Log.Info("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
+					catalog.Catalogs.Add(new DirectoryCatalog(dirPath));
+				}
 			} else {
 				Log.Info("Cannot find plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
 			}
