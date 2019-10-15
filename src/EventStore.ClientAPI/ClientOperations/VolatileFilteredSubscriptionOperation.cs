@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			if (package.Command == TcpCommand.CheckpointReached) {
 				var dto = package.Data.Deserialize<ClientMessage.CheckpointReached>();
 				CheckpointReached(new Position(dto.CommitPosition, dto.PreparePosition));
-				result = new InspectionResult(InspectionDecision.DoNothing, "CheckpointRead");
+				result = new InspectionResult(InspectionDecision.DoNothing, "CheckpointReached");
 				return true;
 			}
 
@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			if (_unsubscribed != 0)
 				return;
 
-			if (_subscription == null) throw new Exception("Subscription not confirmed, but checkpoint read!");
+			if (_subscription == null) throw new Exception("Subscription not confirmed, but checkpoint reached!");
 
 			if (_verboseLogging)
 				_log.Debug("Subscription {0:B} to {1}: checkpoint read @{2}.",

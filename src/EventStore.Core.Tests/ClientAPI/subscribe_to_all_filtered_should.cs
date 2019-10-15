@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void calls_checkpoint_reached_according_to_torsend_checkpoint_message_count() {
+		public void calls_checkpoint_reached_according_to_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
