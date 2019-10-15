@@ -35,8 +35,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly int _maxQueueSize = 2000;
 		private readonly ConcurrentQueueWrapper<Func<Task>> _actionQueue = new ConcurrentQueueWrapper<Func<Task>>();
 		private int _actionExecuting;
-		private T _subscription;
-		private int _unsubscribed;
+		protected T _subscription;
+		protected int _unsubscribed;
 		protected Guid _correlationId;
 
 		protected SubscriptionOperation(ILogger log,
@@ -253,7 +253,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			ExecuteActionAsync(() => _eventAppeared(_subscription, e));
 		}
 
-		private void ExecuteActionAsync(Func<Task> action) {
+		protected void ExecuteActionAsync(Func<Task> action) {
 			_actionQueue.Enqueue(action);
 
 			if (_actionQueue.Count > _maxQueueSize)

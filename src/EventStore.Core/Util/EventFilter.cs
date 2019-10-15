@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Util {
 	public interface IEventFilter {
-		bool IsEventAllowed(PrepareLogRecord prepareLogRecord);
+		bool IsEventAllowed(EventRecord eventRecord);
 	}
 	
 	public class EventFilter {
@@ -37,7 +37,7 @@ namespace EventStore.Core.Util {
 		}
 
 		private class AlwaysAllowStrategy : IEventFilter {
-			public bool IsEventAllowed(PrepareLogRecord prepareLogRecord) {
+			public bool IsEventAllowed(EventRecord eventRecord) {
 				return true;
 			}
 		}
@@ -48,8 +48,8 @@ namespace EventStore.Core.Util {
 			public StreamIdPrefixStrategy(string[] expectedPrefixes) =>
 				_expectedPrefixes = expectedPrefixes;
 
-			public bool IsEventAllowed(PrepareLogRecord prepareLogRecord) =>
-				_expectedPrefixes.Any(expectedPrefix => prepareLogRecord.EventStreamId.StartsWith(expectedPrefix));
+			public bool IsEventAllowed(EventRecord eventRecord) =>
+				_expectedPrefixes.Any(expectedPrefix => eventRecord.EventStreamId.StartsWith(expectedPrefix));
 		}
 
 		private class EventTypePrefixStrategy : IEventFilter {
@@ -58,8 +58,8 @@ namespace EventStore.Core.Util {
 			public EventTypePrefixStrategy(string[] expectedPrefixes) =>
 				_expectedPrefixes = expectedPrefixes;
 
-			public bool IsEventAllowed(PrepareLogRecord prepareLogRecord) =>
-				_expectedPrefixes.Any(expectedPrefix => prepareLogRecord.EventType.StartsWith(expectedPrefix));
+			public bool IsEventAllowed(EventRecord eventRecord) =>
+				_expectedPrefixes.Any(expectedPrefix => eventRecord.EventType.StartsWith(expectedPrefix));
 		}
 
 		private class EventTypeRegexStrategy : IEventFilter {
@@ -68,8 +68,8 @@ namespace EventStore.Core.Util {
 			public EventTypeRegexStrategy(string expectedRegex) =>
 				_expectedRegex = new Regex(expectedRegex, RegexOptions.Compiled);
 
-			public bool IsEventAllowed(PrepareLogRecord prepareLogRecord) =>
-				_expectedRegex.Match(prepareLogRecord.EventType).Success;
+			public bool IsEventAllowed(EventRecord eventRecord) =>
+				_expectedRegex.Match(eventRecord.EventType).Success;
 		}
 
 		private class StreamIdRegexStrategy : IEventFilter {
@@ -78,8 +78,8 @@ namespace EventStore.Core.Util {
 			public StreamIdRegexStrategy(string expectedRegex) =>
 				_expectedRegex = new Regex(expectedRegex, RegexOptions.Compiled);
 
-			public bool IsEventAllowed(PrepareLogRecord prepareLogRecord) =>
-				_expectedRegex.Match(prepareLogRecord.EventStreamId).Success;
+			public bool IsEventAllowed(EventRecord eventRecord) =>
+				_expectedRegex.Match(eventRecord.EventStreamId).Success;
 		}
 
 		public static (bool Success, string Reason) TryParse(string context, string type, string data, out IEventFilter filter) {

@@ -10,6 +10,7 @@ namespace EventStore.ClientAPI.Embedded {
 		IHandle<ClientMessage.SubscriptionConfirmation>,
 		IHandle<ClientMessage.StreamEventAppeared>,
 		IHandle<ClientMessage.SubscriptionDropped>,
+		IHandle<ClientMessage.CheckpointReached>,
 		IHandle<ClientMessage.PersistentSubscriptionConfirmation>,
 		IHandle<ClientMessage.PersistentSubscriptionStreamEventAppeared> {
 		private readonly EmbeddedSubcriptionsManager _subscriptions;
@@ -32,6 +33,11 @@ namespace EventStore.ClientAPI.Embedded {
 			IEmbeddedSubscription subscription;
 			_subscriptions.TryGetActiveSubscription(message.CorrelationId, out subscription);
 			((EmbeddedSubscription)subscription).EventAppeared(message.Event);
+		}
+		
+		public void Handle(ClientMessage.CheckpointReached message) {
+			_subscriptions.TryGetActiveSubscription(message.CorrelationId, out var subscription);
+			((EmbeddedFilteredSubscription)subscription).CheckpointReached(message.Position);
 		}
 
 		public void Handle(ClientMessage.SubscriptionConfirmation message) {
@@ -76,6 +82,19 @@ namespace EventStore.ClientAPI.Embedded {
 			var subscription = new EmbeddedSubscription(
 				_log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
 				resolveLinkTos, eventAppeared,
+				subscriptionDropped);
+
+			_subscriptions.StartSubscription(correlationId, subscription);
+		}
+		
+		public void StartFilteredSubscription(Guid correlationId, TaskCompletionSource<EventStoreSubscription> source,
+			string stream, UserCredentials userCredentials, bool resolveLinkTos, TcpClientMessageDto.Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped) {
+			var subscription = new EmbeddedFilteredSubscription(
+				_log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
+				resolveLinkTos, filter, eventAppeared, checkpointReached, checkpointInterval,
 				subscriptionDropped);
 
 			_subscriptions.StartSubscription(correlationId, subscription);

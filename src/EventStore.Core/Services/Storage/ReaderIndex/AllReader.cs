@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
 									prepare);
 								consideredEventsCount++;
-								if (eventFilter.IsEventAllowed(prepare)) {
+								if (eventFilter.IsEventAllowed(eventRecord)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
 								}
 
@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
 									consideredEventsCount++;
-									if (eventFilter.IsEventAllowed(prepare)) {
+									if (eventFilter.IsEventAllowed(eventRecord)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
@@ -233,7 +233,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									prepare);
 								consideredEventsCount++;
 
-								if (eventFilter.IsEventAllowed(prepare)) {
+								if (eventFilter.IsEventAllowed(eventRecord)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
 								}
 
@@ -281,7 +281,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
 									consideredEventsCount++;
 
-									if (eventFilter.IsEventAllowed(prepare)) {
+									if (eventFilter.IsEventAllowed(eventRecord)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
