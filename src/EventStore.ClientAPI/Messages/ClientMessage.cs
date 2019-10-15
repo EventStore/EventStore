@@ -1208,6 +1208,50 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"SubscribeToStreamFiltered")]
+  public partial class SubscribeToStreamFiltered
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"filter", DataFormat = DataFormat.Default)]
+    public readonly Filter Filter;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"checkpoint_interval", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointInterval;
+  
+    private SubscribeToStreamFiltered() {}
+  
+    public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
+    {
+        EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
+        Filter = filter;
+        CheckpointInterval = checkpointInterval;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"CheckpointReached")]
+  public partial class CheckpointReached
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    private CheckpointReached() {}
+  
+    public CheckpointReached(long commitPosition, long preparePosition)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"SubscriptionConfirmation")]
   public partial class SubscriptionConfirmation
   {

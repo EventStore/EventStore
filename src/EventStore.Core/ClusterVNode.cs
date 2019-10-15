@@ -472,6 +472,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStream, Message>());
+			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.SubscribeToStreamFiltered, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
@@ -482,6 +483,7 @@ namespace EventStore.Core {
 			subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 			subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
 			subscrBus.Subscribe<ClientMessage.SubscribeToStream>(subscription);
+			subscrBus.Subscribe<ClientMessage.SubscribeToStreamFiltered>(subscription);
 			subscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(subscription);
 			subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
 			subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);

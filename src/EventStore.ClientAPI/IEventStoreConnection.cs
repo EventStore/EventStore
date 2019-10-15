@@ -326,6 +326,31 @@ namespace EventStore.ClientAPI {
 			UserCredentials userCredentials = null);
 
 		/// <summary>
+		/// Asynchronously subscribes to all events in Event Store. New
+		/// events written to the stream while the subscription is active
+		/// will be pushed to the client. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set <see cref="checkpointInterval" /> to define how often this method is called.
+		/// </param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <param name="checkpointInterval">Sets how often the <see cref="checkpointReached" /> is called.</param>
+		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
+		Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
+			bool resolveLinkTos,
+			Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
+		
+		/// <summary>
 		/// Subscribes to a persistent subscription (competing consumer) on an event store.
 		/// </summary>
 		/// <param name="groupName">The subscription group to connect to.</param>

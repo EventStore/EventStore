@@ -365,6 +365,18 @@ message SubscribeToStream {
 	required bool resolve_link_tos = 2;
 }
 
+message SubscribeToStreamFiltered {
+	required string event_stream_id = 1;
+	required bool resolve_link_tos = 2;
+	required Filter filter = 3;
+	required int32 checkpoint_interval = 4;
+}
+
+message CheckpointReached {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+}
+
 message SubscriptionConfirmation {
 	required int64 last_commit_position = 1;
 	optional int64 last_event_number = 2;

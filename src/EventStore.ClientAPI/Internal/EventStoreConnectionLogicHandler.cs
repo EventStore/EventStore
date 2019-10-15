@@ -58,6 +58,7 @@ namespace EventStore.ClientAPI.Internal {
 			_queue.RegisterHandler<StartOperationMessage>(msg =>
 				StartOperation(msg.Operation, msg.MaxRetries, msg.Timeout));
 			_queue.RegisterHandler<StartSubscriptionMessage>(StartSubscription);
+			_queue.RegisterHandler<StartFilteredSubscriptionMessage>(StartFilteredSubscription);
 			_queue.RegisterHandler<StartPersistentSubscriptionMessage>(StartSubscription);
 
 			_queue.RegisterHandler<EstablishTcpConnectionMessage>(msg => EstablishTcpConnection(msg.EndPoints));
@@ -209,6 +210,7 @@ namespace EventStore.ClientAPI.Internal {
 					connection.RemoteEndPoint, connection.LocalEndPoint);
 				return;
 			}
+
 			var wasConnected = Interlocked.CompareExchange(ref _wasConnected, 0, 1) == 1;
 
 			_state = ConnectionState.Connecting;
@@ -400,6 +402,33 @@ namespace EventStore.ClientAPI.Internal {
 						msg.ResolveLinkTos,
 						msg.UserCredentials, msg.EventAppeared, msg.SubscriptionDropped,
 						_settings.VerboseLogging, () => _connection);
+					LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation,
+						msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
+					var subscription = new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout);
+					if (_state == ConnectionState.Connecting)
+						_subscriptions.EnqueueSubscription(subscription);
+					else
+						_subscriptions.StartSubscription(subscription, _connection);
+					break;
+				case ConnectionState.Closed:
+					msg.Source.SetException(new ObjectDisposedException(_esConnection.ConnectionName));
+					break;
+				default: throw new Exception(string.Format("Unknown state: {0}.", _state));
+			}
+		}
+
+		private void StartFilteredSubscription(StartFilteredSubscriptionMessage msg) {
+			switch (_state) {
+				case ConnectionState.Init:
+					msg.Source.SetException(new InvalidOperationException(
+						string.Format("EventStoreConnection '{0}' is not active.", _esConnection.ConnectionName)));
+					break;
+				case ConnectionState.Connecting:
+				case ConnectionState.Connected:
+					var operation = new VolatileFilteredSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId,
+						msg.ResolveLinkTos, msg.CheckpointInterval, msg.Filter, msg.UserCredentials, 
+						msg.EventAppeared, msg.CheckpointReached, msg.SubscriptionDropped, _settings.VerboseLogging, 
+						() => _connection);
 					LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation,
 						msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
 					var subscription = new SubscriptionItem(operation, msg.MaxRetries, msg.Timeout);
