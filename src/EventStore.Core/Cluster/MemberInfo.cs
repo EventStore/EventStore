@@ -145,7 +145,7 @@ namespace EventStore.Core.Cluster {
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
 			EpochRecord epoch = null,
-			int nodePriority = 0) {
+			int? nodePriority = null) {
 			return new MemberInfo(InstanceId,
 				DateTime.UtcNow,
 				state ?? State,
@@ -162,7 +162,7 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochPosition : EpochPosition,
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
-				nodePriority,
+				nodePriority ?? NodePriority,
 				IsReadOnlyReplica);
 		}
 
