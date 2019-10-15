@@ -30,6 +30,7 @@ namespace EventStore.Core.Services {
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
 		IHandle<StorageMessage.EventCommitted> {
 		public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
+		private const int DontReportCheckpointReached = -1;
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<SubscriptionsService>();
 		private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
@@ -298,6 +299,9 @@ namespace EventStore.Core.Services {
 					subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
 				}
 
+				if (subscr.CheckpointInterval == DontReportCheckpointReached) 
+					continue;
+				
 				subscr.CheckpointIntervalCurrent++;
 
 				if (subscr.CheckpointInterval != null &&

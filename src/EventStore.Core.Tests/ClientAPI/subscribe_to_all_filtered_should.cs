@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -180,32 +181,66 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
+		public void throw_an_exception_if_checkpoint_reached_is_provided_with_no_interval() {
+			var filter = Filter.ExcludeSystemEvents;
+
+			using (var store = BuildConnection(_node)) {
+				store.ConnectAsync().Wait();
+
+				Assert.Throws<ArgumentNullException>(() => {
+					store.SubscribeToAllFilteredAsync(
+						false,
+						filter,
+						(s, e) => Task.CompletedTask,
+						(s, p) => Task.CompletedTask).Wait();
+				});
+			}
+		}
+		
+		[Test, Category("LongRunning")]
+		public void throw_an_exception_if_interval_is_negative() {
+			var filter = Filter.ExcludeSystemEvents;
+
+			using (var store = BuildConnection(_node)) {
+				store.ConnectAsync().Wait();
+
+				Assert.Throws<ArgumentOutOfRangeException>(() => {
+					store.SubscribeToAllFilteredAsync(
+						false,
+						filter,
+						(s, e) => Task.CompletedTask,
+						(s, p) => Task.CompletedTask, 0).Wait();
+				});
+			}
+		}
+		
+		[Test, Category("LongRunning")]
 		public void calls_checkpoint_reached_according_to_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(9);
-				var checkpointCount = 0;
+				var appeared = new CountdownEvent(5);
+				var eventsSeen = 0;
 
 				using (store.SubscribeToAllFilteredAsync(false,
 					filter,
 					(s, e) => {
-						appeared.Signal();
+						eventsSeen++;
 						return Task.CompletedTask;
 					},
 					(s, p) => {
-						checkpointCount++;
+						appeared.Signal();
 						return Task.CompletedTask;
 					},
 					2).Result) {
 					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents);
 
 					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+						Assert.Fail("Checkpoint appeared not called enough times within time limit.");
 					}
 
-					Assert.AreEqual(4, checkpointCount);
+					Assert.AreEqual(10, eventsSeen);
 				}
 			}
 		}
