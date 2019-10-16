@@ -34,7 +34,8 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.Proposal>,
 		IHandle<ElectionMessage.Accept>,
 		IHandle<ClientMessage.SetNodePriority>,
-		IHandle<ClientMessage.ResignNode> {
+		IHandle<ClientMessage.ResignNode>,
+		IHandle<ElectionMessage.MasterIsResigning> {
 		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
@@ -65,9 +66,9 @@ namespace EventStore.Core.Services {
 		private MasterCandidate _masterProposal;
 		private Guid? _master;
 		private Guid? _lastElectedMaster;
-		private int _lastElectedMasterPriority;
 
 		private MemberInfo[] _servers;
+		private Guid? _resigningMasterInstanceId;
 
 		public ElectionsService(IPublisher publisher,
 			VNodeInfo nodeInfo,
@@ -122,6 +123,7 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
+			subscriber.Subscribe<ElectionMessage.MasterIsResigning>(this);
 			subscriber.Subscribe<ClientMessage.SetNodePriority>(this);
 			subscriber.Subscribe<ClientMessage.ResignNode>(this);
 		}
@@ -138,9 +140,20 @@ namespace EventStore.Core.Services {
 			if (_master != null && _nodeInfo.InstanceId == _master) {
 				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
 				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
+				var masterIsResigningMessage = new ElectionMessage.MasterIsResigning(
+					_nodeInfo.InstanceId,
+					_nodeInfo.InternalHttp);
+				Handle(masterIsResigningMessage);
+				SendToAllExceptMe(masterIsResigningMessage);
 			} else {
 				Log.Info("ELECTIONS: ONLY MASTER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}
+		}
+
+		public void Handle(ElectionMessage.MasterIsResigning message) {
+			Log.Debug("ELECTIONS: RESIGNATION FROM [{masterInternalHttp}, {masterId:B}].",
+				message.MasterInternalHttp, message.MasterId);
+			_resigningMasterInstanceId = message.MasterId;
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -346,7 +359,7 @@ namespace EventStore.Core.Services {
 			_acceptsReceived.Clear();
 			_masterProposal = null;
 
-			var master = GetBestMasterCandidate(_prepareOkReceived, _servers, _lastElectedMaster, _lastElectedMasterPriority);
+			var master = GetBestMasterCandidate(_prepareOkReceived, _servers, _lastElectedMaster, _resigningMasterInstanceId);
 			if (master == null) {
 				Log.Trace("ELECTIONS: (V={lastAttemptedView}) NO MASTER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
@@ -368,12 +381,9 @@ namespace EventStore.Core.Services {
 			SendToAllExceptMe(proposal);
 		}
 
-		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received, MemberInfo[] servers, Guid? lastElectedMaster, int lastElectedMasterPriority) {
-			var samePriority = received.Values.Select(x => x.NodePriority).Distinct().Count() == 1;
-
-			if (lastElectedMaster.HasValue) {
-				if (received.TryGetValue(lastElectedMaster.Value, out var masterMsg)
-					&& (masterMsg.NodePriority >= lastElectedMasterPriority || samePriority)) {
+		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received, MemberInfo[] servers, Guid? lastElectedMaster, Guid? resigningMasterInstanceId) {
+			if (lastElectedMaster.HasValue && lastElectedMaster.Value != resigningMasterInstanceId) {
+				if (received.TryGetValue(lastElectedMaster.Value, out var masterMsg)) {
 					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
 						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
 						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
@@ -382,8 +392,7 @@ namespace EventStore.Core.Services {
 
 				var master = servers.FirstOrDefault(x =>
 					x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
-
-				if (master != null && (master.NodePriority >= lastElectedMasterPriority || samePriority)) {
+				if (master != null) {
 					return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
 						master.EpochNumber, master.EpochPosition, master.EpochId,
 						master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
@@ -399,19 +408,17 @@ namespace EventStore.Core.Services {
 				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ServerId)
 				.FirstOrDefault();
-			if (best == null) {
+			if (best == null)
 				return null;
-			}
-			
 			return new MasterCandidate(best.ServerId, best.ServerInternalHttp,
 				best.EpochNumber, best.EpochPosition, best.EpochId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
 
 		public static bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
-			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, int lastElectedMasterPriority, VNodeInfo nodeInfo, MasterCandidate ownInfo) {
+			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, VNodeInfo nodeInfo, MasterCandidate ownInfo) {
 			var master = servers.FirstOrDefault(x =>
-				x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master && lastElectedMasterPriority == x.NodePriority);
+				x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
 
 			if (master != null) {
 				if (candidate.InstanceId == master.InstanceId
@@ -461,16 +468,13 @@ namespace EventStore.Core.Services {
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
 			if (_servers.All(x => x.InstanceId != message.MasterId)) return;
 
-			var ownInfo = GetOwnInfo();
-			if (message.MasterId == _nodeInfo.InstanceId && message.NodePriority != ownInfo.NodePriority)
-				return;
-
 			var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
 				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
 			
+			var ownInfo = GetOwnInfo();
 			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
-									candidate, _servers, _lastElectedMaster, _lastElectedMasterPriority, _nodeInfo, ownInfo))
+									candidate, _servers, _lastElectedMaster, _nodeInfo, ownInfo))
 				return;
 
 			Log.Debug(
@@ -512,7 +516,7 @@ namespace EventStore.Core.Services {
 					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED MASTER = {masterInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_masterProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedMaster = _master;
-					_lastElectedMasterPriority = _masterProposal.NodePriority;
+					_resigningMasterInstanceId = null;
 					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, master));
 				}
 			}

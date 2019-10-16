@@ -257,6 +257,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = dto.LastCommitPosition;
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
+				NodePriority = dto.NodePriority;
 			}
 
 			public override string ToString() {
@@ -306,6 +307,32 @@ namespace EventStore.Core.Messages {
 				return string.Format(
 					"---- Accept: serverId {0}, serverInternalHttp {1}, masterId {2}, masterInternalHttp {3}, view {4}",
 					ServerId, ServerInternalHttp, MasterId, MasterInternalHttp, View);
+			}
+		}
+		
+		public class MasterIsResigning : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid MasterId;
+			public readonly IPEndPoint MasterInternalHttp;
+
+			public MasterIsResigning(Guid masterId, IPEndPoint masterInternalHttp) {
+				MasterId = masterId;
+				MasterInternalHttp = masterInternalHttp;
+			}
+
+			public MasterIsResigning(ElectionMessageDto.MasterIsResigningDto dto) {
+				MasterId = dto.MasterId;
+				MasterInternalHttp = new IPEndPoint(IPAddress.Parse(dto.MasterInternalHttpAddress),
+					dto.MasterInternalHttpPort);
+			}
+
+			public override string ToString() {
+				return $"---- MasterIsResigning: serverId {MasterId}";
 			}
 		}
 

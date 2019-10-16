@@ -140,114 +140,110 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				NodePriorities = new[] {3, 2, 1}
 			};
 
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 1,
-				ProposingNode = 0,
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2
+				LastElectedMaster = 2,
+				ResigningMaster = 2
 			};
 
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				NodePriorities = new[] {int.MinValue, int.MinValue, int.MinValue},
 				LastElectedMaster = 0,
-				LastElectedMasterPriority = 0
 			};
 
-			//Single node behind
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				CommitPositions = new long[] {1, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2
+				LastElectedMaster = 2,
+				ResigningMaster = 2
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 1,
-				ProposingNode = 0,
 				WriterCheckpoints = new long[] {0, 1, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2
+				LastElectedMaster = 2,
+				ResigningMaster = 2
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				ChaserCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2
+				LastElectedMaster = 2,
+				ResigningMaster = 2
 			};
 
-			//All nodes behind
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				CommitPositions = new long[] {1, 0, 0},
 				NodePriorities = new[] {int.MinValue, 0, 0},
 				LastElectedMaster = 0
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 1,
-				ProposingNode = 0,
 				WriterCheckpoints = new long[] {0, 1, 0},
 				NodePriorities = new[] {0, int.MinValue, 0},
 				LastElectedMaster = 1
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
-				ProposingNode = 0,
 				ChaserCheckpoints = new long[] {0, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
 				LastElectedMaster = 2
 			};
 
-			//2 nodes with low priority
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
 				NodePriorities = new[] {0, int.MinValue, int.MinValue},
-				LastElectedMaster = 1
+				LastElectedMaster = 1,
+				ResigningMaster = 1
 			};
 
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 1,
-				ProposingNode = 0,
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0
+				LastElectedMaster = 0,
+				ResigningMaster = 0
 			};
 
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
-				ProposingNode = 0,
 				NodePriorities = new[] {int.MinValue, int.MinValue, 0},
-				LastElectedMaster = 1
+				LastElectedMaster = 1,
+				ResigningMaster = 1
 			};
 
-			//Node behind with other 2 with low priority
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
-				ProposingNode = 0,
 				CommitPositions = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0
+				LastElectedMaster = 0,
+				ResigningMaster = 0
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
-				ProposingNode = 0,
 				WriterCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0
+				LastElectedMaster = 0,
+				ResigningMaster = 0
 			};
+			
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
-				ProposingNode = 0,
 				ChaserCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0
+				LastElectedMaster = 0,
+				ResigningMaster = 0
 			};
 		}
 
@@ -272,7 +268,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var lastElectedMaster = tc.LastElectedMaster.HasValue
 				? (Guid?)IdForNode(tc.LastElectedMaster.Value)
 				: null;
-			var mc = SUT.GetBestMasterCandidate(prepareOks, members, lastElectedMaster, tc.LastElectedMasterPriority);
+			var resigningMaster = tc.ResigningMaster.HasValue
+				? (Guid?)IdForNode(tc.ResigningMaster.Value)
+				: null;
+			var mc = SUT.GetBestMasterCandidate(prepareOks, members, lastElectedMaster, resigningMaster);
 
 			Assert.AreEqual(IdForNode(tc.ExpectedMasterCandidateNode), mc.InstanceId);
 
@@ -282,7 +281,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var localNode = FromMember(0, members);
 
 			var isLegit = SUT.IsLegitimateMaster(1, EndpointForNode(tc.ProposingNode),
-				IdForNode(tc.ProposingNode), mc, members, null, 0, localNode,
+				IdForNode(tc.ProposingNode), mc, members, null, localNode,
 				ownInfo);
 
 			Assert.True(isLegit);
@@ -343,9 +342,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public class TestCase {
 			private readonly string _name;
 			public int ExpectedMasterCandidateNode { get; set; }
+			public int? ResigningMaster { get; set; }
 			public int ProposingNode { get; set; }
 			public int? LastElectedMaster { get; set; }
-			public int LastElectedMasterPriority { get; set; }
 			public long[] CommitPositions { get; set; } = {1L, 1, 1};
 			public long[] WriterCheckpoints { get; set; } = {1L, 1, 1};
 			public long[] ChaserCheckpoints { get; set; } = {1L, 1, 1};
