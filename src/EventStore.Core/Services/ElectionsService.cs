@@ -374,7 +374,6 @@ namespace EventStore.Core.Services {
 			if (lastElectedMaster.HasValue) {
 				if (received.TryGetValue(lastElectedMaster.Value, out var masterMsg)
 					&& (masterMsg.NodePriority >= lastElectedMasterPriority || samePriority)) {
-
 					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
 						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
 						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
@@ -385,7 +384,6 @@ namespace EventStore.Core.Services {
 					x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
 
 				if (master != null && (master.NodePriority >= lastElectedMasterPriority || samePriority)) {
-
 					return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
 						master.EpochNumber, master.EpochPosition, master.EpochId,
 						master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint,
@@ -432,7 +430,6 @@ namespace EventStore.Core.Services {
 			if (candidate.InstanceId == nodeInfo.InstanceId)
 				return true;
 
-			// var ownInfo = GetOwnInfo();
 			if (!IsCandidateGoodEnough(candidate, ownInfo)) {
 				Log.Debug(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. ME={ownInfo}.",

@@ -17,6 +17,7 @@ using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 using SUT = EventStore.Core.Services.ElectionsService;
+
 namespace EventStore.Core.Tests.Services.ElectionsService {
 	public class ElectionsServiceUnitTests :
 		IHandle<HttpMessage.SendOverHttp> {
@@ -67,7 +68,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					m => {
 						switch (m) {
 							case TimerMessage.Schedule sm:
-								TestContext.WriteLine($"Node {nodeId} : Delay {sm.TriggerAfter} : {sm.ReplyMessage.GetType()}");
+								TestContext.WriteLine(
+									$"Node {nodeId} : Delay {sm.TriggerAfter} : {sm.ReplyMessage.GetType()}");
 								timerService.Handle(sm);
 								break;
 							case HttpMessage.SendOverHttp hm:
@@ -79,7 +81,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 								break;
 						}
 					}
-					));
+				));
 				_nodes.Add(endPoint, inputBus);
 
 				var gossip = new NodeGossipService(outputBus, seedSource, nodeInfo, writerCheckpoint, readerCheckpoint,
@@ -105,6 +107,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				node.Publish(message.Message);
 				return;
 			}
+
 			TestContext.WriteLine($"Failed to find endpoint for {message.Message} to {message.EndPoint}");
 		}
 
@@ -125,34 +128,38 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				return _ipEndPoints.ToArray();
 			}
 		}
-
-
 	}
 
 	public class ChoosingMasterTests {
-
 		static IEnumerable<TestCase> CreateCases() {
-            //Basic cases
-            yield return new TestCase {
-	            ExpectedMasterCandidateNode = 2,
-	            ProposingNode = 0,
-            };
+			//Basic cases
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 2,
+				ProposingNode = 0,
+			};
 
-            yield return new TestCase {
-	            ExpectedMasterCandidateNode = 0,
-	            ProposingNode = 0,
-	            NodePriorities = new[] {3, 2, 1}
-            };
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				NodePriorities = new[] {3, 2, 1}
+			};
 
-            //maintenance checks
-            yield return new TestCase {
-	            ExpectedMasterCandidateNode = 1,
-	            ProposingNode = 0,
-	            NodePriorities = new[] {0, 0, int.MinValue},
-	            LastElectedMaster = 2
-            };
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 1,
+				ProposingNode = 0,
+				NodePriorities = new[] {0, 0, int.MinValue},
+				LastElectedMaster = 2
+			};
 
-			//Node behind
+			yield return new TestCase {
+				ExpectedMasterCandidateNode = 0,
+				ProposingNode = 0,
+				NodePriorities = new[] {int.MinValue, int.MinValue, int.MinValue},
+				LastElectedMaster = 0,
+				LastElectedMasterPriority = 0
+			};
+
+			//Single node behind
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
 				ProposingNode = 0,
@@ -175,7 +182,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				LastElectedMaster = 2
 			};
 
-			// All nodes behind
+			//All nodes behind
 			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
 				ProposingNode = 0,
@@ -198,63 +205,54 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				LastElectedMaster = 2
 			};
 
-			//2 nodes in maintenance
-			yield return new TestCase{
+			//2 nodes with low priority
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 0,
 				ProposingNode = 0,
-				NodePriorities= new[] { 0, int.MinValue, int.MinValue },
-				LastElectedMaster= 1
+				NodePriorities = new[] {0, int.MinValue, int.MinValue},
+				LastElectedMaster = 1
 			};
 
-            yield return new TestCase{
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 1,
 				ProposingNode = 0,
-	            NodePriorities= new[] {int.MinValue,0,  int.MinValue},
-				LastElectedMaster= 0
-            };
+				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
+				LastElectedMaster = 0
+			};
 
-            yield return new TestCase{
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
 				ProposingNode = 0,
-	            NodePriorities= new[] {int.MinValue, int.MinValue, 0},
-				LastElectedMaster= 1
-            };
+				NodePriorities = new[] {int.MinValue, int.MinValue, 0},
+				LastElectedMaster = 1
+			};
 
-            //and non maintenance mode behind
-            yield return new TestCase{
+			//Node behind with other 2 with low priority
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
 				ProposingNode = 0,
-	            CommitPositions= new long[] {1, 0, 1},
-	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
-				LastElectedMaster= 0
-            };
-            yield return new TestCase{
+				CommitPositions = new long[] {1, 0, 1},
+				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
+				LastElectedMaster = 0
+			};
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
 				ProposingNode = 0,
-	            WriterCheckpoints= new long[] {1, 0, 1},
-	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
-				LastElectedMaster= 0
-            };
-            yield return new TestCase{
+				WriterCheckpoints = new long[] {1, 0, 1},
+				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
+				LastElectedMaster = 0
+			};
+			yield return new TestCase {
 				ExpectedMasterCandidateNode = 2,
 				ProposingNode = 0,
-	            ChaserCheckpoints= new long[] {1, 0, 1}, 
-	            NodePriorities= new[] {int.MinValue, 0,  int.MinValue},
-				LastElectedMaster= 0
-            };
-
-			// all 3 nodes on maintenance
-			yield return new TestCase{
-				ExpectedMasterCandidateNode = 0,
-				ProposingNode = 0,
-	            NodePriorities= new[] {int.MinValue, int.MinValue, int.MinValue},
-				LastElectedMaster= 0,
-				LastElectedMasterPriority= 0
+				ChaserCheckpoints = new long[] {1, 0, 1},
+				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
+				LastElectedMaster = 0
 			};
 		}
 
 		[Test, TestCaseSource(nameof(TestCases))]
-		public void ShouldSelectValidBestMasterCandidate(TestCase tc) {
+		public void should_select_valid_best_master_candidate(TestCase tc) {
 			var epochId = Guid.NewGuid();
 			var members = new MemberInfo[3];
 			var prepareOks = new Dictionary<Guid, ElectionMessage.PrepareOk>();
@@ -264,19 +262,22 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority = i => tc.NodePriorities[i];
 
 			for (int index = 0; index < 3; index++) {
-				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, nodePriority);
-				var pok = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, nodePriority);
-				prepareOks.Add(pok.ServerId, pok);
+				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint,
+					chaserCheckpoint, nodePriority);
+				var prepareOk = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+					nodePriority);
+				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
 
 			var lastElectedMaster = tc.LastElectedMaster.HasValue
-									? (Guid?)IdForNode(tc.LastElectedMaster.Value)
-									: null;
+				? (Guid?)IdForNode(tc.LastElectedMaster.Value)
+				: null;
 			var mc = SUT.GetBestMasterCandidate(prepareOks, members, lastElectedMaster, tc.LastElectedMasterPriority);
 
 			Assert.AreEqual(IdForNode(tc.ExpectedMasterCandidateNode), mc.InstanceId);
 
-			var ownInfo = CreateMasterCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, nodePriority);
+			var ownInfo = CreateMasterCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+				nodePriority);
 
 			var localNode = FromMember(0, members);
 
@@ -295,7 +296,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), nodePriority(i));
+			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
+				chaserCheckpoint(i), nodePriority(i));
 		}
 
 		static SUT.MasterCandidate CreateMasterCandidate(int i, Guid epochId,
@@ -305,11 +307,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return new SUT.MasterCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), nodePriority(i));
+			return new SUT.MasterCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
+				chaserCheckpoint(i), nodePriority(i));
 		}
 
 		static VNodeInfo FromMember(int index, MemberInfo[] members) {
-			return new VNodeInfo(members[index].InstanceId, 1, members[index].InternalTcpEndPoint, members[index].InternalSecureTcpEndPoint, members[index].ExternalTcpEndPoint, members[index].ExternalSecureTcpEndPoint, members[index].InternalHttpEndPoint, members[index].ExternalHttpEndPoint, false);
+			return new VNodeInfo(members[index].InstanceId, 1, members[index].InternalTcpEndPoint,
+				members[index].InternalSecureTcpEndPoint, members[index].ExternalTcpEndPoint,
+				members[index].ExternalSecureTcpEndPoint, members[index].InternalHttpEndPoint,
+				members[index].ExternalHttpEndPoint, false);
 		}
 
 		static MemberInfo CreateMemberInfo(int i, Guid epochId, Func<int, long> lastCommitPosition,
@@ -318,7 +324,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Slave, true, ep, ep, ep, ep, ep, ep, lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
+			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Slave, true, ep, ep, ep, ep, ep, ep,
+				lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
 		}
 
 		private static IPEndPoint EndpointForNode(int i) {
@@ -333,7 +340,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			return CreateCases().Cast<object>().ToArray();
 		}
 
-        public class TestCase {
+		public class TestCase {
 			private readonly string _name;
 			public int ExpectedMasterCandidateNode { get; set; }
 			public int ProposingNode { get; set; }
@@ -343,39 +350,36 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			public long[] WriterCheckpoints { get; set; } = {1L, 1, 1};
 			public long[] ChaserCheckpoints { get; set; } = {1L, 1, 1};
 			public int[] NodePriorities { get; set; } = {1, 1, 1};
-			private static string GenerateName(int expectedMasterCandidateNode, long[] commitPositions, long[] writerCheckpoints,
-				long[] chaserCheckpoints, int[] nodePriorities)
-			{
+
+			private static string GenerateName(int expectedMasterCandidateNode, long[] commitPositions,
+				long[] writerCheckpoints,
+				long[] chaserCheckpoints, int[] nodePriorities) {
 				var nameBuilder = new StringBuilder();
-				if (commitPositions != null)
-				{
+				if (commitPositions != null) {
 					if (nameBuilder.Length == 0) nameBuilder.Append("Nodes with ");
 					else nameBuilder.Append(" and");
-					nameBuilder.AppendFormat("commit positions ( {0} )",string.Join(",",
+					nameBuilder.AppendFormat("commit positions ( {0} )", string.Join(",",
 						commitPositions.Where(x => x != 1).Select((x, i) => $"{i} : cp {x}")));
 				}
 
-				if (writerCheckpoints != null)
-				{
+				if (writerCheckpoints != null) {
 					if (nameBuilder.Length == 0) nameBuilder.Append("Nodes with ");
 					else nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("writer checkpoints ( {0} )",string.Join(",",
+					nameBuilder.AppendFormat("writer checkpoints ( {0} )", string.Join(",",
 						writerCheckpoints.Where(x => x != 1).Select((x, i) => $"{i} : wcp {x}")));
 				}
 
-				if (chaserCheckpoints != null)
-				{
+				if (chaserCheckpoints != null) {
 					if (nameBuilder.Length == 0) nameBuilder.Append("Nodes with ");
 					else nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("chaser checkpoints ( {0} )",string.Join(",",
+					nameBuilder.AppendFormat("chaser checkpoints ( {0} )", string.Join(",",
 						chaserCheckpoints.Where(x => x != 1).Select((x, i) => $"{i} : ccp {x}")));
 				}
 
-				if (nodePriorities != null)
-				{
+				if (nodePriorities != null) {
 					if (nameBuilder.Length == 0) nameBuilder.Append("Nodes with ");
 					else nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("node priorities ( {0} )",string.Join(",",
+					nameBuilder.AppendFormat("node priorities ( {0} )", string.Join(",",
 						nodePriorities.Where(x => x != 0).Select((x, i) => $"{i} : np {x}")));
 				}
 
@@ -387,7 +391,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			}
 
 			public override string ToString() {
-				return GenerateName(ExpectedMasterCandidateNode, CommitPositions, WriterCheckpoints, ChaserCheckpoints, NodePriorities);
+				return GenerateName(ExpectedMasterCandidateNode, CommitPositions, WriterCheckpoints, ChaserCheckpoints,
+					NodePriorities);
 			}
 		}
 	}
