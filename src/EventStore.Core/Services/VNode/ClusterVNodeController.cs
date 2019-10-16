@@ -161,6 +161,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.UpdatePersistentSubscription>().Ignore()
 				.When<ClientMessage.DeletePersistentSubscription>().Ignore()
 				.When<SystemMessage.RequestQueueDrained>().Do(Handle)
+				.InAllStatesExcept(VNodeState.ResigningMaster)
+				.When<SystemMessage.RequestQueueDrained>().Ignore()
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
 					VNodeState.Unknown, VNodeState.ReadOnlyMasterless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
