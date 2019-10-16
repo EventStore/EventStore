@@ -20,4 +20,4 @@ EXPOSE 2112/tcp
 EXPOSE 2113/tcp
 
 ENTRYPOINT ["dotnet", "EventStore.ClusterNode.dll"]
-
+CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]
