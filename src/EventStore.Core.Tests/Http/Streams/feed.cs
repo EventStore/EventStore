@@ -244,7 +244,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-
 		[TestFixture, Category("LongRunning")]
 		public class when_reading_a_stream_forward_with_linkto : HttpSpecificationWithLinkToToEvents {
 			private JObject _feed;
@@ -288,6 +287,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(MakeUrl("/streams/" + StreamName + "/1"), foo["uri"].ToString());
 			}
 		}
+
 
 		[TestFixture, Category("LongRunning")]
 		public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name : HttpBehaviorSpecification {
@@ -433,7 +433,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-
 		[TestFixture, Category("LongRunning")]
 		public class
 			when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled :
@@ -467,7 +466,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-
 		[TestFixture, Category("LongRunning")]
 		public class when_reading_a_stream_backward_with_deleted_linktos : HttpSpecificationWithLinkToToDeletedEvents {
 			private JObject _feed;
@@ -497,7 +495,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(MakeUrl("/streams/" + DeletedStreamName + "/0"), foo["uri"].ToString());
 			}
 		}
-
 
 		[TestFixture, Category("LongRunning")]
 		public class
@@ -631,6 +628,130 @@ namespace EventStore.Core.Tests.Http.Streams {
 			public void should_return_not_modified() {
 				Assert.AreEqual(HttpStatusCode.NotModified, _lastResponse.StatusCode);
 			}
+		}
+	}
+
+	[TestFixture, Category("LongRunning")]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+		private JObject _feed;
+		private List<JToken> _entries;
+
+		protected override void When() {
+			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
+			_feed = GetJson<JObject>("/streams/$all",
+				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
+			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+		}
+
+		[Test]
+		public void there_are_three_events_for_the_first_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
+			Assert.AreEqual(3, events.Count());
+		}
+		
+		[Test]
+		public void there_are_two_events_for_the_second_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
+			Assert.AreEqual(2, events.Count());
+		}
+		
+		[Test]
+		public void there_are_no_events_for_the_linked_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
+			Assert.IsEmpty(events);
+		}
+	}
+
+	[TestFixture, Category("LongRunning")]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+		private JObject _feed;
+		private List<JToken> _entries;
+
+		protected override void When() {
+			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
+			_feed = GetJson<JObject>("/streams/$all",
+				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
+			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+		}
+
+		[Test]
+		public void there_are_two_events_for_the_first_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
+			Assert.AreEqual(2, events.Count());
+		}
+		
+		[Test]
+		public void there_is_one_event_for_the_second_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
+			Assert.AreEqual(1, events.Count());
+		}
+		
+		[Test]
+		public void there_are_two_events_for_the_linked_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
+			Assert.AreEqual(2, events.Count());
+		}
+	}
+		
+	[TestFixture, Category("LongRunning")]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+		private JObject _feed;
+		private List<JToken> _entries;
+
+		protected override void When() {
+			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
+			_feed = GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
+			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+		}
+
+		[Test]
+		public void there_are_three_events_for_the_first_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
+			Assert.AreEqual(3, events.Count());
+		}
+		
+		[Test]
+		public void there_are_two_events_for_the_second_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
+			Assert.AreEqual(2, events.Count());
+		}
+		
+		[Test]
+		public void there_are_no_events_for_the_linked_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
+			Assert.IsEmpty(events);
+		}
+	}
+
+	[TestFixture, Category("LongRunning")]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+		private JObject _feed;
+		private List<JToken> _entries;
+
+		protected override void When() {
+			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
+			_feed = GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
+			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
+		}
+
+		[Test]
+		public void there_are_two_events_for_the_first_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
+			Assert.AreEqual(2, events.Count());
+		}
+		
+		[Test]
+		public void there_is_one_event_for_the_second_original_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
+			Assert.AreEqual(1, events.Count());
+		}
+		
+		[Test]
+		public void there_are_two_events_for_the_linked_stream() {
+			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
+			Assert.AreEqual(2, events.Count());
 		}
 	}
 }
