@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void delete_stream_should_succeed_when_master_not_required() {
 			var path = $"streams/{TestStream}";
 			var response = DeleteStream(_slaveEndPoint, path, requireMaster: false);
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void read_from_stream_forward_should_succeed_when_master_not_required() {
 			var path = $"streams/{TestStream}/0/forward/1";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: false);
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void read_from_stream_backward_should_succeed_when_master_not_required() {
 			var path = $"streams/{TestStream}";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: false);
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void read_from_all_forward_should_succeed_when_master_not_required() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: false);
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void read_from_all_backward_should_succeed_when_master_not_required() {
 			var path = $"streams/$all";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: false);
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_writing_with_requires_master() {
 			var path = $"streams/{TestStream}";
 			var response = PostEvent(_slaveEndPoint, path);
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(masterLocation.ToString(), response.Headers["Location"]);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_deleting_with_requires_master() {
 			var path = $"streams/{TestStream}";
 			var response = DeleteStream(_slaveEndPoint, path, requireMaster: true);
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(masterLocation.ToString(), response.Headers["Location"]);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_reading_from_stream_backwards_with_requires_master() {
 			var path = $"streams/{TestStream}";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: true);
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(masterLocation.ToString(), response.Headers["Location"]);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_reading_from_stream_forwards_with_requires_master() {
 			var path = $"streams/{TestStream}/0/forward/1";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: true);
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(masterLocation.ToString(), response.Headers["Location"]);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_reading_from_all_backwards_with_requires_master() {
 			var path = $"streams/$all";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: true);
@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(masterLocation.ToString(), response.Headers["Location"]);
 		}
 
-		[Test]
+		[Test, Ignore("test")]
 		public void should_redirect_to_master_when_reading_from_all_forwards_with_requires_master() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
 			var response = ReadStream(_slaveEndPoint, path, requireMaster: true);
