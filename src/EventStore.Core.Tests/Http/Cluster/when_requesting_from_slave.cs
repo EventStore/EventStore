@@ -3,7 +3,9 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
@@ -14,13 +16,30 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		private const string TestStream = "test-stream";
 		private IPEndPoint _slaveEndPoint;
 		private IPEndPoint _masterEndPoint;
+		private CountdownEvent _expectedNumberOfRoleAssignments;
+		
+		protected override void BeforeNodesStart() {
+			_nodes.ToList().ForEach(x =>
+				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.StateChangeMessage>(Handle)));
+			_expectedNumberOfRoleAssignments = new CountdownEvent(3);
+			base.BeforeNodesStart();
+		}
+		
+		private void Handle(SystemMessage.StateChangeMessage msg) {
+			switch (msg.State) {
+				case Data.VNodeState.Master:
+					_expectedNumberOfRoleAssignments.Signal();
+					break;
+				case Data.VNodeState.Slave:
+					_expectedNumberOfRoleAssignments.Signal();
+					break;
+			}
+		}
 
 		protected override void Given() {
-			var master = GetMaster();
-			if (!master.Ready.WaitOne(TimeSpan.FromSeconds(10)))
-				Assert.Fail("Timed out waiting for admin user to be created.");
+			_expectedNumberOfRoleAssignments.Wait(5000);
 			_slaveEndPoint = GetSlaves().First().ExternalHttpEndPoint;
-			_masterEndPoint = master.ExternalHttpEndPoint;
+			_masterEndPoint = GetMaster().ExternalHttpEndPoint;
 		}
 
 		[Test]
