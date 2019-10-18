@@ -8,6 +8,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Helpers {
 	public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage> {
@@ -35,6 +36,22 @@ namespace EventStore.Core.Helpers {
 
 		public readonly RequestResponseDispatcher<AwakeServiceMessage.SubscribeAwake, IODispatcherDelayedMessage>
 			Awaker;
+
+		public readonly
+			RequestResponseDispatcher
+			<ClientMessage.ReadAllEventsForward, ClientMessage.ReadAllEventsForwardCompleted> AllForwardReader;
+
+		public readonly
+			RequestResponseDispatcher
+			<ClientMessage.ReadAllEventsBackward, ClientMessage.ReadAllEventsBackwardCompleted> AllBackwardReader;
+
+		public readonly
+			RequestResponseDispatcher
+			<ClientMessage.FilteredReadAllEventsForward, ClientMessage.FilteredReadAllEventsForwardCompleted> AllForwardFilteredReader;
+
+		public readonly
+			RequestResponseDispatcher
+			<ClientMessage.FilteredReadAllEventsBackward, ClientMessage.FilteredReadAllEventsBackwardCompleted> AllBackwardFilteredReader;
 
 		public IODispatcher(IPublisher publisher, IEnvelope envelope) {
 			_publisher = publisher;
@@ -74,6 +91,38 @@ namespace EventStore.Core.Helpers {
 					v => v.CorrelationId,
 					envelope,
 					cancelMessageFactory: requestId => new AwakeServiceMessage.UnsubscribeAwake(requestId));
+
+			AllForwardReader =
+				new RequestResponseDispatcher
+					<ClientMessage.ReadAllEventsForward, ClientMessage.ReadAllEventsForwardCompleted>(
+						publisher,
+						v => v.CorrelationId,
+						v => v.CorrelationId,
+						envelope);
+
+			AllBackwardReader =
+				new RequestResponseDispatcher
+					<ClientMessage.ReadAllEventsBackward, ClientMessage.ReadAllEventsBackwardCompleted>(
+						publisher,
+						v => v.CorrelationId,
+						v => v.CorrelationId,
+						envelope);
+
+			AllForwardFilteredReader =
+				new RequestResponseDispatcher
+					<ClientMessage.FilteredReadAllEventsForward, ClientMessage.FilteredReadAllEventsForwardCompleted>(
+						publisher,
+						v => v.CorrelationId,
+						v => v.CorrelationId,
+						envelope);
+
+			AllBackwardFilteredReader =
+				new RequestResponseDispatcher
+					<ClientMessage.FilteredReadAllEventsBackward, ClientMessage.FilteredReadAllEventsBackwardCompleted>(
+						publisher,
+						v => v.CorrelationId,
+						v => v.CorrelationId,
+						envelope);
 		}
 
 		public Guid ReadBackward(
@@ -188,6 +237,174 @@ namespace EventStore.Core.Helpers {
 					false,
 					null,
 					principal),
+				res => {
+					if (!_pendingReads.IsRegistered(corrId)) return;
+					_pendingReads.Remove(corrId);
+					action(res);
+				});
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				if (!_pendingReads.IsRegistered(corrId)) return;
+				_pendingReads.Remove(corrId);
+				timeoutAction();
+			}, corrId);
+			return corrId;
+		}
+
+		public Guid ReadAllForward(
+			long commitPosition,
+			long preparePosition,
+			int maxCount,
+			bool resolveLinks,
+			bool requireMaster,
+			long? validationTfLastCommitPosition,
+			IPrincipal user,
+			TimeSpan? longPollTimeout,
+			Action<ClientMessage.ReadAllEventsForwardCompleted> action,
+			Action timeoutAction,
+			Guid corrId) {
+			_pendingReads.Register(corrId);
+
+			AllForwardReader.Publish(
+				new ClientMessage.ReadAllEventsForward(
+					corrId,
+					corrId,
+					AllForwardReader.Envelope,
+					commitPosition,
+					preparePosition,
+					maxCount,
+					resolveLinks,
+					requireMaster,
+					validationTfLastCommitPosition,
+					user,
+					longPollTimeout
+					),
+				res => {
+					if (!_pendingReads.IsRegistered(corrId)) return;
+					_pendingReads.Remove(corrId);
+					action(res);
+				});
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				if (!_pendingReads.IsRegistered(corrId)) return;
+				_pendingReads.Remove(corrId);
+				timeoutAction();
+			}, corrId);
+			return corrId;
+		}
+
+		public Guid ReadAllBackward(
+			long commitPosition,
+			long preparePosition,
+			int maxCount,
+			bool resolveLinks,
+			bool requireMaster,
+			long? validationTfLastCommitPosition,
+			IPrincipal user,
+			TimeSpan? longPollTimeout,
+			Action<ClientMessage.ReadAllEventsBackwardCompleted> action,
+			Action timeoutAction,
+			Guid corrId) {
+			_pendingReads.Register(corrId);
+
+			AllBackwardReader.Publish(
+				new ClientMessage.ReadAllEventsBackward(
+					corrId,
+					corrId,
+					AllBackwardReader.Envelope,
+					commitPosition,
+					preparePosition,
+					maxCount,
+					resolveLinks,
+					requireMaster,
+					validationTfLastCommitPosition,
+					user
+				),
+				res => {
+					if (!_pendingReads.IsRegistered(corrId)) return;
+					_pendingReads.Remove(corrId);
+					action(res);
+				});
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				if (!_pendingReads.IsRegistered(corrId)) return;
+				_pendingReads.Remove(corrId);
+				timeoutAction();
+			}, corrId);
+			return corrId;
+		}
+
+		public Guid ReadAllForwardFiltered(
+			long commitPosition,
+			long preparePosition,
+			int maxCount,
+			bool resolveLinks,
+			bool requireMaster,
+			int maxSearchWindow,
+			long? validationTfLastCommitPosition,
+			IEventFilter eventFilter,
+			IPrincipal user,
+			TimeSpan? longPollTimeout,
+			Action<ClientMessage.FilteredReadAllEventsForwardCompleted> action,
+			Action timeoutAction,
+			Guid corrId) {
+			_pendingReads.Register(corrId);
+
+			AllForwardFilteredReader.Publish(
+				new ClientMessage.FilteredReadAllEventsForward(
+					corrId,
+					corrId,
+					AllForwardFilteredReader.Envelope,
+					commitPosition,
+					preparePosition,
+					maxCount,
+					resolveLinks,
+					requireMaster,
+					maxSearchWindow,
+					validationTfLastCommitPosition,
+					eventFilter,
+					user,
+					longPollTimeout
+				),
+				res => {
+					if (!_pendingReads.IsRegistered(corrId)) return;
+					_pendingReads.Remove(corrId);
+					action(res);
+				});
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				if (!_pendingReads.IsRegistered(corrId)) return;
+				_pendingReads.Remove(corrId);
+				timeoutAction();
+			}, corrId);
+			return corrId;
+		}
+		public Guid ReadAllBackwardFiltered(
+			long commitPosition,
+			long preparePosition,
+			int maxCount,
+			bool resolveLinks,
+			bool requireMaster,
+			int maxSearchWindow,
+			long? validationTfLastCommitPosition,
+			IEventFilter eventFilter,
+			IPrincipal user,
+			Action<ClientMessage.FilteredReadAllEventsBackwardCompleted> action,
+			Action timeoutAction,
+			Guid corrId) {
+			_pendingReads.Register(corrId);
+
+			AllBackwardFilteredReader.Publish(
+				new ClientMessage.FilteredReadAllEventsBackward(
+					corrId,
+					corrId,
+					AllBackwardFilteredReader.Envelope,
+					commitPosition,
+					preparePosition,
+					maxCount,
+					resolveLinks,
+					requireMaster,
+					maxSearchWindow,
+					validationTfLastCommitPosition,
+					eventFilter,
+					user
+				),
 				res => {
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
