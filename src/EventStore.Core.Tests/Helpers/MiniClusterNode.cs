@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private readonly string _dbPath;
 		private readonly bool _isReadOnlyReplica;
 		public ManualResetEvent StartedEvent;
-		public ManualResetEvent AdminUserCreatedEvent;
+		public ManualResetEvent Ready;
 
 		public VNodeState NodeState = VNodeState.Unknown;
 
@@ -132,7 +132,7 @@ namespace EventStore.Core.Tests.Helpers {
 			StartingTime.Start();
 
 			StartedEvent = new ManualResetEvent(false);
-			AdminUserCreatedEvent = new ManualResetEvent(false);
+			Ready = new ManualResetEvent(false);
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = _isReadOnlyReplica ?
 					VNodeState.ReadOnlyMasterless : VNodeState.Unknown; }));
@@ -148,8 +148,8 @@ namespace EventStore.Core.Tests.Helpers {
 						StartedEvent.Set();
 				}));
 			Node.MainBus.Subscribe(
-				new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => {
-					AdminUserCreatedEvent.Set();
+				new AdHocHandler<SystemMessage.SystemReady>(m => {
+					Ready.Set();
 					}));
 			} else {
 				Node.MainBus.Subscribe(

@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 
 		protected override void Given() {
 			var master = GetMaster();
-			if (!master.AdminUserCreatedEvent.WaitOne(TimeSpan.FromSeconds(5)))
+			if (!master.Ready.WaitOne(TimeSpan.FromSeconds(10)))
 				Assert.Fail("Timed out waiting for admin user to be created.");
 			_slaveEndPoint = GetSlaves().First().ExternalHttpEndPoint;
 			_masterEndPoint = master.ExternalHttpEndPoint;
