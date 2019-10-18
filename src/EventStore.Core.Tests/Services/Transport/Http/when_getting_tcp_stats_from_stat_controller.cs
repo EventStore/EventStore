@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Internal;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
@@ -20,10 +19,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private PortableServer _portableServer;
 		private IPEndPoint _serverEndPoint;
 		private int _serverPort;
+		private IEventStoreConnection _connection;
 		private string _url;
 		private string _clientConnectionName = "test-connection";
 
-		private MonitoringMessage.TcpConnectionStats _externalConnection;
+		private List<MonitoringMessage.TcpConnectionStats> _results = new List<MonitoringMessage.TcpConnectionStats>();
 		private HttpResponse _response;
 
 		protected override void Given() {
@@ -31,30 +31,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_serverEndPoint = new IPEndPoint(IPAddress.Loopback, _serverPort);
 			_url = _HttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
 
+			var settings = ConnectionSettings.Create();
+			_connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);
+			_connection.ConnectAsync().Wait();
+
 			var testEvent = new EventData(Guid.NewGuid(), "TestEvent", true,
 				Encoding.ASCII.GetBytes("{'Test' : 'OneTwoThree'}"), null);
-			_conn.AppendToStreamAsync("tests", ExpectedVersion.Any, testEvent).Wait();
+			_connection.AppendToStreamAsync("tests", ExpectedVersion.Any, testEvent).Wait();
 
 			_portableServer = new PortableServer(_serverEndPoint);
 			_portableServer.SetUp();
 		}
 
-		protected override IEventStoreConnection BuildConnection(MiniNode node) {
-			var settings = ConnectionSettings.Create()
-				.UseCustomLogger(ClientApiLoggerBridge.Default)
-				.EnableVerboseLogging()
-				.LimitReconnectionsTo(10)
-				.SetReconnectionDelayTo(TimeSpan.Zero)
-				.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
-				.FailOnNoServerResponse();
-			return EventStoreConnection.Create(settings, node.TcpEndPoint.ToESTcpUri(), _clientConnectionName);
-		}
-
 		protected override void When() {
 			Func<HttpResponse, bool> verifier = response => {
-				var results = Codec.Json.From<List<MonitoringMessage.TcpConnectionStats>>(response.Body);
-				_externalConnection = results.FirstOrDefault(r =>
-					r.IsExternalConnection && r.ClientConnectionName == _clientConnectionName);
+				_results = Codec.Json.From<List<MonitoringMessage.TcpConnectionStats>>(response.Body);
 				_response = response;
 				return true;
 			};
@@ -69,24 +60,30 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		[Test]
-		public void should_return_the_named_connection() {
-			Assert.NotNull(_externalConnection);
+		public void should_return_the_external_connections() {
+			Assert.AreEqual(2, _results.Count(r => r.IsExternalConnection));
 		}
 
 		[Test]
 		public void should_return_the_total_number_of_bytes_sent_for_external_connections() {
-			Assert.Greater(_externalConnection.TotalBytesSent, 0);
+			Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesSent : 0), 0);
 		}
 
 		[Test]
 		public void should_return_the_total_number_of_bytes_received_from_external_connections() {
-			Assert.Greater(_externalConnection.TotalBytesReceived, 0);
+			Assert.Greater(_results.Sum(r => r.IsExternalConnection ? r.TotalBytesReceived : 0), 0);
+		}
+
+		[Test]
+		public void should_have_set_the_client_connection_name() {
+			Assert.IsTrue(_results.Any(x => x.ClientConnectionName == _clientConnectionName));
 		}
 
 		[OneTimeTearDown]
 		public override void TestFixtureTearDown() {
 			PortsHelper.ReturnPort(_serverPort);
 			_portableServer.TearDown();
+			_connection.Dispose();
 			base.TestFixtureTearDown();
 		}
 	}
