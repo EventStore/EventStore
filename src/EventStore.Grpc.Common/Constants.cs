@@ -9,9 +9,17 @@ namespace EventStore.Grpc {
 			public const string WrongExpectedVersion = "wrong-expected-version";
 			public const string NotFound = "not-found";
 
+			public const string PersistentSubscriptionFailed = "persistent-subscription-failed";
+			public const string PersistentSubscriptionDoesNotExist = "persistent-subscription-does-not-exist";
+			public const string PersistentSubscriptionExists = "persistent-subscription-exists";
+			public const string MaximumSubscribersReached = "maximum-subscribers-reached";
+			public const string PersistentSubscriptionDropped = "persistent-subscription-dropped";
+
 			public const string ExpectedVersion = "expected-version";
 			public const string ActualVersion = "actual-version";
 			public const string StreamName = "stream-name";
+			public const string GroupName = "group-name";
+			public const string Reason = "reason";
 		}
 
 		public static class Metadata {

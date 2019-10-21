@@ -31,7 +31,10 @@ namespace EventStore.ClusterNode {
 		public void Configure(IApplicationBuilder app) =>
 			app.MapWhen(
 					IsGrpc,
-					inner => inner.UseRouting().UseEndpoints(endpoints => endpoints.MapGrpcService<Streams>()))
+					inner => inner.UseRouting().UseEndpoints(endpoints => {
+						endpoints.MapGrpcService<Streams>();
+						endpoints.MapGrpcService<PersistentSubscriptions>();
+					}))
 				.Use(_node.ExternalHttp)
 				.Use(_node.InternalHttp);
 

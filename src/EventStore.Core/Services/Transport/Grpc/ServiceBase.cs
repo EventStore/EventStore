@@ -1,12 +1,80 @@
 using System;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Security.Principal;
+using System.Text;
+using System.Threading.Tasks;
+using EventStore.Core.Authentication;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Grpc;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc
-{
-	internal static class RpcExceptions {
+namespace EventStore.Grpc.PersistentSubscriptions {
+	partial class PersistentSubscriptions {
+		partial class PersistentSubscriptionsBase : ServiceBase {
+		}
+	}
+}
+
+namespace EventStore.Grpc.Streams {
+	partial class Streams {
+		partial class StreamsBase : ServiceBase {
+		}
+	}
+}
+
+namespace EventStore.Core.Services.Transport.Grpc {
+	public class ServiceBase {
+		protected static Task<IPrincipal> GetUserAsync(ClusterVNode node, Metadata requestHeaders) {
+			var principalSource = new TaskCompletionSource<IPrincipal>();
+
+			if (AuthenticationHeaderValue.TryParse(
+				    requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.Authorization)?.Value,
+				    out var authenticationHeader)
+			    && authenticationHeader.Scheme == Constants.Headers.BasicScheme
+			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
+				node.InternalAuthenticationProvider.Authenticate(
+					new GrpcBasicAuthenticationRequest(principalSource, username, password));
+			} else {
+				principalSource.TrySetResult(default);
+			}
+
+			return principalSource.Task;
+
+			bool TryDecodeCredential(string value, out string username, out string password) {
+				username = password = default;
+				var parts = Encoding.ASCII.GetString(Convert.FromBase64String(value))
+					.Split(':'); // TODO: JPB maybe use Convert.TryFromBase64String when in dotnet core 3.0
+				if (parts.Length != 2) {
+					return false;
+				}
+
+				username = parts[0];
+				password = parts[1];
+
+				return true;
+			}
+		}
+
+		private class GrpcBasicAuthenticationRequest : AuthenticationRequest {
+			private readonly TaskCompletionSource<IPrincipal> _principalSource;
+
+			public GrpcBasicAuthenticationRequest(
+				TaskCompletionSource<IPrincipal> principalSource,
+				string name,
+				string suppliedPassword) : base(name, suppliedPassword) {
+				_principalSource = principalSource;
+			}
+
+			public override void Authenticated(IPrincipal principal) => _principalSource.TrySetResult(principal);
+			public override void Unauthorized() => _principalSource.TrySetException(AccessDenied());
+			public override void Error() => _principalSource.TrySetException(UnknownError(1));
+			public override void NotReady() => _principalSource.TrySetException(ServerNotReady());
+		}
+
+		
 		public static Exception Timeout() => new RpcException(new Status(StatusCode.Aborted, "Operation timed out"));
 
 		public static Exception ServerNotReady() =>
@@ -24,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Grpc
 				{Constants.Exceptions.StreamName, streamName}
 			});
 
-		public static Exception NoStream(string streamName) =>
+		private static Exception NoStream(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' was not created."));
 
 		public static Exception UnknownMessage<T>(T message) where T : Message =>
@@ -34,9 +102,6 @@ namespace EventStore.Core.Services.Transport.Grpc
 
 		public static Exception UnknownError<T>(T result) where T : unmanaged =>
 			new RpcException(new Status(StatusCode.Unknown, $"Unexpected {typeof(T).Name}: {result}"));
-
-		public static Exception UnknownError(string message) =>
-			new RpcException(new Status(StatusCode.Unknown, message));
 
 		public static Exception AccessDenied() =>
 			new RpcException(new Status(StatusCode.PermissionDenied, "Access Denied"), new Metadata {
@@ -66,82 +131,30 @@ namespace EventStore.Core.Services.Transport.Grpc
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.WrongExpectedVersion},
 					{Constants.Exceptions.ExpectedVersion, expectedVersion.ToString()},
-					{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? String.Empty}
+					{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? string.Empty}
 				});
 
-		public static bool TryHandleNotHandled(ClientMessage.NotHandled notHandled, out Exception exception) {
-			exception = null;
+		public static void HandleNotHandled<T>(ClientMessage.NotHandled notHandled, TaskCompletionSource<T> result) {
 			switch (notHandled.Reason) {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.NotReady:
-					exception = ServerNotReady();
-					return true;
+					result.TrySetException(ServerNotReady());
+					return;
 				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
-					exception = ServerBusy();
-					return true;
+					result.TrySetException(ServerBusy());
+					return;
 				case TcpClientMessageDto.NotHandled.NotHandledReason.NotMaster:
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
 					switch (notHandled.AdditionalInfo) {
 						case TcpClientMessageDto.NotHandled.MasterInfo _:
-							return false;
+							return;
 						default:
-							exception = NoMasterInfo();
-							return true;
+							result.TrySetException(NoMasterInfo());
+							return;
 					}
 
 				default:
-					return false;
+					return;
 			}
 		}
-
-		public static Exception PersistentSubscriptionFailed(string streamName, string groupName, string reason)
-			=> new RpcException(
-				new Status(
-					StatusCode.Internal,
-					$"Subscription group {groupName} on stream {streamName} failed: '{reason}'"), new Metadata {
-					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionFailed},
-					{Constants.Exceptions.StreamName, streamName},
-					{Constants.Exceptions.GroupName, groupName},
-					{Constants.Exceptions.Reason, reason}
-				});
-
-		public static Exception PersistentSubscriptionDoesNotExist(string streamName, string groupName)
-			=> new RpcException(
-				new Status(
-					StatusCode.NotFound,
-					$"Subscription group {groupName} on stream {streamName} does not exist."), new Metadata {
-					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionDoesNotExist},
-					{Constants.Exceptions.StreamName, streamName},
-					{Constants.Exceptions.GroupName, groupName}
-				});
-
-		public static Exception PersistentSubscriptionExists(string streamName, string groupName)
-			=> new RpcException(
-				new Status(
-					StatusCode.AlreadyExists,
-					$"Subscription group {groupName} on stream {streamName} exists."), new Metadata {
-					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionExists},
-					{Constants.Exceptions.StreamName, streamName},
-					{Constants.Exceptions.GroupName, groupName}
-				});
-
-		public static Exception PersistentSubscriptionMaximumSubscribersReached(string streamName, string groupName)
-			=> new RpcException(
-				new Status(
-					StatusCode.FailedPrecondition,
-					$"Subscription group {groupName} on stream {streamName} exists."), new Metadata {
-					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumSubscribersReached},
-					{Constants.Exceptions.StreamName, streamName},
-					{Constants.Exceptions.GroupName, groupName}
-				});
-
-		public static Exception PersistentSubscriptionDropped(string streamName, string groupName)
-			=> new RpcException(
-				new Status(
-					StatusCode.Cancelled,
-					$"Subscription group {groupName} on stream {streamName} was dropped."), new Metadata {
-					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionDropped},
-					{Constants.Exceptions.StreamName, streamName},
-					{Constants.Exceptions.GroupName, groupName}
-				});
 	}
 }

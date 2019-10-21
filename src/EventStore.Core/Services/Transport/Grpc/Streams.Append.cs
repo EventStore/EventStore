@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(context);
+			var user = await GetUserAsync(_node, context.RequestHeaders);
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
