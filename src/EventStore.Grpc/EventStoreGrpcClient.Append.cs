@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +39,7 @@ namespace EventStore.Grpc {
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials,
 			CancellationToken cancellationToken) {
-			using var call = _client.Append(GetRequestMetadata(userCredentials), cancellationToken: cancellationToken);
+			using var call = _client.Append(RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
 
 			await call.RequestStream.WriteAsync(header);
 
