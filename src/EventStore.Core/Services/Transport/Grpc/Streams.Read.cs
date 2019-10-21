@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var readDirection = options.ReadDirection;
 			var filterOptionsCase = options.FilterOptionsCase;
 
-			var user = await GetUser(context);
+			var user = await GetUserAsync(_node, context.RequestHeaders);
 
 			await using var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {

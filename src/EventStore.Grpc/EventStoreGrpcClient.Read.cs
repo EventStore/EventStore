@@ -128,7 +128,8 @@ namespace EventStore.Grpc {
 				request.Options.NoFilter = new ReadReq.Types.Empty();
 			}
 
-			using var call = _client.Read(request, GetRequestMetadata(userCredentials),
+			using var call = _client.Read(
+				request, RequestMetadata.Create(userCredentials),
 				cancellationToken: cancellationToken);
 
 			await foreach (var e in call.ResponseStream

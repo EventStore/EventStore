@@ -1,17 +1,13 @@
 using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
-using Grpc.Core;
+using EventStore.Grpc.PersistentSubscriptions;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using ReadReq = EventStore.Grpc.Streams.ReadReq;
 
 namespace EventStore.Grpc {
 	public partial class EventStoreGrpcClient : IDisposable {
-		private readonly Streams.Streams.StreamsClient _client;
-
 		private static readonly JsonSerializerOptions StreamMetadataJsonSerializerOptions = new JsonSerializerOptions {
 			Converters = {
 				StreamMetadataJsonConverter.Instance
@@ -19,26 +15,21 @@ namespace EventStore.Grpc {
 		};
 
 		private readonly GrpcChannel _channel;
+		private readonly Streams.Streams.StreamsClient _client;
+		public EventStorePersistentSubscriptionsGrpcClient PersistentSubscriptions { get; }
 
 		public EventStoreGrpcClient(Uri address, Func<HttpClient> createHttpClient = default) {
+			if (address == null) {
+				throw new ArgumentNullException(nameof(address));
+			}
+
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
 				HttpClient = createHttpClient?.Invoke(),
 			});
-			_client = new Streams.Streams.StreamsClient(_channel.CreateCallInvoker()
-				.Intercept(new TypedExceptionInterceptor()));
+			var callInvoker = _channel.CreateCallInvoker().Intercept(new TypedExceptionInterceptor());
+			_client = new Streams.Streams.StreamsClient(callInvoker);
+			PersistentSubscriptions = new EventStorePersistentSubscriptionsGrpcClient(callInvoker);
 		}
-
-		private static Metadata GetRequestMetadata(UserCredentials userCredentials) =>
-			userCredentials == null
-				? null
-				: new Metadata {
-					new Metadata.Entry(Constants.Headers.Authorization, new AuthenticationHeaderValue(
-							Constants.Headers.BasicScheme,
-							Convert.ToBase64String(
-								Encoding.ASCII.GetBytes($"{userCredentials.Username}:{userCredentials.Password}")))
-						.ToString())
-				};
-
 
 		public void Dispose() => _channel.Dispose();
 

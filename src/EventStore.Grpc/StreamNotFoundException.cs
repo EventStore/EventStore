@@ -19,6 +19,5 @@ namespace EventStore.Grpc {
 
 			Stream = stream;
 		}
-
 	}
 }

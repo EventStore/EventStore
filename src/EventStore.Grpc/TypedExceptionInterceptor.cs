@@ -52,6 +52,19 @@ namespace EventStore.Grpc {
 			}), response.ResponseHeadersAsync, response.GetStatus, response.GetTrailers, response.Dispose);
 		}
 
+		public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context,
+			AsyncDuplexStreamingCallContinuation<TRequest, TResponse> continuation) {
+			var response = continuation(context);
+			
+			return new AsyncDuplexStreamingCall<TRequest, TResponse>(
+				response.RequestStream,
+				new AsyncStreamReader<TResponse>(response.ResponseStream),
+				response.ResponseHeadersAsync,
+				response.GetStatus,
+				response.GetTrailers,
+				response.Dispose);
+		}
+
 
 		static Exception ConvertRpcException(RpcException ex)
 			=> ex.Trailers.TryGetValue(Constants.Exceptions.ExceptionKey, out var value) switch {
@@ -68,6 +81,18 @@ namespace EventStore.Grpc {
 						ex),
 					Constants.Exceptions.NotFound => new StreamNotFoundException(
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value, ex),
+					Constants.Exceptions.PersistentSubscriptionDoesNotExist => new
+						PersistentSubscriptionNotFoundException(
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value,
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
+					Constants.Exceptions.MaximumSubscribersReached => new
+						MaximumSubscribersReachedException(
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value,
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
+					Constants.Exceptions.PersistentSubscriptionDropped => new
+						PersistentSubscriptionDroppedByServerException(
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value,
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => new InvalidOperationException(ex.Message, ex)

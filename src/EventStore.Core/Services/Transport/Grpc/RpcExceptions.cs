@@ -93,5 +93,56 @@ namespace EventStore.Core.Services.Transport.Grpc
 					return false;
 			}
 		}
+
+		public static Exception PersistentSubscriptionFailed(string streamName, string groupName, string reason)
+			=> new RpcException(
+				new Status(
+					StatusCode.Internal,
+					$"Subscription group {groupName} on stream {streamName} failed: '{reason}'"), new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionFailed},
+					{Constants.Exceptions.StreamName, streamName},
+					{Constants.Exceptions.GroupName, groupName},
+					{Constants.Exceptions.Reason, reason}
+				});
+
+		public static Exception PersistentSubscriptionDoesNotExist(string streamName, string groupName)
+			=> new RpcException(
+				new Status(
+					StatusCode.NotFound,
+					$"Subscription group {groupName} on stream {streamName} does not exist."), new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionDoesNotExist},
+					{Constants.Exceptions.StreamName, streamName},
+					{Constants.Exceptions.GroupName, groupName}
+				});
+
+		public static Exception PersistentSubscriptionExists(string streamName, string groupName)
+			=> new RpcException(
+				new Status(
+					StatusCode.AlreadyExists,
+					$"Subscription group {groupName} on stream {streamName} exists."), new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionExists},
+					{Constants.Exceptions.StreamName, streamName},
+					{Constants.Exceptions.GroupName, groupName}
+				});
+
+		public static Exception PersistentSubscriptionMaximumSubscribersReached(string streamName, string groupName)
+			=> new RpcException(
+				new Status(
+					StatusCode.FailedPrecondition,
+					$"Maximum subscriptions reached for subscription group {groupName} on stream {streamName}."), new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumSubscribersReached},
+					{Constants.Exceptions.StreamName, streamName},
+					{Constants.Exceptions.GroupName, groupName}
+				});
+
+		public static Exception PersistentSubscriptionDropped(string streamName, string groupName)
+			=> new RpcException(
+				new Status(
+					StatusCode.Cancelled,
+					$"Subscription group {groupName} on stream {streamName} was dropped."), new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.PersistentSubscriptionDropped},
+					{Constants.Exceptions.StreamName, streamName},
+					{Constants.Exceptions.GroupName, groupName}
+				});
 	}
 }

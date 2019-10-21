@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
 using EventStore.Core;
+using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
@@ -15,19 +15,11 @@ namespace EventStore.Grpc.Tests {
 	public abstract class EventStoreGrpcFixture : IAsyncLifetime {
 		public const string TestEventType = "-";
 		private readonly ClusterVNode _node;
-		public readonly EventStoreGrpcClient Client;
+		private readonly TFChunkDb _db;
 		private readonly TestServer _testServer;
 
 		public ClusterVNode Node => _node;
-
-		static EventStoreGrpcFixture() {
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-				return;
-			}
-
-			AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
-				true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
-		}
+		public readonly EventStoreGrpcClient Client;
 
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
@@ -40,13 +32,17 @@ namespace EventStore.Grpc.Tests {
 			vNodeBuilder.RunInMemory().WithTfChunkSize(1024 * 1024);
 			configureVNode?.Invoke(vNodeBuilder);
 
-			_node = vNodeBuilder
-				.Build();
+			_node = vNodeBuilder.Build();
+			_db = vNodeBuilder.GetDb();
 
 			_testServer = new TestServer(
 				webHostBuilder.UseStartup(new ClusterVNodeStartup(_node)));
 
-			Client = new EventStoreGrpcClient(new UriBuilder().Uri, _testServer.CreateClient);
+			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => {
+				var client = _testServer.CreateClient();
+				client.DefaultRequestVersion = new Version(2, 0);
+				return client;
+			});
 		}
 
 		protected abstract Task Given();
@@ -62,13 +58,15 @@ namespace EventStore.Grpc.Tests {
 
 		public virtual async Task InitializeAsync() {
 			await _node.StartAndWaitUntilReady();
-			await Given();
-			await When();
+			await Given().WithTimeout(TimeSpan.FromMinutes(5));
+			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}
 
 		public virtual async Task DisposeAsync() {
 			await _node.Stop();
-			_testServer?.Dispose();
+			_db.Dispose();
+			_testServer.Dispose();
+			Client?.Dispose();
 		}
 
 		public string GetStreamName([CallerMemberName] string testMethod = default) {

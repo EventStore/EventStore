@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -17,7 +16,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Tests {
 	public abstract class StreamRevisionGreaterThanIntMaxValueFixture : EventStoreGrpcFixture {
 		protected abstract string StreamName { get; }
 
@@ -27,8 +26,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			new StreamMetadata(truncateBefore: new StreamRevision(int.MaxValue + 1L)));
 
 		protected StreamRevisionGreaterThanIntMaxValueFixture(Action<ICheckpoint, TFChunkWriter> runScenario) : base(
-			builder => builder
-				.RunOnDisk(CreateExistingDatabase(runScenario))) {
+			builder => builder.RunOnDisk(CreateExistingDatabase(runScenario))) {
 		}
 
 		private static string CreateExistingDatabase(Action<ICheckpoint, TFChunkWriter> runScenario) {
@@ -130,10 +128,6 @@ namespace EventStore.Grpc.Tests.Streams {
 
 		protected new static IEnumerable<EventData> CreateTestEvents(int count)
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
-
-		protected static EventData CreateTestEvent(int index)
-			=> new EventData(Uuid.NewUuid(), TestEventType,
-				Helper.UTF8NoBom.GetBytes($@"{{""x"":{index}}}"));
 
 		protected static EventData CreateLinkToEvent(string originalStreamName, StreamRevision originalRevision)
 			=> new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,

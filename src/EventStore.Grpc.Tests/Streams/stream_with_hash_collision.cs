@@ -29,7 +29,7 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			protected override async Task Given() {
 				var writeResult = await Client.AppendToStreamAsync(Stream1, AnyStreamRevision.NoStream,
-					CreateTestEvents());
+					CreateTestEvents()).WithTimeout();
 
 				Assert.Equal(0, writeResult.NextExpectedVersion);
 
@@ -38,7 +38,7 @@ namespace EventStore.Grpc.Tests.Streams {
 					writeResult = await Client.AppendToStreamAsync(
 						Stream2,
 						AnyStreamRevision.Any,
-						CreateTestEvents());
+						CreateTestEvents()).WithTimeout();
 					Assert.Equal(i, writeResult.NextExpectedVersion);
 				}
 			}

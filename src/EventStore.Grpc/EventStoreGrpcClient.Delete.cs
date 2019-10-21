@@ -33,7 +33,7 @@ namespace EventStore.Grpc {
 
 		private async Task<DeleteResult> DeleteInternal(DeleteReq request, UserCredentials userCredentials,
 			CancellationToken cancellationToken) {
-			var result = await _client.DeleteAsync(request, GetRequestMetadata(userCredentials),
+			var result = await _client.DeleteAsync(request, RequestMetadata.Create(userCredentials),
 				cancellationToken: cancellationToken);
 
 			return new DeleteResult(new Position(result.Position.CommitPosition, result.Position.PreparePosition));

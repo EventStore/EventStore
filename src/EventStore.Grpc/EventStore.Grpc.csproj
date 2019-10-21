@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		<TargetFramework>netcoreapp3.0</TargetFramework>
 		<Platform>x64</Platform>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
@@ -17,7 +17,7 @@
 		<PackageReference Include="System.Text.Json" Version="4.6.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/*.proto" GrpcServices="Client" />
+		<Protobuf Include="../Protos/Grpc/*.proto" Access="internal" GrpcServices="Client" />
 		<Compile Include="../EventStore.Grpc.Common/*.cs" />
 	</ItemGroup>
 </Project>
