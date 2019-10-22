@@ -528,12 +528,12 @@ namespace EventStore.ClientAPI.Embedded {
 
 			if (checkpointReached == null) {
 				checkpointInterval = DontReportCheckpointReached;
-			} else if (!checkpointInterval.HasValue){
+			} else if (!checkpointInterval.HasValue) {
 				throw new ArgumentNullException(nameof(checkpointInterval));
 			} else if (checkpointInterval <= 0) {
 				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
 			}
-			
+
 			var source =
 				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -614,6 +614,17 @@ namespace EventStore.ClientAPI.Embedded {
 
 			catchUpSubscription.StartAsync();
 			return catchUpSubscription;
+		}
+
+		public EventStoreAllFilteredCatchUpSubscription SubscribeToAllFilteredFrom(Position? lastCheckpoint,
+			Filter filter,
+			CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached = null,
+			int? checkpointInterval = null, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
 		}
 
 		public Task CreatePersistentSubscriptionAsync(string stream, string groupName,

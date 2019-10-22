@@ -53,6 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
 			return TestConnection.Create(node.TcpEndPoint);
+
 		}
 
 		[Test]

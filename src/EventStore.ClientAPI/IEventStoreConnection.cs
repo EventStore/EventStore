@@ -467,6 +467,50 @@ namespace EventStore.ClientAPI {
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null);
 
+		/// <summary>
+		/// Subscribes to a all events. Existing events from lastCheckpoint
+		/// onwards are read from Event Store and presented to the user of
+		/// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
+		/// 
+		/// Once the end of the stream is read the subscription is
+		/// transparently (to the user) switched to push new events as
+		/// they are written.
+		/// 
+		/// The action liveProcessingStarted is called when the
+		/// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+		/// phase to the live subscription phase. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="lastCheckpoint">The position from which to start.
+		/// 
+		/// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
+		/// If events have already been received and resubscription from the same point
+		/// is desired, use the position representing the last event processed which
+		/// appeared on the subscription.
+		/// 
+		/// Using <see cref="Position.Start" /> here will result in missing
+		/// the first event in the stream.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="checkpointInterval">Sets how often the <see cref="checkpointReached" /> is called.</param>
+		/// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set <see cref="checkpointInterval" /> to define how often this method is called.
+		/// </param>
+		/// <returns>An <see cref="EventStoreAllFilteredCatchUpSubscription"/> representing the subscription.</returns>
+		EventStoreAllFilteredCatchUpSubscription SubscribeToAllFilteredFrom(
+			Position? lastCheckpoint,
+			Filter filter, 
+			CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached = null,
+			int? checkpointInterval = null,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
 
 		/*
 	/// <summary>

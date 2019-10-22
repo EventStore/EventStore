@@ -371,10 +371,10 @@ namespace EventStore.ClientAPI.Internal {
 			UserCredentials userCredentials = null) {
 			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
- 
+
 			if (checkpointReached == null) {
 				checkpointInterval = DontReportCheckpointReached;
-			} else if (!checkpointInterval.HasValue){
+			} else if (!checkpointInterval.HasValue) {
 				throw new ArgumentNullException(nameof(checkpointInterval));
 			} else if (checkpointInterval <= 0) {
 				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
@@ -414,6 +414,35 @@ namespace EventStore.ClientAPI.Internal {
 			var catchUpSubscription =
 				new EventStoreAllCatchUpSubscription(this, Settings.Log, lastCheckpoint,
 					userCredentials, eventAppeared, liveProcessingStarted,
+					subscriptionDropped, settings);
+			catchUpSubscription.StartAsync();
+			return catchUpSubscription;
+		}
+
+		public EventStoreAllFilteredCatchUpSubscription SubscribeToAllFilteredFrom(Position? lastCheckpoint,
+			Filter filter,
+			CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached = null,
+			int? checkpointInterval = null, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(filter, nameof(filter));
+
+			if (checkpointReached == null) {
+				checkpointInterval = DontReportCheckpointReached;
+			} else if (!checkpointInterval.HasValue) {
+				throw new ArgumentNullException(nameof(checkpointInterval));
+			} else if (checkpointInterval <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
+			}
+			
+			var catchUpSubscription =
+				new EventStoreAllFilteredCatchUpSubscription(this, Settings.Log, lastCheckpoint, filter,
+					userCredentials, eventAppeared, checkpointReached, checkpointInterval.Value, liveProcessingStarted,
 					subscriptionDropped, settings);
 			catchUpSubscription.StartAsync();
 			return catchUpSubscription;
