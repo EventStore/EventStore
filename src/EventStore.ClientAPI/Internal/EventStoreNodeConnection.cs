@@ -27,6 +27,8 @@ namespace EventStore.ClientAPI.Internal {
 		private readonly IEndPointDiscoverer _endPointDiscoverer;
 		private readonly EventStoreConnectionLogicHandler _handler;
 
+		private const int DontReportCheckpointReached = -1;
+
 		/// <summary>
 		/// Returns the <see cref="ConnectionSettings"/> use to create this connection
 		/// </summary>
@@ -364,15 +366,23 @@ namespace EventStore.ClientAPI.Internal {
 
 		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
+			Func<EventStoreSubscription, Position, Task> checkpointReached = null, int? checkpointInterval = null,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
+ 
+			if (checkpointReached == null) {
+				checkpointInterval = DontReportCheckpointReached;
+			} else if (!checkpointInterval.HasValue){
+				throw new ArgumentNullException(nameof(checkpointInterval));
+			} else if (checkpointInterval <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
+			}
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
 			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos,
-				checkpointInterval, filter, userCredentials, eventAppeared, checkpointReached,
+				checkpointInterval.Value, filter, userCredentials, eventAppeared, checkpointReached,
 				subscriptionDropped, Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}

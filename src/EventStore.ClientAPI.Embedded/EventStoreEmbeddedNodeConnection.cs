@@ -59,6 +59,8 @@ namespace EventStore.ClientAPI.Embedded {
 		private readonly IBus _subscriptionBus;
 		private readonly EmbeddedSubscriber _subscriptions;
 
+		private const int DontReportCheckpointReached = -1;
+
 		static EventStoreEmbeddedNodeConnection() {
 			var resolver = new V8IntegrationAssemblyResolver();
 
@@ -517,13 +519,21 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached,
-			int checkpointInterval,
+			Func<EventStoreSubscription, Position, Task> checkpointReached = null,
+			int? checkpointInterval = null,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
 
+			if (checkpointReached == null) {
+				checkpointInterval = DontReportCheckpointReached;
+			} else if (!checkpointInterval.HasValue){
+				throw new ArgumentNullException(nameof(checkpointInterval));
+			} else if (checkpointInterval <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
+			}
+			
 			var source =
 				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -532,7 +542,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Guid corrId = Guid.NewGuid();
 			_subscriptions.StartFilteredSubscription(corrId, source, string.Empty,
 				GetUserCredentials(_settings, userCredentials), resolveLinkTos, serverFilter, eventAppeared,
-				checkpointReached, checkpointInterval, subscriptionDropped);
+				checkpointReached, checkpointInterval.Value, subscriptionDropped);
 			return source.Task;
 		}
 
