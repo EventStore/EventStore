@@ -23,10 +23,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private List<EventData> _fakeSystemEvents;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 
 			_conn = BuildConnection(_node);
 			_conn.ConnectAsync().Wait();
@@ -246,10 +246,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override async Task TearDown() {
 			_conn.Close();
-			_node.Shutdown();
-			base.TearDown();
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
