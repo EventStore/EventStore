@@ -7,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
+using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.RequestManager {
@@ -27,7 +28,8 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
-		IHandle<StorageMessage.RequestManagerTimerTick> {
+		IHandle<StorageMessage.RequestManagerTimerTick>,
+		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly IPublisher _bus;
 		private readonly TimerMessage.Schedule _tickRequestMessage;
 		private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
@@ -37,6 +39,7 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly int _prepareCount;
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
+		private VNodeState _nodeState;
 
 		public RequestManagementService(IPublisher bus,
 			int prepareCount,
@@ -106,7 +109,7 @@ namespace EventStore.Core.Services.RequestManager {
 					(long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
 				_currentTimedRequests.Remove(message.CorrelationId);
 			}
-
+			
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 		}
@@ -144,6 +147,10 @@ namespace EventStore.Core.Services.RequestManager {
 				currentRequest.Value.Handle(message);
 			}
 
+			if (_nodeState == VNodeState.ResigningMaster && _currentRequests.Count == 0) {
+				_bus.Publish(new SystemMessage.RequestQueueDrained());
+			}
+
 			_bus.Publish(_tickRequestMessage);
 		}
 
@@ -156,6 +163,10 @@ namespace EventStore.Core.Services.RequestManager {
 					x.Handle(message);
 				}
 			}
+		}
+
+		public void Handle(SystemMessage.StateChangeMessage message) {
+			_nodeState = message.State;
 		}
 	}
 }

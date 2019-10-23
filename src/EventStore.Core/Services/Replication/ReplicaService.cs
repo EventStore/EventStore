@@ -91,6 +91,7 @@ namespace EventStore.Core.Services.Replication {
 				case VNodeState.ReadOnlyMasterless:
 				case VNodeState.PreMaster:
 				case VNodeState.Master:
+				case VNodeState.ResigningMaster:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown: {
 					Disconnect();

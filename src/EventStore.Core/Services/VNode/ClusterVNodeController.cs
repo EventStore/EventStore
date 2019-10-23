@@ -114,16 +114,16 @@ namespace EventStore.Core.Services.VNode {
 				.WhenOther().ForwardTo(_outputBus)
 				.InStates(VNodeState.Unknown, VNodeState.ReadOnlyMasterless)
 				.WhenOther().ForwardTo(_outputBus)
-				.InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.PreMaster,
+				.InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.ResigningMaster, VNodeState.PreMaster,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
 				.When<SystemMessage.BecomeUnknown>().Do(Handle)
 				.InAllStatesExcept(VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
-					VNodeState.Master, VNodeState.ReadOnlyMasterless,
+					VNodeState.Master, VNodeState.ResigningMaster, VNodeState.ReadOnlyMasterless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
-				.InAllStatesExcept(VNodeState.Master,
+				.InAllStatesExcept(VNodeState.Master, VNodeState.ResigningMaster,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
 					VNodeState.ReadOnlyReplica, VNodeState.PreReadOnlyReplica)
 				.When<ClientMessage.WriteRequestMessage>()
@@ -145,6 +145,26 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ConnectToPersistentSubscription>().ForwardTo(_outputBus)
 				.When<ClientMessage.UpdatePersistentSubscription>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeletePersistentSubscription>().ForwardTo(_outputBus)
+				.When<SystemMessage.InitiateMasterResignation>().Do(Handle)
+				.When<SystemMessage.BecomeResigningMaster>().Do(Handle)
+				.InState(VNodeState.ResigningMaster)
+				.When<ClientMessage.ReadEvent>().ForwardTo(_outputBus)
+				.When<ClientMessage.ReadStreamEventsForward>().ForwardTo(_outputBus)
+				.When<ClientMessage.ReadStreamEventsBackward>().ForwardTo(_outputBus)
+				.When<ClientMessage.ReadAllEventsForward>().ForwardTo(_outputBus)
+				.When<ClientMessage.ReadAllEventsBackward>().ForwardTo(_outputBus)
+				.When<ClientMessage.WriteEvents>().Ignore()
+				.When<ClientMessage.TransactionStart>().Ignore()
+				.When<ClientMessage.TransactionWrite>().Ignore()
+				.When<ClientMessage.TransactionCommit>().Ignore()
+				.When<ClientMessage.DeleteStream>().Ignore()
+				.When<ClientMessage.CreatePersistentSubscription>().Ignore()
+				.When<ClientMessage.ConnectToPersistentSubscription>().Ignore()
+				.When<ClientMessage.UpdatePersistentSubscription>().Ignore()
+				.When<ClientMessage.DeletePersistentSubscription>().Ignore()
+				.When<SystemMessage.RequestQueueDrained>().Do(Handle)
+				.InAllStatesExcept(VNodeState.ResigningMaster)
+				.When<SystemMessage.RequestQueueDrained>().Ignore()
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
 					VNodeState.Unknown, VNodeState.ReadOnlyMasterless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
@@ -243,18 +263,18 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.BecomeReadOnlyMasterless>().Do(Handle)
 				.InState(VNodeState.PreReadOnlyReplica)
 				.When<SystemMessage.BecomeReadOnlyReplica>().Do(Handle)
-				.InStates(VNodeState.PreMaster, VNodeState.Master)
+				.InStates(VNodeState.PreMaster, VNodeState.Master, VNodeState.ResigningMaster)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsMaster)
 				.When<ReplicationMessage.ReplicaSubscriptionRequest>().ForwardTo(_outputBus)
 				.When<ReplicationMessage.ReplicaLogPositionAck>().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.PreMaster, VNodeState.Master)
+				.InAllStatesExcept(VNodeState.PreMaster, VNodeState.Master, VNodeState.ResigningMaster)
 				.When<ReplicationMessage.ReplicaSubscriptionRequest>().Ignore()
 				.InState(VNodeState.PreMaster)
 				.When<SystemMessage.BecomeMaster>().Do(Handle)
 				.When<SystemMessage.WaitForChaserToCatchUp>().Do(Handle)
 				.When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreMaster)
 				.WhenOther().ForwardTo(_outputBus)
-				.InState(VNodeState.Master)
+				.InStates(VNodeState.Master, VNodeState.ResigningMaster)
 				.When<SystemMessage.NoQuorumMessage>().Do(Handle)
 				.When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
 				.When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
@@ -263,8 +283,10 @@ namespace EventStore.Core.Services.VNode {
 				.When<StorageMessage.WriteTransactionPrepare>().ForwardTo(_outputBus)
 				.When<StorageMessage.WriteCommit>().ForwardTo(_outputBus)
 				.WhenOther().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.Master)
+				.InAllStatesExcept(VNodeState.Master, VNodeState.ResigningMaster)
 				.When<SystemMessage.NoQuorumMessage>().Ignore()
+				.When<SystemMessage.InitiateMasterResignation>().Ignore()
+				.When<SystemMessage.BecomeResigningMaster>().Ignore()
 				.When<StorageMessage.WritePrepares>().Ignore()
 				.When<StorageMessage.WriteDelete>().Ignore()
 				.When<StorageMessage.WriteTransactionStart>().Ignore()
@@ -311,7 +333,27 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new ElectionMessage.StartElections());
 		}
+		
+		private void Handle(SystemMessage.InitiateMasterResignation message) {
+			Log.Info("========== [{internalHttp}] IS INITIATING MASTER RESIGNATION...", _nodeInfo.InternalHttp);
 
+			_fsm.Handle(new SystemMessage.BecomeResigningMaster(_stateCorrelationId));
+		}
+
+		private void Handle(SystemMessage.BecomeResigningMaster message) {
+			Log.Info("========== [{internalHttp}] IS RESIGNING MASTER...", _nodeInfo.InternalHttp);
+			if (_stateCorrelationId != message.CorrelationId)
+				return;
+			
+			_state = VNodeState.ResigningMaster;
+			_outputBus.Publish(message);
+		}
+		
+		private void Handle(SystemMessage.RequestQueueDrained message) {
+			Log.Info("========== [{internalHttp}] REQUEST QUEUE DRAINED. RESIGNATION COMPLETE.", _nodeInfo.InternalHttp);
+			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+		}
+		
 		private void Handle(SystemMessage.BecomePreReplica message) {
 			if (_master == null) throw new Exception("_master == null");
 			if (_stateCorrelationId != message.CorrelationId)

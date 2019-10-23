@@ -147,7 +147,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			if (_vnodeState != VNodeState.Master && message is StorageMessage.IMasterWriteMessage) {
+			if (_vnodeState != VNodeState.Master && _vnodeState != VNodeState.ResigningMaster && message is StorageMessage.IMasterWriteMessage) {
 				Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
 					_vnodeState);
 				var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
