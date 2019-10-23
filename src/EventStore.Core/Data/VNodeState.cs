@@ -14,6 +14,7 @@ namespace EventStore.Core.Data {
 		ReadOnlyMasterless,
 		PreReadOnlyReplica,
 		ReadOnlyReplica,
+		ResigningMaster
 	}
 
 	public static class VNodeStateExtensions {

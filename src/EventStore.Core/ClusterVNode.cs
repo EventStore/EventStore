@@ -450,6 +450,7 @@ namespace EventStore.Core {
 				vNodeSettings.CommitTimeout,
 				vNodeSettings.BetterOrdering);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
@@ -626,6 +627,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
+				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
 			}

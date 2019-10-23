@@ -1677,6 +1677,30 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class SetNodePriority : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly int NodePriority;
+
+			public SetNodePriority(int nodePriority) {
+				NodePriority = nodePriority;
+			}
+		}
+
+		public class ResignNode : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
 		public class ScavengeDatabase : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
