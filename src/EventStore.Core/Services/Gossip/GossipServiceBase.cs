@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -21,7 +20,9 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
-		IHandle<SystemMessage.VNodeConnectionEstablished> {
+		IHandle<SystemMessage.VNodeConnectionEstablished>,
+		IHandle<GossipMessage.HealthCheckReceived>,
+		IHandle<GossipMessage.HealthCheckFailed> {
 		private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
@@ -32,6 +33,7 @@ namespace EventStore.Core.Services.Gossip {
 		protected VNodeState CurrentRole = VNodeState.Initializing;
 		protected VNodeInfo CurrentMaster;
 		private readonly TimeSpan GossipInterval = TimeSpan.FromMilliseconds(1000);
+		private readonly TimeSpan HealthCheckTimeToLive = TimeSpan.FromMilliseconds(500);
 		private readonly TimeSpan AllowedTimeDifference = TimeSpan.FromMinutes(30);
 
 		private readonly IPublisher _bus;
@@ -187,14 +189,33 @@ namespace EventStore.Core.Services.Gossip {
 			var node = _cluster.Members.FirstOrDefault(x => x.Is(message.VNodeEndPoint));
 			if (node == null || !node.IsAlive)
 				return;
+			
+			Log.Trace("Looks like node [{nodeEndPoint}] is Dead (TCP Connection Lost) Issuing Health Check.",
+				message.VNodeEndPoint);
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost).", message.VNodeEndPoint);
-
+			_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
+				new GossipMessage.HealthCheck(_cluster, NodeInfo.InternalHttp), DateTime.Now.Add(HealthCheckTimeToLive)));
+		}
+		
+		public void Handle(GossipMessage.HealthCheckReceived message) {
+			Log.Trace("Looks like node [{nodeEndPoint}] is Alive (Health Check Passed).", message.Server);
+			
 			var oldCluster = _cluster;
-			_cluster = UpdateCluster(_cluster, x => x.Is(message.VNodeEndPoint) ? x.Updated(isAlive: false) : x);
+			_cluster = MergeClusters(_cluster,
+				message.ClusterInfo,
+				message.Server,
+				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
+			
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster,
-					string.Format("TCP connection lost to [{0}]", message.VNodeEndPoint));
+					string.Format("TCP connection lost to [{0}]", message.Server));
+			
+			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
+		}
+
+		public void Handle(GossipMessage.HealthCheckFailed message) {
+			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (Health Check Failed).", message.Recipient);
+			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient) ? x.Updated(isAlive: false) : x);
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 

@@ -139,12 +139,12 @@ namespace EventStore.Core.Services {
 		{
 			if (_master != null && _nodeInfo.InstanceId == _master) {
 				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
-				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
 				var masterIsResigningMessage = new ElectionMessage.MasterIsResigning(
 					_nodeInfo.InstanceId,
 					_nodeInfo.InternalHttp);
 				Handle(masterIsResigningMessage);
 				SendToAllExceptMe(masterIsResigningMessage);
+				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
 			} else {
 				Log.Info("ELECTIONS: ONLY MASTER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}

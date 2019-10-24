@@ -628,6 +628,8 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
+				_mainBus.Subscribe<GossipMessage.HealthCheckReceived>(gossip);
+				_mainBus.Subscribe<GossipMessage.HealthCheckFailed>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
 			}

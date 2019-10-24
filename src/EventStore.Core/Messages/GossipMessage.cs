@@ -75,6 +75,60 @@ namespace EventStore.Core.Messages {
 				ServerEndPoint = serverEndPoint;
 			}
 		}
+		
+		public class HealthCheck : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly ClusterInfo ClusterInfo;
+			public readonly IPEndPoint ServerEndPoint;
+
+			public HealthCheck(ClusterInfo clusterInfo, IPEndPoint serverEndPoint) {
+				ClusterInfo = clusterInfo;
+				ServerEndPoint = serverEndPoint;
+			}
+		}
+		
+		public class HealthCheckReceived : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IEnvelope Envelope;
+			public readonly ClusterInfo ClusterInfo;
+			public readonly IPEndPoint Server;
+
+			public HealthCheckReceived(IEnvelope envelope, ClusterInfo clusterInfo, IPEndPoint server) {
+				Envelope = envelope;
+				ClusterInfo = clusterInfo;
+				Server = server;
+			}
+		}
+		
+		public class HealthCheckFailed : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string Reason;
+			public readonly IPEndPoint Recipient;
+
+			public HealthCheckFailed(string reason, IPEndPoint recipient) {
+				Reason = reason;
+				Recipient = recipient;
+			}
+
+			public override string ToString() {
+				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
+			}
+		}
 
 		public class GossipUpdated : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

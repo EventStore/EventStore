@@ -15,7 +15,8 @@ using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class GossipController : CommunicationController,
 		IHttpSender,
-		ISender<GossipMessage.SendGossip> {
+		ISender<GossipMessage.SendGossip>,
+		ISender<GossipMessage.HealthCheck> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipController>();
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
@@ -43,6 +44,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public void SubscribeSenders(HttpMessagePipe pipe) {
 // ReSharper disable RedundantTypeArgumentsOfMethod
 			pipe.RegisterSender<GossipMessage.SendGossip>(this);
+			pipe.RegisterSender<GossipMessage.HealthCheck>(this);
 // ReSharper restore RedundantTypeArgumentsOfMethod
 		}
 
@@ -126,6 +128,41 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				_networkSendQueue, entity, Format.SendGossip,
 				(e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
 			Publish(new GossipMessage.GossipReceived(sendToHttpEnvelope, new ClusterInfo(new MemberInfo[0]), null));
+		}
+
+		public void Send(GossipMessage.HealthCheck message, IPEndPoint endPoint) {
+			Ensure.NotNull(message, "message");
+			Ensure.NotNull(message, "endPoint");
+
+			var url = endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/gossip");
+			_client.Post(
+				url,
+				Codec.Json.To(new ClusterInfoDto(message.ClusterInfo, message.ServerEndPoint)),
+				Codec.Json.ContentType,
+				response => {
+					if (response.HttpStatusCode != HttpStatusCode.OK) {
+						Publish(new GossipMessage.HealthCheckFailed(
+							string.Format("Received HTTP status code {0}.", response.HttpStatusCode), endPoint));
+						return;
+					}
+
+					var clusterInfo = Codec.Json.From<ClusterInfoDto>(response.Body);
+					if (clusterInfo == null) {
+						var msg = string.Format(
+							"Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
+							url, response.ContentType, response.Body);
+						Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Content-Type: {contentType}.",
+							url, response.ContentType);
+						Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Body: {body}.",
+							url, response.Body);
+						Publish(new GossipMessage.HealthCheckFailed(msg, endPoint));
+						return;
+					}
+
+					Publish(
+						new GossipMessage.HealthCheckReceived(new NoopEnvelope(), new ClusterInfo(clusterInfo), endPoint));
+				},
+				error => Publish(new GossipMessage.HealthCheckFailed(error.Message, endPoint)));
 		}
 	}
 }
