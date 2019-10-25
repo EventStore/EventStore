@@ -4,6 +4,8 @@ using EventStore.ClientAPI;
 
 namespace EventStore.ClientAPIAcceptanceTests {
 	partial class EventStoreClientAPIFixture {
+		private const bool UseLoggerBridge = true;
+
 		public IEventStoreConnection CreateConnection(
 			Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureSettings = default,
 			int? port = default) {

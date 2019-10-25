@@ -52,15 +52,25 @@ namespace EventStore.ClientAPIAcceptanceTests {
 			await _node.Stop().WithTimeout();
 		}
 
-		private ConnectionSettingsBuilder DefaultBuilder => ConnectionSettings.Create()
-			//.SetDefaultUserCredentials(userCredentials)
-			.UseCustomLogger(new ConsoleLoggerBridge())
-			.EnableVerboseLogging()
-			.LimitReconnectionsTo(10)
-			.LimitRetriesForOperationTo(100)
-			.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
-			.SetReconnectionDelayTo(TimeSpan.Zero)
-			.FailOnNoServerResponse();
+		private ConnectionSettingsBuilder DefaultBuilder {
+			get {
+				var builder = ConnectionSettings.Create()
+					.EnableVerboseLogging()
+					.LimitReconnectionsTo(10)
+					.LimitRetriesForOperationTo(100)
+					.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
+					.SetReconnectionDelayTo(TimeSpan.Zero)
+					.FailOnNoServerResponse();
+
+				// ReSharper disable ConditionIsAlwaysTrueOrFalse
+				if (UseLoggerBridge) {
+					builder = builder.UseCustomLogger(ConsoleLoggerBridge.Default);
+				}
+				// ReSharper restore ConditionIsAlwaysTrueOrFalse
+
+				return builder;
+			}
+		}
 
 		private static ConnectionSettingsBuilder DefaultConfigureSettings(
 			ConnectionSettingsBuilder builder)
@@ -73,10 +83,10 @@ namespace EventStore.ClientAPIAcceptanceTests {
 			new EventData(Guid.NewGuid(), TestEventType, true, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"),
 				Array.Empty<byte>());
 
-
 		private static class PortHelper {
 			private const int PortStart = 49152;
 			private const int PortCount = ushort.MaxValue - PortStart;
+
 			private static readonly ConcurrentQueue<int> AvailablePorts =
 				new ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
 
@@ -98,9 +108,9 @@ namespace EventStore.ClientAPIAcceptanceTests {
 				while (AvailablePorts.TryDequeue(out var port)) {
 					if (!inUse.Contains(port)) {
 						return port;
-					}	
+					}
 				}
-				
+
 				throw new InvalidOperationException("Ran out of ports.");
 			}
 		}

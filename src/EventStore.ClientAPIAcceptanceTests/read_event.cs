@@ -9,16 +9,9 @@ namespace EventStore.ClientAPIAcceptanceTests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class read_event : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
-		private readonly EventData[] _events;
-		private readonly string _testStream;
-		private readonly string _testDeletedStream;
 
 		public read_event(EventStoreClientAPIFixture fixture) {
 			_fixture = fixture;
-			_events = fixture.CreateTestEvents(2).ToArray();
-
-			_testStream = $"{GetStreamName()}{nameof(_testStream)}";
-			_testDeletedStream = $"{GetStreamName()}{nameof(_testDeletedStream)}";
 		}
 
 		public static IEnumerable<object[]> StreamNameCases() {
@@ -155,13 +148,6 @@ namespace EventStore.ClientAPIAcceptanceTests {
 			Assert.Equal(expected.IsJson, result.Event.Value.OriginalEvent.IsJson);
 			Assert.NotEqual(default, result.Event.Value.OriginalEvent.Created);
 			Assert.NotEqual(default, result.Event.Value.OriginalEvent.CreatedEpoch);
-		}
-		private async Task SetupStreams() {
-			using var connection = _fixture.CreateConnection();
-
-			await connection.ConnectAsync();
-			await connection.AppendToStreamAsync(_testStream, ExpectedVersion.NoStream, _events);
-			await connection.DeleteStreamAsync(_testDeletedStream, ExpectedVersion.NoStream, true);
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task without_credentials_fails(bool useSsl) {
+		public async Task without_credentials_throws(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
 
@@ -26,7 +26,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task with_credentials_succeeds(bool useSsl) {
+		public async Task with_credentials(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
 

@@ -4,6 +4,8 @@ using EventStore.ClientAPI.Embedded;
 
 namespace EventStore.ClientAPIAcceptanceTests {
 	partial class EventStoreClientAPIFixture {
+		private const bool UseLoggerBridge = false;
+
 		public IEventStoreConnection CreateConnection(
 			Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureSettings = default, int? port = default)
 			=> EmbeddedEventStoreConnection.Create(_node,
