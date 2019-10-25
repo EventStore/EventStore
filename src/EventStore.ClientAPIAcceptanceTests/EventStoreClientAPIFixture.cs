@@ -1,30 +1,44 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.ClusterNode;
 using EventStore.Core;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace EventStore.ClientAPIAcceptanceTests {
 	public partial class EventStoreClientAPIFixture : IAsyncLifetime {
 		private const string TestEventType = "-";
+
+		private static readonly X509Certificate2 ServerCertificate;
 		public static readonly int ExternalPort = PortHelper.GetAvailablePort(IPAddress.Loopback);
+		public static readonly int ExternalSecurePort = PortHelper.GetAvailablePort(IPAddress.Loopback);
+		public static readonly int UnusedPort = PortHelper.GetAvailablePort(IPAddress.Loopback);
 		private readonly ClusterVNode _node;
 
-		public ITestOutputHelper TestOutputHelper { get; set; }
+		static EventStoreClientAPIFixture() {
+			using var stream = typeof(EventStoreClientAPIFixture)
+				.Assembly
+				.GetManifestResourceStream(typeof(EventStoreClientAPIFixture), "server.p12");
+			using var mem = new MemoryStream();
+			stream.CopyTo(mem);
+			ServerCertificate = new X509Certificate2(mem.ToArray(), "1111");
+		}
 
 		public EventStoreClientAPIFixture() {
 			var vNodeBuilder = ClusterVNodeBuilder
 				.AsSingleNode()
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort))
+				.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecurePort))
+				.WithServerCertificate(ServerCertificate)
 				.RunInMemory();
 
 			_node = vNodeBuilder.Build();
@@ -38,23 +52,19 @@ namespace EventStore.ClientAPIAcceptanceTests {
 			await _node.Stop().WithTimeout();
 		}
 
-		public ConnectionSettingsBuilder Settings(bool useSsl = false, UserCredentials userCredentials = default) {
-			var settings = ConnectionSettings.Create()
-				.SetDefaultUserCredentials(userCredentials)
-				//.UseCustomLogger(new LoggerBridge(TestOutputHelper))
-				.EnableVerboseLogging()
-				.LimitReconnectionsTo(10)
-				.LimitRetriesForOperationTo(100)
-				.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
-				.SetReconnectionDelayTo(TimeSpan.Zero)
-				.FailOnNoServerResponse();
+		private ConnectionSettingsBuilder DefaultBuilder => ConnectionSettings.Create()
+			//.SetDefaultUserCredentials(userCredentials)
+			//.UseCustomLogger(new ConsoleLoggerBridge())
+			.EnableVerboseLogging()
+			.LimitReconnectionsTo(10)
+			.LimitRetriesForOperationTo(100)
+			.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
+			.SetReconnectionDelayTo(TimeSpan.Zero)
+			.FailOnNoServerResponse();
 
-			if (useSsl) {
-				settings.UseSslConnection("ES", false);
-			}
-
-			return settings;
-		}
+		private static ConnectionSettingsBuilder DefaultConfigureSettings(
+			ConnectionSettingsBuilder builder)
+			=> builder;
 
 		public IEnumerable<EventData> CreateTestEvents(int count = 1)
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
@@ -67,6 +77,8 @@ namespace EventStore.ClientAPIAcceptanceTests {
 		private static class PortHelper {
 			private const int PortStart = 49152;
 			private const int PortCount = ushort.MaxValue - PortStart;
+			private static readonly ConcurrentQueue<int> AvailablePorts =
+				new ConcurrentQueue<int>(Enumerable.Range(PortStart, PortCount));
 
 			public static int GetAvailablePort(IPAddress ip) {
 				var properties = IPGlobalProperties.GetIPGlobalProperties();
@@ -81,10 +93,15 @@ namespace EventStore.ClientAPIAcceptanceTests {
 					.OrderBy(x => x.Port)
 					.ToArray();
 
-				var useablePorts = new HashSet<int>(Enumerable.Range(PortStart, PortCount));
+				var inUse = new HashSet<int>(ipEndPoints.Select(x => x.Port));
 
-				useablePorts.ExceptWith(ipEndPoints.Select(x => x.Port));
-				return useablePorts.FirstOrDefault();
+				while (AvailablePorts.TryDequeue(out var port)) {
+					if (!inUse.Contains(port)) {
+						return port;
+					}	
+				}
+				
+				throw new InvalidOperationException("Ran out of ports.");
 			}
 		}
 	}

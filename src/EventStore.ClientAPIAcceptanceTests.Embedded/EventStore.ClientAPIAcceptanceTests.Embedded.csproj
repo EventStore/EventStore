@@ -23,5 +23,6 @@
 			Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs"
 			Exclude="..\EventStore.ClientAPIAcceptanceTests\connect.cs"
 		/>
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
 	</ItemGroup>
 </Project>

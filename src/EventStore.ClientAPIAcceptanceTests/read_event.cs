@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using EventStore.ClientAPI;
+using Xunit;
+
+namespace EventStore.ClientAPIAcceptanceTests {
+	[Collection(nameof(EventStoreClientAPIFixture))]
+	public class read_event : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
+		private readonly EventStoreClientAPIFixture _fixture;
+		private readonly EventData[] _events;
+		private readonly string _testStream;
+		private readonly string _testDeletedStream;
+
+		public read_event(EventStoreClientAPIFixture fixture) {
+			_fixture = fixture;
+			_events = fixture.CreateTestEvents(2).ToArray();
+
+			_testStream = $"{GetStreamName()}{nameof(_testStream)}";
+			_testDeletedStream = $"{GetStreamName()}{nameof(_testDeletedStream)}";
+		}
+
+		public static IEnumerable<object[]> StreamNameCases() {
+			foreach (var useSsl in UseSsl) {
+				yield return new object[] {string.Empty, useSsl};
+				yield return new object[] {default(string), useSsl};
+			}
+		}
+
+		[Theory, MemberData(nameof(StreamNameCases))]
+		public async Task with_invalid_stream_name_throws(string streamName, bool useSsl) {
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			await Assert.ThrowsAsync<ArgumentNullException>(() => connection.ReadEventAsync(streamName, 0L, false));
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task with_invalid_event_number_throws(bool useSsl) {
+			var streamName = GetStreamName();
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+				() => connection.ReadEventAsync(streamName, -2, false));
+			Assert.Equal("eventNumber", ex.ParamName);
+		}
+
+		public static IEnumerable<object[]> NoStreamCases() {
+			foreach (var useSsl in UseSsl) {
+				yield return new object[] {5L, useSsl};
+				yield return new object[] {-1L, useSsl};
+			}
+		}
+
+		[Theory, MemberData(nameof(NoStreamCases))]
+		public async Task for_stream_that_does_not_exist(long expectedVersion, bool useSsl) {
+			var streamName = $"{GetStreamName()}_{expectedVersion}_{useSsl}";
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			var result = await connection.ReadEventAsync(streamName, expectedVersion, false);
+
+			Assert.Equal(EventReadStatus.NoStream, result.Status);
+			Assert.Null(result.Event);
+			Assert.Equal(streamName, result.Stream);
+			Assert.Equal(expectedVersion, result.EventNumber);
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task for_stream_that_was_deleted(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+			await connection.DeleteStreamAsync(streamName, ExpectedVersion.NoStream, true);
+
+			var result = await connection.ReadEventAsync(streamName, 5, false);
+
+			Assert.Equal(EventReadStatus.StreamDeleted, result.Status);
+			Assert.Null(result.Event);
+			Assert.Equal(streamName, result.Stream);
+			Assert.Equal(5, result.EventNumber);
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task for_stream_that_exists_but_event_does_not(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			await connection.AppendToStreamAsync(streamName, ExpectedVersion.NoStream, _fixture.CreateTestEvents(2));
+
+			var result = await connection.ReadEventAsync(streamName, 5, false);
+
+			Assert.Equal(EventReadStatus.NotFound, result.Status);
+			Assert.Null(result.Event);
+			Assert.Equal(streamName, result.Stream);
+			Assert.Equal(5, result.EventNumber);
+		}
+
+		public static IEnumerable<object[]> StreamExistsCases() {
+			foreach (var useSsl in UseSsl) {
+				yield return new object[] {0, useSsl};
+				yield return new object[] {1, useSsl};
+			}
+		}
+
+		[Theory, MemberData(nameof(StreamExistsCases))]
+		public async Task for_stream_that_exists(int expectedVersion, bool useSsl) {
+			var streamName = $"{GetStreamName()}_{expectedVersion}_{useSsl}";
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			var testEvents = _fixture.CreateTestEvents(2).ToArray();
+			await connection.AppendToStreamAsync(streamName, ExpectedVersion.NoStream, testEvents);
+
+			var result = await connection.ReadEventAsync(streamName, expectedVersion, false);
+			var expected = testEvents.Skip(expectedVersion).Take(1).Single();
+
+			Assert.Equal(EventReadStatus.Success, result.Status);
+			Assert.True(result.Event.HasValue);
+			Assert.Equal(expected.EventId, result.Event.Value.OriginalEvent.EventId);
+			Assert.Equal(streamName, result.Stream);
+			Assert.Equal(expectedVersion, result.EventNumber);
+			Assert.Equal(expected.IsJson, result.Event.Value.OriginalEvent.IsJson);
+			Assert.NotEqual(default, result.Event.Value.OriginalEvent.Created);
+			Assert.NotEqual(default, result.Event.Value.OriginalEvent.CreatedEpoch);
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task last_event(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
+
+			await connection.ConnectAsync();
+
+			var testEvents = _fixture.CreateTestEvents(5).ToArray();
+			await connection.AppendToStreamAsync(streamName, ExpectedVersion.NoStream, testEvents);
+
+			var result = await connection.ReadEventAsync(streamName, -1, false);
+			var expected = testEvents[^1];
+
+			Assert.Equal(EventReadStatus.Success, result.Status);
+			Assert.True(result.Event.HasValue);
+			Assert.Equal(expected.EventId, result.Event.Value.OriginalEvent.EventId);
+			Assert.Equal(streamName, result.Stream);
+			Assert.Equal(-1, result.EventNumber);
+			Assert.Equal(expected.IsJson, result.Event.Value.OriginalEvent.IsJson);
+			Assert.NotEqual(default, result.Event.Value.OriginalEvent.Created);
+			Assert.NotEqual(default, result.Event.Value.OriginalEvent.CreatedEpoch);
+		}
+		private async Task SetupStreams() {
+			using var connection = _fixture.CreateConnection();
+
+			await connection.ConnectAsync();
+			await connection.AppendToStreamAsync(_testStream, ExpectedVersion.NoStream, _events);
+			await connection.DeleteStreamAsync(_testDeletedStream, ExpectedVersion.NoStream, true);
+		}
+	}
+}
