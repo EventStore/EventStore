@@ -282,7 +282,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			var isLegit = SUT.IsLegitimateMaster(1, EndpointForNode(tc.ProposingNode),
 				IdForNode(tc.ProposingNode), mc, members, null, localNode,
-				ownInfo);
+				ownInfo, resigningMaster);
 
 			Assert.True(isLegit);
 		}

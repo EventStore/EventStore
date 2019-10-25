@@ -335,6 +335,39 @@ namespace EventStore.Core.Messages {
 				return $"---- MasterIsResigning: serverId {MasterId}";
 			}
 		}
+		
+		public class MasterIsResigningOk : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid MasterId;
+			public readonly IPEndPoint MasterInternalHttp;
+			public readonly Guid ServerId;
+			public readonly IPEndPoint ServerInternalHttp;
+			
+			public MasterIsResigningOk(ElectionMessageDto.MasterIsResigningOkDto dto) {
+				MasterId = dto.MasterId;
+				MasterInternalHttp = new IPEndPoint(IPAddress.Parse(dto.MasterInternalHttpAddress),
+					dto.MasterInternalHttpPort);
+				ServerId = dto.ServerId;
+				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
+					dto.ServerInternalHttpPort);
+			}
+
+			public MasterIsResigningOk(Guid masterId, IPEndPoint masterInternalHttp, Guid serverId, IPEndPoint serverInternalHttp) {
+				MasterId = masterId;
+				MasterInternalHttp = masterInternalHttp;
+				ServerId = serverId;
+				ServerInternalHttp = serverInternalHttp;
+			}
+
+			public override string ToString() {
+				return $"---- MasterIsResigningOk: serverId {ServerId}";
+			}
+		}
 
 		public class ElectionsDone : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
