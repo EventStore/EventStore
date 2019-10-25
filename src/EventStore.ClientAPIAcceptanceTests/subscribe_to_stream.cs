@@ -5,7 +5,7 @@ using EventStore.ClientAPI;
 using Xunit;
 using EventStoreSubscription = EventStore.ClientAPI.EventStoreSubscription;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class subscribe_to_stream : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using Xunit;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class read_event : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;

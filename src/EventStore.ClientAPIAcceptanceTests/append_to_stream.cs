@@ -4,7 +4,7 @@ using EventStore.ClientAPI.Exceptions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class append_to_stream : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;

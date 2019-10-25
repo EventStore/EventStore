@@ -6,7 +6,7 @@ using EventStore.Core.Services;
 using Xunit;
 using StreamAcl = EventStore.ClientAPI.StreamAcl;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class set_system_settings : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;

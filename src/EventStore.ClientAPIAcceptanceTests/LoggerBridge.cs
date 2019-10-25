@@ -2,7 +2,7 @@ using System;
 using Xunit.Abstractions;
 
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	internal class ConsoleLoggerBridge : EventStore.ClientAPI.ILogger {
 		public static readonly ConsoleLoggerBridge Default = new ConsoleLoggerBridge();
 		public void Error(string format, params object[] args) => Write("ERR", format, args);

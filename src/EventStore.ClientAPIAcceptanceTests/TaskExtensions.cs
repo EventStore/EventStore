@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	public static class TaskExtensions {
 		public static Task WithTimeout(this Task task, TimeSpan timeout)
 			=> task.WithTimeout(Convert.ToInt32(timeout.TotalMilliseconds));

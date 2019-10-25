@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using Xunit;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class connect_to_persistent_subscription
 		: EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {

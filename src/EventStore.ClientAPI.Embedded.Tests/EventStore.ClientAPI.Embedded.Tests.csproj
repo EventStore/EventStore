@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>netcoreapp3.0</TargetFramework>
-		<RootNamespace>EventStore.ClientAPIAcceptanceTests</RootNamespace>
+		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.0.0" />

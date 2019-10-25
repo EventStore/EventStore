@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using EventStore.ClientAPI;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	public abstract class EventStoreClientAPITest {
 		public string GetStreamName([CallerMemberName] string testMethod = default)
 			=> $"{GetType().Name}_{testMethod ?? "unknown"}";

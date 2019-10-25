@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using EventStore.ClientAPI;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	partial class EventStoreClientAPIFixture {
 		private const bool UseLoggerBridge = true;
 

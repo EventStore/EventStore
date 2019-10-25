@@ -9,12 +9,11 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.ClusterNode;
 using EventStore.Core;
 using Xunit;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	public partial class EventStoreClientAPIFixture : IAsyncLifetime {
 		private const string TestEventType = "-";
 

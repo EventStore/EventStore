@@ -3,7 +3,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using Xunit;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class create_persistent_subscription : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private const string Group = nameof(create_persistent_subscription);

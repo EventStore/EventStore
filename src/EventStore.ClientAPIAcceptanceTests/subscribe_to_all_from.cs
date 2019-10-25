@@ -6,7 +6,7 @@ using EventStore.Core.Services;
 using Xunit;
 using SubscriptionDropReason = EventStore.ClientAPI.SubscriptionDropReason;
 
-namespace EventStore.ClientAPIAcceptanceTests {
+namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class subscribe_to_all_from : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture>,
 		IAsyncLifetime {
