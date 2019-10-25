@@ -3,7 +3,7 @@ using Xunit.Abstractions;
 
 
 namespace EventStore.ClientAPI.Tests {
-	internal class ConsoleLoggerBridge : EventStore.ClientAPI.ILogger {
+	internal class ConsoleLoggerBridge : ILogger {
 		public static readonly ConsoleLoggerBridge Default = new ConsoleLoggerBridge();
 		public void Error(string format, params object[] args) => Write("ERR", format, args);
 

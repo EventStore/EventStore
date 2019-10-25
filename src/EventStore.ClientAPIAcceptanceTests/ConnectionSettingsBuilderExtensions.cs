@@ -1,5 +1,4 @@
 using System;
-using EventStore.ClientAPI;
 
 namespace EventStore.ClientAPI.Tests {
 	internal static class ConnectionSettingsBuilderExtensions {

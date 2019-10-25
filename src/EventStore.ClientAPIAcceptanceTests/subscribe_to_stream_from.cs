@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {

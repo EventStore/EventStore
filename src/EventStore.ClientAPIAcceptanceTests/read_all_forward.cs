@@ -1,6 +1,5 @@
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using Xunit;
 

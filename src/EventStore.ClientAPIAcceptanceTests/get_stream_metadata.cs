@@ -3,9 +3,6 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using Xunit;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
-using StreamAcl = EventStore.ClientAPI.StreamAcl;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]

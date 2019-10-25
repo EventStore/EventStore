@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using Xunit;
-using EventStoreSubscription = EventStore.ClientAPI.EventStoreSubscription;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]

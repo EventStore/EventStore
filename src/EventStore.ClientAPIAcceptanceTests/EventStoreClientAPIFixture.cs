@@ -62,9 +62,11 @@ namespace EventStore.ClientAPI.Tests {
 					.FailOnNoServerResponse();
 
 				// ReSharper disable ConditionIsAlwaysTrueOrFalse
+				// ReSharper disable HeuristicUnreachableCode
 				if (UseLoggerBridge) {
 					builder = builder.UseCustomLogger(ConsoleLoggerBridge.Default);
 				}
+				// ReSharper restore HeuristicUnreachableCode
 				// ReSharper restore ConditionIsAlwaysTrueOrFalse
 
 				return builder;

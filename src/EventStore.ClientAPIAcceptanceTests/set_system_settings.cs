@@ -1,10 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Services;
 using Xunit;
-using StreamAcl = EventStore.ClientAPI.StreamAcl;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]

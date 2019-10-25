@@ -2,13 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
-using StreamAcl = EventStore.ClientAPI.StreamAcl;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]

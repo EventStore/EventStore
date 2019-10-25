@@ -1,10 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using Xunit;
-using SubscriptionDropReason = EventStore.ClientAPI.SubscriptionDropReason;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]

@@ -1,8 +1,6 @@
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace EventStore.ClientAPI.Tests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
