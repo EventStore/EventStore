@@ -78,7 +78,7 @@ namespace EventStore.ClientAPI.Tests {
 				eventAppearedSource2.TrySetException(ex ?? new ObjectDisposedException(nameof(s)));
 		}
 
-		[Theory, MemberData(nameof(UseSslTestCases))]
+		[Theory(Skip = nameof(drops_on_subscriber_error) + " is bugged"), MemberData(nameof(UseSslTestCases))]
 		public async Task drops_on_subscriber_error(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			var droppedSource = new TaskCompletionSource<(SubscriptionDropReason, Exception)>();
