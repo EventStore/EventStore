@@ -36,12 +36,13 @@ namespace EventStore.Core.Services {
 		IHandle<ClientMessage.SetNodePriority>,
 		IHandle<ClientMessage.ResignNode>,
 		IHandle<ElectionMessage.MasterIsResigning> {
-		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
-		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
+		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectionsService>();
 		private static readonly IPEndPointComparer IPComparer = new IPEndPointComparer();
 
+		private readonly Func<DateTime> _getUtcNow;
 		private readonly IPublisher _publisher;
 		private readonly IEnvelope _publisherEnvelope;
 		private readonly VNodeInfo _nodeInfo;
@@ -77,7 +78,7 @@ namespace EventStore.Core.Services {
 			ICheckpoint chaserCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
-			int nodePriority) {
+			int nodePriority, Func<DateTime> getUtcNow = null) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
 			Ensure.Positive(clusterSize, "clusterSize");
@@ -86,6 +87,7 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(epochManager, "epochManager");
 			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
 
+			_getUtcNow = getUtcNow ?? (() => DateTime.Now);
 			_publisher = publisher;
 			_nodeInfo = nodeInfo;
 			_publisherEnvelope = new PublishEnvelope(_publisher);
@@ -214,7 +216,7 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _nodeInfo.InstanceId)) {
 				_publisher.Publish(new HttpMessage.SendOverHttp(server.InternalHttpEndPoint, message,
-					DateTime.Now.Add(LeaderElectionProgressTimeout)));
+					_getUtcNow().Add(LeaderElectionProgressTimeout)));
 			}
 		}
 
@@ -271,7 +273,7 @@ namespace EventStore.Core.Services {
 					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttp}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
 					message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
-				ShiftToRegNonLeader();
+				ShiftToNonLeader();
 			}
 		}
 
@@ -301,7 +303,7 @@ namespace EventStore.Core.Services {
 				_lastAttemptedView, message.ServerInternalHttp, message.ServerId);
 
 			if (_state == ElectionsState.ElectingLeader) // install the view
-				ShiftToRegNonLeader();
+				ShiftToNonLeader();
 
 			if (_nodeInfo.IsReadOnlyReplica) {
 				Log.Info("ELECTIONS: READ ONLY REPLICA CAN'T BE A CANDIDATE [{0}]", message.ServerInternalHttp);
@@ -309,7 +311,7 @@ namespace EventStore.Core.Services {
 			}
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
-				DateTime.Now.Add(LeaderElectionProgressTimeout)));
+				_getUtcNow().Add(LeaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {
@@ -320,7 +322,7 @@ namespace EventStore.Core.Services {
 				ownInfo.NodePriority);
 		}
 
-		private void ShiftToRegNonLeader() {
+		private void ShiftToNonLeader() {
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
 
 			_state = ElectionsState.NonLeader;
@@ -340,11 +342,11 @@ namespace EventStore.Core.Services {
 			if (!_prepareOkReceived.ContainsKey(msg.ServerId)) {
 				_prepareOkReceived.Add(msg.ServerId, msg);
 				if (_prepareOkReceived.Count == _clusterSize / 2 + 1)
-					ShiftToRegLeader();
+					ShiftToLeader();
 			}
 		}
 
-		private void ShiftToRegLeader() {
+		private void ShiftToLeader() {
 			if (_nodeInfo.IsReadOnlyReplica) {
 				Log.Debug("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.", _lastAttemptedView);
 				return;
