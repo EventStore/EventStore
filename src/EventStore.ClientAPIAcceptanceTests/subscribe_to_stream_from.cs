@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using Xunit;
-using EventStoreSubscription = EventStore.ClientAPI.EventStoreSubscription;
 
 namespace EventStore.ClientAPIAcceptanceTests {
 	[Collection(nameof(EventStoreClientAPIFixture))]
@@ -22,7 +21,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			await connection.ConnectAsync();
 
-			connection.SubscribeToStreamFrom(streamName, 0L, CatchUpSubscriptionSettings.Default,
+			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared, subscriptionDropped: SubscriptionDropped);
 
 			var testEvents = _fixture.CreateTestEvents().ToArray();
@@ -51,10 +50,10 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			await connection.ConnectAsync();
 
-			connection.SubscribeToStreamFrom(streamName, 0L, CatchUpSubscriptionSettings.Default,
+			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared1, subscriptionDropped: SubscriptionDropped1);
 
-			connection.SubscribeToStreamFrom(streamName, 0L, CatchUpSubscriptionSettings.Default,
+			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared2, subscriptionDropped: SubscriptionDropped2);
 
 			var testEvents = _fixture.CreateTestEvents().ToArray();
@@ -93,7 +92,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			await connection.ConnectAsync();
 
-			connection.SubscribeToStreamFrom(streamName, 0L, CatchUpSubscriptionSettings.Default,
+			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared, subscriptionDropped: SubscriptionDropped);
 
 			var testEvents = _fixture.CreateTestEvents().ToArray();
@@ -101,7 +100,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			var (dropped, exception) = await droppedSource.Task.WithTimeout();
 
-			Assert.Equal(SubscriptionDropReason.SubscribingError, dropped);
+			Assert.Equal(SubscriptionDropReason.EventHandlerException, dropped);
 			Assert.IsType(expectedException.GetType(), exception);
 			Assert.Equal(expectedException.Message, exception.Message);
 
