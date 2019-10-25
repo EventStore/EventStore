@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.Core.Data;
 using EventStore.Core.Services;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -66,7 +65,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 			var actual = result.StreamMetadata;
 
 			Assert.Equal(streamName, result.Stream);
-			Assert.Equal(false, result.IsStreamDeleted);
+			Assert.False(result.IsStreamDeleted);
 			Assert.Equal(0, result.MetastreamVersion);
 			Assert.Equal(expected.MaxCount, actual.MaxCount);
 			Assert.Equal(expected.MaxAge, actual.MaxAge);

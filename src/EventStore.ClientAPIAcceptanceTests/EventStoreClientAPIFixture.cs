@@ -54,7 +54,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 		private ConnectionSettingsBuilder DefaultBuilder => ConnectionSettings.Create()
 			//.SetDefaultUserCredentials(userCredentials)
-			//.UseCustomLogger(new ConsoleLoggerBridge())
+			.UseCustomLogger(new ConsoleLoggerBridge())
 			.EnableVerboseLogging()
 			.LimitReconnectionsTo(10)
 			.LimitRetriesForOperationTo(100)

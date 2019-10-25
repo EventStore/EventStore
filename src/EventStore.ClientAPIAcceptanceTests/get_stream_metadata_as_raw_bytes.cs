@@ -19,7 +19,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			var meta = await connection.GetStreamMetadataAsRawBytesAsync(streamName);
 			Assert.Equal(streamName, meta.Stream);
-			Assert.Equal(false, meta.IsStreamDeleted);
+			Assert.False(meta.IsStreamDeleted);
 			Assert.Equal(-1, meta.MetastreamVersion);
 			Assert.Equal(Array.Empty<byte>(), meta.StreamMetadata);
 		}

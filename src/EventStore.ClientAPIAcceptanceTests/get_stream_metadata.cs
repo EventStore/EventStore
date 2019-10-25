@@ -24,12 +24,12 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			var meta = await connection.GetStreamMetadataAsync(streamName);
 			Assert.Equal(streamName, meta.Stream);
-			Assert.Equal(false, meta.IsStreamDeleted);
+			Assert.False(meta.IsStreamDeleted);
 			Assert.Equal(-1, meta.MetastreamVersion);
-			Assert.Equal(null, meta.StreamMetadata.MaxCount);
-			Assert.Equal(null, meta.StreamMetadata.MaxAge);
-			Assert.Equal(null, meta.StreamMetadata.TruncateBefore);
-			Assert.Equal(null, meta.StreamMetadata.CacheControl);
+			Assert.False(meta.StreamMetadata.MaxCount.HasValue);
+			Assert.False(meta.StreamMetadata.MaxAge.HasValue);
+			Assert.False(meta.StreamMetadata.TruncateBefore.HasValue);
+			Assert.False(meta.StreamMetadata.CacheControl.HasValue);
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
@@ -44,12 +44,12 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			var meta = await connection.GetStreamMetadataAsync(streamName);
 			Assert.Equal(streamName, meta.Stream);
-			Assert.Equal(true, meta.IsStreamDeleted);
+			Assert.True(meta.IsStreamDeleted);
 			Assert.Equal(EventNumber.DeletedStream, meta.MetastreamVersion);
-			Assert.Equal(null, meta.StreamMetadata.MaxCount);
-			Assert.Equal(null, meta.StreamMetadata.MaxAge);
-			Assert.Equal(null, meta.StreamMetadata.TruncateBefore);
-			Assert.Equal(null, meta.StreamMetadata.CacheControl);
+			Assert.False(meta.StreamMetadata.MaxCount.HasValue);
+			Assert.False(meta.StreamMetadata.MaxAge.HasValue);
+			Assert.False(meta.StreamMetadata.TruncateBefore.HasValue);
+			Assert.False(meta.StreamMetadata.CacheControl.HasValue);
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
@@ -69,7 +69,7 @@ namespace EventStore.ClientAPIAcceptanceTests {
 
 			var meta = await connection.GetStreamMetadataAsync(streamName);
 			Assert.Equal(streamName, meta.Stream);
-			Assert.Equal(false, meta.IsStreamDeleted);
+			Assert.False(meta.IsStreamDeleted);
 			Assert.Equal(0, meta.MetastreamVersion);
 			Assert.Equal(metadata.MaxCount, meta.StreamMetadata.MaxCount);
 			Assert.Equal(metadata.MaxAge, meta.StreamMetadata.MaxAge);
