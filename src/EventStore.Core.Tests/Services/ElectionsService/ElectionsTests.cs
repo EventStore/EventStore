@@ -369,4 +369,86 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
+
+	public class when_updating_node_priority : ElectionsFixture {
+		[Test]
+		public void should_broadcast_node_priority_update() {
+			var nodePriority = 5;
+			SUT.Handle(new ClientMessage.SetNodePriority(nodePriority));
+
+			var expected = new[] {
+				new GossipMessage.UpdateNodePriority(nodePriority)
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+
+	public class when_resigning_node_and_node_is_not_the_current_master : ElectionsFixture {
+		[Test]
+		public void should_ignore_resign_node_message() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
+			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ClientMessage.ResignNode());
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+
+	public class when_resigning_node_and_node_is_the_current_master : ElectionsFixture {
+		[Test]
+		public void should_initiate_master_resignation_and_inform_other_nodes() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
+				_epochId, -1, -1, -1, -1));
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+
+			SUT.Handle(new ClientMessage.ResignNode()); 
+
+			var expected = new Message[] {
+				new HttpMessage.SendOverHttp(_nodeOne.InternalHttp,
+					new ElectionMessage.MasterIsResigning(_nodeThree.InstanceId, _nodeThree.InternalHttp),
+					GetUtcNow().Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+					new ElectionMessage.MasterIsResigning(_nodeThree.InstanceId, _nodeThree.InternalHttp),
+					GetUtcNow().Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+
+	public class when_resigning_node_and_majority_resigning_ok_received : ElectionsFixture {
+		[Test]
+		public void should_initiate_master_resignation() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
+				_epochId, -1, -1, -1, -1));
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			SUT.Handle(new ClientMessage.ResignNode());
+			_publisher.Messages.Clear();
+
+			SUT.Handle(new ElectionMessage.MasterIsResigningOk(
+				_nodeThree.InstanceId,
+				_nodeThree.InternalHttp,
+				_nodeTwo.InstanceId,
+				_nodeTwo.InternalHttp));
+
+			var expected = new Message[] {
+				new SystemMessage.InitiateMasterResignation(),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
 }

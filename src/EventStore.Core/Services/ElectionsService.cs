@@ -35,7 +35,8 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.Accept>,
 		IHandle<ClientMessage.SetNodePriority>,
 		IHandle<ClientMessage.ResignNode>,
-		IHandle<ElectionMessage.MasterIsResigning> {
+		IHandle<ElectionMessage.MasterIsResigning>,
+		IHandle<ElectionMessage.MasterIsResigningOk> {
 		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
@@ -61,7 +62,7 @@ namespace EventStore.Core.Services {
 
 		private readonly Dictionary<Guid, ElectionMessage.PrepareOk> _prepareOkReceived =
 			new Dictionary<Guid, ElectionMessage.PrepareOk>();
-
+		private readonly HashSet<Guid> _masterIsResigningOkReceived = new HashSet<Guid>();
 		private readonly HashSet<Guid> _acceptsReceived = new HashSet<Guid>();
 
 		private MasterCandidate _masterProposal;
@@ -126,6 +127,7 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
 			subscriber.Subscribe<ElectionMessage.MasterIsResigning>(this);
+			subscriber.Subscribe<ElectionMessage.MasterIsResigningOk>(this);
 			subscriber.Subscribe<ClientMessage.SetNodePriority>(this);
 			subscriber.Subscribe<ClientMessage.ResignNode>(this);
 		}
@@ -141,21 +143,39 @@ namespace EventStore.Core.Services {
 		{
 			if (_master != null && _nodeInfo.InstanceId == _master) {
 				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
-				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
-				var masterIsResigningMessage = new ElectionMessage.MasterIsResigning(
+				var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
+					_nodeInfo.InstanceId,
+					_nodeInfo.InternalHttp,
 					_nodeInfo.InstanceId,
 					_nodeInfo.InternalHttp);
-				Handle(masterIsResigningMessage);
-				SendToAllExceptMe(masterIsResigningMessage);
+				Handle(masterIsResigningMessageOk);
+				SendToAllExceptMe(new ElectionMessage.MasterIsResigning(
+					_nodeInfo.InstanceId, _nodeInfo.InternalHttp));
 			} else {
 				Log.Info("ELECTIONS: ONLY MASTER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}
 		}
 
 		public void Handle(ElectionMessage.MasterIsResigning message) {
-			Log.Debug("ELECTIONS: RESIGNATION FROM [{masterInternalHttp}, {masterId:B}].",
+			Log.Debug("ELECTIONS: MASTER IS RESIGNING [{masterInternalHttp}, {masterId:B}].",
 				message.MasterInternalHttp, message.MasterId);
-			_resigningMasterInstanceId = message.MasterId;
+			var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
+					message.MasterId,
+					message.MasterInternalHttp,
+					_nodeInfo.InstanceId,
+					_nodeInfo.InternalHttp);
+			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
+				_getUtcNow().Add(LeaderElectionProgressTimeout)));
+		}
+		
+		public void Handle(ElectionMessage.MasterIsResigningOk message) {
+			if (_masterIsResigningOkReceived.Add(message.ServerId) && _masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
+				_resigningMasterInstanceId = message.MasterId;
+				_masterIsResigningOkReceived.Clear();
+				Log.Debug("ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}].",
+					message.MasterInternalHttp, message.MasterId);
+				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
+			}
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
