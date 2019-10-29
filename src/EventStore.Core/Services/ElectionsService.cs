@@ -143,6 +143,7 @@ namespace EventStore.Core.Services {
 		{
 			if (_master != null && _nodeInfo.InstanceId == _master) {
 				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
+				_resigningMasterInstanceId = _master;
 				var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
 					_nodeInfo.InstanceId,
 					_nodeInfo.InternalHttp,
@@ -164,13 +165,13 @@ namespace EventStore.Core.Services {
 					message.MasterInternalHttp,
 					_nodeInfo.InstanceId,
 					_nodeInfo.InternalHttp);
+			_resigningMasterInstanceId = message.MasterId;
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
 				_getUtcNow().Add(LeaderElectionProgressTimeout)));
 		}
 		
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
 			if (_masterIsResigningOkReceived.Add(message.ServerId) && _masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
-				_resigningMasterInstanceId = message.MasterId;
 				_masterIsResigningOkReceived.Clear();
 				Log.Debug("ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}].",
 					message.MasterInternalHttp, message.MasterId);
@@ -438,11 +439,12 @@ namespace EventStore.Core.Services {
 		}
 
 		public static bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
-			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, VNodeInfo nodeInfo, MasterCandidate ownInfo) {
+			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, VNodeInfo nodeInfo, MasterCandidate ownInfo,
+			Guid? resigningMaster) {
 			var master = servers.FirstOrDefault(x =>
 				x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
 
-			if (master != null) {
+			if (master != null && master.InstanceId != resigningMaster) {
 				if (candidate.InstanceId == master.InstanceId
 					|| candidate.EpochNumber > master.EpochNumber
 					|| (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
@@ -496,7 +498,8 @@ namespace EventStore.Core.Services {
 			
 			var ownInfo = GetOwnInfo();
 			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
-									candidate, _servers, _lastElectedMaster, _nodeInfo, ownInfo))
+									candidate, _servers, _lastElectedMaster, _nodeInfo, ownInfo,
+									_resigningMasterInstanceId))
 				return;
 
 			Log.Debug(

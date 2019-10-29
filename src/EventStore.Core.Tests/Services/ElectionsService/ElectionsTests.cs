@@ -451,4 +451,48 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
+
+	public class when_electing_a_master_and_master_node_resigned : ElectionsFixture {
+		[Test]
+		public void should_attempt_not_to_elect_previously_elected_master() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
+				_epochId, -1, -1, -1, -1));
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			
+			SUT.Handle(new ClientMessage.ResignNode());
+			SUT.Handle(new ElectionMessage.MasterIsResigningOk(
+				_nodeThree.InstanceId,
+				_nodeThree.InternalHttp,
+				_nodeTwo.InstanceId,
+				_nodeTwo.InternalHttp));
+			_publisher.Messages.Clear();
+			
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 3));
+			SUT.Handle(new ElectionMessage.PrepareOk(3, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
+			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 3));
+
+			var expected = new[] {
+				new ElectionMessage.ElectionsDone(3,
+					MemberInfo.ForVNode(
+						_nodeTwo.InstanceId, GetUtcNow(), VNodeState.Unknown, true,
+						_nodeTwo.InternalTcp,
+						_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
+						_nodeTwo.InternalHttp,
+						_nodeTwo.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
+						_nodeTwo.IsReadOnlyReplica)),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
 }
