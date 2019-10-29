@@ -21,9 +21,9 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
 		IHandle<SystemMessage.VNodeConnectionEstablished> {
-		private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
-		private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
-		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
+		public static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
+		public static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipServiceBase>();
 
@@ -40,12 +40,14 @@ namespace EventStore.Core.Services.Gossip {
 		private GossipState _state;
 		private ClusterInfo _cluster;
 		private readonly Random _rnd = new Random(Math.Abs(Environment.TickCount));
+		private Func<MemberInfo[], MemberInfo> _getNodeToGossipTo;
 
 		protected GossipServiceBase(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
 			VNodeInfo nodeInfo,
 			TimeSpan gossipInterval,
-			TimeSpan allowedTimeDifference) {
+			TimeSpan allowedTimeDifference,
+			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
@@ -57,6 +59,7 @@ namespace EventStore.Core.Services.Gossip {
 			GossipInterval = gossipInterval;
 			AllowedTimeDifference = allowedTimeDifference;
 			_state = GossipState.Startup;
+			_getNodeToGossipTo = getNodeToGossipTo ?? GetNodeToGossipTo;
 		}
 
 		protected abstract MemberInfo GetInitialMe();

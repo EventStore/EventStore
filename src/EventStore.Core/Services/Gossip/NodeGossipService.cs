@@ -29,8 +29,9 @@ namespace EventStore.Core.Services.Gossip {
 			Func<long> getLastCommitPosition,
 			int nodePriority,
 			TimeSpan interval,
-			TimeSpan allowedTimeDifference)
-			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference)
+			TimeSpan allowedTimeDifference,
+			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
+			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference, getNodeToGossipTo)
 			{
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");

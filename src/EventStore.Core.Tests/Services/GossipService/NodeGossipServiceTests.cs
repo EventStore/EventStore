@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -48,7 +50,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new KnownEndpointGossipSeedSource(new[]
 					{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}), _nodeOne,
 				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
-				TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
+				TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000), infos => infos.First(x => x.InstanceId == _nodeOne.InstanceId));
 		}
 	}
 
@@ -59,6 +61,23 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			
 			var expected = new Message[] {
 				new GossipMessage.GotGossipSeedSources(new []{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+	
+	public class when_gossip_sources_are_received : NodeGossipServiceTestFixture {
+		[Test]
+		public void should_start_gossiping() {
+			SUT.Handle(new SystemMessage.SystemInit());
+			_publisher.Messages.Clear();
+			SUT.Handle(new GossipMessage.GotGossipSeedSources(new[]
+				{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}));
+			
+			var expected = new Message[] {
+				new GossipMessage.Gossip(0),
+				new HttpMessage.SendOverHttp(_nodeOne.InternalHttp, new GossipMessage.GossipUpdated(new ClusterInfo(MemberInfo.ForVNode(
+					_nodeOne.InstanceId, )
 			};
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
