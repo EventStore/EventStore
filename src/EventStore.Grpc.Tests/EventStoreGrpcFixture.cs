@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
 using EventStore.Core;
+using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.TestHost;
@@ -28,6 +29,7 @@ namespace EventStore.Grpc.Tests {
 		private static readonly int ExternalPort = PortHelper.GetAvailablePort(IPAddress.Loopback);
 		private readonly Func<CancellationToken, Task> _startServer;
 		private readonly Action _disposeServer;
+		private readonly TFChunkDb _db;
 
 		public ClusterVNode Node => _node;
 
@@ -47,11 +49,11 @@ namespace EventStore.Grpc.Tests {
 
 			configureWebHost?.Invoke(webHostBuilder);
 
-			var vNodeBuilder = new TestVNodeBuilder()
-				.RunInMemory();
+			var vNodeBuilder = new TestVNodeBuilder();
+			vNodeBuilder.RunInMemory();
 			configureVNode?.Invoke(vNodeBuilder);
-
 			_node = vNodeBuilder.Build();
+			_db = vNodeBuilder.GetDb();
 
 			if (external) {
 				var host = webHostBuilder
@@ -113,6 +115,7 @@ namespace EventStore.Grpc.Tests {
 
 		public virtual async Task DisposeAsync() {
 			await _node.Stop();
+			_db.Dispose();
 			_disposeServer();
 			Client?.Dispose();
 		}

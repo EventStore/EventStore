@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName);
 			await _node.Start();
-			_manager = new UsersManager(new NoopLogger(), _node.ExtHttpEndPoint, TimeSpan.FromSeconds(5));
+			_manager = new UsersManager(new NoopLogger(), _node.ExtHttpEndPoint, TimeSpan.FromSeconds(5), httpMessageHandler: _node.HttpMessageHandler);
 		}
 
 		[OneTimeTearDown]

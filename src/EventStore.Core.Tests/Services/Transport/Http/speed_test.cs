@@ -14,6 +14,7 @@ using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
@@ -144,6 +145,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				new TrieUriRouter(), multiQueuedHandler, false, null, 0, false);
 			KestrelHttpService.CreateAndSubscribePipeline(bus, providers);
 
+			using var server = new TestServer(new WebHostBuilder().UseStartup(new HttpServiceStartup(httpService)));
+			using var httpMessageHandler = server.CreateHandler();
+
 			var fakeController = new FakeController(iterations, null);
 			httpService.SetupController(fakeController);
 
@@ -153,7 +157,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var sw = Stopwatch.StartNew();
 
 			var timeout = TimeSpan.FromMilliseconds(10000);
-			var httpClient = new HttpAsyncClient(timeout);
+			var httpClient = new HttpAsyncClient(timeout, httpMessageHandler);
 			for (int i = 0; i < iterations; ++i) {
 				var route = fakeController.BoundRoutes[rnd.Next(0, fakeController.BoundRoutes.Count)];
 
@@ -209,11 +213,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				1000.0 * iterations / sw.ElapsedMilliseconds);
 		}
 
-		class NoOpStartup : IStartup {
+		class HttpServiceStartup : IStartup {
+			private readonly KestrelHttpService _httpService;
+
+			public HttpServiceStartup(KestrelHttpService httpService) {
+				_httpService = httpService;
+			}
 			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) {
-			}
+			public void Configure(IApplicationBuilder app) => app.Use(_httpService.MidFunc);
 		}
 	}
 }

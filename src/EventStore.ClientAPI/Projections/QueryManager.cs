@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Common.Utils.Threading;
@@ -25,9 +26,9 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="queryTimeout">Timeout of query execution</param>
 		/// <param name="client">Overrideable HTTP Client Handler</param>
 		public QueryManager(ILogger log, EndPoint httpEndPoint, TimeSpan projectionOperationTimeout,
-			TimeSpan queryTimeout, IHttpClient client = null) {
+			TimeSpan queryTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_queryTimeout = queryTimeout;
-			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, client);
+			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, httpMessageHandler);
 		}
 
 		/// <summary>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
@@ -135,7 +136,7 @@ namespace EventStore.Core {
 		private bool _gossipOnSingleNode;
 
 		private bool _readOnlyReplica;
-		private IWebHost _host;
+		private Func<HttpMessageHandler> _createHttpMessageHandler;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -1192,12 +1193,12 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// 
+		/// Determines the factory used to create the <see cref="HttpMessageHandler"/> used by internal http communications. Used for testing.
 		/// </summary>
-		/// <param name="host"></param>
+		/// <param name="createHttpMessageHandler">the <see cref="HttpMessageHandler"/> factory.</param>
 		/// <returns></returns>
-		public VNodeBuilder UseWebHost(IWebHost host) {
-			_host = host;
+		public VNodeBuilder WithHttpMessageHandlerFactory(Func<HttpMessageHandler> createHttpMessageHandler) {
+			_createHttpMessageHandler = createHttpMessageHandler;
 
 			return this;
 		}
@@ -1355,7 +1356,8 @@ namespace EventStore.Core {
 				_structuredLog,
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
-				_readOnlyReplica);
+				_readOnlyReplica,
+				_createHttpMessageHandler);
 
 			var infoController = new InfoController(options, _projectionType);
 

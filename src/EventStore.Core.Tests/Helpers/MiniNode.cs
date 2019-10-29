@@ -53,6 +53,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
 		public readonly HttpClient HttpClient;
+		public readonly HttpMessageHandler HttpMessageHandler;
 
 		private readonly List<int> _usedPorts = new List<int>();
 		private TestServer _kestrelTestServer;
@@ -132,7 +133,8 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseExternalIPAs(advertisedExtIPAddress)
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
-				.WithIndexBitnessVersion(indexBitnessVersion);
+				.WithIndexBitnessVersion(indexBitnessVersion)
+				.WithHttpMessageHandlerFactory(() => HttpMessageHandler);
 
 			if (enableTrustedAuth)
 				builder.EnableTrustedAuth();
@@ -173,7 +175,8 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel()
 				.UseStartup(new ClusterVNodeStartup(Node)));
-			HttpClient = new HttpClient(_kestrelTestServer.CreateHandler());
+			HttpMessageHandler = _kestrelTestServer.CreateHandler();
+			HttpClient = new HttpClient(HttpMessageHandler);
 
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 		}
@@ -235,6 +238,7 @@ namespace EventStore.Core.Tests.Helpers {
 				StoppingTime.Start();
 
 				_kestrelTestServer.Dispose();
+				HttpMessageHandler.Dispose();
 				HttpClient.Dispose();
 				await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
