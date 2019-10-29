@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			SUT = new Core.Services.ElectionsService(_publisher, _nodeThree, 3,
 				new InMemoryCheckpoint(0),
 				new InMemoryCheckpoint(0),
-				new FakeEpochManager(), () => 1, 0, GetUtcNow);
+				new FakeEpochManager(), () => 0L, 0, GetUtcNow);
 
 			SUT.SubscribeMessages(_bus);
 

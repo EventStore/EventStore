@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using System.Reflection;
 
@@ -27,6 +28,15 @@ namespace EventStore.Core.Tests.Infrastructure {
 
 			if (type == typeof(string)) {
 				return x.Equals(y);
+			}
+
+			if (typeof(Array).IsAssignableFrom(type)) {
+				var dx = (Array)x;
+				var dy = (Array)y;
+				if (dx.Length != dy.Length) {
+					return false;
+				}
+				return ((IStructuralEquatable)dx).Equals(dy, StructuralComparisons.StructuralEqualityComparer);
 			}
 
 			if (typeof(IDictionary).IsAssignableFrom(type)) {
