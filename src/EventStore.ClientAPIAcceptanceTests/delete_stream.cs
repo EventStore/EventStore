@@ -4,7 +4,6 @@ using EventStore.ClientAPI.Exceptions;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class delete_stream : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 

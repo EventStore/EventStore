@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class subscribe_to_stream_from : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 

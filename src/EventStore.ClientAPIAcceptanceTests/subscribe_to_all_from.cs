@@ -5,7 +5,6 @@ using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class subscribe_to_all_from : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture>,
 		IAsyncLifetime {
 		private readonly EventStoreClientAPIFixture _fixture;

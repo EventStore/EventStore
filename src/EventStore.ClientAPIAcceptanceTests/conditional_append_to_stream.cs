@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class conditional_append_to_stream : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 
@@ -33,12 +32,12 @@ namespace EventStore.ClientAPI.Tests {
 				.ConditionalAppendToStreamAsync(stream, expectedVersion, _fixture.CreateTestEvents());
 			Assert.Equal(ConditionalWriteStatus.Succeeded, result.Status);
 		}
-		
+
 		[Theory, MemberData(nameof(UseSslTestCases))]
 		public async Task returns_succeeded_when_stream_deleted(bool useSsl) {
 			var stream = $"{GetStreamName()}_{useSsl}";
 			using var connection = _fixture.CreateConnection(settings => settings.UseSsl(useSsl));
-			
+
 			await connection.ConnectAsync();
 
 			await connection.AppendToStreamAsync(stream, ExpectedVersion.Any, _fixture.CreateTestEvents());
@@ -49,6 +48,5 @@ namespace EventStore.ClientAPI.Tests {
 				.ConditionalAppendToStreamAsync(stream, ExpectedVersion.Any, _fixture.CreateTestEvents());
 			Assert.Equal(ConditionalWriteStatus.StreamDeleted, result.Status);
 		}
-
 	}
 }

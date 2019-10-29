@@ -4,7 +4,6 @@ using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class read_all_forward : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture>, IAsyncLifetime {
 		private readonly EventStoreClientAPIFixture _fixture;
 

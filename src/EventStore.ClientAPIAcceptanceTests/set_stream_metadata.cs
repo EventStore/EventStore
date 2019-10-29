@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class set_stream_metadata : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 

@@ -4,7 +4,6 @@ using EventStore.ClientAPI.Exceptions;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class delete_persistent_subscription : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private const string Group = nameof(delete_persistent_subscription);
 		private readonly EventStoreClientAPIFixture _fixture;

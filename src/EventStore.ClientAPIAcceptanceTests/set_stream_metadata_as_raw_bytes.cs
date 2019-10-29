@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class set_stream_metadata_as_raw_bytes : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 
@@ -20,7 +19,7 @@ namespace EventStore.ClientAPI.Tests {
 
 			await connection.SetStreamMetadataAsync(streamName, expectedVersion, Array.Empty<byte>());
 		}
-		
+
 		[Theory, MemberData(nameof(ExpectedVersionTestCases))]
 		public async Task for_existing_stream(long expectedVersion, string displayName, bool useSsl) {
 			var streamName = $"{GetStreamName()}_{displayName}_{useSsl}";
@@ -32,6 +31,5 @@ namespace EventStore.ClientAPI.Tests {
 
 			await connection.SetStreamMetadataAsync(streamName, expectedVersion, Array.Empty<byte>());
 		}
-
 	}
 }

@@ -5,7 +5,6 @@ using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class set_system_settings : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private readonly EventStoreClientAPIFixture _fixture;
 
@@ -36,9 +35,9 @@ namespace EventStore.ClientAPI.Tests {
 
 			var result = await connection.ReadStreamEventsBackwardAsync(SystemStreams.SettingsStream, -1, 1,
 				false, DefaultUserCredentials.Admin);
-			
+
 			Assert.Equal(SliceReadStatus.Success, result.Status);
-			
+
 			Assert.Equal(expected.ToJsonBytes(), result.Events[0].OriginalEvent.Data);
 		}
 

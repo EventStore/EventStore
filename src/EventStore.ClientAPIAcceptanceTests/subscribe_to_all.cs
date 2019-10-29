@@ -5,7 +5,6 @@ using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class subscribe_to_all : EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture>, IAsyncLifetime {
 		private readonly EventStoreClientAPIFixture _fixture;
 
@@ -107,7 +106,7 @@ namespace EventStore.ClientAPI.Tests {
 			void SubscriptionDropped(EventStoreSubscription s, SubscriptionDropReason reason, Exception ex) =>
 				droppedSource.TrySetResult((reason, ex));
 		}
-		
+
 		public async Task InitializeAsync() {
 			using var connection = _fixture.CreateConnection();
 
@@ -125,6 +124,5 @@ namespace EventStore.ClientAPI.Tests {
 			await connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any,
 				StreamMetadata.Build().SetReadRole(null), DefaultUserCredentials.Admin);
 		}
-
 	}
 }

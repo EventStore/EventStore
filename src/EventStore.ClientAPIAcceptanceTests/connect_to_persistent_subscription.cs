@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIFixture))]
 	public class connect_to_persistent_subscription
 		: EventStoreClientAPITest, IClassFixture<EventStoreClientAPIFixture> {
 		private const string Group = nameof(connect_to_persistent_subscription);
@@ -20,10 +19,11 @@ namespace EventStore.ClientAPI.Tests {
 
 			await connection.ConnectAsync();
 
-			await Assert.ThrowsAsync<ArgumentException>(() => connection.ConnectToPersistentSubscriptionAsync(streamName, Group,
+			await Assert.ThrowsAsync<ArgumentException>(() => connection.ConnectToPersistentSubscriptionAsync(
+				streamName, Group,
 				delegate { return Task.CompletedTask; }));
 		}
-		
+
 		[Theory, MemberData(nameof(UseSslTestCases))]
 		public async Task that_does_exist_succeeds(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
@@ -36,7 +36,6 @@ namespace EventStore.ClientAPI.Tests {
 
 			await connection.ConnectToPersistentSubscriptionAsync(streamName, Group,
 				delegate { return Task.CompletedTask; });
-		} 
- 
+		}
 	}
 }
