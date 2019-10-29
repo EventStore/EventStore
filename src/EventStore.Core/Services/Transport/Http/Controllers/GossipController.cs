@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Http;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -10,6 +11,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
@@ -25,11 +27,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private readonly HttpAsyncClient _client;
 		private readonly TimeSpan _gossipTimeout;
 
-		public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout)
+		public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout, HttpMessageHandler httpMessageHandler)
 			: base(publisher) {
 			_networkSendQueue = networkSendQueue;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout);
+			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {

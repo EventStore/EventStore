@@ -27,10 +27,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				Assert.IsNotNull(deletedLinkMetadata);
 
 				var checkpointTag = Encoding.UTF8.GetString(deletedLinkMetadata).ParseCheckpointExtraJson();
-				JToken deletedValue;
-				Assert.IsTrue(checkpointTag.TryGetValue("$deleted", out deletedValue));
-				JToken originalStream;
-				Assert.IsTrue(checkpointTag.TryGetValue("$o", out originalStream));
+				Assert.IsTrue(checkpointTag.TryGetValue("$deleted", out _));
+				Assert.IsTrue(checkpointTag.TryGetValue("$o", out var originalStream));
 				Assert.AreEqual("cat-1", ((JValue)originalStream).Value);
 			}
 

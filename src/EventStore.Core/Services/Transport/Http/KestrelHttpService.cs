@@ -75,6 +75,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			_inputBus.Publish(
 				TimerMessage.Schedule.Create(
 					UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
+			_isListening = true;
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -109,10 +110,8 @@ namespace EventStore.Core.Services.Transport.Http {
 			return tcs.Task;
 		}
 
-		private void OnShutdown() => _isListening = false;
-		private void OnStartup() => _isListening = true;
-
 		public void Shutdown() {
+			_isListening = false;
 		}
 
 		public MidFunc MidFunc => RequestReceived;

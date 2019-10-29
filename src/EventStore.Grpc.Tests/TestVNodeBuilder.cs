@@ -9,6 +9,5 @@ namespace EventStore.Grpc.Tests {
 		public TFChunkDb GetDb() {
 			return _db;
 		}
-
 	}
 }

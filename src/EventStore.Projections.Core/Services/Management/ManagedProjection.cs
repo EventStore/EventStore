@@ -262,7 +262,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					_stateHandler = new DeletingState(this);
 					break;
 				default:
-					throw new Exception();
+					throw InvalidProjectionState(value);
 			}
 		}
 
@@ -904,7 +904,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					_output.Publish(new CoreProjectionManagementMessage.Stop(Id, _workerId));
 					break;
 				default:
-					throw new NotSupportedException();
+					throw InvalidProjectionState(_state);
 			}
 		}
 
@@ -935,9 +935,10 @@ namespace EventStore.Projections.Core.Services.Management {
 					_output.Publish(new CoreProjectionManagementMessage.Kill(Id, _workerId));
 					break;
 				default:
-					throw new NotSupportedException();
+					throw InvalidProjectionState(_state);
 			}
 		}
+
 
 		public void Fault(string reason) {
 			_logger.Error("The '{projection}' projection faulted due to '{e}'", _name, reason);
@@ -983,13 +984,14 @@ namespace EventStore.Projections.Core.Services.Management {
 				else {
 					LoadStopped();
 				}
-			} else if (_state == ManagedProjectionState.Aborted || _state == ManagedProjectionState.Completed
-			                                                    || _state == ManagedProjectionState.Faulted ||
-			                                                    _state == ManagedProjectionState.Stopped
-			                                                    || _state == ManagedProjectionState.Deleting)
+			} else if (_state == ManagedProjectionState.Aborted ||
+			           _state == ManagedProjectionState.Completed ||
+			           _state == ManagedProjectionState.Faulted ||
+			           _state == ManagedProjectionState.Stopped ||
+			           _state == ManagedProjectionState.Deleting)
 				Reply();
 			else
-				throw new Exception();
+				throw InvalidProjectionState(_state);
 		}
 
 		private void UpdateQuery(ProjectionManagementMessage.Command.UpdateQuery message) {
@@ -1051,6 +1053,9 @@ namespace EventStore.Projections.Core.Services.Management {
 				throw new ApplicationException(
 					"Internal error: projection definition must be saved before forced updating version");
 		}
+
+		private static InvalidOperationException InvalidProjectionState(ManagedProjectionState state) =>
+			new InvalidOperationException($"Did not expect {nameof(ManagedProjectionState)} in state {state}.");
 	}
 
 	public class SerializedRunAs {

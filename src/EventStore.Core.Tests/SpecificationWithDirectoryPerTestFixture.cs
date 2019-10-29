@@ -28,7 +28,11 @@ namespace EventStore.Core.Tests {
 		[OneTimeTearDown]
 		public virtual Task TestFixtureTearDown() {
 			//kill whole tree
-			ForceDeleteDirectory(PathName);
+			try {
+				ForceDeleteDirectory(PathName);
+			} catch {
+
+			}
 
 			return Task.CompletedTask;
 		}

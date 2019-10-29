@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -25,38 +26,38 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		private InMemoryBus _bus;
-		private IHttpService _service;
+		private KestrelHttpService _service;
 		private MultiQueuedHandler _multiQueuedHandler;
 		private HttpAsyncClient _client;
 		private readonly TimeSpan _timeout;
-		private readonly TestServer _server;
-
+		private TestServer _server;
 
 		private readonly IPEndPoint _serverEndPoint;
+		private HttpMessageHandler _httpMessageHandler;
 
 		public PortableServer(IPEndPoint serverEndPoint, int timeout = 10000) {
 			Ensure.NotNull(serverEndPoint, "serverEndPoint");
 			_serverEndPoint = serverEndPoint;
 			_timeout = TimeSpan.FromMilliseconds(timeout);
-			_server = new TestServer(new WebHostBuilder().UseStartup(new NoOpStartup()));
 		}
 
 		public void SetUp() {
 			_bus = new InMemoryBus($"bus_{_serverEndPoint.Port}");
+			var pipelineBus = InMemoryBus.CreateTest();
+			var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", true, TimeSpan.FromMilliseconds(50));
+			_multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
+			_multiQueuedHandler.Start();
+			var httpAuthenticationProviders = new HttpAuthenticationProvider[]
+				{new AnonymousHttpAuthenticationProvider()};
 
-			{
-				var pipelineBus = InMemoryBus.CreateTest();
-				var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", true, TimeSpan.FromMilliseconds(50));
-				_multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] { queue }, null);
-				_multiQueuedHandler.Start();
-				var httpAuthenticationProviders = new HttpAuthenticationProvider[]
-					{new AnonymousHttpAuthenticationProvider()};
-
-				_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
-					_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
-				KestrelHttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
-				_client = new HttpAsyncClient(_timeout);
-			}
+			_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
+				_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
+			KestrelHttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
+			_server = new TestServer(
+				new WebHostBuilder()
+					.UseStartup(new HttpServiceStartup(_service)));
+			_httpMessageHandler = _server.CreateHandler();
+			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 
 			HttpBootstrap.Subscribe(_bus, _service);
 		}
@@ -65,9 +66,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			HttpBootstrap.Unsubscribe(_bus, _service);
 
 			_service.Shutdown();
+			_httpMessageHandler?.Dispose();
 			_client.Dispose();
 			_multiQueuedHandler.Stop();
-			_server.Dispose();
+			_server?.Dispose();
 		}
 
 		public void Publish(Message message) {
@@ -100,11 +102,15 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			return new Tuple<bool, string>(success, error);
 		}
 
-		class NoOpStartup : IStartup {
+		class HttpServiceStartup : IStartup {
+			private readonly KestrelHttpService _httpService;
+
+			public HttpServiceStartup(KestrelHttpService httpService) {
+				_httpService = httpService;
+			}
 			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) {
-			}
+			public void Configure(IApplicationBuilder app) => app.Use(_httpService.MidFunc);
 		}
 	}
 }

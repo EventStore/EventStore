@@ -19,6 +19,8 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
+using EventStore.Core.Data;
+using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	[Category("ClientAPI")]
@@ -26,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		protected MiniClusterNode[] _nodes = new MiniClusterNode[3];
 		protected Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
-		protected ProjectionsSubsystem _projections;
+		private readonly ProjectionsSubsystem[] _projections = new ProjectionsSubsystem[3];
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 
@@ -86,24 +88,27 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			_nodes[2] = CreateNode(2,
 				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
 
-			_nodes[0].Start();
-			_nodes[1].Start();
-			_nodes[2].Start();
+			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.MasterMainBus)).ToArray();
+
+			foreach (var node in _nodes) {
+				node.Start();
+			}
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
 
-			QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
 			_conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
-			await _conn.ConnectAsync();
+			await _conn.ConnectAsync().WithTimeout();
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
-				_nodes[0].ExternalHttpEndPoint,
+				_nodes.Single(x => x.NodeState == VNodeState.Master).ExternalHttpEndPoint,
 				TimeSpan.FromMilliseconds(10000));
 
-			if (GivenStandardProjectionsRunning())
-				await EnableStandardProjections();
-			QueueStatsCollector.WaitIdle();
+			if (GivenStandardProjectionsRunning()) {
+				await Task.WhenAny(projectionsStarted).WithTimeout(TimeSpan.FromSeconds(10));
+				await EnableStandardProjections().WithTimeout(TimeSpan.FromMinutes(2));
+			}
+
 			try {
 				await Given().WithTimeout();
 			} catch (Exception ex) {
@@ -119,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds) {
-			_projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
+			_projections[index] = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
@@ -127,7 +132,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
 				endpoints.ExternalTcp,
 				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] { _projections }, gossipSeeds: gossipSeeds);
+				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
 			WaitIdle();
 			return node;
 		}
@@ -140,7 +145,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected async Task EnableStandardProjections() {
-			await Task.Delay(4000); /* workaround for race condition when a projection is in LoadStopped() state and it is enabled */
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -162,9 +166,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			for (int i = 1; i <= 10; i++) {
 				try {
 					await _manager.EnableAsync(name, _admin);
-				} catch (Exception e) {
+				} catch (Exception) {
 					if (i == 10)
-						throw e;
+						throw;
 					await Task.Delay(5000);
 				}
 			}

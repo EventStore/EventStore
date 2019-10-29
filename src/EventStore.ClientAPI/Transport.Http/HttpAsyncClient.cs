@@ -18,7 +18,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 			ServicePointManager.DefaultConnectionLimit = 800;
 		}
 
-		public HttpAsyncClient(TimeSpan timeout, HttpClientHandler clientHandler = null) {
+		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler clientHandler = null) {
 			_client = clientHandler == null ? new HttpClient() : new HttpClient(clientHandler);
 			_client.Timeout = timeout;
 		}

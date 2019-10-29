@@ -90,15 +90,15 @@ namespace EventStore.Core.Bus {
 			lock (_itemsUpdateLock) {
 				_started = false;
 				_totalLength -= _length;
-				Debug.Assert(_totalLength >= 0,
-					string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
+				//Debug.Assert(_totalLength >= 0,
+				//	string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
 			}
 
 			if (_idleDetection) {
 				lock (_notifyStopLock) {
 					_totalStarted--;
-					Debug.Assert(_totalStarted >= 0,
-						string.Format("QueueStatsCollector [{0}] _totalStarted = {1} < 0", Name, _totalStarted));
+					//Debug.Assert(_totalStarted >= 0,
+					//	string.Format("QueueStatsCollector [{0}] _totalStarted = {1} < 0", Name, _totalStarted));
 					if (_totalStarted == 0) {
 						Monitor.Pulse(_notifyStopLock);
 					}
@@ -136,8 +136,8 @@ namespace EventStore.Core.Bus {
 			if (_idleDetection) {
 				lock (_notifyIdleLock) {
 					_nonIdle--;
-					Debug.Assert(_nonIdle >= 0,
-						string.Format("QueueStatsCollector [{0}] _nonIdle = {1} < 0", Name, _nonIdle));
+					//Debug.Assert(_nonIdle >= 0,
+					//	string.Format("QueueStatsCollector [{0}] _nonIdle = {1} < 0", Name, _nonIdle));
 					if (_nonIdle == 0) {
 						Monitor.Pulse(_notifyIdleLock);
 					}
@@ -360,10 +360,10 @@ namespace EventStore.Core.Bus {
 				if (_started) {
 					_length--;
 					_totalLength--;
-					Debug.Assert(_length >= 0,
-						string.Format("QueueStatsCollector [{0}] _length = {1} < 0", Name, _length));
-					Debug.Assert(_totalLength >= 0,
-						string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
+					//Debug.Assert(_length >= 0,
+					//	string.Format("QueueStatsCollector [{0}] _length = {1} < 0", Name, _length));
+					//Debug.Assert(_totalLength >= 0,
+					//	string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
 				}
 			}
 

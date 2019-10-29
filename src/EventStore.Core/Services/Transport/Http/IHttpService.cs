@@ -23,10 +23,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		bool ForwardRequest(HttpEntityManager manager);
 	}
 
-	public interface IHttpService :
-		IHandle<SystemMessage.SystemInit>,
-		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<HttpMessage.PurgeTimedOutRequests> {
+	public interface IHttpService {
 		ServiceAccessibility Accessibility { get; }
 		bool IsListening { get; }
 		IEnumerable<IPEndPoint> EndPoints { get; }

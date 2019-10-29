@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
+using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Tests.Integration;
 using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
 using NUnit.Framework;
 
@@ -16,25 +16,22 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 		private int _masterId;
 
-		private HttpClient CreateHttpClient(string username, string password) {
-			var httpClientHandler = new HttpClientHandler();
-			httpClientHandler.AllowAutoRedirect = false;
-
-			var client = new HttpClient(httpClientHandler);
-			client.Timeout = _timeout;
-			client.DefaultRequestHeaders.Authorization =
-				new AuthenticationHeaderValue(
-					"Basic", System.Convert.ToBase64String(
-						System.Text.ASCIIEncoding.ASCII.GetBytes(
-						$"{username}:{password}")));
-
-			return client;
-		}
+		private HttpClient CreateHttpClient(string username, string password) =>
+			new HttpClient(new SocketsHttpHandler {
+				AllowAutoRedirect = false,
+				SslOptions = new SslClientAuthenticationOptions {
+					RemoteCertificateValidationCallback = delegate { return true; }
+				}
+			}) {
+				Timeout = _timeout,
+				DefaultRequestHeaders = {
+					Authorization = new AuthenticationHeaderValue(
+						"Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")))
+				}
+			};
 
 		private async Task<int> SendRequest(HttpClient client, HttpMethod method, string url, string body, string contentType) {
-			var request = new HttpRequestMessage();
-			request.Method = method;
-			request.RequestUri = new Uri(url);
+			using var request = new HttpRequestMessage {Method = method, RequestUri = new Uri(url)};
 
 			if (body != null) {
 				var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
@@ -177,7 +174,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
 			var requiredMinAuthorizationLevel = httpEndpointTokens[2];
 
-			var url = string.Format("http://{0}{1}", nodeEndpoint, endpointUrl);
+			var url = $"http://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

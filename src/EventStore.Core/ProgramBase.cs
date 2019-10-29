@@ -30,6 +30,7 @@ namespace EventStore.Core {
 		public abstract Task Stop();
 
 		protected ProgramBase(string[] args) {
+			Application.RegisterExitAction(Exit);
 			try {
 				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
@@ -75,7 +76,6 @@ namespace EventStore.Core {
 		}
 
 		public async Task<int> Run() {
-			Application.RegisterExitAction(Exit);
 			try {
 				await Task.WhenAny(_startupSource.Task, Start());
 				var exitCode = await _exitSource.Task;

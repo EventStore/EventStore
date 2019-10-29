@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -92,8 +93,8 @@ namespace EventStore.Core {
 
 		private readonly ClusterVNodeController _controller;
 		private readonly TimerService _timerService;
-		private readonly IHttpService _internalHttpService;
-		private readonly IHttpService _externalHttpService;
+		private readonly KestrelHttpService _internalHttpService;
+		private readonly KestrelHttpService _externalHttpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
@@ -102,6 +103,7 @@ namespace EventStore.Core {
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
+		private readonly HttpMessageHandler _httpMessageHandler;
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		public IEnumerable<Task> Tasks {
@@ -135,6 +137,7 @@ namespace EventStore.Core {
 			var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_mainBus = new InMemoryBus("MainBus");
+			_httpMessageHandler = vNodeSettings.CreateHttpMessageHandler?.Invoke();
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -385,10 +388,10 @@ namespace EventStore.Core {
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching);
-			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout);
+			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout, _httpMessageHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var electController = new ElectController(_mainQueue);
+			var electController = new ElectController(_mainQueue, _httpMessageHandler);
 
 			// HTTP SENDERS
 			gossipController.SubscribeSenders(httpPipe);
@@ -695,6 +698,7 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
+			_httpMessageHandler?.Dispose();
 			_shutdownSource.TrySetResult(true);
 		}
 

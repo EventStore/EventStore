@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
@@ -43,16 +42,23 @@ namespace EventStore.Core.Tests.Integration {
 				var defaultLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
 
 				using var internalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				using var internalTcpSecure = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				using var internalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				using var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				using var externalTcpSecure = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				using var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalTcp.Bind(defaultLoopBack);
+
+				using var internalTcpSecure =
+					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalTcpSecure.Bind(defaultLoopBack);
+
+				using var internalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalHttp.Bind(defaultLoopBack);
+
+				using var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalTcp.Bind(defaultLoopBack);
+
+				using var externalTcpSecure =
+					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalTcpSecure.Bind(defaultLoopBack);
+
+				using var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalHttp.Bind(defaultLoopBack);
 
 				InternalTcp = (IPEndPoint)internalTcp.LocalEndPoint;
@@ -85,13 +91,13 @@ namespace EventStore.Core.Tests.Integration {
 			Assert.IsEmpty(duplicates);
 
 			_nodeCreationFactory.Add(0, wait => CreateNode(0,
-				_nodeEndpoints[0], new[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp },
+				_nodeEndpoints[0], new[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp},
 				wait));
 			_nodeCreationFactory.Add(1, wait => CreateNode(1,
-				_nodeEndpoints[1], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp },
+				_nodeEndpoints[1], new[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp},
 				wait));
 			_nodeCreationFactory.Add(2, wait => CreateNode(2,
-				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp },
+				_nodeEndpoints[2], new[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp},
 				wait));
 
 			_nodes[0] = _nodeCreationFactory[0](true);
@@ -106,12 +112,8 @@ namespace EventStore.Core.Tests.Integration {
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
 
-			QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
-
 			_conn = CreateConnection();
 			await _conn.ConnectAsync();
-
-			QueueStatsCollector.WaitIdle();
 
 			await Given();
 		}
@@ -129,14 +131,13 @@ namespace EventStore.Core.Tests.Integration {
 			return _nodes[nodeNum].Shutdown(keepDb: true);
 		}
 
-		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
+		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds,
+			bool wait = true) {
 			var node = new MiniClusterNode(
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
 				endpoints.ExternalTcp,
 				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] { }, gossipSeeds: gossipSeeds, inMemDb: false);
-			if (wait)
-				WaitIdle();
 			return node;
 		}
 
@@ -155,7 +156,6 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		protected static void WaitIdle() {
-			QueueStatsCollector.WaitIdle();
 		}
 
 		protected MiniClusterNode GetMaster() {

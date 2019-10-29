@@ -11,20 +11,20 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class Authorization : specification_with_cluster {
-		private Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
+		private readonly Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
 		private int _masterId;
 
 		private HttpClient CreateHttpClient(string username, string password) {
-			var httpClientHandler = new HttpClientHandler();
-			httpClientHandler.AllowAutoRedirect = false;
-
-			var client = new HttpClient(httpClientHandler);
-			client.Timeout = _timeout;
+			var client = new HttpClient(new HttpClientHandler {
+				AllowAutoRedirect = false
+			}) {
+				Timeout = _timeout
+			};
 			client.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue(
 					"Basic", System.Convert.ToBase64String(
-						System.Text.ASCIIEncoding.ASCII.GetBytes(
+						System.Text.Encoding.ASCII.GetBytes(
 						$"{username}:{password}")));
 
 			return client;

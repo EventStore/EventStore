@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -552,8 +553,7 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(SystemMessage.SubSystemInitialized message) {
 			Log.Info("========== [{internalHttp}] Sub System '{subSystemName}' initialized.", _nodeInfo.InternalHttp,
 				message.SubSystemName);
-			_subSystemInitsToExpect -= 1;
-			if (_subSystemInitsToExpect == 0) {
+			if (Interlocked.Decrement(ref _subSystemInitsToExpect) == 0) {
 				_outputBus.Publish(new SystemMessage.SystemReady());
 			}
 		}

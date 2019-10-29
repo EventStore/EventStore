@@ -286,6 +286,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		[Test]
 		public async Task
 			when_reading_end_of_stream_and_a_live_event_is_received_subscription_should_read_stream_again() {
+			var eventsFoundSource = new TaskCompletionSource<bool>();
 			var envelope = new FakeEnvelope();
 			var checkpointReader = new FakeCheckpointReader();
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -311,8 +312,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 								throw new Exception("Invalid start event number: " + startEventNumber);
 							}
 
-							Task.Delay(100).ContinueWith((action) => {
+							Task.Delay(100).ContinueWith(action => {
 								onEventsFound(events.ToArray(), nextEventNumber, isEndOfStream);
+								if (startEventNumber == 3) {
+									eventsFoundSource.TrySetResult(true);
+								}
 							});
 						}))
 					.WithCheckpointReader(checkpointReader)
@@ -331,13 +335,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
 
 			//a subscriber coming in a while later, should receive all 3 events
-			await Task.Delay(500).ContinueWith((action) => {
-				//add a subscriber
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
+			await eventsFoundSource.Task.WithTimeout();
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), envelope, 10, "foo", "bar");
 
-				//all 3 events should be received by the subscriber
-				Assert.AreEqual(3, envelope.Replies.Count);
-			});
+			//all 3 events should be received by the subscriber
+			Assert.AreEqual(3, envelope.Replies.Count);
 		}
 	}
 

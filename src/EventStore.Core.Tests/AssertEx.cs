@@ -18,5 +18,14 @@ namespace EventStore.Core.Tests {
 
 			return expected;
 		}
+
+		public static async Task DoesNotThrowAsync<TException>(Func<Task> code, string message)
+			where TException : Exception {
+			try {
+				await code();
+			} catch (TException ex) {
+				Assert.Fail(message);
+			}
+		}
 	}
 }

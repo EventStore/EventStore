@@ -31,7 +31,6 @@ namespace EventStore.Grpc.Tests {
 			var vNodeBuilder = new TestVNodeBuilder();
 			vNodeBuilder.RunInMemory().WithTfChunkSize(1024 * 1024);
 			configureVNode?.Invoke(vNodeBuilder);
-
 			_node = vNodeBuilder.Build();
 			_db = vNodeBuilder.GetDb();
 

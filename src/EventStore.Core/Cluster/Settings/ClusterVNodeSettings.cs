@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -83,6 +84,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
+		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -151,7 +153,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
-			bool readOnlyReplica = false) {
+			bool readOnlyReplica = false,
+			Func<HttpMessageHandler> createHttpMessageHandler = null) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -251,6 +254,7 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
+			CreateHttpMessageHandler = createHttpMessageHandler;
 		}
 
 		public override string ToString() =>

@@ -132,6 +132,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(InternalHttpEndPoint);
+					o.Listen(ExternalHttpEndPoint);
 				})
 				.UseStartup(new MiniNode.ClusterVNodeStartup(Node))
 				.Build();

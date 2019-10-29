@@ -34,53 +34,53 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_stream_prefix() {
+		public async Task only_return_events_with_a_given_stream_prefix() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = await _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.EvenEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_event_prefix() {
+		public async Task only_return_events_with_a_given_event_prefix() {
 			var filter = Filter.EventType.Prefix("AE");
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = await _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_stream_regex() {
+		public async Task only_return_events_that_satisfy_a_given_stream_regex() {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = await _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.OddEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_event_regex() {
+		public async Task only_return_events_that_satisfy_a_given_event_regex() {
 			var filter = Filter.EventType.Regex(new Regex(@"^.*BEv.*$"));
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = await _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_are_not_system_events() {
+		public async Task only_return_events_that_are_not_system_events() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = await _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000);
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
 	}

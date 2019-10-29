@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_executing_query.with_long_from_all_query {
@@ -16,20 +17,20 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_executing_query.with_
 			WaitIdle();
 		}
 
-		[Test, Category("Network")]
-		public void throws_exception() {
+		[Test, Category("Network"), Timeout(60000)]
+		public async Task throws_exception() {
 			const string query = @"
 fromAll().when({
     $init: function(){return {count:0}},
     type1: function(s,e){
         var start = new Date();
-        while(new Date()-start < 8000){}
+        while(new Date()-start < 1e7){}
         
         s.count++;
     },
 });
 ";
-			Assert.ThrowsAsync<OperationTimedOutException>(() => _queryManager.ExecuteAsync("query", query,
+			await AssertEx.ThrowsAsync<OperationTimedOutException>(() => _queryManager.ExecuteAsync("query", query,
 				TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(5000), _admin));
 		}
 	}

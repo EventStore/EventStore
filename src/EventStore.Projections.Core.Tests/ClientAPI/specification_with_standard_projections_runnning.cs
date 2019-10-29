@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -20,12 +21,13 @@ using EventStore.ClientAPI.Projections;
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
 	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode _node;
+		private MiniNode _node;
 		protected IEventStoreConnection _conn;
-		protected ProjectionsSubsystem _projections;
+		private ProjectionsSubsystem _projections;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 		protected QueryManager _queryManager;
+		private Task _projectionsCreated;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -34,20 +36,32 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
             Assert.Ignore("These tests require DEBUG conditional");
 #else
 			QueueStatsCollector.InitializeIdleDetection();
-			await CreateNode();
+			var projectionWorkerThreadCount = GivenWorkerThreadCount();
+			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
+				startStandardProjections: false,
+				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			_node = new MiniNode(
+				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
+				subsystems: new ISubsystem[] {_projections});
+			_projectionsCreated = SystemProjections.Created(_projections.MasterMainBus);
+
+			await _node.Start();
 			_conn = EventStoreConnection.Create(_node.TcpEndPoint);
 			await _conn.ConnectAsync();
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
 				_node.ExtHttpEndPoint,
-				TimeSpan.FromMilliseconds(20000));
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
 
 			_queryManager = new QueryManager(
 				new ConsoleLogger(),
 				_node.ExtHttpEndPoint,
 				TimeSpan.FromMilliseconds(20000),
-				TimeSpan.FromMilliseconds(20000));
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
 
 			WaitIdle();
 
@@ -70,18 +84,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #endif
 		}
 
-		private Task CreateNode() {
-			var projectionWorkerThreadCount = GivenWorkerThreadCount();
-			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
-				startStandardProjections: false,
-				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
-			_node = new MiniNode(
-				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] { _projections });
-			return _node.Start();
-		}
-
 		protected virtual int GivenWorkerThreadCount() {
 			return 1;
 		}
@@ -94,6 +96,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		protected async Task EnableStandardProjections() {
+			await _projectionsCreated;
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -158,6 +161,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 		protected async Task AssertStreamTail(string streamId, params string[] events) {
 #if DEBUG
+			await Task.Delay(TimeSpan.FromMilliseconds(500));
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin);
 			switch (result.Status) {
 				case SliceReadStatus.StreamDeleted:
@@ -172,7 +176,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 						DumpFailed("Stream does not contain enough events", streamId, events, result.Events);
 					else {
 						for (var index = 0; index < events.Length; index++) {
-							var parts = events[index].Split(new char[] { ':' }, 2);
+							var parts = events[index].Split(new char[] {':'}, 2);
 							var eventType = parts[0];
 							var eventData = parts[1];
 

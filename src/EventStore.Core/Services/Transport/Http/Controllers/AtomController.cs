@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
 			if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
 				var stream = match.BoundVariables["stream"];
-				var accepts = manager.HttpEntity.Request.AcceptTypes == null ||
+				var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
 							  manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
 				var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
 				var responseMessage = manager.HttpEntity.Request.AcceptTypes == null
