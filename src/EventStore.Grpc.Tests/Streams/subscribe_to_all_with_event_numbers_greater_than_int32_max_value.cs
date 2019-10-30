@@ -21,7 +21,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var @event = new EventData(Uuid.NewUuid(), "-", Array.Empty<byte>(), isJson: false);
 			var received = new List<Uuid>(3);
 			using var _ = _fixture.Client.SubscribeToAllAsync(
-				Position.Start, false, EventAppeared, SubscriptionDropped, userCredentials: TestCredentials.Root);
+				Position.Start, EventAppeared, false, SubscriptionDropped, userCredentials: TestCredentials.Root);
 
 			await _fixture.Client.AppendToStreamAsync(Stream, AnyStreamRevision.Any, new[] {@event});
 

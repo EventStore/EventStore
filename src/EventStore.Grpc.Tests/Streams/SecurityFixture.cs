@@ -166,30 +166,28 @@ namespace EventStore.Grpc.Tests.Streams {
 
 		public async Task SubscribeToStream(string streamId, UserCredentials userCredentials = default) {
 			var source = new TaskCompletionSource<bool>();
-			using (Client.SubscribeToStreamAsync(streamId, false, (x, y, ct) => {
+			using (Client.SubscribeToStreamAsync(streamId, (x, y, ct) => {
 					source.TrySetResult(true);
 					return Task.CompletedTask;
 				},
-				(x, y, ex) => {
+				subscriptionDropped: (x, y, ex) => {
 					if (ex == null) source.TrySetResult(true);
 					else source.TrySetException(ex);
-				},
-				userCredentials)) {
+				}, userCredentials: userCredentials)) {
 				await source.Task.WithTimeout();
 			}
 		}
 
 		public async Task SubscribeToAll(UserCredentials userCredentials = default) {
 			var source = new TaskCompletionSource<bool>();
-			using (Client.SubscribeToAllAsync(false, (x, y, ct) => {
+			using (Client.SubscribeToAllAsync((x, y, ct) => {
 					source.TrySetResult(true);
 					return Task.CompletedTask;
 				},
-				(x, y, ex) => {
+				subscriptionDropped: (x, y, ex) => {
 					if (ex == null) source.TrySetResult(true);
 					else source.TrySetException(ex);
-				},
-				userCredentials: userCredentials)) {
+				}, userCredentials: userCredentials)) {
 				await source.Task.WithTimeout();
 			}
 		}

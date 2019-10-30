@@ -22,8 +22,8 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(false, EventAppeared,
-				filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
+			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -51,8 +51,8 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(false, EventAppeared,
-				filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
+			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+				false, filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -84,8 +84,8 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(false, EventAppeared,
-				filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
+			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+				false, filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -117,8 +117,8 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(false, EventAppeared,
-				filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
+			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+				false, filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",

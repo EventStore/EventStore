@@ -20,7 +20,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task should_subscribe() {
 			var source = new TaskCompletionSource<ResolvedEvent>();
 			using var _ = _fixture.Client.SubscribeToStreamAsync(
-				Stream, StreamRevision.Start, false, EventAppeared, SubscriptionDropped);
+				Stream, StreamRevision.Start, EventAppeared, false, SubscriptionDropped);
 
 			var result = await source.Task.WithTimeout();
 

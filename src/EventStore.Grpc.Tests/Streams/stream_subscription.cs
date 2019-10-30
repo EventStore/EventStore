@@ -18,10 +18,10 @@ namespace EventStore.Grpc.Tests.Streams {
 			var appeared = new TaskCompletionSource<bool>();
 			var dropped = new TaskCompletionSource<bool>();
 
-			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, false, (s, e, ct) => {
+			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, (s, e, ct) => {
 				appeared.TrySetResult(true);
 				return Task.CompletedTask;
-			}, (s, reason, ex) => dropped.TrySetResult(true));
+			}, false, (s, reason, ex) => dropped.TrySetResult(true));
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream,
 				_fixture.CreateTestEvents());
 
@@ -36,8 +36,8 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			int appearedCount = 0;
 
-			using var s1 = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, false, EventAppeared);
-			using var s2 = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, false, EventAppeared);
+			using var s1 = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, EventAppeared, false);
+			using var s2 = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, EventAppeared, false);
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, _fixture.CreateTestEvents());
 
 			Assert.True(await appeared.Task.WithTimeout());
@@ -57,7 +57,7 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, false, EventAppeared, SubscriptionDropped);
+			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, EventAppeared, false, SubscriptionDropped);
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, _fixture.CreateTestEvents());
 
 			Task EventAppeared(StreamSubscription s, ResolvedEvent e, CancellationToken ct) {
@@ -80,7 +80,7 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, false, EventAppeared, SubscriptionDropped);
+			using var _ = _fixture.Client.SubscribeToStreamAsync(stream, StreamRevision.End, EventAppeared, false, SubscriptionDropped);
 
 			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
 			var (reason, ex) = await dropped.Task.WithTimeout();

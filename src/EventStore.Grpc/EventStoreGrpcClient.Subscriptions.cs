@@ -9,15 +9,16 @@ namespace EventStore.Grpc {
 		/// <summary>
 		/// Subscribes to all events. Use this when you have no checkpoint.
 		/// </summary>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAllAsync(bool resolveLinkTos,
+		public StreamSubscription SubscribeToAllAsync(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
@@ -38,17 +39,16 @@ namespace EventStore.Grpc {
 		/// Subscribes to all events from a checkpoint. This is exclusive of.
 		/// </summary>
 		/// <param name="start">A position (exclusive of) to start the subscription from.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAllAsync(
-			Position start,
-			bool resolveLinkTos,
+		public StreamSubscription SubscribeToAllAsync(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
@@ -68,10 +68,9 @@ namespace EventStore.Grpc {
 			}, userCredentials,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
-		public StreamSubscription SubscribeToStreamAsync(
-			string streamName,
-			bool resolveLinkTos,
+		public StreamSubscription SubscribeToStreamAsync(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => new StreamSubscription(ReadInternal(new ReadReq {
@@ -88,11 +87,10 @@ namespace EventStore.Grpc {
 			userCredentials,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
-		public StreamSubscription SubscribeToStreamAsync(
-			string streamName,
+		public StreamSubscription SubscribeToStreamAsync(string streamName,
 			StreamRevision start,
-			bool resolveLinkTos,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => new StreamSubscription(ReadInternal(new ReadReq {

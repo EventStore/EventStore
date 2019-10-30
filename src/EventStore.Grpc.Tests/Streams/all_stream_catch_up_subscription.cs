@@ -22,7 +22,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task calls_subscription_dropped_when_disposed() {
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var subscription = _fixture.Client.SubscribeToAllAsync(false, EventAppeared, SubscriptionDropped);
+			using var subscription = _fixture.Client.SubscribeToAllAsync(EventAppeared, false, SubscriptionDropped);
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -45,7 +45,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 			var expectedException = new Exception("Error");
 
-			using var subscription = _fixture.Client.SubscribeToAllAsync(false, EventAppeared, SubscriptionDropped);
+			using var subscription = _fixture.Client.SubscribeToAllAsync(EventAppeared, false, SubscriptionDropped);
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, _fixture.CreateTestEvents());
 
@@ -66,7 +66,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var appeared = new TaskCompletionSource<bool>();
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var subscription = _fixture.Client.SubscribeToAllAsync(false, EventAppeared, SubscriptionDropped);
+			using var subscription = _fixture.Client.SubscribeToAllAsync(EventAppeared, false, SubscriptionDropped);
 
 			await Task.Delay(200);
 
@@ -105,7 +105,7 @@ namespace EventStore.Grpc.Tests.Streams {
 					new[] {@event});
 			}
 
-			using var subscription = _fixture.Client.SubscribeToAllAsync(false, EventAppeared, SubscriptionDropped);
+			using var subscription = _fixture.Client.SubscribeToAllAsync(EventAppeared, false, SubscriptionDropped);
 
 			foreach (var @event in afterEvents) {
 				await _fixture.Client.AppendToStreamAsync($"stream-{@event.EventId:n}", AnyStreamRevision.NoStream,
