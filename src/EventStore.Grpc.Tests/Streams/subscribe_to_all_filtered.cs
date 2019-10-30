@@ -22,7 +22,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+			_fixture.Client.SubscribeToAll(EventAppeared,
 				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
 
 			foreach (var e in events) {
@@ -51,7 +51,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+			_fixture.Client.SubscribeToAll(EventAppeared,
 				false, filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
 
 			foreach (var e in events) {
@@ -84,7 +84,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+			_fixture.Client.SubscribeToAll(EventAppeared,
 				false, filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
 
 			foreach (var e in events) {
@@ -117,7 +117,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAllAsync(EventAppeared,
+			_fixture.Client.SubscribeToAll(EventAppeared,
 				false, filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
 
 			foreach (var e in events) {

@@ -16,7 +16,7 @@ namespace EventStore.Grpc {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAllAsync(
+		public StreamSubscription SubscribeToAll(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
@@ -46,7 +46,7 @@ namespace EventStore.Grpc {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAllAsync(Position start,
+		public StreamSubscription SubscribeToAll(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
@@ -68,7 +68,7 @@ namespace EventStore.Grpc {
 			}, userCredentials,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
-		public StreamSubscription SubscribeToStreamAsync(string streamName,
+		public StreamSubscription SubscribeToStream(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
@@ -87,7 +87,7 @@ namespace EventStore.Grpc {
 			userCredentials,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
-		public StreamSubscription SubscribeToStreamAsync(string streamName,
+		public StreamSubscription SubscribeToStream(string streamName,
 			StreamRevision start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
