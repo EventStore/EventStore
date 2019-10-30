@@ -262,6 +262,80 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
+	public class when_receiving_a_prepare : ElectionsFixture {
+		[Test]
+		public void should_reply_with_prepare_ok() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Prepare(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+
+			var expected = new Message[] {
+				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+					new ElectionMessage.PrepareOk(0,
+						_nodeThree.InstanceId, _nodeThree.InternalHttp, -1, -1, Guid.Empty, 0, 0, 0, 0),
+					GetUtcNow().Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+	
+	public class when_receiving_a_prepare_when_node_is_shutting_down : ElectionsFixture {
+		[Test]
+		public void should_ignore_the_prepare() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.Prepare(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), false, false));
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_prepare_for_the_same_node : ElectionsFixture {
+		[Test]
+		public void should_ignore_the_prepare() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_prepare_not_for_the_last_attempted_view : ElectionsFixture {
+		[Test]
+		public void should_ignore_the_prepare() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 1));
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_prepare_from_an_unknown_node : ElectionsFixture {
+		[Test]
+		public void should_ignore_the_prepare() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Prepare(Guid.NewGuid(), new IPEndPoint(IPAddress.Loopback, 1114), 0));
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_prepare_for_a_readonly_replica : ElectionsFixture {
+		[Test]
+		public void should_ignore_the_prepare() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+
 	public class when_receiving_prepare_ok_and_node_is_shutting_down : ElectionsFixture {
 		[Test]
 		public void should_ignore_prepare_ok() {
@@ -369,6 +443,25 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
+	
+	public class when_elections_timeout_and_not_electing_leader : ElectionsFixture {
+		[Test]
+		public void should_ignore_timeout() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
+			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
+			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.ElectionsTimedOut(0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
 
 	public class when_updating_node_priority : ElectionsFixture {
 		[Test]
@@ -413,7 +506,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
 			_publisher.Messages.Clear();
 
-			SUT.Handle(new ClientMessage.ResignNode()); 
+			SUT.Handle(new ClientMessage.ResignNode());
 
 			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeOne.InternalHttp,
@@ -462,7 +555,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			SUT.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
 			_publisher.Messages.Clear();
-			
+
 			SUT.Handle(new ClientMessage.ResignNode());
 			SUT.Handle(new ElectionMessage.MasterIsResigningOk(
 				_nodeThree.InstanceId,
@@ -470,7 +563,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				_nodeTwo.InstanceId,
 				_nodeTwo.InternalHttp));
 			_publisher.Messages.Clear();
-			
+
 			SUT.Handle(new ElectionMessage.StartElections());
 			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 3));
 			SUT.Handle(new ElectionMessage.PrepareOk(3, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,

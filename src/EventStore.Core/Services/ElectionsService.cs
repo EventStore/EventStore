@@ -142,7 +142,6 @@ namespace EventStore.Core.Services {
 		public void Handle(ClientMessage.ResignNode message)
 		{
 			if (_master != null && _nodeInfo.InstanceId == _master) {
-				Log.Info("ELECTIONS: INITIATING RESIGNATION OF THE MASTER NODE");
 				_resigningMasterInstanceId = _master;
 				var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
 					_nodeInfo.InstanceId,
@@ -173,7 +172,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
 			if (_masterIsResigningOkReceived.Add(message.ServerId) && _masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
 				_masterIsResigningOkReceived.Clear();
-				Log.Debug("ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}].",
+				Log.Debug("ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}]. NOW INITIATING MASTER RESIGNATION.",
 					message.MasterInternalHttp, message.MasterId);
 				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
 			}
