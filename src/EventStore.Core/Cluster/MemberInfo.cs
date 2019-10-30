@@ -145,9 +145,10 @@ namespace EventStore.Core.Cluster {
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
 			EpochRecord epoch = null,
-			int? nodePriority = null) {
+			int? nodePriority = null,
+			Func<DateTime> getUtcNow = null) {
 			return new MemberInfo(InstanceId,
-				DateTime.UtcNow,
+				getUtcNow?.Invoke() ?? DateTime.UtcNow,
 				state ?? State,
 				isAlive ?? IsAlive,
 				InternalTcpEndPoint,

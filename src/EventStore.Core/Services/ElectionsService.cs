@@ -80,13 +80,13 @@ namespace EventStore.Core.Services {
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority, Func<DateTime> getUtcNow = null) {
-			Ensure.NotNull(publisher, "publisher");
-			Ensure.NotNull(nodeInfo, "nodeInfo");
-			Ensure.Positive(clusterSize, "clusterSize");
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
-			Ensure.NotNull(epochManager, "epochManager");
-			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
+			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(nodeInfo, nameof(nodeInfo));
+			Ensure.Positive(clusterSize, nameof(clusterSize));
+			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
+			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
+			Ensure.NotNull(epochManager, nameof(epochManager));
+			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 
 			_getUtcNow = getUtcNow ?? (() => DateTime.Now);
 			_publisher = publisher;
