@@ -8,7 +8,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Gossip {
 	public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.UpdateNodePriority> {

@@ -10,7 +10,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Gossip {
 	public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,

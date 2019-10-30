@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}), _nodeOne,
 				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), _getLastCommitPosition, 0,
 				TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000), GetUtcNow, GetNow,
-				infos => infos.First(x => x.InternalHttpEndPoint == _nodeTwo.InternalHttp));
+				infos => infos.First(x => x.InternalHttpEndPoint.Equals(_nodeTwo.InternalHttp)));
 		}
 	}
 
@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
-	
+
 	public class when_gossiping_and_gossip_round_larger_than_or_equal_to_20 : NodeGossipServiceTestFixture {
 		[Test]
 		public void should_use_gossip_interval_for_next_gossip() {
@@ -139,29 +139,62 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
-	
-	public class when_receiving_a_gossip : NodeGossipServiceTestFixture {
+
+	public class when_receiving_out_of_date_cluster_information_from_gossip : NodeGossipServiceTestFixture {
 		[Test]
-		public void should_update_cluster_information_and_reply_with_gossip() {
+		public void should_publish_updated_gossip_and_reply_with_updated_gossip() {
+			var clusterInfo = new ClusterInfo(
+				MemberInfo.ForManager(Guid.Empty, GetUtcNow(), true, _nodeTwo.InternalHttp,
+					_nodeTwo.InternalHttp),
+				MemberInfo.ForManager(Guid.Empty, GetUtcNow(), true, _nodeThree.InternalHttp,
+					_nodeThree.InternalHttp),
+				MemberInfo.ForVNode(_nodeOne.InstanceId, GetUtcNow(), VNodeState.Initializing, true,
+					_nodeOne.InternalTcp, _nodeOne.InternalSecureTcp, _nodeOne.ExternalTcp,
+					_nodeOne.ExternalSecureTcp, _nodeOne.InternalHttp, _nodeOne.ExternalHttp,
+					_getLastCommitPosition(), 0, 0, -1, -1, Guid.Empty, 0, false));
+
+			ClusterInfo updatedClusterInfo = null;
+
 			SUT.Handle(new SystemMessage.SystemInit());
 			SUT.Handle(new GossipMessage.GotGossipSeedSources(new[]
 				{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}));
 			_publisher.Messages.Clear();
-			SUT.Handle(new GossipMessage.GossipReceived());
+			SUT.Handle(new GossipMessage.GossipReceived(new CallbackEnvelope(
+					message => updatedClusterInfo = ((GossipMessage.SendGossip)message).ClusterInfo), clusterInfo,
+				_nodeTwo.InternalHttp));
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_publisher),
-					new GossipMessage.Gossip(21)),
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
-						MemberInfo.ForManager(Guid.Empty, GetUtcNow(), true, _nodeTwo.InternalHttp,
-							_nodeTwo.InternalHttp),
-						MemberInfo.ForManager(Guid.Empty, GetUtcNow(), true, _nodeThree.InternalHttp,
-							_nodeThree.InternalHttp),
-						MemberInfo.ForVNode(_nodeOne.InstanceId, GetUtcNow(), VNodeState.Initializing, true,
-							_nodeOne.InternalTcp, _nodeOne.InternalSecureTcp, _nodeOne.ExternalTcp,
-							_nodeOne.ExternalSecureTcp, _nodeOne.InternalHttp, _nodeOne.ExternalHttp,
-							_getLastCommitPosition(), 0, 0, -1, -1, Guid.Empty, 0, false)), _nodeOne.InternalHttp),
-					GetNow().Add(_gossipInterval)),
+				new GossipMessage.GossipUpdated(updatedClusterInfo), 
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+	
+	public class when_receiving_fresh_cluster_information_from_gossip : NodeGossipServiceTestFixture {
+		[Test]
+		public void should_update_cluster_information_and_reply_with_updated_gossip() {
+			var clusterInfo = new ClusterInfo(
+				MemberInfo.ForManager(Guid.Empty, GetUtcNow().AddMilliseconds(1), true, _nodeTwo.InternalHttp,
+					_nodeTwo.InternalHttp),
+				MemberInfo.ForManager(Guid.Empty, GetUtcNow().AddMilliseconds(1), true, _nodeThree.InternalHttp,
+					_nodeThree.InternalHttp),
+				MemberInfo.ForVNode(_nodeOne.InstanceId, GetUtcNow(), VNodeState.Initializing, true,
+					_nodeOne.InternalTcp, _nodeOne.InternalSecureTcp, _nodeOne.ExternalTcp,
+					_nodeOne.ExternalSecureTcp, _nodeOne.InternalHttp, _nodeOne.ExternalHttp,
+					_getLastCommitPosition(), 0, 0, -1, -1, Guid.Empty, 0, false));
+
+			ClusterInfo updatedClusterInfo = null;
+
+			SUT.Handle(new SystemMessage.SystemInit());
+			SUT.Handle(new GossipMessage.GotGossipSeedSources(new[]
+				{_nodeOne.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}));
+			_publisher.Messages.Clear();
+			SUT.Handle(new GossipMessage.GossipReceived(new CallbackEnvelope(
+					message => updatedClusterInfo = ((GossipMessage.SendGossip)message).ClusterInfo), clusterInfo,
+				_nodeTwo.InternalHttp));
+
+			var expected = new Message[] {
+				new GossipMessage.GossipUpdated(updatedClusterInfo), 
 			};
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
