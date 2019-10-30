@@ -51,25 +51,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_stream_prefix() {
+		public async Task only_return_events_with_a_given_stream_prefix() {
 			var filter = Filter.StreamId.Prefix("stream-a");
-			var foundEvents = new ConcurrentBag<ResolvedEvent>();
+			var foundEvents = new List<ResolvedEvent>();
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
-					appeared.Signal();
-					return Task.CompletedTask;
-				}, (s, p) => Task.CompletedTask, 100).Result) {
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.OddEvents());
-
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+					if (foundEvents.Count > 4) {
+						appeared.TrySetResult(true);
 					}
+					return Task.CompletedTask;
+				}, (s, p) => Task.CompletedTask, 100, (_, reason, ex) => appeared.TrySetException(ex))) {
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.OddEvents());
+
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.True(foundEvents.All(e => e.Event.EventStreamId == "stream-a"));
 				}
@@ -77,25 +77,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_with_a_given_event_prefix() {
+		public async Task only_return_events_with_a_given_event_prefix() {
 			var filter = Filter.EventType.Prefix("AE");
-			var foundEvents = new ConcurrentBag<ResolvedEvent>();
+			var foundEvents = new List<ResolvedEvent>();
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
-					appeared.Signal();
-					return Task.CompletedTask;
-				}, (s, p) => Task.CompletedTask, 100).Result) {
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.OddEvents());
-
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+					if (foundEvents.Count > 4) {
+						appeared.TrySetResult(true);
 					}
+					return Task.CompletedTask;
+				}, (s, p) => Task.CompletedTask, 100)) {
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.OddEvents());
+
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.True(foundEvents.All(e => e.Event.EventType == "AEvent"));
 				}
@@ -103,25 +103,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_stream_regex() {
+		public async Task only_return_events_that_satisfy_a_given_stream_regex() {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
-			var foundEvents = new ConcurrentBag<ResolvedEvent>();
+			var foundEvents = new List<ResolvedEvent>();
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
-					appeared.Signal();
-					return Task.CompletedTask;
-				}, (s, p) => Task.CompletedTask, 100).Result) {
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents());
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
-
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+					if (foundEvents.Count > 4) {
+						appeared.TrySetResult(true);
 					}
+					return Task.CompletedTask;
+				}, (s, p) => Task.CompletedTask, 100)) {
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
+
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.True(foundEvents.All(e => e.Event.EventStreamId == "stream-b"));
 				}
@@ -129,25 +129,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_satisfy_a_given_event_regex() {
+		public async Task only_return_events_that_satisfy_a_given_event_regex() {
 			var filter = Filter.EventType.Regex(new Regex(@"^.*BEv.*$"));
 			var foundEvents = new ConcurrentBag<ResolvedEvent>();
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
-					appeared.Signal();
-					return Task.CompletedTask;
-				}, (s, p) => Task.CompletedTask, 100).Result) {
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents());
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
-
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+					if (foundEvents.Count > 4) {
+						appeared.TrySetResult(true);
 					}
+					return Task.CompletedTask;
+				}, (s, p) => Task.CompletedTask, 100)) {
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
+
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.True(foundEvents.All(e => e.Event.EventType == "BEvent"));
 				}
@@ -155,25 +155,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void only_return_events_that_are_not_system_events() {
+		public async Task only_return_events_that_are_not_system_events() {
 			var filter = Filter.ExcludeSystemEvents;
-			var foundEvents = new ConcurrentBag<ResolvedEvent>();
+			var foundEvents = new List<ResolvedEvent>();
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
-					appeared.Signal();
-					return Task.CompletedTask;
-				}, (s, p) => Task.CompletedTask, 100).Result) {
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _fakeSystemEvents);
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
-
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Appeared countdown event timed out.");
+					if (foundEvents.Count > 4) {
+						appeared.TrySetResult(true);
 					}
+					return Task.CompletedTask;
+				}, (s, p) => Task.CompletedTask, 100)) {
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _fakeSystemEvents);
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.EvenEvents());
+
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.True(foundEvents.All(e => !e.Event.EventType.StartsWith("$")));
 				}
@@ -181,64 +181,61 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void throw_an_exception_if_checkpoint_reached_is_provided_with_no_interval() {
+		public async Task throw_an_exception_if_checkpoint_reached_is_provided_with_no_interval() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
-				Assert.Throws<ArgumentNullException>(() => {
-					store.SubscribeToAllFilteredAsync(
-						false,
-						filter,
-						(s, e) => Task.CompletedTask,
-						(s, p) => Task.CompletedTask).Wait();
-				});
+				await AssertEx.ThrowsAsync<ArgumentNullException>(() => store.SubscribeToAllFilteredAsync(
+					false,
+					filter,
+					(s, e) => Task.CompletedTask,
+					(s, p) => Task.CompletedTask));
 			}
 		}
 		
 		[Test, Category("LongRunning")]
-		public void throw_an_exception_if_interval_is_negative() {
+		public async Task throw_an_exception_if_interval_is_negative() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
-				Assert.Throws<ArgumentOutOfRangeException>(() => {
-					store.SubscribeToAllFilteredAsync(
-						false,
-						filter,
-						(s, e) => Task.CompletedTask,
-						(s, p) => Task.CompletedTask, 0).Wait();
-				});
+				await AssertEx.ThrowsAsync<ArgumentOutOfRangeException>(() => store.SubscribeToAllFilteredAsync(
+					false,
+					filter,
+					(s, e) => Task.CompletedTask,
+					(s, p) => Task.CompletedTask, 0));
 			}
 		}
 		
 		[Test, Category("LongRunning")]
-		public void calls_checkpoint_reached_according_to_checkpoint_message_count() {
+		public async Task calls_checkpoint_reached_according_to_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(5);
+				await store.ConnectAsync();
+				var appeared = new TaskCompletionSource<bool>();
 				var eventsSeen = 0;
+				var checkpointsSeen = 0;
 
-				using (store.SubscribeToAllFilteredAsync(false,
+				using (await store.SubscribeToAllFilteredAsync(false,
 					filter,
 					(s, e) => {
 						eventsSeen++;
 						return Task.CompletedTask;
 					},
 					(s, p) => {
-						appeared.Signal();
+						if (++checkpointsSeen == 5) {
+							appeared.TrySetResult(true);
+						}
 						return Task.CompletedTask;
 					},
-					2).Result) {
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents);
+					2)) {
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents);
 
-					if (!appeared.Wait(Timeout)) {
-						Assert.Fail("Checkpoint appeared not called enough times within time limit.");
-					}
+					await appeared.Task.WithTimeout(Timeout);
 
 					Assert.AreEqual(10, eventsSeen);
 				}
