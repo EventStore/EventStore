@@ -19,6 +19,9 @@ namespace EventStore.Grpc.Tests.PersistentSubscriptions {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override async Task Given() {
 				await Client.AppendToStreamAsync(Stream, AnyStreamRevision.NoStream, CreateTestEvents());
 				await Client.PersistentSubscriptions.CreateAsync(Stream, Group, new PersistentSubscriptionSettings(),

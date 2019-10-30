@@ -12,6 +12,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : SecurityFixture {
+			public Fixture() {
+				
+			}
 			protected override Task When() {
 				var settings = new SystemSettings(
 					systemStreamAcl: new StreamAcl(SystemRoles.All, SystemRoles.All, SystemRoles.All, SystemRoles.All,

@@ -21,6 +21,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			public WriteResult Result { get; private set; }
 
 			protected override Task Given() => Task.CompletedTask;

@@ -51,6 +51,9 @@ namespace EventStore.Grpc.Tests.Streams {
 			=> $"{_fixture.GetStreamName(testMethod)}_{isJson}_{(data == string.Empty ? "no_data" : "data")}_{(metadata == string.Empty ? "no_metadata" : "metadata")}";
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override Task Given() => Task.CompletedTask;
 			protected override Task When() => Task.CompletedTask;
 		}

@@ -128,6 +128,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override Task Given() => Task.CompletedTask;
 			protected override Task When() => Task.CompletedTask;
 		}

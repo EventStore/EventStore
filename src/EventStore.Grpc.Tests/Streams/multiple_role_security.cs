@@ -30,6 +30,9 @@ namespace EventStore.Grpc.Tests.Streams {
 
 
 		public class Fixture : SecurityFixture {
+			public Fixture() {
+				
+			}
 			protected override Task When() {
 				var settings = new SystemSettings(
 					new StreamAcl(new[] {"user1", "user2"}, new[] {"$admins", "user1"},

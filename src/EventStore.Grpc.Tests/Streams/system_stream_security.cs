@@ -12,6 +12,9 @@ namespace EventStore.Grpc.Tests.Streams
 		}
 
 		public class Fixture : SecurityFixture {
+			public Fixture() {
+				
+			}
 			protected override Task When() => Task.CompletedTask;
 		}
 

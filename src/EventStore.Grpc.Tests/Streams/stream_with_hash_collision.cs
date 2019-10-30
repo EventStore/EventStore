@@ -17,6 +17,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			private readonly DirectoryInfo _directory;
 			public bool DeleteDirectory { get; set; }
 

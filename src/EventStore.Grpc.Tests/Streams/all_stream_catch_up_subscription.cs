@@ -142,6 +142,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override Task Given() =>
 				Client.SetStreamMetadataAsync("$all", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), TestCredentials.Root);

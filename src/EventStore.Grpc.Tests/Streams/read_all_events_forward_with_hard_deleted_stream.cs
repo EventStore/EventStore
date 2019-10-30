@@ -34,6 +34,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override async Task Given() {
 				var result = await Client.SetStreamMetadataAsync(
 					"$all",

@@ -13,6 +13,9 @@ namespace EventStore.Grpc.Tests.PersistentSubscriptions {
 		private readonly Fixture _fixture;
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			protected override Task Given() => Task.CompletedTask;
 			protected override Task When() => Task.CompletedTask;
 		}

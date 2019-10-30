@@ -140,6 +140,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			public const string FilteredOutStream = nameof(FilteredOutStream);
 
 			protected override Task Given() => Client.SetStreamMetadataAsync("$all", AnyStreamRevision.Any,

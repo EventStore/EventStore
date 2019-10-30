@@ -11,6 +11,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : SecurityFixture {
+			public Fixture() {
+				
+			}
 			protected override async Task When() {
 				var settings = new SystemSettings(userStreamAcl: new StreamAcl(writeRole: "user1"),
 					systemStreamAcl: new StreamAcl(writeRole: "user1"));

@@ -54,6 +54,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			public EventData[] Events { get; private set; }
 
 			protected override async Task Given() {

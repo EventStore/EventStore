@@ -22,6 +22,9 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
+			public Fixture() {
+				
+			}
 			private const string DeletedStream = nameof(DeletedStream);
 			private const string LinkedStream = nameof(LinkedStream);
 			public ResolvedEvent[] Events { get; private set; }
