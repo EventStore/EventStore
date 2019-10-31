@@ -41,6 +41,7 @@ namespace EventStore.Grpc.Tests.PersistentSubscriptions {
 				_subscription = Client.PersistentSubscriptions.Subscribe(Stream, Group,
 					delegate { return Task.CompletedTask; },
 					(subscription, reason, ex) => _droppedSource.TrySetResult((reason, ex)));
+				await _subscription.Started;
 			}
 
 			protected override Task When() => Client.PersistentSubscriptions.UpdateAsync(Stream, Group,
