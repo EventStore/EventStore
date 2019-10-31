@@ -18,7 +18,7 @@ namespace EventStore.Core.Services {
 		Idle,
 		ElectingLeader,
 		Leader,
-		NonLeader,
+		Acceptor,
 		Shutdown
 	}
 
@@ -293,7 +293,7 @@ namespace EventStore.Core.Services {
 					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttp}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
 					message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
-				ShiftToNonLeader();
+				ShiftToAcceptor();
 			}
 		}
 
@@ -323,7 +323,7 @@ namespace EventStore.Core.Services {
 				_lastAttemptedView, message.ServerInternalHttp, message.ServerId);
 
 			if (_state == ElectionsState.ElectingLeader) // install the view
-				ShiftToNonLeader();
+				ShiftToAcceptor();
 
 			if (_nodeInfo.IsReadOnlyReplica) {
 				Log.Info("ELECTIONS: READ ONLY REPLICA CAN'T BE A CANDIDATE [{0}]", message.ServerInternalHttp);
@@ -342,10 +342,10 @@ namespace EventStore.Core.Services {
 				ownInfo.NodePriority);
 		}
 
-		private void ShiftToNonLeader() {
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
+		private void ShiftToAcceptor() {
+			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_ACCEPTOR.", _lastAttemptedView);
 
-			_state = ElectionsState.NonLeader;
+			_state = ElectionsState.Acceptor;
 			_lastInstalledView = _lastAttemptedView;
 		}
 
@@ -486,7 +486,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.Proposal message) {
 			if (_state == ElectionsState.Shutdown) return;
 			if (message.ServerId == _nodeInfo.InstanceId) return;
-			if (_state != ElectionsState.NonLeader) return;
+			if (_state != ElectionsState.Acceptor) return;
 			if (message.View != _lastInstalledView) return;
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
 			if (_servers.All(x => x.InstanceId != message.MasterId)) return;

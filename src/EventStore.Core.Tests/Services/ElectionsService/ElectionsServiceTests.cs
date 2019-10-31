@@ -597,6 +597,181 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
+	public class when_node_is_shutting_down_and_receive_a_proposal : ElectionsFixture {
+		public when_node_is_shutting_down_and_receive_a_proposal() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), false, false));
+			SUT.Handle(new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
+				_node.InstanceId,
+				_node.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_proposal_from_the_same_node : ElectionsFixture {
+		public when_receiving_a_proposal_from_the_same_node() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
+				_node.InstanceId,
+				_node.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages, "Nodes do not send proposals to themselves, they accept their own proposal implicitly.");
+		}
+	}
+	
+	public class when_receiving_a_proposal_and_an_acceptor_of_the_current_view : ElectionsFixture {
+		public when_receiving_a_proposal_and_an_acceptor_of_the_current_view() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Proposal(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				_node.InstanceId,
+				_node.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_proposal_not_for_the_current_installed_view : ElectionsFixture {
+		public when_receiving_a_proposal_not_for_the_current_installed_view() :
+			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Proposal(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
+				_node.InstanceId,
+				_node.InternalHttp, 1, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_proposal_from_an_unknown_node : ElectionsFixture {
+		public when_receiving_a_proposal_from_an_unknown_node() :
+			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Proposal(Guid.NewGuid(), new IPEndPoint(IPAddress.Loopback, 4), 
+				_node.InstanceId,
+				_node.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_proposal_for_an_unknown_node : ElectionsFixture {
+		public when_receiving_a_proposal_for_an_unknown_node() :
+			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_proposal() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Proposal(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 
+				Guid.NewGuid(),
+				new IPEndPoint(IPAddress.Loopback, 4), 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
+	public class when_receiving_a_proposal : ElectionsFixture {
+		public when_receiving_a_proposal() :
+			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_send_an_acceptance_to_other_members() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+			SUT.Handle(new ElectionMessage.Prepare(_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+			_publisher.Messages.Clear();
+			SUT.Handle(new ElectionMessage.Proposal(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 
+				_nodeThree.InstanceId,
+				_nodeThree.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
+
+			var expected = new Message[] {
+				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
+						_nodeThree.InstanceId,
+						_nodeThree.InternalHttp, 0),
+					GetUtcNow().Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
+						_nodeThree.InstanceId,
+						_nodeThree.InternalHttp, 0), 
+					GetUtcNow().Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				new ElectionMessage.ElectionsDone(0,
+					MemberInfo.ForVNode(
+						_nodeThree.InstanceId, GetUtcNow(), VNodeState.Unknown, true,
+						_nodeThree.InternalTcp,
+						_nodeThree.InternalSecureTcp, _nodeThree.ExternalTcp, _nodeThree.ExternalSecureTcp,
+						_nodeThree.InternalHttp,
+						_nodeThree.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
+						_nodeThree.IsReadOnlyReplica)),
+			};
+			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+		}
+	}
+
 	public class when_receiving_majority_accept : ElectionsFixture {
 		public when_receiving_majority_accept() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
