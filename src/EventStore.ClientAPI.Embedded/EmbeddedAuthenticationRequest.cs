@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		internal EmbeddedAuthenticationRequest(
 			string name, string suppliedPassword, Action<Exception> setException, Action<IPrincipal> onAuthenticated)
-			: base(name, suppliedPassword) {
+			: base("embedded", name, suppliedPassword) {
 			_onAuthenticated = onAuthenticated;
 			_setException = setException;
 		}

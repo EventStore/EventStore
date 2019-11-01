@@ -2,10 +2,12 @@
 
 namespace EventStore.Core.Authentication {
 	public abstract class AuthenticationRequest {
+		public readonly string Id;
 		public readonly string Name;
 		public readonly string SuppliedPassword;
 
-		protected AuthenticationRequest(string name, string suppliedPassword) {
+		protected AuthenticationRequest(string id, string name, string suppliedPassword) {
+			Id = id;
 			Name = name;
 			SuppliedPassword = suppliedPassword;
 		}
