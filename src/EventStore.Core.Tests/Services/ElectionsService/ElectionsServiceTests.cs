@@ -92,6 +92,23 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
+	
+	public class when_starting_elections_for_readonly_replica : ElectionsFixture {
+		public when_starting_elections_for_readonly_replica()
+			: base(NodeFactory(3, true), NodeFactory(2, false), NodeFactory(1, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_send_view_change_to_other_members() {
+			SUT.Handle(new ElectionMessage.StartElections());
+
+			Assert.Fail("TODO: Need to check if this is the correct behavior to continue.");
+		}
+	}
 
 	public class when_starting_elections_after_elections_have_started : ElectionsFixture {
 		public when_starting_elections_after_elections_have_started()
@@ -215,6 +232,26 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
+	public class when_receiving_view_change_and_shutting_down : ElectionsFixture {
+		public when_receiving_view_change_and_shutting_down() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			SUT.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, GetUtcNow(), VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, GetUtcNow(), VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_the_view_change() {
+			_publisher.Messages.Clear();
+
+			SUT.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), false, false));
+			SUT.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, -2));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
+	
 	public class when_receiving_view_change_and_idle : ElectionsFixture {
 		public when_receiving_view_change_and_idle() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
@@ -530,6 +567,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		[Test]
 		public void should_ignore_prepare_ok() {
+			SUT.Handle(new ElectionMessage.StartElections());
+			_publisher.Messages.Clear();
 			SUT.Handle(new ElectionMessage.PrepareOk(-1, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
 
