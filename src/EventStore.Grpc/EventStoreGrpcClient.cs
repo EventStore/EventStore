@@ -77,7 +77,7 @@ namespace EventStore.Grpc {
 			if (filter.MaxSearchWindow.HasValue) {
 				options.Max = filter.MaxSearchWindow.Value;
 			} else {
-				options.Count = new ReadReq.Types.Options.Types.Empty();
+				options.Count = new ReadReq.Types.Empty();
 			}
 
 			return options;

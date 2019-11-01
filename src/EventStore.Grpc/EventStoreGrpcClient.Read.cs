@@ -125,7 +125,7 @@ namespace EventStore.Grpc {
 			}
 
 			if (request.Options.Filter == null) {
-				request.Options.NoFilter = new ReadReq.Types.Options.Types.Empty();
+				request.Options.NoFilter = new ReadReq.Types.Empty();
 			}
 
 			using var call = _client.Read(

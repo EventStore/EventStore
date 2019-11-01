@@ -27,7 +27,7 @@ namespace EventStore.Grpc {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
 					All = new ReadReq.Types.Options.Types.AllOptions {
-						Start = new ReadReq.Types.Options.Types.Empty()
+						Start = new ReadReq.Types.Empty()
 					},
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 					Filter = GetFilterOptions(filter)
@@ -79,7 +79,7 @@ namespace EventStore.Grpc {
 					ResolveLinks = resolveLinkTos,
 					Stream = new ReadReq.Types.Options.Types.StreamOptions {
 						StreamName = streamName,
-						Start = new ReadReq.Types.Options.Types.Empty()
+						Start = new ReadReq.Types.Empty()
 					},
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 				}

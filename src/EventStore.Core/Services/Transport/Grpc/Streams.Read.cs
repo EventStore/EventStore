@@ -197,7 +197,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						e.OriginalPosition.Value.PreparePosition);
 					readEvent.CommitPosition = position.CommitPosition;
 				} else {
-					readEvent.NoPosition = new ReadResp.Types.ReadEvent.Types.Empty();
+					readEvent.NoPosition = new ReadResp.Types.Empty();
 				}
 
 				return readEvent;

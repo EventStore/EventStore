@@ -65,8 +65,8 @@ message ReadReq {
 				repeated string prefix = 2;
 			}
 		}
-		message Empty {
-		}
+	}
+	message Empty {
 	}
 }
 
@@ -80,6 +80,7 @@ message ReadResp {
 			uint64 commit_position = 3;
 			Empty no_position = 4;
 		}
+
 		message RecordedEvent {
 			bytes id = 1;
 			string stream_name = 2;
@@ -90,9 +91,8 @@ message ReadResp {
 			bytes custom_metadata = 7;
 			bytes data = 8;
 		}
-
-		message Empty {
-		}
+	}
+	message Empty {
 	}
 }
 
@@ -101,6 +101,7 @@ message AppendReq {
 		Options options = 1;
 		ProposedMessage proposed_message = 2;
 	}
+
 	message Options {
 		bytes id = 1;
 		string stream_name = 2;
@@ -150,15 +151,13 @@ message DeleteReq {
 			SoftDeleteOptions soft = 5;
 			HardDeleteOptions hard = 6;
 		}
-		message HardDeleteOptions {
 
+		message HardDeleteOptions {
 		}
 		message SoftDeleteOptions {
-
 		}
 	}
 }
-
 
 message DeleteResp {
 	bytes id = 1;
@@ -166,6 +165,7 @@ message DeleteResp {
 		Position position = 2;
 		Empty empty = 3;
 	}
+
 	message Position {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
