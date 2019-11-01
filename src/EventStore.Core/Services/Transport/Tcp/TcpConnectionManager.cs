@@ -455,7 +455,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			private readonly TcpPackage _package;
 
 			public TcpAuthRequest(TcpConnectionManager manager, TcpPackage package, string login, string password)
-				: base(login, password) {
+				: base($"(TCP) {manager.RemoteEndPoint}", login, password) {
 				_manager = manager;
 				_package = package;
 			}
@@ -485,7 +485,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			public TcpDefaultAuthRequest(TcpConnectionManager manager, Guid correlationId,
 				UserCredentials userCredentials)
-				: base(userCredentials.Login, userCredentials.Password) {
+				: base($"(TCP) {manager.RemoteEndPoint}", userCredentials.Login, userCredentials.Password) {
 				_manager = manager;
 				_correlationId = correlationId;
 				_userCredentials = userCredentials;

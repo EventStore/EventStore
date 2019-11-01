@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			public HttpBasicAuthenticationRequest(
 				BasicHttpAuthenticationProvider basicHttpAuthenticationProvider, IncomingHttpRequestMessage message,
 				string name, string suppliedPassword)
-				: base(name, suppliedPassword) {
+				: base($"(HTTP) {message.Entity.Request?.RemoteEndPoint}", name, suppliedPassword) {
 				_basicHttpAuthenticationProvider = basicHttpAuthenticationProvider;
 				_message = message;
 			}

@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Authentication {
 
 			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
 			_internalAuthenticationProvider =
-				new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
+				new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000, false);
 			_bus.Subscribe(_internalAuthenticationProvider);
 		}
 	}
@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Authentication {
 
 		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
 			Action<IPrincipal> authenticated, Action error, Action notReady)
-			: base(name, suppliedPassword) {
+			: base("test", name, suppliedPassword) {
 			_unauthorized = unauthorized;
 			_authenticated = authenticated;
 			_error = error;
