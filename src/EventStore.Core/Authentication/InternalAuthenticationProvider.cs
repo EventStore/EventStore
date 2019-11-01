@@ -1,5 +1,6 @@
 using System;
 using System.Security.Principal;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,15 +12,18 @@ using EventStore.Core.Services.UserManagement;
 namespace EventStore.Core.Authentication {
 	public class InternalAuthenticationProvider : IAuthenticationProvider,
 		IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache> {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<InternalAuthenticationProvider>();
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
+		private readonly bool _logFailedAuthenticationAttempts;
 		private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
 
 		public InternalAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
-			int cacheSize) {
+			int cacheSize, bool logFailedAuthenticationAttempts) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
+			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 		}
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
@@ -39,11 +43,16 @@ namespace EventStore.Core.Authentication {
 				if (completed.Result == ReadStreamResult.StreamDeleted ||
 				    completed.Result == ReadStreamResult.NoStream ||
 				    completed.Result == ReadStreamResult.AccessDenied) {
+					if (_logFailedAuthenticationAttempts)
+						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id, "Invalid user.");
 					authenticationRequest.Unauthorized();
 					return;
 				}
 
 				if (completed.Result == ReadStreamResult.Error) {
+					if (_logFailedAuthenticationAttempts)
+						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+							"The system is not ready.");
 					authenticationRequest.NotReady();
 					return;
 				}
@@ -54,10 +63,14 @@ namespace EventStore.Core.Authentication {
 					return;
 				}
 
-				if (userData.Disabled)
+				if (userData.Disabled) {
+					if (_logFailedAuthenticationAttempts)
+						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+							"The account is disabled.");
 					authenticationRequest.Unauthorized();
-				else
+				} else {
 					AuthenticateWithPasswordHash(authenticationRequest, userData);
+				}
 			} catch {
 				authenticationRequest.Unauthorized();
 			}
@@ -65,6 +78,9 @@ namespace EventStore.Core.Authentication {
 
 		private void AuthenticateWithPasswordHash(AuthenticationRequest authenticationRequest, UserData userData) {
 			if (!_passwordHashAlgorithm.Verify(authenticationRequest.SuppliedPassword, userData.Hash, userData.Salt)) {
+				if (_logFailedAuthenticationAttempts)
+					Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+						"Invalid credentials supplied.");
 				authenticationRequest.Unauthorized();
 				return;
 			}
@@ -90,6 +106,9 @@ namespace EventStore.Core.Authentication {
 		private void AuthenticateWithPassword(AuthenticationRequest authenticationRequest, string correctPassword,
 			IPrincipal principal) {
 			if (authenticationRequest.SuppliedPassword != correctPassword) {
+				if (_logFailedAuthenticationAttempts)
+					Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+						"Invalid credentials supplied.");
 				authenticationRequest.Unauthorized();
 				return;
 			}

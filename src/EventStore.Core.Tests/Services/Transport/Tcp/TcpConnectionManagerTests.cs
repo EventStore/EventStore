@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1),
+					new StubPasswordHashAlgorithm(), 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
 				publisher, dummyConnection, publisher,
 				new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1),
+					new StubPasswordHashAlgorithm(), 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -136,7 +136,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -168,7 +168,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -200,7 +200,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -232,7 +232,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
