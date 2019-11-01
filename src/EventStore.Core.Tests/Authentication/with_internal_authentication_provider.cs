@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Authentication {
 
 			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
 			_internalAuthenticationProvider =
-				new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
+				new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000, false);
 			_bus.Subscribe(_internalAuthenticationProvider);
 		}
 	}

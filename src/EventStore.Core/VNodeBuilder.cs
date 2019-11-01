@@ -76,6 +76,7 @@ namespace EventStore.Core {
 
 		protected IAuthenticationProviderFactory _authenticationProviderFactory;
 		protected bool _disableFirstLevelHttpAuthorization;
+		protected bool _logFailedAuthenticationAttempts;
 		protected bool _disableScavengeMerging;
 		protected int _scavengeHistoryMaxAge;
 		protected bool _adminOnPublic;
@@ -213,6 +214,7 @@ namespace EventStore.Core {
 			_startStandardProjections = Opts.StartStandardProjectionsDefault;
 			_disableHTTPCaching = Opts.DisableHttpCachingDefault;
 			_logHttpRequests = Opts.LogHttpRequestsDefault;
+			_logFailedAuthenticationAttempts = Opts.LogFailedAuthenticationAttemptsDefault;
 			_enableHistograms = Opts.LogHttpRequestsDefault;
 			_index = null;
 			_skipIndexVerify = Opts.SkipIndexVerifyDefault;
@@ -905,6 +907,15 @@ namespace EventStore.Core {
 			_logHttpRequests = true;
 			return this;
 		}
+		
+		/// <summary>
+		/// Enable logging of Failed Authentication Attempts
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder EnableLoggingOfFailedAuthenticationAttempts() {
+			_logFailedAuthenticationAttempts = true;
+			return this;
+		}
 
 		/// <summary>
 		/// Enable the tracking of various histograms in the backend, typically only used for debugging
@@ -1406,7 +1417,8 @@ namespace EventStore.Core {
 				_faultOutOfOrderProjections,
 				_structuredLog,
 				_maxAutoMergeIndexLevel,
-				_disableFirstLevelHttpAuthorization);
+				_disableFirstLevelHttpAuthorization,
+				_logFailedAuthenticationAttempts);
 
 			var infoController = new InfoController(options, _projectionType);
 

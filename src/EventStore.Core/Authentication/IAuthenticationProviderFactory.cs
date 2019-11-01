@@ -5,7 +5,7 @@ using EventStore.Core.Services.Transport.Http;
 namespace EventStore.Core.Authentication {
 	public interface IAuthenticationProviderFactory {
 		IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, ISubscriber mainBus,
-			IPublisher workersQueue, InMemoryBus[] workerBusses);
+			IPublisher workersQueue, InMemoryBus[] workerBuses, bool logFailedAuthenticationAttempts);
 
 		void RegisterHttpControllers(HttpService externalHttpService, HttpService internalHttpService,
 			HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue);
