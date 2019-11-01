@@ -29,10 +29,9 @@ namespace EventStore.Grpc {
 				Options = new DeleteReq.Types.Options {
 					Soft = new DeleteReq.Types.Options.Types.SoftDeleteOptions(),
 					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
-					StreamName = streamName,
-					AnyRevision = expectedRevision
+					StreamName = streamName
 				}
-			}, userCredentials, cancellationToken);
+			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);
 
 		public Task<DeleteResult> HardDeleteAsync(
 			string streamName,
@@ -57,10 +56,9 @@ namespace EventStore.Grpc {
 				Options = new DeleteReq.Types.Options {
 					Hard = new DeleteReq.Types.Options.Types.HardDeleteOptions(),
 					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
-					StreamName = streamName,
-					AnyRevision = expectedRevision
+					StreamName = streamName
 				}
-			}, userCredentials, cancellationToken);
+			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);
 
 		private async Task<DeleteResult> DeleteInternal(DeleteReq request, UserCredentials userCredentials,
 			CancellationToken cancellationToken) {

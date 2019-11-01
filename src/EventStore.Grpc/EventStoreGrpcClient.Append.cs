@@ -22,17 +22,16 @@ namespace EventStore.Grpc {
 
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
-			AnyStreamRevision anyExpectedRevision,
+			AnyStreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) =>
 			AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
 					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
-					StreamName = streamName,
-					AnyRevision = anyExpectedRevision
+					StreamName = streamName
 				}
-			}, eventData, userCredentials, cancellationToken);
+			}.WithAnyStreamRevision(expectedRevision), eventData, userCredentials, cancellationToken);
 
 		private async Task<WriteResult> AppendToStreamInternal(
 			AppendReq header,

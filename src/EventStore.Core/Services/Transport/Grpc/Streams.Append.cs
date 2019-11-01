@@ -25,8 +25,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.AnyRevision => new AnyStreamRevision(
-					options.AnyRevision).ToInt64(),
+				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
+				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
+				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
 				_ => throw new InvalidOperationException()
 			};
 

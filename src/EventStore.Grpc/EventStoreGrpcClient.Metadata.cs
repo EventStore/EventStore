@@ -35,11 +35,9 @@ namespace EventStore.Grpc {
 			=> SetStreamMetadataInternal(metadata, new AppendReq {
 				Options = new AppendReq.Types.Options {
 					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
-					StreamName = SystemStreams.MetastreamOf(streamName),
-					AnyRevision = expectedRevision
+					StreamName = SystemStreams.MetastreamOf(streamName)
 				}
-			}, userCredentials,
-				cancellationToken);
+			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);
 
 		public Task<WriteResult> SetStreamMetadataAsync(string streamName, StreamRevision expectedRevision,
 			StreamMetadata metadata, UserCredentials userCredentials = default,

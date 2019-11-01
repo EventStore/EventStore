@@ -107,7 +107,9 @@ message AppendReq {
 		string stream_name = 2;
 		oneof expected_stream_revision {
 			uint64 revision = 3;
-			int32 any_revision = 4;
+			Empty no_stream = 4;
+			Empty any = 5;
+			Empty stream_exists = 6;
 		}
 	}
 	message ProposedMessage {
@@ -115,6 +117,8 @@ message AppendReq {
 		map<string, string> metadata = 2;
 		bytes custom_metadata = 3;
 		bytes data = 4;
+	}
+	message Empty {
 	}
 }
 
@@ -145,17 +149,21 @@ message DeleteReq {
 		string stream_name = 2;
 		oneof expected_stream_revision {
 			uint64 revision = 3;
-			int32 any_revision = 4;
+			Empty no_stream = 4;
+			Empty any = 5;
+			Empty stream_exists = 6;
 		}
 		oneof delete_options {
-			SoftDeleteOptions soft = 5;
-			HardDeleteOptions hard = 6;
+			SoftDeleteOptions soft = 7;
+			HardDeleteOptions hard = 8;
 		}
 
 		message HardDeleteOptions {
 		}
 		message SoftDeleteOptions {
 		}
+	}
+	message Empty {
 	}
 }
 
