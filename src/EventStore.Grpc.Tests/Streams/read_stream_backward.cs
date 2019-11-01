@@ -38,7 +38,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task stream_deleted_throws() {
 			var stream = _fixture.GetStreamName();
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			var ex = await Assert.ThrowsAsync<StreamDeletedException>(() => _fixture.Client
 				.ReadStreamBackwardsAsync(stream, StreamRevision.End, 1, false)

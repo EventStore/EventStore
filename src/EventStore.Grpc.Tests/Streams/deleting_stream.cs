@@ -22,7 +22,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			AnyStreamRevision expectedVersion, string name) {
 			var stream = $"{_fixture.GetStreamName()}_{name}";
 
-			await _fixture.Client.HardDeleteAsync(stream, expectedVersion);
+			await _fixture.Client.TombstoneAsync(stream, expectedVersion);
 		}
 
 		[Theory, MemberData(nameof(ExpectedVersionCases))]
@@ -39,7 +39,7 @@ namespace EventStore.Grpc.Tests.Streams {
 			var stream = _fixture.GetStreamName();
 
 			await Assert.ThrowsAsync<WrongExpectedVersionException>(
-				() => _fixture.Client.HardDeleteAsync(stream, StreamRevision.Start));
+				() => _fixture.Client.TombstoneAsync(stream, StreamRevision.Start));
 		}
 
 		[Fact]
@@ -59,7 +59,7 @@ namespace EventStore.Grpc.Tests.Streams {
 				AnyStreamRevision.NoStream,
 				_fixture.CreateTestEvents());
 
-			var deleteResult = await _fixture.Client.HardDeleteAsync(stream, StreamRevision.FromInt64(writeResult.NextExpectedVersion));
+			var deleteResult = await _fixture.Client.TombstoneAsync(stream, StreamRevision.FromInt64(writeResult.NextExpectedVersion));
 
 			Assert.True(deleteResult.LogPosition > writeResult.LogPosition);
 		}
@@ -82,10 +82,10 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task hard_deleting_a_deleted_stream_should_throw() {
 			var stream = _fixture.GetStreamName();
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			await Assert.ThrowsAsync<StreamDeletedException>(
-				() => _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream));
+				() => _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream));
 		}
 
 		public class Fixture : EventStoreGrpcFixture {

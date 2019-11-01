@@ -178,7 +178,7 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			await _fixture.Client.SoftDeleteAsync(stream, new StreamRevision(1));
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.Any);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.Any);
 
 			var ex = await Assert.ThrowsAsync<StreamDeletedException>(
 				() => _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)

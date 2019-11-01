@@ -43,7 +43,7 @@ namespace EventStore.Grpc.Tests.Streams {
 				Events = CreateTestEvents(20).ToArray();
 
 				await Client.AppendToStreamAsync(Stream, AnyStreamRevision.NoStream, Events);
-				await Client.HardDeleteAsync(Stream, AnyStreamRevision.Any);
+				await Client.TombstoneAsync(Stream, AnyStreamRevision.Any);
 			}
 
 			public EventData[] Events { get; private set; }

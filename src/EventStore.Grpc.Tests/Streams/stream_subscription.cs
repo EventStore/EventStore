@@ -82,7 +82,7 @@ namespace EventStore.Grpc.Tests.Streams {
 
 			using var _ = _fixture.Client.SubscribeToStream(stream, StreamRevision.End, EventAppeared, false, SubscriptionDropped);
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 			var (reason, ex) = await dropped.Task.WithTimeout();
 
 			Assert.Equal(SubscriptionDroppedReason.ServerError, reason);

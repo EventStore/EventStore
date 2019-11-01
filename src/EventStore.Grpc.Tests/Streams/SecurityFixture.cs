@@ -200,6 +200,6 @@ namespace EventStore.Grpc.Tests.Streams {
 		}
 
 		public Task<DeleteResult> DeleteStream(string streamId, UserCredentials userCredentials = default) =>
-			Client.HardDeleteAsync(streamId, AnyStreamRevision.Any, userCredentials);
+			Client.TombstoneAsync(streamId, AnyStreamRevision.Any, userCredentials);
 	}
 }

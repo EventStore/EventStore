@@ -140,7 +140,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task writing_with_correct_expected_version_to_deleted_stream_throws_stream_deleted() {
 			var stream = _fixture.GetStreamName();
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			await Assert.ThrowsAsync<StreamDeletedException>(() => _fixture.Client.AppendToStreamAsync(
 				stream,
@@ -163,7 +163,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		[Fact]
 		public async Task writing_with_any_expected_version_to_deleted_stream_throws_stream_deleted() {
 			var stream = _fixture.GetStreamName();
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			await Assert.ThrowsAsync<StreamDeletedException>(
 				() => _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.Any, _fixture.CreateTestEvents(1)));
@@ -173,7 +173,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task writing_with_invalid_expected_version_to_deleted_stream_throws_stream_deleted() {
 			var stream = _fixture.GetStreamName();
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			await Assert.ThrowsAsync<StreamDeletedException>(
 				() => _fixture.Client.AppendToStreamAsync(stream, new StreamRevision(5), _fixture.CreateTestEvents()));
@@ -279,7 +279,7 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task appending_with_stream_exists_expected_version_to_hard_deleted_stream_throws_stream_deleted() {
 			var stream = _fixture.GetStreamName();
 
-			await _fixture.Client.HardDeleteAsync(stream, AnyStreamRevision.NoStream);
+			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			await Assert.ThrowsAsync<StreamDeletedException>(() => _fixture.Client.AppendToStreamAsync(
 				stream,

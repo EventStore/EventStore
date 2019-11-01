@@ -6,6 +6,7 @@ service Streams {
 	rpc Read (ReadReq) returns (stream ReadResp);
 	rpc Append (stream AppendReq) returns (AppendResp);
 	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Tombstone (TombstoneReq) returns (TombstoneResp);
 }
 
 message ReadReq {
@@ -153,21 +154,44 @@ message DeleteReq {
 			Empty any = 5;
 			Empty stream_exists = 6;
 		}
-		oneof delete_options {
-			SoftDeleteOptions soft = 7;
-			HardDeleteOptions hard = 8;
-		}
-
-		message HardDeleteOptions {
-		}
-		message SoftDeleteOptions {
-		}
 	}
 	message Empty {
 	}
 }
 
 message DeleteResp {
+	bytes id = 1;
+	oneof position_options {
+		Position position = 2;
+		Empty empty = 3;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+	message Empty {
+	}
+}
+
+message TombstoneReq {
+	Options options = 1;
+
+	message Options {
+		bytes request_id = 1;
+		string stream_name = 2;
+		oneof expected_stream_revision {
+			uint64 revision = 3;
+			Empty no_stream = 4;
+			Empty any = 5;
+			Empty stream_exists = 6;
+		}
+	}
+	message Empty {
+	}
+}
+
+message TombstoneResp {
 	bytes id = 1;
 	oneof position_options {
 		Position position = 2;
