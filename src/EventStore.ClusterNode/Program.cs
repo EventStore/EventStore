@@ -216,7 +216,13 @@ namespace EventStore.ClusterNode {
 			} else {
 				builder = builder.RunOnDisk(options.Db);
 			}
-			
+
+			if (options.WriteStatsToDb) {
+				builder = builder.WithStatsStorage(StatsStorage.StreamAndFile);
+			} else {
+				builder = builder.WithStatsStorage(StatsStorage.File);
+			}
+
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)
@@ -251,7 +257,6 @@ namespace EventStore.ClusterNode {
 				.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
 				.WithTfCachedChunks(options.CachedChunks)
 				.WithTfChunksCacheSize(options.ChunksCacheSize)
-				.WithStatsStorage(StatsStorage.File)
 				.AdvertiseInternalIPAs(options.IntIpAdvertiseAs)
 				.AdvertiseExternalIPAs(options.ExtIpAdvertiseAs)
 				.AdvertiseInternalHttpPortAs(options.IntHttpPortAdvertiseAs)
