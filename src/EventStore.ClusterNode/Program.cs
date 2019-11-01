@@ -289,6 +289,8 @@ namespace EventStore.ClusterNode {
 				builder.DisableScavengeMerging();
 			if (options.LogHttpRequests)
 				builder.EnableLoggingOfHttpRequests();
+			if (options.LogFailedAuthenticationAttempts)
+				builder.EnableLoggingOfFailedAuthenticationAttempts();
 			if (options.EnableHistograms)
 				builder.EnableHistograms();
 			if (options.UnsafeIgnoreHardDelete)

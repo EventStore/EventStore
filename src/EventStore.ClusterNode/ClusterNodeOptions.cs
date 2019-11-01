@@ -285,6 +285,9 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.LogHttpRequestsDescr, Opts.AppGroup)]
 		public bool LogHttpRequests { get; set; }
+		
+		[ArgDescription(Opts.LogFailedAuthenticationAttemptsDescr, Opts.AppGroup)]
+		public bool LogFailedAuthenticationAttempts { get; set; }
 
 		[ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
 		public bool AlwaysKeepScavenged { get; set; }
@@ -410,6 +413,7 @@ namespace EventStore.ClusterNode {
 			StartStandardProjections = Opts.StartStandardProjectionsDefault;
 			DisableHTTPCaching = Opts.DisableHttpCachingDefault;
 			LogHttpRequests = Opts.LogHttpRequestsDefault;
+			LogFailedAuthenticationAttempts = Opts.LogFailedAuthenticationAttemptsDefault;
 
 			Unbuffered = Opts.UnbufferedDefault;
 			WriteThrough = Opts.WriteThroughDefault;
