@@ -21,6 +21,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool StartStandardProjections;
 		public readonly bool DisableHTTPCaching;
 		public readonly bool LogHttpRequests;
+		public readonly bool LogFailedAuthenticationAttempts;
 
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
@@ -154,6 +155,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
 			bool readOnlyReplica = false,
+			bool logFailedAuthenticationAttempts = false,
 			Func<HttpMessageHandler> createHttpMessageHandler = null) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -190,6 +192,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StartStandardProjections = startStandardProjections;
 			DisableHTTPCaching = disableHTTPCaching;
 			LogHttpRequests = logHttpRequests;
+			LogFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 			AdditionalConsumerStrategies =
 				additionalConsumerStrategies ?? new IPersistentSubscriptionConsumerStrategyFactory[0];
 
