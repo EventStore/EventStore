@@ -167,6 +167,7 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Post>(_coreResponseWriter);
+				coreInputBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);

@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using NUnit.Framework;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Projections;
@@ -7,11 +10,15 @@ using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
 using EventStore.Core.Util;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	public abstract class SpecificationWithNodeAndProjectionsManager : SpecificationWithDirectoryPerTestFixture {
@@ -21,6 +28,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		protected UserCredentials _credentials;
 		protected TimeSpan _timeout;
 		protected string _tag;
+		private CountdownEvent _systemProjectionsCreated;
+		private ProjectionsSubsystem _projectionsSubsystem;
 
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
@@ -36,9 +45,23 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			} else {
 				createdMiniNode = true;
 				_tag = "_1";
-
+				
 				_node = CreateNode();
+				
+				// System projections are created and put into the stopped state when they're ready.
+				// NOTE: If this specification is changed to allow setting the 'startStandardProjections' option,
+				// this will need to be updated to take that into account.
+				_systemProjectionsCreated = new CountdownEvent(_systemProjections.Count()); 
+				_projectionsSubsystem.MasterMainBus.Subscribe(new AdHocHandler<CoreProjectionStatusMessage.Stopped>(msg => {
+					if (_systemProjections.Contains(msg.Name)
+					    && _systemProjectionsCreated.CurrentCount > 0)
+							_systemProjectionsCreated.Signal();
+				}));
+				
 				_node.Start();
+
+				if(!_systemProjectionsCreated.Wait(TimeSpan.FromSeconds(10)))
+					Assert.Fail("Timed out waiting for standard projections to be written");
 
 				_connection = TestConnection.Create(_node.TcpEndPoint);
 				_connection.ConnectAsync().Wait();
@@ -83,13 +106,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		public abstract void When();
 
 		protected MiniNode CreateNode() {
-			var projections = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
+			_projectionsSubsystem = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
 			return new MiniNode(
 				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] {projections});
+				subsystems: new ISubsystem[] {_projectionsSubsystem});
 		}
 
 		protected EventData CreateEvent(string eventType, string data) {
@@ -128,5 +151,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
                     } 
                 });";
 		}
+		
+		private List<string> _systemProjections =>
+			typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
+					System.Reflection.BindingFlags.Public |
+					System.Reflection.BindingFlags.Static |
+					System.Reflection.BindingFlags.FlattenHierarchy)
+				.Where(x => x.IsLiteral && !x.IsInitOnly)
+				.Select(x => x.GetRawConstantValue().ToString())
+				.ToList();
 	}
 }
