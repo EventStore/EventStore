@@ -183,7 +183,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void CheckIdle() {
 			if (_eofs.All(v => v.Value))
 				_publisher.Publish(
-					new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+					new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.UtcNow));
 		}
 
 		private void ProcessBuffers() {

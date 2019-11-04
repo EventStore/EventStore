@@ -43,7 +43,6 @@ namespace EventStore.Core.Services {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectionsService>();
 		private static readonly IPEndPointComparer IPComparer = new IPEndPointComparer();
 
-		private readonly Func<DateTime> _getUtcNow;
 		private readonly IPublisher _publisher;
 		private readonly IEnvelope _publisherEnvelope;
 		private readonly VNodeInfo _nodeInfo;
@@ -53,6 +52,7 @@ namespace EventStore.Core.Services {
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
+		private readonly ITimeProvider _timeProvider;
 
 		private int _lastAttemptedView = -1;
 		private int _lastInstalledView = -1;
@@ -80,7 +80,8 @@ namespace EventStore.Core.Services {
 			ICheckpoint chaserCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
-			int nodePriority, Func<DateTime> getUtcNow = null) {
+			int nodePriority,
+			ITimeProvider timeProvider) {
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(nodeInfo, nameof(nodeInfo));
 			Ensure.Positive(clusterSize, nameof(clusterSize));
@@ -88,8 +89,8 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));
 			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
+			Ensure.NotNull(timeProvider, nameof(timeProvider));
 
-			_getUtcNow = getUtcNow ?? (() => DateTime.Now);
 			_publisher = publisher;
 			_nodeInfo = nodeInfo;
 			_publisherEnvelope = new PublishEnvelope(_publisher);
@@ -99,11 +100,12 @@ namespace EventStore.Core.Services {
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
+			_timeProvider = timeProvider;
 
 			var ownInfo = GetOwnInfo();
 			_servers = new[] {
 				MemberInfo.ForVNode(nodeInfo.InstanceId,
-					DateTime.UtcNow,
+					_timeProvider.UtcNow,
 					VNodeState.Initializing,
 					true,
 					nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp,
@@ -170,7 +172,7 @@ namespace EventStore.Core.Services {
 				_nodeInfo.InternalHttp);
 			_resigningMasterInstanceId = message.MasterId;
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
-				_getUtcNow().Add(LeaderElectionProgressTimeout)));
+				_timeProvider.UtcNow.Add(LeaderElectionProgressTimeout)));
 		}
 
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
@@ -242,7 +244,7 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _nodeInfo.InstanceId)) {
 				_publisher.Publish(new HttpMessage.SendOverHttp(server.InternalHttpEndPoint, message,
-					_getUtcNow().Add(LeaderElectionProgressTimeout)));
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 			}
 		}
 
@@ -340,7 +342,7 @@ namespace EventStore.Core.Services {
 
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
-				_getUtcNow().Add(LeaderElectionProgressTimeout)));
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {

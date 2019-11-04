@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					writerCheckpoint,
 					readerCheckpoint,
 					epochManager,
-					() => -1, 0);
+					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);
 
 				outputBus.Subscribe<HttpMessage.SendOverHttp>(this);

@@ -7,6 +7,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
@@ -79,7 +80,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 					new InMemoryCheckpoint(),
 					new InMemoryCheckpoint(),
 					new FakeEpochManager(),
-					() => -1, 0);
+					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);
 
 				outputBus.Subscribe(sendOverHttpHandler);

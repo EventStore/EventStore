@@ -169,7 +169,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			_slaveMasterCorrelationId = slaveMasterCorrelationId;
 			_getStateDispatcher = getStateDispatcher;
 			_getResultDispatcher = getResultDispatcher;
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			_ioDispatcher = ioDispatcher;
 			_projectionsQueryExpiry = projectionQueryExpiry;
 		}
@@ -306,7 +306,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.GetState message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			if (_state >= ManagedProjectionState.Running) {
 				_getStateDispatcher.Publish(
 					new CoreProjectionManagementMessage.GetState(Guid.NewGuid(), Id, message.Partition, _workerId),
@@ -321,7 +321,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.GetResult message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			if (_state >= ManagedProjectionState.Running) {
 				_getResultDispatcher.Publish(
 					new CoreProjectionManagementMessage.GetResult(Guid.NewGuid(), Id, message.Partition, _workerId),
@@ -337,7 +337,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.GetQuery message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 
 			var emitEnabled = PersistedProjectionState.EmitEnabled ?? false;
 
@@ -359,7 +359,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateQuery message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 
 			Prepared = false;
 			UpdateQuery(message);
@@ -369,7 +369,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Disable message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			SetLastReplyEnvelope(message.Envelope);
 			Disable();
 			UpdateProjectionVersion();
@@ -377,7 +377,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Abort message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			UpdateProjectionVersion();
 			SetLastReplyEnvelope(message.Envelope);
 			Disable();
@@ -385,7 +385,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Enable message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			if (Enabled
 			    && !(_state == ManagedProjectionState.Completed || _state == ManagedProjectionState.Faulted
 			                                                    || _state == ManagedProjectionState.Aborted ||
@@ -405,7 +405,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.SetRunAs message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			Prepared = false;
 			SetRunAs(message);
 			UpdateProjectionVersion();
@@ -417,7 +417,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if ((_state != ManagedProjectionState.Stopped && _state != ManagedProjectionState.Faulted) &&
 			    Mode != ProjectionMode.Transient)
 				throw new InvalidOperationException("Cannot delete a projection that hasn't been stopped or faulted.");
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 
 			PersistedProjectionState.DeleteCheckpointStream = message.DeleteCheckpointStream;
 			PersistedProjectionState.DeleteStateStream = message.DeleteStateStream;
@@ -445,7 +445,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.GetConfig message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 
 			var emitEnabled = PersistedProjectionState.EmitEnabled ?? false;
 			var trackEmittedStreams = PersistedProjectionState.TrackEmittedStreams ?? false;
@@ -464,7 +464,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			    Mode != ProjectionMode.Transient)
 				throw new InvalidOperationException(
 					"Cannot update the config of a projection that hasn't been stopped or faulted.");
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 
 			PersistedProjectionState.EmitEnabled = message.EmitEnabled;
 			PersistedProjectionState.TrackEmittedStreams = message.TrackEmittedStreams;
@@ -521,7 +521,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Reset message) {
-			_lastAccessed = _timeProvider.Now;
+			_lastAccessed = _timeProvider.UtcNow;
 			Prepared = false;
 			_pendingWritePersistedState = true;
 			Reset();
@@ -597,7 +597,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private bool IsExpiredProjection() {
 			return Mode == ProjectionMode.Transient && !_isSlave &&
-			       _lastAccessed.Add(_projectionsQueryExpiry) < _timeProvider.Now && _persistedStateLoaded;
+			       _lastAccessed.Add(_projectionsQueryExpiry) < _timeProvider.UtcNow && _persistedStateLoaded;
 		}
 
 		public void InitializeNew(PersistedState persistedState, IEnvelope replyEnvelope) {
