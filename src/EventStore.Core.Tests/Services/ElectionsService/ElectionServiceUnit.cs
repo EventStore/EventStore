@@ -9,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new InMemoryCheckpoint(WriterCheckpoint),
 				new InMemoryCheckpoint(ChaserCheckpoint),
 				new FakeEpochManager(),
-				() => -1, 0);
+				() => -1, 0, new FakeTimeProvider());
 			ElectionsService.SubscribeMessages(_bus);
 
 			InputMessages = new List<Message>();

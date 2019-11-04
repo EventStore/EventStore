@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					writerCheckpoint,
 					readerCheckpoint,
 					epochManager,
-					() => -1, 0);
+					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);
 
 				outputBus.Subscribe<HttpMessage.SendOverHttp>(this);
@@ -282,7 +282,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			var isLegit = SUT.IsLegitimateMaster(1, EndpointForNode(tc.ProposingNode),
 				IdForNode(tc.ProposingNode), mc, members, null, localNode,
-				ownInfo);
+				ownInfo, resigningMaster);
 
 			Assert.True(isLegit);
 		}

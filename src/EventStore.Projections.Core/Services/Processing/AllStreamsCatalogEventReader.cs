@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				: base(
 					reader,
 					new ReaderSubscriptionMessage.EventReaderIdle(
-						reader.EventReaderCorrelationId, reader._timeProvider.Now)) {
+						reader.EventReaderCorrelationId, reader._timeProvider.UtcNow)) {
 			}
 		}
 

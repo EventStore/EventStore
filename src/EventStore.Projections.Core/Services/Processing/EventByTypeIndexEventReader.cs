@@ -698,7 +698,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			private void SendIdle() {
 				_publisher.Publish(
-					new ReaderSubscriptionMessage.EventReaderIdle(_reader.EventReaderCorrelationId, _timeProvider.Now));
+					new ReaderSubscriptionMessage.EventReaderIdle(_reader.EventReaderCorrelationId, _timeProvider.UtcNow));
 			}
 
 			public override void Dispose() {
