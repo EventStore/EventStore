@@ -161,7 +161,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.MasterIsResigning message) {
 			if (_nodeInfo.IsReadOnlyReplica) {
 				Log.Debug(
-					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFOR NOT ALLOWED TO ACKNOWLEDGE MASTER RESIGNATION.");
+					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFORE NOT ALLOWED TO ACKNOWLEDGE MASTER RESIGNATION.");
 				return;
 			}
 			Log.Debug("ELECTIONS: MASTER IS RESIGNING [{masterInternalHttp}, {masterId:B}].",
