@@ -164,6 +164,7 @@ namespace EventStore.Core.Services {
 					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFORE NOT ALLOWED TO ACKNOWLEDGE MASTER RESIGNATION.");
 				return;
 			}
+
 			Log.Debug("ELECTIONS: MASTER IS RESIGNING [{masterInternalHttp}, {masterId:B}].",
 				message.MasterInternalHttp, message.MasterId);
 			var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
@@ -171,7 +172,7 @@ namespace EventStore.Core.Services {
 				message.MasterInternalHttp,
 				_nodeInfo.InstanceId,
 				_nodeInfo.InternalHttp);
-			
+
 			_resigningMasterInstanceId = message.MasterId;
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
@@ -337,7 +338,8 @@ namespace EventStore.Core.Services {
 				ShiftToAcceptor();
 
 			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Info("ELECTIONS: READ ONLY REPLICA CAN'T BE A CANDIDATE [{0}]", message.ServerInternalHttp);
+				Log.Info("ELECTIONS: READ ONLY REPLICA, NOT ACCEPTING PREPARE, NOT ELIGIBLE TO VOTE [{0}]",
+					_nodeInfo.InternalHttp);
 				return;
 			}
 
