@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Bus {
 	[TestFixture, Category("bus")]
 	public class when_consumer_throws_mres : when_consumer_throws {
 		public when_consumer_throws_mres()
-			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, new QueueStatsManager(), false, null, timeout)) {
 		}
 	}
 
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Bus {
 	public class when_consumer_throws_autoreset : when_consumer_throws {
 		public when_consumer_throws_autoreset()
 			: base((consumer, name, timeout) =>
-				new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)) {
+				new QueuedHandlerAutoResetWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)) {
 		}
 	}
 }

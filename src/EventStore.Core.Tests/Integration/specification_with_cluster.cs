@@ -74,9 +74,6 @@ namespace EventStore.Core.Tests.Integration {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-#if DEBUG
-			QueueStatsCollector.InitializeIdleDetection();
-#endif
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
 			_nodeEndpoints[2] = new Endpoints();
@@ -149,9 +146,6 @@ namespace EventStore.Core.Tests.Integration {
 				_nodes[1].Shutdown(),
 				_nodes[2].Shutdown());
 
-#if DEBUG
-			QueueStatsCollector.DisableIdleDetection();
-#endif
 			await base.TestFixtureTearDown();
 		}
 

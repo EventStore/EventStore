@@ -181,6 +181,12 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 			RunningTime.Stop();
 		}
 
+		public void WaitIdle() {
+#if DEBUG
+			Node.QueueStatsManager.WaitIdle();
+#endif
+		}
+
 		private void TryDeleteDirectory(string directory) {
 			try {
 				Directory.Delete(directory, true);

@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 			IPublisher inputBus = new NoopPublisher();
 			var bus = InMemoryBus.CreateTest();
-			var queue = new QueuedHandlerThreadPool(bus, "Test", true, TimeSpan.FromMilliseconds(50));
+			var queue = new QueuedHandlerThreadPool(bus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
 			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] { queue }, null);
 			var providers = new HttpAuthenticationProvider[] { new AnonymousHttpAuthenticationProvider() };
 			var httpService = new KestrelHttpService(ServiceAccessibility.Public, inputBus,

@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core {
 
 		public void Register(StandardComponents standardComponents) {
 			_masterMainBus = new InMemoryBus("manager input bus");
-			_masterInputQueue = QueuedHandler.CreateQueuedHandler(_masterMainBus, "Projections Master");
+			_masterInputQueue = QueuedHandler.CreateQueuedHandler(_masterMainBus, "Projections Master", standardComponents.QueueStatsManager);
 			_masterOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 
 			var projectionsStandardComponents = new ProjectionsStandardComponents(

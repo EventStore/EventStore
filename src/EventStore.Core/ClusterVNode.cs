@@ -70,6 +70,8 @@ namespace EventStore.Core {
 			get { return _workersHandler; }
 		}
 
+		public QueueStatsManager QueueStatsManager => _queueStatsManager;
+
 		public IAuthenticationProvider InternalAuthenticationProvider {
 			get { return _internalAuthenticationProvider; }
 		}
@@ -97,6 +99,7 @@ namespace EventStore.Core {
 		private readonly HttpMessageHandler _httpMessageHandler;
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
+		private readonly QueueStatsManager _queueStatsManager;
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
@@ -129,6 +132,7 @@ namespace EventStore.Core {
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_mainBus = new InMemoryBus("MainBus");
 			_httpMessageHandler = vNodeSettings.CreateHttpMessageHandler?.Invoke();
+			_queueStatsManager = new QueueStatsManager();
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -146,6 +150,7 @@ namespace EventStore.Core {
 				vNodeSettings.WorkerThreads,
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					string.Format("Worker #{0}", queueNum + 1),
+					_queueStatsManager,
 					groupName: "Workers",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
@@ -154,7 +159,7 @@ namespace EventStore.Core {
 
 			_controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this,
 				forwardingProxy, _subsystems);
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue");
+			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
 
@@ -164,7 +169,7 @@ namespace EventStore.Core {
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", true,
+			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
@@ -246,21 +251,21 @@ namespace EventStore.Core {
 			epochManager.Init();
 
 			var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,
-				db, writer, readIndex.IndexWriter, epochManager,
+				db, writer, readIndex.IndexWriter, epochManager, _queueStatsManager,
 				() => readIndex.LastCommitPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
-				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint);
+				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint, _queueStatsManager);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
-				db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount, tableIndex);
+				db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
 			AddTask(indexCommitterService.Task);
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
@@ -271,12 +276,11 @@ namespace EventStore.Core {
 			var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
 				db.Config.OptimizeReadSideCache);
 			var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, indexCommitterService,
-				epochManager);
+				epochManager, _queueStatsManager);
 			AddTask(storageChaser.Task);
 
 #if DEBUG
-			QueueStatsCollector.InitializeCheckpoints(
-				_nodeInfo.DebugIndex, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
+			_queueStatsManager.InitializeCheckpoints(db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
 #endif
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
@@ -476,7 +480,7 @@ namespace EventStore.Core {
 
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", false);
+			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
@@ -507,7 +511,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			_mainBus.Subscribe(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", false);
+			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
@@ -575,7 +579,7 @@ namespace EventStore.Core {
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();
-			var threadBasedScheduler = new ThreadBasedScheduler(_timeProvider);
+			var threadBasedScheduler = new ThreadBasedScheduler(_timeProvider, _queueStatsManager);
 			AddTask(threadBasedScheduler.Task);
 			_timerService = new TimerService(threadBasedScheduler);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
@@ -593,7 +597,8 @@ namespace EventStore.Core {
 				// MASTER REPLICATION
 				var masterReplicationService = new MasterReplicationService(_mainQueue, gossipInfo.InstanceId, db,
 					_workersHandler,
-					epochManager, vNodeSettings.ClusterNodeCount);
+					epochManager, vNodeSettings.ClusterNodeCount,
+					_queueStatsManager);
 				AddTask(masterReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
@@ -653,7 +658,7 @@ namespace EventStore.Core {
 						? new[] { _externalHttpService }
 						: new[] { _internalHttpService, _externalHttpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
-						httpSendService, http, _workersHandler));
+						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
 		}

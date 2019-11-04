@@ -67,7 +67,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #if (!DEBUG)
             Assert.Ignore("These tests require DEBUG conditional");
 #else
-			QueueStatsCollector.InitializeIdleDetection();
 			_nodeEndpoints[0] = new Endpoints(
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
@@ -87,11 +86,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodeEndpoints[1], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
 			_nodes[2] = CreateNode(2,
 				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
+			WaitIdle();
 
 			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.MasterMainBus)).ToArray();
 
 			foreach (var node in _nodes) {
 				node.Start();
+				node.WaitIdle();
 			}
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
@@ -108,6 +109,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				await Task.WhenAny(projectionsStarted).WithTimeout(TimeSpan.FromSeconds(10));
 				await EnableStandardProjections().WithTimeout(TimeSpan.FromMinutes(2));
 			}
+
+			WaitIdle();
 
 			try {
 				await Given().WithTimeout();
@@ -133,7 +136,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				endpoints.ExternalTcp,
 				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
-			WaitIdle();
 			return node;
 		}
 
@@ -187,9 +189,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodes[0].Shutdown(),
 				_nodes[1].Shutdown(),
 				_nodes[2].Shutdown());
-#if DEBUG
-			QueueStatsCollector.DisableIdleDetection();
-#endif
 			foreach (var endpoint in _nodeEndpoints) {
 				foreach (var port in endpoint.Ports) {
 					PortsHelper.ReturnPort(port);
@@ -218,8 +217,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
 		}
 
-		protected static void WaitIdle() {
-			QueueStatsCollector.WaitIdle();
+		protected void WaitIdle() {
+#if DEBUG
+			_nodes[0].WaitIdle();
+			_nodes[1].WaitIdle();
+			_nodes[2].WaitIdle();
+#endif
 		}
 
 		protected async Task AssertStreamTailAsync(string streamId, params string[] events) {

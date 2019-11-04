@@ -241,6 +241,12 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 		}
 
+		public void WaitIdle() {
+#if DEBUG
+			Node.QueueStatsManager.WaitIdle();
+#endif
+		}
+
 		private void TryDeleteDirectory(string directory) {
 			try {
 				Directory.Delete(directory, true);

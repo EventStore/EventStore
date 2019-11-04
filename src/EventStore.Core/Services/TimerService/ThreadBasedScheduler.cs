@@ -23,16 +23,17 @@ namespace EventStore.Core.Services.TimerService {
 		private readonly Thread _timerThread;
 		private volatile bool _stop;
 
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Timer");
+		private readonly QueueStatsCollector _queueStats;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
 		public Task Task {
 			get { return _tcs.Task; }
 		}
 
-		public ThreadBasedScheduler(ITimeProvider timeProvider) {
+		public ThreadBasedScheduler(ITimeProvider timeProvider, QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(timeProvider, "timeProvider");
 			_timeProvider = timeProvider;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Timer");
 
 			_timerThread = new Thread(DoTiming);
 			_timerThread.IsBackground = true;
