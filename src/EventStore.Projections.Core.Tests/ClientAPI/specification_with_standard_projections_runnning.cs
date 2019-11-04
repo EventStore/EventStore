@@ -35,7 +35,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #if (!DEBUG)
             Assert.Ignore("These tests require DEBUG conditional");
 #else
-			QueueStatsCollector.InitializeIdleDetection();
 			var projectionWorkerThreadCount = GivenWorkerThreadCount();
 			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
 				startStandardProjections: false,
@@ -68,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			if (GivenStandardProjectionsRunning())
 				await EnableStandardProjections();
 
-			QueueStatsCollector.WaitIdle();
+			WaitIdle();
 			try {
 				await Given().WithTimeout(TimeSpan.FromSeconds(10));
 			} catch (Exception ex) {
@@ -129,9 +128,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 			if (_node != null)
 				await _node.Shutdown();
-#if DEBUG
-			QueueStatsCollector.DisableIdleDetection();
-#endif
 			await base.TestFixtureTearDown();
 		}
 
@@ -155,8 +151,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
 		}
 
-		protected static void WaitIdle(int multiplier = 1) {
-			QueueStatsCollector.WaitIdle(multiplier: multiplier);
+		protected void WaitIdle(int multiplier = 1) {
+			_node.WaitIdle();
 		}
 
 		protected async Task AssertStreamTail(string streamId, params string[] events) {

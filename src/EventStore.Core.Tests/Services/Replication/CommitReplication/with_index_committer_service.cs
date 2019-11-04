@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			_tableIndex = new FakeTableIndex();
 			_tfChunkScavengerLogManager = new FakeTfChunkLogManager();
 			_service = new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint,
-				_commitCount, _tableIndex);
+				_commitCount, _tableIndex, new QueueStatsManager());
 			_service.Init(0);
 			When();
 		}

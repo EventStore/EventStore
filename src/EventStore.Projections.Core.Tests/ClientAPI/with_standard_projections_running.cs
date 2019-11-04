@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				await _conn.DeleteStreamAsync("cat-1", r2.NextExpectedVersion, GivenDeleteHardDeleteStreamMode(),
 						_admin)
 					;
-				QueueStatsCollector.WaitIdle();
+				WaitIdle();
 				if (!GivenStandardProjectionsRunning()) {
 					await EnableStandardProjections();
 					WaitIdle();

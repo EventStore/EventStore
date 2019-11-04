@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Replication {
 
 		private readonly Thread _mainLoopThread;
 		private volatile bool _stop;
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Master Replication Service");
+		private readonly QueueStatsCollector _queueStats;
 
 		private readonly ConcurrentDictionary<Guid, ReplicaSubscription> _subscriptions =
 			new ConcurrentDictionary<Guid, ReplicaSubscription>();
@@ -77,7 +77,8 @@ namespace EventStore.Core.Services.Replication {
 			TFChunkDb db,
 			IPublisher tcpSendPublisher,
 			IEpochManager epochManager,
-			int clusterSize) {
+			int clusterSize,
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(db, "db");
@@ -91,6 +92,7 @@ namespace EventStore.Core.Services.Replication {
 			_tcpSendPublisher = tcpSendPublisher;
 			_epochManager = epochManager;
 			_clusterSize = clusterSize;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Master Replication Service");
 
 			_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
 			_mainLoopThread = new Thread(MainLoop) {Name = _queueStats.Name, IsBackground = true};

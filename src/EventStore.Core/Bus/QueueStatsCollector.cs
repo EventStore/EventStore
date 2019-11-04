@@ -4,7 +4,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Bus {
 	public class QueueStatsCollector {
@@ -40,12 +39,9 @@ namespace EventStore.Core.Bus {
 		private bool _wasIdle;
 
 #if DEBUG
-		private bool _started = false; //whether the queue has been started or not
-		private int _length = 0; //current number of items on the queue
-		private bool
-			_idleDetection =
-				QueueStatsCollector
-					._idleDetectionEnabled; //whether idle detection was enabled when this instance was created
+		private volatile bool _started;
+		private volatile bool _stopped;
+		private int _length;
 #endif
 		public QueueStatsCollector(string name, string groupName = null) {
 			Ensure.NotNull(name, "name");
@@ -59,22 +55,9 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			Debug.Assert(!_started,
 				string.Format("QueueStatsCollector [{0}] was already started when Start() entered", Name));
-			lock (_itemsUpdateLock) {
-				_started = true;
-				_totalLength += _length;
-			}
-
-			if (_idleDetection) {
-				lock (_notifyIdleLock) {
-					_nonIdle++;
-				}
-			}
-
-			if (_idleDetection) {
-				lock (_notifyStopLock) {
-					_totalStarted++;
-				}
-			}
+			Debug.Assert(!_stopped,
+				string.Format("QueueStatsCollector [{0}] was stopped when Start() entered", Name));
+			_started = true;
 #endif
 			EnterIdle();
 		}
@@ -83,27 +66,13 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			Debug.Assert(_started,
 				string.Format("QueueStatsCollector [{0}] was not started when Stop() entered", Name));
+			Debug.Assert(!_stopped,
+				string.Format("QueueStatsCollector [{0}] was already stopped when Stop() entered", Name));
 #endif
 			EnterIdle();
 			_totalTimeWatch.Stop();
 #if DEBUG
-			lock (_itemsUpdateLock) {
-				_started = false;
-				_totalLength -= _length;
-				//Debug.Assert(_totalLength >= 0,
-				//	string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
-			}
-
-			if (_idleDetection) {
-				lock (_notifyStopLock) {
-					_totalStarted--;
-					//Debug.Assert(_totalStarted >= 0,
-					//	string.Format("QueueStatsCollector [{0}] _totalStarted = {1} < 0", Name, _totalStarted));
-					if (_totalStarted == 0) {
-						Monitor.Pulse(_notifyStopLock);
-					}
-				}
-			}
+			_stopped = true;
 #endif
 		}
 
@@ -132,18 +101,6 @@ namespace EventStore.Core.Bus {
 			if (_wasIdle)
 				return;
 			_wasIdle = true;
-#if DEBUG
-			if (_idleDetection) {
-				lock (_notifyIdleLock) {
-					_nonIdle--;
-					//Debug.Assert(_nonIdle >= 0,
-					//	string.Format("QueueStatsCollector [{0}] _nonIdle = {1} < 0", Name, _nonIdle));
-					if (_nonIdle == 0) {
-						Monitor.Pulse(_notifyIdleLock);
-					}
-				}
-			}
-#endif
 
 			//NOTE: the following locks are primarily acquired in main thread,
 			//      so not too high performance penalty
@@ -164,14 +121,6 @@ namespace EventStore.Core.Bus {
 			if (!_wasIdle)
 				return;
 			_wasIdle = false;
-
-#if DEBUG
-			if (_idleDetection) {
-				lock (_notifyIdleLock) {
-					_nonIdle++;
-				}
-			}
-#endif
 
 			lock (_statisticsLock) {
 				_totalIdleWatch.Stop();
@@ -227,127 +176,10 @@ namespace EventStore.Core.Bus {
 			}
 		}
 
-#if DEBUG
-		private static object _notifyIdleLock = new object();
-		private static object _notifyStopLock = new object();
-		private static object _itemsUpdateLock = new object();
-		private static volatile bool _idleDetectionEnabled = false;
-		private static int _nonIdle = 0;
-		private static ICheckpoint[] _writerCheckpoint = new ICheckpoint[3];
-		private static ICheckpoint[] _chaserCheckpoint = new ICheckpoint[3];
-		private static int _totalLength = 0; //sum of lengths of all active (started) queues
-		private static int _totalStarted = 0; //number of active (started) queues
-		public static bool DumpMessages;
-
-		public static void InitializeIdleDetection() {
-			lock (_notifyIdleLock) {
-				_nonIdle = 0;
-			}
-
-			lock (_itemsUpdateLock) {
-				_totalLength = 0;
-			}
-
-			lock (_notifyStopLock) {
-				_totalStarted = 0;
-			}
-
-			_writerCheckpoint = new ICheckpoint[3];
-			_chaserCheckpoint = new ICheckpoint[3];
-			_idleDetectionEnabled = true;
-		}
-
-		public static void DisableIdleDetection() {
-			WaitIdle(waitForCheckpoints: false, waitForNonEmptyTf: false);
-			WaitStop();
-			_idleDetectionEnabled = false;
-		}
-
-		private static void WaitStop(int multiplier = 1) {
-			Debug.Assert(_idleDetectionEnabled, "_idleDetectionEnabled was false when WaitStop() entered");
-			lock (_notifyStopLock) {
-				var counter = 0;
-				while (_totalStarted > 0) {
-					if (!Monitor.Wait(_notifyStopLock, 100)) {
-						Console.WriteLine("Waiting for STOP state...");
-						counter++;
-						if (counter > 150 * multiplier)
-							throw new ApplicationException("Infinite WaitStop() loop?");
-					}
-				}
-			}
-		}
-#endif
-
-		[Conditional("DEBUG")]
-		public static void WaitIdle(bool waitForCheckpoints = true, bool waitForNonEmptyTf = false,
-			int multiplier = 1) {
-#if DEBUG
-			Debug.Assert(_idleDetectionEnabled, "_idleDetectionEnabled was false when WaitIdle() entered");
-			var counter = 0;
-			lock (_notifyIdleLock) {
-				var successes = 0;
-				while (successes < 2) {
-					while (_nonIdle > 0 || _totalLength > 0 ||
-						   (waitForCheckpoints && (AreCheckpointsDifferent(0) || AreCheckpointsDifferent(1)
-																			  || AreCheckpointsDifferent(2) ||
-																			  AnyCheckpointsDifferent()))
-						   || (waitForNonEmptyTf && _writerCheckpoint[0].Read() == 0)) {
-						if (!Monitor.Wait(_notifyIdleLock, 100)) {
-							Console.WriteLine("Waiting for IDLE state...");
-							counter++;
-							if (counter > 150 * multiplier)
-								throw new ApplicationException("Infinite WaitIdle() loop?");
-						}
-					}
-
-					Thread.Sleep(10);
-					successes++;
-				}
-			}
-#endif
-		}
-
-#if DEBUG
-		private static bool AreCheckpointsDifferent(int index) {
-			return _writerCheckpoint[index] != null && _chaserCheckpoint[index] != null
-													&& _writerCheckpoint[index].ReadNonFlushed() !=
-													_chaserCheckpoint[index].Read();
-		}
-
-		private static bool AnyCheckpointsDifferent() {
-			long c1 = _writerCheckpoint[0] != null ? _writerCheckpoint[0].ReadNonFlushed() : -1;
-			long c2 = _writerCheckpoint[1] != null ? _writerCheckpoint[1].ReadNonFlushed() : -1;
-			long c3 = _writerCheckpoint[2] != null ? _writerCheckpoint[2].ReadNonFlushed() : -1;
-
-			return (c2 != -1 && c1 != c2) || (c2 != -1 && c3 != -1 && c2 != c3);
-		}
-
-		public static void InitializeCheckpoints(int index, ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint) {
-			if (index == -1) {
-				index = 0;
-				_chaserCheckpoint[1] = _chaserCheckpoint[2] = null;
-				_writerCheckpoint[1] = _writerCheckpoint[2] = null;
-			}
-
-			_chaserCheckpoint[index] = chaserCheckpoint;
-			_writerCheckpoint[index] = writerCheckpoint;
-		}
-#endif
-
 		[Conditional("DEBUG")]
 		public void Enqueued() {
 #if DEBUG
-			lock (_itemsUpdateLock) {
-				_length++;
-				if (_started) {
-					//if the queue is stopped, do not increment _totalLength
-					//This is particularly important for idle detection in WaitIdle() since items published on a stopped queue may never be dequeued and WaitIdle() will wait indefinitely.
-					//If ever the queue is started again, _length will be added back to _totalLength.
-					_totalLength++;
-				}
-			}
+			Interlocked.Increment(ref _length);
 #endif
 		}
 
@@ -356,21 +188,21 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			Debug.Assert(_started,
 				string.Format("QueueStatsCollector [{0}] was not started when Dequeued() entered", Name));
-			lock (_itemsUpdateLock) {
-				if (_started) {
-					_length--;
-					_totalLength--;
-					//Debug.Assert(_length >= 0,
-					//	string.Format("QueueStatsCollector [{0}] _length = {1} < 0", Name, _length));
-					//Debug.Assert(_totalLength >= 0,
-					//	string.Format("QueueStatsCollector [{0}] _totalLength = {1} < 0", Name, _totalLength));
-				}
-			}
-
-			if (DumpMessages) {
-				Console.WriteLine(msg.GetType().Namespace + "." + msg.GetType().Name);
-			}
+			Debug.Assert(!_stopped,
+				string.Format("QueueStatsCollector [{0}] was stopped when Dequeued() entered", Name));
+			Interlocked.Decrement(ref _length);
 #endif
 		}
+
+#if DEBUG
+		public bool IsIdle() {
+			var curLength = Interlocked.CompareExchange(ref _length, 0, 0);
+			return !_started || _stopped || curLength == 0;
+		}
+
+		public bool IsStopped() {
+			return _stopped;
+		}
+#endif
 	}
 }
