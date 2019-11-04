@@ -1197,7 +1197,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.MasterIsResigningOk(
 						_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 						_node.InstanceId, _node.InternalHttp),
-					_timeProvider.UtcNow.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
 			Assert.That(_publisher.Messages,
 				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));

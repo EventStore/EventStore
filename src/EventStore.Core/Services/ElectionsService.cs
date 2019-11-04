@@ -172,7 +172,7 @@ namespace EventStore.Core.Services {
 				_nodeInfo.InternalHttp);
 			_resigningMasterInstanceId = message.MasterId;
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
-				_timeProvider.UtcNow.Add(LeaderElectionProgressTimeout)));
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
