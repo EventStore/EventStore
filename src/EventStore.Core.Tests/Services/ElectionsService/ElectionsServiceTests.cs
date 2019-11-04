@@ -443,7 +443,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_not_consider_readonly_replica_as_leader_of_elections_and_send_prepares_to_other_members() {
+		public void should_ignore_view_change() {
 			_sut.Handle(new ElectionMessage.StartElections());
 			_publisher.Messages.Clear();
 
@@ -785,8 +785,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_receiving_a_proposal_and_an_acceptor_of_the_current_view : ElectionsFixture {
-		public when_receiving_a_proposal_and_an_acceptor_of_the_current_view() :
+	public class when_receiving_a_proposal_as_the_acceptor_of_the_current_view : ElectionsFixture {
+		public when_receiving_a_proposal_as_the_acceptor_of_the_current_view() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -878,8 +878,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_receiving_a_proposal : ElectionsFixture {
-		public when_receiving_a_proposal() :
+	public class when_receiving_a_proposal_as_acceptor : ElectionsFixture {
+		public when_receiving_a_proposal_as_acceptor() :
 			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),

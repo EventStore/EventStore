@@ -149,6 +149,7 @@ namespace EventStore.Core.Services {
 					_nodeInfo.InternalHttp,
 					_nodeInfo.InstanceId,
 					_nodeInfo.InternalHttp);
+				_masterIsResigningOkReceived.Clear();
 				Handle(masterIsResigningMessageOk);
 				SendToAllExceptMe(new ElectionMessage.MasterIsResigning(
 					_nodeInfo.InstanceId, _nodeInfo.InternalHttp));
@@ -170,6 +171,7 @@ namespace EventStore.Core.Services {
 				message.MasterInternalHttp,
 				_nodeInfo.InstanceId,
 				_nodeInfo.InternalHttp);
+			
 			_resigningMasterInstanceId = message.MasterId;
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
@@ -178,7 +180,6 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
 			if (_masterIsResigningOkReceived.Add(message.ServerId) &&
 			    _masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
-				_masterIsResigningOkReceived.Clear();
 				Log.Debug(
 					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}]. NOW INITIATING MASTER RESIGNATION.",
 					message.MasterInternalHttp, message.MasterId);
