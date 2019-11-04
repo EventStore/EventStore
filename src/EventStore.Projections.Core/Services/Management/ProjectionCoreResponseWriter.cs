@@ -1,4 +1,5 @@
-﻿using EventStore.Common.Log;
+﻿using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
@@ -22,6 +23,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionManagementMessage.Command.GetState>,
 			IHandle<ProjectionManagementMessage.Command.GetStatistics>,
 			IHandle<ProjectionManagementMessage.Command.Post>,
+			IHandle<ProjectionManagementMessage.Command.PostBatch>,
 			IHandle<ProjectionManagementMessage.Command.Reset>,
 			IHandle<ProjectionManagementMessage.Command.SetRunAs>,
 			IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
@@ -171,6 +173,29 @@ namespace EventStore.Projections.Core.Services.Management {
 				Query = message.Query,
 			};
 			_writer.PublishCommand("$post", command);
+		}
+
+		public void Handle(ProjectionManagementMessage.Command.PostBatch message) {
+			var projections = new List<PostBatchCommand.ProjectionPost>();
+			foreach(var proj in message.Projections) {
+				projections.Add(new PostBatchCommand.ProjectionPost{
+					Mode = proj.Mode,
+					RunAs = proj.RunAs,
+					Name = proj.Name,
+					CheckpointsEnabled = proj.CheckpointsEnabled,
+					TrackEmittedStreams = proj.TrackEmittedStreams,
+					EmitEnabled = proj.EmitEnabled,
+					EnableRunAs = proj.EnableRunAs,
+					Enabled = proj.Enabled,
+					HandlerType = proj.HandlerType,
+					Query = proj.Query
+				});
+			}
+			var command = new PostBatchCommand {
+				RunAs = message.RunAs,
+				Projections = projections.ToArray()
+			};
+			_writer.PublishCommand("$post-batch", command);
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Reset message) {

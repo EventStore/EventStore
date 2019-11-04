@@ -12,6 +12,10 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core {
 	public sealed class ProjectionsSubsystem : ISubsystem, IHandle<CoreProjectionStatusMessage.Stopped> {
+		public InMemoryBus MasterMainBus {
+			get { return _masterMainBus; }
+		}
+		
 		private readonly int _projectionWorkerThreadCount;
 		private readonly ProjectionType _runProjections;
 		private readonly bool _startStandardProjections;
