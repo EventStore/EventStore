@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		protected void WhenLoop(IEnumerable<WhenStep> steps) {
 			foreach (var step in steps) {
-				_timeProvider.AddTime(TimeSpan.FromMilliseconds(10));
+				_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10));
 				if (step.Action != null) {
 					step.Action();
 				}

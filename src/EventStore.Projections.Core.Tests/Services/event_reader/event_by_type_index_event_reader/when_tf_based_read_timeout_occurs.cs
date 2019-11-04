@@ -49,13 +49,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 				ResolvedEvent.ForUnresolvedEvent(
 					new EventRecord(
 						1, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "test_stream", ExpectedVersion.Any,
-						_fakeTimeProvider.Now,
+						_fakeTimeProvider.UtcNow,
 						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 						"eventTypeOne", new byte[] {1}, new byte[] {2}), 100),
 				ResolvedEvent.ForUnresolvedEvent(
 					new EventRecord(
 						2, 150, Guid.NewGuid(), Guid.NewGuid(), 150, 0, "test_stream", ExpectedVersion.Any,
-						_fakeTimeProvider.Now,
+						_fakeTimeProvider.UtcNow,
 						PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 						"eventTypeTwo", new byte[] {1}, new byte[] {2}), 200),
 			});

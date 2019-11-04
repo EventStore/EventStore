@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SendIdle() {
 			_publisher.Publish(
-				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.UtcNow));
 		}
 
 		protected override void RequestEvents() {

@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SendIdle() {
 			_publisher.Publish(
-				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.UtcNow));
 		}
 
 		private void ReadDataStreamCompleted(ClientMessage.ReadStreamEventsForwardCompleted completed) {

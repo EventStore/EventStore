@@ -611,7 +611,7 @@ namespace EventStore.Core {
 
 			var electionsService = new ElectionsService(_mainQueue, gossipInfo, vNodeSettings.ClusterNodeCount,
 				db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-				epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority);
+				epochManager, () => readIndex.LastCommitPosition, vNodeSettings.NodePriority, _timeProvider);
 			electionsService.SubscribeMessages(_mainBus);
 			if (!isSingleNode || vNodeSettings.GossipOnSingleNode) {
 				// GOSSIP
