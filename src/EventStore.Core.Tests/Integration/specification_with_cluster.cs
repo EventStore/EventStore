@@ -38,28 +38,38 @@ namespace EventStore.Core.Tests.Integration {
 				yield return ExternalHttp.Port;
 			}
 
+			private readonly List<Socket> _sockets;
+
 			public Endpoints() {
+				_sockets = new List<Socket>();
+
 				var defaultLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
 
-				using var internalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				var internalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalTcp.Bind(defaultLoopBack);
+				_sockets.Add(internalTcp);
 
-				using var internalTcpSecure =
+				var internalTcpSecure =
 					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalTcpSecure.Bind(defaultLoopBack);
+				_sockets.Add(internalTcpSecure);
 
-				using var internalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				var internalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				internalHttp.Bind(defaultLoopBack);
+				_sockets.Add(internalHttp);
 
-				using var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalTcp.Bind(defaultLoopBack);
+				_sockets.Add(externalTcp);
 
-				using var externalTcpSecure =
+				var externalTcpSecure =
 					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalTcpSecure.Bind(defaultLoopBack);
+				_sockets.Add(externalTcpSecure);
 
-				using var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalHttp.Bind(defaultLoopBack);
+				_sockets.Add(externalHttp);
 
 				InternalTcp = CopyEndpoint((IPEndPoint)internalTcp.LocalEndPoint);
 				InternalTcpSec = CopyEndpoint((IPEndPoint)internalTcpSecure.LocalEndPoint);
@@ -67,6 +77,12 @@ namespace EventStore.Core.Tests.Integration {
 				ExternalTcp = CopyEndpoint((IPEndPoint)externalTcp.LocalEndPoint);
 				ExternalTcpSec = CopyEndpoint((IPEndPoint)externalTcpSecure.LocalEndPoint);
 				ExternalHttp = CopyEndpoint((IPEndPoint)externalHttp.LocalEndPoint);
+			}
+
+			public void DisposeSockets() {
+				foreach (var socket in _sockets) {
+					socket.Dispose();
+				}
 			}
 
 			private IPEndPoint CopyEndpoint(IPEndPoint endpoint) {
@@ -81,6 +97,10 @@ namespace EventStore.Core.Tests.Integration {
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
 			_nodeEndpoints[2] = new Endpoints();
+
+			_nodeEndpoints[0].DisposeSockets();
+			_nodeEndpoints[1].DisposeSockets();
+			_nodeEndpoints[2].DisposeSockets();
 
 			var duplicates = _nodeEndpoints[0].Ports().Concat(_nodeEndpoints[1].Ports())
 				.Concat(_nodeEndpoints[2].Ports())
