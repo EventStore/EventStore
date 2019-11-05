@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests {
 		public static Task WithTimeout(this Task task, TimeSpan timeout)
 			=> task.WithTimeout(Convert.ToInt32(timeout.TotalMilliseconds));
 
-		public static async Task WithTimeout(this Task task, int timeoutMs = 3000) {
+		public static async Task WithTimeout(this Task task, int timeoutMs = 10000) {
 			if (Debugger.IsAttached) {
 				timeoutMs = -1;
 			}
@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests {
 		public static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout)
 			=> task.WithTimeout(Convert.ToInt32(timeout.TotalMilliseconds));
 
-		public static async Task<T> WithTimeout<T>(this Task<T> task, int timeoutMs = 3000) {
+		public static async Task<T> WithTimeout<T>(this Task<T> task, int timeoutMs = 10000) {
 			if (Debugger.IsAttached) {
 				timeoutMs = -1;
 			}
