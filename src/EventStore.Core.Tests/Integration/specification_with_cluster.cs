@@ -61,12 +61,16 @@ namespace EventStore.Core.Tests.Integration {
 				using var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalHttp.Bind(defaultLoopBack);
 
-				InternalTcp = (IPEndPoint)internalTcp.LocalEndPoint;
-				InternalTcpSec = (IPEndPoint)internalTcpSecure.LocalEndPoint;
-				InternalHttp = (IPEndPoint)internalHttp.LocalEndPoint;
-				ExternalTcp = (IPEndPoint)externalTcp.LocalEndPoint;
-				ExternalTcpSec = (IPEndPoint)externalTcpSecure.LocalEndPoint;
-				ExternalHttp = (IPEndPoint)externalHttp.LocalEndPoint;
+				InternalTcp = CopyEndpoint((IPEndPoint)internalTcp.LocalEndPoint);
+				InternalTcpSec = CopyEndpoint((IPEndPoint)internalTcpSecure.LocalEndPoint);
+				InternalHttp = CopyEndpoint((IPEndPoint)internalHttp.LocalEndPoint);
+				ExternalTcp = CopyEndpoint((IPEndPoint)externalTcp.LocalEndPoint);
+				ExternalTcpSec = CopyEndpoint((IPEndPoint)externalTcpSecure.LocalEndPoint);
+				ExternalHttp = CopyEndpoint((IPEndPoint)externalHttp.LocalEndPoint);
+			}
+
+			private IPEndPoint CopyEndpoint(IPEndPoint endpoint) {
+				return new IPEndPoint(endpoint.Address, endpoint.Port);
 			}
 		}
 
