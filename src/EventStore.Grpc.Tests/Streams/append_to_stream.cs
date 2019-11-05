@@ -92,18 +92,21 @@ namespace EventStore.Grpc.Tests.Streams {
 		public async Task multiple_idempotent_writes_with_same_id_bug_case() {
 			var stream = _fixture.GetStreamName();
 
-			var events = _fixture.CreateTestEvents(6).ToArray();
+			var evnt = _fixture.CreateTestEvents().First();
+			var events = new[] {evnt, evnt, evnt, evnt, evnt, evnt};
 
 			var writeResult = await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.Any, events);
 
 			Assert.Equal(5, writeResult.NextExpectedVersion);
 		}
 
-		[Fact(Skip = nameof(in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id))]
-		public async Task in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id() {
+		[Fact]
+		public async Task
+			in_case_where_multiple_writes_of_multiple_events_with_the_same_ids_using_expected_version_any_then_next_expected_version_is_unreliable() {
 			var stream = _fixture.GetStreamName();
 
-			var events = _fixture.CreateTestEvents(6).ToArray();
+			var evnt = _fixture.CreateTestEvents().First();
+			var events = new []{evnt, evnt, evnt, evnt, evnt, evnt};
 
 			var writeResult = await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.Any, events);
 
@@ -114,24 +117,19 @@ namespace EventStore.Grpc.Tests.Streams {
 			Assert.Equal(0, writeResult.NextExpectedVersion);
 		}
 
-		public static IEnumerable<object[]> SameIdTestCases() {
-			yield return new object[] { AnyStreamRevision.Any, nameof(AnyStreamRevision.Any) };
-			yield return new object[] { AnyStreamRevision.NoStream, nameof(AnyStreamRevision.NoStream) };
-		}
-
-		[Theory, MemberData(nameof(SameIdTestCases))]
+		[Fact]
 		public async Task
-			in_slightly_reasonable_multiple_case_of_multiple_writes_with_expected_version_per_all_same_id(
-				AnyStreamRevision expectedRevision, string name) {
-			var stream = $"{_fixture.GetStreamName()}_{name}";
+			in_case_where_multiple_writes_of_multiple_events_with_the_same_ids_using_expected_version_nostream_then_next_expected_version_is_correct() {
+			var stream = _fixture.GetStreamName();
 
-			var events = _fixture.CreateTestEvents(6).ToArray();
+			var evnt = _fixture.CreateTestEvents().First();
+			var events = new[] {evnt, evnt, evnt, evnt, evnt, evnt};
 
-			var writeResult = await _fixture.Client.AppendToStreamAsync(stream, expectedRevision, events);
+			var writeResult = await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
 
 			Assert.Equal(events.Length - 1, writeResult.NextExpectedVersion);
 
-			writeResult = await _fixture.Client.AppendToStreamAsync(stream, expectedRevision, events);
+			writeResult = await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
 
 			Assert.Equal(events.Length - 1, writeResult.NextExpectedVersion);
 		}

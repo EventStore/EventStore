@@ -117,7 +117,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		[Category("Network")]
-		public async Task in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id() {
+		public async Task
+			in_case_where_multiple_writes_of_multiple_events_with_the_same_ids_using_expected_version_any_then_next_expected_version_is_unreliable() {
 			const string stream = "in_wtf_multiple_case_of_multiple_writes_expected_version_any_per_all_same_id";
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
@@ -131,7 +132,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		[Category("Network")]
-		public async Task in_slightly_reasonable_multiple_case_of_multiple_writes_with_expected_version_per_all_same_id() {
+		public async Task
+			in_case_where_multiple_writes_of_multiple_events_with_the_same_ids_using_expected_version_nostream_then_next_expected_version_is_correct() {
 			const string stream =
 				"in_slightly_reasonable_multiple_case_of_multiple_writes_with_expected_version_per_all_same_id";
 			using (var store = BuildConnection(_node)) {
