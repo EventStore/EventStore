@@ -27,7 +27,7 @@ namespace EventStore.Grpc.Streams {
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
-		protected static Task<IPrincipal> GetUserAsync(ClusterVNode node, Metadata requestHeaders) {
+		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider, Metadata requestHeaders) {
 			var principalSource = new TaskCompletionSource<IPrincipal>();
 
 			if (AuthenticationHeaderValue.TryParse(
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				    out var authenticationHeader)
 			    && authenticationHeader.Scheme == Constants.Headers.BasicScheme
 			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
-				node.InternalAuthenticationProvider.Authenticate(
+				authenticationProvider.Authenticate(
 					new GrpcBasicAuthenticationRequest(principalSource, username, password));
 			} else {
 				principalSource.TrySetResult(default);
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public override void NotReady() => _principalSource.TrySetException(ServerNotReady());
 		}
 
-		
+
 		public static Exception Timeout() => new RpcException(new Status(StatusCode.Aborted, "Operation timed out"));
 
 		public static Exception ServerNotReady() =>

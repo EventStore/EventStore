@@ -17,4 +17,14 @@
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Grpc\EventStore.Grpc.csproj" />
 	</ItemGroup>
+		<PropertyGroup>
+			<IsMac>false</IsMac>
+			<IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>
+		</PropertyGroup>
+		<Target BeforeTargets="BeforeBuild" Name="ProjectionDependencies">
+			<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+			<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+			<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+			<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+		</Target>
 </Project>

@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			var options = requestStream.Current.Options;
-			var user = await GetUserAsync(_node, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
 			var correlationId = Guid.NewGuid();
 			var source = new TaskCompletionSource<bool>();
 			string subscriptionId = default;
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			Task.Run(() => requestStream.ForEachAsync(HandleAckNack));
 #pragma warning restore 4014
 
-			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, _node.MainQueue,
+			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, _queue,
 				options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
 			subscriptionId = await enumerator.Started;
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			Task HandleAckNack(ReadReq request) {
-				_node.MainQueue.Publish(request.ContentCase switch {
+				_queue.Publish(request.ContentCase switch {
 					ReadReq.ContentOneofCase.Ack => (Message)
 					new ClientMessage.PersistentSubscriptionAckEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,

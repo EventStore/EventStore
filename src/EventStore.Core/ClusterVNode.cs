@@ -36,6 +36,10 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Transport.Grpc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -47,6 +51,8 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShutdown> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
+		private static readonly PathString PersistentSegment = "/event_store.grpc.persistent_subscriptions.PersistentSubscriptions";
+		private static readonly PathString StreamsSegment = "/event_store.grpc.streams.Streams";
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
@@ -89,6 +95,8 @@ namespace EventStore.Core {
 			get { return _workersHandler; }
 		}
 
+		public IEnumerable<ISubsystem> Subsystems => _subsystems;
+
 		private readonly VNodeInfo _nodeInfo;
 		private readonly IQueuedHandler _mainQueue;
 		private readonly ISubscriber _mainBus;
@@ -109,9 +117,32 @@ namespace EventStore.Core {
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
+
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
+
+		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder =>
+			_subsystems.Aggregate(builder
+						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),  // TODO JPB figure out how to delete this sadness
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<PersistentSubscriptions>()))
+						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
+							inner => inner.UseRouting().UseEndpoints(endpoint => endpoint.MapGrpcService<Streams>())),
+					(b, subsystem) => subsystem.Configure(b))
+				.Use(ExternalHttp)
+				.Use(InternalHttp);
+
+		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
+			_subsystems.Aggregate(services
+					.AddRouting()
+					.AddSingleton(InternalAuthenticationProvider)
+					.AddSingleton(_readIndex)
+					.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex))
+					.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
+					.AddGrpc().Services,
+				(s, subsystem) => subsystem.ConfigureServices(s));
+
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
 		public object _taskAddLock = new object();
@@ -392,7 +423,8 @@ namespace EventStore.Core {
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching);
-			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout, _httpMessageHandler);
+			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout,
+				_httpMessageHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 			var electController = new ElectController(_mainQueue, _httpMessageHandler);
@@ -442,7 +474,7 @@ namespace EventStore.Core {
 				_internalHttpService.SetupController(histogramController);
 				_internalHttpService.SetupController(persistentSubscriptionController);
 			}
-			
+
 			// Authentication plugin HTTP
 			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService,
 				_internalHttpService, httpSendService, _mainQueue, _workersHandler);
@@ -657,7 +689,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
-			
+
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
@@ -668,8 +700,8 @@ namespace EventStore.Core {
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
 					var http = isSingleNode
-						? new[] { _externalHttpService }
-						: new[] { _internalHttpService, _externalHttpService };
+						? new[] {_externalHttpService}
+						: new[] {_internalHttpService, _externalHttpService};
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}

@@ -1,4 +1,5 @@
 using System;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -12,9 +13,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>();
 			var correlationId = Guid.NewGuid();
 
-			var user = await GetUserAsync(_node, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
 
-			_node.MainQueue.Publish(new ClientMessage.DeletePersistentSubscription(
+			_queue.Publish(new ClientMessage.DeletePersistentSubscription(
 				correlationId,
 				correlationId,
 				new CallbackEnvelope(HandleDeletePersistentSubscriptionCompleted),

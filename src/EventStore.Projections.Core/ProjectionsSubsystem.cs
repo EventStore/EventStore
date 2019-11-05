@@ -4,14 +4,24 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Grpc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
+using Microsoft.Net.Http.Headers;
 
 namespace EventStore.Projections.Core {
 	public sealed class ProjectionsSubsystem : ISubsystem, IHandle<CoreProjectionStatusMessage.Stopped> {
+		private static readonly MediaTypeHeaderValue Grpc = new MediaTypeHeaderValue("application/grpc");
+		private static readonly PathString ProjectionsSegment = "/event_store.grpc.projections.Projections";
+
 		public InMemoryBus MasterMainBus {
 			get { return _masterMainBus; }
 		}
@@ -22,13 +32,24 @@ namespace EventStore.Projections.Core {
 		public const int VERSION = 3;
 
 		private IQueuedHandler _masterInputQueue;
-		private InMemoryBus _masterMainBus;
+		private readonly InMemoryBus _masterMainBus;
 		private InMemoryBus _masterOutputBus;
 		private IDictionary<Guid, IQueuedHandler> _coreQueues;
 		private Dictionary<Guid, IPublisher> _queueMap;
 		private bool _subsystemStarted;
 
 		private readonly bool _faultOutOfOrderProjections;
+
+		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder => builder
+			.UseWhen(
+				context => context.Request.Path.StartsWithSegments(ProjectionsSegment),
+				inner => inner
+					.UseRouting()
+					.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>()));
+
+		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
+			services.AddSingleton(provider =>
+				new ProjectionManagement(_masterInputQueue, provider.GetService<IAuthenticationProvider>()));
 
 		public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
 			bool startStandardProjections, TimeSpan projectionQueryExpiry, bool faultOutOfOrderProjections) {
@@ -41,11 +62,12 @@ namespace EventStore.Projections.Core {
 			_startStandardProjections = startStandardProjections;
 			_projectionsQueryExpiry = projectionQueryExpiry;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
+			_masterMainBus = new InMemoryBus("manager input bus");
 		}
 
 		public void Register(StandardComponents standardComponents) {
-			_masterMainBus = new InMemoryBus("manager input bus");
-			_masterInputQueue = QueuedHandler.CreateQueuedHandler(_masterMainBus, "Projections Master", standardComponents.QueueStatsManager);
+			_masterInputQueue = QueuedHandler.CreateQueuedHandler(_masterMainBus, "Projections Master",
+				standardComponents.QueueStatsManager);
 			_masterOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 
 			var projectionsStandardComponents = new ProjectionsStandardComponents(
@@ -116,5 +138,12 @@ namespace EventStore.Projections.Core {
 				}
 			}
 		}
+
+		private static bool IsGrpc(HttpContext context) =>
+			context.Request.Headers.TryGetValue("content-type", out var contentType) &&
+			MediaTypeHeaderValue.TryParse(new StringSegment(contentType), out var contentTypeHeader) &&
+			contentTypeHeader.Type == Grpc.Type &&
+			contentTypeHeader.SubTypeWithoutSuffix == Grpc.SubTypeWithoutSuffix;
+
 	}
 }

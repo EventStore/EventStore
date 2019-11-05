@@ -5,8 +5,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
+using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Util;
+using EventStore.Projections.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Xunit;
@@ -14,29 +17,29 @@ using Xunit;
 namespace EventStore.Grpc.Tests {
 	public abstract class EventStoreGrpcFixture : IAsyncLifetime {
 		public const string TestEventType = "-";
-		private readonly ClusterVNode _node;
 		private readonly TFChunkDb _db;
 		private readonly TestServer _testServer;
 
-		public ClusterVNode Node => _node;
+		public ClusterVNode Node { get; }
+
 		public readonly EventStoreGrpcClient Client;
 
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
 			Action<IWebHostBuilder> configureWebHost = default) {
-			var webHostBuilder = new WebHostBuilder();
 
+			var webHostBuilder = new WebHostBuilder();
 			configureWebHost?.Invoke(webHostBuilder);
 
 			var vNodeBuilder = new TestVNodeBuilder();
 			vNodeBuilder.RunInMemory().WithTfChunkSize(1024 * 1024);
 			configureVNode?.Invoke(vNodeBuilder);
 
-			_node = vNodeBuilder.Build();
+			Node = vNodeBuilder.Build();
 			_db = vNodeBuilder.GetDb();
 
 			_testServer = new TestServer(
-				webHostBuilder.UseStartup(new ClusterVNodeStartup(_node)));
+				webHostBuilder.UseStartup(new ClusterVNodeStartup(Node)));
 
 			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => {
 				var client = _testServer.CreateClient();
@@ -57,13 +60,13 @@ namespace EventStore.Grpc.Tests {
 			=> new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
 
 		public virtual async Task InitializeAsync() {
-			await _node.StartAndWaitUntilReady();
+			await Node.StartAndWaitUntilReady();
 			await Given().WithTimeout(TimeSpan.FromMinutes(5));
 			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}
 
 		public virtual async Task DisposeAsync() {
-			await _node.Stop();
+			await Node.Stop();
 			_db.Dispose();
 			_testServer.Dispose();
 			Client?.Dispose();

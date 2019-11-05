@@ -8,7 +8,6 @@
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
   </PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Grpc.AspNetCore" Version="2.23.2" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="4.5.0" />
 		<PackageReference Include="NLog.Web.AspNetCore" Version="4.7.1" />
 	</ItemGroup>

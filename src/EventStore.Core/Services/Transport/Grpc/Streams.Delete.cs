@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUserAsync(_node, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, false);
 
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUserAsync(_node, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, true);
 
@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var envelope = new CallbackEnvelope(HandleStreamDeletedCompleted);
 
-			_node.MainQueue.Publish(new ClientMessage.DeleteStream(
+			_queue.Publish(new ClientMessage.DeleteStream(
 				correlationId,
 				correlationId,
 				envelope,

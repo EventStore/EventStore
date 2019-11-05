@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -31,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUserAsync(_node, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
@@ -54,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
 
-			_node.MainQueue.Publish(new ClientMessage.WriteEvents(
+			_queue.Publish(new ClientMessage.WriteEvents(
 				correlationId,
 				correlationId,
 				envelope,
