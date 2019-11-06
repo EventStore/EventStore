@@ -8,7 +8,11 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
+using EventStore.Common.Log;
 using EventStore.Core;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
@@ -44,6 +48,7 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		public EventStoreClientAPIFixture() {
+			InitializeLogger();
 			var vNodeBuilder = ClusterVNodeBuilder
 				.AsSingleNode()
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort))
@@ -52,6 +57,17 @@ namespace EventStore.ClientAPI.Tests {
 				.RunInMemory();
 
 			_node = vNodeBuilder.Build();
+		}
+
+		private void InitializeLogger() {
+			var fileTarget = new FileTarget("file_target");
+			fileTarget.FileName = "/tmp/eslogs/eventstore.log";
+			fileTarget.CreateDirs = true;
+			fileTarget.Layout = "[PID:${processid:padCharacter=0:padding=5}:${threadid:padCharacter=0:padding=3} ${date:universalTime=true:format=yyyy\\.MM\\.dd HH\\:mm\\:ss\\.fff} ${level:padding=-5:uppercase=true} ${logger:padding=-20:fixedLength=true}] ${message}${onexception:${newline}${literal:text=EXCEPTION OCCURRED}${newline}${exception:format=tostring:innerFormat=tostring:maxInnerExceptionLevel=20}}";
+			var config = new NLog.Config.LoggingConfiguration();
+			config.AddRule(LogLevel.Trace, LogLevel.Fatal, fileTarget);
+			NLog.LogManager.Configuration = config;
+			EventStore.Common.Log.LogManager.SetLogFactory(x => new NLogger(x));
 		}
 
 		public Task InitializeAsync() => _node.StartAndWaitUntilReady();

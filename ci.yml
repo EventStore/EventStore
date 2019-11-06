@@ -75,6 +75,7 @@ jobs:
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
     displayName: Run Tests
+    timeoutInMinutes: 20
   - task: PublishTestResults@2
     displayName: Publish Test Results
     condition: succeededOrFailed()
@@ -84,12 +85,11 @@ jobs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
+    condition: succeededOrFailed()
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-netcoreapp3-{{ variables['Configuration'] }}
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
-
+      artifactName: macos-netcoreapp3-logs-$(Configuration)
+      pathToPublish: '/tmp/eslogs/'
 - job: ubuntu_x64
   strategy:
     matrix:
