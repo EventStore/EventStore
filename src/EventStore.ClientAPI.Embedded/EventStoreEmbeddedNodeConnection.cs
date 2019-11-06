@@ -624,7 +624,26 @@ namespace EventStore.ClientAPI.Embedded {
 			int? checkpointInterval = null, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			throw new NotImplementedException();
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(settings, "settings");
+
+			Ensure.NotNull(filter, nameof(filter));
+
+			if (checkpointReached == null) {
+				checkpointInterval = DontReportCheckpointReached;
+			} else if (!checkpointInterval.HasValue) {
+				throw new ArgumentNullException(nameof(checkpointInterval));
+			} else if (checkpointInterval <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
+			}
+			
+			var catchUpSubscription =
+				new EventStoreAllFilteredCatchUpSubscription(this, _settings.Log, lastCheckpoint, filter,
+					userCredentials, eventAppeared, checkpointReached, checkpointInterval.Value, liveProcessingStarted,
+					subscriptionDropped, settings);
+
+			catchUpSubscription.StartAsync();
+			return catchUpSubscription;
 		}
 
 		public Task CreatePersistentSubscriptionAsync(string stream, string groupName,

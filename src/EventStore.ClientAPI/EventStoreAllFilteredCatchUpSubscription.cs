@@ -21,7 +21,7 @@ namespace EventStore.ClientAPI {
 		private const int DontReportCheckpointReached = -1;
 
 
-		internal EventStoreAllFilteredCatchUpSubscription(EventStoreNodeConnection connection,
+		internal EventStoreAllFilteredCatchUpSubscription(IEventStoreConnection connection,
 			ILogger log, Position? position, Filter filter, UserCredentials userCredentials,
 			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached, int checkpointInterval,
