@@ -18,6 +18,7 @@ using EventStore.Core.Util;
 using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 using NLog.Web;
 
 namespace EventStore.ClusterNode {
@@ -130,7 +131,11 @@ namespace EventStore.ClusterNode {
 						listenOptions => listenOptions.UseHttps(unsafeDevCert));
 				})
 				.UseStartup(new ClusterVNodeStartup(_node))
-				.UseNLog()
+				.ConfigureLogging(logging =>
+				{
+					logging.ClearProviders();
+					logging.SetMinimumLevel(LogLevel.Warning);
+				})				.UseNLog()
 				.Build();
 		}
 
@@ -209,10 +214,6 @@ namespace EventStore.ClusterNode {
 				builder = builder.RunOnDisk(options.Db);
 			}
 			
-			// TODO(jen20): ABSOLUTELY remove this before merging the `grpc` branch. This is solely for
-			// 			 	interim testing. Load a development certificate and use it for Kestrel.
-			var unsafeDevCert = new X509Certificate2("dev-cert.pfx", "", X509KeyStorageFlags.MachineKeySet);
-
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)
