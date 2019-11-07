@@ -630,6 +630,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
 
 			AddTasks(_workersHandler.Start());

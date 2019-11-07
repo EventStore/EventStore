@@ -21,7 +21,8 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
-		IHandle<SystemMessage.VNodeConnectionEstablished> {
+		IHandle<SystemMessage.VNodeConnectionEstablished>,
+		IHandle<ElectionMessage.ElectionsDone> {
 		private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
@@ -204,6 +205,17 @@ namespace EventStore.Core.Services.Gossip {
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster,
 					string.Format("TCP connection established to [{0}]", message.VNodeEndPoint));
+			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
+		}
+
+		public void Handle(ElectionMessage.ElectionsDone message) {
+			var oldCluster = _cluster;
+			_cluster = UpdateCluster(_cluster,
+				x => x.InstanceId == message.Master.InstanceId
+					? x.Updated(VNodeState.Master)
+					: x.Updated(VNodeState.Unknown));
+			if (_cluster.HasChangedSince(oldCluster))
+				LogClusterChange(oldCluster, _cluster, "Elections Done");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
