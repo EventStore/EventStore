@@ -689,13 +689,16 @@ namespace EventStore.Core {
 		public async Task Stop() {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
+			Log.Debug("Awaiting subsystem shutdown");
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
 					subsystem.Stop();
 				}
 			}
 
+			Log.Debug("Awaiting _shutdownSource");
 			await _shutdownSource.Task.ConfigureAwait(false);
+			Log.Debug("_shutdownSource result received");
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -703,8 +706,11 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
+			Log.Debug("Received SystemMessage.BecomeShutdown message");
 			_httpMessageHandler?.Dispose();
+			Log.Debug("_httpMessageHandler disposed");
 			_shutdownSource.TrySetResult(true);
+			Log.Debug("result set on _shutdownSource");
 		}
 
 		public void AddTasks(IEnumerable<Task> tasks) {
