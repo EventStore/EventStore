@@ -743,13 +743,17 @@ namespace EventStore.Core {
 		}
 
 		public async Task<ClusterVNode> StartAndWaitUntilReady() {
+			Log.Debug("=============================================== StartAndWaitUntilReady");
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+			Log.Debug("=============================================== Subscribing to SystemMessage.SystemReady");
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
 				_ => tcs.TrySetResult(this)));
 
+			Log.Debug("=============================================== Starting");
 			Start();
 
+			Log.Debug("=============================================== Returning task");
 			return await tcs.Task.ConfigureAwait(false);
 		}
 

@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.Tests {
 			EventStore.Common.Log.LogManager.SetLogFactory(x => new NLogger(x));
 		}
 
-		public Task InitializeAsync() => _node.StartAndWaitUntilReady();
+		public Task InitializeAsync() => _node.StartAndWaitUntilReady().WithTimeout();
 
 		public Task DisposeAsync() => _node.Stop().WithTimeout();
 
