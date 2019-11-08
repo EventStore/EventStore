@@ -26,8 +26,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		protected UserCredentials _credentials;
 		protected TimeSpan _timeout;
 		protected string _tag;
-		private CountdownEvent _systemProjectionsCreated;
+		private Task _systemProjectionsCreated;
 		private ProjectionsSubsystem _projectionsSubsystem;
+
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -38,7 +39,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			_tag = "_1";
 
 			_node = CreateNode();
-			await _node.Start();
+			await _node.Start().WithTimeout(_timeout);
+
+			await _systemProjectionsCreated.WithTimeout(_timeout);
 
 			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
@@ -73,6 +76,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.MasterMainBus);
 			return new MiniNode(
 				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] {_projectionsSubsystem});
