@@ -2,52 +2,52 @@ resources:
 - repo: self
 
 jobs:
-- job: windows_x64
-  strategy:
-    matrix:
-      DEBUG:
-        Configuration: debug
-      RELEASE:
-        Configuration: release
-  displayName: 'Windows x64'
-  timeoutInMinutes: 30
-  pool:
-    vmImage: 'vs2017-win2016'
-  steps:
-  - task: UseDotNet@1
-    displayName: 'Install .NET Core 3.x SDK'
-    inputs:
-      packageType: 'sdk'
-      version: '3.0.100'
-      includePreviewVersions: true
-  - powershell: |
-      dotnet build -c $(Configuration) src\EventStore.sln
-      if (-Not $?) { throw "Exit code is $?" }
-    workingDirectory: $(Build.SourcesDirectory)
-    displayName: Compile
-  - powershell: |
-      (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests' | `
-        ForEach-Object {
-          dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
-          if (-Not $?) { throw "Exit code is $?" }
-        }
-    workingDirectory: $(Build.SourcesDirectory)
-    displayName: Test
-    errorActionPreference: Stop
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Windows (.NET Framework)"
-      platform: "Windows"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: windows-netcoreapp3-$(Configuration)
-      pathToPublish: '$(Build.SourcesDirectory)\bin\'
+#- job: windows_x64
+#  strategy:
+#    matrix:
+#      DEBUG:
+#        Configuration: debug
+#      RELEASE:
+#        Configuration: release
+#  displayName: 'Windows x64'
+#  timeoutInMinutes: 30
+#  pool:
+#    vmImage: 'vs2017-win2016'
+#  steps:
+#  - task: UseDotNet@1
+#    displayName: 'Install .NET Core 3.x SDK'
+#    inputs:
+#      packageType: 'sdk'
+#      version: '3.0.100'
+#      includePreviewVersions: true
+#  - powershell: |
+#      dotnet build -c $(Configuration) src\EventStore.sln
+#      if (-Not $?) { throw "Exit code is $?" }
+#    workingDirectory: $(Build.SourcesDirectory)
+#    displayName: Compile
+#  - powershell: |
+#      (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests' | `
+#        ForEach-Object {
+#          dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
+#          if (-Not $?) { throw "Exit code is $?" }
+#        }
+#    workingDirectory: $(Build.SourcesDirectory)
+#    displayName: Test
+#    errorActionPreference: Stop
+#  - task: PublishTestResults@2
+#    displayName: Publish Test Results
+#    condition: succeededOrFailed()
+#    inputs:
+#      testRunTitle: "Windows (.NET Framework)"
+#      platform: "Windows"
+#      testRunner: VSTest
+#      testResultsFiles: '**/*.trx'
+#  - task: PublishBuildArtifacts@1
+#    condition: eq(variables['System.PullRequest.IsFork'], 'False')
+#    displayName: Publish Artifacts
+#    inputs:
+#      artifactName: windows-netcoreapp3-$(Configuration)
+#      pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
 - job: macos_x64
   strategy:
@@ -75,7 +75,7 @@ jobs:
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
     displayName: Run Tests
-    timeoutInMinutes: 20
+    timeoutInMinutes: 10
   - task: PublishTestResults@2
     displayName: Publish Test Results
     condition: succeededOrFailed()
@@ -90,40 +90,40 @@ jobs:
     inputs:
       artifactName: macos-netcoreapp3-logs-$(Configuration)
       pathToPublish: '/tmp/eslogs/'
-- job: ubuntu_x64
-  strategy:
-    matrix:
-      DEBUG:
-        Configuration: debug
-      RELEASE:
-        Configuration: release
-
-  displayName: Ubuntu 16.04 x64
-  timeoutInMinutes: 30
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - task: UseDotNet@1
-    displayName: 'Install .NET Core 3.x SDK'
-    inputs:
-      packageType: 'sdk'
-      version: '3.0.100'
-      includePreviewVersions: true
-  - bash: dotnet build -c $(Configuration) src/EventStore.sln
-    displayName: Compile
-  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
-    displayName: Run Tests
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Ubuntu 16.04"
-      platform: "Ubuntu 16.04"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+#- job: ubuntu_x64
+#  strategy:
+#    matrix:
+#      DEBUG:
+#        Configuration: debug
+#      RELEASE:
+#        Configuration: release
+#
+#  displayName: Ubuntu 16.04 x64
+#  timeoutInMinutes: 30
+#  pool:
+#    vmImage: 'ubuntu-16.04'
+#  steps:
+#  - task: UseDotNet@1
+#    displayName: 'Install .NET Core 3.x SDK'
+#    inputs:
+#      packageType: 'sdk'
+#      version: '3.0.100'
+#      includePreviewVersions: true
+#  - bash: dotnet build -c $(Configuration) src/EventStore.sln
+#    displayName: Compile
+#  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
+#    displayName: Run Tests
+#  - task: PublishTestResults@2
+#    displayName: Publish Test Results
+#    condition: succeededOrFailed()
+#    inputs:
+#      testRunTitle: "Ubuntu 16.04"
+#      platform: "Ubuntu 16.04"
+#      testRunner: VSTest
+#      testResultsFiles: '**/*.trx'
+#  - task: PublishBuildArtifacts@1
+#    condition: eq(variables['System.PullRequest.IsFork'], 'False')
+#    displayName: Publish Artifacts
+#    inputs:
+#      artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
+#      pathToPublish: '$(Build.SourcesDirectory)/bin/'
