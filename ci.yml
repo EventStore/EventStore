@@ -5,8 +5,6 @@ jobs:
 - job: windows_x64
   strategy:
     matrix:
-      DEBUG:
-        Configuration: debug
       RELEASE:
         Configuration: release
   displayName: 'Windows x64'
@@ -52,8 +50,6 @@ jobs:
 - job: macos_x64
   strategy:
     matrix:
-      DEBUG:
-        Configuration: debug
       RELEASE:
         Configuration: release
   displayName: 'macOS x64'
@@ -97,8 +93,6 @@ jobs:
 - job: ubuntu_x64
   strategy:
     matrix:
-      DEBUG:
-        Configuration: debug
       RELEASE:
         Configuration: release
 
