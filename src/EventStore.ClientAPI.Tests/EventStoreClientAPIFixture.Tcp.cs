@@ -13,8 +13,8 @@ namespace EventStore.ClientAPI.Tests {
 			return EventStoreConnection.Create(
 				settings,
 				new IPEndPoint(IPAddress.Loopback, port ?? (settings.UseSslConnection
-					                                   ? ExternalSecurePort
-					                                   : ExternalPort)));
+					                                   ? _externalSecurePort
+					                                   : _externalPort)));
 		}
 	}
 }

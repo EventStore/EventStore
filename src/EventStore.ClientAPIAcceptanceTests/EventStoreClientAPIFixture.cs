@@ -20,9 +20,9 @@ namespace EventStore.ClientAPI.Tests {
 		private const string TestEventType = "-";
 
 		private static readonly X509Certificate2 ServerCertificate;
-		public static readonly int ExternalPort;
-		public static readonly int ExternalSecurePort;
-		public static readonly int UnusedPort;
+		private readonly int _externalPort;
+		private readonly int _externalSecurePort;
+		private readonly int _unusedPort;
 		private readonly ClusterVNode _node;
 
 		static EventStoreClientAPIFixture() {
@@ -32,27 +32,31 @@ namespace EventStore.ClientAPI.Tests {
 			using var mem = new MemoryStream();
 			stream.CopyTo(mem);
 			ServerCertificate = new X509Certificate2(mem.ToArray(), "1111");
+		}
 
+		public EventStoreClientAPIFixture() {
 			var defaultLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
 
-			using var external = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			using var externalSecure = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			using var unused = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			var external = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			var externalSecure = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			var unused = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 			external.Bind(defaultLoopBack);
 			externalSecure.Bind(defaultLoopBack);
 			unused.Bind(defaultLoopBack);
 
-			ExternalPort = ((IPEndPoint)external.LocalEndPoint).Port;
-			ExternalSecurePort = ((IPEndPoint)externalSecure.LocalEndPoint).Port;
-			UnusedPort = ((IPEndPoint)unused.LocalEndPoint).Port;
-		}
+			_externalPort = ((IPEndPoint)external.LocalEndPoint).Port;
+			_externalSecurePort = ((IPEndPoint)externalSecure.LocalEndPoint).Port;
+			_unusedPort = ((IPEndPoint)unused.LocalEndPoint).Port;
 
-		public EventStoreClientAPIFixture() {
+			external.Dispose();
+			externalSecure.Dispose();
+			unused.Dispose();
+
 			InitializeLogger();
 			var vNodeBuilder = ClusterVNodeBuilder
 				.AsSingleNode()
-				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort))
-				.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecurePort))
+				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, _externalPort))
+				.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, _externalSecurePort))
 				.WithServerCertificate(ServerCertificate)
 				.RunInMemory();
 
