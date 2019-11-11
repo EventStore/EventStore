@@ -18,9 +18,9 @@ namespace EventStore.Core.Services.Transport.Grpc
 		private static Exception NoMasterInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No master info available in response"));
 
-		public static Exception NotFound(string streamName) =>
+		public static Exception StreamNotFound(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
-				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotFound},
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamNotFound},
 				{Constants.Exceptions.StreamName, streamName}
 			});
 
@@ -144,5 +144,24 @@ namespace EventStore.Core.Services.Transport.Grpc
 					{Constants.Exceptions.StreamName, streamName},
 					{Constants.Exceptions.GroupName, groupName}
 				});
+
+		public static Exception LoginNotFound(string loginName) =>
+			new RpcException(new Status(StatusCode.NotFound, $"User '{loginName}' is not found."), new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.UserNotFound},
+				{Constants.Exceptions.LoginName, loginName}
+			});
+
+		public static Exception LoginConflict(string loginName) =>
+			new RpcException(new Status(StatusCode.FailedPrecondition, "Conflict."), new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.UserConflict},
+				{Constants.Exceptions.LoginName, loginName}
+			});
+
+		public static Exception LoginTryAgain(string loginName) =>
+			new RpcException(new Status(StatusCode.DeadlineExceeded, "Try again."), new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.UserConflict},
+				{Constants.Exceptions.LoginName, loginName}
+			});
+
 	}
 }

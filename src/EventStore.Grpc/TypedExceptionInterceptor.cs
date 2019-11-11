@@ -79,7 +79,7 @@ namespace EventStore.Grpc {
 						ex.Trailers.GetLongValueOrDefault(Constants.Exceptions.ExpectedVersion),
 						ex.Trailers.GetLongValueOrDefault(Constants.Exceptions.ActualVersion),
 						ex),
-					Constants.Exceptions.NotFound => new StreamNotFoundException(
+					Constants.Exceptions.StreamNotFound => new StreamNotFoundException(
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value, ex),
 					Constants.Exceptions.PersistentSubscriptionDoesNotExist => new
 						PersistentSubscriptionNotFoundException(
@@ -93,6 +93,8 @@ namespace EventStore.Grpc {
 						PersistentSubscriptionDroppedByServerException(
 							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value,
 							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
+					Constants.Exceptions.UserNotFound => new UserNotFoundException(
+						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.LoginName)?.Value),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => new InvalidOperationException(ex.Message, ex)

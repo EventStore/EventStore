@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Grpc.Core;
 
 namespace EventStore.Grpc.Projections {

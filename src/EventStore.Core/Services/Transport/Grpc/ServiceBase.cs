@@ -25,6 +25,14 @@ namespace EventStore.Grpc.Streams {
 	}
 }
 
+namespace EventStore.Grpc.Users {
+	partial class Users {
+		partial class UsersBase : ServiceBase {
+		}
+	}
+}
+
+
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
 		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider, Metadata requestHeaders) {
@@ -88,7 +96,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public static Exception NotFound(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
-				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotFound},
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamNotFound},
 				{Constants.Exceptions.StreamName, streamName}
 			});
 

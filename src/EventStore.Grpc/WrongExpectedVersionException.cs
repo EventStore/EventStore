@@ -16,13 +16,14 @@ namespace EventStore.Grpc {
 		public long? ActualVersion { get; }
 
 
-
 		/// <summary>
 		/// Constructs a new instance of <see cref="WrongExpectedVersionException" /> with the expected and actual versions if available.
 		/// </summary>
 		public WrongExpectedVersionException(string streamName, long? expectedVersion, long? actualVersion,
 			Exception exception = default) :
-			base($"Append failed due to WrongExpectedVersion. Stream: {streamName}, Expected version: {expectedVersion}, Actual version: {actualVersion}", exception) {
+			base(
+				$"Append failed due to WrongExpectedVersion. Stream: {streamName}, Expected version: {expectedVersion}, Actual version: {actualVersion}",
+				exception) {
 			StreamName = streamName;
 			ExpectedVersion = expectedVersion;
 			ActualVersion = actualVersion;

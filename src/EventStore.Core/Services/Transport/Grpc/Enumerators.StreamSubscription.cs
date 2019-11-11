@@ -115,7 +115,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							readNextSource.TrySetResult(true);
 							return;
 						case ReadStreamResult.NoStream:
-							readNextSource.TrySetException(RpcExceptions.NotFound(_streamName));
+							readNextSource.TrySetException(RpcExceptions.StreamNotFound(_streamName));
 							return;
 						case ReadStreamResult.StreamDeleted:
 							readNextSource.TrySetException(RpcExceptions.StreamDeleted(_streamName));

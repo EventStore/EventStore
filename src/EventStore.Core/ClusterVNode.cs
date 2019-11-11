@@ -53,6 +53,7 @@ namespace EventStore.Core {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
 		private static readonly PathString PersistentSegment = "/event_store.grpc.persistent_subscriptions.PersistentSubscriptions";
 		private static readonly PathString StreamsSegment = "/event_store.grpc.streams.Streams";
+		private static readonly PathString UsersSegment = "/event_store.grpc.users.Users";
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
@@ -127,6 +128,9 @@ namespace EventStore.Core {
 						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),  // TODO JPB figure out how to delete this sadness
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<PersistentSubscriptions>()))
+						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),  // TODO JPB figure out how to delete this sadness
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<Users>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint => endpoint.MapGrpcService<Streams>())),
 					(b, subsystem) => subsystem.Configure(b))
@@ -140,6 +144,7 @@ namespace EventStore.Core {
 					.AddSingleton(_readIndex)
 					.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex))
 					.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
+					.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
 					.AddGrpc().Services,
 				(s, subsystem) => subsystem.ConfigureServices(s));
 

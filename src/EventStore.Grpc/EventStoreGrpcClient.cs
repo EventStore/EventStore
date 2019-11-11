@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text.Json;
 using EventStore.Grpc.PersistentSubscriptions;
 using EventStore.Grpc.Projections;
+using EventStore.Grpc.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using ReadReq = EventStore.Grpc.Streams.ReadReq;
@@ -19,6 +20,7 @@ namespace EventStore.Grpc {
 		private readonly Streams.Streams.StreamsClient _client;
 		public EventStorePersistentSubscriptionsGrpcClient PersistentSubscriptions { get; }
 		public EventStoreProjectionManagerGrpcClient ProjectionsManager { get; }
+		public EventStoreUserManagerGrpcClient UsersManager { get; }
 
 		public EventStoreGrpcClient(Uri address, Func<HttpClient> createHttpClient = default) {
 			if (address == null) {
@@ -32,8 +34,8 @@ namespace EventStore.Grpc {
 			_client = new Streams.Streams.StreamsClient(callInvoker);
 			PersistentSubscriptions = new EventStorePersistentSubscriptionsGrpcClient(callInvoker);
 			ProjectionsManager = new EventStoreProjectionManagerGrpcClient(callInvoker);
+			UsersManager = new EventStoreUserManagerGrpcClient(callInvoker);
 		}
-
 
 		public void Dispose() => _channel.Dispose();
 
