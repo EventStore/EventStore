@@ -4,8 +4,7 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPICollection))]
-	public abstract class EventStoreClientAPITest {
+	public abstract class EventStoreClientAPITest: IClassFixture<EventStoreClientAPIFixture> {
 		public string GetStreamName([CallerMemberName] string testMethod = default)
 			=> $"{GetType().Name}_{testMethod ?? "unknown"}";
 
