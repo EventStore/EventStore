@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class read_all_security : IClassFixture<read_all_security.Fixture> {
 		private readonly Fixture _fixture;
 

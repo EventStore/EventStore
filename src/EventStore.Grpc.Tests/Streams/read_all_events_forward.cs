@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class read_all_events_forward : IClassFixture<read_all_events_forward.Fixture> {
 		private const string Stream = "stream";

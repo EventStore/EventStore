@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -6,7 +5,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "Network"), Trait("Category", "LongRunning")]
 	public class is_json : IClassFixture<is_json.Fixture> {
 		private readonly Fixture _fixture;

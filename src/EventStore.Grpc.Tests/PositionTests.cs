@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace EventStore.Grpc.Tests {
+namespace EventStore.Grpc {
 	public class PositionTests {
 		[Fact]
 		public void Equality() {

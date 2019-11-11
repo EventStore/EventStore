@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace EventStore.Grpc.Tests {
+namespace EventStore.Grpc {
 	public class StreamRevisionTests {
 		[Fact]
 		public void Equality() {

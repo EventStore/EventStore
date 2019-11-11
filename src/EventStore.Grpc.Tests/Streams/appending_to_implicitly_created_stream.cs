@@ -1,9 +1,8 @@
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class appending_to_implicitly_created_stream
 		: IClassFixture<appending_to_implicitly_created_stream.Fixture> {

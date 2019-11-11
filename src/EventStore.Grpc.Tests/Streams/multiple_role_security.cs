@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class multiple_role_security : IClassFixture<multiple_role_security.Fixture> {
 		private readonly Fixture _fixture;
 

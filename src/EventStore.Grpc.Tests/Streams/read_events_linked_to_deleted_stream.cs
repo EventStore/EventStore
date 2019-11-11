@@ -1,12 +1,11 @@
 using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public abstract class read_events_linked_to_deleted_stream {
 		private readonly Fixture _fixture;
 

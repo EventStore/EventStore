@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "Network")]
 	public class append_to_stream :
 		IClassFixture<append_to_stream.Fixture> {

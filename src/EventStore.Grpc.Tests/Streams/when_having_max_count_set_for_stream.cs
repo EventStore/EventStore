@@ -2,7 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class when_having_max_count_set_for_stream : IClassFixture<when_having_max_count_set_for_stream.Fixture> {
 		private readonly Fixture _fixture;

@@ -2,9 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using static EventStore.Grpc.Tests.EventStoreGrpcFixture;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class read_all_events_backward : IClassFixture<read_all_events_backward.Fixture> {
 		private const string Stream = "stream";

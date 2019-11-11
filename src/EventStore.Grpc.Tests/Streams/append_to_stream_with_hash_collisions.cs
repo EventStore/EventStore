@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class append_to_stream_with_hash_collisions
 		: IClassFixture<append_to_stream_with_hash_collisions.Fixture> {

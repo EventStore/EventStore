@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class append_to_stream_expected_version_no_stream :
 		IClassFixture<append_to_stream_expected_version_no_stream.Fixture> {
 		private readonly Fixture _fixture;

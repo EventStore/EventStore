@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class append_to_stream_with_event_numbers_greater_than_int32_max_value : IAsyncLifetime {
 		private readonly Fixture _fixture;
 		private const string Stream = nameof(append_to_stream_with_event_numbers_greater_than_int32_max_value);

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class subscribe_to_all_from_filtered : IClassFixture<subscribe_to_all_from_filtered.Fixture> {
 		private readonly Fixture _fixture;
 

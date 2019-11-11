@@ -1,7 +1,7 @@
 using System;
 using Xunit;
 
-namespace EventStore.Grpc.Tests {
+namespace EventStore.Grpc {
 	public class PrefixFilterExpressionTests {
 		[Fact]
 		public void Equality() {

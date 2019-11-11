@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class stream_metadata : IClassFixture<stream_metadata.Fixture> {
 		private readonly Fixture _fixture;

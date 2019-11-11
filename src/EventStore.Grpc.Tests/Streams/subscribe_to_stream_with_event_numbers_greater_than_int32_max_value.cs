@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class subscribe_to_stream_with_event_numbers_greater_than_int32_max_value
 		: IClassFixture<subscribe_to_stream_with_event_numbers_greater_than_int32_max_value.Fixture> {
 		private const string Stream = nameof(subscribe_to_stream_with_event_numbers_greater_than_int32_max_value);

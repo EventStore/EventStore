@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Grpc.Core;
 using Xunit;
 
-namespace EventStore.Grpc.Tests {
+namespace EventStore.Grpc {
 	public class AnyStreamRevisionTests {
 		[Fact]
 		public void Equality() {

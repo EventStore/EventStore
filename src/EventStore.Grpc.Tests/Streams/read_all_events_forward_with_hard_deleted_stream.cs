@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class read_all_events_forward_with_hard_deleted_stream
 		: IClassFixture<read_all_events_forward_with_hard_deleted_stream.Fixture> {

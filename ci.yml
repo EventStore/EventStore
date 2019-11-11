@@ -74,6 +74,9 @@ jobs:
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results

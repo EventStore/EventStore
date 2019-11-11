@@ -2,7 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using Xunit;
 
-namespace EventStore.Grpc.Tests {
+namespace EventStore.Grpc {
 	public class RegularFilterExpressionTests {
 		[Fact]
 		public void Equality() {

@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class stream_catch_up_subscription : IClassFixture<stream_catch_up_subscription.Fixture> {
 		private readonly Fixture _fixture;

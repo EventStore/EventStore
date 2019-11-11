@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Convert = System.Convert;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class read_stream_with_event_numbers_greater_than_int32_max_value_resolve_links
 		: IClassFixture<read_stream_with_event_numbers_greater_than_int32_max_value_resolve_links.Fixture> {
 		private const string Stream = nameof(read_stream_with_event_numbers_greater_than_int32_max_value);

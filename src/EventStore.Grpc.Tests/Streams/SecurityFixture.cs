@@ -9,7 +9,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public abstract class SecurityFixture : EventStoreGrpcFixture {
 		public const string NoAclStream = nameof(NoAclStream);
 		public const string ReadStream = nameof(ReadStream);

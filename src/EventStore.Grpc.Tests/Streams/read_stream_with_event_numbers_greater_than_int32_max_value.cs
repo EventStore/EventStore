@@ -2,7 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class read_stream_with_event_numbers_greater_than_int32_max_value
 		: IClassFixture<read_stream_with_event_numbers_greater_than_int32_max_value.Fixture> {
 		private const string Stream = nameof(read_stream_with_event_numbers_greater_than_int32_max_value);

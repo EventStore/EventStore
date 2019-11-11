@@ -1,6 +1,6 @@
 using EventStore.Common.Utils;
 
-namespace EventStore.Grpc.Tests.Streams
+namespace EventStore.Grpc.Streams
 {
 	internal static class EventDataComparer {
 		public static bool Equal(EventData expected, EventRecord actual) {

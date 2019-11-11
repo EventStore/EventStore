@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	public class overriden_system_stream_security_for_all
 		: IClassFixture<overriden_system_stream_security_for_all.Fixture> {
 		private readonly Fixture _fixture;

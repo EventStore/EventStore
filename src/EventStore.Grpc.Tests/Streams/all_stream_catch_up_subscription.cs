@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
-namespace EventStore.Grpc.Tests.Streams {
+namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
 	public class all_stream_catch_up_subscription : IAsyncLifetime {
 		private readonly Fixture _fixture;
