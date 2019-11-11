@@ -70,12 +70,9 @@ jobs:
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: |
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
     displayName: Run Tests
-    timeoutInMinutes: 10
+    timeoutInMinutes: 4
   - task: PublishTestResults@2
     displayName: Publish Test Results
     condition: succeededOrFailed()
