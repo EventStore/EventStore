@@ -24,7 +24,7 @@ jobs:
     workingDirectory: $(Build.SourcesDirectory)
     displayName: Compile
   - powershell: |
-      (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests' | `
+      (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests$' | `
         ForEach-Object {
           dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
           if (-Not $?) { throw "Exit code is $?" }
