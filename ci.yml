@@ -59,7 +59,7 @@ jobs:
   displayName: 'macOS x64'
   timeoutInMinutes: 30
   pool:
-    vmImage: 'macOS 10.13'
+    vmImage: 'macOS 10.14'
   steps:
   - task: UseDotNet@1
     displayName: 'Install .NET Core 3.x SDK'
@@ -79,8 +79,8 @@ jobs:
     displayName: Publish Test Results
     condition: succeededOrFailed()
     inputs:
-      testRunTitle: "MacOS 10.13"
-      platform: "MacOS 10.13"
+      testRunTitle: "MacOS 10.14"
+      platform: "MacOS 10.14"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
   - task: PublishBuildArtifacts@1
