@@ -31,14 +31,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Handle(ClientMessage.WriteEvents msg) {
 			_externalRequestQueue.Publish(
 				new ClientMessage.WriteEvents(
-					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false,
+					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), true,
 					msg.EventStreamId, msg.ExpectedVersion, msg.Events, msg.User));
 		}
 
 		public void Handle(ClientMessage.DeleteStream msg) {
 			_externalRequestQueue.Publish(
 				new ClientMessage.DeleteStream(
-					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false,
+					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), true,
 					msg.EventStreamId, msg.ExpectedVersion, msg.HardDelete, msg.User));
 		}
 
