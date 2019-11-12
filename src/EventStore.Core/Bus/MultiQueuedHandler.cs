@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -12,7 +13,7 @@ namespace EventStore.Core.Bus {
 
 		private readonly Func<Message, int> _queueHash;
 		private int _nextQueueNum = -1;
-
+		private static readonly ILogger Log = LogManager.GetLoggerFor<MultiQueuedHandler>();
 		public MultiQueuedHandler(int queueCount,
 			Func<int, IQueuedHandler> queueFactory,
 			Func<Message, int> queueHash = null) {
@@ -60,7 +61,9 @@ namespace EventStore.Core.Bus {
 				stopTasks[i] = Task.Factory.StartNew(() => Queues[queueNum].Stop());
 			}
 
+			Log.Debug("MultiQueuedHandler Stop()");
 			Task.WaitAll(stopTasks);
+			Log.Debug("MultiQueuedHandler Stop() Completed");
 		}
 
 		public void Handle(Message message) {
