@@ -114,7 +114,7 @@ namespace EventStore.ClientAPI.Tests {
 
 		private static ConnectionSettingsBuilder DefaultConfigureSettings(
 			ConnectionSettingsBuilder builder)
-			=> builder;
+			=> builder.EnableVerboseLogging().KeepRetrying().KeepReconnecting().UseFileLogger("/tmp/eslogs/client.log");
 
 		public IEnumerable<EventData> CreateTestEvents(int count = 1)
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
