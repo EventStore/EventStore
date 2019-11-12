@@ -1269,6 +1269,7 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
 		public ClusterVNode Build(IOptions options = null,
 			IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null) {
+			_log.Debug("ClusterVNode Build");
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
@@ -1366,6 +1367,9 @@ namespace EventStore.Core {
 			var epochCheckpoint = _db.Config.EpochCheckpoint.Read();
 			var truncateCheckpoint = _db.Config.TruncateCheckpoint.Read();
 
+			_log.Debug("ClusterVNode Build Completed");
+
+			_log.Debug("ClusterVNode Log");
 			_log.Info("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
 			_log.Info("{description,-25} {path}", "DATABASE:", _db.Config.Path);
 			_log.Info("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
@@ -1377,6 +1381,7 @@ namespace EventStore.Core {
 			_log.Info("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
 				truncateCheckpoint, truncateCheckpoint);
 
+			_log.Debug("ClusterVNode Log Completed");
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
 		}
 

@@ -32,9 +32,17 @@ namespace EventStore.ClientAPI.Tests {
 			using var mem = new MemoryStream();
 			stream.CopyTo(mem);
 			ServerCertificate = new X509Certificate2(mem.ToArray(), "1111");
+			try {
+				Directory.CreateDirectory("/tmp/eslogs/");
+			} catch (Exception e) {
+
+			}
 		}
 
 		public EventStoreClientAPIFixture() {
+			using (StreamWriter outputFile = new StreamWriter("/tmp/eslogs/fixture.log", true)) {
+				outputFile.WriteLine("EventStoreClientAPIFixture start");
+			}
 			var defaultLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
 
 			var external = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -61,6 +69,9 @@ namespace EventStore.ClientAPI.Tests {
 				.RunInMemory();
 
 			_node = vNodeBuilder.Build();
+			using (StreamWriter outputFile = new StreamWriter("/tmp/eslogs/fixture.log", true)) {
+				outputFile.WriteLine("EventStoreClientAPIFixture end");
+			}
 		}
 
 		private void InitializeLogger() {
