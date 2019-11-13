@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic AS build
 WORKDIR /es
 
 COPY ./ .
@@ -10,7 +10,7 @@ RUN dotnet publish -c Debug -o ../../out
 WORKDIR /out
 RUN ls -la
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.0 AS dest
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-bionic AS dest
 WORKDIR /eventstore
 COPY --from=build /out/ ./
 

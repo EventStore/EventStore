@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -28,7 +29,6 @@ namespace EventStore.Grpc {
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
 			Action<IWebHostBuilder> configureWebHost = default) {
-
 			var webHostBuilder = new WebHostBuilder();
 			configureWebHost?.Invoke(webHostBuilder);
 
@@ -42,11 +42,10 @@ namespace EventStore.Grpc {
 			_testServer = new TestServer(
 				webHostBuilder.UseStartup(new ClusterVNodeStartup(Node)));
 
-			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => {
-				var client = _testServer.CreateClient();
-				client.DefaultRequestVersion = new Version(2, 0);
-				client.Timeout = Timeout.InfiniteTimeSpan;
-				return client;
+			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => new HttpClient(new ResponseVersionHandler {
+				InnerHandler = _testServer.CreateHandler()
+			}) {
+				Timeout = Timeout.InfiniteTimeSpan
 			});
 		}
 
@@ -78,6 +77,17 @@ namespace EventStore.Grpc {
 			var type = GetType();
 
 			return $"{type.DeclaringType.Name}_{testMethod ?? "unknown"}";
+		}
+
+
+		private class ResponseVersionHandler : DelegatingHandler {
+			protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+				CancellationToken cancellationToken) {
+				var response = await base.SendAsync(request, cancellationToken);
+				response.Version = request.Version;
+
+				return response;
+			}
 		}
 	}
 }
