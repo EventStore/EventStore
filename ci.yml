@@ -68,6 +68,8 @@ jobs:
   - bash: |
       sudo sysctl -w net.inet.ip.portrange.first=32768
       sudo sysctl -w net.inet.ip.portrange.hifirst=32768
+      sudo sysctl -w kern.maxproc=2500
+      sudo launchctl limit maxproc 2500
     displayName: Increase Ephemeral Ports
   - bash: |
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests
