@@ -1208,8 +1208,8 @@ namespace EventStore.Core.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"SubscribeToStreamFiltered")]
-  public partial class SubscribeToStreamFiltered
+  [Serializable, ProtoContract(Name=@"FilteredSubscribeToStream")]
+  public partial class FilteredSubscribeToStream
   {
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
@@ -1223,9 +1223,9 @@ namespace EventStore.Core.Messages
     [ProtoMember(4, IsRequired = true, Name=@"checkpoint_interval", DataFormat = DataFormat.TwosComplement)]
     public readonly int CheckpointInterval;
   
-    private SubscribeToStreamFiltered() {}
+    private FilteredSubscribeToStream() {}
   
-    public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
+    public FilteredSubscribeToStream(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
     {
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;

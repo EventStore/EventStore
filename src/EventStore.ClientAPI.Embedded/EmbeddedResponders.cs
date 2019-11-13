@@ -217,12 +217,12 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 		}
 		
-		internal class ReadAllEventsForwardFiltered :
-			EmbeddedResponderBase<AllEventsSlice, ClientMessage.ReadAllEventsForwardFilteredCompleted> {
-			public ReadAllEventsForwardFiltered(TaskCompletionSource<AllEventsSlice> source) : base(source) {
+		internal class FilteredReadAllEventsForward :
+			EmbeddedResponderBase<AllEventsSlice, ClientMessage.FilteredReadAllEventsForwardCompleted> {
+			public FilteredReadAllEventsForward(TaskCompletionSource<AllEventsSlice> source) : base(source) {
 			}
 
-			protected override void InspectResponse(ClientMessage.ReadAllEventsForwardFilteredCompleted response) {
+			protected override void InspectResponse(ClientMessage.FilteredReadAllEventsForwardCompleted response) {
 				switch (response.Result) {
 					case ReadAllFilteredResult.Success:
 						Succeed(response);
@@ -241,7 +241,7 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 
 			protected override AllEventsSlice TransformResponse(
-				ClientMessage.ReadAllEventsForwardFilteredCompleted response) {
+				ClientMessage.FilteredReadAllEventsForwardCompleted response) {
 				return new AllEventsSlice(ReadDirection.Forward,
 					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
 					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
@@ -249,12 +249,12 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 		}
 		
-		internal class ReadAllEventsBackwardFiltered :
-			EmbeddedResponderBase<AllEventsSlice, ClientMessage.ReadAllEventsBackwardFilteredCompleted> {
-			public ReadAllEventsBackwardFiltered(TaskCompletionSource<AllEventsSlice> source) : base(source) {
+		internal class FilteredReadAllEventsBackward :
+			EmbeddedResponderBase<AllEventsSlice, ClientMessage.FilteredReadAllEventsBackwardCompleted> {
+			public FilteredReadAllEventsBackward(TaskCompletionSource<AllEventsSlice> source) : base(source) {
 			}
 
-			protected override void InspectResponse(ClientMessage.ReadAllEventsBackwardFilteredCompleted response) {
+			protected override void InspectResponse(ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
 				switch (response.Result) {
 					case ReadAllFilteredResult.Success:
 						Succeed(response);
@@ -273,7 +273,7 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 
 			protected override AllEventsSlice TransformResponse(
-				ClientMessage.ReadAllEventsBackwardFilteredCompleted response) {
+				ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
 				return new AllEventsSlice(ReadDirection.Forward,
 					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
 					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),

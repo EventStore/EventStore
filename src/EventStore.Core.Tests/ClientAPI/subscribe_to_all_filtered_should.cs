@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 				var appeared = new CountdownEvent(4);
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					appeared.Signal();
 					return Task.CompletedTask;
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 				var appeared = new CountdownEvent(4);
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					appeared.Signal();
 					return Task.CompletedTask;
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 				var appeared = new CountdownEvent(4);
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					appeared.Signal();
 					return Task.CompletedTask;
@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 				var appeared = new CountdownEvent(4);
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					appeared.Signal();
 					return Task.CompletedTask;
@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 				var appeared = new CountdownEvent(4);
 
-				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					appeared.Signal();
 					return Task.CompletedTask;
@@ -181,23 +181,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void throw_an_exception_if_checkpoint_reached_is_provided_with_no_interval() {
-			var filter = Filter.ExcludeSystemEvents;
-
-			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
-
-				Assert.Throws<ArgumentNullException>(() => {
-					store.SubscribeToAllFilteredAsync(
-						false,
-						filter,
-						(s, e) => Task.CompletedTask,
-						(s, p) => Task.CompletedTask).Wait();
-				});
-			}
-		}
-		
-		[Test, Category("LongRunning")]
 		public void throw_an_exception_if_interval_is_negative() {
 			var filter = Filter.ExcludeSystemEvents;
 
@@ -205,7 +188,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.ConnectAsync().Wait();
 
 				Assert.Throws<ArgumentOutOfRangeException>(() => {
-					store.SubscribeToAllFilteredAsync(
+					store.FilteredSubscribeToAllAsync(
 						false,
 						filter,
 						(s, e) => Task.CompletedTask,
@@ -213,7 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				});
 			}
 		}
-		
+
 		[Test, Category("LongRunning")]
 		public void calls_checkpoint_reached_according_to_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
@@ -223,7 +206,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var appeared = new CountdownEvent(5);
 				var eventsSeen = 0;
 
-				using (store.SubscribeToAllFilteredAsync(false,
+				using (store.FilteredSubscribeToAllAsync(false,
 					filter,
 					(s, e) => {
 						eventsSeen++;

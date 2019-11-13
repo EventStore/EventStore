@@ -29,11 +29,11 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override TcpPackage CreateSubscriptionPackage() {
-			var dto = new ClientMessage.SubscribeToStreamFiltered(_streamId, _resolveLinkTos,
+			var dto = new ClientMessage.FilteredSubscribeToStream(_streamId, _resolveLinkTos,
 				_filter.Value, _checkpointInterval);
 
 			return new TcpPackage(
-				TcpCommand.SubscribeToStreamFiltered, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+				TcpCommand.FilteredSubscribeToStream, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
 				_correlationId, _userCredentials != null ? _userCredentials.Username : null,
 				_userCredentials != null ? _userCredentials.Password : null, dto.Serialize());
 		}

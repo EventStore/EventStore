@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var appeared = new CountdownEvent(5);
 			var eventsSeen = 0;
 
-			_conn.SubscribeToAllFilteredFrom(
+			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				CatchUpSubscriptionFilteredSettings.Default,
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var eventsSeen = 0;
 			var isLive = false;
 
-			_conn.SubscribeToAllFilteredFrom(
+			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				CatchUpSubscriptionFilteredSettings.Default,
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		private void Subscribe(Filter filter, ConcurrentBag<ResolvedEvent> foundEvents, CountdownEvent appeared) {
-			_conn.SubscribeToAllFilteredFrom(
+			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
 				CatchUpSubscriptionFilteredSettings.Default,

@@ -262,9 +262,9 @@ namespace EventStore.Core.Services.Transport.Http {
 			return InternalServerError();
 		}
 		
-		public static ResponseConfiguration ReadAllEventsBackwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+		public static ResponseConfiguration FilteredReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
-			var msg = message as ClientMessage.ReadAllEventsBackwardFilteredCompleted;
+			var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
 			if (msg != null) {
 				switch (msg.Result) {
 					case ReadAllFilteredResult.Success:
@@ -320,9 +320,9 @@ namespace EventStore.Core.Services.Transport.Http {
 			return InternalServerError();
 		}
 		
-		public static ResponseConfiguration ReadAllEventsForwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+		public static ResponseConfiguration FilteredReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
-			var msg = message as ClientMessage.ReadAllEventsForwardFilteredCompleted;
+			var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
 			if (msg != null) {
 				switch (msg.Result) {
 					case ReadAllFilteredResult.Success:

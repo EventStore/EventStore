@@ -7,7 +7,7 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class
-		ReadAllEventsBackwardFilteredOperation : OperationBase<AllEventsSlice,
+		FilteredReadAllEventsBackwardOperation : OperationBase<AllEventsSlice,
 			ClientMessage.ReadAllEventsFilteredCompleted> {
 		private readonly Position _position;
 		private readonly int _maxCount;
@@ -16,11 +16,11 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly int _maxSearchWindow;
 		private readonly ClientMessage.Filter _filter;
 
-		public ReadAllEventsBackwardFilteredOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
+		public FilteredReadAllEventsBackwardOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
 			Position position, int maxCount, bool resolveLinkTos, bool requireMaster, int maxSearchWindow,
 			ClientMessage.Filter filter, UserCredentials userCredentials)
-			: base(log, source, TcpCommand.ReadAllEventsBackwardFiltered,
-				TcpCommand.ReadAllEventsBackwardFilteredCompleted, userCredentials) {
+			: base(log, source, TcpCommand.FilteredReadAllEventsBackward,
+				TcpCommand.FilteredReadAllEventsBackwardCompleted, userCredentials) {
 			_position = position;
 			_maxCount = maxCount;
 			_resolveLinkTos = resolveLinkTos;

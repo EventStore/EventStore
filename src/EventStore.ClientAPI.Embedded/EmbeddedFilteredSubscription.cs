@@ -47,7 +47,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
 				ex => DropSubscription(Core.Services.SubscriptionDropReason.AccessDenied, ex),
-				user => new ClientMessage.SubscribeToStreamFiltered(
+				user => new ClientMessage.FilteredSubscribeToStream(
 					correlationId,
 					correlationId,
 					new PublishEnvelope(Publisher, true),

@@ -32,14 +32,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 
 		/// <summary>
 		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 
 		bool IsStreamDeleted(string streamId);

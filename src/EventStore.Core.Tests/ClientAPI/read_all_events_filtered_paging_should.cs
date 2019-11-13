@@ -55,7 +55,7 @@
  			AllEventsSlice slice;
 
   			do {
- 				slice = _conn.ReadAllEventsForwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
+ 				slice = _conn.FilteredReadAllEventsForwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
  					.GetAwaiter()
  					.GetResult();
 
@@ -84,7 +84,7 @@
 	        AllEventsSlice slice;
 
 	        do {
-		        slice = _conn.ReadAllEventsBackwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
+		        slice = _conn.FilteredReadAllEventsBackwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
 			        .GetAwaiter()
 			        .GetResult();
 		        if (slice.Events.Length == 0) {
@@ -106,7 +106,7 @@
         public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
 	        var filter = Filter.EventType.Prefix("BE");
 
-	        var slice = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
+	        var slice = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
 			        .GetAwaiter()
 			        .GetResult();
         
@@ -117,7 +117,7 @@
         public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_backward() {
 	        var filter = Filter.EventType.Prefix("BE");
 
-	        var slice = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
+	        var slice = _conn.FilteredReadAllEventsBackwardAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
 		        .GetAwaiter()
 		        .GetResult();
         

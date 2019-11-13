@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void only_return_events_with_a_given_stream_prefix() {
 			var filter = Filter.StreamId.Prefix("stream-a");
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.EvenEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.EventType.Prefix("AE");
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void only_return_events_that_satisfy_a_given_stream_regex() {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.OddEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.EventType.Regex(new Regex(@"^.*BEv.*$"));
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000).Result;
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.ExcludeSystemEvents;
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
-			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			var read = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 1000, false, filter, 1000).Result;
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
 	}

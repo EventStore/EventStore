@@ -134,8 +134,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadStreamEventsBackward>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsForward>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsBackward>().ForwardTo(_outputBus)
-				.When<ClientMessage.ReadAllEventsForwardFiltered>().ForwardTo(_outputBus)
-				.When<ClientMessage.ReadAllEventsBackwardFiltered>().ForwardTo(_outputBus)
+				.When<ClientMessage.FilteredReadAllEventsForward>().ForwardTo(_outputBus)
+				.When<ClientMessage.FilteredReadAllEventsBackward>().ForwardTo(_outputBus)
 				.When<ClientMessage.WriteEvents>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionStart>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
@@ -173,8 +173,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadStreamEventsBackward>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadAllEventsForward>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ReadAllEventsBackward>().Do(HandleAsNonMaster)
-				.When<ClientMessage.ReadAllEventsForwardFiltered>().Do(HandleAsNonMaster)
-				.When<ClientMessage.ReadAllEventsBackwardFiltered>().Do(HandleAsNonMaster)
+				.When<ClientMessage.FilteredReadAllEventsForward>().Do(HandleAsNonMaster)
+				.When<ClientMessage.FilteredReadAllEventsBackward>().Do(HandleAsNonMaster)
 				.When<ClientMessage.CreatePersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.ConnectToPersistentSubscription>().Do(HandleAsNonMaster)
 				.When<ClientMessage.UpdatePersistentSubscription>().Do(HandleAsNonMaster)
@@ -201,8 +201,8 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadStreamEventsBackwardCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsForwardCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsBackwardCompleted>().ForwardTo(_outputBus)
-				.When<ClientMessage.ReadAllEventsForwardFilteredCompleted>().ForwardTo(_outputBus)
-				.When<ClientMessage.ReadAllEventsBackwardFilteredCompleted>().ForwardTo(_outputBus)
+				.When<ClientMessage.FilteredReadAllEventsForwardCompleted>().ForwardTo(_outputBus)
+				.When<ClientMessage.FilteredReadAllEventsBackwardCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.WriteEventsCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionStartCompleted>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionWriteCompleted>().ForwardTo(_outputBus)
@@ -602,7 +602,7 @@ namespace EventStore.Core.Services.VNode {
 			}
 		}
 		
-		private void HandleAsNonMaster(ClientMessage.ReadAllEventsForwardFiltered message) {
+		private void HandleAsNonMaster(ClientMessage.FilteredReadAllEventsForward message) {
 			if (message.RequireMaster) {
 				if (_master == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
@@ -624,7 +624,7 @@ namespace EventStore.Core.Services.VNode {
 			}
 		}
 		
-		private void HandleAsNonMaster(ClientMessage.ReadAllEventsBackwardFiltered message) {
+		private void HandleAsNonMaster(ClientMessage.FilteredReadAllEventsBackward message) {
 			if (message.RequireMaster) {
 				if (_master == null)
 					DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);

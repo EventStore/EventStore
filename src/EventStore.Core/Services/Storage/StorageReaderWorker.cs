@@ -20,9 +20,9 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsBackward>,
-		IHandle<ClientMessage.ReadAllEventsForwardFiltered>,
+		IHandle<ClientMessage.FilteredReadAllEventsForward>,
 		IHandle<StorageMessage.CheckStreamAccess>,
-		IHandle<StorageMessage.BatchLogExpiredMessages>, IHandle<ClientMessage.ReadAllEventsBackwardFiltered> {
+		IHandle<StorageMessage.BatchLogExpiredMessages>, IHandle<ClientMessage.FilteredReadAllEventsBackward> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
 		private static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
 
@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Storage {
 			msg.Envelope.ReplyWith(ReadAllEventsBackward(msg));
 		}
 
-		void IHandle<ClientMessage.ReadAllEventsForwardFiltered>.Handle(ClientMessage.ReadAllEventsForwardFiltered msg) {
+		void IHandle<ClientMessage.FilteredReadAllEventsForward>.Handle(ClientMessage.FilteredReadAllEventsForward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
 				Log.Debug(
 					"Read All Stream Events Forward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
-				var res = ReadAllEventsForwardFiltered(msg);
+				var res = FilteredReadAllEventsForward(msg);
 				switch (res.Result) {
 					case ReadAllFilteredResult.Success:
 						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
@@ -204,7 +204,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 		
-		void IHandle<ClientMessage.ReadAllEventsBackwardFiltered>.Handle(ClientMessage.ReadAllEventsBackwardFiltered msg) {
+		void IHandle<ClientMessage.FilteredReadAllEventsBackward>.Handle(ClientMessage.FilteredReadAllEventsBackward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
 				Log.Debug(
 					"Read All Stream Events Backward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
@@ -213,7 +213,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
-				var res = ReadAllEventsBackwardFiltered(msg);
+				var res = FilteredReadAllEventsBackward(msg);
 				switch (res.Result) {
 					case ReadAllFilteredResult.Success:
 						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream && res.Events.Length == 0) {
@@ -440,8 +440,8 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private ClientMessage.ReadAllEventsForwardFilteredCompleted ReadAllEventsForwardFiltered(
-			ClientMessage.ReadAllEventsForwardFiltered msg) {
+		private ClientMessage.FilteredReadAllEventsForwardCompleted FilteredReadAllEventsForward(
+			ClientMessage.FilteredReadAllEventsForward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
 				var lastCommitPosition = _readIndex.LastReplicatedPosition;
@@ -467,7 +467,7 @@ namespace EventStore.Core.Services.Storage {
 						return NoDataForFilteredCommand(msg, ReadAllFilteredResult.AccessDenied, pos,
 							lastCommitPosition);
 
-					var res = _readIndex.ReadAllEventsForwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
+					var res = _readIndex.FilteredReadAllEventsForward(pos, msg.MaxCount, msg.MaxSearchWindow,
 						msg.EventFilter);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
@@ -475,20 +475,20 @@ namespace EventStore.Core.Services.Storage {
 							lastCommitPosition);
 
 					var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
-					return new ClientMessage.ReadAllEventsForwardFilteredCompleted(
+					return new ClientMessage.FilteredReadAllEventsForwardCompleted(
 						msg.CorrelationId, ReadAllFilteredResult.Success, null, resolved, metadata, access.Public,
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastCommitPosition, res.IsEndOfStream);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+					Log.ErrorException(exc, "Error during processing FilteredReadAllEventsForward request.");
 					return NoDataForFilteredCommand(msg, ReadAllFilteredResult.Error, pos, lastCommitPosition,
 						exc.Message);
 				}
 			}
 		}
 		
-		private ClientMessage.ReadAllEventsBackwardFilteredCompleted ReadAllEventsBackwardFiltered(
-			ClientMessage.ReadAllEventsBackwardFiltered msg) {
+		private ClientMessage.FilteredReadAllEventsBackwardCompleted FilteredReadAllEventsBackward(
+			ClientMessage.FilteredReadAllEventsBackward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
 				var lastCommitPosition = _readIndex.LastReplicatedPosition;
@@ -514,7 +514,7 @@ namespace EventStore.Core.Services.Storage {
 						return NoDataForFilteredCommand(msg, ReadAllFilteredResult.AccessDenied, pos,
 							lastCommitPosition);
 
-					var res = _readIndex.ReadAllEventsBackwardFiltered(pos, msg.MaxCount, msg.MaxSearchWindow,
+					var res = _readIndex.FilteredReadAllEventsBackward(pos, msg.MaxCount, msg.MaxSearchWindow,
 						msg.EventFilter);
 					var resolved = ResolveReadAllResult(res.Records, msg.ResolveLinkTos, msg.User);
 					if (resolved == null)
@@ -522,12 +522,12 @@ namespace EventStore.Core.Services.Storage {
 							lastCommitPosition);
 
 					var metadata = _readIndex.GetStreamMetadata(SystemStreams.AllStream);
-					return new ClientMessage.ReadAllEventsBackwardFilteredCompleted(
+					return new ClientMessage.FilteredReadAllEventsBackwardCompleted(
 						msg.CorrelationId, ReadAllFilteredResult.Success, null, resolved, metadata, access.Public,
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastCommitPosition, res.IsEndOfStream);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+					Log.ErrorException(exc, "Error during processing FilteredReadAllEventsForward request.");
 					return NoDataForFilteredCommand(msg, ReadAllFilteredResult.Error, pos, lastCommitPosition,
 						exc.Message);
 				}
@@ -583,18 +583,18 @@ namespace EventStore.Core.Services.Storage {
 				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition);
 		}
 
-		private ClientMessage.ReadAllEventsForwardFilteredCompleted NoDataForFilteredCommand(
-			ClientMessage.ReadAllEventsForwardFiltered msg, ReadAllFilteredResult result, TFPos pos,
+		private ClientMessage.FilteredReadAllEventsForwardCompleted NoDataForFilteredCommand(
+			ClientMessage.FilteredReadAllEventsForward msg, ReadAllFilteredResult result, TFPos pos,
 			long lastCommitPosition, string error = null) {
-			return new ClientMessage.ReadAllEventsForwardFilteredCompleted(
+			return new ClientMessage.FilteredReadAllEventsForwardCompleted(
 				msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
 				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition, false);
 		}
 		
-		private ClientMessage.ReadAllEventsBackwardFilteredCompleted NoDataForFilteredCommand(
-			ClientMessage.ReadAllEventsBackwardFiltered msg, ReadAllFilteredResult result, TFPos pos,
+		private ClientMessage.FilteredReadAllEventsBackwardCompleted NoDataForFilteredCommand(
+			ClientMessage.FilteredReadAllEventsBackward msg, ReadAllFilteredResult result, TFPos pos,
 			long lastCommitPosition, string error = null) {
-			return new ClientMessage.ReadAllEventsBackwardFilteredCompleted(
+			return new ClientMessage.FilteredReadAllEventsBackwardCompleted(
 				msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
 				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition, false);
 		}

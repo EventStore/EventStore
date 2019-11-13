@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI {
 			MaxSearchWindow = maxSearchWindow;
 		}
 
-		public int MaxSearchWindow { get; set; }
+		public int MaxSearchWindow { get; }
 		
 		public new static readonly CatchUpSubscriptionFilteredSettings Default = new CatchUpSubscriptionFilteredSettings(
 			Consts.CatchUpDefaultMaxPushQueueSize,

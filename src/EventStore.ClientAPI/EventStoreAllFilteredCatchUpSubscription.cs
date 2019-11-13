@@ -14,17 +14,16 @@ namespace EventStore.ClientAPI {
 		private Position _nextReadPosition;
 		private Filter _filter;
 		private int _maxSearchWindow;
-		private int _checkpointInterval;
+		private int _checkpointIntervalMultiplier;
 		private int _checkpointIntervalCurrent;
 		private Func<EventStoreCatchUpSubscription, Position, Task> _checkpointReached;
 
 		private const int DontReportCheckpointReached = -1;
 
-
 		internal EventStoreAllFilteredCatchUpSubscription(IEventStoreConnection connection,
 			ILogger log, Position? position, Filter filter, UserCredentials userCredentials,
 			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached, int checkpointInterval,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached, int checkpointIntervalMultiplier,
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped,
 			CatchUpSubscriptionFilteredSettings settings)
@@ -34,7 +33,7 @@ namespace EventStore.ClientAPI {
 			_nextReadPosition = position ?? Position.Start;
 			_filter = filter;
 			_maxSearchWindow = settings.MaxSearchWindow;
-			_checkpointInterval = checkpointInterval;
+			_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
 			_checkpointReached = checkpointReached;
 		}
 
@@ -50,7 +49,7 @@ namespace EventStore.ClientAPI {
 			AllEventsSlice slice;
 			do {
 				slice = await connection
-					.ReadAllEventsForwardFilteredAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, _filter,
+					.FilteredReadAllEventsForwardAsync(_nextReadPosition, ReadBatchSize, resolveLinkTos, _filter,
 						_maxSearchWindow, userCredentials)
 					.ConfigureAwait(false);
 				shouldStopOrDone = await ReadEventsCallbackAsync(slice, lastCommitPosition).ConfigureAwait(false);
@@ -79,9 +78,9 @@ namespace EventStore.ClientAPI {
 					throw new Exception(String.Format("Subscription {0} event came up with no OriginalPosition.",
 						SubscriptionName));
 				await TryProcessAsync(e).ConfigureAwait(false);
-				await ProcessClientSideCheckpointReached(e.OriginalPosition.Value);
 			}
 
+			await ProcessClientSideCheckpointReached(slice.NextPosition);
 			_nextReadPosition = slice.NextPosition;
 
 			var done = lastCommitPosition == null
@@ -94,12 +93,12 @@ namespace EventStore.ClientAPI {
 		}
 
 		private async Task ProcessClientSideCheckpointReached(Position position) {
-			if (_checkpointInterval == DontReportCheckpointReached)
+			if (_checkpointIntervalMultiplier == DontReportCheckpointReached)
 				return;
 
 			_checkpointIntervalCurrent++;
 
-			if (_checkpointIntervalCurrent >= _checkpointInterval) {
+			if (_checkpointIntervalCurrent >= _checkpointIntervalMultiplier) {
 				await TryProcessCheckpointReachedAsync(position);
 				_checkpointIntervalCurrent = 0;
 			}
@@ -171,8 +170,13 @@ namespace EventStore.ClientAPI {
 				if (Verbose)
 					Log.Debug("Catch-up Subscription {0} to <all>: subscribing...", SubscriptionName);
 
-				var subscription = await Connection.SubscribeToAllFilteredAsync(ResolveLinkTos, _filter,
-					EnqueuePushedEvent, EnqueueCheckpointReached, _checkpointInterval, ServerSubscriptionDropped,
+				var checkpointInterval = _checkpointIntervalMultiplier == DontReportCheckpointReached
+					? DontReportCheckpointReached
+					: _maxSearchWindow * _checkpointIntervalMultiplier;
+
+				var subscription = await Connection.FilteredSubscribeToAllAsync(ResolveLinkTos, _filter,
+					EnqueuePushedEvent, EnqueueCheckpointReached, checkpointInterval,
+					ServerSubscriptionDropped,
 					UserCredentials).ConfigureAwait(false);
 
 				Subscription = subscription;
@@ -182,7 +186,8 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
-		protected override async Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription, Position lastPosition) {
+		protected override async Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription,
+			Position lastPosition) {
 			await CheckpointReachedAction(lastPosition).ConfigureAwait(false);
 		}
 	}

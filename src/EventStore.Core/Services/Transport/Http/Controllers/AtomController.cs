@@ -151,36 +151,36 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			
 			Register(http,
 				"/streams/$all/filtered" + querystring,
-				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
+				HttpMethod.Get, GetFilteredAllEventsBackward, Codec.NoCodecs,
 				AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http,
 				"/streams/$all/filtered/{position}/{count}" + querystring,
-				HttpMethod.Get, GetAllEventsBackwardFiltered,
+				HttpMethod.Get, GetFilteredAllEventsBackward,
 				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http,
 				"/streams/$all/filtered/{position}/backward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetFilteredAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http,
 				"/streams/$all/filtered/{position}/forward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetFilteredAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http,
 				"/streams/%24all/filtered" + querystring,
-				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
+				HttpMethod.Get, GetFilteredAllEventsBackward, Codec.NoCodecs,
 				AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http,
 				"/streams/%24all/filtered/{position}/{count}" + querystring,
-				HttpMethod.Get, GetAllEventsBackwardFiltered,
+				HttpMethod.Get, GetFilteredAllEventsBackward,
 				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			Register(http,
 				"/streams/%24all/filtered/{position}/backward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetFilteredAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 			RegisterCustom(http,
 				"/streams/%24all/filtered/{position}/forward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetFilteredAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
 
 			// $ALL
 			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs,
@@ -672,7 +672,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				requireMaster, true, GetETagTFPosition(manager), manager.User));
 		}
 
-		private void GetAllEventsBackwardFiltered(HttpEntityManager manager, UriTemplateMatch match) {
+		private void GetFilteredAllEventsBackward(HttpEntityManager manager, UriTemplateMatch match) {
 			var pos = match.BoundVariables["position"];
 			var cnt = match.BoundVariables["count"];
 
@@ -706,10 +706,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 			var envelope = new SendToHttpEnvelope(_networkSendQueue,
 				manager,
-				(args, msg) => Format.ReadAllEventsBackwardFilteredCompleted(args, msg, embed),
-				(args, msg) => Configure.ReadAllEventsBackwardFilteredCompleted(args, msg, position == TFPos.HeadOfTf));
+				(args, msg) => Format.FilteredReadAllEventsBackwardCompleted(args, msg, embed),
+				(args, msg) => Configure.FilteredReadAllEventsBackwardCompleted(args, msg, position == TFPos.HeadOfTf));
 			var corrId = Guid.NewGuid();
-			Publish(new ClientMessage.ReadAllEventsBackwardFiltered(corrId, corrId, envelope,
+			Publish(new ClientMessage.FilteredReadAllEventsBackward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count,
 				requireMaster, true, count, GetETagTFPosition(manager), filter, manager.User));
 		}
@@ -748,7 +748,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
 		}
 
-		private RequestParams GetAllEventsForwardFiltered(HttpEntityManager manager, UriTemplateMatch match) {
+		private RequestParams GetFilteredAllEventsForward(HttpEntityManager manager, UriTemplateMatch match) {
 			var pos = match.BoundVariables["position"];
 			var cnt = match.BoundVariables["count"];
 
@@ -775,10 +775,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 			var envelope = new SendToHttpEnvelope(_networkSendQueue,
 				manager,
-				(args, msg) => Format.ReadAllEventsForwardFilteredCompleted(args, msg, embed),
-				(args, msg) => Configure.ReadAllEventsForwardFilteredCompleted(args, msg, headOfTf: false));
+				(args, msg) => Format.FilteredReadAllEventsForwardCompleted(args, msg, embed),
+				(args, msg) => Configure.FilteredReadAllEventsForwardCompleted(args, msg, headOfTf: false));
 			var corrId = Guid.NewGuid();
-			Publish(new ClientMessage.ReadAllEventsForwardFiltered(corrId, corrId, envelope,
+			Publish(new ClientMessage.FilteredReadAllEventsForward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count, true,
 				requireMaster, 1000, GetETagTFPosition(manager), filter, manager.User,
 				longPollTimeout));
