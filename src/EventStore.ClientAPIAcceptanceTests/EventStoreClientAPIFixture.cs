@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,14 +14,8 @@ using Xunit;
 namespace EventStore.ClientAPI.Tests {
 	public partial class EventStoreClientAPIFixture : IAsyncLifetime {
 		private const string TestEventType = "-";
-		private const int PortStart = 1024;
-		private const int PortCount = 32768 - PortStart;
 
 		private static readonly X509Certificate2 ServerCertificate;
-		private static readonly Queue<int> AvailablePorts =
-			new Queue<int>(Enumerable.Range(PortStart, PortCount));
-
-
 		public static readonly int ExternalPort;
 		public static readonly int ExternalSecurePort;
 		public static readonly int UnusedPort;
@@ -45,9 +37,6 @@ namespace EventStore.ClientAPI.Tests {
 			UnusedPort = GetFreePort();
 
 			int GetFreePort() {
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-					return GetFreePortMacOS();
-				}
 				using var socket =
 					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) {
 						ExclusiveAddressUse = false
@@ -55,40 +44,6 @@ namespace EventStore.ClientAPI.Tests {
 				socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 				socket.Bind(defaultLoopBack);
 				return ((IPEndPoint)socket.LocalEndPoint).Port;
-			}
-
-			int GetFreePortMacOS() {
-				const int maxAttempts = 50;
-
-				var properties = IPGlobalProperties.GetIPGlobalProperties();
-
-				var ipEndPoints = properties.GetActiveTcpConnections()
-					.Select(x => x.LocalEndPoint)
-					.Concat(properties.GetActiveTcpListeners())
-					.Concat(properties.GetActiveUdpListeners())
-					.Where(x => x.AddressFamily == AddressFamily.InterNetwork &&
-					            x.Address.Equals(IPAddress.Loopback) &&
-					            x.Port >= PortStart &&
-					            x.Port < PortStart + PortCount)
-					.OrderBy(x => x.Port)
-					.ToArray();
-				var inUse = new HashSet<int>(ipEndPoints.Select(x => x.Port));
-
-				var attempt = 0;
-
-				while (attempt++ < maxAttempts && AvailablePorts.TryDequeue(out var port)) {
-					using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream,
-						ProtocolType.Tcp);
-					try {
-						socket.Bind(new IPEndPoint(IPAddress.Loopback, port));
-						return port;
-					} catch (Exception) {
-						// ignored
-					}
-				}
-
-				throw new Exception(
-					$"Could not find free port on {IPAddress.Loopback} after {attempt} attempts. The following ports are used: {string.Join(",", inUse)}");
 			}
 		}
 
