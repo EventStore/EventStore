@@ -66,21 +66,32 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
-			var appeared = new CountdownEvent(5);
+			var appeared = new CountdownEvent(9);
 			var eventsSeen = 0;
+
+			var settings = new CatchUpSubscriptionFilteredSettings(
+				10000,
+				2,
+				verboseLogging: false,
+				resolveLinkTos: true,
+				maxSearchWindow: 2,
+				subscriptionName: String.Empty
+			);
 
 			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
-				CatchUpSubscriptionFilteredSettings.Default,
+				settings,
 				(s, e) => {
+					Console.WriteLine("e");
 					eventsSeen++;
 					return Task.CompletedTask;
 				},
 				(s, p) => {
+					Console.WriteLine("x");
 					appeared.Signal();
 					return Task.CompletedTask;
-				}, 2);
+				}, 1);
 
 			if (!appeared.Wait(Timeout)) {
 				Assert.Fail("Checkpoint appeared not called enough times within time limit.");
@@ -96,10 +107,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var eventsSeen = 0;
 			var isLive = false;
 
+			var settings = new CatchUpSubscriptionFilteredSettings(
+				10000,
+				2,
+				verboseLogging: false,
+				resolveLinkTos: true,
+				maxSearchWindow: 2,
+				subscriptionName: String.Empty
+			);
+
 			_conn.FilteredSubscribeToAllFrom(
 				Position.Start,
 				filter,
-				CatchUpSubscriptionFilteredSettings.Default,
+				settings,
 				(s, e) => {
 					eventsSeen++;
 					return Task.CompletedTask;
@@ -108,8 +128,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					if (isLive) {
 						appeared.Signal();
 					}
+
 					return Task.CompletedTask;
-				}, 2, 
+				}, 1,
 				s => {
 					isLive = true;
 					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents()).Wait();
