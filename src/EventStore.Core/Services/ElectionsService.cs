@@ -179,10 +179,16 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.MasterIsResigningOk message) {
+			Log.Debug(
+				"ELECTIONS: MASTER IS RESIGNING OK FROM [{serverInternalHttp},{serverId:B}] M=[{masterInternalHttp},{masterId:B}]).",
+				message.ServerInternalHttp,
+				message.ServerId,
+				message.MasterInternalHttp,
+				message.MasterId);
 			if (_masterIsResigningOkReceived.Add(message.ServerId) &&
-			    _masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
+					_masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
 				Log.Debug(
-					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp}, {masterId:B}]. NOW INITIATING MASTER RESIGNATION.",
+					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp},{masterId:B}]. NOW INITIATING MASTER RESIGNATION.",
 					message.MasterInternalHttp, message.MasterId);
 				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
 			}
