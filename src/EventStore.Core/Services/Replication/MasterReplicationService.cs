@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
@@ -409,8 +410,11 @@ namespace EventStore.Core.Services.Replication {
 			var dataFound = false;
 			foreach (var subscription in _subscriptions.Values) {
 				if (subscription.IsConnectionClosed) {
-					_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
-						subscription.ConnectionId));
+					if (subscription.CloseReason != SocketError.Success) {
+						_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
+							subscription.ConnectionId));
+					}
+
 					subscription.ShouldDispose = true;
 				}
 
@@ -635,6 +639,10 @@ namespace EventStore.Core.Services.Replication {
 
 			public bool IsConnectionClosed {
 				get { return _connection.IsClosed; }
+			}
+
+			public SocketError CloseReason {
+				get { return _connection.CloseReason; }
 			}
 
 			public readonly bool IsPromotable;

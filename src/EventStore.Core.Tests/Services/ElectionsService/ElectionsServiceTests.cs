@@ -1254,7 +1254,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
 				_epochId, -1, -1, -1, -1));
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				_nodeThree.InstanceId, _nodeThree.InternalHttp, 0));
+				_node.InstanceId, _node.InternalHttp, 0));
 			_publisher.Messages.Clear();
 
 			_sut.Handle(new ClientMessage.ResignNode());
