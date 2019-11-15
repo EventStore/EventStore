@@ -17,7 +17,6 @@ namespace EventStore.Core.Tests {
 		public void SetUp() {
 			System.Net.ServicePointManager.DefaultConnectionLimit = 1000;
 			Console.WriteLine("Initializing tests (setting console loggers)...");
-			SetUpDebugListeners();
 
 			var originalFormatter = NLog.Config.ConfigurationItemFactory.Default.ValueFormatter;
 			ConfigurationItemFactory.Default.ValueFormatter = new NLogValueFormatter(originalFormatter, false);
@@ -25,7 +24,7 @@ namespace EventStore.Core.Tests {
 			var config = new NLog.Config.LoggingConfiguration();
 			config.AddRule(LogLevel.Trace, LogLevel.Fatal, consoleTarget);
 			consoleTarget.Layout =
-				"[${processid:padCharacter=0:padding=5},${threadid:padCharacter=0:padding=2},${date:universalTime=true:format=HH\\:mm\\:ss\\.fff},${level:padding=-5:uppercase=true}] ${message}${onexception:${newline}${literal:text=EXCEPTION OCCURRED}${newline}${exception:format=message}}";
+				"[${processid:padCharacter=0:padding=5},${threadid:padCharacter=0:padding=2},${date:universalTime=true:format=HH\\:mm\\:ss\\.fff},${level:padding=-5:uppercase=true}] ${message}${onexception:${newline}${literal:text=EXCEPTION OCCURRED}${newline}${exception:format=message:maxInnerExceptionLevel=5}}";
 			NLog.LogManager.Configuration = config;
 			EventStore.Common.Log.LogManager.SetLogFactory(x => new NLogger(x));
 
@@ -34,12 +33,6 @@ namespace EventStore.Core.Tests {
 
 			if (!Debugger.IsAttached)
 				PortsHelper.InitPorts(IPAddress.Loopback);
-		}
-
-		private void SetUpDebugListeners() {
-			Debug.Listeners.Clear(); //prevent message box popup when assertions fail
-			Debug.Listeners.Add(
-				new ThrowExceptionTraceListener()); //all failed assertions should throw an exception to halt the tests
 		}
 
 		private void LogEnvironmentInfo() {

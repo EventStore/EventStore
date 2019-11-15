@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
+using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 	public partial class TFChunk {

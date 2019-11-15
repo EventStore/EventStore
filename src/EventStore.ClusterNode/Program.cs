@@ -4,8 +4,6 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Net;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -16,8 +14,6 @@ using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
-using System.Net.NetworkInformation;
-using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 
 namespace EventStore.ClusterNode {
