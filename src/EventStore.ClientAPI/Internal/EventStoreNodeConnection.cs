@@ -424,8 +424,8 @@ namespace EventStore.ClientAPI.Internal {
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
-			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+			Ensure.NotNull(settings, nameof(settings));
 			var catchUpSubscription =
 				new EventStoreAllCatchUpSubscription(this, Settings.Log, lastCheckpoint,
 					userCredentials, eventAppeared, liveProcessingStarted,
@@ -452,8 +452,8 @@ namespace EventStore.ClientAPI.Internal {
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
-			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+			Ensure.NotNull(settings, nameof(settings));
 			Ensure.NotNull(filter, nameof(filter));
 			Ensure.NotNull(checkpointReached, nameof(checkpointReached));
 			Ensure.Positive(settings.MaxSearchWindow, nameof(settings.MaxSearchWindow));
