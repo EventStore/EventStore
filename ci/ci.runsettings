@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+	<NUnit>
+		<DefaultTestNamePattern>{C}.{m}</DefaultTestNamePattern>
+		<DefaultTimeout>20000</DefaultTimeout>
+	</NUnit>
+</RunSettings>
