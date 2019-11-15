@@ -6,6 +6,7 @@ using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.SystemData;
+using TaskEx = System.Threading.Tasks.Task;
 
 namespace EventStore.ClientAPI.Internal {
 	/// <summary>
@@ -433,6 +434,43 @@ namespace EventStore.ClientAPI.Internal {
 			return catchUpSubscription;
 		}
 
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
+			Filter filter, CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			return FilteredSubscribeToAllFrom(lastCheckpoint, filter, settings, eventAppeared,
+				(s, p) => TaskEx.CompletedTask, DontReportCheckpointReached, liveProcessingStarted, subscriptionDropped,
+				userCredentials);
+		}
+
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
+			Filter filter, CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached, int checkpointIntervalMultiplier,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(filter, nameof(filter));
+			Ensure.NotNull(checkpointReached, nameof(checkpointReached));
+			Ensure.Positive(settings.MaxSearchWindow, nameof(settings.MaxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(settings.MaxSearchWindow, settings.ReadBatchSize, nameof(settings.ReadBatchSize));
+
+			if (checkpointIntervalMultiplier <= 0 && checkpointIntervalMultiplier != DontReportCheckpointReached) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointIntervalMultiplier));
+			}
+
+			var catchUpSubscription =
+				new EventStoreAllFilteredCatchUpSubscription(this, Settings.Log, lastCheckpoint, filter,
+					userCredentials, eventAppeared, checkpointReached, checkpointIntervalMultiplier, liveProcessingStarted,
+					subscriptionDropped, settings);
+			catchUpSubscription.StartAsync();
+			return catchUpSubscription;
+		}
+		
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
 			string stream,
 			string groupName,
