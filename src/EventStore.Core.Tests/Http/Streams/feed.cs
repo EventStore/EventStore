@@ -3,18 +3,16 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Net.Http.Headers;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
 
@@ -209,7 +207,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			[Test]
 			public void the_response_is_not_cachable() {
-				Assert.AreEqual("max-age=0, no-cache, must-revalidate", _lastResponse.Headers["Cache-Control"]);
+				Assert.AreEqual(CacheControlHeaderValue.Parse("max-age=0, no-cache, must-revalidate").ToString(), _lastResponse.Headers["Cache-Control"]);
 			}
 		}
 

@@ -285,7 +285,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override void When() {
 				var request = CreateRequest(TestStream + "/", "", "DELETE", "application/json", null);
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -344,7 +348,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var request = CreateRequest("/streams/$all/", "", "GET", "application/json", null);
 				request.Credentials = DefaultData.AdminNetworkCredentials;
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -371,10 +379,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 
 			protected override void When() {
-				var request = CreateRequest("/streams/%24all/", "", "GET", "application/json", null);
+				var request = CreateRequest("/streams/%24all/", "", "GET", "application/json");
 				request.Credentials = DefaultData.AdminNetworkCredentials;
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -406,6 +418,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				request.GetRequestStream()
 					.WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
 				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -436,7 +453,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var request = CreateRequest(TestStream + "/metadata/", "", "GET", "application/json", null);
 				request.Credentials = DefaultData.AdminNetworkCredentials;
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]

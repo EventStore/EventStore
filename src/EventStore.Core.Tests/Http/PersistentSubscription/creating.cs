@@ -46,10 +46,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		protected override void When() {
 			_response = MakeJsonPut(
-				"/subscriptions/stream/groupname334?testing=test",
+				"/subscriptions/stream/groupname334",
 				new {
 					ResolveLinkTos = true
-				}, _admin);
+				}, _admin, "testing=test");
 		}
 
 		[TearDown]

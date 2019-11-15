@@ -180,9 +180,9 @@ namespace EventStore.Core.Tests.Http {
 			return x.Uri;
 		}
 
-		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null) {
+		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
+			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials, extra);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
@@ -383,9 +383,9 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected HttpWebRequest CreateRawJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null) {
+			string path, string method, T body, ICredentials credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "", method, "application/json", credentials);
+			var request = CreateRequest(path, extra, method, "application/json", credentials);
 			request.GetRequestStream().WriteJson(body);
 			return request;
 		}
