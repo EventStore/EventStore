@@ -273,8 +273,13 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 
 			protected override AllEventsSlice TransformResponse(
-				ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
+<<<<<<< HEAD
+				ClientMessage.ReadAllEventsBackwardFilteredCompleted response) {
 				return new AllEventsSlice(ReadDirection.Backward,
+=======
+				ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
+				return new AllEventsSlice(ReadDirection.Forward,
+>>>>>>> Renamed filtered methods to be prefixed with `Filtered`
 					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
 					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
 					response.Events.ConvertToClientResolvedEvents(), response.IsEndOfStream);

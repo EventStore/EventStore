@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.Tests {
 				await connection.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}", ExpectedVersion.NoStream, e);
 			}
 
-			var result = await connection.ReadAllEventsBackwardFilteredAsync(
+			var result = await connection.FilteredReadAllEventsBackwardAsync(
 				Position.End, 4096, false, getFilter(streamPrefix)).WithTimeout();
 
 			//Assert.Equal(ReadDirection.Backward, result.ReadDirection);
@@ -51,7 +51,7 @@ namespace EventStore.ClientAPI.Tests {
 				await connection.AppendToStreamAsync(Guid.NewGuid().ToString("n"), ExpectedVersion.NoStream, e);
 			}
 
-			var result = await connection.ReadAllEventsBackwardFilteredAsync(
+			var result = await connection.FilteredReadAllEventsBackwardAsync(
 				Position.End, 4096, false, getFilter(eventTypePrefix)).WithTimeout();
 
 			//Assert.Equal(ReadDirection.Backward, result.ReadDirection);

@@ -29,7 +29,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override TcpPackage CreateSubscriptionPackage() {
-			var dto = new ClientMessage.SubscribeToStreamFiltered(_streamId, _resolveLinkTos,
+			var dto = new ClientMessage.FilteredSubscribeToStream(_streamId, _resolveLinkTos,
 				_filter.Value, _checkpointInterval);
 
 			return new TcpPackage(

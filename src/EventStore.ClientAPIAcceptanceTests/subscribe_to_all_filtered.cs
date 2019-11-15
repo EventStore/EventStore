@@ -21,10 +21,10 @@ namespace EventStore.ClientAPI.Tests {
 			var filter = getFilter(streamName);
 
 			using (await connection
-				.SubscribeToAllFilteredAsync(false, filter, EventAppeared1, subscriptionDropped: SubscriptionDropped1)
+				.FilteredSubscribeToAllAsync(false, filter, EventAppeared1, subscriptionDropped: SubscriptionDropped1)
 				.WithTimeout())
 			using (await connection
-				.SubscribeToAllFilteredAsync(false, filter, EventAppeared2, subscriptionDropped: SubscriptionDropped2)
+				.FilteredSubscribeToAllAsync(false, filter, EventAppeared2, subscriptionDropped: SubscriptionDropped2)
 				.WithTimeout()) {
 				var testEvents = _fixture.CreateTestEvents().ToArray();
 				await connection.AppendToStreamAsync(streamName, ExpectedVersion.NoStream, testEvents).WithTimeout();
@@ -65,10 +65,10 @@ namespace EventStore.ClientAPI.Tests {
 			var filter = getFilter(eventTypePrefix);
 
 			using (await connection
-				.SubscribeToAllFilteredAsync(false, filter, EventAppeared1, subscriptionDropped: SubscriptionDropped1)
+				.FilteredSubscribeToAllAsync(false, filter, EventAppeared1, subscriptionDropped: SubscriptionDropped1)
 				.WithTimeout())
 			using (await connection
-				.SubscribeToAllFilteredAsync(false, filter, EventAppeared2, subscriptionDropped: SubscriptionDropped2)
+				.FilteredSubscribeToAllAsync(false, filter, EventAppeared2, subscriptionDropped: SubscriptionDropped2)
 				.WithTimeout()) {
 				var testEvents = _fixture.CreateTestEvents(10)
 					.Select(e =>
@@ -110,7 +110,7 @@ namespace EventStore.ClientAPI.Tests {
 			var connection = _fixture.Connections[useSsl];
 
 			using var _ = await connection
-				.SubscribeToAllFilteredAsync(false, Filter.ExcludeSystemEvents, EventAppeared,
+				.FilteredSubscribeToAllAsync(false, Filter.ExcludeSystemEvents, EventAppeared,
 					subscriptionDropped: SubscriptionDropped).WithTimeout();
 
 			var testEvents = _fixture.CreateTestEvents().ToArray();
@@ -134,7 +134,7 @@ namespace EventStore.ClientAPI.Tests {
 			var connection = _fixture.Connections[useSsl];
 
 			using var subscription = await connection
-				.SubscribeToAllFilteredAsync(false, Filter.ExcludeSystemEvents, EventAppeared,
+				.FilteredSubscribeToAllAsync(false, Filter.ExcludeSystemEvents, EventAppeared,
 					subscriptionDropped: SubscriptionDropped).WithTimeout();
 
 			subscription.Unsubscribe();

@@ -220,11 +220,24 @@ namespace EventStore.ClientAPI {
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node forward (e.g. beginning to end). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
 		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
-		Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null);
+		Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
+
 
 		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).
@@ -247,8 +260,20 @@ namespace EventStore.ClientAPI {
 		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
-		Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount, bool resolveLinkTos,
-			Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null);
+		Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node backwards (e.g. end to beginning). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, UserCredentials userCredentials = null);
 
 		/// <summary>
 		/// Asynchronously subscribes to a single event stream. New events
@@ -340,15 +365,33 @@ namespace EventStore.ClientAPI {
 		/// <param name="userCredentials">User credentials to use for the operation.</param>
 		/// <param name="checkpointInterval">Sets how often the <see cref="checkpointReached" /> is called.</param>
 		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
-		Task<EventStoreSubscription> SubscribeToAllFilteredAsync(
+		Task<EventStoreSubscription> FilteredSubscribeToAllAsync(
 			bool resolveLinkTos,
 			Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached = null,
-			int? checkpointInterval = null,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null);
-		
+
+		/// <summary>
+		/// Asynchronously subscribes to all events in Event Store. New
+		/// events written to the stream while the subscription is active
+		/// will be pushed to the client. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
+		Task<EventStoreSubscription> FilteredSubscribeToAllAsync(
+			bool resolveLinkTos,
+			Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
+
 		/// <summary>
 		/// Subscribes to a persistent subscription (competing consumer) on an event store.
 		/// </summary>

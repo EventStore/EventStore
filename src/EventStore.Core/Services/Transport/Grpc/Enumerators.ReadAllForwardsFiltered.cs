@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var (commitPosition, preparePosition) = _nextPosition.ToInt64();
 
-				_bus.Publish(new ClientMessage.ReadAllEventsForwardFiltered(
+				_bus.Publish(new ClientMessage.FilteredReadAllEventsForward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
 					commitPosition, preparePosition, Math.Min(_maxCount, 32),
 					_resolveLinks, false, _maxSearchWindow, default, _eventFilter, _user));
@@ -109,14 +109,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						return;
 					}
 
-					if (!(message is ClientMessage.ReadAllEventsForwardFilteredCompleted completed)) {
+					if (!(message is ClientMessage.FilteredReadAllEventsForwardCompleted completed)) {
 						readNextSource.TrySetException(
-							RpcExceptions.UnknownMessage<ClientMessage.ReadAllEventsForwardFilteredCompleted>(message));
+							RpcExceptions.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(message));
 						return;
 					}
 
 					switch (completed.Result) {
-						case ReadAllFilteredResult.Success:
+						case FilteredReadAllResult.Success:
 							foreach (var @event in completed.Events) {
 								_buffer.Enqueue(@event);
 							}
@@ -127,7 +127,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								completed.NextPos.PreparePosition);
 							readNextSource.TrySetResult(true);
 							return;
-						case ReadAllFilteredResult.AccessDenied:
+						case FilteredReadAllResult.AccessDenied:
 							readNextSource.TrySetException(RpcExceptions.AccessDenied());
 							return;
 						default:

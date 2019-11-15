@@ -24,7 +24,7 @@ namespace EventStore.Core.Services {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<ClientMessage.SubscribeToStream>,
-		IHandle<ClientMessage.SubscribeToStreamFiltered>,
+		IHandle<ClientMessage.FilteredSubscribeToStream>,
 		IHandle<ClientMessage.UnsubscribeFromStream>,
 		IHandle<SubscriptionMessage.PollStream>,
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
@@ -123,7 +123,7 @@ namespace EventStore.Core.Services {
 			}
 		}
 
-		public void Handle(ClientMessage.SubscribeToStreamFiltered msg) {
+		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
 			var streamAccess = _readIndex.CheckStreamAccess(
 				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read,
 				msg.User);

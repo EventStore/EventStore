@@ -374,13 +374,19 @@ namespace EventStore.ClientAPI.Embedded {
 			return await source.Task.ConfigureAwait(false);
 		}
 
+<<<<<<< HEAD
+		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+=======
 		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
 			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
 			return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
 				userCredentials);
 		}
+>>>>>>> Renamed filtered methods to be prefixed with `Filtered`
 
-		public async Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
+		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
 			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
 			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
@@ -426,13 +432,19 @@ namespace EventStore.ClientAPI.Embedded {
 			return await source.Task.ConfigureAwait(false);
 		}
 
+<<<<<<< HEAD
+		public async Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
+			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+=======
 		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
 			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
 			return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
 				userCredentials);
 		}
+>>>>>>> Renamed filtered methods to be prefixed with `Filtered`
 
-		public async Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
 			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
 			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));

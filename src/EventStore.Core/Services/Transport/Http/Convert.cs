@@ -146,7 +146,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			return feed;
 		}
 		
-		public static FeedElement ToAllEventsForwardFilteredFeed(ClientMessage.ReadAllEventsForwardFilteredCompleted msg,
+		public static FeedElement ToAllEventsForwardFilteredFeed(ClientMessage.FilteredReadAllEventsForwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
 			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
 			var feed = new FeedElement();
@@ -214,7 +214,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			return feed;
 		}
 		
-		public static FeedElement ToAllEventsBackwardFilteredFeed(ClientMessage.ReadAllEventsBackwardFilteredCompleted msg,
+		public static FeedElement ToFilteredAllEventsBackwardFeed(ClientMessage.FilteredReadAllEventsBackwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
 			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
 			var feed = new FeedElement();

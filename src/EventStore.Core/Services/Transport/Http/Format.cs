@@ -60,11 +60,11 @@ namespace EventStore.Core.Services.Transport.Http {
 		
 		public static string ReadAllEventsBackwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 			EmbedLevel embed) {
-			var msg = message as ClientMessage.ReadAllEventsBackwardFilteredCompleted;
-			if (msg == null || msg.Result != ReadAllFilteredResult.Success)
+			var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
+			if (msg == null || msg.Result != FilteredReadAllResult.Success)
 				return String.Empty;
 
-			return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFilteredFeed(msg, entity.ResponseUrl, embed));
+			return entity.ResponseCodec.To(Convert.ToFilteredAllEventsBackwardFeed(msg, entity.ResponseUrl, embed));
 		}
 
 		public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message,
@@ -78,8 +78,8 @@ namespace EventStore.Core.Services.Transport.Http {
 		
 		public static string ReadAllEventsForwardFilteredCompleted(HttpResponseFormatterArgs entity, Message message,
 			EmbedLevel embed) {
-			var msg = message as ClientMessage.ReadAllEventsForwardFilteredCompleted;
-			if (msg == null || msg.Result != ReadAllFilteredResult.Success)
+			var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
+			if (msg == null || msg.Result != FilteredReadAllResult.Success)
 				return String.Empty;
 
 			return entity.ResponseCodec.To(Convert.ToAllEventsForwardFilteredFeed(msg, entity.ResponseUrl, embed));

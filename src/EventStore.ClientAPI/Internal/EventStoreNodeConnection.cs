@@ -231,13 +231,18 @@ namespace EventStore.ClientAPI.Internal {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
-			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+		
+		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+			return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
+				userCredentials);
+		}
 
+		public async Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -246,8 +251,8 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
-			var operation = new ReadAllEventsForwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindowInternal, filter.Value, userCredentials);
+			var operation = new FilteredReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
+				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -267,13 +272,17 @@ namespace EventStore.ClientAPI.Internal {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public async Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
-			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+			return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
+				userCredentials);
+		}
 
+		public async Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -282,8 +291,8 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
-			var operation = new ReadAllEventsBackwardFilteredOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindowInternal, filter.Value, userCredentials);
+			var operation = new FilteredReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
+				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -364,25 +373,30 @@ namespace EventStore.ClientAPI.Internal {
 			return source.Task;
 		}
 
-		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached = null, int? checkpointInterval = null,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			return FilteredSubscribeToAllAsync(resolveLinkTos, filter, eventAppeared, (s, p) => Task.CompletedTask,
+				DontReportCheckpointReached, subscriptionDropped, userCredentials);
+		}
+
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
- 
-			if (checkpointReached == null) {
-				checkpointInterval = DontReportCheckpointReached;
-			} else if (!checkpointInterval.HasValue){
-				throw new ArgumentNullException(nameof(checkpointInterval));
-			} else if (checkpointInterval <= 0) {
+			Ensure.NotNull(checkpointReached, nameof(checkpointReached));
+
+			if (checkpointInterval <= 0 && checkpointInterval != DontReportCheckpointReached) {
 				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
 			}
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreSubscription>();
 			_handler.EnqueueMessage(new StartFilteredSubscriptionMessage(source, string.Empty, resolveLinkTos,
-				checkpointInterval.Value, filter, userCredentials, eventAppeared, checkpointReached,
+				checkpointInterval, filter, userCredentials, eventAppeared, checkpointReached,
 				subscriptionDropped, Settings.MaxRetries, Settings.OperationTimeout));
 			return source.Task;
 		}
