@@ -1,12 +1,15 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
+#if!NET452
 using TaskEx = System.Threading.Tasks.Task;
 
-namespace EventStore.ClientAPI
-{
+#endif
+
+namespace EventStore.ClientAPI {
 	/// <summary>
 	/// A catch-up subscription to a single stream in the Event Store.
 	/// </summary>
@@ -141,14 +144,14 @@ namespace EventStore.ClientAPI
 					e.OriginalEventNumber);
 			}
 		}
-		
+
 		protected override async Task SubscribeToStreamAsync() {
 			if (!ShouldStop) {
 				if (Verbose)
 					Log.Debug("Catch-up Subscription {0} to {1}: subscribing...", SubscriptionName, StreamId);
 
 				var subscription = await Connection.SubscribeToStreamAsync(StreamId, ResolveLinkTos, EnqueuePushedEvent,
-							ServerSubscriptionDropped, UserCredentials).ConfigureAwait(false);
+					ServerSubscriptionDropped, UserCredentials).ConfigureAwait(false);
 
 				Subscription = subscription;
 				await ReadMissedHistoricEventsAsync().ConfigureAwait(false);
@@ -157,7 +160,8 @@ namespace EventStore.ClientAPI
 			}
 		}
 
-		protected override Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription, Position lastPosition) {
+		protected override Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription,
+			Position lastPosition) {
 			return TaskEx.CompletedTask;
 		}
 	}

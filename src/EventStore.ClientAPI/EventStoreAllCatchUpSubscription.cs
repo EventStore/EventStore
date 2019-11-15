@@ -1,7 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.SystemData;
+#if!NET452
 using TaskEx = System.Threading.Tasks.Task;
+
+#endif
 
 namespace EventStore.ClientAPI
 {

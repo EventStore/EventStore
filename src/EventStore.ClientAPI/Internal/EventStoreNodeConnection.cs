@@ -6,7 +6,10 @@ using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.SystemData;
+#if!NET452
 using TaskEx = System.Threading.Tasks.Task;
+
+#endif
 
 namespace EventStore.ClientAPI.Internal {
 	/// <summary>
@@ -378,7 +381,7 @@ namespace EventStore.ClientAPI.Internal {
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			return FilteredSubscribeToAllAsync(resolveLinkTos, filter, eventAppeared, (s, p) => Task.CompletedTask,
+			return FilteredSubscribeToAllAsync(resolveLinkTos, filter, eventAppeared, (s, p) => TaskEx.CompletedTask,
 				DontReportCheckpointReached, subscriptionDropped, userCredentials);
 		}
 

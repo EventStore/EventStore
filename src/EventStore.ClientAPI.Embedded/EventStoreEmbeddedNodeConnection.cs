@@ -12,7 +12,10 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Util;
+#if!NET452
 using TaskEx = System.Threading.Tasks.Task;
+
+#endif
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EventStoreEmbeddedNodeConnection : IEventStoreConnection, IEventStoreTransactionConnection {
