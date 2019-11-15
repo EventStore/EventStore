@@ -10,6 +10,7 @@ using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Linq;
 using System.Xml.Linq;
 using System.IO;
+using System.Net.Http.Headers;
 using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
@@ -251,7 +252,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				request.AllowAutoRedirect = false;
 				request.GetRequestStream()
 					.WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -261,7 +266,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			[Test]
 			public void redirect_is_cacheable() {
-				Assert.AreEqual("max-age=31536000, public", _response.Headers[HttpResponseHeader.CacheControl]);
+				Assert.AreEqual(CacheControlHeaderValue.Parse("max-age=31536000, public").ToString(), _response.Headers[HttpResponseHeader.CacheControl]);
 			}
 
 			[Test]
@@ -285,7 +290,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override void When() {
 				var request = CreateRequest(TestStream + "/", "", "DELETE", "application/json", null);
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -314,7 +323,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override void When() {
 				var request = CreateRequest(TestStream + "/", "", "GET", "application/json", null);
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
+
 			}
 
 			[Test]
@@ -344,7 +358,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var request = CreateRequest("/streams/$all/", "", "GET", "application/json", null);
 				request.Credentials = DefaultData.AdminNetworkCredentials;
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -363,7 +381,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[TestFixture, Category("LongRunning"), Ignore("HttpListener on dotnet core no longer decodes the URL in the request coming in.")]
 		public class when_getting_from_encoded_all_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
@@ -405,7 +423,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 				request.AllowAutoRedirect = false;
 				request.GetRequestStream()
 					.WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
+
 			}
 
 			[Test]
@@ -436,7 +459,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var request = CreateRequest(TestStream + "/metadata/", "", "GET", "application/json", null);
 				request.Credentials = DefaultData.AdminNetworkCredentials;
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
+
 			}
 
 			[Test]

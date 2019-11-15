@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				}, _admin);
 		}
 
-		[TearDown]
+		[OneTimeTearDown]
 		public void TearDown() {
 			_response.Close();
 		}
@@ -46,13 +46,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		protected override void When() {
 			_response = MakeJsonPut(
-				"/subscriptions/stream/groupname334?testing=test",
+				"/subscriptions/stream/groupname334",
 				new {
 					ResolveLinkTos = true
-				}, _admin);
+				}, _admin, "testing=test");
 		}
 
-		[TearDown]
+		[OneTimeTearDown]
 		public void TearDown() {
 			_response.Close();
 		}
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				});
 		}
 
-		[TearDown]
+		[OneTimeTearDown]
 		public void TearDown() {
 			_response.Close();
 		}
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				}, _admin);
 		}
 
-		[TearDown]
+		[OneTimeTearDown]
 		public void TearDown() {
 			_response.Close();
 		}
@@ -161,7 +161,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				_admin);
 		}
 
-		[TearDown]
+		[OneTimeTearDown]
 		public void TearDown() {
 			Response.Close();
 		}

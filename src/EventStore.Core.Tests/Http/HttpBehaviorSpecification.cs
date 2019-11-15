@@ -180,9 +180,9 @@ namespace EventStore.Core.Tests.Http {
 			return x.Uri;
 		}
 
-		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null) {
+		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
-			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
+			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials, extra);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
@@ -283,9 +283,9 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null,
-			NameValueCollection headers = null) {
+			NameValueCollection headers = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
-			Get(path, "", accept, credentials, headers: headers);
+			Get(path, extra, accept, credentials, headers: headers);
 			try {
 				return _lastResponseBody.ParseJson<T>();
 			} catch (JsonException ex) {
@@ -383,9 +383,9 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected HttpWebRequest CreateRawJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null) {
+			string path, string method, T body, ICredentials credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
-			var request = CreateRequest(path, "", method, "application/json", credentials);
+			var request = CreateRequest(path, extra, method, "application/json", credentials);
 			request.GetRequestStream().WriteJson(body);
 			return request;
 		}
