@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				var appeared = new CountdownEvent(5);
 
 				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				var appeared = new CountdownEvent(5);
 
 				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				var appeared = new CountdownEvent(5);
 
 				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				var appeared = new CountdownEvent(5);
 
 				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
@@ -161,7 +161,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			using (var store = BuildConnection(_node)) {
 				store.ConnectAsync().Wait();
-				var appeared = new CountdownEvent(4);
+				var appeared = new CountdownEvent(5);
 
 				using (store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
