@@ -10,6 +10,7 @@ using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Linq;
 using System.Xml.Linq;
 using System.IO;
+using System.Net.Http.Headers;
 using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
@@ -251,7 +252,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 				request.AllowAutoRedirect = false;
 				request.GetRequestStream()
 					.WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -261,7 +266,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			[Test]
 			public void redirect_is_cacheable() {
-				Assert.AreEqual("max-age=31536000, public", _response.Headers[HttpResponseHeader.CacheControl]);
+				Assert.AreEqual(CacheControlHeaderValue.Parse("max-age=31536000, public").ToString(), _response.Headers[HttpResponseHeader.CacheControl]);
 			}
 
 			[Test]
@@ -318,7 +323,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected override void When() {
 				var request = CreateRequest(TestStream + "/", "", "GET", "application/json", null);
 				request.AllowAutoRedirect = false;
-				_response = (HttpWebResponse)request.GetResponse();
+				try {
+					_response = (HttpWebResponse)request.GetResponse();
+				} catch (WebException ex) {
+					_response = ex.Response as HttpWebResponse;
+				}
 			}
 
 			[Test]
@@ -372,40 +381,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture, Category("LongRunning")]
-		public class when_getting_from_encoded_all_stream_with_slash : with_admin_user {
-			private HttpWebResponse _response;
-
-			protected override void Given() {
-			}
-
-			protected override void When() {
-				var request = CreateRequest("/streams/%24all/", "", "GET", "application/json");
-				request.Credentials = DefaultData.AdminNetworkCredentials;
-				request.AllowAutoRedirect = false;
-				try {
-					_response = (HttpWebResponse)request.GetResponse();
-				} catch (WebException ex) {
-					_response = ex.Response as HttpWebResponse;
-				}
-			}
-
-			[Test]
-			public void returns_permanent_redirect() {
-				Assert.AreEqual(HttpStatusCode.RedirectKeepVerb, _response.StatusCode);
-			}
-
-			[Test]
-			public void returns_a_location_header() {
-				Assert.IsNotEmpty(_response.Headers[HttpResponseHeader.Location]);
-			}
-
-			[Test]
-			public void returns_a_location_header_that_is_to_stream_without_slash() {
-				Assert.AreEqual(MakeUrl("/streams/$all").ToString(), _response.Headers[HttpResponseHeader.Location]);
-			}
-		}
-
-		[TestFixture, Category("LongRunning")]
 		public class when_posting_an_event_as_array_to_metadata_stream_with_slash : with_admin_user {
 			private HttpWebResponse _response;
 
@@ -417,7 +392,6 @@ namespace EventStore.Core.Tests.Http.Streams {
 				request.AllowAutoRedirect = false;
 				request.GetRequestStream()
 					.WriteJson(new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}}});
-				_response = (HttpWebResponse)request.GetResponse();
 				try {
 					_response = (HttpWebResponse)request.GetResponse();
 				} catch (WebException ex) {
