@@ -43,7 +43,6 @@ namespace EventStore.Transport.Tcp {
 				_listeningSocket.Listen(TcpConfiguration.AcceptBacklogCount);
 			} catch (Exception) {
 				Log.Info("Failed to listen on TCP endpoint: {serverEndPoint}.", _serverEndPoint);
-				Helper.EatException(() => _listeningSocket.Shutdown(SocketShutdown.Both));
 				Helper.EatException(() => _listeningSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
 				throw;
 			}
@@ -84,8 +83,11 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void HandleBadAccept(SocketAsyncEventArgs socketArgs) {
-			Helper.EatException(() => socketArgs.AcceptSocket?.Shutdown(SocketShutdown.Both));
-			Helper.EatException(() => socketArgs.AcceptSocket?.Close(TcpConfiguration.SocketCloseTimeoutMs));
+			Helper.EatException(
+				() => {
+					if (socketArgs.AcceptSocket != null) // avoid annoying exceptions
+						socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs);
+				});
 			socketArgs.AcceptSocket = null;
 			_acceptSocketArgsPool.Return(socketArgs);
 		}
@@ -102,7 +104,6 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		public void Stop() {
-			Helper.EatException(() => _listeningSocket.Shutdown(SocketShutdown.Both));
 			Helper.EatException(() => _listeningSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
 		}
 	}

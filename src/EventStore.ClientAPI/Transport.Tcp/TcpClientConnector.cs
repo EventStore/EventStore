@@ -98,22 +98,19 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void HandleBadConnect(SocketAsyncEventArgs socketArgs) {
-			using (socketArgs.AcceptSocket) {
-				var serverEndPoint = socketArgs.RemoteEndPoint;
-				var socketError = socketArgs.SocketError;
-				var callbacks = (CallbacksStateToken)socketArgs.UserToken;
-				var onConnectionFailed = callbacks.OnConnectionFailed;
-				var pendingConnection = callbacks.PendingConnection;
+			var serverEndPoint = socketArgs.RemoteEndPoint;
+			var socketError = socketArgs.SocketError;
+			var callbacks = (CallbacksStateToken)socketArgs.UserToken;
+			var onConnectionFailed = callbacks.OnConnectionFailed;
+			var pendingConnection = callbacks.PendingConnection;
 
-				Helper.EatException(() => socketArgs.AcceptSocket.Shutdown(SocketShutdown.Both));
-				Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-				socketArgs.AcceptSocket = null;
-				callbacks.Reset();
-				_connectSocketArgsPool.Return(socketArgs);
+			Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+			socketArgs.AcceptSocket = null;
+			callbacks.Reset();
+			_connectSocketArgsPool.Return(socketArgs);
 
-				if (RemoveFromConnecting(pendingConnection))
-					onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
-			}
+			if (RemoveFromConnecting(pendingConnection))
+				onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
 		}
 
 		private void OnSocketConnected(SocketAsyncEventArgs socketArgs) {
@@ -147,7 +144,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private bool RemoveFromConnecting(PendingConnection pendingConnection) {
 			PendingConnection conn;
 			return _pendingConections.TryRemove(pendingConnection.Connection.ConnectionId, out conn)
-				   && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
+			       && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
 		}
 
 		private class CallbacksStateToken {

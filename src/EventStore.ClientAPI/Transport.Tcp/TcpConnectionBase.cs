@@ -15,9 +15,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		public bool IsInitialized {
-			get {
-				return Volatile.Read(ref _socket) != null;
-			}
+			get { return _socket != null; }
 		}
 
 		public bool IsClosed {
@@ -71,8 +69,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public bool IsReadyForSend {
 			get {
 				try {
-					var socket = Volatile.Read(ref _socket);
-					return !_isClosed && socket.Poll(0, SelectMode.SelectWrite);
+					return !_isClosed && _socket.Poll(0, SelectMode.SelectWrite);
 				} catch (ObjectDisposedException) {
 					//TODO: why do we get this?
 					return false;
@@ -83,8 +80,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public bool IsReadyForReceive {
 			get {
 				try {
-					var socket = Volatile.Read(ref _socket);
-					return !_isClosed && socket.Poll(0, SelectMode.SelectRead);
+					return !_isClosed && _socket.Poll(0, SelectMode.SelectRead);
 				} catch (ObjectDisposedException) {
 					//TODO: why do we get this?
 					return false;
@@ -95,8 +91,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public bool IsFaulted {
 			get {
 				try {
-					var socket = Volatile.Read(ref _socket);
-					return !_isClosed && socket.Poll(0, SelectMode.SelectError);
+					return !_isClosed && _socket.Poll(0, SelectMode.SelectError);
 				} catch (ObjectDisposedException) {
 					//TODO: why do we get this?
 					return false;
@@ -147,7 +142,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		protected void InitConnectionBase(Socket socket) {
 			Ensure.NotNull(socket, "socket");
 
-			Volatile.Write(ref _socket, socket);
+			_socket = socket;
 			_localEndPoint = Helper.EatException(() => (IPEndPoint)socket.LocalEndPoint);
 		}
 

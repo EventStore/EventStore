@@ -30,7 +30,7 @@ namespace EventStore.Transport.Tcp {
 			Action<ITcpConnection, SocketError> onConnectionFailed,
 			bool verbose) {
 			var connection = new TcpConnection(connectionId, remoteEndPoint, verbose);
-			// ReSharper disable ImplicitlyCapturedClosure
+// ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
 				(_, socket) => {
 					connection.InitSocket(socket);
@@ -41,7 +41,7 @@ namespace EventStore.Transport.Tcp {
 					if (onConnectionFailed != null)
 						onConnectionFailed(connection, socketError);
 				}, connection, connectionTimeout);
-			// ReSharper restore ImplicitlyCapturedClosure
+// ReSharper restore ImplicitlyCapturedClosure
 			return connection;
 		}
 
@@ -137,10 +137,8 @@ namespace EventStore.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _socket == null)
-					return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked())
-					return;
+				if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
+				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 				_isSending = true;
 			}
 
@@ -214,16 +212,14 @@ namespace EventStore.Transport.Tcp {
 			// TODO AN: do we need to lock on _receiveSocketArgs?..
 			lock (_receiveSocketArgs) {
 				_receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-				if (_receiveSocketArgs.Buffer == null)
-					throw new Exception("Buffer was not set");
+				if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
 			}
 
 			try {
 				NotifyReceiveStarting();
 				bool firedAsync;
 				lock (_receiveSocketArgs) {
-					if (_receiveSocketArgs.Buffer == null)
-						throw new Exception("Buffer was lost");
+					if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
 					firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
 				}
 
@@ -332,11 +328,9 @@ namespace EventStore.Transport.Tcp {
 			}
 
 			if (_socket != null) {
-				using (_socket) {
-					Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
-					Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-					_socket = null;
-				}
+				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
+				Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+				_socket = null;
 			}
 
 			lock (_sendLock) {
