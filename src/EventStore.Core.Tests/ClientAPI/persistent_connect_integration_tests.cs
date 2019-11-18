@@ -143,8 +143,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 					return Task.CompletedTask;
 				},
 				(sub, reason, exception) => {
-					throw new Exception(string.Format("Subscription dropped (reason:{0}, exception:{1}).", reason,
-						exception));
 				},
 				userCredentials: DefaultData.AdminCredentials,
 				autoAck: true);
