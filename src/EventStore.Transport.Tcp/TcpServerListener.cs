@@ -39,6 +39,7 @@ namespace EventStore.Transport.Tcp {
 			Log.Info("Starting {securityType} TCP listening on TCP endpoint: {serverEndPoint}.", securityType,
 				_serverEndPoint);
 			try {
+				_listeningSocket.ExclusiveAddressUse = true;
 				_listeningSocket.Bind(_serverEndPoint);
 				_listeningSocket.Listen(TcpConfiguration.AcceptBacklogCount);
 			} catch (Exception) {
