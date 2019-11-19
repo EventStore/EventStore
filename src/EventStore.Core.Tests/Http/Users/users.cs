@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace EventStore.Core.Tests.Http.Users {
 	namespace users {
 		public abstract class with_admin_user : HttpBehaviorSpecification {
-			protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;
+			protected readonly NetworkCredential _admin = DefaultData.AdminNetworkCredentials;
 
 			protected override bool GivenSkipInitializeStandardUsersCheck() {
 				return false;

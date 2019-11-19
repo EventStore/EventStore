@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 			PostUser("guest", "Guest", "guest!");
 		}
 
-		protected readonly ICredentials _admin = DefaultData.AdminNetworkCredentials;
+		protected readonly NetworkCredential _admin = DefaultData.AdminNetworkCredentials;
 
 		protected override bool GivenSkipInitializeStandardUsersCheck() {
 			return false;
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 			return response.Headers[HttpResponseHeader.Location];
 		}
 
-		protected HttpWebResponse PostEvent<T>(T data, ICredentials credentials = null) {
+		protected HttpWebResponse PostEvent<T>(T data, NetworkCredential credentials = null) {
 			return MakeArrayEventsPost(
 				TestStream, new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = data}}, credentials);
 		}

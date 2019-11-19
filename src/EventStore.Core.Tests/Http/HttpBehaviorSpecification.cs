@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Http {
 		private Func<HttpWebRequest, byte[]> _dumpRequest2;
 		private string _tag;
 		private bool _createdMiniNode;
-		private ICredentials _defaultCredentials = null;
+		private NetworkCredential _defaultCredentials = null;
 
 		public override void TestFixtureSetUp() {
 			Helper.EatException(() => _dumpResponse = CreateDumpResponse());
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected HttpWebRequest CreateRequest(
-			string path, string extra, string method, string contentType, ICredentials credentials = null,
+			string path, string extra, string method, string contentType, NetworkCredential credentials = null,
 			NameValueCollection headers = null) {
 			credentials = credentials??_defaultCredentials;
 			var uri = MakeUrl(path, extra);
@@ -143,25 +143,26 @@ namespace EventStore.Core.Tests.Http {
 			httpWebRequest.ContentType = contentType;
 			httpWebRequest.UseDefaultCredentials = false;
 			if (credentials != null) {
-				httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
+				httpWebRequest.Headers.Add("authorization", $"Basic {GetAuthorizationHeader(credentials)}");
 			}
 
 			return httpWebRequest;
 		}
 
-		protected HttpWebRequest CreateRequest(string path, string method, ICredentials credentials = null) {
+		protected HttpWebRequest CreateRequest(string path, string method, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var httpWebRequest = (HttpWebRequest)WebRequest.Create(MakeUrl(path));
 			httpWebRequest.Method = method;
 			httpWebRequest.UseDefaultCredentials = false;
 			if (credentials != null) {
-				httpWebRequest.Credentials = credentials;
-				httpWebRequest.PreAuthenticate = true;
+				httpWebRequest.Headers.Add("authorization", $"Basic {GetAuthorizationHeader(credentials)}");
 			}
 
 			return httpWebRequest;
 		}
+		
+		protected static string GetAuthorizationHeader(NetworkCredential credentials) 
+			=> Convert.ToBase64String(Encoding.ASCII.GetBytes($"{credentials.UserName}:{credentials.Password}"));
 
 		protected Uri MakeUrl(string path, string extra = "") {
 			var supplied = string.IsNullOrWhiteSpace(extra)
@@ -180,7 +181,7 @@ namespace EventStore.Core.Tests.Http {
 			return x.Uri;
 		}
 
-		protected HttpWebResponse MakeJsonPut<T>(string path, T body, ICredentials credentials = null, string extra = null) {
+		protected HttpWebResponse MakeJsonPut<T>(string path, T body, NetworkCredential credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials, extra);
 			var httpWebResponse = GetRequestResponse(request);
@@ -188,28 +189,28 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 
-		protected HttpWebResponse MakeJsonPost<T>(string path, T body, ICredentials credentials = null) {
+		protected HttpWebResponse MakeJsonPost<T>(string path, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, ICredentials credentials = null) {
+		protected HttpWebResponse MakeArrayEventsPost<T>(string path, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
 			var response = GetRequestResponse(request);
 			return response;
 		}
 
-		protected HttpWebResponse MakeRawJsonPost<T>(string path, T body, ICredentials credentials = null) {
+		protected HttpWebResponse MakeRawJsonPost<T>(string path, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null) {
+		protected JObject MakeJsonPostWithJsonResponse<T>(string path, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRawJsonPostRequest(path, "POST", body, credentials);
 			_lastResponse = GetRequestResponse(request);
@@ -225,7 +226,7 @@ namespace EventStore.Core.Tests.Http {
 			}
 		}
 
-		protected JObject MakeJsonEventsPostWithJsonResponse<T>(string path, T body, ICredentials credentials = null) {
+		protected JObject MakeJsonEventsPostWithJsonResponse<T>(string path, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateEventsJsonPostRequest(path, "POST", body, credentials);
 			_lastResponse = GetRequestResponse(request);
@@ -242,47 +243,47 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 
-		protected HttpWebResponse MakeEventsJsonPut<T>(string path, T body, ICredentials credentials) {
+		protected HttpWebResponse MakeEventsJsonPut<T>(string path, T body, NetworkCredential credentials) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateEventsJsonPostRequest(path, "PUT", body, credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected HttpWebResponse MakeRawJsonPut<T>(string path, T body, ICredentials credentials) {
+		protected HttpWebResponse MakeRawJsonPut<T>(string path, T body, NetworkCredential credentials) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRawJsonPostRequest(path, "PUT", body, credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected HttpWebResponse MakeDelete(string path, ICredentials credentials = null) {
+		protected HttpWebResponse MakeDelete(string path, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRequest(path, "DELETE", credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected HttpWebResponse MakePost(string path, ICredentials credentials = null) {
+		protected HttpWebResponse MakePost(string path, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateJsonPostRequest(path, credentials);
 			var httpWebResponse = GetRequestResponse(request);
 			return httpWebResponse;
 		}
 
-		protected XDocument GetAtomXml(Uri uri, ICredentials credentials = null) {
+		protected XDocument GetAtomXml(Uri uri, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			Get(uri.ToString(), "", ContentType.Atom, credentials);
 			return XDocument.Parse(_lastResponseBody);
 		}
 
-		protected XDocument GetXml(Uri uri, ICredentials credentials = null) {
+		protected XDocument GetXml(Uri uri, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			Get(uri.ToString(), "", ContentType.Xml, credentials);
 			return XDocument.Parse(_lastResponseBody);
 		}
 
-		protected T GetJson<T>(string path, string accept = null, ICredentials credentials = null,
+		protected T GetJson<T>(string path, string accept = null, NetworkCredential credentials = null,
 			NameValueCollection headers = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
 			Get(path, extra, accept, credentials, headers: headers);
@@ -294,7 +295,7 @@ namespace EventStore.Core.Tests.Http {
 			}
 		}
 
-		protected T GetJson2<T>(string path, string extra, string accept = null, ICredentials credentials = null) {
+		protected T GetJson2<T>(string path, string extra, string accept = null, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			Get(path, extra, accept, credentials);
 			try {
@@ -320,7 +321,7 @@ namespace EventStore.Core.Tests.Http {
 			}
 		}
 
-		protected void Get(string path, string extra, string accept = null, ICredentials credentials = null,
+		protected void Get(string path, string extra, string accept = null, NetworkCredential credentials = null,
 			bool setAcceptHeader = true, NameValueCollection headers = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRequest(path, extra, "GET", null, credentials, headers);
@@ -375,7 +376,7 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected HttpWebRequest CreateEventsJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null) {
+			string path, string method, T body, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRequest(path, "", method, "application/vnd.eventstore.events+json", credentials);
 			request.GetRequestStream().WriteJson(body);
@@ -383,19 +384,19 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		protected HttpWebRequest CreateRawJsonPostRequest<T>(
-			string path, string method, T body, ICredentials credentials = null, string extra = null) {
+			string path, string method, T body, NetworkCredential credentials = null, string extra = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRequest(path, extra, method, "application/json", credentials);
 			request.GetRequestStream().WriteJson(body);
 			return request;
 		}
-		private HttpWebRequest CreateJsonPostRequest(string path, ICredentials credentials = null) {
+		private HttpWebRequest CreateJsonPostRequest(string path, NetworkCredential credentials = null) {
 			credentials = credentials??_defaultCredentials;
 			var request = CreateRequest(path, "POST", credentials);
 			request.ContentLength = 0;
 			return request;
 		}
-		protected void SetDefaultCredentials(ICredentials credentials){
+		protected void SetDefaultCredentials(NetworkCredential credentials){
 			_defaultCredentials = credentials;
 		}
 
