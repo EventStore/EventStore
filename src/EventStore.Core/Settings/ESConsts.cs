@@ -15,11 +15,6 @@ namespace EventStore.Core.Settings {
 		                                        + StorageReaderThreadCount
 		                                        + 5 /* just in case reserve :) */;
 
-		public const int TFChunkMaxReaderCount = PTableMaxReaderCount
-		                                         + 2 /* for caching/uncaching, populating midpoints */
-		                                         + 1 /* for epoch manager usage of elections/replica service */
-		                                         + 1 /* for epoch manager usage of master replication service */;
-
 		public const int MemTableEntryCount = 1000000;
 		public const int StreamInfoCacheCapacity = 100000;
 		public const int TransactionMetadataCacheCapacity = 50000;

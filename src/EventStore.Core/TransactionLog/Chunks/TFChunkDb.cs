@@ -75,6 +75,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 									unbufferedRead: Config.Unbuffered,
 									initialReaderCount: Config.InitialReaderCount,
+									maxReaderCount: Config.MaxReaderCount,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
 							else {
@@ -82,6 +83,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									checkSize: false,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
+									maxReaderCount: Config.MaxReaderCount,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
@@ -91,6 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
 								initialReaderCount: Config.InitialReaderCount,
+								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure);
 						}
@@ -118,6 +121,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
 						initialReaderCount: Config.InitialReaderCount,
+						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
@@ -143,6 +147,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
+						maxReaderCount:Config.MaxReaderCount,
 						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					Manager.AddChunk(lastChunk);
 				}
