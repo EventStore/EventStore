@@ -23,6 +23,8 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
+using EventStore.Core.Settings;
+using EventStore.Core.Tests.TransactionLog;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -209,7 +211,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Opts.ChunkInitialReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, TFChunkHelper.TFChunkInitialReaderCountDefault, TFChunkHelper.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

@@ -17,6 +17,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly bool Unbuffered;
 		public readonly bool WriteThrough;
 		public readonly int InitialReaderCount;
+		public readonly int MaxReaderCount;
 		public readonly bool OptimizeReadSideCache;
 		public readonly bool ReduceFileCachePressure;
 
@@ -30,6 +31,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			ICheckpoint truncateCheckpoint,
 			ICheckpoint replicationCheckpoint,
 			int initialReaderCount,
+			int maxReaderCount,
 			bool inMemDb = false,
 			bool unbuffered = false,
 			bool writethrough = false,
@@ -45,6 +47,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.Positive(initialReaderCount, "initialReaderCount");
+			Ensure.Positive(maxReaderCount, "maxReaderCount");
 
 			Path = path;
 			ChunkSize = chunkSize;
@@ -59,6 +62,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Unbuffered = unbuffered;
 			WriteThrough = writethrough;
 			InitialReaderCount = initialReaderCount;
+			MaxReaderCount = maxReaderCount;
 			OptimizeReadSideCache = optimizeReadSideCache;
 			ReduceFileCachePressure = reduceFileCachePressure;
 		}
