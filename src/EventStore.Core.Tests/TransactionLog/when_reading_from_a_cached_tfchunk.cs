@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_chunk.Flush();
 			_chunk.Complete();
 			_cachedChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true, unbufferedRead: false,
-				initialReaderCount: 5, reduceFileCachePressure: false);
+				initialReaderCount: TFChunkHelper.TFChunkInitialReaderCountDefault, maxReaderCount: TFChunkHelper.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 			_cachedChunk.CacheInMemory();
 		}
 

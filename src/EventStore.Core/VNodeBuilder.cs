@@ -1280,6 +1280,7 @@ namespace EventStore.Core {
 				_unbuffered,
 				_writethrough,
 				_chunkInitialReaderCount,
+				ComputeTFChunkMaxReaderCount(_chunkInitialReaderCount, _readerThreadsCount),
 				_optimizeIndexMerge,
 				_reduceFileCachePressure,
 				_log);
@@ -1380,6 +1381,23 @@ namespace EventStore.Core {
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
 		}
 
+		private int ComputeTFChunkMaxReaderCount(int tfChunkInitialReaderCount, int readerThreadsCount) {
+				var ptableMaxReaderCount = 1 /* StorageWriter */
+	                                        + 1 /* StorageChaser */
+	                                        + 1 /* Projections */
+	                                        + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+	                                        + 1 /* Subscription LinkTos resolving */
+	                                        + readerThreadsCount
+	                                        + 5 /* just in case reserve :) */;
+
+				var tfChunkMaxReaderCount = ptableMaxReaderCount
+                                            + 2 /* for caching/uncaching, populating midpoints */
+                                            + 1 /* for epoch manager usage of elections/replica service */
+                                            + 1 /* for epoch manager usage of master replication service */;
+
+				return Math.Max(tfChunkMaxReaderCount, tfChunkInitialReaderCount);
+		}
+
 
 		private IGossipSeedSource GetGossipSource() {
 			IGossipSeedSource gossipSeedSource;
@@ -1407,6 +1425,7 @@ namespace EventStore.Core {
 			bool unbuffered,
 			bool writethrough,
 			int chunkInitialReaderCount,
+			int chunkMaxReaderCount,
 			bool optimizeReadSideCache,
 			bool reduceFileCachePressure,
 			ILogger log) {
@@ -1473,6 +1492,7 @@ namespace EventStore.Core {
 				truncateChk,
 				replicationChk,
 				chunkInitialReaderCount,
+				chunkMaxReaderCount,
 				inMemDb,
 				unbuffered,
 				writethrough,

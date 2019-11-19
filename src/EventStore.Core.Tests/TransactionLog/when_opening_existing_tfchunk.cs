@@ -14,7 +14,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 			_chunk.Complete();
-			_testChunk = TFChunk.FromCompletedFile(Filename, true, false, 5, reduceFileCachePressure: false);
+			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,
+				TFChunkHelper.TFChunkInitialReaderCountDefault,
+				TFChunkHelper.TFChunkMaxReaderCountDefault,
+				reduceFileCachePressure: false);
 		}
 
 		[TearDown]
