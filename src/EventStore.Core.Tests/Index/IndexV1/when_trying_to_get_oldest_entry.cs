@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		public void nothing_is_found_on_empty_stream() {
 			var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memTable.Add(0x010100000000, 0x01, 0xffff);
-			using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var ptable = PTable.FromMemtable(memTable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				IndexEntry entry;
 				Assert.IsFalse(ptable.TryGetOldestEntry(0x12, out entry));
 			}
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		public void single_item_is_latest() {
 			var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memTable.Add(0x010100000000, 0x01, 0xffff);
-			using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var ptable = PTable.FromMemtable(memTable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				IndexEntry entry;
 				Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
 				Assert.AreEqual(GetHash(0x010100000000), entry.Stream);
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memTable.Add(0x010100000000, 0x01, 0xffff);
 			memTable.Add(0x010100000000, 0x02, 0xfff2);
-			using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var ptable = PTable.FromMemtable(memTable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				IndexEntry entry;
 				Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
 				Assert.AreEqual(GetHash(0x010100000000), entry.Stream);
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memTable.Add(0x010100000000, 0x02, 0xfff2);
 			memTable.Add(0x010100000000, 0x01, 0xfff3);
 			memTable.Add(0x010100000000, 0x02, 0xfff4);
-			using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var ptable = PTable.FromMemtable(memTable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				IndexEntry entry;
 				Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
 				Assert.AreEqual(GetHash(0x010100000000), entry.Stream);
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memTable.Add(0x010100000000, 0x01, 0xfff1);
 			memTable.Add(0x010100000000, 0x01, 0xfff3);
 			memTable.Add(0x010100000000, 0x01, 0xfff5);
-			using (var ptable = PTable.FromMemtable(memTable, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var ptable = PTable.FromMemtable(memTable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				IndexEntry entry;
 				Assert.IsTrue(ptable.TryGetOldestEntry(0x010100000000, out entry));
 				Assert.AreEqual(GetHash(0x010100000000), entry.Stream);

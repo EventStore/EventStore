@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_map = IndexMapTestFactory.FromFile(_filename, maxTablesPerLevel: 4);
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 2, 123);
-			var table = PTable.FromMemtable(memtable, _tablename);
+			var table = PTable.FromMemtable(memtable, _tablename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 			_result = _map.AddPTable(table, 0, 0, (streamId, hash) => hash, _ => true,
 				_ => new Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion,
 				_maxAutoMergeIndexLevel, 0);

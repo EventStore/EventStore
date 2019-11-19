@@ -10,9 +10,10 @@ namespace EventStore.Core.Tests.Index {
 		public static IndexMap FromFile(string filename, int maxTablesPerLevel = 4,
 			bool loadPTables = true, int cacheDepth = 16, bool skipIndexVerify = false,
 			int threads = 1,
-			int maxAutoMergeLevel = int.MaxValue) {
+			int maxAutoMergeLevel = int.MaxValue,
+			int pTableMaxReaderCount = Constants.PTableMaxReaderCountDefault) {
 			return IndexMap.FromFile(filename, maxTablesPerLevel, loadPTables, cacheDepth, skipIndexVerify, threads,
-				maxAutoMergeLevel);
+				maxAutoMergeLevel, pTableMaxReaderCount);
 		}
 	}
 }

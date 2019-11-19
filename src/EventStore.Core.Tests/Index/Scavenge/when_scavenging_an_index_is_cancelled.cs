@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			table.Add(0x010200000000, 0, 2);
 			table.Add(0x010300000000, 0, 3);
 			table.Add(0x010300000000, 1, 4);
-			_oldTable = PTable.FromMemtable(table, GetTempFilePath());
+			_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
 			var cancellationTokenSource = new CancellationTokenSource();
 			long spaceSaved;
@@ -35,7 +35,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
 				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
-					PTableVersions.IndexV4, out spaceSaved, ct: cancellationTokenSource.Token),
+					PTableVersions.IndexV4, out spaceSaved, ct: cancellationTokenSource.Token,
+					initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault),
 				Throws.InstanceOf<OperationCanceledException>());
 		}
 

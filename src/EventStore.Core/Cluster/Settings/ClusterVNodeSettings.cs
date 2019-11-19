@@ -84,6 +84,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool StructuredLog;
+		public int PTableMaxReaderCount;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -135,6 +136,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
+			int ptableMaxReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -255,6 +257,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
+			PTableMaxReaderCount = ptableMaxReaderCount;
 		}
 
 		public override string ToString() {
