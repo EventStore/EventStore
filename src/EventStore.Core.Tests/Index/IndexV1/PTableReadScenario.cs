@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			AddItemsForScenario(table);
 
-			PTable = PTable.FromMemtable(table, Filename, cacheDepth: _midpointCacheDepth,
+			PTable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, cacheDepth: _midpointCacheDepth,
 				skipIndexVerify: _skipIndexVerify);
 		}
 

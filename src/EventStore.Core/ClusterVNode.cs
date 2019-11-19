@@ -258,9 +258,8 @@ namespace EventStore.Core {
 			// STORAGE SUBSYSTEM
 			db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
 			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
-			var maxReaderCount = ESConsts.PTableMaxReaderCount + vNodeSettings.ReaderThreadsCount;
 			var readerPool = new ObjectPool<ITransactionFileReader>(
-				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, maxReaderCount,
+				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
 			var tableIndex = new TableIndex(indexPath,
@@ -277,7 +276,8 @@ namespace EventStore.Core {
 				indexCacheDepth: vNodeSettings.IndexCacheDepth,
 				initializationThreads: vNodeSettings.InitializationThreads,
 				additionalReclaim: false,
-				maxAutoMergeIndexLevel: vNodeSettings.MaxAutoMergeIndexLevel);
+				maxAutoMergeIndexLevel: vNodeSettings.MaxAutoMergeIndexLevel,
+				pTableMaxReaderCount: vNodeSettings.PTableMaxReaderCount);
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,

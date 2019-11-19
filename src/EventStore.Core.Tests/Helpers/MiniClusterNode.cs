@@ -111,7 +111,8 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				readOnlyReplica: readOnlyReplica);
+				readOnlyReplica: readOnlyReplica,
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Info(
@@ -230,7 +231,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, TFChunkHelper.TFChunkInitialReaderCountDefault, TFChunkHelper.TFChunkMaxReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

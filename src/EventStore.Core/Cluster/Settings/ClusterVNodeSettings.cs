@@ -84,6 +84,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
 		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
+		public int PTableMaxReaderCount;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -133,6 +134,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
+			int ptableMaxReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -252,6 +254,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
 			CreateHttpMessageHandler = createHttpMessageHandler;
+			PTableMaxReaderCount = ptableMaxReaderCount;
 		}
 
 		public override string ToString() =>

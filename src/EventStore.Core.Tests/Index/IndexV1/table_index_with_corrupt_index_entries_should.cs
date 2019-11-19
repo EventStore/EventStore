@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
 				() => fakeReader,
 				version,
-				int.MaxValue,
+				int.MaxValue, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: NumIndexEntries,
 				skipIndexVerify: skipIndexVerify);
 			_tableIndex.Initialize(long.MaxValue);
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
 				() => fakeReader,
 				version,
-				int.MaxValue,
+				int.MaxValue, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: NumIndexEntries,
 				skipIndexVerify: skipIndexVerify,
 				indexCacheDepth: 8);

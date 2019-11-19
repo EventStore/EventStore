@@ -43,25 +43,25 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memtable.Add(0, 1, 0);
 
 			_result = _map.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				10, 20, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				20, 30, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				30, 40, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				50, 60, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new FakeFilenameProvider(_mergeFile + ".firstmerge", _mergeFile), _ptableVersion,
 				_maxAutoMergeIndexLevel, 0, skipIndexVerify: _skipIndexVerify);

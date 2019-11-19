@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_size = _ptableCount * (long)_indexEntrySize + PTableHeader.Size + PTable.MD5Size;
 			Console.WriteLine("Creating PTable at {0}. Size of PTable: {1}", Filename, _size);
 			CreatePTableFile(Filename, _size, _indexEntrySize);
-			_ptable = PTable.FromFile(Filename, 22, false);
+			_ptable = PTable.FromFile(Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 22, false);
 		}
 
 		public static void CreatePTableFile(string filename, long ptableSize, int indexEntrySize, int cacheDepth = 16) {
