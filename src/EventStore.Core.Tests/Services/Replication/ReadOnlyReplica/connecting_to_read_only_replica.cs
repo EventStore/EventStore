@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 
 	[TestFixture]
-	[Category("LongRunning")]
+	[Category("LongRunning"), Ignore("Ignore Clustering Tests")]
 	public class connecting_to_read_only_replica : specification_with_cluster {
 		protected override MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
 			var isReadOnly = index == 2;

@@ -9,7 +9,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	[TestFixture]
-	[Category("LongRunning")]
+	[Category("LongRunning"), Ignore("")]
 	public class when_reading_events_from_cluster_with_replication_checkpoint_not_set : specification_with_cluster {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 

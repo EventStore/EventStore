@@ -10,7 +10,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	[TestFixture]
-	[Category("LongRunning")]
+	[Category("LongRunning"), Ignore("")]
 	public class when_reading_an_event_committed_on_master_and_on_slaves : specification_with_cluster {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 

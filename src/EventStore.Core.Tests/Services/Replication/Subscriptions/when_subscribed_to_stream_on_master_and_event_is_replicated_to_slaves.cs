@@ -10,7 +10,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
-	[TestFixture, Category("LongRunning")]
+	[TestFixture, Category("LongRunning"), Ignore("Ignoring clustering tests")]
 	public class when_subscribed_to_stream_on_master_and_event_is_replicated_to_slaves : specification_with_cluster {
 		private const string _streamId = "test-stream";
 		private CountdownEvent _expectedNumberOfRoleAssignments;
