@@ -49,7 +49,7 @@ namespace EventStore.Grpc.Streams {
 						Stream,
 						revision + i,
 						Array.Empty<byte>(),
-						eventId: @event.EventId.ToGuid(),
+						eventId: @event.EventId,
 						eventType: @event.Type);
 				}
 			}) {

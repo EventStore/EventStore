@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Grpc;
 using EventStore.Grpc.Streams;
 using Grpc.Core;
+using UUID = EventStore.Grpc.Streams.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
@@ -22,7 +23,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var streamName = options.StreamName;
-			var requestId = options.Id;
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),
@@ -44,7 +44,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var proposedMessage = requestStream.Current.ProposedMessage;
 				events.Add(new Event(
-					new Uuid(proposedMessage.Id.ToByteArray()).ToGuid(),
+					proposedMessage.Id.ValueCase switch {
+						UUID.ValueOneofCase.String => Guid.Parse(proposedMessage.Id.String),
+						_ => throw new NotSupportedException()
+					},
 					proposedMessage.Metadata[Constants.Metadata.Type],
 					bool.Parse(proposedMessage.Metadata[Constants.Metadata.IsJson]),
 					proposedMessage.Data.ToByteArray(),
@@ -81,9 +84,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				switch (completed.Result) {
 					case OperationResult.Success:
-						var response = new AppendResp {
-							Id = requestId,
-						};
+						var response = new AppendResp();
 
 						if (completed.LastEventNumber == -1) {
 							response.NoStream = new AppendResp.Types.Empty();

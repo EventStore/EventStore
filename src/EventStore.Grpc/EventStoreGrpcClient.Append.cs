@@ -14,7 +14,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
-					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName,
 					Revision = expectedRevision
 				}
@@ -28,7 +27,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
-					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName
 				}
 			}.WithAnyStreamRevision(expectedRevision), eventData, userCredentials, cancellationToken);
@@ -38,14 +36,17 @@ namespace EventStore.Grpc {
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials,
 			CancellationToken cancellationToken) {
-			using var call = _client.Append(RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
+			using var call = _client.Append(RequestMetadata.Create(userCredentials),
+				cancellationToken: cancellationToken);
 
 			await call.RequestStream.WriteAsync(header);
 
 			foreach (var e in eventData)
 				await call.RequestStream.WriteAsync(new AppendReq {
 					ProposedMessage = new AppendReq.Types.ProposedMessage {
-						Id = ByteString.CopyFrom(e.EventId.ToSpan()),
+						Id = new Streams.UUID {
+							String = e.EventId.ToString("n")
+						},
 						Data = ByteString.CopyFrom(e.Data),
 						CustomMetadata = ByteString.CopyFrom(e.Metadata),
 						Metadata = {

@@ -24,12 +24,12 @@ message ReadReq {
 
 	message Ack {
 		bytes id = 1;
-		repeated bytes ids = 2;
+		repeated UUID ids = 2;
 	}
 
 	message Nack {
 		bytes id = 1;
-		repeated bytes ids = 2;
+		repeated UUID ids = 2;
 		Action action = 3;
 		string reason = 4;
 		
@@ -60,7 +60,7 @@ message ReadResp {
 			Empty empty = 6;			
 		}
 		message RecordedEvent {
-			bytes id = 1;
+			UUID id = 1;
 			string stream_name = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
@@ -154,4 +154,16 @@ message DeleteReq {
 }
 
 message DeleteResp {
+}
+
+message UUID {
+	oneof value {
+		Structured structured = 1;
+		string string = 2;
+	}
+
+	message Structured {
+		uint64 most_significant_bits = 1;
+		uint64 least_significant_bits = 2;
+	}
 }

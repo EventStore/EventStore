@@ -28,7 +28,7 @@ namespace EventStore.Grpc {
 		protected static EventData CreateTestEvent(int index) => CreateTestEvent(index, TestEventType);
 
 		protected static EventData CreateTestEvent(int index, string type)
-			=> new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
+			=> new EventData(Guid.NewGuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
 
 		public string GetStreamName([CallerMemberName] string testMethod = default) {
 			var type = GetType();

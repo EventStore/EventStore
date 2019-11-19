@@ -130,7 +130,7 @@ namespace EventStore.Grpc {
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
 
 		protected static EventData CreateLinkToEvent(string originalStreamName, StreamRevision originalRevision)
-			=> new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
+			=> new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo,
 				Helper.UTF8NoBom.GetBytes($"{originalRevision.ToInt64()}@{originalStreamName}"));
 	}
 }

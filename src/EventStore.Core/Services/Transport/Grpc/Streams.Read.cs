@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
@@ -13,7 +12,7 @@ using CountOptionsOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.Coun
 using FilterOptionsOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.FilterOptionsOneofCase;
 using ReadDirection = EventStore.Grpc.Streams.ReadReq.Types.Options.Types.ReadDirection;
 using StreamOptionsOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.StreamOptionsOneofCase;
-
+using UUID = EventStore.Grpc.Streams.UUID;
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
 		public override async Task Read(
@@ -172,7 +171,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = ByteString.CopyFrom(Uuid.FromGuid(e.EventId).ToSpan()),
+					Id = new UUID {
+						String = e.EventId.ToString()
+					} ,
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,

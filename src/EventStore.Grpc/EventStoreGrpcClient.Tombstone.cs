@@ -12,7 +12,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			TombstoneInternal(new TombstoneReq {
 				Options = new TombstoneReq.Types.Options {
-					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName,
 					Revision = expectedRevision
 				}
@@ -25,7 +24,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			TombstoneInternal(new TombstoneReq {
 				Options = new TombstoneReq.Types.Options {
-					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName
 				}
 			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);

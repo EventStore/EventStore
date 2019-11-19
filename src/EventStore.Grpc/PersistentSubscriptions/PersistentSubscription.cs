@@ -63,15 +63,15 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 #pragma warning restore 4014
 		}
 
-		public Task Ack(params Uuid[] eventIds) {
+		public Task Ack(params Guid[] eventIds) {
 			if (eventIds.Length > 2000) {
 				throw new ArgumentException();
 			}
 
-			return AckInternal(Array.ConvertAll(eventIds, id => ByteString.CopyFrom(id.ToSpan())));
+			return AckInternal(eventIds);
 		}
 
-		public Task Ack(IEnumerable<Uuid> eventIds) => Ack(eventIds.ToArray());
+		public Task Ack(IEnumerable<Guid> eventIds) => Ack(eventIds.ToArray());
 
 		public Task Ack(params ResolvedEvent[] resolvedEvents) =>
 			Ack(Array.ConvertAll(resolvedEvents, resolvedEvent => resolvedEvent.OriginalEvent.EventId));
@@ -79,12 +79,12 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 		public Task Ack(IEnumerable<ResolvedEvent> resolvedEvents) =>
 			Ack(resolvedEvents.Select(resolvedEvent => resolvedEvent.OriginalEvent.EventId));
 
-		public Task Nack(PersistentSubscriptionNakEventAction action, string reason, params Uuid[] eventIds) {
+		public Task Nack(PersistentSubscriptionNakEventAction action, string reason, params Guid[] eventIds) {
 			if (eventIds.Length > 2000) {
 				throw new ArgumentException();
 			}
 
-			return NackInternal(Array.ConvertAll(eventIds, id => ByteString.CopyFrom(id.ToSpan())), action, reason);
+			return NackInternal(eventIds, action, reason);
 		}
 
 		public Task Nack(PersistentSubscriptionNakEventAction action, string reason,
@@ -115,7 +115,12 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 										_ => default
 									}, _disposed.Token);
 								if (_autoAck) {
-									await AckInternal(current.Event.Link?.Id ?? current.Event.Event.Id);
+									await AckInternal(
+										(current.Event.Link?.Id?.ValueCase ?? current.Event.Event.Id.ValueCase) switch {
+											UUID.ValueOneofCase.String => Guid.Parse(
+												(current.Event.Link?.Id ?? current.Event.Event.Id).String),
+											_ => throw new NotSupportedException()
+										});
 								}
 							} catch (Exception ex) when (ex is ObjectDisposedException ||
 							                             ex is OperationCanceledException) {
@@ -158,7 +163,10 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 					? null
 					: new EventRecord(
 						e.StreamName,
-						new Uuid(e.Id.ToByteArray()),
+						e.Id.ValueCase switch {
+							UUID.ValueOneofCase.String => Guid.Parse(e.Id.String),
+							_ => throw new NotSupportedException()
+						},
 						new StreamRevision(e.StreamRevision),
 						e.Metadata,
 						e.Data.ToByteArray(),
@@ -175,17 +183,25 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			_disposed.Dispose();
 		}
 
-		private Task AckInternal(params ByteString[] ids) =>
+		private Task AckInternal(params Guid[] ids) =>
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Ack = new ReadReq.Types.Ack {
-					Ids = {ids}
+					Ids = {
+						Array.ConvertAll(ids, id => new UUID {
+							String = id.ToString("n")
+						})
+					}
 				}
 			});
 
-		private Task NackInternal(ByteString[] ids, PersistentSubscriptionNakEventAction action, string reason) =>
+		private Task NackInternal(Guid[] ids, PersistentSubscriptionNakEventAction action, string reason) =>
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Nack = new ReadReq.Types.Nack {
-					Ids = {ids},
+					Ids = {
+						Array.ConvertAll(ids, id => new UUID {
+							String = id.ToString("n")
+						})
+					},
 					Action = action switch {
 						PersistentSubscriptionNakEventAction.Park => ReadReq.Types.Nack.Types.Action.Park,
 						PersistentSubscriptionNakEventAction.Retry => ReadReq.Types.Nack.Types.Action.Retry,

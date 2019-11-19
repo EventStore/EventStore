@@ -155,7 +155,10 @@ namespace EventStore.Grpc {
 					? null
 					: new EventRecord(
 						e.StreamName,
-						new Uuid(e.Id.ToByteArray()),
+						e.Id.ValueCase switch {
+							Streams.UUID.ValueOneofCase.String => Guid.Parse(e.Id.String),
+							_ => throw new NotSupportedException()
+						},
 						new StreamRevision(e.StreamRevision),
 						e.Metadata,
 						e.Data.ToByteArray(),

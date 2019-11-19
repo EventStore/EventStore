@@ -75,7 +75,7 @@ namespace EventStore.Grpc.Streams {
 						Stream,
 						revision + i,
 						@event.Data,
-						eventId: @event.EventId.ToGuid(),
+						eventId: @event.EventId,
 						eventType: @event.Type);
 				}
 			}) {

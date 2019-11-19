@@ -13,7 +13,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			DeleteInternal(new DeleteReq {
 				Options = new DeleteReq.Types.Options {
-					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName,
 					Revision = expectedRevision
 				}
@@ -26,7 +25,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default) =>
 			DeleteInternal(new DeleteReq {
 				Options = new DeleteReq.Types.Options {
-					RequestId = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = streamName
 				}
 			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);

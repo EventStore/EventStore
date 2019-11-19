@@ -15,6 +15,7 @@ using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
+using UUID = EventStore.Grpc.PersistentSubscriptions.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
@@ -59,7 +60,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadReq.ContentOneofCase.Ack => (Message)
 					new ClientMessage.PersistentSubscriptionAckEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
-						request.Ack.Ids.Select(id => new Uuid(id.Span).ToGuid()).ToArray(), user),
+						request.Ack.Ids.Select(id => id.ValueCase switch {
+							UUID.ValueOneofCase.String => Guid.Parse(id.String),
+							_ => throw new NotSupportedException()
+						}).ToArray(), user),
 					ReadReq.ContentOneofCase.Nack =>
 					new ClientMessage.PersistentSubscriptionNackEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
@@ -71,7 +75,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadReq.Types.Nack.Types.Action.Stop => NakAction.Stop,
 							_ => throw new InvalidOperationException()
 						},
-						request.Nack.Ids.Select(id => new Uuid(id.Span).ToGuid()).ToArray(), user),
+						request.Nack.Ids.Select(id => id.ValueCase switch {
+							UUID.ValueOneofCase.String => Guid.Parse(id.String),
+							_ => throw new NotSupportedException()
+						}).ToArray(), user),
 					_ => throw new InvalidOperationException()
 				});
 
@@ -82,7 +89,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = ByteString.CopyFrom(Uuid.FromGuid(e.EventId).ToSpan()),
+					Id = new UUID {
+						String = e.EventId.ToString()
+					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,

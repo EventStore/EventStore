@@ -17,7 +17,7 @@
 		<PackageReference Include="System.Text.Json" Version="4.6.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/*.proto" Access="internal" GrpcServices="Client" />
+		<Protobuf Include="../Protos/Grpc/*.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />
 		<Compile Include="../EventStore.Grpc.Common/*.cs" />
 	</ItemGroup>
 </Project>

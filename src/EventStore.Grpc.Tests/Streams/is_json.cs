@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -30,7 +31,7 @@ namespace EventStore.Grpc.Streams {
 			var stream = GetStreamName(isJson, data, metadata);
 			var encoding = Helper.UTF8NoBom;
 			var eventData = new EventData(
-				Uuid.NewUuid(), 
+				Guid.NewGuid(),
 				"-",
 				encoding.GetBytes(data),
 				encoding.GetBytes(metadata),

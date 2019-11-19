@@ -93,7 +93,7 @@ namespace EventStore.Grpc.Streams {
 						Stream,
 						revision + i,
 						@event.Data,
-						eventId: @event.EventId.ToGuid(),
+						eventId: @event.EventId,
 						eventType: @event.Type);
 
 					WriteSingleEvent(
@@ -102,7 +102,7 @@ namespace EventStore.Grpc.Streams {
 						LinkedStream,
 						i,
 						link.Data,
-						eventId: link.EventId.ToGuid(),
+						eventId: link.EventId,
 						eventType: link.Type);
 				}
 			}) {

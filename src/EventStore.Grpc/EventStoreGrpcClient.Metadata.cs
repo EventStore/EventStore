@@ -34,7 +34,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default)
 			=> SetStreamMetadataInternal(metadata, new AppendReq {
 				Options = new AppendReq.Types.Options {
-					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = SystemStreams.MetastreamOf(streamName)
 				}
 			}.WithAnyStreamRevision(expectedRevision), userCredentials, cancellationToken);
@@ -44,7 +43,6 @@ namespace EventStore.Grpc {
 			CancellationToken cancellationToken = default)
 			=> SetStreamMetadataInternal(metadata, new AppendReq {
 				Options = new AppendReq.Types.Options {
-					Id = ByteString.CopyFrom(Uuid.NewUuid().ToSpan()),
 					StreamName = SystemStreams.MetastreamOf(streamName),
 					Revision = expectedRevision
 				}
@@ -56,7 +54,7 @@ namespace EventStore.Grpc {
 			UserCredentials userCredentials,
 			CancellationToken cancellationToken) =>
 			AppendToStreamInternal(appendReq, new[] {
-				new EventData(Uuid.NewUuid(), SystemEventTypes.StreamMetadata,
+				new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata,
 					JsonSerializer.SerializeToUtf8Bytes(metadata, StreamMetadataJsonSerializerOptions)),
 			}, userCredentials, cancellationToken);
 	}
