@@ -24,12 +24,9 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
-<<<<<<< HEAD
 using Microsoft.AspNetCore.Hosting;
-=======
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.TransactionLog;
->>>>>>> fd41da2... Compute TFChunk max reader count based on number of reader threads specified in configuration
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -114,7 +111,7 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault, readOnlyReplica: readOnlyReplica);
+				readOnlyReplica: readOnlyReplica);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Info(

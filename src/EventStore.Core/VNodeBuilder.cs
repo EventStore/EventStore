@@ -1337,7 +1337,6 @@ namespace EventStore.Core {
 				_logHttpRequests,
 				_connectionPendingSendBytesThreshold,
 				_connectionQueueSizeThreshold,
-				_chunkInitialReaderCount,
 				_index,
 				_enableHistograms,
 				_skipIndexVerify,
