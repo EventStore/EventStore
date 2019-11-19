@@ -70,7 +70,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int IndexCacheDepth;
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
-		public readonly int ChunkInitialReaderCount;
 
 		public readonly bool BetterOrdering;
 		public readonly string Index;
@@ -136,7 +135,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
-			int chunkInitialReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -236,7 +234,6 @@ namespace EventStore.Core.Cluster.Settings {
 			ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
 			ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			ConnectionQueueSizeThreshold = connectionQueueSizeThreshold;
-			ChunkInitialReaderCount = chunkInitialReaderCount;
 
 			VerifyDbHash = verifyDbHash;
 			MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -298,11 +295,10 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "IndexPath: {34}\n"
 			                     + "ScavengeHistoryMaxAge: {35}\n"
 			                     + "ConnectionPendingSendBytesThreshold: {36}\n"
-			                     + "ChunkInitialReaderCount: {37}\n"
-			                     + "ReduceFileCachePressure: {38}\n"
-			                     + "InitializationThreads: {39}\n"
-			                     + "StructuredLog: {40}\n"
-								 + "DisableFirstLevelHttpAuthorization: {41}\n",
+			                     + "ReduceFileCachePressure: {37}\n"
+			                     + "InitializationThreads: {38}\n"
+			                     + "StructuredLog: {39}\n"
+								 + "DisableFirstLevelHttpAuthorization: {40}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -320,7 +316,7 @@ namespace EventStore.Core.Cluster.Settings {
 				StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
 				NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
-				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
+				ConnectionPendingSendBytesThreshold,
 				ReduceFileCachePressure, InitializationThreads, StructuredLog,
 				DisableFirstLevelHttpAuthorization);
 		}
