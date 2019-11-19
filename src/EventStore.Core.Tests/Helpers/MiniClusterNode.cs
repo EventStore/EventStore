@@ -23,8 +23,6 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
-using EventStore.Core.Settings;
-using EventStore.Core.Tests.TransactionLog;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -106,7 +104,8 @@ namespace EventStore.Core.Tests.Helpers {
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
-				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault);
+				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
 
 			Log.Info(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -210,7 +209,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, TFChunkHelper.TFChunkInitialReaderCountDefault, TFChunkHelper.TFChunkMaxReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

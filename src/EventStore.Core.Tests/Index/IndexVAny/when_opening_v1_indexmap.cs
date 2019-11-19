@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 			base.TestFixtureSetUp();
 
 			_filename = GetFilePathFor("indexfile");
-			var empty = IndexMap.CreateEmpty(2, maxTableLevelsForAutomaticMerge: 4);
+			var empty = IndexMap.CreateEmpty(2, 4, Constants.PTableMaxReaderCountDefault);
 			empty.SaveToFile(_filename);
 		}
 

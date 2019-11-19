@@ -18,6 +18,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
+using EventStore.Core.Settings;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -1399,6 +1400,7 @@ namespace EventStore.Core {
 				_logHttpRequests,
 				_connectionPendingSendBytesThreshold,
 				_connectionQueueSizeThreshold,
+				ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, _readerThreadsCount),
 				_index,
 				_enableHistograms,
 				_skipIndexVerify,
@@ -1441,21 +1443,23 @@ namespace EventStore.Core {
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
 		}
 
-		private int ComputeTFChunkMaxReaderCount(int tfChunkInitialReaderCount, int readerThreadsCount) {
-				var ptableMaxReaderCount = 1 /* StorageWriter */
-	                                        + 1 /* StorageChaser */
-	                                        + 1 /* Projections */
-	                                        + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
-	                                        + 1 /* Subscription LinkTos resolving */
-	                                        + readerThreadsCount
-	                                        + 5 /* just in case reserve :) */;
+		private int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {
+			var ptableMaxReaderCount = 1 /* StorageWriter */
+			                           + 1 /* StorageChaser */
+			                           + 1 /* Projections */
+			                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+			                           + 1 /* Subscription LinkTos resolving */
+			                           + readerThreadsCount
+			                           + 5 /* just in case reserve :) */;
+			return Math.Max(ptableMaxReaderCount, ptableInitialReaderCount);
+		}
 
-				var tfChunkMaxReaderCount = ptableMaxReaderCount
+		private int ComputeTFChunkMaxReaderCount(int tfChunkInitialReaderCount, int readerThreadsCount) {
+			var tfChunkMaxReaderCount = ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, readerThreadsCount)
                                             + 2 /* for caching/uncaching, populating midpoints */
                                             + 1 /* for epoch manager usage of elections/replica service */
                                             + 1 /* for epoch manager usage of master replication service */;
-
-				return Math.Max(tfChunkMaxReaderCount, tfChunkInitialReaderCount);
+			return Math.Max(tfChunkMaxReaderCount, tfChunkInitialReaderCount);
 		}
 
 

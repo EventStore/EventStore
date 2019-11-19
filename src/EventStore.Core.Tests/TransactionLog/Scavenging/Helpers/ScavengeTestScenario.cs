@@ -5,7 +5,6 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Settings;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
@@ -49,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			var indexPath = Path.Combine(PathName, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
-				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+				"ReadIndex readers pool", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				() => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
@@ -57,7 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
 				() => new TFReaderLease(readerPool),
 				PTableVersions.IndexV3,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
 			ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount,

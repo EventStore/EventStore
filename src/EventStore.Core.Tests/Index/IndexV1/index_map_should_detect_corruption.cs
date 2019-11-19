@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 0, 0);
 			memtable.Add(1, 1, 100);
-			_ptable = PTable.FromMemtable(memtable, _ptableFileName, skipIndexVerify: _skipIndexVerify);
+			_ptable = PTable.FromMemtable(memtable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 
 			indexMap = indexMap.AddPTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
 				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion,
