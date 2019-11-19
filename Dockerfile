@@ -16,8 +16,10 @@ COPY --from=build /out/ ./
 
 EXPOSE 1112/tcp
 EXPOSE 1113/tcp
+EXPOSE 1114/tcp
 EXPOSE 2112/tcp
 EXPOSE 2113/tcp
+EXPOSE 2114/tcp
 
 ENTRYPOINT ["dotnet", "EventStore.ClusterNode.dll"]
-CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]
+CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0", "--certificate-file", "/eventstore/dev-cert.pfx"]

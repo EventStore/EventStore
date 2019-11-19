@@ -19,7 +19,10 @@
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\connect.cs" />
+		<Compile
+						Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs"
+						Exclude="..\EventStore.ClientAPIAcceptanceTests\connect.cs;..\EventStore.ClientAPIAcceptanceTests\EventStoreClientAPIFixture.macOS.cs;"
+		/>
 		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
 	</ItemGroup>
 </Project>
