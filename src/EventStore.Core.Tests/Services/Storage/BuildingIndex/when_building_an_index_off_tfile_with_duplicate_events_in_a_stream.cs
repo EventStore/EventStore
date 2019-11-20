@@ -125,7 +125,9 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
-				MaxEntriesInMemTable, Constants.PTableMaxReaderCountDefault);
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
+				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,
@@ -156,7 +158,9 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
-				MaxEntriesInMemTable, Constants.PTableMaxReaderCountDefault);
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
+				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,
