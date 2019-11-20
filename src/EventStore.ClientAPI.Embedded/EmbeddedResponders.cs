@@ -274,7 +274,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			protected override AllEventsSlice TransformResponse(
 				ClientMessage.ReadAllEventsBackwardFilteredCompleted response) {
-				return new AllEventsSlice(ReadDirection.Forward,
+				return new AllEventsSlice(ReadDirection.Backward,
 					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
 					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
 					response.Events.ConvertToClientResolvedEvents(), response.IsEndOfStream);
