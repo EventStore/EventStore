@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsFilteredCompleted response) {
-			return new AllEventsSlice(ReadDirection.Forward,
+			return new AllEventsSlice(ReadDirection.Backward,
 				new Position(response.CommitPosition, response.PreparePosition),
 				new Position(response.NextCommitPosition, response.NextPreparePosition),
 				response.Events, response.IsEndOfStream);

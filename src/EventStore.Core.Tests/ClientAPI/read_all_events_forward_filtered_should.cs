@@ -59,6 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*eam-b.*$"));
 
 			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.OddEvents().ToArray(),
 				read.Events.Select(x => x.Event).ToArray()));
@@ -70,6 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -81,6 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 1000, false, filter, 1000).Result;
+			Assert.AreEqual(ReadDirection.Forward, read.ReadDirection);
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
 	}
