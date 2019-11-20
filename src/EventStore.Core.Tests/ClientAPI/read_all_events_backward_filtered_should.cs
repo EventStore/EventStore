@@ -45,6 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 4096, false, filter, 4096).Result;
+			Assert.AreEqual(ReadDirection.Backward, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "AEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -55,6 +56,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			var filter = Filter.StreamId.Regex(new Regex(@"^.*m-b.*$"));
 
 			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 4096, false, filter, 4096).Result;
+			Assert.AreEqual(ReadDirection.Backward, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.OddEvents().ReverseEvents(),
 				read.Events.Select(x => x.Event).ToArray()));
@@ -66,6 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 4096, false, filter, 4096).Result;
+			Assert.AreEqual(ReadDirection.Backward, read.ReadDirection);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.Where(e => e.Type == "BEvent").OrderBy(x => x.EventId).ToArray(),
 				read.Events.Select(x => x.Event).OrderBy(x => x.EventId).ToArray()));
@@ -77,6 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			// Have to order the events as we are writing to two streams and can't guarantee ordering
 			var read = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 4096, false, filter, 4096).Result;
+			Assert.AreEqual(ReadDirection.Backward, read.ReadDirection);
 			Assert.That(!read.Events.Any(e => e.Event.EventType.StartsWith("$")));
 		}
 	}
