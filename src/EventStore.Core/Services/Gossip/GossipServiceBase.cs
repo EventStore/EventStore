@@ -159,6 +159,8 @@ namespace EventStore.Core.Services.Gossip {
 
 			//if (_cluster.HasChangedSince(oldCluster))
 			//LogClusterChange(oldCluster, _cluster, _nodeInfo.InternalHttp);
+			if (message.State == VNodeState.ShuttingDown)
+				_state = GossipState.ShuttingDown;
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
