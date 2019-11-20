@@ -56,7 +56,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV3,
-				MaxEntriesInMemTable, Constants.PTableMaxReaderCountDefault);
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
+				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,
