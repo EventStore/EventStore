@@ -19,11 +19,11 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 
 			using var first = _fixture.Client.PersistentSubscriptions
 				.Subscribe(Stream, Group, delegate { return Task.CompletedTask; });
-			await first.Started;
+			await first.Started.WithTimeout();
 			using var second = _fixture.Client.PersistentSubscriptions
 				.Subscribe(Stream, Group, delegate { return Task.CompletedTask; },
 					(s, r, e) => dropped.SetResult((r, e)));
-			await second.Started;
+			await second.Started.WithTimeout();
 
 			var (reason, exception) = await dropped.Task.WithTimeout();
 

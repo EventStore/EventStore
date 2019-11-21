@@ -15,12 +15,12 @@ using Xunit;
 
 namespace EventStore.Grpc {
 	public class StandaloneKestrelServerFixture : IAsyncLifetime {
-		private static readonly ClusterVNode Node;
-		private static readonly TFChunkDb Db;
-		private static readonly IWebHost Host;
-		public static EventStoreGrpcClient Client { get; }
+		private readonly ClusterVNode _node;
+		private readonly TFChunkDb _db;
+		private readonly IWebHost _host;
+		public EventStoreGrpcClient Client { get; }
 
-		static StandaloneKestrelServerFixture() {
+		public StandaloneKestrelServerFixture() {
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
@@ -32,10 +32,10 @@ namespace EventStore.Grpc {
 
 			var vNodeBuilder = new TestVNodeBuilder();
 			vNodeBuilder.RunInMemory();
-			Node = vNodeBuilder.Build();
-			Db = vNodeBuilder.GetDb();
+			_node = vNodeBuilder.Build();
+			_db = vNodeBuilder.GetDb();
 
-			Host = new WebHostBuilder()
+			_host = new WebHostBuilder()
 				.UseKestrel(serverOptions => {
 					serverOptions.Listen(IPAddress.Loopback, port, listenOptions => {
 						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -45,7 +45,7 @@ namespace EventStore.Grpc {
 						}
 					});
 				})
-				.UseStartup(new ClusterVNodeStartup(Node))
+				.UseStartup(new ClusterVNodeStartup(_node))
 				.Build();
 
 			Client = new EventStoreGrpcClient(new UriBuilder {
@@ -61,16 +61,16 @@ namespace EventStore.Grpc {
 			});
 		}
 
-		async Task IAsyncLifetime.InitializeAsync() {
-			await Node.StartAndWaitUntilReady();
-			await Host.StartAsync();
+		public virtual async Task InitializeAsync() {
+			await _node.StartAndWaitUntilReady();
+			await _host.StartAsync();
 		}
 
-		async Task IAsyncLifetime.DisposeAsync() {
-			await Node.Stop();
-			Db.Dispose();
-			await Host.StopAsync();
-			Host.Dispose();
+		public virtual async Task DisposeAsync() {
+			await _node.Stop();
+			_db.Dispose();
+			await _host.StopAsync();
+			_host.Dispose();
 			Client.Dispose();
 		}
 	}

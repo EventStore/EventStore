@@ -23,7 +23,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			Assert.Equal(Group, ex.GroupName);
 		}
 
-		public class Fixture : EventStoreGrpcFixture {
+		public class Fixture : ExternalEventStoreGrpcFixture {
 			private readonly TaskCompletionSource<(SubscriptionDroppedReason, Exception)> _droppedSource;
 			public Task<(SubscriptionDroppedReason, Exception)> Dropped => _droppedSource.Task;
 			public Task Started => _subscription.Started;

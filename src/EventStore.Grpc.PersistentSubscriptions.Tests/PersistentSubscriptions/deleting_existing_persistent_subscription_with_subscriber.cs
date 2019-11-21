@@ -12,7 +12,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			_fixture = fixture;
 		}
 
-		public class Fixture : EventStoreGrpcFixture {
+		public class Fixture : ExternalEventStoreGrpcFixture {
 			public Task<(SubscriptionDroppedReason reason, Exception exception)> Dropped => _dropped.Task;
 			private readonly TaskCompletionSource<(SubscriptionDroppedReason, Exception)> _dropped;
 			private PersistentSubscription _subscription;

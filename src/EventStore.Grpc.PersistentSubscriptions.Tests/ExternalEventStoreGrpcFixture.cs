@@ -7,17 +7,15 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace EventStore.Grpc {
-	public abstract class ExternalEventStoreGrpcFixture : StandaloneKestrelServerFixture, IAsyncLifetime {
+	// TODO JPB get rid of this when we figure out why bid streaming doesn't work when exceptions are thrown
+	public abstract class ExternalEventStoreGrpcFixture : StandaloneKestrelServerFixture {
 		public const string TestEventType = "-";
 
-		public virtual async Task InitializeAsync() {
+		public override async Task InitializeAsync() {
+			await base.InitializeAsync();
 			await Given().WithTimeout(TimeSpan.FromSeconds(5));
 			await When().WithTimeout(TimeSpan.FromSeconds(5));
 		}
-
-		public new EventStoreGrpcClient Client => StandaloneKestrelServerFixture.Client;
-
-		public virtual Task DisposeAsync() => Task.CompletedTask;
 
 		protected abstract Task Given();
 		protected abstract Task When();
