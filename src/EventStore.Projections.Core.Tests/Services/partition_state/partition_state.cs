@@ -49,6 +49,12 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state {
 			}
 
 			[Test]
+			public void dates() {
+				foreach(var info in TimeZoneInfo.GetSystemTimeZones())
+					AssertCorrect($@"[""{DateTimeOffset.UtcNow.ToOffset(info.BaseUtcOffset):yyyy-MM-ddThh:mm:sszzz}""]");
+			}
+
+			[Test]
 			public void null_deserialization() {
 				var deserialized = PartitionState.Deserialize(null, CheckpointTag.FromPosition(0, 100, 50));
 				Assert.AreEqual("", deserialized.State);
