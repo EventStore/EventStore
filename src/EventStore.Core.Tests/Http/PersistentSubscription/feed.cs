@@ -15,6 +15,7 @@ using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.Http.Streams;
 using EventStore.Core.Tests.Http.Users.users;
 using HttpStatusCode = System.Net.HttpStatusCode;
@@ -32,13 +33,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		protected string _subscriptionGroupName;
 		protected List<Guid> _eventIds = new List<Guid>();
 
-		protected void SetupPersistentSubscription(string streamId, string groupName, int messageTimeoutInMs = 10000) {
+		protected async Task SetupPersistentSubscription(string streamId, string groupName, int messageTimeoutInMs = 10000) {
 			_subscriptionStream = streamId;
 			_subscriptionGroupName = groupName;
 			_subscriptionEndpoint =
 				String.Format("/subscriptions/{0}/{1}", _subscriptionStream, _subscriptionGroupName);
 
-			var response = MakeJsonPut(
+			var response = await MakeJsonPut(
 				_subscriptionEndpoint,
 				new {
 					ResolveLinkTos = true,
@@ -48,27 +49,27 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 		}
 
-		protected string PostEvent(int i) {
+		protected async Task<string> PostEvent(int i) {
 			var eventId = Guid.NewGuid();
-			var response = MakeArrayEventsPost(
-				TestStream, new[] {new {EventId = eventId, EventType = "event-type", Data = new {Number = i}}});
+			var response = await MakeArrayEventsPost(
+				TestStream, new[] { new { EventId = eventId, EventType = "event-type", Data = new { Number = i } } });
 			_eventIds.Add(eventId);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-			return response.Headers[HttpResponseHeader.Location];
+			return response.Headers.Location.ToString();
 		}
 
-		protected override void Given() {
-			SetupPersistentSubscription(TestStreamName, SubscriptionGroupName);
+		protected override async Task Given() {
+			await SetupPersistentSubscription(TestStreamName, SubscriptionGroupName);
 			for (var i = 0; i < _numberOfEvents; i++) {
-				PostEvent(i);
+				await PostEvent(i);
 			}
 		}
 
 		protected string GetLink(JObject feed, string relation) {
 			var rel = (from JObject link in feed["links"]
-				from JProperty attr in link
-				where attr.Name == "relation" && (string)attr.Value == relation
-				select link).SingleOrDefault();
+					   from JProperty attr in link
+					   where attr.Name == "relation" && (string)attr.Value == relation
+					   select link).SingleOrDefault();
 			return (rel == null) ? (string)null : (string)rel["uri"];
 		}
 	}
@@ -79,14 +80,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private JObject _head;
 		private string _previous;
 
-		protected override void Given() {
-			base.Given();
-			_head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
+		protected override async Task Given() {
+			await base.Given();
+			_head = await GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
 			_previous = GetLink(_head, "previous");
 		}
 
-		protected override void When() {
-			_feed = GetJson<JObject>(_previous, ContentType.CompetingJson);
+		protected override async Task When() {
+			_feed = await GetJson<JObject>(_previous, ContentType.CompetingJson);
 		}
 
 		[Test]
@@ -123,9 +124,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private JObject _feed;
 		private List<JToken> _entries;
 
-		protected override void When() {
+		protected override async Task When() {
 			var allMessagesFeedLink = String.Format("{0}/{1}", _subscriptionEndpoint, _numberOfEvents);
-			_feed = GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson);
+			_feed = await GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
 
@@ -162,15 +163,15 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private string _lastEventLocation;
 		private List<JToken> _entries;
 
-		protected override void Given() {
-			base.Given();
-			_head = GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
+		protected override async Task Given() {
+			await base.Given();
+			_head = await GetJson<JObject>(_subscriptionEndpoint + "/" + _numberOfEvents, ContentType.CompetingJson);
 			_previous = GetLink(_head, "previous");
-			_lastEventLocation = PostEvent(-1);
+			_lastEventLocation = await PostEvent(-1);
 		}
 
-		protected override void When() {
-			_feed = GetJson<JObject>(_previous, ContentType.CompetingJson);
+		protected override async Task When() {
+			_feed = await GetJson<JObject>(_previous, ContentType.CompetingJson);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
 
@@ -181,7 +182,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		[Test]
 		public void returns_a_feed_with_a_single_entry_referring_to_the_last_event() {
-			HelperExtensions.AssertJson(new {entries = new[] {new {Id = _lastEventLocation}}}, _feed);
+			HelperExtensions.AssertJson(new { entries = new[] { new { Id = _lastEventLocation } } }, _feed);
 		}
 
 		[Test]
@@ -208,8 +209,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private XDocument document;
 		private XElement[] _entries;
 
-		protected override void When() {
-			Get(MakeUrl(_subscriptionEndpoint + "/" + 1).ToString(), String.Empty, ContentType.Competing);
+		protected override async Task When() {
+			await Get(MakeUrl(_subscriptionEndpoint + "/" + 1).ToString(), String.Empty, ContentType.Competing);
 			document = XDocument.Parse(_lastResponseBody);
 			_entries = document.GetEntries();
 		}
@@ -264,8 +265,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_retrieving_a_feed_with_invalid_content_type : SpecificationWithLongFeed {
-		protected override void When() {
-			Get(MakeUrl(_subscriptionEndpoint + "/" + _numberOfEvents).ToString(), String.Empty, ContentType.Xml);
+		protected override Task When() {
+			return Get(MakeUrl(_subscriptionEndpoint + "/" + _numberOfEvents).ToString(), String.Empty, ContentType.Xml);
 		}
 
 		[Test]
@@ -280,12 +281,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private List<JToken> _entries;
 		private string _prefix;
 
-		protected override void When() {
+		protected override async Task When() {
 			_prefix = "myprefix";
 			var headers = new NameValueCollection();
 			headers.Add("X-Forwarded-Prefix", _prefix);
 			var allMessagesFeedLink = String.Format("{0}/{1}", _subscriptionEndpoint, _numberOfEvents);
-			_feed = GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson, headers: headers);
+			_feed = await GetJson<JObject>(allMessagesFeedLink, ContentType.CompetingJson, headers: headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
 

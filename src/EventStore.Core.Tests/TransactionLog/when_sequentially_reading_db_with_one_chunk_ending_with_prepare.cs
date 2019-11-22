@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
@@ -18,8 +19,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private LogRecord[] _records;
 		private RecordWriteResult[] _results;
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_db = new TFChunkDb(
 				TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 4096));
@@ -38,8 +39,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 					"es1",
 					ExpectedVersion.Any,
 					"et1",
-					new byte[] {0, 1, 2},
-					new byte[] {5, 7});
+					new byte[] { 0, 1, 2 },
+					new byte[] { 5, 7 });
 				_results[i] = chunk.TryAppend(_records[i]);
 			}
 
@@ -53,8 +54,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 				ExpectedVersion.Any,
 				PrepareFlags.Data,
 				"et1",
-				new byte[] {0, 1, 2},
-				new byte[] {5, 7});
+				new byte[] { 0, 1, 2 },
+				new byte[] { 5, 7 });
 			_results[_records.Length - 1] = chunk.TryAppend(_records[_records.Length - 1]);
 
 			chunk.Flush();
@@ -62,10 +63,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Config.WriterCheckpoint.Flush();
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_db.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

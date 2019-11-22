@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -21,15 +22,15 @@ namespace EventStore.ClientAPI.Projections {
 		/// </summary>
 		/// <param name="log">An instance of <see cref="ILogger"/> to use for logging.</param>
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
-		/// <param name="client"></param>
+		/// <param name="httpMessageHandler"></param>
 		/// <param name="httpSchema">HTTP endpoint schema http|https.</param>
 		/// <param name="operationTimeout"></param>
 		public ProjectionsManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout,
-			IHttpClient client = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			HttpMessageHandler httpMessageHandler = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-			_client = new ProjectionsClient(log, operationTimeout, client);
+			_client = new ProjectionsClient(log, operationTimeout, httpMessageHandler);
 			_httpEndPoint = httpEndPoint;
 			_httpSchema = httpSchema;
 		}

@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
 	[TestFixture]
@@ -8,13 +9,14 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		protected Action _onDeleteStreamCompleted;
 		protected ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
-		protected override void Given() {
+		protected override Task Given() {
 			_onDeleteStreamCompleted = () => { _resetEvent.Set(); };
-			base.Given();
+			return base.Given();
 		}
 
-		protected override void When() {
+		protected override Task When() {
 			_emittedStreamsDeleter.DeleteEmittedStreams(_onDeleteStreamCompleted);
+			return Task.CompletedTask;
 		}
 
 		[Test]

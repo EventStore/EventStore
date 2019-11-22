@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 
@@ -11,8 +12,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(maxEntriesInMemTable, metastreamMaxCount) {
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			if (TruncateCheckpoint == long.MinValue)
 				throw new InvalidOperationException("AckCheckpoint must be set in WriteTestScenario.");

@@ -34,9 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		[OneTimeTearDown]
-		public void TestFixtureTearDown() {
-			PortsHelper.ReturnPort(_serverEndPoint.Port);
-		}
+		public void OneTimeTearDown() => PortsHelper.ReturnPort(_serverEndPoint.Port);
 
 		[Test]
 		[Category("Network")]
@@ -71,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		[Test]
 		[Category("Network")]
 		public void reply_with_404_to_every_request_when_there_are_no_registered_controllers() {
-			var requests = new[] {"/ping", "/streams", "/gossip", "/stuff", "/notfound", "/magic/url.exe"};
+			var requests = new[] { "/ping", "/streams", "/gossip", "/stuff", "/notfound", "/magic/url.exe" };
 			var successes = new bool[requests.Length];
 			var errors = new string[requests.Length];
 			var signals = new AutoResetEvent[requests.Length];
@@ -106,7 +104,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		public void handle_invalid_characters_in_url() {
 			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping^\"");
 			Func<HttpResponse, bool> verifier = response => string.IsNullOrEmpty(response.Body) &&
-			                                                response.HttpStatusCode == (int)HttpStatusCode.NotFound;
+															response.HttpStatusCode == (int)HttpStatusCode.NotFound;
 
 			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
 			Assert.IsTrue(result.Item1, result.Item2);
@@ -127,6 +125,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_portableServer = new PortableServer(_serverEndPoint, _timeout);
 		}
 
+		[OneTimeTearDown]
+		public void OneTimeTearDown() {
+			PortsHelper.ReturnPort(_serverEndPoint.Port);
+		}
+
 		[SetUp]
 		public void SetUp() {
 			_portableServer.SetUp();
@@ -135,11 +138,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		[TearDown]
 		public void TearDown() {
 			_portableServer.TearDown();
-		}
-
-		[OneTimeTearDown]
-		public void TestFixtureTearDown() {
-			PortsHelper.ReturnPort(_serverEndPoint.Port);
 		}
 
 		[Test]

@@ -1,9 +1,10 @@
-﻿using EventStore.Core.Bus;
+﻿using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
 
 namespace EventStore.Core.Services.Transport.Http {
-	class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage> {
+	internal class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage> {
 		private readonly HttpAuthenticationProvider[] _providers;
 
 		public IncomingHttpRequestAuthenticationManager(HttpAuthenticationProvider[] providers) {
@@ -18,11 +19,12 @@ namespace EventStore.Core.Services.Transport.Http {
 			try {
 				foreach (var provider in _providers) {
 					if (provider.Authenticate(message))
-						break;
+						return;
 				}
 			} catch {
-				HttpAuthenticationProvider.ReplyUnauthorized(message.Entity);
 			}
+
+			HttpAuthenticationProvider.ReplyUnauthorized(message.Entity);
 		}
 	}
 }

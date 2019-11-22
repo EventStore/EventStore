@@ -64,8 +64,8 @@ namespace EventStore.ClientAPI.Transport.Http {
 		}
 
 		private void OnCompleted() {
-			if (Completed != null)
-				Completed(this, EventArgs.Empty);
+			var onCompleted = Completed;
+			onCompleted?.Invoke(this, EventArgs.Empty);
 		}
 	}
 }

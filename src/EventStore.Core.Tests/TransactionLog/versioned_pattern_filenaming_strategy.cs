@@ -108,9 +108,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var tempFiles = strategy.GetAllTempFiles();
 
 			Assert.AreEqual(3, tempFiles.Length);
-			Assert.AreEqual(GetFilePathFor("bla.tmp"), tempFiles[0]);
-			Assert.AreEqual(GetFilePathFor("chunk-000005.000007.tmp"), tempFiles[1]);
-			Assert.AreEqual(GetFilePathFor("foo.tmp"), tempFiles[2]);
+			Assert.Contains(GetFilePathFor("bla.tmp"), tempFiles);
+			Assert.Contains(GetFilePathFor("chunk-000005.000007.tmp"), tempFiles);
+			Assert.Contains(GetFilePathFor("foo.tmp"), tempFiles);
 		}
 
 		[Test]
@@ -132,7 +132,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var tmp2 = strategy.GetTempFilename();
 			File.Create(tmp1).Close();
 			File.Create(tmp2).Close();
-			var tmp = new[] {tmp1, tmp2};
+			var tmp = new[] { tmp1, tmp2 };
 			Array.Sort(tmp);
 
 			var tempFiles = strategy.GetAllTempFiles();

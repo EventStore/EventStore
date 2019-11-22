@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
@@ -24,8 +25,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_filename = GetFilePathFor("indexfile");
 			_tablename = GetTempFilePath();
@@ -44,11 +45,11 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
 			_result.MergedMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(1000));
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

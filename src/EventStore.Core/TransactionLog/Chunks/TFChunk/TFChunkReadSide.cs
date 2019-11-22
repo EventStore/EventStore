@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
+using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 	public partial class TFChunk {
@@ -136,7 +136,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			private BloomFilter PopulateBloomFilter() {
 				var mapCount = Chunk.ChunkFooter.MapCount;
-				if (mapCount <= 0) return null;
+				if (mapCount <= 0)
+					return null;
 
 				BloomFilter bf = null;
 				double p = 1e-4; //false positive probability
@@ -469,20 +470,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (length <= 0) {
 					throw new InvalidReadException(
 						string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-						              + " in chunk {2}.", actualPosition, length, Chunk));
+									  + " in chunk {2}.", actualPosition, length, Chunk));
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
 					throw new InvalidReadException(
 						string.Format("Log record at actual pos {0} has too large length: {1} bytes, "
-						              + "while limit is {2} bytes. In chunk {3}.",
+									  + "while limit is {2} bytes. In chunk {3}.",
 							actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
 				}
 
 				if (actualPosition + length + 2 * sizeof(int) > Chunk.PhysicalDataSize) {
 					throw new UnableToReadPastEndOfStreamException(
 						string.Format("There is not enough space to read full record (length prefix: {0}). "
-						              + "Actual pre-position: {1}. Something is seriously wrong in chunk {2}.",
+									  + "Actual pre-position: {1}. Something is seriously wrong in chunk {2}.",
 							length, actualPosition, Chunk));
 				}
 
@@ -493,7 +494,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (suffixLength != length) {
 					throw new Exception(
 						string.Format("Prefix/suffix length inconsistency: prefix length({0}) != suffix length ({1}).\n"
-						              + "Actual pre-position: {2}. Something is seriously wrong in chunk {3}.",
+									  + "Actual pre-position: {2}. Something is seriously wrong in chunk {3}.",
 							length, suffixLength, actualPosition, Chunk));
 				}
 
@@ -515,14 +516,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (length <= 0) {
 					throw new InvalidReadException(
 						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
-						              + "In chunk {2}.",
+									  + "In chunk {2}.",
 							actualPosition, length, Chunk));
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
 					throw new ArgumentException(
 						string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
-						              + "while limit is {2} bytes. In chunk {3}.",
+									  + "while limit is {2} bytes. In chunk {3}.",
 							actualPosition, length, TFConsts.MaxLogRecordSize, Chunk));
 				}
 
@@ -530,7 +531,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				{
 					throw new UnableToReadPastEndOfStreamException(
 						string.Format("There is not enough space to read full record (length suffix: {0}). "
-						              + "Actual post-position: {1}. Something is seriously wrong in chunk {2}.",
+									  + "Actual post-position: {1}. Something is seriously wrong in chunk {2}.",
 							length, actualPosition, Chunk));
 				}
 
@@ -541,7 +542,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				if (prefixLength != length) {
 					throw new Exception(
 						string.Format("Prefix/suffix length inconsistency: prefix length({0}) != suffix length ({1})"
-						              + "Actual post-position: {2}. Something is seriously wrong in chunk {3}.",
+									  + "Actual post-position: {2}. Something is seriously wrong in chunk {3}.",
 							prefixLength, length, actualPosition, Chunk));
 				}
 

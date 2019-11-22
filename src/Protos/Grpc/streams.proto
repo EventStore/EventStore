@@ -1,0 +1,214 @@
+syntax = "proto3";
+package event_store.grpc.streams;
+option java_package = "com.eventstore.client.streams";
+
+service Streams {
+	rpc Read (ReadReq) returns (stream ReadResp);
+	rpc Append (stream AppendReq) returns (AppendResp);
+	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Tombstone (TombstoneReq) returns (TombstoneResp);
+}
+
+message ReadReq {
+	Options options = 1;
+
+	message Options {
+		oneof stream_options {
+			StreamOptions stream = 1;
+			AllOptions all = 2;
+		}
+		ReadDirection read_direction = 3;
+		bool resolve_links = 4;
+		oneof count_options {
+			int32 count = 5;
+			SubscriptionOptions subscription = 6;
+		}
+		oneof filter_options {
+			FilterOptions filter = 7;
+			Empty no_filter = 8;
+		}
+
+		enum ReadDirection {
+			Forwards = 0;
+			Backwards = 1;
+		}
+		message StreamOptions {
+			string stream_name = 1;
+			oneof revision_options {
+				uint64 revision = 2;
+				Empty start = 3;
+			}
+		}
+		message AllOptions {
+			oneof all_options {
+				Position position = 1;
+				Empty start = 2;
+			}
+		}
+		message SubscriptionOptions {
+		}
+		message Position {
+			uint64 commit_position = 1;
+			uint64 prepare_position = 2;
+		}
+		message FilterOptions {
+			oneof filter {
+				Expression stream_name = 1;
+				Expression event_type = 2;
+			}
+			oneof window {
+				int32 max = 3;
+				Empty count = 4;
+			}
+
+			message Expression {
+				string regex = 1;
+				repeated string prefix = 2;
+			}
+		}
+	}
+	message Empty {
+	}
+}
+
+message ReadResp {
+	ReadEvent event = 1;
+
+	message ReadEvent {
+		RecordedEvent event = 1;
+		RecordedEvent link = 2;
+		oneof position {
+			uint64 commit_position = 3;
+			Empty no_position = 4;
+		}
+
+		message RecordedEvent {
+			UUID id = 1;
+			string stream_name = 2;
+			uint64 stream_revision = 3;
+			uint64 prepare_position = 4;
+			uint64 commit_position = 5;
+			map<string, string> metadata = 6;
+			bytes custom_metadata = 7;
+			bytes data = 8;
+		}
+	}
+	message Empty {
+	}
+}
+
+message AppendReq {
+	oneof content {
+		Options options = 1;
+		ProposedMessage proposed_message = 2;
+	}
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			Empty no_stream = 3;
+			Empty any = 4;
+			Empty stream_exists = 5;
+		}
+	}
+	message ProposedMessage {
+		UUID id = 1;
+		map<string, string> metadata = 2;
+		bytes custom_metadata = 3;
+		bytes data = 4;
+	}
+	message Empty {
+	}
+
+}
+
+message AppendResp {
+	oneof current_revision_options {
+		uint64 current_revision = 1;
+		Empty no_stream = 2;
+	}
+	oneof position_options {
+		Position position = 3;
+		Empty empty = 4;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+	message Empty {
+	}
+}
+
+message DeleteReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			Empty no_stream = 3;
+			Empty any = 4;
+			Empty stream_exists = 5;
+		}
+	}
+	message Empty {
+	}
+}
+
+message DeleteResp {
+	oneof position_options {
+		Position position = 1;
+		Empty empty = 2;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+	message Empty {
+	}
+}
+
+message TombstoneReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			Empty no_stream = 3;
+			Empty any = 4;
+			Empty stream_exists = 5;
+		}
+	}
+	message Empty {
+	}
+}
+
+message TombstoneResp {
+	oneof position_options {
+		Position position = 1;
+		Empty empty = 2;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+	message Empty {
+	}
+}
+
+message UUID {
+	oneof value {
+		Structured structured = 1;
+		string string = 2;
+	}
+
+	message Structured {
+		uint64 most_significant_bits = 1;
+		uint64 least_significant_bits = 2;
+	}
+}

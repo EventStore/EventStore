@@ -31,9 +31,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		[OneTimeTearDown]
-		public void TestFixtureTearDown() {
-			PortsHelper.ReturnPort(_serverEndPoint.Port);
-		}
+		public void OneTimeTearDown() => PortsHelper.ReturnPort(_serverEndPoint.Port);
 
 		[Test]
 		public void respond_with_httpmessage_text_message() {

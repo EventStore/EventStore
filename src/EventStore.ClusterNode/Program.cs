@@ -4,7 +4,6 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Net;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
@@ -16,20 +15,28 @@ using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
-using System.Net.NetworkInformation;
-using EventStore.Core.Data;
+using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
+using NLog.Web;
 
 namespace EventStore.ClusterNode {
 	public class Program : ProgramBase<ClusterNodeOptions> {
 		private ClusterVNode _node;
 		private ExclusiveDbLock _dbLock;
 		private ClusterNodeMutex _clusterNodeMutex;
+		private IWebHost _host;
 
-		public static void Main(string[] args) {
-			Console.CancelKeyPress += delegate { Environment.Exit((int)ExitCode.Success); };
-			var p = new Program();
-			p.Run(args);
+		public static Task<int> Main(string[] args) {
+			Console.CancelKeyPress += delegate {
+				Application.Exit(0, "Cancelled.");
+			};
+			var p = new Program(args);
+			return p.Run();
+		}
+
+		private Program(string[] args) : base(args) {	
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -85,7 +92,7 @@ namespace EventStore.ClusterNode {
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
-				if(Runtime.IsWindows)
+				if (Runtime.IsWindows)
 					absolutePath = absolutePath.ToLower();
 
 				_dbLock = new ExclusiveDbLock(absolutePath);
@@ -111,7 +118,22 @@ namespace EventStore.ClusterNode {
 				? new[] {NodeSubsystems.Projections}
 				: new NodeSubsystems[0];
 			_node = BuildNode(opts);
+
 			RegisterWebControllers(enabledNodeSubsystems, opts);
+
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(opts.IntIp, opts.IntHttpPort);
+					o.Listen(opts.ExtIp, opts.ExtHttpPort,
+						listenOptions => listenOptions.UseHttps());
+				})
+				.UseStartup(new ClusterVNodeStartup(_node))
+				.ConfigureLogging(logging =>
+				{
+					logging.ClearProviders();
+					logging.SetMinimumLevel(LogLevel.Warning);
+				})				.UseNLog()
+				.Build();
 		}
 
 		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options) {
@@ -127,7 +149,8 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static int GetQuorumSize(int clusterSize) {
-			if (clusterSize == 1) return 1;
+			if (clusterSize == 1)
+				return 1;
 			return clusterSize / 2 + 1;
 		}
 
@@ -187,7 +210,7 @@ namespace EventStore.ClusterNode {
 			} else {
 				builder = builder.RunOnDisk(options.Db);
 			}
-
+			
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)
@@ -246,20 +269,8 @@ namespace EventStore.ClusterNode {
 			else
 				builder.DisableDnsDiscovery();
 
-			if (!options.AddInterfacePrefixes) {
-				builder.DontAddInterfacePrefixes();
-			}
-
 			if (options.GossipOnSingleNode) {
 				builder.GossipAsSingleNode();
-			}
-
-			foreach (var prefix in options.IntHttpPrefixes) {
-				builder.AddInternalHttpPrefix(prefix);
-			}
-
-			foreach (var prefix in options.ExtHttpPrefixes) {
-				builder.AddExternalHttpPrefix(prefix);
 			}
 
 			if (options.EnableTrustedAuth)
@@ -306,7 +317,7 @@ namespace EventStore.ClusterNode {
 				builder.ReduceFileCachePressure();
 			if (options.StructuredLog)
 				builder.WithStructuredLogging(options.StructuredLog);
-			if(options.DisableFirstLevelHttpAuthorization)
+			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 
 			if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0) {
@@ -405,12 +416,12 @@ namespace EventStore.ClusterNode {
 			return new CompositionContainer(catalog);
 		}
 
-		protected override void Start() {
-			_node.Start();
+		protected override Task Start() {
+			return Task.WhenAll(_node.StartAndWaitUntilReady(), _host.StartAsync());
 		}
 
-		public override void Stop() {
-			_node.StopNonblocking(true, true);
+		public override Task Stop() {
+			return Task.WhenAll(_node.Stop(), _host.StopAsync());
 		}
 
 		protected override void OnProgramExit() {

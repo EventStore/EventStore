@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -27,8 +28,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private RecordWriteResult _res1, _res2, _res3;
 		private RecordWriteResult _cres1, _cres2, _cres3;
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 16 * 1024));
 			_db.Open();
@@ -36,7 +37,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chunk = _db.Manager.GetChunkFor(0);
 
 			_p1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-				new byte[2048], new byte[] {5, 7});
+				new byte[2048], new byte[] { 5, 7 });
 			_res1 = chunk.TryAppend(_p1);
 
 			_c1 = LogRecord.Commit(_res1.NewPosition, Guid.NewGuid(), _p1.LogPosition, 0);
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_p2 = LogRecord.SingleWrite(_cres1.NewPosition,
 				Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-				new byte[2048], new byte[] {5, 7});
+				new byte[2048], new byte[] { 5, 7 });
 			_res2 = chunk.TryAppend(_p2);
 
 			_c2 = LogRecord.Commit(_res2.NewPosition, Guid.NewGuid(), _p2.LogPosition, 1);
@@ -52,7 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_p3 = LogRecord.SingleWrite(_cres2.NewPosition,
 				Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-				new byte[2048], new byte[] {5, 7});
+				new byte[2048], new byte[] { 5, 7 });
 			_res3 = chunk.TryAppend(_p3);
 
 			_c3 = LogRecord.Commit(_res3.NewPosition, Guid.NewGuid(), _p3.LogPosition, 2);
@@ -68,15 +69,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var scavenger = new TFChunkScavenger(_db, new FakeTFScavengerLog(), new FakeTableIndex(),
 				new FakeReadIndex(x => x == "es-to-scavenge"));
-			scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
+			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
 			_scavengedChunk = _db.Manager.GetChunk(0);
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_db.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

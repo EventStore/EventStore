@@ -141,8 +141,6 @@ namespace EventStore.Projections.Core.Tests.Other {
 
 				Console.WriteLine();
 			}
-
-			Assert.Inconclusive();
 		}
 
 		private static void Matches(string template, string candidate) {

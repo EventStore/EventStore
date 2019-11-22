@@ -1,0 +1,169 @@
+syntax = "proto3";
+package event_store.grpc.persistent_subscriptions;
+option java_package = "com.eventstore.client.persistentsubscriptions";
+
+service PersistentSubscriptions {
+	rpc Create (CreateReq) returns (CreateResp);
+	rpc Update (UpdateReq) returns (UpdateResp);
+	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Read (stream ReadReq) returns (stream ReadResp);
+}
+
+message ReadReq {
+	oneof content {
+		Options options = 1;
+		Ack ack = 2;
+		Nack nack = 3;
+	}
+
+	message Options {
+		string stream_name = 1;
+		string group_name = 2;
+		int32 buffer_size = 3;
+	}
+
+	message Ack {
+		bytes id = 1;
+		repeated UUID ids = 2;
+	}
+
+	message Nack {
+		bytes id = 1;
+		repeated UUID ids = 2;
+		Action action = 3;
+		string reason = 4;
+		
+		enum Action {
+			Unknown = 0;
+			Park = 1;
+			Retry = 2;
+			Skip = 3;
+			Stop = 4;
+		}
+	}
+}
+
+message ReadResp {
+	oneof content {
+		ReadEvent event = 1;
+		Empty empty = 2;
+	}
+	message ReadEvent {
+		RecordedEvent event = 1;
+		RecordedEvent link = 2;
+		oneof position {
+			uint64 commit_position = 3;
+			Empty no_position = 4;
+		}
+		oneof count {
+			int32 retry_count = 5;
+			Empty empty = 6;			
+		}
+		message RecordedEvent {
+			UUID id = 1;
+			string stream_name = 2;
+			uint64 stream_revision = 3;
+			uint64 prepare_position = 4;
+			uint64 commit_position = 5;
+			map<string, string> metadata = 6;
+			bytes custom_metadata = 7;
+			bytes data = 8;
+		}
+	}
+	message Empty {
+	}
+}
+
+message CreateReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		string group_name = 2;
+		Settings settings = 3;
+	}
+
+	message Settings {
+		bool resolve_links = 1;
+		uint64 revision = 2;
+		bool extra_statistics = 3;
+		int64 message_timeout = 4;
+		int32 max_retry_count = 5;
+		int64 checkpoint_after = 6;
+		int32 min_checkpoint_count = 7;
+		int32 max_checkpoint_count = 8;
+		int32 max_subscriber_count = 9;
+		int32 live_buffer_size = 10;
+		int32 read_batch_size = 11;
+		int32 history_buffer_size = 12;
+		ConsumerStrategy named_consumer_strategy = 13;
+	}
+
+	enum ConsumerStrategy {
+		DispatchToSingle = 0;
+		RoundRobin = 1;
+		Pinned = 2;
+	}
+}
+
+message CreateResp {
+}
+
+message UpdateReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		string group_name = 2;
+		Settings settings = 3;
+	}
+
+	message Settings {
+		bool resolve_links = 1;
+		uint64 revision = 2;
+		bool extra_statistics = 3;
+		int64 message_timeout = 4;
+		int32 max_retry_count = 5;
+		int64 checkpoint_after = 6;
+		int32 min_checkpoint_count = 7;
+		int32 max_checkpoint_count = 8;
+		int32 max_subscriber_count = 9;
+		int32 live_buffer_size = 10;
+		int32 read_batch_size = 11;
+		int32 history_buffer_size = 12;
+		ConsumerStrategy named_consumer_strategy = 13;
+	}
+
+	enum ConsumerStrategy {
+		DispatchToSingle = 0;
+		RoundRobin = 1;
+		Pinned = 2;
+	}
+}
+
+message UpdateResp {
+}
+
+message DeleteReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		string group_name = 2;
+	}
+}
+
+message DeleteResp {
+}
+
+message UUID {
+	oneof value {
+		Structured structured = 1;
+		string string = 2;
+	}
+
+	message Structured {
+		uint64 most_significant_bits = 1;
+		uint64 least_significant_bits = 2;
+	}
+}

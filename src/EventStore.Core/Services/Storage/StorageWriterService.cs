@@ -80,7 +80,8 @@ namespace EventStore.Core.Services.Storage {
 			TFChunkDb db,
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
-			IEpochManager epochManager) {
+			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -104,6 +105,7 @@ namespace EventStore.Core.Services.Storage {
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
+				queueStatsManager,
 				true,
 				TimeSpan.FromMilliseconds(500));
 			_tasks.Add(StorageWriterQueue.Start());

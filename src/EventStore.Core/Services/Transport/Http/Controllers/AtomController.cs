@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using Microsoft.Extensions.Primitives;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public enum EmbedLevel {
@@ -28,7 +29,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 	public class AtomController : CommunicationController {
 		public const char ETagSeparator = ';';
-		public static readonly char[] ETagSeparatorArray = {';'};
+		public static readonly char[] ETagSeparatorArray = { ';' };
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
 
@@ -148,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			// $ALL Filtered
 			const string querystring =
 				"?embed={embed}&context={context}&type={type}&data={data}&exclude-system-events={exclude-system-events}";
-			
+
 			Register(http,
 				"/streams/$all/filtered" + querystring,
 				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
@@ -208,8 +209,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
 			if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
 				var stream = match.BoundVariables["stream"];
-				var accepts = manager.HttpEntity.Request.AcceptTypes == null ||
-				              manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
+				var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
+							  manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
 				var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
 				var responseMessage = manager.HttpEntity.Request.AcceptTypes == null
 					? "We are unable to represent the stream in the format requested."
@@ -223,7 +224,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 						string[] persistentSubscriptionGroups = null;
 						if (m.Result == MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus
-							    .Success) {
+								.Success) {
 							persistentSubscriptionGroups = m.SubscriptionStats.Select(x => x.GroupName).ToArray();
 						}
 
@@ -410,7 +411,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private void GetStreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match) {
-			if (GetDescriptionDocument(manager, match)) return;
+			if (GetDescriptionDocument(manager, match))
+				return;
 
 			var stream = match.BoundVariables["stream"];
 			var evNum = match.BoundVariables["event"];
@@ -645,8 +647,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var embed = GetEmbedLevel(manager, match);
 
 			if (pos != null && pos != "head"
-			                && (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 ||
-			                    position.CommitPosition < 0)) {
+							&& (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 ||
+								position.CommitPosition < 0)) {
 				SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
 				return;
 			}
@@ -681,14 +683,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				SendBadRequest(manager, errorMessage);
 				return;
 			}
-	
+
 			TFPos position = TFPos.HeadOfTf;
 			int count = AtomSpecs.FeedPageSize;
 			var embed = GetEmbedLevel(manager, match);
 
 			if (pos != null && pos != "head"
-			                && (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 ||
-			                    position.CommitPosition < 0)) {
+							&& (!TFPos.TryParse(pos, out position) || position.PreparePosition < 0 ||
+								position.CommitPosition < 0)) {
 				SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
 				return;
 			}
@@ -714,7 +716,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				requireMaster, true, count, GetETagTFPosition(manager), filter, manager.User));
 		}
 
-		
+
 
 		private RequestParams GetAllEventsForward(HttpEntityManager manager, UriTemplateMatch match) {
 			var pos = match.BoundVariables["position"];
@@ -786,23 +788,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		// HELPERS
-		private (bool Success, string ErrorMessage) GetFilterFromQueryString(UriTemplateMatch match, out IEventFilter filter)
-		{
+		private (bool Success, string ErrorMessage) GetFilterFromQueryString(UriTemplateMatch match, out IEventFilter filter) {
 			var context = match.BoundVariables["context"];
 			var type = match.BoundVariables["type"];
 			var data = match.BoundVariables["data"];
 			var excludeSystemEvents = match.BoundVariables["exclude-system-events"];
 
-			if (excludeSystemEvents != null)
-			{
-				if (!bool.TryParse(excludeSystemEvents, out var parsedExcludeSystemEvents))
-				{
+			if (excludeSystemEvents != null) {
+				if (!bool.TryParse(excludeSystemEvents, out var parsedExcludeSystemEvents)) {
 					filter = null;
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
 
-				if (parsedExcludeSystemEvents == false)
-				{
+				if (parsedExcludeSystemEvents == false) {
 					filter = null;
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
@@ -810,24 +808,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				filter = EventFilter.Get(new TcpClientMessageDto.Filter(
 					TcpClientMessageDto.Filter.FilterContext.EventType,
 					TcpClientMessageDto.Filter.FilterType.Regex,
-					new[] {@"^[^\$].*"}
+					new[] { @"^[^\$].*" }
 				));
-				
+
 				return (true, null);
 			}
 
 			var parsedFilterResult = EventFilter.TryParse(context, type, data, out filter);
-			if (!parsedFilterResult.Success)
-			{
+			if (!parsedFilterResult.Success) {
 				return (false, parsedFilterResult.Reason);
 			}
-			
+
 			return (true, null);
 		}
-		
+
 		private bool GetExpectedVersion(HttpEntityManager manager, out long expectedVersion) {
-			var expVer = manager.HttpEntity.Request.Headers[SystemHeaders.ExpectedVersion];
-			if (expVer == null) {
+			var expVer = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ExpectedVersion);
+			if (StringValues.IsNullOrEmpty(expVer)) {
 				expectedVersion = ExpectedVersion.Any;
 				return true;
 			}
@@ -836,8 +833,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private bool GetIncludedId(HttpEntityManager manager, out Guid includedId) {
-			var id = manager.HttpEntity.Request.Headers[SystemHeaders.EventId];
-			if (id == null) {
+			var id = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.EventId);
+			if (StringValues.IsNullOrEmpty(id)) {
 				includedId = Guid.Empty;
 				return true;
 			}
@@ -846,8 +843,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private bool GetIncludedType(HttpEntityManager manager, out string includedType) {
-			var type = manager.HttpEntity.Request.Headers[SystemHeaders.EventType];
-			if (type == null) {
+			var type = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.EventType);
+			if (StringValues.IsNullOrEmpty(type)) {
 				includedType = null;
 				return true;
 			}
@@ -859,8 +856,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private bool GetRequireMaster(HttpEntityManager manager, out bool requireMaster) {
 			requireMaster = false;
-			var onlyMaster = manager.HttpEntity.Request.Headers[SystemHeaders.RequireMaster];
-			if (onlyMaster == null)
+			var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
+			if (StringValues.IsNullOrEmpty(onlyMaster))
 				return true;
 			if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
 				requireMaster = true;
@@ -874,8 +871,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private bool GetLongPoll(HttpEntityManager manager, out TimeSpan? longPollTimeout) {
 			longPollTimeout = null;
-			var longPollHeader = manager.HttpEntity.Request.Headers[SystemHeaders.LongPoll];
-			if (longPollHeader == null)
+			var longPollHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.LongPoll);
+			if (StringValues.IsNullOrEmpty(longPollHeader))
 				return true;
 			int longPollSec;
 			if (int.TryParse(longPollHeader, out longPollSec) && longPollSec > 0) {
@@ -888,8 +885,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos) {
 			resolveLinkTos = true;
-			var onlyMaster = manager.HttpEntity.Request.Headers[SystemHeaders.ResolveLinkTos];
-			if (onlyMaster == null)
+			var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
+			if (StringValues.IsNullOrEmpty(onlyMaster))
 				return true;
 			if (string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase)) {
 				resolveLinkTos = false;
@@ -903,8 +900,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private bool GetHardDelete(HttpEntityManager manager, out bool hardDelete) {
 			hardDelete = false;
-			var hardDel = manager.HttpEntity.Request.Headers[SystemHeaders.HardDelete];
-			if (hardDel == null)
+			var hardDel = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.HardDelete);
+			if (StringValues.IsNullOrEmpty(hardDel))
 				return true;
 			if (string.Equals(hardDel, "True", StringComparison.OrdinalIgnoreCase)) {
 				hardDelete = true;
@@ -987,15 +984,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private long? GetETagStreamVersion(HttpEntityManager manager) {
-			var etag = manager.HttpEntity.Request.Headers["If-None-Match"];
-			if (etag.IsNotEmptyString()) {
+			var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");
+			if (!StringValues.IsNullOrEmpty(etag)) {
 				// etag format is version;contenttypehash
-				var splitted = etag.Trim('\"').Split(ETagSeparatorArray);
+				var splitted = etag.ToString().Trim('\"').Split(ETagSeparatorArray);
 				if (splitted.Length == 2) {
 					var typeHash = manager.ResponseCodec.ContentType.GetHashCode()
 						.ToString(CultureInfo.InvariantCulture);
-					long streamVersion;
-					var res = splitted[1] == typeHash && long.TryParse(splitted[0], out streamVersion)
+					var res = splitted[1] == typeHash && long.TryParse(splitted[0], out var streamVersion)
 						? (long?)streamVersion
 						: null;
 					return res;
@@ -1006,15 +1002,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private static long? GetETagTFPosition(HttpEntityManager manager) {
-			var etag = manager.HttpEntity.Request.Headers["If-None-Match"];
-			if (etag.IsNotEmptyString()) {
+			var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");
+			if (!StringValues.IsNullOrEmpty(etag)) {
 				// etag format is version;contenttypehash
-				var splitted = etag.Trim('\"').Split(ETagSeparatorArray);
+				var splitted = etag.ToString().Trim('\"').Split(ETagSeparatorArray);
 				if (splitted.Length == 2) {
 					var typeHash = manager.ResponseCodec.ContentType.GetHashCode()
 						.ToString(CultureInfo.InvariantCulture);
-					long tfEofPosition;
-					return splitted[1] == typeHash && long.TryParse(splitted[0], out tfEofPosition)
+					return splitted[1] == typeHash && long.TryParse(splitted[0], out var tfEofPosition)
 						? (long?)tfEofPosition
 						: null;
 				}
@@ -1029,12 +1024,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return htmlLevel;
 			var rawValue = match.BoundVariables["embed"] ?? string.Empty;
 			switch (rawValue.ToLowerInvariant()) {
-				case "content": return EmbedLevel.Content;
-				case "rich": return EmbedLevel.Rich;
-				case "body": return EmbedLevel.Body;
-				case "pretty": return EmbedLevel.PrettyBody;
-				case "tryharder": return EmbedLevel.TryHarder;
-				default: return EmbedLevel.None;
+				case "content":
+					return EmbedLevel.Content;
+				case "rich":
+					return EmbedLevel.Rich;
+				case "body":
+					return EmbedLevel.Body;
+				case "pretty":
+					return EmbedLevel.PrettyBody;
+				case "tryharder":
+					return EmbedLevel.TryHarder;
+				default:
+					return EmbedLevel.None;
 			}
 		}
 	}
@@ -1062,9 +1063,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public bool SuitableForResponse(MediaType component) {
 			return component.Type == "*"
-			       || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
-			           && (component.Subtype == "*" ||
-			               string.Equals(component.Subtype, "html", StringComparison.OrdinalIgnoreCase)));
+				   || (string.Equals(component.Type, "text", StringComparison.OrdinalIgnoreCase)
+					   && (component.Subtype == "*" ||
+						   string.Equals(component.Subtype, "html", StringComparison.OrdinalIgnoreCase)));
 		}
 
 		public T From<T>(string text) {

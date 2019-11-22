@@ -19,7 +19,7 @@ namespace EventStore.ClientAPI.Embedded {
 			_subscriptions = subscriptions;
 		}
 
-		internal override Task<PersistentEventStoreSubscription> StartSubscription(
+		internal override async Task<PersistentEventStoreSubscription> StartSubscription(
 			string subscriptionId, string streamId, int bufferSize, UserCredentials userCredentials,
 			Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> onEventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> onSubscriptionDropped,
@@ -32,7 +32,7 @@ namespace EventStore.ClientAPI.Embedded {
 				userCredentials, bufferSize, onEventAppeared,
 				onSubscriptionDropped, settings.MaxRetries, settings.OperationTimeout);
 
-			return source.Task;
+			return await source.Task.ConfigureAwait(false);
 		}
 	}
 }

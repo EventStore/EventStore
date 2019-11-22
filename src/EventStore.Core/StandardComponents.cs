@@ -11,8 +11,9 @@ namespace EventStore.Core {
 		private readonly TimerService _timerService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly IHttpForwarder _httpForwarder;
-		private readonly HttpService[] _httpServices;
+		private readonly IHttpService[] _httpServices;
 		private readonly IPublisher _networkSendService;
+		private readonly QueueStatsManager _queueStatsManager;
 
 		public StandardComponents(
 			TFChunkDb db,
@@ -21,8 +22,9 @@ namespace EventStore.Core {
 			TimerService timerService,
 			ITimeProvider timeProvider,
 			IHttpForwarder httpForwarder,
-			HttpService[] httpServices,
-			IPublisher networkSendService) {
+			IHttpService[] httpServices,
+			IPublisher networkSendService,
+			QueueStatsManager queueStatsManager) {
 			_db = db;
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
@@ -31,6 +33,7 @@ namespace EventStore.Core {
 			_httpForwarder = httpForwarder;
 			_httpServices = httpServices;
 			_networkSendService = networkSendService;
+			_queueStatsManager = queueStatsManager;
 		}
 
 		public TFChunkDb Db {
@@ -57,12 +60,16 @@ namespace EventStore.Core {
 			get { return _httpForwarder; }
 		}
 
-		public HttpService[] HttpServices {
+		public IHttpService[] HttpServices {
 			get { return _httpServices; }
 		}
 
 		public IPublisher NetworkSendService {
 			get { return _networkSendService; }
+		}
+
+		public QueueStatsManager QueueStatsManager {
+			get { return _queueStatsManager; }
 		}
 	}
 }

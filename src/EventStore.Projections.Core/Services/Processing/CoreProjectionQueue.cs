@@ -1,6 +1,4 @@
 using System;
-using System.Net.Configuration;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
@@ -91,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false) {
 			if (eventTag < _lastEnqueuedEventTag ||
-			    (!(allowCurrentPosition || _justInitialized) && eventTag <= _lastEnqueuedEventTag))
+				(!(allowCurrentPosition || _justInitialized) && eventTag <= _lastEnqueuedEventTag))
 				throw new InvalidOperationException(
 					string.Format(
 						"Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'", _lastEnqueuedEventTag,

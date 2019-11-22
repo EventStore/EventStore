@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -35,8 +36,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_metastreamMaxCount = metastreamMaxCount;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
@@ -67,14 +68,14 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
-			scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
+			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}
 
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			ReadIndex.Close();
 			_dbResult.Db.Close();
 
-			base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 
 			if (!_checked)
 				throw new Exception("Records were not checked. Probably you forgot to call CheckRecords() method.");

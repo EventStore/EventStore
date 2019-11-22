@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Threading.Tasks;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
 using EventStore.ClientAPI;
@@ -22,7 +23,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		protected string GroupName;
 		protected int? NumberOfEventsToCreate;
 
-		protected override void Given() {
+		protected override async Task Given() {
 			Events = new List<object> {
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}},
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {B = "2"}},
@@ -30,7 +31,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {D = "4"}}
 			};
 
-			var response = MakeArrayEventsPost(
+			var response = await MakeArrayEventsPost(
 				TestStream,
 				Events.Take(NumberOfEventsToCreate ?? Events.Count),
 				_admin);
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 			GroupName = Guid.NewGuid().ToString();
 			SubscriptionPath = string.Format("/subscriptions/{0}/{1}", TestStream.Substring(9), GroupName);
-			response = MakeJsonPut(SubscriptionPath,
+			response = await MakeJsonPut(SubscriptionPath,
 				new {
 					ResolveLinkTos = true,
 					MessageTimeoutMilliseconds = 10000,
@@ -47,10 +48,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 		}
 
-		protected override void When() {
-		}
+		protected override Task When() => Task.CompletedTask;
 
-		protected void SecureStream() {
+		protected async Task SecureStream() {
 			var metadata =
 				(StreamMetadata)
 				StreamMetadata.Build()
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 					.SetReadRole("admin")
 					.SetWriteRole("admin");
 			var jsonMetadata = metadata.AsJsonString();
-			var response = MakeArrayEventsPost(
+			var response = await MakeArrayEventsPost(
 				TestMetadataStream,
 				new[] {
 					new {
@@ -74,14 +74,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_getting_messages_without_permission : with_subscription_having_events {
-		protected override void Given() {
-			base.Given();
-			SecureStream();
+		protected override async Task Given() {
+			await base.Given();
+			await SecureStream();
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			SetDefaultCredentials(null);
-			GetJson<JObject>(
+			await GetJson<JObject>(
 				SubscriptionPath,
 				ContentType.CompetingJson);
 		}
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		protected string SubscriptionPath;
 		protected string GroupName;
 
-		protected override void Given() {
+		protected override async Task Given() {
 			Events = new List<object> {
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {A = "1"}},
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {B = "2"}},
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 			GroupName = Guid.NewGuid().ToString();
 			SubscriptionPath = string.Format("/subscriptions/{0}/{1}", TestStream.Substring(9), GroupName);
-			var response = MakeJsonPut(SubscriptionPath,
+			var response = await MakeJsonPut(SubscriptionPath,
 				new {
 					ResolveLinkTos = true,
 					MessageTimeoutMilliseconds = 10000
@@ -117,24 +117,24 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				_admin);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
-			response = MakeArrayEventsPost(
+			response = await MakeArrayEventsPost(
 				TestStream,
 				Events,
 				_admin);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
 			//pull all events out.
-			_response = GetJson<JObject>(
+			_response = await GetJson<JObject>(
 				SubscriptionPath + "/" + Events.Count,
 				ContentType.CompetingJson, //todo CLC sort out allowed content types
 				_admin);
 
-			var count = ((JObject)_response)["entries"].Count();
+			var count = _response["entries"].Count();
 			Assert.AreEqual(Events.Count, count, "Expected {0} events, received {1}", Events.Count, count);
 		}
 
-		protected override void When() {
-			_response = GetJson<JObject>(
+		protected override async Task When() {
+			_response = await GetJson<JObject>(
 				SubscriptionPath,
 				ContentType.CompetingJson,
 				_admin);
@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		[Test]
 		public void return_0_messages() {
-			var count = ((JObject)_response)["entries"].Count();
+			var count = _response["entries"].Count();
 			Assert.AreEqual(0, count, "Expected {0} events, received {1}", 0, count);
 		}
 	}
@@ -150,8 +150,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_getting_messages_from_a_subscription_with_n_messages : with_subscription_having_events {
 		private JObject _response;
 
-		protected override void When() {
-			_response = GetJson<JObject>(
+		protected override async Task When() {
+			_response = await GetJson<JObject>(
 				SubscriptionPath + "/" + Events.Count,
 				ContentType.CompetingJson, //todo CLC sort out allowed content types
 				_admin);
@@ -167,8 +167,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_getting_messages_from_a_subscription_with_more_than_n_messages : with_subscription_having_events {
 		private JObject _response;
 
-		protected override void When() {
-			_response = GetJson<JObject>(
+		protected override async Task When() {
+			_response = await GetJson<JObject>(
 				SubscriptionPath + "/" + (Events.Count - 1),
 				ContentType.CompetingJson, //todo CLC sort out allowed content types
 				_admin);
@@ -184,8 +184,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_getting_messages_from_a_subscription_with_less_than_n_messags : with_subscription_having_events {
 		private JObject _response;
 
-		protected override void When() {
-			_response = GetJson<JObject>(
+		protected override async Task When() {
+			_response = await GetJson<JObject>(
 				SubscriptionPath + "/" + (Events.Count + 1),
 				ContentType.CompetingJson, //todo CLC sort out allowed content types
 				_admin);
@@ -201,8 +201,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_getting_messages_from_a_subscription_with_unspecified_count : with_subscription_having_events {
 		private JObject _response;
 
-		protected override void When() {
-			_response = GetJson<JObject>(
+		protected override async Task When() {
+			_response = await GetJson<JObject>(
 				SubscriptionPath,
 				ContentType.CompetingJson,
 				_admin);
@@ -216,8 +216,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_getting_messages_from_a_subscription_with_a_negative_count : with_subscription_having_events {
-		protected override void When() {
-			Get(SubscriptionPath + "/-1",
+		protected override Task When() {
+			return Get(SubscriptionPath + "/-1",
 				"",
 				ContentType.CompetingJson,
 				_admin);
@@ -230,8 +230,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_getting_messages_from_a_subscription_with_a_count_of_0 : with_subscription_having_events {
-		protected override void When() {
-			Get(SubscriptionPath + "/0",
+		protected override async Task When() {
+			await Get(SubscriptionPath + "/0",
 				"",
 				ContentType.CompetingJson,
 				_admin);
@@ -244,8 +244,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_getting_messages_from_a_subscription_with_count_more_than_100 : with_subscription_having_events {
-		protected override void When() {
-			Get(SubscriptionPath + "/101",
+		protected override async Task When() {
+			await Get(SubscriptionPath + "/101",
 				"",
 				ContentType.CompetingJson,
 				_admin);
@@ -258,8 +258,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_getting_messages_from_a_subscription_with_count_not_an_integer : with_subscription_having_events {
-		protected override void When() {
-			Get(SubscriptionPath + "/10.1",
+		protected override Task When() {
+			return Get(SubscriptionPath + "/10.1",
 				"",
 				ContentType.CompetingJson,
 				_admin);
@@ -272,8 +272,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_getting_messages_from_a_subscription_with_count_not_a_number : with_subscription_having_events {
-		protected override void When() {
-			Get(SubscriptionPath + "/one",
+		protected override Task When() {
+			return Get(SubscriptionPath + "/one",
 				"",
 				ContentType.CompetingJson,
 				_admin);

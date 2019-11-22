@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(false)]
@@ -20,8 +21,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x0101);
@@ -41,13 +42,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -83,8 +84,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x0101);
@@ -104,13 +105,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -146,8 +147,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x010100000000);
@@ -173,13 +174,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -224,9 +225,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			hasher = new Murmur3AUnsafe();
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
 			table.Add(0x010100000000, 2, 5);
@@ -249,13 +250,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -275,8 +276,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}
@@ -299,9 +300,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			hasher = new Murmur3AUnsafe();
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 1);
@@ -330,13 +331,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -357,8 +358,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}

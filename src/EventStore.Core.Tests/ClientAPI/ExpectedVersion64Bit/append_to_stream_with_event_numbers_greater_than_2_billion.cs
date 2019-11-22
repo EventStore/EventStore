@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
@@ -18,38 +19,30 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			WriteSingleEvent(StreamName, intMaxValue + 5, new string('.', 3000));
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
-			_store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
+			await _store.ConnectAsync();
+			await _store.SetStreamMetadataAsync(StreamName, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
-		public void should_be_able_to_append_to_stream() {
+		public async Task should_be_able_to_append_to_stream() {
 			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			var writeResult = _store.AppendToStreamAsync(StreamName, intMaxValue + 5, evnt).Result;
+			var writeResult = await _store.AppendToStreamAsync(StreamName, intMaxValue + 5, evnt);
 			Assert.AreEqual(intMaxValue + 6, writeResult.NextExpectedVersion);
 
-			var readResult = _store
-				.ReadStreamEventsForwardAsync(StreamName, intMaxValue + 6, 1, false, DefaultData.AdminCredentials)
-				.Result;
+			var readResult = await _store
+				.ReadStreamEventsForwardAsync(StreamName, intMaxValue + 6, 1, false, DefaultData.AdminCredentials);
 			Assert.AreEqual(SliceReadStatus.Success, readResult.Status);
 			Assert.AreEqual(evnt.EventId, readResult.Events[0].Event.EventId);
 		}
 
 		[Test]
-		public void should_throw_wrong_expected_version_when_version_incorrect() {
-			Exception thrownException = null;
+		public async Task should_throw_wrong_expected_version_when_version_incorrect() {
 			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
-			try {
-				_store.AppendToStreamAsync(StreamName, intMaxValue + 15, evnt).Wait();
-			} catch (Exception ex) {
-				thrownException = ex;
-			}
-
-			Assert.IsNotNull(thrownException);
-			Assert.IsInstanceOf(typeof(WrongExpectedVersionException), thrownException.InnerException);
+			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(
+				() => _store.AppendToStreamAsync(StreamName, intMaxValue + 15, evnt));
 		}
 	}
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
@@ -8,6 +7,8 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
@@ -19,7 +20,6 @@ namespace EventStore.Core.Tests.Integration {
 		protected Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory =
 			new Dictionary<int, Func<bool, MiniClusterNode>>();
 
-		private readonly List<int> _portsUsed = new List<int>();
 
 		protected class Endpoints {
 			public readonly IPEndPoint InternalTcp;
@@ -29,53 +29,96 @@ namespace EventStore.Core.Tests.Integration {
 			public readonly IPEndPoint ExternalTcpSec;
 			public readonly IPEndPoint ExternalHttp;
 
-			public Endpoints(
-				int internalTcp, int internalTcpSec, int internalHttp, int externalTcp,
-				int externalTcpSec, int externalHttp) {
-				var address = IPAddress.Loopback;
-				InternalTcp = new IPEndPoint(address, internalTcp);
-				InternalTcpSec = new IPEndPoint(address, internalTcpSec);
-				InternalHttp = new IPEndPoint(address, internalHttp);
-				ExternalTcp = new IPEndPoint(address, externalTcp);
-				ExternalTcpSec = new IPEndPoint(address, externalTcpSec);
-				ExternalHttp = new IPEndPoint(address, externalHttp);
+			public IEnumerable<int> Ports() {
+				yield return InternalTcp.Port;
+				yield return InternalTcpSec.Port;
+				yield return InternalHttp.Port;
+				yield return ExternalTcp.Port;
+				yield return ExternalTcpSec.Port;
+				yield return ExternalHttp.Port;
+			}
+
+			private readonly List<Socket> _sockets;
+
+			public Endpoints() {
+				_sockets = new List<Socket>();
+
+				var defaultLoopBack = new IPEndPoint(IPAddress.Loopback, 0);
+
+				var internalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				internalTcp.Bind(defaultLoopBack);
+				_sockets.Add(internalTcp);
+
+				var internalTcpSecure =
+					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				internalTcpSecure.Bind(defaultLoopBack);
+				_sockets.Add(internalTcpSecure);
+
+				var internalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				internalHttp.Bind(defaultLoopBack);
+				_sockets.Add(internalHttp);
+
+				var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				externalTcp.Bind(defaultLoopBack);
+				_sockets.Add(externalTcp);
+
+				var externalTcpSecure =
+					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				externalTcpSecure.Bind(defaultLoopBack);
+				_sockets.Add(externalTcpSecure);
+
+				var externalHttp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				externalHttp.Bind(defaultLoopBack);
+				_sockets.Add(externalHttp);
+
+				InternalTcp = CopyEndpoint((IPEndPoint)internalTcp.LocalEndPoint);
+				InternalTcpSec = CopyEndpoint((IPEndPoint)internalTcpSecure.LocalEndPoint);
+				InternalHttp = CopyEndpoint((IPEndPoint)internalHttp.LocalEndPoint);
+				ExternalTcp = CopyEndpoint((IPEndPoint)externalTcp.LocalEndPoint);
+				ExternalTcpSec = CopyEndpoint((IPEndPoint)externalTcpSecure.LocalEndPoint);
+				ExternalHttp = CopyEndpoint((IPEndPoint)externalHttp.LocalEndPoint);
+			}
+
+			public void DisposeSockets() {
+				foreach (var socket in _sockets) {
+					socket.Dispose();
+				}
+			}
+
+			private IPEndPoint CopyEndpoint(IPEndPoint endpoint) {
+				return new IPEndPoint(endpoint.Address, endpoint.Port);
 			}
 		}
 
-		private int GetFreePort(IPAddress ip) {
-			var port = PortsHelper.GetAvailablePort(ip);
-			_portsUsed.Add(port);
-			return port;
-		}
-
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
-#if DEBUG
-			QueueStatsCollector.InitializeIdleDetection();
-#endif
-			_nodeEndpoints[0] = new Endpoints(
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
-			_nodeEndpoints[1] = new Endpoints(
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
-			_nodeEndpoints[2] = new Endpoints(
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback),
-				GetFreePort(IPAddress.Loopback), GetFreePort(IPAddress.Loopback));
+			_nodeEndpoints[0] = new Endpoints();
+			_nodeEndpoints[1] = new Endpoints();
+			_nodeEndpoints[2] = new Endpoints();
 
-			_nodeCreationFactory.Add(0, (wait) => CreateNode(0,
-				_nodeEndpoints[0], new IPEndPoint[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp},
+			_nodeEndpoints[0].DisposeSockets();
+			_nodeEndpoints[1].DisposeSockets();
+			_nodeEndpoints[2].DisposeSockets();
+
+			var duplicates = _nodeEndpoints[0].Ports().Concat(_nodeEndpoints[1].Ports())
+				.Concat(_nodeEndpoints[2].Ports())
+				.GroupBy(x => x)
+				.Where(g => g.Count() > 1)
+				.Select(x => x.Key)
+				.ToList();
+
+			Assert.IsEmpty(duplicates);
+
+			_nodeCreationFactory.Add(0, wait => CreateNode(0,
+				_nodeEndpoints[0], new[] {_nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp},
 				wait));
-			_nodeCreationFactory.Add(1, (wait) => CreateNode(1,
-				_nodeEndpoints[1], new IPEndPoint[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp},
+			_nodeCreationFactory.Add(1, wait => CreateNode(1,
+				_nodeEndpoints[1], new[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp},
 				wait));
-			_nodeCreationFactory.Add(2, (wait) => CreateNode(2,
-				_nodeEndpoints[2], new IPEndPoint[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp},
+			_nodeCreationFactory.Add(2, wait => CreateNode(2,
+				_nodeEndpoints[2], new[] {_nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp},
 				wait));
 
 			_nodes[0] = _nodeCreationFactory[0](true);
@@ -88,15 +131,12 @@ namespace EventStore.Core.Tests.Integration {
 			_nodes[1].Start();
 			_nodes[2].Start();
 
-			WaitHandle.WaitAll(new[] {_nodes[0].StartedEvent, _nodes[1].StartedEvent, _nodes[2].StartedEvent});
-			QueueStatsCollector.WaitIdle(waitForNonEmptyTf: true);
+			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
 
 			_conn = CreateConnection();
-			_conn.ConnectAsync().Wait();
+			await _conn.ConnectAsync();
 
-			QueueStatsCollector.WaitIdle();
-
-			Given();
+			await Given();
 		}
 
 		protected virtual IEventStoreConnection CreateConnection() {
@@ -106,48 +146,34 @@ namespace EventStore.Core.Tests.Integration {
 		protected virtual void BeforeNodesStart() {
 		}
 
-		protected virtual void Given() {
+		protected virtual Task Given() => Task.CompletedTask;
+
+		protected Task ShutdownNode(int nodeNum) {
+			return _nodes[nodeNum].Shutdown(keepDb: true);
 		}
 
-		protected void ShutdownNode(int nodeNum) {
-			_nodes[nodeNum].Shutdown(keepDb: true, keepPorts: true);
-		}
-
-		protected void StartNode(int nodeNum) {
-			_nodes[nodeNum] = _nodeCreationFactory[nodeNum](false);
-			_nodes[nodeNum].Start();
-			WaitHandle.WaitAll(new[] {_nodes[nodeNum].StartedEvent});
-		}
-
-		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds, bool wait = true) {
+		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds,
+			bool wait = true) {
 			var node = new MiniClusterNode(
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
 				endpoints.ExternalTcp,
 				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] { }, gossipSeeds: gossipSeeds, inMemDb: false);
-			if (wait)
-				WaitIdle();
 			return node;
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			for (var i = 0; i < _portsUsed.Count; i++) {
-				PortsHelper.ReturnPort(_portsUsed[i]);
-			}
-
+		public override async Task TestFixtureTearDown() {
 			_conn.Close();
-			_nodes[0].Shutdown();
-			_nodes[1].Shutdown();
-			_nodes[2].Shutdown();
-#if DEBUG
-			QueueStatsCollector.DisableIdleDetection();
-#endif
-			base.TestFixtureTearDown();
+			await Task.WhenAll(
+				_nodes[0].Shutdown(),
+				_nodes[1].Shutdown(),
+				_nodes[2].Shutdown());
+
+			await base.TestFixtureTearDown();
 		}
 
 		protected static void WaitIdle() {
-			QueueStatsCollector.WaitIdle();
 		}
 
 		protected MiniClusterNode GetMaster() {
