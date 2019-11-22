@@ -22,4 +22,4 @@ EXPOSE 2113/tcp
 EXPOSE 2114/tcp
 
 ENTRYPOINT ["dotnet", "EventStore.ClusterNode.dll"]
-CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0", "--certificate-file", "/eventstore/dev-cert.pfx"]
+CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]

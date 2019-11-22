@@ -121,14 +121,11 @@ namespace EventStore.ClusterNode {
 
 			RegisterWebControllers(enabledNodeSubsystems, opts);
 
-			// TODO(jen20): ABSOLUTELY remove this before merging the `grpc` branch. This is solely for
-			// 			 	interim testing. Load a development certificate and use it for Kestrel.
-			var unsafeDevCert = new X509Certificate2("dev-cert.pfx", "", X509KeyStorageFlags.MachineKeySet);
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
 					o.Listen(opts.ExtIp, opts.ExtHttpPort,
-						listenOptions => listenOptions.UseHttps(unsafeDevCert));
+						listenOptions => listenOptions.UseHttps());
 				})
 				.UseStartup(new ClusterVNodeStartup(_node))
 				.ConfigureLogging(logging =>
