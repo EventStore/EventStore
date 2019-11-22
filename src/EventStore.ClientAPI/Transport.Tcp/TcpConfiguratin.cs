@@ -1,6 +1,6 @@
 ﻿namespace EventStore.ClientAPI.Transport.Tcp {
 	internal static class TcpConfiguration {
-		public const int SocketCloseTimeoutMs = 500;
+		public const int SocketCloseTimeoutSecs = 1;
 
 		public const int AcceptBacklogCount = 1000;
 		public const int ConcurrentAccepts = 1;
