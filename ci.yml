@@ -124,3 +124,25 @@ jobs:
     inputs:
       artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
+
+- job: docker
+  strategy:
+    matrix:
+      bionic:
+        CONTAINER_RUNTIME: bionic
+        RUNTIME: linux-x64
+      buster:
+        CONTAINER_RUNTIME: buster-slim
+        RUNTIME: linux-x64
+
+  displayName: Docker
+  timeoutInMinutes: 30
+  pool:
+    vmImage: 'ubuntu-18.04'
+  steps:
+  - bash: |
+      docker build -t eventstore \
+        --build-arg RUNTIME=$(RUNTIME) \
+        --build-arg CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) \
+        .
+    displayName: Docker Build
