@@ -535,7 +535,7 @@ namespace EventStore.ClientAPI.Embedded {
 			} else if (checkpointInterval <= 0) {
 				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
 			}
-			
+
 			var source =
 				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -776,28 +776,28 @@ namespace EventStore.ClientAPI.Embedded {
 			UserCredentials userCredentials = null) {
 			return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false,
 				GetUserCredentials(_settings, userCredentials)).ContinueWith(t => {
-					if (t.Exception != null)
-						throw t.Exception.InnerException;
+				if (t.Exception != null)
+					throw t.Exception.InnerException;
 
-					var res = t.Result;
-					switch (res.Status) {
-						case EventReadStatus.Success:
-							if (res.Event == null)
-								throw new Exception("Event is null while operation result is Success.");
-							var evnt = res.Event.Value.OriginalEvent;
-							if (evnt == null)
-								return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-							return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
-						case EventReadStatus.NotFound:
-						case EventReadStatus.NoStream:
+				var res = t.Result;
+				switch (res.Status) {
+					case EventReadStatus.Success:
+						if (res.Event == null)
+							throw new Exception("Event is null while operation result is Success.");
+						var evnt = res.Event.Value.OriginalEvent;
+						if (evnt == null)
 							return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-						case EventReadStatus.StreamDeleted:
-							return new RawStreamMetadataResult(stream, true, long.MaxValue, Empty.ByteArray);
-						default:
-							throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.",
-								res.Status));
-					}
-				});
+						return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
+					case EventReadStatus.NotFound:
+					case EventReadStatus.NoStream:
+						return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
+					case EventReadStatus.StreamDeleted:
+						return new RawStreamMetadataResult(stream, true, long.MaxValue, Empty.ByteArray);
+					default:
+						throw new ArgumentOutOfRangeException(string.Format("Unexpected ReadEventResult: {0}.",
+							res.Status));
+				}
+			});
 		}
 
 		public Task SetSystemSettingsAsync(SystemSettings settings, UserCredentials userCredentials = null) {

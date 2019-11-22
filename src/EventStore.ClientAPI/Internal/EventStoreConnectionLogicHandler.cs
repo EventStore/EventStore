@@ -87,18 +87,18 @@ namespace EventStore.ClientAPI.Internal {
 
 			switch (_state) {
 				case ConnectionState.Init: {
-						_endPointDiscoverer = endPointDiscoverer;
-						_state = ConnectionState.Connecting;
-						_connectingPhase = ConnectingPhase.Reconnecting;
-						DiscoverEndPoint(task);
-						break;
-					}
+					_endPointDiscoverer = endPointDiscoverer;
+					_state = ConnectionState.Connecting;
+					_connectingPhase = ConnectingPhase.Reconnecting;
+					DiscoverEndPoint(task);
+					break;
+				}
 				case ConnectionState.Connecting:
 				case ConnectionState.Connected: {
-						task.SetException(new InvalidOperationException(
-							string.Format("EventStoreConnection '{0}' is already active.", _esConnection.ConnectionName)));
-						break;
-					}
+					task.SetException(new InvalidOperationException(
+						string.Format("EventStoreConnection '{0}' is already active.", _esConnection.ConnectionName)));
+					break;
+				}
 				case ConnectionState.Closed:
 					task.SetException(new ObjectDisposedException(_esConnection.ConnectionName));
 					break;
@@ -106,7 +106,6 @@ namespace EventStore.ClientAPI.Internal {
 					task.SetException(new Exception(string.Format("Unknown state: {0}", _state)));
 					break;
 			}
-
 		}
 
 		private void DiscoverEndPoint(TaskCompletionSource<object> completionTask) {
@@ -146,12 +145,15 @@ namespace EventStore.ClientAPI.Internal {
 			LogDebug("EstablishTcpConnection to [{0}]", endPoint);
 
 			if (_state != ConnectionState.Connecting) {
-				LogDebug("EstablishTcpConnection to [{0}] skipped because expected state 'Connecting', was '{1}'", endPoint, _state);
+				LogDebug("EstablishTcpConnection to [{0}] skipped because expected state 'Connecting', was '{1}'",
+					endPoint, _state);
 				return;
 			}
 
 			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) {
-				LogDebug("EstablishTcpConnection to [{0}] skipped because expected connecting phase 'EndPointDiscovery', was '{1}'", endPoint, _connectingPhase);
+				LogDebug(
+					"EstablishTcpConnection to [{0}] skipped because expected connecting phase 'EndPointDiscovery', was '{1}'",
+					endPoint, _connectingPhase);
 				return;
 			}
 
@@ -283,7 +285,8 @@ namespace EventStore.ClientAPI.Internal {
 			_identifyInfo = new IdentifyInfo(Guid.NewGuid(), _stopwatch.Elapsed);
 			var dto = new ClientMessage.IdentifyClient(ClientVersion, _esConnection.ConnectionName);
 			if (_settings.VerboseLogging) {
-				_settings.Log.Debug($"IdentifyClient; Client Version: {ClientVersion}, ConnectionName: {_esConnection.ConnectionName}, ");
+				_settings.Log.Debug(
+					$"IdentifyClient; Client Version: {ClientVersion}, ConnectionName: {_esConnection.ConnectionName}, ");
 			}
 
 			_connection.EnqueueSend(new TcpPackage(TcpCommand.IdentifyClient, _identifyInfo.CorrelationId,
@@ -312,50 +315,50 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Init:
 					break;
 				case ConnectionState.Connecting: {
-						if (_connectingPhase == ConnectingPhase.Reconnecting &&
-							_stopwatch.Elapsed - _reconnInfo.TimeStamp >= _settings.ReconnectionDelay) {
-							LogDebug("TimerTick checking reconnection...");
+					if (_connectingPhase == ConnectingPhase.Reconnecting &&
+					    _stopwatch.Elapsed - _reconnInfo.TimeStamp >= _settings.ReconnectionDelay) {
+						LogDebug("TimerTick checking reconnection...");
 
-							_reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt + 1, _stopwatch.Elapsed);
-							if (_settings.MaxReconnections >= 0 &&
-								_reconnInfo.ReconnectionAttempt > _settings.MaxReconnections)
-								CloseConnection("Reconnection limit reached.");
-							else {
-								RaiseReconnecting();
-								_operations.CheckTimeoutsAndRetry(_connection);
-								_subscriptions.CheckTimeoutsAndRetry(_connection);
-								DiscoverEndPoint(null);
-							}
-						}
-
-						if (_connectingPhase == ConnectingPhase.Authentication &&
-							_stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout) {
-							RaiseAuthenticationFailed("Authentication timed out.");
-							GoToIdentifyState();
-						}
-
-						if (_connectingPhase == ConnectingPhase.Identification &&
-							_stopwatch.Elapsed - _identifyInfo.TimeStamp >= _settings.OperationTimeout) {
-							const string msg = "Timed out waiting for client to be identified";
-							LogDebug(msg);
-							CloseTcpConnection(msg);
-						}
-
-						if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
-							ManageHeartbeats();
-						break;
-					}
-				case ConnectionState.Connected: {
-						// operations timeouts are checked only if connection is established and check period time passed
-						if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod) {
+						_reconnInfo = new ReconnectionInfo(_reconnInfo.ReconnectionAttempt + 1, _stopwatch.Elapsed);
+						if (_settings.MaxReconnections >= 0 &&
+						    _reconnInfo.ReconnectionAttempt > _settings.MaxReconnections)
+							CloseConnection("Reconnection limit reached.");
+						else {
+							RaiseReconnecting();
 							_operations.CheckTimeoutsAndRetry(_connection);
 							_subscriptions.CheckTimeoutsAndRetry(_connection);
-							_lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+							DiscoverEndPoint(null);
 						}
-
-						ManageHeartbeats();
-						break;
 					}
+
+					if (_connectingPhase == ConnectingPhase.Authentication &&
+					    _stopwatch.Elapsed - _authInfo.TimeStamp >= _settings.OperationTimeout) {
+						RaiseAuthenticationFailed("Authentication timed out.");
+						GoToIdentifyState();
+					}
+
+					if (_connectingPhase == ConnectingPhase.Identification &&
+					    _stopwatch.Elapsed - _identifyInfo.TimeStamp >= _settings.OperationTimeout) {
+						const string msg = "Timed out waiting for client to be identified";
+						LogDebug(msg);
+						CloseTcpConnection(msg);
+					}
+
+					if (_connectingPhase > ConnectingPhase.ConnectionEstablishing)
+						ManageHeartbeats();
+					break;
+				}
+				case ConnectionState.Connected: {
+					// operations timeouts are checked only if connection is established and check period time passed
+					if (_stopwatch.Elapsed - _lastTimeoutsTimeStamp >= _settings.OperationTimeoutCheckPeriod) {
+						_operations.CheckTimeoutsAndRetry(_connection);
+						_subscriptions.CheckTimeoutsAndRetry(_connection);
+						_lastTimeoutsTimeStamp = _stopwatch.Elapsed;
+					}
+
+					ManageHeartbeats();
+					break;
+				}
 				case ConnectionState.Closed:
 					break;
 				default:
@@ -453,8 +456,8 @@ namespace EventStore.ClientAPI.Internal {
 				case ConnectionState.Connecting:
 				case ConnectionState.Connected:
 					var operation = new VolatileFilteredSubscriptionOperation(_settings.Log, msg.Source, msg.StreamId,
-						msg.ResolveLinkTos, msg.CheckpointInterval, msg.Filter, msg.UserCredentials, 
-						msg.EventAppeared, msg.CheckpointReached, msg.SubscriptionDropped, _settings.VerboseLogging, 
+						msg.ResolveLinkTos, msg.CheckpointInterval, msg.Filter, msg.UserCredentials,
+						msg.EventAppeared, msg.CheckpointReached, msg.SubscriptionDropped, _settings.VerboseLogging,
 						() => _connection);
 					LogDebug("StartSubscription {4} {0}, {1}, {2}, {3}.", operation.GetType().Name, operation,
 						msg.MaxRetries, msg.Timeout, _state == ConnectionState.Connected ? "fire" : "enqueue");
@@ -520,8 +523,8 @@ namespace EventStore.ClientAPI.Internal {
 
 			if (package.Command == TcpCommand.Authenticated || package.Command == TcpCommand.NotAuthenticated) {
 				if (_state == ConnectionState.Connecting
-					&& _connectingPhase == ConnectingPhase.Authentication
-					&& _authInfo.CorrelationId == package.CorrelationId) {
+				    && _connectingPhase == ConnectingPhase.Authentication
+				    && _authInfo.CorrelationId == package.CorrelationId) {
 					if (package.Command == TcpCommand.NotAuthenticated)
 						RaiseAuthenticationFailed("Not authenticated");
 
@@ -532,7 +535,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			if (package.Command == TcpCommand.ClientIdentified) {
 				if (_state == ConnectionState.Connecting
-					&& _identifyInfo.CorrelationId == package.CorrelationId) {
+				    && _identifyInfo.CorrelationId == package.CorrelationId) {
 					GoToConnectedState();
 					return;
 				}

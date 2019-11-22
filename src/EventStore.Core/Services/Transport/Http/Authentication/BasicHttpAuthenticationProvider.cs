@@ -18,10 +18,10 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			var entity = message.Entity;
 
 			if (!AuthenticationHeaderValue.TryParse(
-					entity.Request.GetHeaderValues("authorization"),
-					out var authenticationHeader)
-				|| authenticationHeader.Scheme != "Basic"
-				|| !TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
+				    entity.Request.GetHeaderValues("authorization"),
+				    out var authenticationHeader)
+			    || authenticationHeader.Scheme != "Basic"
+			    || !TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
 				return false;
 			}
 
@@ -32,7 +32,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 		private static bool TryDecodeCredential(string value, out string username, out string password) {
 			username = password = default;
-			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':'); // TODO: JOB Use Convert.TryFromBase64String when in dotnet core 3.0
+
+			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':');
 			if (parts.Length != 2) {
 				return false;
 			}

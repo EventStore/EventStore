@@ -1,10 +1,10 @@
-﻿using EventStore.Core.Bus;
+﻿using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Messages;
-using NLog.Fluent;
 
 namespace EventStore.Core.Services.Transport.Http {
-	class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage> {
+	internal class IncomingHttpRequestAuthenticationManager : IHandle<IncomingHttpRequestMessage> {
 		private readonly HttpAuthenticationProvider[] _providers;
 
 		public IncomingHttpRequestAuthenticationManager(HttpAuthenticationProvider[] providers) {
@@ -22,7 +22,6 @@ namespace EventStore.Core.Services.Transport.Http {
 						return;
 				}
 			} catch {
-				// TODO: JPB Log this as an error? Warning?
 			}
 
 			HttpAuthenticationProvider.ReplyUnauthorized(message.Entity);

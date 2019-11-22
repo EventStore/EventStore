@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 [assembly: AssemblyTitle("EventStore.Core")]
 [assembly: AssemblyDescription("")]
