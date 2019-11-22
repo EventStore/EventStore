@@ -1,18 +1,53 @@
+ARG CONTAINER_RUNTIME=bionic
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic AS build
-WORKDIR /es
+ARG RUNTIME=linux-x64
 
-COPY ./ .
-RUN dotnet restore ./src/EventStore.sln
+WORKDIR /build/ci
 
-WORKDIR /es/src
-RUN dotnet publish -c Debug -o ../../out
+COPY ./ci ./
 
-WORKDIR /out
-RUN ls -la
+WORKDIR /build/src
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-bionic AS dest
-WORKDIR /eventstore
-COPY --from=build /out/ ./
+COPY ./src/EventStore.sln ./src/*/*.csproj ./src/Directory.Build.* ./
+
+RUN for file in $(ls *.csproj); do mkdir -p ./${file%.*}/ && mv $file ./${file%.*}/; done
+
+RUN dotnet restore --runtime=${RUNTIME}
+
+COPY ./src .
+
+RUN dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --framework=netcoreapp3.1
+
+RUN find ./ -maxdepth 1 -type d -name "*.Tests" -print0 | \
+    xargs -0 -n1 dotnet test --no-restore --blame --configuration=Release \
+    --verbosity=normal --logger=trx --runtime=${RUNTIME} --settings ../ci/ci.runsettings
+
+RUN dotnet publish --configuration=Release --no-build --runtime=${RUNTIME} --self-contained \
+     --framework=netcoreapp3.1 --output /publish /p:PublishTrimmed=true EventStore.ClusterNode
+
+FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-${CONTAINER_RUNTIME} AS runtime
+ARG UID=1000
+ARG GID=1000
+
+WORKDIR /opt/eventstore
+
+RUN addgroup --gid ${GID} "eventstore" && \
+    adduser \
+    --disabled-password \
+    --gecos "" \
+    --ingroup "eventstore" \
+    --no-create-home \
+    --uid ${UID} \
+    "eventstore"
+
+COPY --from=build /publish ./
+
+RUN mkdir -p /var/lib/eventstore && \
+    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore
+
+USER eventstore
+
+VOLUME /var/lib/eventstore
 
 EXPOSE 1112/tcp
 EXPOSE 1113/tcp
@@ -21,5 +56,5 @@ EXPOSE 2112/tcp
 EXPOSE 2113/tcp
 EXPOSE 2114/tcp
 
-ENTRYPOINT ["dotnet", "EventStore.ClusterNode.dll"]
+ENTRYPOINT ["/opt/eventstore/EventStore.ClusterNode"]
 CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]
