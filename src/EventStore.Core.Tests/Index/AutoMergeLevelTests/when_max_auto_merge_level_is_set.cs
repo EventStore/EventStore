@@ -11,7 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 	[TestFixture]
-	public class when_max_auto_merge_level_is_set : SpecificationWithDirectoryPerTestFixture {
+	public abstract class when_max_auto_merge_level_is_set : SpecificationWithDirectoryPerTestFixture {
 		protected readonly int _maxAutoMergeLevel;
 		protected string _filename;
 		protected IndexMap _map;
@@ -52,14 +52,14 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
 			_result.MergedMap.Dispose(TimeSpan.FromMilliseconds(100));
 			_map.Dispose(TimeSpan.FromMilliseconds(100));
 			File.Delete(_filename);
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		protected Tuple<string, bool> RecordExistsAt(IndexEntry arg) {

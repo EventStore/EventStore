@@ -20,42 +20,43 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected InMemoryBus _publisher = new InMemoryBus("publisher");
 		protected FakeIndexCommitter _indexCommitter = new FakeIndexCommitter();
 		protected ITableIndex _tableIndex = new FakeTableIndex();
+		private QueueStatsManager _queueStatsManager = new QueueStatsManager();
 
 		[Test]
 		public void null_index_committer_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(null, _publisher,
-				_replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex));
+				_replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void null_publisher_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, null,
-				_replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex));
+				_replicationCheckpoint, _writerCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void null_writer_checkpoint_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				_replicationCheckpoint, null, _commitCount, _tableIndex));
+				_replicationCheckpoint, null, _commitCount, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void null_replication_checkpoint_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
 				new IndexCommitterService(_indexCommitter, _publisher, null, _writerCheckpoint, _commitCount,
-					_tableIndex));
+					_tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void commit_count_of_zero_throws_argument_out_of_range_exception() {
 			Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				_replicationCheckpoint, _writerCheckpoint, 0, _tableIndex));
+				_replicationCheckpoint, _writerCheckpoint, 0, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void negative_commit_count_throws_argument_out_of_range_exception() {
 			Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				_replicationCheckpoint, _writerCheckpoint, -1, _tableIndex));
+				_replicationCheckpoint, _writerCheckpoint, -1, _tableIndex, _queueStatsManager));
 		}
 	}
 }

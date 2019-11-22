@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Bus {
 	public class when_publishing_to_queued_handler_mres_before_starting :
 		when_publishing_to_queued_handler_before_starting {
 		public when_publishing_to_queued_handler_mres_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)) {
 		}
 	}
 
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Bus {
 	public class when_publishing_to_queued_handler_autoreset_before_starting :
 		when_publishing_to_queued_handler_before_starting {
 		public when_publishing_to_queued_handler_autoreset_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, false, null, timeout)
+			: base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, new QueueStatsManager(), false, null, timeout)
 			) {
 		}
 	}
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Bus {
 	public class when_publishing_to_queued_handler_sleep_before_starting :
 		when_publishing_to_queued_handler_before_starting {
 		public when_publishing_to_queued_handler_sleep_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, new QueueStatsManager(), false, null, timeout)) {
 		}
 	}
 
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Bus {
 	public class when_publishing_to_queued_handler_pulse_before_starting :
 		when_publishing_to_queued_handler_before_starting {
 		public when_publishing_to_queued_handler_pulse_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, new QueueStatsManager(), false, null, timeout)) {
 		}
 	}
 }

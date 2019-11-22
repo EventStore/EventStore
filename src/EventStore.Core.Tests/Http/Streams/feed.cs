@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
-using System.Xml;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
 
@@ -23,34 +22,34 @@ namespace EventStore.Core.Tests.Http.Streams {
 		public abstract class SpecificationWithLongFeed : with_admin_user {
 			protected int _numberOfEvents;
 
-			protected override void Given() {
+			protected override async Task Given() {
 				_numberOfEvents = 25;
 				for (var i = 0; i < _numberOfEvents; i++) {
-					PostEvent(i);
+					await PostEvent(i);
 				}
 			}
 
-			protected string PostEvent(int i) {
-				var response = MakeArrayEventsPost(
+			protected async Task<string> PostEvent(int i) {
+				var response = await MakeArrayEventsPost(
 					TestStream,
-					new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {Number = i}}});
+					new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Number = i } } });
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-				return response.Headers[HttpResponseHeader.Location];
+				return response.Headers.GetLocationAsString();
 			}
 
 			protected string GetLink(JObject feed, string relation) {
 				var rel = (from JObject link in feed["links"]
-					from JProperty attr in link
-					where attr.Name == "relation" && (string)attr.Value == relation
-					select link).SingleOrDefault();
+						   from JProperty attr in link
+						   where attr.Name == "relation" && (string)attr.Value == relation
+						   select link).SingleOrDefault();
 				return (rel == null) ? (string)null : (string)rel["uri"];
 			}
 		}
 
 		[TestFixture, Category("LongRunning")]
 		public class when_posting_multiple_events : SpecificationWithLongFeed {
-			protected override void When() {
-				GetJson<JObject>(TestStream, ContentType.AtomJson);
+			protected override Task When() {
+				return GetJson<JObject>(TestStream, ContentType.AtomJson);
 			}
 
 			[Test]
@@ -63,8 +62,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		public class when_retrieving_feed_head : SpecificationWithLongFeed {
 			private JObject _feed;
 
-			protected override void When() {
-				_feed = GetJson<JObject>(TestStream, ContentType.AtomJson);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson);
 			}
 
 			[Test]
@@ -108,11 +107,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private string _prefix;
 
-			protected override void When() {
+			protected override async Task When() {
 				_prefix = "testprefix";
 				var headers = new NameValueCollection();
 				headers.Add("X-Forwarded-Prefix", _prefix);
-				_feed = GetJson<JObject>(TestStream, ContentType.AtomJson, headers: headers);
+				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson, headers: headers);
 			}
 
 			[Test]
@@ -157,14 +156,14 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _head;
 			private string _previous;
 
-			protected override void Given() {
-				base.Given();
-				_head = GetJson<JObject>(TestStream, ContentType.AtomJson);
+			protected override async Task Given() {
+				await base.Given();
+				_head = await GetJson<JObject>(TestStream, ContentType.AtomJson);
 				_previous = GetLink(_head, "previous");
 			}
 
-			protected override void When() {
-				_feed = GetJson<JObject>(_previous, ContentType.AtomJson);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(_previous, ContentType.AtomJson);
 			}
 
 			[Test]
@@ -209,7 +208,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			[Test]
 			public void the_response_is_not_cachable() {
-				Assert.AreEqual("max-age=0, no-cache, must-revalidate", _lastResponse.Headers["Cache-Control"]);
+				Assert.AreEqual(CacheControlHeaderValue.Parse("max-age=0, no-cache, must-revalidate"),
+					_lastResponse.Headers.CacheControl);
 			}
 		}
 
@@ -219,8 +219,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -250,8 +250,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -294,38 +294,38 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected string LinkedStreamName;
 			protected string StreamName;
 
-			protected override void Given() {
+			protected override async Task Given() {
 				var creds = DefaultData.AdminCredentials;
 				LinkedStreamName = Guid.NewGuid().ToString();
 				StreamName = Guid.NewGuid() + "@" + Guid.NewGuid() + "@";
 				using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
-					conn.ConnectAsync().Wait();
-					conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+					await conn.ConnectAsync();
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
 								new byte[0]))
-						.Wait();
-					conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+;
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
 								new byte[0]))
-						.Wait();
-					conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
+;
+					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
 								new byte[0]))
-						.Wait();
-					conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+;
+					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-							Encoding.UTF8.GetBytes("0@" + StreamName), new byte[0])).Wait();
-					conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
+							Encoding.UTF8.GetBytes("0@" + StreamName), new byte[0]));
+					await conn.AppendToStreamAsync(LinkedStreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo, false,
-							Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0])).Wait();
+							Encoding.UTF8.GetBytes("1@" + StreamName), new byte[0]));
 				}
 			}
 
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -373,8 +373,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10", accept: ContentType.Json);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -392,8 +392,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=rich",
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=rich",
 					accept: ContentType.Json);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
@@ -410,8 +410,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private XDocument _feed;
 			private XElement[] _entries;
 
-			protected override void When() {
-				_feed = GetAtomXml(MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content"));
+			protected override async Task When() {
+				_feed = await GetAtomXml(MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content"));
 				_entries = _feed.GetEntries();
 			}
 
@@ -441,9 +441,9 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
+			protected override async Task When() {
 				var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/forward/10", "embed=content");
-				_feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
+				_feed = await GetJson<JObject>(uri.ToString(), accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -473,8 +473,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
-				_feed = GetJson<JObject>("/streams/" + LinkedStreamName + "/0/backward/1", accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/backward/1", accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -506,9 +506,9 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private JObject _feed;
 			private List<JToken> _entries;
 
-			protected override void When() {
+			protected override async Task When() {
 				var uri = MakeUrl("/streams/" + LinkedStreamName + "/0/backward/1", "embed=content");
-				_feed = GetJson<JObject>(uri.ToString(), accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
+				_feed = await GetJson<JObject>(uri.ToString(), accept: ContentType.Json, credentials: DefaultData.AdminNetworkCredentials);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}
 
@@ -539,19 +539,19 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private string _previous;
 			private string _lastEventLocation;
 
-			protected override void Given() {
-				base.Given();
-				_head = GetJson<JObject>(TestStream, ContentType.AtomJson);
+			protected override async Task Given() {
+				await base.Given();
+				_head = await GetJson<JObject>(TestStream, ContentType.AtomJson);
 				Console.WriteLine(new string('*', 60));
 				Console.WriteLine(_head);
 				Console.WriteLine(TestStream);
 				Console.WriteLine(new string('*', 60));
 				_previous = GetLink(_head, "previous");
-				_lastEventLocation = PostEvent(-1);
+				_lastEventLocation = await PostEvent(-1);
 			}
 
-			protected override void When() {
-				_feed = GetJson<JObject>(_previous, ContentType.AtomJson);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(_previous, ContentType.AtomJson);
 			}
 
 			[Test]
@@ -561,7 +561,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 			[Test]
 			public void returns_a_feed_with_a_single_entry_referring_to_the_last_event() {
-				HelperExtensions.AssertJson(new {entries = new[] {new {Id = _lastEventLocation}}}, _feed);
+				HelperExtensions.AssertJson(new { entries = new[] { new { Id = _lastEventLocation } } }, _feed);
 			}
 		}
 
@@ -571,8 +571,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 				SpecificationWithLongFeed {
 			private JObject _feed;
 
-			protected override void When() {
-				_feed = GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents - 1),
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents - 1),
 					accept: ContentType.AtomJson);
 			}
 
@@ -588,8 +588,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 				SpecificationWithLongFeed {
 			private JObject _feed;
 
-			protected override void When() {
-				_feed = GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents + 1),
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + (_numberOfEvents + 1),
 					accept: ContentType.AtomJson);
 			}
 
@@ -605,8 +605,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 				SpecificationWithLongFeed {
 			private JObject _feed;
 
-			protected override void When() {
-				_feed = GetJson<JObject>(TestStream + "/0/forward/" + _numberOfEvents, accept: ContentType.AtomJson);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(TestStream + "/0/forward/" + _numberOfEvents, accept: ContentType.AtomJson);
 			}
 
 			[Test]
@@ -619,12 +619,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		public class when_reading_a_stream_forward_with_etag_in_header : SpecificationWithLongFeed {
 			private JObject _feed;
 
-			protected override void When() {
-				_feed = GetJson<JObject>(TestStream, accept: ContentType.AtomJson);
+			protected override async Task When() {
+				_feed = await GetJson<JObject>(TestStream, accept: ContentType.AtomJson);
 				var etag = _feed.Value<string>("eTag");
-				var headers = new NameValueCollection();
-				headers.Add("If-None-Match", etag);
-				_feed = GetJson<JObject>(TestStream, accept: ContentType.AtomJson, headers: headers);
+				var headers = new NameValueCollection { { "If-None-Match", EntityTagHeaderValue.Parse($@"""{etag}""").Tag } };
+				_feed = await GetJson<JObject>(TestStream, accept: ContentType.AtomJson, headers: headers);
 			}
 
 			[Test]
@@ -641,7 +640,7 @@ namespace EventStore.Core.Tests.Http {
 		[TestFixture, Category("LongRunning")]
 		public class when_retrieving_feed_head_and_http_advertise_ip_is_set : with_admin_user {
 			private JObject _feed;
-			private IPAddress advertisedAddress = IPAddress.Parse("192.168.10.1");
+			private IPAddress advertisedAddress = IPAddress.Parse("127.0.10.1");
 			private int advertisedPort = 2116;
 
 			protected override MiniNode CreateMiniNode() {
@@ -649,33 +648,33 @@ namespace EventStore.Core.Tests.Http {
 					advertisedExtIPAddress: advertisedAddress, advertisedExtHttpPort: advertisedPort);
 			}
 
-			protected override void Given() {
-				var response = MakeArrayEventsPost(
+			protected override async Task Given() {
+				var response = await MakeArrayEventsPost(
 					TestStream,
-					new[] {new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {Number = 1}}});
+					new[] { new { EventId = Guid.NewGuid(), EventType = "event-type", Data = new { Number = 1 } } });
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			}
 
 			protected string GetLink(JObject feed, string relation) {
 				var rel = (from JObject link in feed["links"]
-					from JProperty attr in link
-					where attr.Name == "relation" && (string)attr.Value == relation
-					select link).SingleOrDefault();
+						   from JProperty attr in link
+						   where attr.Name == "relation" && (string)attr.Value == relation
+						   select link).SingleOrDefault();
 				return (rel == null) ? (string)null : (string)rel["uri"];
 			}
 
 			protected string GetFirstEntryLink(JObject feed) {
 				var rel = (from JObject entry in feed["entries"]
-					from JObject link in entry["links"]
-					from JProperty attr in link
-					where attr.Name == "relation" && (string)attr.Value == "edit"
-					select link).FirstOrDefault();
+						   from JObject link in entry["links"]
+						   from JProperty attr in link
+						   where attr.Name == "relation" && (string)attr.Value == "edit"
+						   select link).FirstOrDefault();
 				return (rel == null) ? (string)null : (string)rel["uri"];
 			}
 
-			protected override void When() {
+			protected override async Task When() {
 				Console.WriteLine("Getting feed");
-				_feed = GetJson<JObject>(TestStream, ContentType.AtomJson);
+				_feed = await GetJson<JObject>(TestStream, ContentType.AtomJson);
 				Console.WriteLine("Feed: {0}", _feed);
 			}
 

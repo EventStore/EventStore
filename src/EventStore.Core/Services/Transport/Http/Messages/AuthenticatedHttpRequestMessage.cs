@@ -9,10 +9,10 @@ namespace EventStore.Core.Services.Transport.Http.Messages {
 			get { return TypeId; }
 		}
 
-		public readonly HttpService HttpService;
+		public readonly IHttpService HttpService;
 		public readonly HttpEntity Entity;
 
-		public AuthenticatedHttpRequestMessage(HttpService httpService, HttpEntity entity) {
+		public AuthenticatedHttpRequestMessage(IHttpService httpService, HttpEntity entity) {
 			HttpService = httpService;
 			Entity = entity;
 		}

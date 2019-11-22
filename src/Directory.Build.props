@@ -12,5 +12,6 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
 		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
+		<LangVersion>8.0</LangVersion>
 	</PropertyGroup>
 </Project>

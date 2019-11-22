@@ -93,10 +93,10 @@ namespace EventStore.Core.Services.Monitoring {
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
 			_timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
+			_systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath);
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath);
 			_timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
 		}
 

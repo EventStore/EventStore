@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
@@ -12,8 +13,8 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 		private IndexMap _map;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_filename = GetFilePathFor("indexfile");
 			_map = IndexMapTestFactory.FromFile(_filename);

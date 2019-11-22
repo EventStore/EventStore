@@ -31,10 +31,8 @@ namespace EventStore.Projections.Core.Tests.Playground {
 				Environment.SetEnvironmentVariable(v.Key, v.Value);
 			}
 
-			var setup = new AppDomainSetup
-				{ApplicationBase = AppDomain.CurrentDomain.BaseDirectory, ConfigurationFile = executable + ".config",};
 			var appDomain = AppDomain.CreateDomain(
-				Path.GetFileNameWithoutExtension(executable), AppDomain.CurrentDomain.Evidence, setup);
+				Path.GetFileNameWithoutExtension(executable));
 			ThreadPool.QueueUserWorkItem(
 				state => {
 					try {

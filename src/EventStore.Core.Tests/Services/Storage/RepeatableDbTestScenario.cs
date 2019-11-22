@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
@@ -30,10 +31,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
 			MaxEntriesInMemTable = maxEntriesInMemTable;
 			_metastreamMaxCount = metastreamMaxCount;
-		}
-
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
 		}
 
 		public void CreateDb(params Rec[] records) {
@@ -74,9 +71,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			DbRes.Db.Close();
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 	}
 }

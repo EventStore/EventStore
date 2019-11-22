@@ -176,45 +176,50 @@ namespace EventStore.Core.Services {
 
 			var hasContentLength = false;
 			// Copy unrestricted headers (including cookies, if any)
-			foreach (var headerKey in srcReq.Headers.AllKeys) {
+			foreach (var headerKey in srcReq.GetHeaderKeys()) {
 				try {
 					switch (headerKey.ToLower()) {
 						case "accept":
-							request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.Accept.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "connection": break;
-						case "content-type": break;
+						case "connection":
+							break;
+						case "content-type":
+							break;
 						case "content-length":
 							hasContentLength = true;
 							break;
 						case "date":
-							request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]);
+							request.Headers.Date = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "expect": break;
+						case "expect":
+							break;
 						case "host":
 							request.Headers.Host = forwardUri.Host;
 							break;
 						case "if-modified-since":
-							request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]);
+							request.Headers.IfModifiedSince = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "proxy-connection": break;
-						case "range": break;
+						case "proxy-connection":
+							break;
+						case "range":
+							break;
 						case "referer":
-							request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]);
+							request.Headers.Referrer = new Uri(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 						case "transfer-encoding":
-							request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.TransferEncoding.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 						case "user-agent":
-							request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.UserAgent.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 
 						default:
-							request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
+							request.Headers.Add(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 					}
 				} catch (System.FormatException) {
-					request.Headers.TryAddWithoutValidation(headerKey, srcReq.Headers[headerKey]);
+					request.Headers.TryAddWithoutValidation(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 				}
 			}
 
@@ -225,8 +230,8 @@ namespace EventStore.Core.Services {
 
 			// Copy content (if content body is allowed)
 			if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
-			    && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
-			    && hasContentLength) {
+				&& !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
+				&& hasContentLength) {
 				var streamContent = new StreamContent(srcReq.InputStream);
 				streamContent.Headers.ContentLength = srcReq.ContentLength64;
 				request.Content = streamContent;

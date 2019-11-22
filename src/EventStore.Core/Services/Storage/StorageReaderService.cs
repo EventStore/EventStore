@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly MultiQueuedHandler _workersMultiHandler;
 
 		public StorageReaderService(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount,
-			ICheckpoint writerCheckpoint) {
+			ICheckpoint writerCheckpoint, QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -53,6 +53,7 @@ namespace EventStore.Core.Services.Storage {
 				_threadCount,
 				queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
 					string.Format("StorageReaderQueue #{0}", queueNum + 1),
+					queueStatsManager,
 					groupName: "StorageReaderQueue",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));

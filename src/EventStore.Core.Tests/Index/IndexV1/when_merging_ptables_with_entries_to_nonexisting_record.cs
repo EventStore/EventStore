@@ -3,6 +3,7 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV2, false)]
@@ -26,8 +27,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			for (int i = 0; i < 4; i++) {
 				_files.Add(GetTempFilePath());
 
@@ -46,13 +47,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -65,8 +66,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}

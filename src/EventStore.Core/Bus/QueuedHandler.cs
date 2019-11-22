@@ -7,6 +7,7 @@ namespace EventStore.Core.Bus {
 		QueuedHandlerMRES,
 		IQueuedHandler {
 		public static IQueuedHandler CreateQueuedHandler(IHandle<Message> consumer, string name,
+			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null, TimeSpan? threadStopWaitTimeout = null, string groupName = null) {
 			//if (IntPtr.Size == 8)
@@ -15,7 +16,7 @@ namespace EventStore.Core.Bus {
 			//    return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
 			//        groupName);
 			//}
-			return new QueuedHandler(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
+			return new QueuedHandler(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
 		}
 
 		public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
@@ -23,12 +24,13 @@ namespace EventStore.Core.Bus {
 
 		QueuedHandler(IHandle<Message> consumer,
 			string name,
+			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
 			string groupName = null)
 			: base(
-				consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
+				consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
 				groupName) {
 		}
 
@@ -37,12 +39,13 @@ namespace EventStore.Core.Bus {
 			IQueuedHandler {
 			public QueueHandlerUsingMpsc(IHandle<Message> consumer,
 				string name,
+				QueueStatsManager queueStatsManager,
 				bool watchSlowMsg = true,
 				TimeSpan? slowMsgThreshold = null,
 				TimeSpan? threadStopWaitTimeout = null,
 				string groupName = null)
 				: base(
-					consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
+					consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
 					groupName) {
 			}
 		}

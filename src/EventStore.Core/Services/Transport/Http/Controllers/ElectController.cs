@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Http;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -9,6 +10,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class ElectController : CommunicationController,
@@ -27,9 +29,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private TimeSpan _operationTimeout;
 		private readonly HttpAsyncClient _client;
 
-		public ElectController(IPublisher publisher) : base(publisher) {
+		public ElectController(IPublisher publisher, HttpMessageHandler httpMessageHandler) : base(publisher) {
 			_operationTimeout = TimeSpan.FromMilliseconds(2000); //TODO make these configurable
-			_client = new HttpAsyncClient(_operationTimeout);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {

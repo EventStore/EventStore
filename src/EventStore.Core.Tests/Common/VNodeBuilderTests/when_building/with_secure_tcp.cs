@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		public override void Given() {
 			var certPath = GetCertificatePath();
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		public override void Given() {
 			_certificate = ssl_connections.GetCertificate();
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[OneTimeSetUp]
 		public void SetUp() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			var internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			var externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder = TestVNodeBuilder.AsSingleNode()

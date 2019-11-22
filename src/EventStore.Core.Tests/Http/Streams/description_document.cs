@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Services.Transport.Http;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
@@ -20,11 +21,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
-		protected override void Given() {
-		}
+		protected override Task Given() => Task.CompletedTask;
 
-		protected override void When() {
-			_descriptionDocument = GetJsonWithoutAcceptHeader<JObject>(TestStream);
+		protected override async Task When() {
+			_descriptionDocument = await GetJsonWithoutAcceptHeader<JObject>(TestStream);
 		}
 
 		[Test]
@@ -45,11 +45,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
-		protected override void Given() {
-		}
+		protected override Task Given() => Task.CompletedTask;
 
-		protected override void When() {
-			_descriptionDocument = GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
+		protected override async Task When() {
+			_descriptionDocument = await GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
 		}
 
 		[Test]
@@ -70,11 +69,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
-		protected override void Given() {
-		}
+		protected override Task Given() => Task.CompletedTask;
 
-		protected override void When() {
-			_descriptionDocument = GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
+		protected override async Task When() {
+			_descriptionDocument = await GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
 			_links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
 		}
 
@@ -125,17 +123,17 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private JToken[] _subscriptions;
 		private string _subscriptionUrl;
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_subscriptionUrl = "/subscriptions/" + TestStreamName + "/groupname334";
-			MakeJsonPut(
+			await MakeJsonPut(
 				_subscriptionUrl,
 				new {
 					ResolveLinkTos = true
 				}, DefaultData.AdminNetworkCredentials);
 		}
 
-		protected override void When() {
-			_descriptionDocument = GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
+		protected override async Task When() {
+			_descriptionDocument = await GetJson<JObject>(TestStream, "application/vnd.eventstore.streamdesc+json", null);
 			_links = _descriptionDocument != null ? _descriptionDocument["_links"].ToList() : new List<JToken>();
 			_subscriptions = _descriptionDocument["_links"]["streamSubscription"].Values<JToken>().ToArray();
 		}

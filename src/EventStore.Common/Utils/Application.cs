@@ -19,7 +19,8 @@ namespace EventStore.Common.Utils {
 
 		protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
 
-		private static Action<int> _exit;
+		private static Action<int> _exit = exitCode => {
+		};
 		private static int _exited;
 
 		private static readonly HashSet<string> _defines = new HashSet<string>();
@@ -56,10 +57,7 @@ namespace EventStore.Common.Utils {
 				else
 					Log.Info("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
 			}
-
-			var exit = _exit;
-			if (exit != null)
-				exit(exitCode);
+			_exit?.Invoke(exitCode);
 		}
 
 		public static void AddDefines(IEnumerable<string> defines) {

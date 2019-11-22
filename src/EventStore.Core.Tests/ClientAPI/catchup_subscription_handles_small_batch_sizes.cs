@@ -19,16 +19,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private IEventStoreConnection _conn;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName, inMemDb: true);
-			_node.Start();
+			await _node.Start();
 
 			_conn = BuildConnection(_node);
-			_conn.ConnectAsync().Wait();
+			await _conn.ConnectAsync();
 			//Create 80000 events
 			for (var i = 0; i < 80; i++) {
-				_conn.AppendToStreamAsync(_streamName, ExpectedVersion.Any, CreateThousandEvents()).Wait();
+				await _conn.AppendToStreamAsync(_streamName, ExpectedVersion.Any, CreateThousandEvents());
 			}
 
 			_settings = new CatchUpSubscriptionSettings(100, 1, false, true, String.Empty);
@@ -45,10 +45,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			_conn.Dispose();
-			_node.Shutdown();
-			base.TestFixtureTearDown();
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {

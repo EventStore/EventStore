@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Threading.Tasks;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_all_foreach_projection {
 	[TestFixture]
@@ -7,14 +8,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 			return false;
 		}
 
-		protected override void Given() {
-			base.Given();
-			PostEvent("stream-1", "type1", "{}");
-			PostEvent("stream-1", "type2", "{}");
-			PostEvent("stream-2", "type1", "{}");
-			PostEvent("stream-2", "type2", "{}");
+		protected override async Task Given() {
+			await base.Given();
+			await PostEvent("stream-1", "type1", "{}");
+			await PostEvent("stream-1", "type2", "{}");
+			await PostEvent("stream-2", "type1", "{}");
+			await PostEvent("stream-2", "type2", "{}");
 			WaitIdle();
-			PostProjection(@"
+			await PostProjection(@"
 fromAll().foreachStream().when({
     $init: function(){return {a:0}},
     type1: function(s,e){s.a++},
@@ -24,22 +25,22 @@ fromAll().foreachStream().when({
 ");
 		}
 
-		protected override void When() {
-			base.When();
-			this.HardDeleteStream("stream-1");
+		protected override async Task When() {
+			await base.When();
+			await HardDeleteStream("stream-1");
 			WaitIdle();
-			PostEvent("stream-2", "type1", "{}");
-			PostEvent("stream-2", "type2", "{}");
-			PostEvent("stream-3", "type1", "{}");
+			await PostEvent("stream-2", "type1", "{}");
+			await PostEvent("stream-2", "type2", "{}");
+			await PostEvent("stream-3", "type1", "{}");
 			WaitIdle();
 		}
 
 		[Test, Category("Network")]
-		public void receives_deleted_notification() {
-			AssertStreamTail(
+		public async Task receives_deleted_notification() {
+			await AssertStreamTail(
 				"$projections-test-projection-stream-1-result", "Result:{\"a\":2}", "Result:{\"a\":2,\"deleted\":1}");
-			AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":4}");
-			AssertStreamTail("$projections-test-projection-stream-3-result", "Result:{\"a\":1}");
+			await AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":4}");
+			await AssertStreamTail("$projections-test-projection-stream-3-result", "Result:{\"a\":1}");
 		}
 	}
 }

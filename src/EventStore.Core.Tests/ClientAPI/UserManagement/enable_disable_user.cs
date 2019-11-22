@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
@@ -6,39 +8,39 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
 	public class enable_disable_user : TestWithUser {
 		[Test]
-		public void disable_empty_username_throws() {
-			Assert.Throws<ArgumentNullException>(() =>
-				_manager.DisableAsync("", new UserCredentials("admin", "changeit")).Wait());
+		public async Task disable_empty_username_throws() {
+			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>
+				_manager.DisableAsync("", new UserCredentials("admin", "changeit")));
 		}
 
 		[Test]
-		public void disable_null_username_throws() {
-			Assert.Throws<ArgumentNullException>(() =>
-				_manager.DisableAsync(null, new UserCredentials("admin", "changeit")).Wait());
+		public async Task disable_null_username_throws() {
+			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>
+				_manager.DisableAsync(null, new UserCredentials("admin", "changeit")));
 		}
 
 		[Test]
-		public void enable_empty_username_throws() {
-			Assert.Throws<ArgumentNullException>(() =>
-				_manager.EnableAsync("", new UserCredentials("admin", "changeit")).Wait());
+		public async Task enable_empty_username_throws() {
+			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>
+				_manager.EnableAsync("", new UserCredentials("admin", "changeit")));
 		}
 
 		[Test]
-		public void enable_null_username_throws() {
-			Assert.Throws<ArgumentNullException>(() =>
-				_manager.EnableAsync(null, new UserCredentials("admin", "changeit")).Wait());
+		public async Task enable_null_username_throws() {
+			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>
+				_manager.EnableAsync(null, new UserCredentials("admin", "changeit")));
 		}
 
 		[Test]
-		public void can_enable_disable_user() {
-			_manager.DisableAsync(_username, new UserCredentials("admin", "changeit")).Wait();
+		public async Task can_enable_disable_user() {
+			await _manager.DisableAsync(_username, new UserCredentials("admin", "changeit"));
 
-			Assert.Throws<AggregateException>(() =>
-				_manager.DisableAsync("foo", new UserCredentials(_username, "password")).Wait());
+			await AssertEx.ThrowsAsync<UserCommandFailedException>(() =>
+				_manager.DisableAsync("foo", new UserCredentials(_username, "password")));
 
-			_manager.EnableAsync(_username, new UserCredentials("admin", "changeit")).Wait();
+			await _manager.EnableAsync(_username, new UserCredentials("admin", "changeit"));
 
-			var c = _manager.GetCurrentUserAsync(new UserCredentials(_username, "password")).Result;
+			var c = await _manager.GetCurrentUserAsync(new UserCredentials(_username, "password"));
 		}
 	}
 }

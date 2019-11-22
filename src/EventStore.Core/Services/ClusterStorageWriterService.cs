@@ -38,8 +38,9 @@ namespace EventStore.Core.Services {
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
 			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager,
 			Func<long> getLastCommitPosition)
-			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager) {
+			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager, queueStatsManager) {
 			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
 
 			_getLastCommitPosition = getLastCommitPosition;

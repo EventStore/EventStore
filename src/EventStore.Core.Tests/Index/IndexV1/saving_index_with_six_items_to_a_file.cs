@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
@@ -24,8 +25,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_filename = GetFilePathFor("indexfile");
 			_tablename = GetTempFilePath();

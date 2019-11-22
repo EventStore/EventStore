@@ -7,9 +7,11 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.Tests.Fakes;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
+	[TestFixture]
 	public class table_index_with_corrupt_index_entries_should : SpecificationWithDirectoryPerTestFixture {
 		private TableIndex _tableIndex;
 		private IndexMap _indexMap;
@@ -18,7 +20,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		public void ConstructTableIndexWithCorruptIndexEntries(byte version, bool skipIndexVerify,
 			bool createForceVerifyFile = false) {
-			base.TestFixtureSetUp();
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
@@ -75,14 +76,16 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_tableIndex.Initialize(long.MaxValue);
 		}
 
-		public override void TestFixtureTearDown() {
+		[TearDown]
+		public void TearDown() {
 			_tableIndex.Close();
-			base.TestFixtureTearDown();
 		}
 
 		private ulong GetOriginalHash(ulong stream, byte version) {
-			if (version == PTableVersions.IndexV1) return stream << 32;
-			else return stream;
+			if (version == PTableVersions.IndexV1)
+				return stream << 32;
+			else
+				return stream;
 		}
 
 		private void CorruptPTableFile(string ptableFile, byte version, string corruptionType) {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
@@ -18,6 +19,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
+using Microsoft.AspNetCore.Hosting;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -45,9 +47,6 @@ namespace EventStore.Core {
 		protected IPEndPoint _internalHttp;
 		protected IPEndPoint _externalHttp;
 
-		protected List<string> _intHttpPrefixes;
-		protected List<string> _extHttpPrefixes;
-		protected bool _addInterfacePrefixes;
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
 		protected int _workerThreads;
@@ -138,6 +137,7 @@ namespace EventStore.Core {
 		private bool _gossipOnSingleNode;
 
 		private bool _readOnlyReplica;
+		private Func<HttpMessageHandler> _createHttpMessageHandler;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -161,9 +161,6 @@ namespace EventStore.Core {
 			_externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
 			_internalHttp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalHttpPortDefault);
 
-			_intHttpPrefixes = new List<string>();
-			_extHttpPrefixes = new List<string>();
-			_addInterfacePrefixes = true;
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
 			_certificate = null;
@@ -659,36 +656,7 @@ namespace EventStore.Core {
 			_workerThreads = count;
 			return this;
 		}
-
-		/// <summary>
-		/// Adds a http prefix for the internal http endpoint
-		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddInternalHttpPrefix(string prefix) {
-			_intHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Adds a http prefix for the external http endpoint
-		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddExternalHttpPrefix(string prefix) {
-			_extHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix)
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DontAddInterfacePrefixes() {
-			_addInterfacePrefixes = false;
-			return this;
-		}
-
+		
 		/// <summary>
 		/// Sets the Server SSL Certificate to be loaded from a file
 		/// </summary>
@@ -751,7 +719,7 @@ namespace EventStore.Core {
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			return this;
 		}
-		
+
 		/// <summary>
 		/// Sets the maximum number of connection operations allowed before a connection is closed.
 		/// </summary>
@@ -1010,8 +978,7 @@ namespace EventStore.Core {
 		/// Disables first level authorization checks on all HTTP endpoints.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableFirstLevelHttpAuthorization()
-		{
+		public VNodeBuilder DisableFirstLevelHttpAuthorization() {
 			_disableFirstLevelHttpAuthorization = true;
 			return this;
 		}
@@ -1236,44 +1203,15 @@ namespace EventStore.Core {
 			return this;
 		}
 
-		private void EnsureHttpPrefixes() {
-			if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-				_intHttpPrefixes = new List<string>();
-			if (_extHttpPrefixes == null || _extHttpPrefixes.IsEmpty())
-				_extHttpPrefixes = new List<string>();
+		/// <summary>
+		/// Determines the factory used to create the <see cref="HttpMessageHandler"/> used by internal http communications. Used for testing.
+		/// </summary>
+		/// <param name="createHttpMessageHandler">the <see cref="HttpMessageHandler"/> factory.</param>
+		/// <returns></returns>
+		public VNodeBuilder WithHttpMessageHandlerFactory(Func<HttpMessageHandler> createHttpMessageHandler) {
+			_createHttpMessageHandler = createHttpMessageHandler;
 
-			if ((_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-			     _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
-				if (_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_intHttpPrefixes.Add(String.Format("http://*:{0}/", _internalHttp.Port));
-				}
-
-				if (_externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_extHttpPrefixes.Add(String.Format("http://*:{0}/", _externalHttp.Port));
-				}
-			} else if (_addInterfacePrefixes) {
-				var intHttpPrefixToAdd = String.Format("http://{0}:{1}/", _internalHttp.Address, _internalHttp.Port);
-				if (!_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
-				intHttpPrefixToAdd = String.Format("http://localhost:{0}/", _internalHttp.Port);
-				if (_internalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
-				var extHttpPrefixToAdd = String.Format("http://{0}:{1}/", _externalHttp.Address, _externalHttp.Port);
-				if (!_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-
-				extHttpPrefixToAdd = String.Format("http://localhost:{0}/", _externalHttp.Port);
-				if (_externalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-			}
+			return this;
 		}
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
@@ -1282,7 +1220,7 @@ namespace EventStore.Core {
 				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
 
 				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
+				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
@@ -1342,7 +1280,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
 		public ClusterVNode Build(IOptions options = null,
 			IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null) {
-			EnsureHttpPrefixes();
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
@@ -1370,8 +1307,6 @@ namespace EventStore.Core {
 				_internalHttp,
 				_externalHttp,
 				_gossipAdvertiseInfo,
-				_intHttpPrefixes.ToArray(),
-				_extHttpPrefixes.ToArray(),
 				_enableTrustedAuth,
 				_certificate,
 				_workerThreads,
@@ -1433,7 +1368,8 @@ namespace EventStore.Core {
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
 				_logFailedAuthenticationAttempts,
-				_readOnlyReplica);
+				_readOnlyReplica,
+				_createHttpMessageHandler);
 
 			var infoController = new InfoController(options, _projectionType);
 
@@ -1464,7 +1400,7 @@ namespace EventStore.Core {
 			} else {
 				if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1) {
 					throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					                    + "Specify gossip seeds using the `GossipSeed` option.");
+										+ "Specify gossip seeds using the `GossipSeed` option.");
 				}
 
 				if (_gossipSeeds == null)
@@ -1519,19 +1455,19 @@ namespace EventStore.Core {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				if (Runtime.IsMono) {
-					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true,
-						initValue: -1);
-				} else {
+				if (!Runtime.IsMono) {
 					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
 						initValue: -1);
 					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
 						cached: true, initValue: -1);
+				} else {
+					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true,
+						initValue: -1);
 				}
 			}
 

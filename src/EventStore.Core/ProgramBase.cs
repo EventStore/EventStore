@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
@@ -13,25 +14,24 @@ using EventStore.Rags;
 
 namespace EventStore.Core {
 	public abstract class ProgramBase<TOptions> where TOptions : class, IOptions, new() {
-// ReSharper disable StaticFieldInGenericType
+		// ReSharper disable StaticFieldInGenericType
 		protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
-// ReSharper restore StaticFieldInGenericType
+		// ReSharper restore StaticFieldInGenericType
 
-		private int _exitCode;
-		private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
+		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
+		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
 
 		protected abstract string GetLogsDirectory(TOptions options);
 		protected abstract bool GetIsStructuredLog(TOptions options);
 		protected abstract string GetComponentName(TOptions options);
 
 		protected abstract void Create(TOptions options);
-		protected abstract void Start();
-		public abstract void Stop();
+		protected abstract Task Start();
+		public abstract Task Stop();
 
-		public void Run(string[] args) {
+		protected ProgramBase(string[] args) {
+			Application.RegisterExitAction(Exit);
 			try {
-				Application.RegisterExitAction(Exit);
-
 				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
 				if (options.Help) {
@@ -40,15 +40,10 @@ namespace EventStore.Core {
 				} else if (options.Version) {
 					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
-					Application.ExitSilent(0, "Normal exit.");
 				} else {
 					PreInit(options);
 					Init(options);
-					CommitSuicideIfInBoehmOrOnBadVersionsOfMono(options);
 					Create(options);
-					Start();
-
-					_exitEvent.Wait();
 				}
 			} catch (OptionException exc) {
 				Console.Error.WriteLine("Error while parsing options:");
@@ -56,6 +51,7 @@ namespace EventStore.Core {
 				Console.Error.WriteLine();
 				Console.Error.WriteLine("Options:");
 				Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
+				_startupSource.SetException(exc);
 			} catch (ApplicationInitializationException ex) {
 				var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
 				if (LogManager.Initialized) {
@@ -63,6 +59,7 @@ namespace EventStore.Core {
 				} else {
 					Console.Error.WriteLine(msg);
 				}
+				_startupSource.SetException(ex);
 			} catch (Exception ex) {
 				var msg = "Unhandled exception while starting application:";
 				if (LogManager.Initialized) {
@@ -72,36 +69,38 @@ namespace EventStore.Core {
 					Console.Error.WriteLine(msg);
 					Console.Error.WriteLine(FormatExceptionMessage(ex));
 				}
+				_startupSource.SetException(ex);
 			} finally {
 				Log.Flush();
 			}
+		}
 
-			Environment.Exit(_exitCode);
+		public async Task<int> Run() {
+			try {
+				await Task.WhenAny(_startupSource.Task, Start());
+				var exitCode = await _exitSource.Task;
+				await Stop();
+
+				return exitCode;
+			} catch (Exception ex) {
+				if (LogManager.Initialized) {
+					Log.FatalException(ex, "{e}", FormatExceptionMessage(ex));
+				} else {
+					Console.Error.WriteLine(ex.Message);
+					Console.Error.WriteLine(FormatExceptionMessage(ex));
+				}
+				
+				return 1;
+			}
 		}
 
 		protected virtual void PreInit(TOptions options) {
 		}
 
-		private void CommitSuicideIfInBoehmOrOnBadVersionsOfMono(TOptions options) {
-			if (!options.Force) {
-				if (GC.MaxGeneration == 0) {
-					Application.Exit(3,
-						"Appears that we are running in mono with boehm GC this is generally not a good idea, please run with sgen instead." +
-						"to run with sgen use mono --gc=sgen. If you really want to run with boehm GC you can use --force to override this error.");
-				}
-
-				if (OS.IsUnix && !(OS.GetRuntimeVersion().StartsWith("5.16.0"))) {
-					Log.Warn(
-						"You appear to be running a version of Mono which is untested and not supported. Only Mono 5.16.0 is supported at this time.");
-				}
-			}
-		}
-
 		private void Exit(int exitCode) {
 			LogManager.Finish();
 
-			_exitCode = exitCode;
-			_exitEvent.Set();
+			_exitSource.TrySetResult(exitCode);
 		}
 
 		protected virtual void OnProgramExit() {

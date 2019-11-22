@@ -44,6 +44,7 @@ namespace EventStore.Core.Bus {
 
 		public QueuedHandlerAutoResetWithMpsc(IHandle<Message> consumer,
 			string name,
+			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
@@ -58,7 +59,7 @@ namespace EventStore.Core.Bus {
 			_threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
 
 			_queueMonitor = QueueMonitor.Default;
-			_queueStats = new QueueStatsCollector(name, groupName);
+			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
 		}
 
 		public Task Start() {

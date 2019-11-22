@@ -16,8 +16,8 @@ namespace EventStore.Transport.Http.Client {
 			ServicePointManager.DefaultConnectionLimit = 500;
 		}
 
-		public HttpAsyncClient(TimeSpan timeout) {
-			_client = new HttpClient();
+		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler httpMessageHandler = null) {
+			_client = httpMessageHandler == null ? new HttpClient() : new HttpClient(httpMessageHandler);
 			_client.Timeout = timeout;
 		}
 
@@ -85,60 +85,46 @@ namespace EventStore.Transport.Http.Client {
 				}
 			}
 
-			var state = new ClientOperationState(request, onSuccess, onException);
-			_client.SendAsync(request).ContinueWith(RequestSent(state));
+			Task.Run(() => SendRequest(request, onSuccess, onException));
 		}
 
 		private void Send(string method, string url, string body, string contentType,
 			IEnumerable<KeyValuePair<string, string>> headers,
 			Action<HttpResponse> onSuccess, Action<Exception> onException) {
-			var request = new HttpRequestMessage();
-			request.Method = new System.Net.Http.HttpMethod(method);
-			request.RequestUri = new Uri(url);
-
 			var bodyBytes = Helper.UTF8NoBom.GetBytes(body);
 			var stream = new MemoryStream(bodyBytes);
-			var content = new StreamContent(stream);
-			content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-			content.Headers.ContentLength = bodyBytes.Length;
-
-			request.Content = content;
+			var request = new HttpRequestMessage {
+				Method = new System.Net.Http.HttpMethod(method),
+				RequestUri = new Uri(url),
+				Content = new StreamContent(stream) {
+					Headers = {
+						ContentType = new MediaTypeHeaderValue(contentType),
+						ContentLength = bodyBytes.Length
+					}
+				}
+			};
 
 			if (headers != null) {
-				foreach (var header in headers) {
-					request.Headers.Add(header.Key, header.Value);
+				foreach (var (key, value) in headers) {
+					request.Headers.Add(key, value);
 				}
 			}
 
-			var state = new ClientOperationState(request, onSuccess, onException);
-			_client.SendAsync(request).ContinueWith(RequestSent(state));
+			Task.Run(() => SendRequest(request, onSuccess, onException));
 		}
 
-		private Action<Task<HttpResponseMessage>> RequestSent(ClientOperationState state) {
-			return task => {
-				try {
-					var responseMsg = task.Result;
-					state.Response = new HttpResponse(responseMsg);
-					responseMsg.Content.ReadAsStringAsync()
-						.ContinueWith(ResponseRead(state));
-				} catch (Exception ex) {
-					state.Dispose();
-					state.OnError(ex);
-				}
-			};
-		}
-
-		private Action<Task<string>> ResponseRead(ClientOperationState state) {
-			return task => {
-				try {
-					state.Response.Body = task.Result;
-					state.Dispose();
-					state.OnSuccess(state.Response);
-				} catch (Exception ex) {
-					state.Dispose();
-					state.OnError(ex);
-				}
-			};
+		private async Task SendRequest(HttpRequestMessage request, Action<HttpResponse> onSuccess, Action<Exception> onException) {
+			try {
+				using var response = await _client.SendAsync(request);
+				onSuccess(new HttpResponse(response) {
+					Body = await response.Content.ReadAsStringAsync()
+				});
+			} catch (Exception ex) {
+				onException(ex);
+				throw;
+			} finally {
+				request.Dispose();
+			}
 		}
 	}
 }
