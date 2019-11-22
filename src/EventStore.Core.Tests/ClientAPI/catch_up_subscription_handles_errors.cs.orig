@@ -24,13 +24,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private IList<ResolvedEvent> _raisedEvents;
 		private bool _liveProcessingStarted;
 		private bool _isDropped;
-<<<<<<< HEAD
 		private TaskCompletionSource<bool> _dropEvent;
 		private TaskCompletionSource<bool> _raisedEventEvent;
-=======
-		private ManualResetEventSlim _dropEvent;
-		private CountdownEvent _raisedEventEvent;
->>>>>>> Implmented FilteredSubscribeToAllFrom
 		private Exception _dropException;
 		private SubscriptionDropReason _dropReason;
 		private EventStoreStreamCatchUpSubscription _subscription;
@@ -46,8 +41,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 =======
 			_dropEvent = new ManualResetEventSlim();
 			_raisedEventEvent = new CountdownEvent(2);
-			;
->>>>>>> Implmented FilteredSubscribeToAllFrom
+
+>>>>>>> Amendments to filtered PR
 			_liveProcessingStarted = false;
 			_isDropped = false;
 			_dropReason = SubscriptionDropReason.Unknown;
@@ -57,13 +52,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_subscription = new EventStoreStreamCatchUpSubscription(_connection, new NoopLogger(), StreamId, null, null,
 				(subscription, ev) => {
 					_raisedEvents.Add(ev);
-<<<<<<< HEAD
 					if (_raisedEvents.Count >= 2) {
 						_raisedEventEvent.TrySetResult(true);
 					}
-=======
-					_raisedEventEvent.Signal();
->>>>>>> Implmented FilteredSubscribeToAllFrom
 					return Task.CompletedTask;
 				},
 				subscription => { _liveProcessingStarted = true; },
@@ -520,13 +511,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _readAllEventsForwardAsync(position, maxCount, resolveLinkTos, userCredentials);
 		}
 
-		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
+			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
-		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
+			int maxSearchWindow, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
@@ -535,13 +526,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			throw new NotImplementedException();
 		}
 
-		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
+			int maxSearchWindow, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
-		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos, Filter filter,
+			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
@@ -593,17 +584,20 @@ namespace EventStore.Core.Tests.ClientAPI {
 			return _subscribeToAllAsync(resolveLinkTos, eventAppeared, subscriptionDropped);
 		}
 
-		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
-			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-			UserCredentials userCredentials = null) {
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared, Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval, Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
-		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter, Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
+			throw new NotImplementedException();
+		}
+
+		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached,
-			int checkpointInterval,
+			Func<EventStoreSubscription, Position, Task> checkpointReached = null,
+			int? checkpointInterval = null,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
@@ -644,23 +638,25 @@ namespace EventStore.Core.Tests.ClientAPI {
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
-		
+
+<<<<<<< HEAD
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint, Filter filter,
+			CatchUpSubscriptionFilteredSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached,
+			int checkpointIntervalMultiplier, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null, Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+=======
 		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
 			Filter filter, CatchUpSubscriptionFilteredSettings settings,
 			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+>>>>>>> Amendments to filtered PR
 			UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 
-		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
-			Filter filter, CatchUpSubscriptionFilteredSettings settings,
-			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached,
-			int checkpointInterval, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
-			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-			UserCredentials userCredentials = null) {
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint, Filter filter,
+			CatchUpSubscriptionFilteredSettings settings, Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared, Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null, UserCredentials userCredentials = null) {
 			throw new NotImplementedException();
 		}
 

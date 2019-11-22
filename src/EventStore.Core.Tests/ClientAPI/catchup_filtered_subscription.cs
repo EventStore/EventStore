@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			_conn = BuildConnection(_node);
 			_conn.ConnectAsync().Wait();
-			_conn.SetStreamMetadataAsync("$all", -1,
+			_conn.SetStreamMetadataAsync(SystemStreams.AllStream, -1,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All),
 				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
 
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
-			var appeared = new CountdownEvent(9);
+			var checkpointReached = new CountdownEvent(10);
 			var eventsSeen = 0;
 
 			var settings = new CatchUpSubscriptionFilteredSettings(
@@ -82,18 +82,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 				filter,
 				settings,
 				(s, e) => {
-					Console.WriteLine("e");
 					eventsSeen++;
 					return Task.CompletedTask;
 				},
 				(s, p) => {
-					Console.WriteLine("x");
-					appeared.Signal();
+					checkpointReached.Signal();
 					return Task.CompletedTask;
 				}, 1);
 
-			if (!appeared.Wait(Timeout)) {
-				Assert.Fail("Checkpoint appeared not called enough times within time limit.");
+			if (!checkpointReached.Wait(Timeout)) {
+				Assert.Fail("Checkpoint reached not called enough times within time limit.");
 			}
 
 			Assert.AreEqual(10, eventsSeen);
@@ -102,16 +100,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void calls_checkpoint_during_live_processing_stage() {
 			var filter = Filter.StreamId.Prefix("stream-a");
-			var appeared = new CountdownEvent(6);
+			var appeared = new CountdownEvent(_testEventsAfter.EvenEvents().Count + 1); // Calls once for switch to live.
 			var eventsSeen = 0;
 			var isLive = false;
 
 			var settings = new CatchUpSubscriptionFilteredSettings(
 				10000,
-				2,
+				1,
 				verboseLogging: false,
 				resolveLinkTos: true,
-				maxSearchWindow: 2,
+				maxSearchWindow: 1,
 				subscriptionName: String.Empty
 			);
 

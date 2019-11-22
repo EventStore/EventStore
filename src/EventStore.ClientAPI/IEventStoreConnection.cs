@@ -532,7 +532,7 @@ namespace EventStore.ClientAPI {
 		/// Using <see cref="Position.Start" /> here will result in missing
 		/// the first event in the stream.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="checkpointIntervalMultiplier">Sets how often the <see cref="checkpointReached" /> is called. It be multiplied by the max search window.</param>
+		/// <param name="checkpointIntervalMultiplier">Sets how often the <see cref="checkpointReached" /> is called. It is multiplied by the max search window.</param>
 		/// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="userCredentials">User credentials to use for the operation.</param>
