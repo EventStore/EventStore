@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
-using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
@@ -189,11 +185,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodes[0].Shutdown(),
 				_nodes[1].Shutdown(),
 				_nodes[2].Shutdown());
-			foreach (var endpoint in _nodeEndpoints) {
-				foreach (var port in endpoint.Ports) {
-					PortsHelper.ReturnPort(port);
-				}
-			}
 			await base.TestFixtureTearDown();
 		}
 

@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Internal;
@@ -22,15 +21,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task should_not_throw_exception_when_server_is_down() {
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
-			try {
-				using (var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType)) {
-					await connection.ConnectAsync();
-				}
-			} finally {
-				{
-					PortsHelper.ReturnPort(port);
-				}
-			}
+			using var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType);
+			await connection.ConnectAsync();
 		}
 
 		//TODO GFY THESE NEED TO BE LOOKED AT IN LINUX
@@ -52,20 +44,15 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
-			try {
-				using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri())) {
-					connection.Closed += (s, e) => closed.TrySetResult(true);
+			using var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri());
+			connection.Closed += (s, e) => closed.TrySetResult(true);
 
-					await connection.ConnectAsync();
+			await connection.ConnectAsync();
 
-					await closed.Task.WithTimeout(
-						TimeSpan.FromSeconds(120)); // TCP connection timeout might be even 60 seconds
+			await closed.Task.WithTimeout(
+				TimeSpan.FromSeconds(120)); // TCP connection timeout might be even 60 seconds
 
-					await AssertEx.ThrowsAsync<ObjectDisposedException>(() => connection.ConnectAsync().WithTimeout());
-				}
-			} finally {
-				PortsHelper.ReturnPort(port);
-			}
+			await AssertEx.ThrowsAsync<ObjectDisposedException>(() => connection.ConnectAsync().WithTimeout());
 		}
 
 		//TODO GFY THIS TEST TIMES OUT IN LINUX.
@@ -85,33 +72,27 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
-			try {
-				using (var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri())) {
-					connection.Closed += (s, e) => closed.TrySetResult(true);
-					connection.Connected += (s, e) =>
-						Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...",
-							e.Connection.ConnectionName, e.RemoteEndPoint);
-					connection.Reconnecting += (s, e) =>
-						Console.WriteLine("EventStoreConnection '{0}': reconnecting...", e.Connection.ConnectionName);
-					connection.Disconnected += (s, e) =>
-						Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...",
-							e.Connection.ConnectionName, e.RemoteEndPoint);
-					connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}",
-						e.Connection.ConnectionName, e.Exception);
+			using var connection = EventStoreConnection.Create(settings, new IPEndPoint(ip, port).ToESTcpUri());
+			connection.Closed += (s, e) => closed.TrySetResult(true);
+			connection.Connected += (s, e) =>
+				Console.WriteLine("EventStoreConnection '{0}': connected to [{1}]...",
+					e.Connection.ConnectionName, e.RemoteEndPoint);
+			connection.Reconnecting += (s, e) =>
+				Console.WriteLine("EventStoreConnection '{0}': reconnecting...", e.Connection.ConnectionName);
+			connection.Disconnected += (s, e) =>
+				Console.WriteLine("EventStoreConnection '{0}': disconnected from [{1}]...",
+					e.Connection.ConnectionName, e.RemoteEndPoint);
+			connection.ErrorOccurred += (s, e) => Console.WriteLine("EventStoreConnection '{0}': error = {1}",
+				e.Connection.ConnectionName, e.Exception);
 
-					await connection.ConnectAsync();
+			await connection.ConnectAsync();
 
-					await closed.Task.WithTimeout(
-						TimeSpan.FromSeconds(120)); // TCP connection timeout might be even 60 seconds
+			await closed.Task.WithTimeout(
+				TimeSpan.FromSeconds(120)); // TCP connection timeout might be even 60 seconds
 
-					await AssertEx.ThrowsAsync<ObjectDisposedException>(() => connection
-						.AppendToStreamAsync("stream", ExpectedVersion.NoStream, TestEvent.NewTestEvent())
-						.WithTimeout());
-				}
-
-			} finally {
-				PortsHelper.ReturnPort(port);
-			}
+			await AssertEx.ThrowsAsync<ObjectDisposedException>(() => connection
+				.AppendToStreamAsync("stream", ExpectedVersion.NoStream, TestEvent.NewTestEvent())
+				.WithTimeout());
 		}
 	}
 

@@ -33,9 +33,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_portableServer.TearDown();
 		}
 
-		[OneTimeTearDown]
-		public void OneTimeTearDown() => PortsHelper.ReturnPort(_serverEndPoint.Port);
-
 		[Test]
 		[Category("Network")]
 		public void start_after_system_message_system_init_published() {
@@ -124,12 +121,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
 			_portableServer = new PortableServer(_serverEndPoint, _timeout);
 		}
-
-		[OneTimeTearDown]
-		public void OneTimeTearDown() {
-			PortsHelper.ReturnPort(_serverEndPoint.Port);
-		}
-
+		
 		[SetUp]
 		public void SetUp() {
 			_portableServer.SetUp();
