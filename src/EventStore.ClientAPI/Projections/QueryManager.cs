@@ -24,7 +24,7 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
 		/// <param name="projectionOperationTimeout">Timeout of projection API operations</param>
 		/// <param name="queryTimeout">Timeout of query execution</param>
-		/// <param name="client">Overrideable HTTP Client Handler</param>
+		/// <param name="httpMessageHandler">Overrideable HTTP Client Handler</param>
 		public QueryManager(ILogger log, EndPoint httpEndPoint, TimeSpan projectionOperationTimeout,
 			TimeSpan queryTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_queryTimeout = queryTimeout;

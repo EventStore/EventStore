@@ -15,9 +15,11 @@ namespace EventStore.ClientAPI.Tests {
 				// ReSharper disable ConditionIsAlwaysTrueOrFalse
 				// ReSharper disable HeuristicUnreachableCode
 #if DEBUG
+				#pragma warning disable 0162
 				if (UseLoggerBridge) {
 					builder = builder.UseCustomLogger(ConsoleLoggerBridge.Default);
 				}
+				#pragma warning restore 0162
 				// ReSharper restore HeuristicUnreachableCode
 				// ReSharper restore ConditionIsAlwaysTrueOrFalse
 #endif

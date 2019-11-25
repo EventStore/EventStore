@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests {
 			where TException : Exception {
 			try {
 				await code();
-			} catch (TException ex) {
+			} catch (TException) {
 				Assert.Fail(message);
 			}
 		}

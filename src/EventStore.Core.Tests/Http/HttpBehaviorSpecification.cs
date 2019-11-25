@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Http {
 		private readonly System.Collections.Generic.List<HttpResponseMessage> _allResponses =
 			new System.Collections.Generic.List<HttpResponseMessage>();
 
-		private string _tag;
+		private string _tag = null;
 		private NetworkCredential _defaultCredentials = null;
 		protected HttpClient _client => _node.HttpClient;
 

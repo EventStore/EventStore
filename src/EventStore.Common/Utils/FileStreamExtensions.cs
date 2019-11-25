@@ -10,7 +10,6 @@ namespace EventStore.Common.Utils {
 	public static class FileStreamExtensions {
 		private static readonly ILogger Log = LogManager.GetLogger("FileStreamExtensions");
 		private static Action<FileStream> FlushSafe;
-		private static Func<FileStream, SafeFileHandle> GetFileHandle;
 
 		[DllImport("kernel32.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

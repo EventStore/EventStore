@@ -17,7 +17,6 @@ namespace EventStore.ClientAPI.ClientOperations {
 		protected readonly ILogger Log;
 		private readonly TaskCompletionSource<TResult> _source;
 		private TResponse _response;
-		private int _completed;
 
 		protected abstract object CreateRequestDto();
 		protected abstract InspectionResult InspectResponse(TResponse response);

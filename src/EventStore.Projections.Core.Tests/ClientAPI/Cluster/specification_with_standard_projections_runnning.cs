@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable 1998
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;

@@ -48,6 +48,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 						_firstEventSource.TrySetResult(e);
 						return Task.CompletedTask;
 					});
+				await _firstEventSource.Task;
 			}
 
 			public override Task DisposeAsync() {

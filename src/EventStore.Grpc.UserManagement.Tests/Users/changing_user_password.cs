@@ -13,7 +13,6 @@ namespace EventStore.Grpc.Users {
 
 		public static IEnumerable<object[]> NullInputCases() {
 			var loginName = "ouro";
-			var fullName = "greg";
 			var currentPassword = "foofoofoo";
 			var newPassword = "foofoofoofoofoofoo";
 
@@ -33,7 +32,6 @@ namespace EventStore.Grpc.Users {
 
 		public static IEnumerable<object[]> EmptyInputCases() {
 			var loginName = "ouro";
-			var fullName = "greg";
 			var currentPassword = "foofoofoo";
 			var newPassword = "foofoofoofoofoofoo";
 

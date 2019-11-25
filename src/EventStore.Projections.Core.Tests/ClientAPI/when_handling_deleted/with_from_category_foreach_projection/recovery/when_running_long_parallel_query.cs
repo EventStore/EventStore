@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#pragma warning disable 1998
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
