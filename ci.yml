@@ -66,10 +66,6 @@ jobs:
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: |
-      dotnet run -c $(Configuration) -p src/EventStore.Sadness
-    condition: succeededOrFailed()
-    displayName: Run TCP Client API Tests
-  - bash: |
       set -eo pipefail
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests
       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
