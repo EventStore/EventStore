@@ -63,12 +63,10 @@ namespace EventStore.Core {
 			get { return _mainBus; }
 		}
 
-		[Obsolete]
 		public IHttpService InternalHttpService {
 			get { return _internalHttpService; }
 		}
 
-		[Obsolete]
 		public IHttpService ExternalHttpService {
 			get { return _externalHttpService; }
 		}
