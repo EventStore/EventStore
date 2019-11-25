@@ -27,7 +27,9 @@ namespace EventStore.Grpc {
 			Data = data;
 			Metadata = customMetadata;
 			EventType = metadata[Constants.Metadata.Type];
-			Created = DateTime.FromBinary(Convert.ToInt64(metadata[Constants.Metadata.Created]));
+			Created = new DateTime(
+				DateTime.UnixEpoch.Ticks + Convert.ToInt64(metadata[Constants.Metadata.Created]),
+				DateTimeKind.Utc);
 			IsJson = bool.Parse(metadata[Constants.Metadata.IsJson]);
 		}
 	}
