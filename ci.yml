@@ -89,7 +89,7 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: macos-netcoreapp3-{{ variables['Configuration'] }}
+      artifactName: macos-netcoreapp3-$(Configuration)
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: ubuntu_x64
@@ -125,5 +125,5 @@ jobs:
     condition: eq(variables['System.PullRequest.IsFork'], 'False')
     displayName: Publish Artifacts
     inputs:
-      artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
+      artifactName: ubuntu1604-netcoreapp3-$(Configuration)
       pathToPublish: '$(Build.SourcesDirectory)/bin/'
