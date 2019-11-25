@@ -44,6 +44,7 @@ namespace EventStore.Core {
 					PreInit(options);
 					Init(options);
 					Create(options);
+					_startupSource.SetResult(true);
 				}
 			} catch (OptionException exc) {
 				Console.Error.WriteLine("Error while parsing options:");
@@ -77,7 +78,8 @@ namespace EventStore.Core {
 
 		public async Task<int> Run() {
 			try {
-				await Task.WhenAny(_startupSource.Task, Start());
+				await _startupSource.Task;
+				await Start();
 				var exitCode = await _exitSource.Task;
 				await Stop();
 
