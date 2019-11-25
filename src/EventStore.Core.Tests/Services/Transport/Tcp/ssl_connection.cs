@@ -23,10 +23,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			_ip = IPAddress.Loopback;
 			_port = PortsHelper.GetAvailablePort(_ip);
 		}
-
-		[TearDown]
-		public void TearDown() => PortsHelper.ReturnPort(_port);
-
+		
 		[Test]
 		public void should_connect_to_each_other_and_send_data() {
 			var serverEndPoint = new IPEndPoint(_ip, _port);
@@ -94,12 +91,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		}
 
 		public static X509Certificate2 GetCertificate() {
-			using (var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.server.p12"))
-			using (var mem = new MemoryStream()) {
-				stream.CopyTo(mem);
-				return new X509Certificate2(mem.ToArray(), "1111");
-			}
+			using var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.Core.Tests.server.p12");
+			using var mem = new MemoryStream();
+			stream.CopyTo(mem);
+			return new X509Certificate2(mem.ToArray(), "1111");
 		}
 	}
 }
