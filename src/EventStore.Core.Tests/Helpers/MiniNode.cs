@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -15,8 +14,6 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Transport.Grpc;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -24,7 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
-		public static int RunCount = 0;
+		public static int RunCount;
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
 		public static readonly Stopwatch StoppingTime = new Stopwatch();
@@ -46,8 +43,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly HttpClient HttpClient;
 		public readonly HttpMessageHandler HttpMessageHandler;
 
-		private readonly List<int> _usedPorts = new List<int>();
-		private TestServer _kestrelTestServer;
+		private readonly TestServer _kestrelTestServer;
 
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
@@ -63,24 +59,19 @@ namespace EventStore.Core.Tests.Helpers {
 			RunningTime.Start();
 			RunCount += 1;
 
-			IPAddress ip = IPAddress.Loopback; //GetLocalIp();
+			var ip = IPAddress.Loopback; //GetLocalIp();
+			
 
-			int GetAvailablePort(IPAddress ipAddress) {
-				var port = PortsHelper.GetAvailablePort(ipAddress);
-				_usedPorts.Add(port);
-				return port;
-			}
+			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
+			int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
+			int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
+			int intTcpPort = PortsHelper.GetAvailablePort(ip);
+			int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
+			int intHttpPort = PortsHelper.GetAvailablePort(ip);
 
-			int extTcpPort = tcpPort ?? GetAvailablePort(ip);
-			int extSecTcpPort = tcpSecPort ?? GetAvailablePort(ip);
-			int extHttpPort = httpPort ?? GetAvailablePort(ip);
-			int intTcpPort = GetAvailablePort(ip);
-			int intSecTcpPort = GetAvailablePort(ip);
-			int intHttpPort = GetAvailablePort(ip);
-
-			if (String.IsNullOrEmpty(dbPath)) {
+			if (string.IsNullOrEmpty(dbPath)) {
 				DbPath = Path.Combine(pathname,
-					string.Format("mini-node-db-{0}-{1}-{2}", extTcpPort, extSecTcpPort, extHttpPort));
+					$"mini-node-db-{extTcpPort}-{extSecTcpPort}-{extHttpPort}");
 			} else {
 				DbPath = dbPath;
 			}
@@ -198,7 +189,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public void MonitorFailures(TaskCompletionSource<object> tcs) {
 			if (tcs.Task.IsCompleted)
 				return;
-			if (Node.Tasks.Count() == 0)
+			if (!Node.Tasks.Any())
 				return;
 
 			Task.WhenAny(Node.Tasks)
@@ -225,24 +216,20 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public async Task Shutdown(bool keepDb = false) {
-			try {
-				StoppingTime.Start();
 
-				_kestrelTestServer.Dispose();
-				HttpMessageHandler.Dispose();
-				HttpClient.Dispose();
-				await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+			StoppingTime.Start();
 
-				if (!keepDb)
-					TryDeleteDirectory(DbPath);
+			_kestrelTestServer.Dispose();
+			HttpMessageHandler.Dispose();
+			HttpClient.Dispose();
+			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
-				StoppingTime.Stop();
-				RunningTime.Stop();
-			} finally {
-				foreach (var port in _usedPorts) {
-					PortsHelper.ReturnPort(port);
-				}
-			}
+			if (!keepDb)
+				TryDeleteDirectory(DbPath);
+
+			StoppingTime.Stop();
+			RunningTime.Stop();
+
 		}
 
 		public void WaitIdle() {
@@ -269,11 +256,7 @@ namespace EventStore.Core.Tests.Helpers {
 			private readonly ClusterVNode _node;
 
 			public ClusterVNodeStartup(ClusterVNode node) {
-				if (node == null) {
-					throw new ArgumentNullException(nameof(node));
-				}
-
-				_node = node;
+				_node = node ?? throw new ArgumentNullException(nameof(node));
 			}
 
 			public IServiceProvider ConfigureServices(IServiceCollection services) => services
