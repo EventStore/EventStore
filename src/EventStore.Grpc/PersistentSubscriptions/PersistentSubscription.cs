@@ -168,6 +168,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 							_ => throw new NotSupportedException()
 						},
 						new StreamRevision(e.StreamRevision),
+						new Position(e.CommitPosition, e.PreparePosition),
 						e.Metadata,
 						e.Data.ToByteArray(),
 						e.CustomMetadata.ToByteArray());
