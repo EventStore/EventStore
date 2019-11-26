@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected MiniNode _node;
 		protected IEventStoreConnection _conn;
 		protected IPEndPoint _HttpEndPoint;
-		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(3);
+		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(10);
 
 		protected virtual Task Given() => Task.CompletedTask;
 
