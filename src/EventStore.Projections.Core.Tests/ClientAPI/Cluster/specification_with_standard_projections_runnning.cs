@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -15,6 +16,7 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.Core.Data;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 

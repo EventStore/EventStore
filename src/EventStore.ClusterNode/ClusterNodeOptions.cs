@@ -304,6 +304,12 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
+		[ArgDescription(Opts.HttpServerCertificateLocationDescr, Opts.InterfacesGroup)]
+		public string HttpServerCertificateLocation { get; set; }
+		
+		[ArgDescription(Opts.HttpServerCertificatePasswordDescr, Opts.InterfacesGroup)]
+		public string HttpServerCertificatePassword { get; set; }
+
 		public ClusterNodeOptions() {
 			Config = "";
 			Help = Opts.ShowHelpDefault;
@@ -426,6 +432,9 @@ namespace EventStore.ClusterNode {
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+
+			HttpServerCertificateLocation = Opts.HttpServerCertificateLocationDefault;
+			HttpServerCertificatePassword = Opts.HttpServerCertificatePasswordDefault;
 		}
 	}
 }

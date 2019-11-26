@@ -36,7 +36,7 @@ namespace EventStore.ClusterNode {
 			return p.Run();
 		}
 
-		private Program(string[] args) : base(args) {	
+		private Program(string[] args) : base(args) {
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -121,18 +121,33 @@ namespace EventStore.ClusterNode {
 
 			RegisterWebControllers(enabledNodeSubsystems, opts);
 
+			if (!string.IsNullOrEmpty(opts.HttpServerCertificatePassword) &&
+			    string.IsNullOrEmpty(opts.HttpServerCertificateLocation)) {
+				throw new ApplicationInitializationException(
+					"An Http Server Certificate Password has been provided without providing the certificate location.");
+			}
+
+			if (!string.IsNullOrEmpty(opts.HttpServerCertificateLocation) &&
+			    !File.Exists(opts.HttpServerCertificateLocation)) {
+				throw new ApplicationInitializationException(
+					"An Http Server Certificate Location has been provided, but the file does not exist.");
+			}
+
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
 					o.Listen(opts.ExtIp, opts.ExtHttpPort,
-						listenOptions => listenOptions.UseHttps());
+						listenOptions => listenOptions.UseHttps(options => {
+							if (!string.IsNullOrEmpty(opts.HttpServerCertificateLocation))
+								options.ServerCertificate = new X509Certificate2(opts.HttpServerCertificateLocation,
+									opts.HttpServerCertificatePassword);
+						}));
 				})
 				.UseStartup(new ClusterVNodeStartup(_node))
-				.ConfigureLogging(logging =>
-				{
+				.ConfigureLogging(logging => {
 					logging.ClearProviders();
 					logging.SetMinimumLevel(LogLevel.Warning);
-				})				.UseNLog()
+				}).UseNLog()
 				.Build();
 		}
 
@@ -210,7 +225,7 @@ namespace EventStore.ClusterNode {
 			} else {
 				builder = builder.RunOnDisk(options.Db);
 			}
-			
+
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)

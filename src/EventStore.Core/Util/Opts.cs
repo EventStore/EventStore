@@ -420,5 +420,15 @@ namespace EventStore.Core.Util {
 			"During large Index Merge operations, writes may be slowed down. Set this to the maximum index file level for which automatic merges should happen.  Merging indexes above this level should be done manually.";
 
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
+		
+		public const string HttpServerCertificateLocationDescr =
+			"The Certificate Location for the HTTPS server.";
+		
+		public static readonly string HttpServerCertificateLocationDefault = string.Empty;
+		
+		public const string HttpServerCertificatePasswordDescr =
+			"The Certificate Password for the HTTPS server.";
+		
+		public static readonly string HttpServerCertificatePasswordDefault = string.Empty;
 	}
 }
