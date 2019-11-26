@@ -19,5 +19,10 @@ namespace EventStore.Grpc {
 			=> metadata.TryGetValue(key, out var s) && long.TryParse(s, out var value)
 				? value
 				: default;
+
+		public static int GetIntValueOrDefault(this Metadata metadata, string key)
+			=> metadata.TryGetValue(key, out var s) && int.TryParse(s, out var value)
+				? value
+				: default;
 	}
 }

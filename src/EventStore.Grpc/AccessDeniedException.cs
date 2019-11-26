@@ -13,5 +13,3 @@ namespace EventStore.Grpc {
 		}
 	}
 }
-
-

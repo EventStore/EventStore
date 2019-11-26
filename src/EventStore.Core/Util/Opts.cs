@@ -221,6 +221,9 @@ namespace EventStore.Core.Util {
 		public const string CertificateSubjectNameDescr = "The certificate subject name.";
 		public static readonly string CertificateSubjectNameDefault = string.Empty;
 
+		public const string MaxAppendSizeDecr = "The maximum size of appends, in bytes. May not exceed 16MB.";
+		public const int MaxAppendSizeDefault = 1024 * 1024; // ONE MB
+
 		public const string CertificateThumbprintDescr = "The certificate fingerprint/thumbprint.";
 		public static readonly string CertificateThumbprintDefault = string.Empty;
 

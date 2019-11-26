@@ -4,8 +4,7 @@ using EventStore.Core.Messaging;
 using EventStore.Grpc;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc
-{
+namespace EventStore.Core.Services.Transport.Grpc {
 	internal static class RpcExceptions {
 		public static Exception Timeout() => new RpcException(new Status(StatusCode.Aborted, "Operation timed out"));
 
@@ -70,6 +69,14 @@ namespace EventStore.Core.Services.Transport.Grpc
 					{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? string.Empty}
 				});
 
+		public static Exception MaxAppendSizeExceeded(int maxAppendSize) =>
+			new RpcException(
+				new Status(StatusCode.InvalidArgument, $"Maximum Append Size of {maxAppendSize} Exceeded."),
+				new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumAppendSizeExceeded},
+					{Constants.Exceptions.MaximumAppendSize, maxAppendSize.ToString()}
+				});
+
 		public static bool TryHandleNotHandled(ClientMessage.NotHandled notHandled, out Exception exception) {
 			exception = null;
 			switch (notHandled.Reason) {
@@ -129,7 +136,8 @@ namespace EventStore.Core.Services.Transport.Grpc
 			=> new RpcException(
 				new Status(
 					StatusCode.FailedPrecondition,
-					$"Maximum subscriptions reached for subscription group {groupName} on stream {streamName}."), new Metadata {
+					$"Maximum subscriptions reached for subscription group {groupName} on stream {streamName}."),
+				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumSubscribersReached},
 					{Constants.Exceptions.StreamName, streamName},
 					{Constants.Exceptions.GroupName, groupName}
@@ -162,6 +170,5 @@ namespace EventStore.Core.Services.Transport.Grpc
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.UserConflict},
 				{Constants.Exceptions.LoginName, loginName}
 			});
-
 	}
 }

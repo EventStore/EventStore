@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -38,11 +37,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var events = new List<Event>();
 
+			var size = 0;
 			while (await requestStream.MoveNext()) {
 				if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.ProposedMessage)
 					throw new InvalidOperationException();
 
 				var proposedMessage = requestStream.Current.ProposedMessage;
+				var data = proposedMessage.Data.ToByteArray();
+				size += data.Length;
+
+				if (size > _maxAppendSize) {
+					throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
+				}
+
 				events.Add(new Event(
 					proposedMessage.Id.ValueCase switch {
 						UUID.ValueOneofCase.String => Guid.Parse(proposedMessage.Id.String),
@@ -50,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					},
 					proposedMessage.Metadata[Constants.Metadata.Type],
 					bool.Parse(proposedMessage.Metadata[Constants.Metadata.IsJson]),
-					proposedMessage.Data.ToByteArray(),
+					data,
 					proposedMessage.CustomMetadata.ToByteArray()));
 			}
 

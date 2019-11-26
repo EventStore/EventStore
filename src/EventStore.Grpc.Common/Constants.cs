@@ -8,6 +8,7 @@ namespace EventStore.Grpc {
 			public const string StreamDeleted = "stream-deleted";
 			public const string WrongExpectedVersion = "wrong-expected-version";
 			public const string StreamNotFound = "stream-not-found";
+			public const string MaximumAppendSizeExceeded = "maximum-append-size-exceeded";
 
 			public const string PersistentSubscriptionFailed = "persistent-subscription-failed";
 			public const string PersistentSubscriptionDoesNotExist = "persistent-subscription-does-not-exist";
@@ -23,6 +24,7 @@ namespace EventStore.Grpc {
 			public const string StreamName = "stream-name";
 			public const string GroupName = "group-name";
 			public const string Reason = "reason";
+			public const string MaximumAppendSize = "maximum-append-size";
 
 			public const string LoginName = "login-name";
 		}

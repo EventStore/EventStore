@@ -22,6 +22,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DisableHTTPCaching;
 		public readonly bool LogHttpRequests;
 		public readonly bool LogFailedAuthenticationAttempts;
+		public readonly int MaxAppendSize;
 
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
@@ -156,6 +157,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool disableFirstLevelHttpAuthorization = false,
 			bool logFailedAuthenticationAttempts = false,
 			bool readOnlyReplica = false,
+			int maxAppendSize = 1024 * 1024,
 			Func<HttpMessageHandler> createHttpMessageHandler = null) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
@@ -172,6 +174,9 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(commitAckCount, "commitAckCount");
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
+			if (maxAppendSize > 1024 * 1024 * 16) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), $"{nameof(maxAppendSize)} exceeded 16MB.");
+			}
 
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
 				throw new ArgumentException(
@@ -256,6 +261,7 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
+			MaxAppendSize = maxAppendSize;
 			CreateHttpMessageHandler = createHttpMessageHandler;
 			PTableMaxReaderCount = ptableMaxReaderCount;
 		}
