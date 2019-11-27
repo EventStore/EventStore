@@ -60,6 +60,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Grpc.PersistentS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Grpc.Projections.Tests", "EventStore.Grpc.Projections.Tests\EventStore.Grpc.Projections.Tests.csproj", "{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.ClientAPI.v5.Tests", "EventStore.ClientAPI.v5.Tests\EventStore.ClientAPI.v5.Tests.csproj", "{8B3FDD14-C959-4859-80C4-B157D1D94969}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -370,6 +372,8 @@ Global
 		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Release|x64.Build.0 = Release|Any CPU
 		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Release|x86.ActiveCfg = Release|Any CPU
 		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Release|x86.Build.0 = Release|Any CPU
+		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x86.ActiveCfg = Release|Any CPU
+		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
