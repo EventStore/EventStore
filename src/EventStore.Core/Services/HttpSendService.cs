@@ -195,7 +195,7 @@ namespace EventStore.Core.Services {
 						case "expect":
 							break;
 						case "host":
-							request.Headers.Host = forwardUri.Host;
+							request.Headers.Host = $"{forwardUri.Host}:{forwardUri.Port}";
 							break;
 						case "if-modified-since":
 							request.Headers.IfModifiedSince = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
