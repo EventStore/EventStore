@@ -141,8 +141,27 @@ jobs:
     vmImage: 'ubuntu-18.04'
   steps:
   - bash: |
-      docker build -t eventstore \
+      mkdir testresults
+      docker build \
+        --target test \
+        --tag eventstore-test \
         --build-arg RUNTIME=$(RUNTIME) \
         --build-arg CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) \
         .
+      docker build \
+        --tag eventstore \
+        --build-arg RUNTIME=$(RUNTIME) \
+        --build-arg CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) \
+        .
+      docker run --name tests eventstore-test
+      EXIT_CODE=$?
+      docker cp tests:/build/testresults ./
+      exit $EXIT_CODE
     displayName: Docker Build
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    condition: succeededOrFailed()
+    inputs:
+      testRunTitle: "Docker $(CONTAINER_RUNTIME)"
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
