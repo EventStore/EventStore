@@ -35,24 +35,14 @@ namespace EventStore.Common.Utils {
 				return;
 			}
 
-			if (Runtime.IsMono)
+			if (!Runtime.IsWindows)
 				FlushSafe = f => f.Flush(flushToDisk: true);
 			else {
-				try {
-					ParameterExpression arg = Expression.Parameter(typeof(FileStream), "f");
-					Expression expr = Expression.Field(arg,
-						typeof(FileStream).GetField("_handle", BindingFlags.Instance | BindingFlags.NonPublic));
-					GetFileHandle = Expression.Lambda<Func<FileStream, SafeFileHandle>>(expr, arg).Compile();
-					FlushSafe = f => {
-						f.Flush(flushToDisk: false);
-						if (!FlushFileBuffers(GetFileHandle(f)))
-							throw new Exception(string.Format("FlushFileBuffers failed with err: {0}",
-								Marshal.GetLastWin32Error()));
-					};
-				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while compiling sneaky SafeFileHandle getter.");
-					FlushSafe = f => f.Flush(flushToDisk: true);
-				}
+				FlushSafe = f => {
+					f.Flush(flushToDisk: false);
+					if (!FlushFileBuffers(f.SafeFileHandle))
+						throw new Exception($"FlushFileBuffers failed with err: {Marshal.GetLastWin32Error()}");
+				};
 			}
 		}
 	}
