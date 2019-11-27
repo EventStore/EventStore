@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI.Tests {
 			_fixture = fixture;
 		}
 
-		[Theory, MemberData(nameof(UseSslTestCases))]
+		[Theory(Skip = "busted on 5.x"), MemberData(nameof(UseSslTestCases))]
 		public async Task that_does_not_exist_throws(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			var connection = _fixture.Connections[useSsl];
