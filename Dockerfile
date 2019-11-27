@@ -18,9 +18,16 @@ COPY ./src .
 
 RUN dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --framework=netcoreapp3.1
 
-RUN find ./ -maxdepth 1 -type d -name "*.Tests" -print0 | \
-    xargs -0 -n1 dotnet test --no-restore --blame --configuration=Release \
-    --verbosity=normal --logger=trx --runtime=${RUNTIME} --settings ../ci/ci.runsettings
+FROM build as test
+ARG RUNTIME=linux-x64
+RUN echo '#!/usr/bin/env sh\n\
+find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -0 -n1 dotnet test --no-restore --blame --configuration=Release --results-directory=../testresults --verbosity=normal --logger=trx --runtime=${RUNTIME} --settings ../ci/ci.runsettings' \
+    >> /build/test.sh && \
+    chmod +x /build/test.sh
+CMD ["/build/test.sh"]
+
+FROM build as publish
+ARG RUNTIME=linux-x64
 
 RUN dotnet publish --configuration=Release --no-build --runtime=${RUNTIME} --self-contained \
      --framework=netcoreapp3.1 --output /publish /p:PublishTrimmed=true EventStore.ClusterNode
@@ -40,7 +47,7 @@ RUN addgroup --gid ${GID} "eventstore" && \
     --uid ${UID} \
     "eventstore"
 
-COPY --from=build /publish ./
+COPY --from=publish /publish ./
 
 RUN mkdir -p /var/lib/eventstore && \
     chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore
