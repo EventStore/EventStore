@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="endPoint">The <see cref="IPEndPoint"/> for the External HTTP endpoint of the gossip seed. The standard port is 2113.</param>
 		/// <param name="hostHeader">The host header to be sent when requesting gossip. Defaults to String.Empty</param>
 		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
-		public GossipSeed(IPEndPoint endPoint, string hostHeader = "", bool seedOverTls = false) {
+		public GossipSeed(IPEndPoint endPoint, string hostHeader = "", bool seedOverTls = true) {
 			EndPoint = endPoint;
 			HostHeader = hostHeader;
 			SeedOverTls = seedOverTls;
