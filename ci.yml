@@ -140,6 +140,11 @@ jobs:
   pool:
     vmImage: 'ubuntu-18.04'
   steps:
+  - task: UseDotNet@1
+    displayName: 'Install .NET Core 3.0 SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.0.x'
   - bash: |
       mkdir testresults
       docker build \
@@ -165,3 +170,18 @@ jobs:
       testRunTitle: "Docker $(CONTAINER_RUNTIME)"
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
+  - bash: |
+      IMAGE=docker.pkg.github.com/eventstore/eventstore/eventstore
+      dotnet tool install --global minver-cli --version 2.0.0
+      docker tag eventstore ${IMAGE}:$(minver \
+        --tag-prefix=oss-v \
+        --default-pre-release-phase=preview1 \
+        --minimum-major-minor=6.0)-$(CONTAINER_RUNTIME)
+      docker images --filter=reference="${IMAGE}"
+    displayName: Tag Container
+  - bash: |
+      IMAGE=docker.pkg.github.com/eventstore/eventstore/eventstore
+      docker login --user eventstore --password ??? docker.pkg.github.com
+      docker push ${IMAGE}
+    displayName: Publish Container
+    condition: eq(variables['System.PullRequest.IsFork'], 'False')
