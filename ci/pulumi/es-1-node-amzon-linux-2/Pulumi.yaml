@@ -1,0 +1,3 @@
+name: es-1-node-amzon-linux-2
+runtime: nodejs
+description: Event Store Single Node on Amazon Linux 2
