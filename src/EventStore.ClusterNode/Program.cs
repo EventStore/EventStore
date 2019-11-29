@@ -18,25 +18,26 @@ using EventStore.Core.Util;
 using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
 
 namespace EventStore.ClusterNode {
-	public class Program : ProgramBase<ClusterNodeOptions> {
+	public class Program : ProgramBase<ClusterNodeOptions>, IDisposable {
 		private ClusterVNode _node;
 		private ExclusiveDbLock _dbLock;
 		private ClusterNodeMutex _clusterNodeMutex;
-		private IWebHost _host;
+		private IHost _host;
 
-		public static Task<int> Main(string[] args) {
+		public static async Task<int> Main(string[] args) {
 			Console.CancelKeyPress += delegate {
 				Application.Exit(0, "Cancelled.");
 			};
-			var p = new Program(args);
-			return p.Run();
+			using var p = new Program(args);
+			return await p.Run();
 		}
 
-		private Program(string[] args) : base(args) {	
+		private Program(string[] args) : base(args) {
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -119,26 +120,28 @@ namespace EventStore.ClusterNode {
 				: new NodeSubsystems[0];
 			_node = BuildNode(opts);
 
+
 			RegisterWebControllers(enabledNodeSubsystems, opts);
 
-			_host = new WebHostBuilder()
-				.UseKestrel(o => {
-					o.Listen(opts.IntIp, opts.IntHttpPort);
-					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => {
-						if (_node.Certificate == null) {
-							listenOptions.UseHttps();
-						} else {
-							listenOptions.UseHttps(_node.Certificate);
-						}
-					});
-				})
-				.UseStartup(new ClusterVNodeStartup(_node))
-				.ConfigureLogging(logging =>
-				{
-					logging.ClearProviders();
-					logging.SetMinimumLevel(LogLevel.Warning);
-				})
-				.UseNLog()
+			_host = Host.CreateDefaultBuilder()
+				.ConfigureWebHost(builder => builder
+					.UseKestrel(o => {
+						o.Listen(opts.IntIp, opts.IntHttpPort);
+						o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => {
+							if (_node.Certificate == null) {
+								listenOptions.UseHttps();
+							} else {
+								listenOptions.UseHttps(_node.Certificate);
+							}
+						});
+					})
+					.Configure(app => _node.Configure(app))
+					.ConfigureServices(services => _node.ConfigureServices(services))
+					.ConfigureLogging(logging => {
+						logging.ClearProviders();
+						logging.SetMinimumLevel(LogLevel.Warning);
+					})
+					.UseNLog())
 				.Build();
 		}
 
@@ -445,5 +448,7 @@ namespace EventStore.ClusterNode {
 		protected override bool GetIsStructuredLog(ClusterNodeOptions options) {
 			return options.StructuredLog;
 		}
+
+		public void Dispose() => _host?.Dispose();
 	}
 }
