@@ -181,11 +181,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public void throw_an_exception_if_interval_is_negative() {
+		public async Task throw_an_exception_if_interval_is_negative() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
-				store.ConnectAsync().Wait();
+				await store.ConnectAsync();
 
 				Assert.Throws<ArgumentOutOfRangeException>(() => {
 					store.FilteredSubscribeToAllAsync(

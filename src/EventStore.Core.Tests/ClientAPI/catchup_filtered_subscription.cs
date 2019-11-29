@@ -24,9 +24,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[SetUp]
 		public override async Task SetUp() {
-			base.SetUp();
+			await base.SetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 
 			_conn = BuildConnection(_node);
 			_conn.ConnectAsync().Wait();
@@ -127,10 +127,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					}
 
 					return Task.CompletedTask;
-				}, 1,
-				s => {
+				}, 1, async s => {
 					isLive = true;
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents()).Wait();
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents());
 				});
 
 			if (!appeared.Wait(Timeout)) {
@@ -226,18 +225,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 					return Task.CompletedTask;
 				},
 				(s, p) => Task.CompletedTask, 5,
-				s => {
-					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents()).Wait();
-					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.Any, _testEventsAfter.OddEvents()).Wait();
+				async s => {
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents());
+					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.Any, _testEventsAfter.OddEvents());
 				});
 		}
 
 		[TearDown]
-		public override Task TearDown() {
+		public override async Task TearDown() {
 			_conn.Close();
-			_node.Shutdown();
-			base.TearDown();
-			return Task.CompletedTask;
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 	}
 }
