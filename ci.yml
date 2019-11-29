@@ -66,17 +66,15 @@ jobs:
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: |
-      dotnet run -c $(Configuration) -p src/EventStore.Sadness
-    condition: succeededOrFailed()
-    displayName: Run TCP Client API Tests
-  - bash: |
-      set -eo pipefail
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests
+      EXIT_CODE=0
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests || EXIT_CODE=$?
+      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests || EXIT_CODE=$?
+      exit $EXIT_CODE
     condition: succeededOrFailed()
     displayName: Run Tests
   - task: PublishTestResults@2
