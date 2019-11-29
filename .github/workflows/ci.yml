@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+
+jobs:
+  continuous-integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+        - bionic:
+          CONTAINER_RUNTIME: bionic
+          RUNTIME: linux-x64
+        - buster:
+          CONTAINER_RUNTIME: buster-slim
+          RUNTIME: linux-x64
+    runs-on: ubuntu-latest
+    name: continuous-integration/github/${{ matrix.env.container-runtime }}
+    steps:
+    - name: checkout
+      uses: actions/checkout@master
+    - name: build
+      run: |
+        docker build \
+          --target test \
+          --tag eventstore-test \
+          --build-arg RUNTIME=$(RUNTIME) \
+          --build-arg CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) \
+          .
+        docker build \
+          --tag eventstore \
+          --build-arg RUNTIME=$(RUNTIME) \
+          --build-arg CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) \
+          .
+        docker run --name tests eventstore-test
+      env:
+        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
+        RUNTIME: ${{ matrix.env.runtime }}
+    - name:
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.2.103'
+    - name: Calculate Version
+      id: version
+      env:
+        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
+      run: |
+        dotnet tool install --global minver-cli --version 2.0.0
+        echo "##[set-output name=value;$(minver \
+          --tag-prefix=oss-v \
+          --default-pre-release-phase=preview1 \
+          --minimum-major-minor=6.0)-$(CONTAINER_RUNTIME)]"
+    - name: Docker Push
+      uses: jen20/action-docker-build@v1
+      if: github.event_name == 'push'
+      with:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        registry: https://docker.pkg.github.com
+        tag-latest: false
+        additional-tags: ${{ steps.version.value }}
