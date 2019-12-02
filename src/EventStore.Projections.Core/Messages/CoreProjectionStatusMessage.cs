@@ -189,6 +189,18 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
+		public class Suspended : CoreProjectionStatusMessageBase {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public Suspended(Guid projectionId)
+				: base(projectionId) {
+			}
+		}
+		
 		public class Stopped : CoreProjectionStatusMessageBase {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

@@ -997,10 +997,10 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly Guid EpochId;
+			public readonly Guid InstanceCorrelationId;
 
-			public Starting(Guid epochId) {
-				EpochId = epochId;
+			public Starting(Guid instanceCorrelationId) {
+				InstanceCorrelationId = instanceCorrelationId;
 			}
 		}
 

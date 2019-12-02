@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Tests.Services.command_reader_response_rea
 	public class
 		when_command_reader_times_out_reading_projection_core_stream_on_startup :
 			specification_with_command_reader_and_response_reader {
-		private Guid _epochId = Guid.NewGuid();
+		private Guid _instanceCorrelationId = Guid.NewGuid();
 
 		protected override void Given() {
 			_coreServiceId = Guid.NewGuid().ToString("N");
@@ -36,8 +36,8 @@ namespace EventStore.Projections.Core.Tests.Services.command_reader_response_rea
 
 		protected override IEnumerable<WhenStep> When() {
 			yield return new WhenStep(
-				new ProjectionCoreServiceMessage.StartCore(_epochId),
-				new ProjectionManagementMessage.Starting(_epochId));
+				new ProjectionCoreServiceMessage.StartCore(_instanceCorrelationId),
+				new ProjectionManagementMessage.Starting(_instanceCorrelationId));
 		}
 
 		[Test]

@@ -89,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
-			_bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
 			_bus.Subscribe(
 				CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(

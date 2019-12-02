@@ -11,10 +11,10 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly Guid EpochId;
+			public readonly Guid InstanceCorrelationId;
 
-			public StartCore(Guid epochId) {
-				EpochId = epochId;
+			public StartCore(Guid instanceCorrelationId) {
+				InstanceCorrelationId = instanceCorrelationId;
 			}
 		}
 
@@ -24,26 +24,28 @@ namespace EventStore.Projections.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
+
+			public Guid QueueId { get; }
+
+			public StopCore(Guid queueId) {
+				QueueId = queueId;
+			}
 		}
 
-		public class Connected : Message {
+		public class StopCoreTimeout : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
+			
+			public Guid QueueId { get; }
 
-			private readonly TcpConnectionManager _connection;
-
-			public Connected(TcpConnectionManager connection) {
-				_connection = connection;
-			}
-
-			public TcpConnectionManager Connection {
-				get { return _connection; }
+			public StopCoreTimeout(Guid queueId) {
+				QueueId = queueId;
 			}
 		}
-
+		
 		public class CoreTick : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -69,9 +71,11 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly string SubComponent;
-
-			public SubComponentStarted(string subComponent) {
+			public string SubComponent { get; }
+			public Guid InstanceCorrelationId { get; }
+		
+			public SubComponentStarted(string subComponent, Guid instanceCorrelationId) {
+				InstanceCorrelationId = instanceCorrelationId;
 				SubComponent = subComponent;
 			}
 		}
@@ -85,8 +89,11 @@ namespace EventStore.Projections.Core.Messages {
 
 			public readonly string SubComponent;
 
-			public SubComponentStopped(string subComponent) {
+			public Guid QueueId { get; }
+
+			public SubComponentStopped(string subComponent, Guid queueId) {
 				SubComponent = subComponent;
+				QueueId = queueId;
 			}
 		}
 	}

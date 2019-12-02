@@ -74,9 +74,6 @@ namespace EventStore.Projections.Core {
 			ProjectionManagerResponseReader projectionManagerResponseReader,
 			IODispatcher ioDispatcher,
 			ProjectionManagerCommandWriter projectionManagerCommandWriter) {
-			mainBus.Subscribe<SystemMessage.StateChangeMessage>(projectionManager);
-			mainBus.Subscribe<SystemMessage.SystemCoreReady>(projectionManager);
-			mainBus.Subscribe<SystemMessage.EpochWritten>(projectionManager);
 			if (runProjections >= ProjectionType.System) {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(projectionManager);
@@ -108,6 +105,8 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.ReaderReady>(projectionManager);
+				mainBus.Subscribe<ProjectionSubsystemMessage.StartComponents>(projectionManager);
+				mainBus.Subscribe<ProjectionSubsystemMessage.StopComponents>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerResponseReader);
 			}
 
