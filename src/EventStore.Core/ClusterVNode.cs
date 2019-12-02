@@ -130,13 +130,13 @@ namespace EventStore.Core {
 		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder =>
 			_subsystems.Aggregate(builder
 						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),  // TODO JPB figure out how to delete this sadness
-							inner => inner.Use(CompleteResponse).UseRouting().UseEndpoints(endpoint =>
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<PersistentSubscriptions>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),  // TODO JPB figure out how to delete this sadness
-							inner => inner.Use(CompleteResponse).UseRouting().UseEndpoints(endpoint =>
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Users>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
-							inner => inner.Use(CompleteResponse).UseRouting().UseEndpoints(endpoint => endpoint.MapGrpcService<Streams>())),
+							inner => inner.UseRouting().UseEndpoints(endpoint => endpoint.MapGrpcService<Streams>())),
 					(b, subsystem) => subsystem.Configure(b))
 				.Use(ExternalHttp)
 				.Use(InternalHttp);
@@ -161,10 +161,6 @@ namespace EventStore.Core {
 			EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
 			if (handler != null)
 				handler(this, e);
-		}
-
-		private static Task CompleteResponse(HttpContext context, Func<Task> next) {
-			return next().ContinueWith(_ => context.Response.Body.FlushAsync());
 		}
 
 		public ClusterVNode(TFChunkDb db,
