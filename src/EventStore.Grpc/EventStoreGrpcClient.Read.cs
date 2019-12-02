@@ -146,7 +146,7 @@ namespace EventStore.Grpc {
 					response.Event.PositionCase switch {
 						ReadResp.Types.ReadEvent.PositionOneofCase.CommitPosition => new Position(
 							response.Event.CommitPosition, 0).ToInt64().commitPosition,
-						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => default,
+						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => null,
 						_ => throw new InvalidOperationException()
 					});
 
@@ -160,6 +160,7 @@ namespace EventStore.Grpc {
 							_ => throw new NotSupportedException()
 						},
 						new StreamRevision(e.StreamRevision),
+						new Position(e.CommitPosition, e.PreparePosition),
 						e.Metadata,
 						e.Data.ToByteArray(),
 						e.CustomMetadata.ToByteArray());
