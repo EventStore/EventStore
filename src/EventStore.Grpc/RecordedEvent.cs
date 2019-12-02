@@ -27,7 +27,7 @@ namespace EventStore.Grpc {
 			Event = @event;
 			Link = link;
 			OriginalPosition = commitPosition.HasValue
-				? Position.FromInt64(commitPosition.Value, (link ?? @event).PreparePosition)
+				? new Position((ulong)commitPosition.Value, (link ?? @event).Position.PreparePosition)
 				: default;
 		}
 	}
