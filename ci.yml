@@ -156,5 +156,6 @@ jobs:
         npm install
         pulumi stack select arwinneil/es-1-node-amzon-linux-2/dev
         pulumi config set pullNo 2068
+        pulumi config set keyName $(EC2_KEY_NAME)
         pulumi up --yes
     displayName: Pulumi - Deploy Event Store Instance 

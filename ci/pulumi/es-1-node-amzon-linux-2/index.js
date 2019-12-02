@@ -3,7 +3,7 @@ const pulumi = require("@pulumi/pulumi");
 
 var config = new pulumi.Config();
 
-//const keyName = config.require("keyName");  //#AWS key pair name
+const keyName = config.require("keyName");  //#AWS key pair name
 const pullNo = config.require("pullNo");
 
 let size = "t2.small";
@@ -50,7 +50,7 @@ var instance = new aws.ec2.Instance("EventStoreNode", {
     instanceType: size,
     securityGroups: [group.name],
     ami: ami.id,
-    // keyName: keyName,
+    keyName: keyName,
     tags: {
         Name: "EventStoreNode"
     },
