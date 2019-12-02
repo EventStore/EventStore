@@ -4,7 +4,7 @@ const pulumi = require("@pulumi/pulumi");
 var config = new pulumi.Config();
 
 //const keyName = config.require("keyName");  //#AWS key pair name
-const pullNo = config.require("pullNo");  //#AWS key pair name
+const pullNo = config.require("pullNo");
 
 let size = "t2.small";
 let ami = aws.getAmi({
@@ -29,10 +29,22 @@ let group = new aws.ec2.SecurityGroup("webserver-secgrp", {
 });
 
 let userData =
-`   #!/bin/bash
+`#!/bin/
+wget https://download.visualstudio.microsoft.com/download/pr/941853c3-98c6-44ff-b11f-3892e4f91814/14e8f22c7a1d95dd6fe9a53296d19073/dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz
+mkdir -p $HOME/dotnet && tar zxf dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz -C $HOME/dotnet
+export DOTNET_ROOT=$HOME/dotnet
+export PATH=$PATH:$HOME/dotnet
+
+sudo yum install git
 git clone https://github.com/EventStore/EventStore.git
 git fetch origin pull/`+pullNo+`2068/head:pull-ci
-git checkout pull-ci`;
+git checkout pull-ci
+
+cd /src/EventStore.ClusterNode
+export EVENTSTORE_INT_IP=0.0.0.0
+export EVENTSTORE_EXT_IP=0.0.0.0
+dotnet run
+`;
 
 var instance = new aws.ec2.Instance("EventStoreNode", {
     instanceType: size,
