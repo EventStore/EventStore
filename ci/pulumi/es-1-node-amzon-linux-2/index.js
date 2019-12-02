@@ -39,7 +39,7 @@ export DOTNET_CLI_HOME=/
 sudo yum install git -y
 git clone https://github.com/EventStore/EventStore.git
 cd EventStore/
-git fetch origin pull/`+pullNo+`2068/head:pull-ci
+git fetch origin pull/`+pullNo+`/head:pull-ci
 git checkout pull-ci
 
 cd src/EventStore.ClusterNode
