@@ -154,9 +154,6 @@ jobs:
         export PATH=$PATH:$HOME/.pulumi/bin
         cd /home/vsts/work/1/s/ci/pulumi/es-1-node-amzon-linux-2
         npm install
-        export PULUMI_ACCESS_TOKEN=$(PULUMI_ACCESS_TOKEN)
-        export AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID)
-        export AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)
         pulumi stack select arwinneil/es-1-node-amzon-linux-2/dev
         pulumi config set pullNo 2068
         pulumi up --yes
