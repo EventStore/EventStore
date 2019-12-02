@@ -29,7 +29,8 @@ let group = new aws.ec2.SecurityGroup("webserver-secgrp", {
 });
 
 let userData =
-`wget https://download.visualstudio.microsoft.com/download/pr/941853c3-98c6-44ff-b11f-3892e4f91814/14e8f22c7a1d95dd6fe9a53296d19073/dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz
+`#!/bin/bash
+wget https://download.visualstudio.microsoft.com/download/pr/941853c3-98c6-44ff-b11f-3892e4f91814/14e8f22c7a1d95dd6fe9a53296d19073/dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz
 sudo mkdir -p $HOME/dotnet && sudo tar zxf dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz -C $HOME/dotnet
 export DOTNET_ROOT=$HOME/dotnet
 export PATH=$PATH:$HOME/dotnet
@@ -42,8 +43,7 @@ git checkout pull-ci
 cd src/EventStore.ClusterNode
 export EVENTSTORE_INT_IP=0.0.0.0
 export EVENTSTORE_EXT_IP=0.0.0.0
-dotnet run
-`;
+dotnet run`;
 
 var instance = new aws.ec2.Instance("EventStoreNode", {
     instanceType: size,
