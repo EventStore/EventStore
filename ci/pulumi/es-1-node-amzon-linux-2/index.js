@@ -34,9 +34,11 @@ wget https://download.visualstudio.microsoft.com/download/pr/941853c3-98c6-44ff-
 sudo mkdir -p $HOME/dotnet && sudo tar zxf dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz -C $HOME/dotnet
 export DOTNET_ROOT=$HOME/dotnet
 export PATH=$PATH:$HOME/dotnet
+export DOTNET_CLI_HOME=/
 
-sudo yum install git
+sudo yum install git -y
 git clone https://github.com/EventStore/EventStore.git
+cd EventStore/
 git fetch origin pull/`+pullNo+`2068/head:pull-ci
 git checkout pull-ci
 
