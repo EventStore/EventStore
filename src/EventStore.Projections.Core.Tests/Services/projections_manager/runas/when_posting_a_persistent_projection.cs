@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Security.Principal;
 using EventStore.Core.Authentication;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 	namespace when_posting_a_persistent_projection {
@@ -30,9 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-				yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-				yield return new SystemMessage.SystemCoreReady();
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
@@ -80,9 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-				yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-				yield return new SystemMessage.SystemCoreReady();
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,
@@ -118,9 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 
 			protected override IEnumerable<WhenStep> PreWhen() {
-				yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-				yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-				yield return new SystemMessage.SystemCoreReady();
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,

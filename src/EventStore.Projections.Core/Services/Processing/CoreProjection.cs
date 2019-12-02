@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Faulted = 0x200,
 			CompletingPhase = 0x400,
 			PhaseCompleted = 0x800,
+			Suspended = 0x900,
 		}
 
 		private readonly string _name;
@@ -198,6 +199,20 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Kill() {
 			if (_state != State.Stopped)
 				GoToState(State.Stopped);
+		}
+		
+		public bool Suspend() {
+			if (_state == State.Stopped || _state == State.Suspended)
+				return false;
+			
+			GoToState(State.Suspended);
+			return true;
+		}
+
+		private void EnterSuspended() {
+			EnsureUnsubscribed();
+			_masterProjectionResponseReader?.Stop();
+			_publisher.Publish(new CoreProjectionStatusMessage.Suspended(_projectionCorrelationId));
 		}
 
 		private void GetStatistics(ProjectionStatistics info) {
@@ -362,6 +377,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 
 		private void GoToState(State state) {
+			if (_state == State.Suspended) {
+				_logger.Debug($"Projection {_name} has been suspended for a subsystem restart. Cannot go to state {state}");
+				return;
+			}
 //            _logger.Trace("CP: {projection} {stateFrom} => {stateTo}", _name, _state, state);
 			var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
 			var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
@@ -453,6 +472,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 					break;
 				case State.PhaseCompleted:
 					EnterPhaseCompleted();
+					break;
+				case State.Suspended:
+					EnterSuspended();
 					break;
 				default:
 					throw new Exception();

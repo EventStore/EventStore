@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected Guid _workerId;
 
 		[SetUp]
-		public void Setup() {
+		public virtual void Setup() {
 			_consumer = new TestHandler<Message>();
 			_bus = new InMemoryBus("temp");
 			_bus.Subscribe(_consumer);
@@ -91,8 +91,10 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 			_bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
-			_readerService.Handle(new Messages.ReaderCoreServiceMessage.StartReader());
-			_service.Handle(new ProjectionCoreServiceMessage.StartCore(Guid.NewGuid()));
+			
+			var instanceCorrelationId = Guid.NewGuid();
+			_readerService.Handle(new ReaderCoreServiceMessage.StartReader(instanceCorrelationId));
+			_service.Handle(new ProjectionCoreServiceMessage.StartCore(instanceCorrelationId));
 		}
 
 		protected IReaderStrategy CreateReaderStrategy() {

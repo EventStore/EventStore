@@ -19,9 +19,6 @@ using EventStore.Projections.Core.Common;
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionManager
 		: IDisposable,
-			IHandle<SystemMessage.StateChangeMessage>,
-			IHandle<SystemMessage.SystemCoreReady>,
-			IHandle<SystemMessage.EpochWritten>,
 			IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
 			IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
 			IHandle<ClientMessage.WriteEventsCompleted>,
@@ -42,6 +39,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
 			IHandle<ProjectionManagementMessage.Command.GetConfig>,
 			IHandle<ProjectionManagementMessage.Command.UpdateConfig>,
+			IHandle<ProjectionSubsystemMessage.StartComponents>,
+			IHandle<ProjectionSubsystemMessage.StopComponents>,
 			IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
 			IHandle<ProjectionManagementMessage.Internal.Deleted>,
 			IHandle<CoreProjectionStatusMessage.Started>,
@@ -57,6 +56,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionManagementMessage.ReaderReady> {
 		public const int ProjectionQueryId = -2;
 		public const int ProjectionCreationRetryCount = 1;
+		public const string ServiceName = "ProjectionManager";
 
 		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
@@ -107,6 +107,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			_getResultDispatcher;
 
 		private readonly IODispatcher _ioDispatcher;
+		
+		private Guid _instanceCorrelationId = Guid.Empty;
 
 		public ProjectionManager(
 			IPublisher inputQueue,
@@ -179,20 +181,43 @@ namespace EventStore.Projections.Core.Services.Management {
 						new PublishEnvelope(_inputQueue));
 		}
 
-		private void Start() {
-			if (_started)
-				throw new InvalidOperationException();
+		public void Handle(ProjectionSubsystemMessage.StartComponents message) {
+			if (_started) {
+				_logger.Debug("PROJECTIONS: Projection manager already started. Correlation: {correlation}",
+					message.InstanceCorrelationId);
+				return;
+			}
+			
+			_instanceCorrelationId = message.InstanceCorrelationId;
+			_logger.Debug("PROJECTIONS: Starting Projections Manager. Correlation: {correlation}", _instanceCorrelationId);
+			
 			_started = true;
-			_publisher.Publish(new ProjectionManagementMessage.Starting(_epochId));
+			_publisher.Publish(new ProjectionManagementMessage.Starting(_instanceCorrelationId));
+			_publisher.Publish(new ProjectionSubsystemMessage.ComponentStarted(ServiceName, _instanceCorrelationId));
 		}
 
+		public void Handle(ProjectionSubsystemMessage.StopComponents message) {
+			if (!_started) {
+				_logger.Debug("PROJECTIONS: Projection manager already stopped. Correlation: {correlation}",
+					message.InstanceCorrelationId);
+				return;
+			}
+			
+			if (_instanceCorrelationId != message.InstanceCorrelationId) {
+				_logger.Debug("PROJECTIONS: Projection Manager received stop request for incorrect correlation id." +
+				              "Current: {correlationId}. Requested: {requestedCorrelationId}", _instanceCorrelationId, message.InstanceCorrelationId);
+				return;
+			}
+			_logger.Debug("PROJECTIONS: Stopping Projections Manager. Correlation {correlation}", _instanceCorrelationId);
+			Stop();
+		}
+	
 		public void Handle(ProjectionManagementMessage.ReaderReady message) {
 			if (_runProjections >= ProjectionType.System)
 				StartExistingProjections(
 					() => {
 						_projectionsStarted = true;
 						ScheduleExpire();
-						_publisher.Publish(new SystemMessage.SubSystemInitialized("Projections"));
 					});
 		}
 
@@ -213,9 +238,16 @@ namespace EventStore.Projections.Core.Services.Management {
 
 			_writeDispatcher.CancelAll();
 			_readDispatcher.CancelAll();
+			_readForwardDispatcher.CancelAll();
+			_streamDispatcher.CancelAll();
+			
+			_getStateDispatcher.CancelAll();
+			_getResultDispatcher.CancelAll();
 
 			_projections.Clear();
 			_projectionsMap.Clear();
+			
+			_publisher.Publish(new ProjectionSubsystemMessage.ComponentStopped(ServiceName, _instanceCorrelationId));
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.Post message) {
@@ -602,50 +634,6 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		public void Handle(ClientMessage.DeleteStreamCompleted message) {
 			_streamDispatcher.Handle(message);
-		}
-
-		private VNodeState _currentState = VNodeState.Unknown;
-		private bool _systemIsReady = false;
-		private bool _ready = false;
-		private Guid _epochId = Guid.Empty;
-
-		public void Handle(SystemMessage.SystemCoreReady message) {
-			_systemIsReady = true;
-			StartWhenConditionsAreMet();
-		}
-
-		public void Handle(SystemMessage.StateChangeMessage message) {
-			_currentState = message.State;
-			if (_currentState != VNodeState.Master)
-				_ready = false;
-
-			StartWhenConditionsAreMet();
-		}
-
-		public void Handle(SystemMessage.EpochWritten message) {
-			if (_ready) return;
-
-			if (_currentState == VNodeState.Master) {
-				_epochId = message.Epoch.EpochId;
-				_ready = true;
-			}
-
-			StartWhenConditionsAreMet();
-		}
-
-		private void StartWhenConditionsAreMet() {
-			//run if and only if these conditions are met
-			if (_systemIsReady && _ready) {
-				if (!_started) {
-					_logger.Debug("PROJECTIONS: Starting Projections Manager. (Node State : {state})", _currentState);
-					Start();
-				}
-			} else {
-				if (_started) {
-					_logger.Debug("PROJECTIONS: Stopping Projections Manager. (Node State : {state})", _currentState);
-					Stop();
-				}
-			}
 		}
 
 		public void Handle(ProjectionManagementMessage.Internal.Deleted message) {

@@ -9,6 +9,12 @@ namespace EventStore.Projections.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
+			
+			public Guid InstanceCorrelationId { get; }
+
+			public StartReader(Guid instanceCorrelationId) {
+				InstanceCorrelationId = instanceCorrelationId;
+			}
 		}
 
 		public class StopReader : Message {
@@ -16,6 +22,12 @@ namespace EventStore.Projections.Core.Messages {
 
 			public override int MsgTypeId {
 				get { return TypeId; }
+			}
+			
+			public Guid QueueId { get; }
+			
+			public StopReader(Guid queueId) {
+				QueueId = queueId;
 			}
 		}
 
