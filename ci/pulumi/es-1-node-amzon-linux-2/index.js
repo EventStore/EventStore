@@ -40,7 +40,7 @@ git clone https://github.com/EventStore/EventStore.git
 git fetch origin pull/`+pullNo+`2068/head:pull-ci
 git checkout pull-ci
 
-cd /src/EventStore.ClusterNode
+cd src/EventStore.ClusterNode
 export EVENTSTORE_INT_IP=0.0.0.0
 export EVENTSTORE_EXT_IP=0.0.0.0
 dotnet run
