@@ -143,6 +143,7 @@ jobs:
       checkLatest: true
     displayName: Install Node 8.x
   - task: CmdLine@2
+    condition: eq(variables['Build.Reason'], 'PullRequest')
     env:
         PULUMI_ACCESS_TOKEN: $(PULUMI_ACCESS_TOKEN)
         AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
@@ -155,7 +156,7 @@ jobs:
         cd /home/vsts/work/1/s/ci/pulumi/es-1-node-amzon-linux-2
         npm install
         pulumi stack select arwinneil/es-1-node-amzon-linux-2/dev
-        pulumi config set pullNo 2068
+        pulumi config set pullNo $(System.PullRequest.PullRequestNumber)
         # pulumi config set keyName $(EC2_KEY_NAME)
         pulumi up --yes
     displayName: Pulumi - Deploy Event Store Instance 
