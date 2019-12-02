@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core {
 
 		private readonly bool _faultOutOfOrderProjections;
 		
-		private const int ComponentCount = 2; /* ProjectionManager & ProjectionCoreCoordinator */
+		private readonly int _componentCount;
 		private bool _restarting;
 		private int _pendingComponentStarts;
 		private int _runningComponentCount;
@@ -81,6 +81,10 @@ namespace EventStore.Projections.Core {
 				_projectionWorkerThreadCount = projectionWorkerThreadCount;
 
 			_runProjections = runProjections;
+			// Projection manager & Projection Core Coordinator
+			// The manager only starts when projections are running
+			_componentCount = _runProjections == ProjectionType.None ? 1 : 2;
+
 			_startStandardProjections = startStandardProjections;
 			_projectionsQueryExpiry = projectionQueryExpiry;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
@@ -161,7 +165,7 @@ namespace EventStore.Projections.Core {
 			_restarting = false;
 			_instanceCorrelationId = Guid.NewGuid();
 			_logger.Info("PROJECTIONS SUBSYSTEM: Starting components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
-			_pendingComponentStarts = ComponentCount;
+			_pendingComponentStarts = _componentCount;
 			_masterMainBus.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
 		}
 
