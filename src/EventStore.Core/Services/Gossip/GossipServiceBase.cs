@@ -22,8 +22,11 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
 		IHandle<SystemMessage.VNodeConnectionEstablished>,
+		IHandle<GossipMessage.GetGossipReceived>,
+		IHandle<GossipMessage.GetGossipFailed>,
 		IHandle<ElectionMessage.ElectionsDone> {
 		private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
+		private static readonly TimeSpan GossipTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
 
@@ -189,13 +192,41 @@ namespace EventStore.Core.Services.Gossip {
 			if (node == null || !node.IsAlive)
 				return;
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost).", message.VNodeEndPoint);
+			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
+				message.VNodeEndPoint);
+			_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
+				new GossipMessage.GetGossip(), DateTime.Now.Add(GossipTimeout)));
+		}
+
+		public void Handle(GossipMessage.GetGossipReceived message) {
+			if (_state != GossipState.Working)
+				return;
+
+			Log.Trace("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
 
 			var oldCluster = _cluster;
-			_cluster = UpdateCluster(_cluster, x => x.Is(message.VNodeEndPoint) ? x.Updated(isAlive: false) : x);
+			_cluster = MergeClusters(_cluster,
+				message.ClusterInfo,
+				message.Server,
+				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
+
+			if (_cluster.HasChangedSince(oldCluster))
+				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
+			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
+		}
+
+		public void Handle(GossipMessage.GetGossipFailed message) {
+			if (_state != GossipState.Working)
+				return;
+			
+			Log.Trace("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
+				message.Recipient);
+
+			var oldCluster = _cluster;
+			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient) ? x.Updated(isAlive: false) : x);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster,
-					string.Format("TCP connection lost to [{0}]", message.VNodeEndPoint));
+					string.Format("TCP connection lost to [{0}]", message.Recipient));
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
