@@ -132,8 +132,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		private void OnConnectionClosed(TcpConnectionManager manager, SocketError socketError) {
-			if(socketError != SocketError.Success)
-				_publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
+			_publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
 		}
 
 		public void Handle(ReplicationMessage.ReconnectToMaster message) {

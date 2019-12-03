@@ -45,10 +45,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			get { return _clientConnectionName; }
 		}
 
-		public SocketError CloseReason {
-			get { return _closeReason; }
-		}
-
 		private readonly ITcpConnection _connection;
 		private readonly IEnvelope _tcpEnvelope;
 		private readonly IPublisher _publisher;
@@ -72,7 +68,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IAuthenticationProvider _authProvider;
 		private UserCredentials _defaultUser;
 		private TcpServiceType _serviceType;
-		private SocketError _closeReason;
 
 		public TcpConnectionManager(string connectionName,
 			TcpServiceType serviceType,
@@ -202,7 +197,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] closed: {e}.",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				connection.RemoteEndPoint, ConnectionId, socketError);
-			_closeReason = socketError;
 			if (_connectionClosed != null)
 				_connectionClosed(this, socketError);
 		}
