@@ -9,7 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Util;
 
 namespace EventStore.ClientAPI.Embedded {
-	internal class EmbeddedFilteredSubscription : EmbeddedSubscription {
+	internal class FilteredEmbeddedSubscription : EmbeddedSubscription {
 		private readonly UserCredentials _userCredentials;
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly bool _resolveLinkTos;
@@ -18,7 +18,7 @@ namespace EventStore.ClientAPI.Embedded {
 		private readonly Func<EventStoreSubscription, Position, Task> _checkpointReached;
 		private readonly int _checkpointInterval;
 
-		public EmbeddedFilteredSubscription(
+		public FilteredEmbeddedSubscription(
 			ILogger log, IPublisher publisher, Guid connectionId, TaskCompletionSource<EventStoreSubscription> source,
 			string streamId, UserCredentials userCredentials, IAuthenticationProvider authenticationProvider,
 			bool resolveLinkTos, TcpClientMessageDto.Filter filter,
@@ -47,7 +47,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
 				ex => DropSubscription(Core.Services.SubscriptionDropReason.AccessDenied, ex),
-				user => new ClientMessage.SubscribeToStreamFiltered(
+				user => new ClientMessage.FilteredSubscribeToStream(
 					correlationId,
 					correlationId,
 					new PublishEnvelope(Publisher, true),

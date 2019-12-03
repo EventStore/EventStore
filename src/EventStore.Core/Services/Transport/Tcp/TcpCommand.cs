@@ -47,10 +47,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		ReadAllEventsForwardCompleted = 0xB7,
 		ReadAllEventsBackward = 0xB8,
 		ReadAllEventsBackwardCompleted = 0xB9,
-		ReadAllEventsForwardFiltered = 0xBA,
-		ReadAllEventsForwardFilteredCompleted = 0xBB,
-		ReadAllEventsBackwardFiltered = 0xBC,
-		ReadAllEventsBackwardFilteredCompleted = 0xBE,
+		FilteredReadAllEventsForward = 0xBA,
+		FilteredReadAllEventsForwardCompleted = 0xBB,
+		FilteredReadAllEventsBackward = 0xBC,
+		FilteredReadAllEventsBackwardCompleted = 0xBE,
 
 		SubscribeToStream = 0xC0,
 		SubscriptionConfirmation = 0xC1,
@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		PersistentSubscriptionNakEvents = 0xCD,
 		UpdatePersistentSubscription = 0xCE,
 		UpdatePersistentSubscriptionCompleted = 0xCF,
-		SubscribeToStreamFiltered = 0xD2,
+		FilteredSubscribeToStream = 0xD2,
 		CheckpointReached = 0xD3,
 
 		ScavengeDatabase = 0xD0,

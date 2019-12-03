@@ -20,23 +20,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync("$all", -1,
-					StreamMetadata.Build().SetReadRole(SystemRoles.All),
-					DefaultData.AdminCredentials);
+				StreamMetadata.Build().SetReadRole(SystemRoles.All),
+				DefaultData.AdminCredentials);
 
 			_testEventsA = Enumerable
-			   .Range(0, 10)
-			   .Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "AEvent"))
-			   .ToList();
+				.Range(0, 10)
+				.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "AEvent"))
+				.ToList();
 
 			var testEventsB = Enumerable
-			   .Range(0, 10000)
-			   .Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "BEvent"))
-			   .ToList();
+				.Range(0, 10000)
+				.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "BEvent"))
+				.ToList();
 
 			_testEventsC = Enumerable
-			   .Range(0, 10)
-			   .Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "CEvent"))
-			   .ToList();
+				.Range(0, 10)
+				.Select(x => TestEvent.NewTestEvent(x.ToString(), eventName: "CEvent"))
+				.ToList();
 
 			_testEvents.AddRange(_testEventsA);
 			_testEvents.AddRange(testEventsB);
@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			AllEventsSlice slice;
 
 			do {
-				slice = _conn.ReadAllEventsForwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
+				slice = _conn.FilteredReadAllEventsForwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
 					.GetAwaiter()
 					.GetResult();
 
@@ -64,12 +64,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 				} else {
 					read.AddRange(slice.Events);
 				}
+
 				sliceStart = slice.NextPosition;
 			} while (!slice.IsEndOfStream);
 
 			Assert.That(EventDataComparer.Equal(
-			   _testEventsC.ToArray(),
-			   read.Select(x => x.Event).ToArray()));
+				_testEventsC.ToArray(),
+				read.Select(x => x.Event).ToArray()));
 
 			Assert.AreEqual(100, numberOfEmptySlicesRead);
 		}
@@ -84,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			AllEventsSlice slice;
 
 			do {
-				slice = _conn.ReadAllEventsBackwardFilteredAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
+				slice = _conn.FilteredReadAllEventsBackwardAsync(sliceStart, 50, false, filter, maxSearchWindow: 100)
 					.GetAwaiter()
 					.GetResult();
 				if (slice.Events.Length == 0) {
@@ -92,6 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				} else {
 					read.AddRange(slice.Events);
 				}
+
 				sliceStart = slice.NextPosition;
 			} while (!slice.IsEndOfStream);
 
@@ -106,9 +108,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
 			var filter = Filter.EventType.Prefix("BE");
 
-			var slice = _conn.ReadAllEventsForwardFilteredAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
-					.GetAwaiter()
-					.GetResult();
+			var slice = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
+				.GetAwaiter()
+				.GetResult();
 
 			Assert.AreEqual(2, slice.Events.Length); // Includes system events at start of stream
 		}
@@ -117,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_backward() {
 			var filter = Filter.EventType.Prefix("BE");
 
-			var slice = _conn.ReadAllEventsBackwardFilteredAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
+			var slice = _conn.FilteredReadAllEventsBackwardAsync(Position.End, 20, false, filter, maxSearchWindow: 20)
 				.GetAwaiter()
 				.GetResult();
 

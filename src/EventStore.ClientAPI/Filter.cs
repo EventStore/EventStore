@@ -11,8 +11,13 @@ namespace EventStore.ClientAPI {
 
 		public static FilterContext EventType => new FilterContext(ClientMessage.Filter.FilterContext.EventType);
 		public static FilterContext StreamId => new FilterContext(ClientMessage.Filter.FilterContext.StreamId);
+
 		public static Filter ExcludeSystemEvents => new Filter(ClientMessage.Filter.FilterContext.EventType,
 			ClientMessage.Filter.FilterType.Regex, new[] {@"^[^\$].*"});
+
+		public override string ToString() {
+			return $"{Value.Context}/{Value.Type}/{string.Join(",", Value.Data)}";
+		}                                                                                                                                                                                                                                                                                                                                                                                                       
 	}
 
 	public class FilterContext {

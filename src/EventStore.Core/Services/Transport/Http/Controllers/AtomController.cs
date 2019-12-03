@@ -711,7 +711,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, msg) => Format.ReadAllEventsBackwardFilteredCompleted(args, msg, embed),
 				(args, msg) => Configure.ReadAllEventsBackwardFilteredCompleted(args, msg, position == TFPos.HeadOfTf));
 			var corrId = Guid.NewGuid();
-			Publish(new ClientMessage.ReadAllEventsBackwardFiltered(corrId, corrId, envelope,
+			Publish(new ClientMessage.FilteredReadAllEventsBackward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count,
 				requireMaster, true, count, GetETagTFPosition(manager), filter, manager.User));
 		}
@@ -780,7 +780,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, msg) => Format.ReadAllEventsForwardFilteredCompleted(args, msg, embed),
 				(args, msg) => Configure.ReadAllEventsForwardFilteredCompleted(args, msg, headOfTf: false));
 			var corrId = Guid.NewGuid();
-			Publish(new ClientMessage.ReadAllEventsForwardFiltered(corrId, corrId, envelope,
+			Publish(new ClientMessage.FilteredReadAllEventsForward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count, true,
 				requireMaster, 1000, GetETagTFPosition(manager), filter, manager.User,
 				longPollTimeout));
