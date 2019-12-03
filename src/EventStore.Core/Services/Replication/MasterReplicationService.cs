@@ -412,10 +412,8 @@ namespace EventStore.Core.Services.Replication {
 			var dataFound = false;
 			foreach (var subscription in _subscriptions.Values) {
 				if (subscription.IsConnectionClosed) {
-					if (subscription.CloseReason != SocketError.Success) {
-						_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
-							subscription.ConnectionId));
-					}
+					_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
+						subscription.ConnectionId));
 
 					subscription.ShouldDispose = true;
 				}
@@ -641,10 +639,6 @@ namespace EventStore.Core.Services.Replication {
 
 			public bool IsConnectionClosed {
 				get { return _connection.IsClosed; }
-			}
-
-			public SocketError CloseReason {
-				get { return _connection.CloseReason; }
 			}
 
 			public readonly bool IsPromotable;
