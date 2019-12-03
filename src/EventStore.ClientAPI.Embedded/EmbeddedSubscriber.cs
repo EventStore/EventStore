@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Embedded {
 		
 		public void Handle(ClientMessage.CheckpointReached message) {
 			_subscriptions.TryGetActiveSubscription(message.CorrelationId, out var subscription);
-			((EmbeddedFilteredSubscription)subscription).CheckpointReached(message.Position);
+			((FilteredEmbeddedSubscription)subscription).CheckpointReached(message.Position);
 		}
 
 		public void Handle(ClientMessage.SubscriptionConfirmation message) {
@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Func<EventStoreSubscription, Position, Task> checkpointReached, int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped) {
-			var subscription = new EmbeddedFilteredSubscription(
+			var subscription = new FilteredEmbeddedSubscription(
 				_log, _publisher, _connectionId, source, stream, userCredentials, _authenticationProvider,
 				resolveLinkTos, filter, eventAppeared, checkpointReached, checkpointInterval,
 				subscriptionDropped);

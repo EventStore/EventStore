@@ -1,6 +1,6 @@
 namespace EventStore.Core.Data
 {
-    public enum ReadAllFilteredResult
+    public enum FilteredReadAllResult
     {
         Success = 0,
         NotModified = 1,

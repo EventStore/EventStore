@@ -8,8 +8,8 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
-using static EventStore.Core.Messages.TcpClientMessageDto.ReadAllEventsFilteredCompleted;
-using ReadAllFilteredResult = EventStore.Core.Data.ReadAllFilteredResult;
+using static EventStore.Core.Messages.TcpClientMessageDto.FilteredReadAllEventsCompleted;
+using FilteredReadAllResult = EventStore.Core.Data.FilteredReadAllResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages {
@@ -890,7 +890,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReadAllEventsForwardFiltered : ReadRequestMessage {
+		public class FilteredReadAllEventsForward : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 			public override int MsgTypeId {
 				get { return TypeId; }
@@ -907,7 +907,7 @@ namespace EventStore.Core.Messages {
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
 
-			public ReadAllEventsForwardFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+			public FilteredReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster,
 				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, IPrincipal user,
 				TimeSpan? longPollTimeout = null)
@@ -924,7 +924,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReadAllEventsForwardFilteredCompleted : ReadResponseMessage {
+		public class FilteredReadAllEventsForwardCompleted : ReadResponseMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 			public override int MsgTypeId {
 				get { return TypeId; }
@@ -932,7 +932,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly Guid CorrelationId;
 
-			public readonly ReadAllFilteredResult Result;
+			public readonly FilteredReadAllResult Result;
 			public readonly string Error;
 
 			public readonly ResolvedEvent[] Events;
@@ -945,7 +945,7 @@ namespace EventStore.Core.Messages {
 			public readonly long TfLastCommitPosition;
 			public readonly bool IsEndOfStream;
 
-			public ReadAllEventsForwardFilteredCompleted(Guid correlationId, ReadAllFilteredResult result, string error,
+			public FilteredReadAllEventsForwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
 				ResolvedEvent[] events,
 				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
@@ -967,7 +967,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		public class ReadAllEventsBackwardFiltered : ReadRequestMessage {
+		public class FilteredReadAllEventsBackward : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -985,7 +985,7 @@ namespace EventStore.Core.Messages {
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
 
-			public ReadAllEventsBackwardFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+			public FilteredReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireMaster,
 				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, IPrincipal user,
 				TimeSpan? longPollTimeout = null)
@@ -1002,7 +1002,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		public class ReadAllEventsBackwardFilteredCompleted : ReadResponseMessage {
+		public class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1011,7 +1011,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly Guid CorrelationId;
 
-			public readonly ReadAllFilteredResult Result;
+			public readonly FilteredReadAllResult Result;
 			public readonly string Error;
 
 			public readonly ResolvedEvent[] Events;
@@ -1024,7 +1024,7 @@ namespace EventStore.Core.Messages {
 			public readonly long TfLastCommitPosition;
 			public readonly bool IsEndOfStream;
 
-			public ReadAllEventsBackwardFilteredCompleted(Guid correlationId, ReadAllFilteredResult result, string error,
+			public FilteredReadAllEventsBackwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
 				ResolvedEvent[] events,
 				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
@@ -1510,7 +1510,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		public class SubscribeToStreamFiltered : ReadRequestMessage {
+		public class FilteredSubscribeToStream : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1523,7 +1523,7 @@ namespace EventStore.Core.Messages {
 			public readonly IEventFilter EventFilter;
 			public readonly int CheckpointInterval;
 
-			public SubscribeToStreamFiltered(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
+			public FilteredSubscribeToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
 				string eventStreamId, bool resolveLinkTos, IPrincipal user, IEventFilter eventFilter, int checkpointInterval)
 				: base(internalCorrId, correlationId, envelope, user) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");

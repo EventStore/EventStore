@@ -12,6 +12,10 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Util;
+#if!NET452
+using TaskEx = System.Threading.Tasks.Task;
+
+#endif
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EventStoreEmbeddedNodeConnection : IEventStoreConnection, IEventStoreTransactionConnection {
@@ -70,8 +74,8 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName,
 			IPublisher publisher, ISubscriber bus, IAuthenticationProvider authenticationProvider) {
-			Ensure.NotNull(publisher, "publisher");
-			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(settings, nameof(settings));
 
 			Guid connectionId = Guid.NewGuid();
 
@@ -90,7 +94,7 @@ namespace EventStore.ClientAPI.Embedded {
 			_subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionConfirmation>(_subscriptions);
 			_subscriptionBus.Subscribe<ClientMessage.PersistentSubscriptionStreamEventAppeared>(_subscriptions);
 			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStream>(_publisher.Publish));
-			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.SubscribeToStreamFiltered>(_publisher.Publish));
+			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.FilteredSubscribeToStream>(_publisher.Publish));
 			_subscriptionBus.Subscribe(new AdHocHandler<ClientMessage.UnsubscribeFromStream>(_publisher.Publish));
 			_subscriptionBus.Subscribe(
 				new AdHocHandler<ClientMessage.ConnectToPersistentSubscription>(_publisher.Publish));
@@ -136,7 +140,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public Task<DeleteResult> DeleteStreamAsync(string stream, long expectedVersion, bool hardDelete,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
 
 			var source = new TaskCompletionSource<DeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -172,8 +176,8 @@ namespace EventStore.ClientAPI.Embedded {
 		public async Task<WriteResult> AppendToStreamAsync(string stream, long expectedVersion, IEnumerable<EventData> events,
 			UserCredentials userCredentials = null) {
 			// ReSharper disable PossibleMultipleEnumeration
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNull(events, "events");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNull(events, nameof(events));
 
 			var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -195,8 +199,8 @@ namespace EventStore.ClientAPI.Embedded {
 			IEnumerable<EventData> events,
 			UserCredentials userCredentials = null) {
 			// ReSharper disable PossibleMultipleEnumeration
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNull(events, "events");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNull(events, nameof(events));
 
 			var source =
 				new TaskCompletionSource<ConditionalWriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -217,7 +221,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public Task<EventStoreTransaction> StartTransactionAsync(string stream, long expectedVersion,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
 
 			var source =
 				new TaskCompletionSource<EventStoreTransaction>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -237,15 +241,15 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public EventStoreTransaction ContinueTransaction(long transactionId, UserCredentials userCredentials = null) {
-			Ensure.Nonnegative(transactionId, "transactionId");
+			Ensure.Nonnegative(transactionId, nameof(transactionId));
 			return new EventStoreTransaction(transactionId, GetUserCredentials(_settings, userCredentials), this);
 		}
 
 		Task IEventStoreTransactionConnection.TransactionalWriteAsync(EventStoreTransaction transaction,
 			IEnumerable<EventData> events, UserCredentials userCredentials) {
 			// ReSharper disable PossibleMultipleEnumeration
-			Ensure.NotNull(transaction, "transaction");
-			Ensure.NotNull(events, "events");
+			Ensure.NotNull(transaction, nameof(transaction));
+			Ensure.NotNull(events, nameof(events));
 
 			var source =
 				new TaskCompletionSource<EventStoreTransaction>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -266,7 +270,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		async Task<WriteResult> IEventStoreTransactionConnection.CommitTransactionAsync(EventStoreTransaction transaction,
 			UserCredentials userCredentials) {
-			Ensure.NotNull(transaction, "transaction");
+			Ensure.NotNull(transaction, nameof(transaction));
 
 			var source = new TaskCompletionSource<WriteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -284,9 +288,8 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task<EventReadResult> ReadEventAsync(string stream, long eventNumber, bool resolveLinkTos,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			if (eventNumber < -1)
-				throw new ArgumentOutOfRangeException("eventNumber");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
 
 			var source = new TaskCompletionSource<EventReadResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -304,9 +307,9 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, long start, int count,
 			bool resolveLinkTos, UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.Nonnegative(start, "start");
-			Ensure.Positive(count, "count");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.Nonnegative(start, nameof(start));
+			Ensure.Positive(count, nameof(count));
 			if (count > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -329,8 +332,8 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, long start, int count,
 			bool resolveLinkTos, UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.Positive(count, "count");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.Positive(count, nameof(count));
 			if (count > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -353,7 +356,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
 			UserCredentials userCredentials = null) {
-			Ensure.Positive(maxCount, "maxCount");
+			Ensure.Positive(maxCount, nameof(maxCount));
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -373,13 +376,17 @@ namespace EventStore.ClientAPI.Embedded {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public async Task<AllEventsSlice> ReadAllEventsForwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
-			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+		public Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+			return FilteredReadAllEventsForwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
+				userCredentials);
+		}
 
-			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+		public async Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+			Ensure.Positive(maxCount, nameof(maxCount));
+			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -388,7 +395,7 @@ namespace EventStore.ClientAPI.Embedded {
 					ClientApiConstants.MaxReadSize));
 			var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-			var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsForwardFiltered(source));
+			var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.FilteredReadAllEventsForward(source));
 
 			Guid corrId = Guid.NewGuid();
 
@@ -396,16 +403,16 @@ namespace EventStore.ClientAPI.Embedded {
 
 			_publisher.PublishWithAuthentication(_authenticationProvider,
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
-					new ClientMessage.ReadAllEventsForwardFiltered(corrId, corrId, envelope,
+					new ClientMessage.FilteredReadAllEventsForward(corrId, corrId, envelope,
 						position.CommitPosition,
-						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindowInternal, null,
+						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindow, null,
 						EventFilter.Get(serverFilter), user));
 			return await source.Task.ConfigureAwait(false);
 		}
 
 		public async Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 			UserCredentials userCredentials = null) {
-			Ensure.Positive(maxCount, "maxCount");
+			Ensure.Positive(maxCount, nameof(maxCount));
 			if (maxCount > ClientApiConstants.MaxReadSize)
 				throw new ArgumentException(string.Format(
 					"Count should be less than {0}. For larger reads you should page.",
@@ -421,13 +428,17 @@ namespace EventStore.ClientAPI.Embedded {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public async Task<AllEventsSlice> ReadAllEventsBackwardFilteredAsync(Position position, int maxCount,
-			bool resolveLinkTos, Filter filter, int? maxSearchWindow = null, UserCredentials userCredentials = null) {
-			var maxSearchWindowInternal = maxSearchWindow.GetValueOrDefault(maxCount);
+		public Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, UserCredentials userCredentials = null) {
+			return FilteredReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos, filter, maxCount,
+				userCredentials);
+		}
 
-			Ensure.Positive(maxCount, "maxCount");
-			Ensure.Positive(maxSearchWindowInternal, nameof(maxSearchWindow));
-			Ensure.GreaterThanOrEqualTo(maxSearchWindowInternal, maxCount, nameof(maxSearchWindow));
+		public async Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount,
+			bool resolveLinkTos, Filter filter, int maxSearchWindow, UserCredentials userCredentials = null) {
+			Ensure.Positive(maxCount, nameof(maxCount));
+			Ensure.Positive(maxSearchWindow, nameof(maxSearchWindow));
+			Ensure.GreaterThanOrEqualTo(maxSearchWindow, maxCount, nameof(maxSearchWindow));
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
@@ -435,16 +446,16 @@ namespace EventStore.ClientAPI.Embedded {
 					"Count should be less than {0}. For larger reads you should page.",
 					ClientApiConstants.MaxReadSize));
 			var source = new TaskCompletionSource<AllEventsSlice>(TaskCreationOptions.RunContinuationsAsynchronously);
-			var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.ReadAllEventsBackwardFiltered(source));
+			var envelope = new EmbeddedResponseEnvelope(new EmbeddedResponders.FilteredReadAllEventsBackward(source));
 			Guid corrId = Guid.NewGuid();
 
 			var serverFilter = ConvertToServerFilter(filter);
 
 			_publisher.PublishWithAuthentication(_authenticationProvider,
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
-					new ClientMessage.ReadAllEventsBackwardFiltered(corrId, corrId, envelope,
+					new ClientMessage.FilteredReadAllEventsBackward(corrId, corrId, envelope,
 						position.CommitPosition,
-						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindowInternal, null,
+						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindow, null,
 						EventFilter.Get(serverFilter), user));
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -455,8 +466,8 @@ namespace EventStore.ClientAPI.Embedded {
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			var source =
 				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -490,9 +501,9 @@ namespace EventStore.ClientAPI.Embedded {
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNull(settings, "settings");
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNull(settings, nameof(settings));
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			var catchUpSubscription =
 				new EventStoreStreamCatchUpSubscription(this, _settings.Log, stream, lastCheckpoint,
@@ -508,7 +519,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			var source =
 				new TaskCompletionSource<EventStoreSubscription>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -519,20 +530,25 @@ namespace EventStore.ClientAPI.Embedded {
 			return await source.Task.ConfigureAwait(false);
 		}
 
-		public Task<EventStoreSubscription> SubscribeToAllFilteredAsync(bool resolveLinkTos, Filter filter,
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
-			Func<EventStoreSubscription, Position, Task> checkpointReached = null,
-			int? checkpointInterval = null,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			return FilteredSubscribeToAllAsync(resolveLinkTos, filter, eventAppeared, (s, p) => TaskEx.CompletedTask,
+				DontReportCheckpointReached, subscriptionDropped, userCredentials);
+		}
+
+		public Task<EventStoreSubscription> FilteredSubscribeToAllAsync(bool resolveLinkTos, Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 			Ensure.NotNull(filter, nameof(filter));
+			Ensure.NotNull(checkpointReached, nameof(checkpointReached));
 
-			if (checkpointReached == null) {
-				checkpointInterval = DontReportCheckpointReached;
-			} else if (!checkpointInterval.HasValue){
-				throw new ArgumentNullException(nameof(checkpointInterval));
-			} else if (checkpointInterval <= 0) {
+			if (checkpointInterval <= 0 && checkpointInterval != DontReportCheckpointReached) {
 				throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
 			}
 
@@ -544,10 +560,9 @@ namespace EventStore.ClientAPI.Embedded {
 			Guid corrId = Guid.NewGuid();
 			_subscriptions.StartFilteredSubscription(corrId, source, string.Empty,
 				GetUserCredentials(_settings, userCredentials), resolveLinkTos, serverFilter, eventAppeared,
-				checkpointReached, checkpointInterval.Value, subscriptionDropped);
+				checkpointReached, checkpointInterval, subscriptionDropped);
 			return source.Task;
 		}
-
 
 		public EventStorePersistentSubscriptionBase ConnectToPersistentSubscription(
 			string stream, string groupName,
@@ -555,9 +570,9 @@ namespace EventStore.ClientAPI.Embedded {
 			Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null, int bufferSize = 10,
 			bool autoAck = true) {
-			Ensure.NotNullOrEmpty(groupName, "groupName");
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNullOrEmpty(groupName, nameof(groupName));
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared,
 				subscriptionDropped,
@@ -574,7 +589,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Func<EventStorePersistentSubscriptionBase, ResolvedEvent, int?, Task> eventAppeared,
 			Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null, int bufferSize = 10, bool autoAck = true) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
 
 			var subscription = new EmbeddedEventStorePersistentSubscription(groupName, stream, eventAppeared,
 				subscriptionDropped,
@@ -606,8 +621,8 @@ namespace EventStore.ClientAPI.Embedded {
 			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNull(eventAppeared, "eventAppeared");
-			Ensure.NotNull(settings, "settings");
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+			Ensure.NotNull(settings, nameof(settings));
 
 			var catchUpSubscription =
 				new EventStoreAllCatchUpSubscription(this, _settings.Log, lastCheckpoint,
@@ -618,12 +633,50 @@ namespace EventStore.ClientAPI.Embedded {
 			return catchUpSubscription;
 		}
 
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
+			Filter filter, CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			return FilteredSubscribeToAllFrom(lastCheckpoint, filter, settings, eventAppeared,
+				(s, p) => TaskEx.CompletedTask, DontReportCheckpointReached, liveProcessingStarted, subscriptionDropped,
+				userCredentials);
+		}
+
+		public EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(Position? lastCheckpoint,
+			Filter filter, CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached, int checkpointIntervalMultiplier,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null) {
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+			Ensure.NotNull(settings, nameof(settings));
+
+			Ensure.NotNull(filter, nameof(filter));
+			Ensure.NotNull(checkpointReached, nameof(checkpointReached));
+
+			if (checkpointIntervalMultiplier <= 0 && checkpointIntervalMultiplier != DontReportCheckpointReached) {
+				throw new ArgumentOutOfRangeException(nameof(checkpointIntervalMultiplier));
+			}
+
+			var catchUpSubscription =
+				new EventStoreAllFilteredCatchUpSubscription(this, _settings.Log, lastCheckpoint, filter,
+					userCredentials, eventAppeared, checkpointReached, checkpointIntervalMultiplier,
+					liveProcessingStarted,
+					subscriptionDropped, settings);
+
+			catchUpSubscription.StartAsync();
+			return catchUpSubscription;
+		}
+
 		public async Task CreatePersistentSubscriptionAsync(string stream, string groupName,
 			PersistentSubscriptionSettings settings,
 			UserCredentials credentials) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNullOrEmpty(groupName, "groupName");
-			Ensure.NotNull(settings, "settings");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNullOrEmpty(groupName, nameof(groupName));
+			Ensure.NotNull(settings, nameof(settings));
 
 			var source =
 				new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions
@@ -663,8 +716,8 @@ namespace EventStore.ClientAPI.Embedded {
 		public async Task UpdatePersistentSubscriptionAsync(string stream, string groupName,
 			PersistentSubscriptionSettings settings,
 			UserCredentials credentials) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNullOrEmpty(groupName, "groupName");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNullOrEmpty(groupName, nameof(groupName));
 
 			var source =
 				new TaskCompletionSource<PersistentSubscriptionUpdateResult>(TaskCreationOptions
@@ -704,8 +757,8 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task DeletePersistentSubscriptionAsync(
 			string stream, string groupName, UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
-			Ensure.NotNullOrEmpty(groupName, "groupName");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
+			Ensure.NotNullOrEmpty(groupName, nameof(groupName));
 
 			var source =
 				new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions
@@ -735,7 +788,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 		public async Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion, byte[] metadata,
 			UserCredentials userCredentials = null) {
-			Ensure.NotNullOrEmpty(stream, "stream");
+			Ensure.NotNullOrEmpty(stream, nameof(stream));
 			if (SystemStreams.IsMetastream(stream))
 				throw new ArgumentException(
 					string.Format("Setting metadata for metastream '{0}' is not supported.", stream), "stream");

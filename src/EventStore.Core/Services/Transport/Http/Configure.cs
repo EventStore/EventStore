@@ -264,21 +264,21 @@ namespace EventStore.Core.Services.Transport.Http {
 		
 		public static ResponseConfiguration ReadAllEventsBackwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
-			var msg = message as ClientMessage.ReadAllEventsBackwardFilteredCompleted;
+			var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
 			if (msg != null) {
 				switch (msg.Result) {
-					case ReadAllFilteredResult.Success:
+					case FilteredReadAllResult.Success:
 						var codec = entity.ResponseCodec;
 						if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfLastCommitPosition)
 							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
 						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
 						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
 						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
-					case ReadAllFilteredResult.NotModified:
+					case FilteredReadAllResult.NotModified:
 						return NotModified();
-					case ReadAllFilteredResult.Error:
+					case FilteredReadAllResult.Error:
 						return InternalServerError(msg.Error);
-					case ReadAllFilteredResult.AccessDenied:
+					case FilteredReadAllResult.AccessDenied:
 						return Unauthorized();
 					default:
 						throw new ArgumentOutOfRangeException();
@@ -322,21 +322,21 @@ namespace EventStore.Core.Services.Transport.Http {
 		
 		public static ResponseConfiguration ReadAllEventsForwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
-			var msg = message as ClientMessage.ReadAllEventsForwardFilteredCompleted;
+			var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
 			if (msg != null) {
 				switch (msg.Result) {
-					case ReadAllFilteredResult.Success:
+					case FilteredReadAllResult.Success:
 						var codec = entity.ResponseCodec;
 						if (!headOfTf && msg.Events.Length == msg.MaxCount)
 							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
 						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
 						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
 						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
-					case ReadAllFilteredResult.NotModified:
+					case FilteredReadAllResult.NotModified:
 						return NotModified();
-					case ReadAllFilteredResult.Error:
+					case FilteredReadAllResult.Error:
 						return InternalServerError(msg.Error);
-					case ReadAllFilteredResult.AccessDenied:
+					case FilteredReadAllResult.AccessDenied:
 						return Unauthorized();
 					default:
 						throw new ArgumentOutOfRangeException();

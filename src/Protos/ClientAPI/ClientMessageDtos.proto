@@ -216,7 +216,7 @@ message Filter{
     repeated string data = 3;    
 }
 
-message ReadAllEventsFiltered {
+message FilteredReadAllEvents {
     required int64 commit_position = 1;
     required int64 prepare_position = 2;
     required int32 max_count = 3;
@@ -226,9 +226,9 @@ message ReadAllEventsFiltered {
     required Filter filter = 7;
 }
 
-message ReadAllEventsFilteredCompleted {
+message FilteredReadAllEventsCompleted {
 
-    enum ReadAllFilteredResult {
+    enum FilteredReadAllResult {
         Success = 0;
         NotModified = 1;
         Error = 2;
@@ -242,7 +242,7 @@ message ReadAllEventsFilteredCompleted {
     required int64 next_prepare_position = 5;
     required bool is_end_of_stream = 6;
 
-    optional ReadAllFilteredResult result = 7 [default = Success];
+    optional FilteredReadAllResult result = 7 [default = Success];
     optional string error = 8;
 }
 
@@ -365,7 +365,7 @@ message SubscribeToStream {
 	required bool resolve_link_tos = 2;
 }
 
-message SubscribeToStreamFiltered {
+message FilteredSubscribeToStream {
 	required string event_stream_id = 1;
 	required bool resolve_link_tos = 2;
 	required Filter filter = 3;

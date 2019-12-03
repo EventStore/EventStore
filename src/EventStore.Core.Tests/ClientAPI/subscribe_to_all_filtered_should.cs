@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
 
-				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
 
-				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
 
-				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
 
-				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
 
-				using (await store.SubscribeToAllFilteredAsync(false, filter, (s, e) => {
+				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -181,35 +181,22 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test, Category("LongRunning")]
-		public async Task throw_an_exception_if_checkpoint_reached_is_provided_with_no_interval() {
-			var filter = Filter.ExcludeSystemEvents;
-
-			using (var store = BuildConnection(_node)) {
-				await store.ConnectAsync();
-
-				await AssertEx.ThrowsAsync<ArgumentNullException>(() => store.SubscribeToAllFilteredAsync(
-					false,
-					filter,
-					(s, e) => Task.CompletedTask,
-					(s, p) => Task.CompletedTask));
-			}
-		}
-		
-		[Test, Category("LongRunning")]
 		public async Task throw_an_exception_if_interval_is_negative() {
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 
-				await AssertEx.ThrowsAsync<ArgumentOutOfRangeException>(() => store.SubscribeToAllFilteredAsync(
-					false,
-					filter,
-					(s, e) => Task.CompletedTask,
-					(s, p) => Task.CompletedTask, 0));
+				Assert.Throws<ArgumentOutOfRangeException>(() => {
+					store.FilteredSubscribeToAllAsync(
+						false,
+						filter,
+						(s, e) => Task.CompletedTask,
+						(s, p) => Task.CompletedTask, 0).Wait();
+				});
 			}
 		}
-		
+
 		[Test, Category("LongRunning")]
 		public async Task calls_checkpoint_reached_according_to_checkpoint_message_count() {
 			var filter = Filter.ExcludeSystemEvents;
@@ -220,7 +207,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var eventsSeen = 0;
 				var checkpointsSeen = 0;
 
-				using (await store.SubscribeToAllFilteredAsync(false,
+				using (await store.FilteredSubscribeToAllAsync(false,
 					filter,
 					(s, e) => {
 						eventsSeen++;

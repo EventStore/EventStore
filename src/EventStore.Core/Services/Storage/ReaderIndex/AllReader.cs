@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 
 		/// <summary>
@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// Returns event records whose eventType matches the given <see cref="EventFilter"/> in the sequence they were committed into TF.
 		/// Positions is specified as pre-positions (pointer at the beginning of the record).
 		/// </summary>
-		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 	}
 
@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.None);
 		}
 
-		public IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		public IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			return ReadAllEventsForwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
 		}
@@ -181,7 +181,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
 		}
 
-		public IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+		public IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			return ReadAllEventsBackwardInternal(pos, maxCount, maxSearchWindow, eventFilter);
 		}

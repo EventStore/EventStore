@@ -696,8 +696,8 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"ReadAllEventsFiltered")]
-  public partial class ReadAllEventsFiltered
+  [Serializable, ProtoContract(Name=@"FilteredReadAllEvents")]
+  public partial class FilteredReadAllEvents
   {
     [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long CommitPosition;
@@ -720,9 +720,9 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(7, IsRequired = true, Name=@"filter", DataFormat = DataFormat.Default)]
     public readonly Filter Filter;
   
-    private ReadAllEventsFiltered() {}
+    private FilteredReadAllEvents() {}
   
-    public ReadAllEventsFiltered(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, Filter filter)
+    public FilteredReadAllEvents(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, Filter filter)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
@@ -734,8 +734,8 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"ReadAllEventsFilteredCompleted")]
-  public partial class ReadAllEventsFilteredCompleted
+  [Serializable, ProtoContract(Name=@"FilteredReadAllEventsCompleted")]
+  public partial class FilteredReadAllEventsCompleted
   {
     [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long CommitPosition;
@@ -756,13 +756,13 @@ namespace EventStore.ClientAPI.Messages
     public readonly bool IsEndOfStream;
   
     [ProtoMember(7, IsRequired = false, Name=@"result", DataFormat = DataFormat.TwosComplement)]
-    public readonly ReadAllEventsFilteredCompleted.ReadAllFilteredResult Result;
+    public readonly FilteredReadAllEventsCompleted.FilteredReadAllResult Result;
   
     [ProtoMember(8, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
   
-    [ProtoContract(Name=@"ReadAllFilteredResult")]
-    public enum ReadAllFilteredResult
+    [ProtoContract(Name=@"FilteredReadAllResult")]
+    public enum FilteredReadAllResult
     {
             
       [ProtoEnum(Name=@"Success", Value=0)]
@@ -778,9 +778,9 @@ namespace EventStore.ClientAPI.Messages
       AccessDenied = 3
     }
   
-    private ReadAllEventsFilteredCompleted() {}
+    private FilteredReadAllEventsCompleted() {}
   
-    public ReadAllEventsFilteredCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, ReadAllEventsFilteredCompleted.ReadAllFilteredResult result, string error)
+    public FilteredReadAllEventsCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, FilteredReadAllEventsCompleted.FilteredReadAllResult result, string error)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
@@ -1208,8 +1208,8 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"SubscribeToStreamFiltered")]
-  public partial class SubscribeToStreamFiltered
+  [Serializable, ProtoContract(Name=@"FilteredSubscribeToStream")]
+  public partial class FilteredSubscribeToStream
   {
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
@@ -1223,9 +1223,9 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"checkpoint_interval", DataFormat = DataFormat.TwosComplement)]
     public readonly int CheckpointInterval;
   
-    private SubscribeToStreamFiltered() {}
+    private FilteredSubscribeToStream() {}
   
-    public SubscribeToStreamFiltered(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
+    public FilteredSubscribeToStream(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
     {
         EventStreamId = eventStreamId;
         ResolveLinkTos = resolveLinkTos;

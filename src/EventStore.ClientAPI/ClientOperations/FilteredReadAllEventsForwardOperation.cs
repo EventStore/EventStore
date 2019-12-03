@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
@@ -7,8 +6,8 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class
-		ReadAllEventsBackwardFilteredOperation : OperationBase<AllEventsSlice,
-			ClientMessage.ReadAllEventsFilteredCompleted> {
+		FilteredReadAllEventsForwardOperation : OperationBase<AllEventsSlice,
+			ClientMessage.FilteredReadAllEventsCompleted> {
 		private readonly Position _position;
 		private readonly int _maxCount;
 		private readonly bool _resolveLinkTos;
@@ -16,11 +15,13 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly int _maxSearchWindow;
 		private readonly ClientMessage.Filter _filter;
 
-		public ReadAllEventsBackwardFilteredOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
+		public FilteredReadAllEventsForwardOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
 			Position position, int maxCount, bool resolveLinkTos, bool requireMaster, int maxSearchWindow,
-			ClientMessage.Filter filter, UserCredentials userCredentials)
-			: base(log, source, TcpCommand.ReadAllEventsBackwardFiltered,
-				TcpCommand.ReadAllEventsBackwardFilteredCompleted, userCredentials) {
+			ClientMessage.Filter filter,
+			UserCredentials userCredentials)
+			: base(log, source, TcpCommand.ReadAllEventsForwardFiltered,
+				TcpCommand.ReadAllEventsForwardFilteredCompleted,
+				userCredentials) {
 			_position = position;
 			_maxCount = maxCount;
 			_resolveLinkTos = resolveLinkTos;
@@ -30,20 +31,20 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override object CreateRequestDto() {
-			return new ClientMessage.ReadAllEventsFiltered(_position.CommitPosition, _position.PreparePosition,
+			return new ClientMessage.FilteredReadAllEvents(_position.CommitPosition, _position.PreparePosition,
 				_maxCount, _maxSearchWindow, _resolveLinkTos, _requireMaster, _filter);
 		}
 
-		protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsFilteredCompleted response) {
+		protected override InspectionResult InspectResponse(ClientMessage.FilteredReadAllEventsCompleted response) {
 			switch (response.Result) {
-				case ClientMessage.ReadAllEventsFilteredCompleted.ReadAllFilteredResult.Success:
+				case ClientMessage.FilteredReadAllEventsCompleted.FilteredReadAllResult.Success:
 					Succeed();
 					return new InspectionResult(InspectionDecision.EndOperation, "Success");
-				case ClientMessage.ReadAllEventsFilteredCompleted.ReadAllFilteredResult.Error:
+				case ClientMessage.FilteredReadAllEventsCompleted.FilteredReadAllResult.Error:
 					Fail(new ServerErrorException(
 						string.IsNullOrEmpty(response.Error) ? "<no message>" : response.Error));
 					return new InspectionResult(InspectionDecision.EndOperation, "Error");
-				case ClientMessage.ReadAllEventsFilteredCompleted.ReadAllFilteredResult.AccessDenied:
+				case ClientMessage.FilteredReadAllEventsCompleted.FilteredReadAllResult.AccessDenied:
 					Fail(new AccessDeniedException("Read access denied for $all."));
 					return new InspectionResult(InspectionDecision.EndOperation, "AccessDenied");
 				default:
@@ -51,8 +52,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 			}
 		}
 
-		protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsFilteredCompleted response) {
-			return new AllEventsSlice(ReadDirection.Backward,
+		protected override AllEventsSlice TransformResponse(ClientMessage.FilteredReadAllEventsCompleted response) {
+			return new AllEventsSlice(ReadDirection.Forward,
 				new Position(response.CommitPosition, response.PreparePosition),
 				new Position(response.NextCommitPosition, response.NextPreparePosition),
 				response.Events, response.IsEndOfStream);
