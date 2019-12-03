@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _node.Start();
 
 			_conn = BuildConnection(_node);
-			_conn.ConnectAsync().Wait();
+			await _conn.ConnectAsync();
 			_conn.SetStreamMetadataAsync(SystemStreams.AllStream, -1,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All),
 				new UserCredentials(SystemUsers.Admin, SystemUsers.DefaultAdminPassword)).Wait();
@@ -127,9 +127,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					}
 
 					return Task.CompletedTask;
-				}, 1, async s => {
+				}, 1, s => {
 					isLive = true;
-					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents());
+					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents()).Wait();
 				});
 
 			if (!appeared.Wait(Timeout)) {
@@ -225,9 +225,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 					return Task.CompletedTask;
 				},
 				(s, p) => Task.CompletedTask, 5,
-				async s => {
-					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents());
-					await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.Any, _testEventsAfter.OddEvents());
+				s => {
+					_conn.AppendToStreamAsync("stream-a", ExpectedVersion.Any, _testEventsAfter.EvenEvents()).Wait();
+					_conn.AppendToStreamAsync("stream-b", ExpectedVersion.Any, _testEventsAfter.OddEvents()).Wait();
 				});
 		}
 
