@@ -37,12 +37,14 @@ message ReadReq {
 			oneof revision_options {
 				uint64 revision = 2;
 				Empty start = 3;
+				Empty end = 4;
 			}
 		}
 		message AllOptions {
 			oneof all_options {
 				Position position = 1;
 				Empty start = 2;
+				Empty end = 3;
 			}
 		}
 		message SubscriptionOptions {

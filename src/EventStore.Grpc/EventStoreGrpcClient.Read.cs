@@ -30,12 +30,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					All = new ReadReq.Types.Options.Types.AllOptions {
-						Position = new ReadReq.Types.Options.Types.Position {
-							CommitPosition = position.CommitPosition,
-							PreparePosition = position.PreparePosition
-						}
-					},
+					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
 					Count = maxCount,
 					Filter = GetFilterOptions(filter)
 				}
@@ -63,12 +58,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
 					ResolveLinks = resolveLinkTos,
-					All = new ReadReq.Types.Options.Types.AllOptions {
-						Position = new ReadReq.Types.Options.Types.Position {
-							CommitPosition = position.CommitPosition,
-							PreparePosition = position.PreparePosition
-						}
-					},
+					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
 					Count = maxCount,
 					Filter = GetFilterOptions(filter)
 				}
@@ -86,10 +76,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					Stream = new ReadReq.Types.Options.Types.StreamOptions {
-						StreamName = streamName,
-						Revision = revision
-					},
+					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName, revision),
 					Count = count
 				}
 			},
@@ -106,10 +93,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
 					ResolveLinks = resolveLinkTos,
-					Stream = new ReadReq.Types.Options.Types.StreamOptions {
-						StreamName = streamName,
-						Revision = revision
-					},
+					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName, revision),
 					Count = count
 				}
 			}, userCredentials,

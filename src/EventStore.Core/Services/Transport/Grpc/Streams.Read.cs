@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					new Enumerators.ReadStreamForwards(
 						_queue,
 						request.Options.Stream.StreamName,
-						new StreamRevision(request.Options.Stream.Revision),
+						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionsOneofCase.NoFilter) => new Enumerators.ReadStreamBackwards(
 						_queue,
 						request.Options.Stream.StreamName,
-						new StreamRevision(request.Options.Stream.Revision),
+						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
@@ -57,8 +57,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionsOneofCase.NoFilter) => new Enumerators.ReadAllForwards(
 						_queue,
-						new Position(request.Options.All.Position.CommitPosition,
-							request.Options.All.Position.PreparePosition),
+						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
@@ -68,8 +67,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionsOneofCase.Filter) => new Enumerators.ReadAllForwardsFiltered(
 						_queue,
-						new Position(request.Options.All.Position.CommitPosition,
-							request.Options.All.Position.PreparePosition),
+						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
@@ -85,8 +83,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Backwards,
 					FilterOptionsOneofCase.NoFilter) => new Enumerators.ReadAllBackwards(
 						_queue,
-						new Position(request.Options.All.Position.CommitPosition,
-							request.Options.All.Position.PreparePosition),
+						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
@@ -96,8 +93,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Backwards,
 					FilterOptionsOneofCase.Filter) => new Enumerators.ReadAllBackwardsFiltered(
 						_queue,
-						new Position(request.Options.All.Position.CommitPosition,
-							request.Options.All.Position.PreparePosition),
+						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
@@ -114,13 +110,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionsOneofCase.NoFilter) => new Enumerators.StreamSubscription(
 						_queue,
 						request.Options.Stream.StreamName,
-						request.Options.Stream.RevisionOptionsCase switch {
-							ReadReq.Types.Options.Types.StreamOptions.RevisionOptionsOneofCase.Start =>
-							StreamRevision.Start,
-							ReadReq.Types.Options.Types.StreamOptions.RevisionOptionsOneofCase.Revision =>
-							new StreamRevision(request.Options.Stream.Revision),
-							_ => throw new InvalidOperationException()
-						},
+						request.Options.Stream.ToStreamRevision(),
 						request.Options.ResolveLinks,
 						user,
 						_readIndex,
@@ -130,13 +120,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionsOneofCase.NoFilter) => new Enumerators.AllSubscription(
 						_queue,
-						request.Options.All.AllOptionsCase switch {
-							ReadReq.Types.Options.Types.AllOptions.AllOptionsOneofCase.Position =>
-							new Position(request.Options.All.Position.CommitPosition,
-								request.Options.All.Position.PreparePosition),
-							ReadReq.Types.Options.Types.AllOptions.AllOptionsOneofCase.Start => Position.Start,
-							_ => throw new InvalidOperationException()
-						},
+						request.Options.All.ToPosition(),
 						request.Options.ResolveLinks,
 						user,
 						_readIndex,
@@ -146,13 +130,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionsOneofCase.Filter) => new Enumerators.AllSubscriptionFiltered(
 						_queue,
-						request.Options.All.AllOptionsCase switch {
-							ReadReq.Types.Options.Types.AllOptions.AllOptionsOneofCase.Position =>
-							new Position(request.Options.All.Position.CommitPosition,
-								request.Options.All.Position.PreparePosition),
-							ReadReq.Types.Options.Types.AllOptions.AllOptionsOneofCase.Start => Position.Start,
-							_ => throw new InvalidOperationException()
-						},
+						request.Options.All.ToPosition(),
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						user,
