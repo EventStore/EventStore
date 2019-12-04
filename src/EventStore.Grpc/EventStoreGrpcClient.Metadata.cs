@@ -54,7 +54,7 @@ namespace EventStore.Grpc {
 			UserCredentials userCredentials,
 			CancellationToken cancellationToken) =>
 			AppendToStreamInternal(appendReq, new[] {
-				new EventData(Guid.NewGuid(), SystemEventTypes.StreamMetadata,
+				new EventData(Uuid.NewUuid(), SystemEventTypes.StreamMetadata,
 					JsonSerializer.SerializeToUtf8Bytes(metadata, StreamMetadataJsonSerializerOptions)),
 			}, userCredentials, cancellationToken);
 	}

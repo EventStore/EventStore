@@ -139,10 +139,7 @@ namespace EventStore.Grpc {
 					? null
 					: new EventRecord(
 						e.StreamName,
-						e.Id.ValueCase switch {
-							Streams.UUID.ValueOneofCase.String => Guid.Parse(e.Id.String),
-							_ => throw new NotSupportedException()
-						},
+						Uuid.FromDto(e.Id),
 						new StreamRevision(e.StreamRevision),
 						new Position(e.CommitPosition, e.PreparePosition),
 						e.Metadata,

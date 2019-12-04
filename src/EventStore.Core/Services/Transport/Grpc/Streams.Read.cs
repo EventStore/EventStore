@@ -149,9 +149,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = new UUID {
-						String = e.EventId.ToString()
-					} ,
+					Id = Uuid.FromGuid(e.EventId).ToStreamsDto(),
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,

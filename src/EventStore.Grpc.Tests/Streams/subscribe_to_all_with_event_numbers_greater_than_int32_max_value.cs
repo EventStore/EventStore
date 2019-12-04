@@ -18,8 +18,8 @@ namespace EventStore.Grpc.Streams {
 		[Fact]
 		public async Task should_subscribe() {
 			var source = new TaskCompletionSource<bool>();
-			var @event = new EventData(Guid.NewGuid(), "-", Array.Empty<byte>(), isJson: false);
-			var received = new List<Guid>(3);
+			var @event = new EventData(Uuid.NewUuid(), "-", Array.Empty<byte>(), isJson: false);
+			var received = new List<Uuid>(3);
 			using var _ = _fixture.Client.SubscribeToAll(
 				Position.Start, EventAppeared, false, SubscriptionDropped, userCredentials: TestCredentials.Root);
 

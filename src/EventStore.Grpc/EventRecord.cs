@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace EventStore.Grpc {
 	public class EventRecord {
 		public readonly string EventStreamId;
-		public readonly Guid EventId;
+		public readonly Uuid EventId;
 		public readonly StreamRevision EventNumber;
 		public readonly string EventType;
 		public readonly byte[] Data;
@@ -15,7 +15,7 @@ namespace EventStore.Grpc {
 
 		public EventRecord(
 			string eventStreamId,
-			Guid eventId,
+			Uuid eventId,
 			StreamRevision eventNumber,
 			Position position,
 			IDictionary<string, string> metadata,

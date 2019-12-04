@@ -44,10 +44,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var proposedMessage = requestStream.Current.ProposedMessage;
 				events.Add(new Event(
-					proposedMessage.Id.ValueCase switch {
-						UUID.ValueOneofCase.String => Guid.Parse(proposedMessage.Id.String),
-						_ => throw new NotSupportedException()
-					},
+					Uuid.FromDto(proposedMessage.Id).ToGuid(),
 					proposedMessage.Metadata[Constants.Metadata.Type],
 					bool.Parse(proposedMessage.Metadata[Constants.Metadata.IsJson]),
 					proposedMessage.Data.ToByteArray(),

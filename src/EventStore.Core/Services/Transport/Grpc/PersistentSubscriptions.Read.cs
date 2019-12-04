@@ -60,10 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadReq.ContentOneofCase.Ack => (Message)
 					new ClientMessage.PersistentSubscriptionAckEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
-						request.Ack.Ids.Select(id => id.ValueCase switch {
-							UUID.ValueOneofCase.String => Guid.Parse(id.String),
-							_ => throw new NotSupportedException()
-						}).ToArray(), user),
+						request.Ack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
 					ReadReq.ContentOneofCase.Nack =>
 					new ClientMessage.PersistentSubscriptionNackEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
@@ -75,10 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadReq.Types.Nack.Types.Action.Stop => NakAction.Stop,
 							_ => throw new InvalidOperationException()
 						},
-						request.Nack.Ids.Select(id => id.ValueCase switch {
-							UUID.ValueOneofCase.String => Guid.Parse(id.String),
-							_ => throw new NotSupportedException()
-						}).ToArray(), user),
+						request.Nack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
 					_ => throw new InvalidOperationException()
 				});
 

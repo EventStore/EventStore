@@ -7,14 +7,11 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
-using EventStore.Grpc.Tests.Common;
 using Xunit;
 
 namespace EventStore.Grpc {
@@ -73,11 +70,11 @@ namespace EventStore.Grpc {
 			long eventNumber,
 			byte[] data,
 			DateTime? timestamp = null,
-			Guid eventId = default,
+			Uuid eventId = default,
 			string eventType = "some-type") {
 			var prepare = LogRecord.SingleWrite(writerCheckpoint.ReadNonFlushed(),
 				Guid.NewGuid(),
-				eventId == default ? Guid.NewGuid() : eventId,
+				(eventId == default ? Uuid.NewUuid() : eventId).ToGuid(),
 				eventStreamId,
 				eventNumber - 1,
 				eventType,
@@ -135,7 +132,7 @@ namespace EventStore.Grpc {
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
 
 		protected static EventData CreateLinkToEvent(string originalStreamName, StreamRevision originalRevision)
-			=> new EventData(Guid.NewGuid(), SystemEventTypes.LinkTo,
+			=> new EventData(Uuid.NewUuid(), SystemEventTypes.LinkTo,
 				Helper.UTF8NoBom.GetBytes($"{originalRevision.ToInt64()}@{originalStreamName}"));
 	}
 }
