@@ -124,15 +124,21 @@ namespace EventStore.ClusterNode {
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
-					o.Listen(opts.ExtIp, opts.ExtHttpPort,
-						listenOptions => listenOptions.UseHttps());
+					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => {
+						if (_node.Certificate == null) {
+							listenOptions.UseHttps();
+						} else {
+							listenOptions.UseHttps(_node.Certificate);
+						}
+					});
 				})
 				.UseStartup(new ClusterVNodeStartup(_node))
 				.ConfigureLogging(logging =>
 				{
 					logging.ClearProviders();
 					logging.SetMinimumLevel(LogLevel.Warning);
-				})				.UseNLog()
+				})
+				.UseNLog()
 				.Build();
 		}
 
@@ -327,21 +333,19 @@ namespace EventStore.ClusterNode {
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 
-			if (options.IntSecureTcpPort > 0 || options.ExtSecureTcpPort > 0) {
-				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-					var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
-					var name = GetCertificateStoreName(options.CertificateStoreName);
-					builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
-						options.CertificateThumbprint);
-				} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-					var name = GetCertificateStoreName(options.CertificateStoreName);
-					builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
-						options.CertificateThumbprint);
-				} else if (options.CertificateFile.IsNotEmptyString()) {
-					builder.WithServerCertificateFromFile(options.CertificateFile, options.CertificatePassword);
-				} else
-					throw new Exception("No server certificate specified.");
-			}
+			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
+				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
+				var name = GetCertificateStoreName(options.CertificateStoreName);
+				builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
+				var name = GetCertificateStoreName(options.CertificateStoreName);
+				builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (options.CertificateFile.IsNotEmptyString()) {
+				builder.WithServerCertificateFromFile(options.CertificateFile, options.CertificatePassword);
+			} else
+				Log.Warn("No server certificate specified.");
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
