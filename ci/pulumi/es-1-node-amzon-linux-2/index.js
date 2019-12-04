@@ -30,8 +30,8 @@ let group = new aws.ec2.SecurityGroup("webserver-secgrp", {
 
 let userData =
 `#!/bin/bash
-wget https://download.visualstudio.microsoft.com/download/pr/941853c3-98c6-44ff-b11f-3892e4f91814/14e8f22c7a1d95dd6fe9a53296d19073/dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz
-sudo mkdir -p $HOME/dotnet && sudo tar zxf dotnet-sdk-3.1.100-preview3-014645-linux-x64.tar.gz -C $HOME/dotnet
+wget https://download.visualstudio.microsoft.com/download/pr/d731f991-8e68-4c7c-8ea0-fad5605b077a/49497b5420eecbd905158d86d738af64/dotnet-sdk-3.1.100-linux-x64.tar.gz
+sudo mkdir -p $HOME/dotnet && sudo tar zxf dotnet-sdk-3.1.100-linux-x64.tar.gz -C $HOME/dotnet
 export DOTNET_ROOT=$HOME/dotnet
 export PATH=$PATH:$HOME/dotnet
 export DOTNET_CLI_HOME=/
