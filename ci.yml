@@ -17,7 +17,6 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '3.1.100'
-      includePreviewVersions: true
   - powershell: |
       dotnet build -c $(Configuration) src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -62,7 +61,6 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '3.1.100'
-      includePreviewVersions: true
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: |
@@ -108,7 +106,6 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '3.1.100'
-      includePreviewVersions: true
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
