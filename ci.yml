@@ -2,125 +2,161 @@ resources:
 - repo: self
 
 jobs:
-- job: windows_x64
-  strategy:
-    matrix:
-      RELEASE:
-        Configuration: release
-  displayName: 'Windows x64'
-  timeoutInMinutes: 30
-  pool:
-    vmImage: 'vs2017-win2016'
-  steps:
-  - task: UseDotNet@1
-    displayName: 'Install .NET Core 3.x SDK'
-    inputs:
-      packageType: 'sdk'
-      version: '3.1.100'
-  - powershell: |
-      dotnet build -c $(Configuration) src\EventStore.sln
-      if (-Not $?) { throw "Exit code is $?" }
-    workingDirectory: $(Build.SourcesDirectory)
-    displayName: Compile
-  - powershell: |
-      (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests$' | `
-        ForEach-Object {
-          dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
-          if (-Not $?) { throw "Exit code is $?" }
-        }
-    workingDirectory: $(Build.SourcesDirectory)
-    displayName: Test
-    errorActionPreference: Stop
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "Windows (.NET Framework)"
-      platform: "Windows"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: windows-netcoreapp3-$(Configuration)
-      pathToPublish: '$(Build.SourcesDirectory)\bin\'
+# - job: windows_x64
+#   strategy:
+#     matrix:
+#       RELEASE:
+#         Configuration: release
+#   displayName: 'Windows x64'
+#   timeoutInMinutes: 30
+#   pool:
+#     vmImage: 'vs2017-win2016'
+#   steps:
+#   - task: UseDotNet@1
+#     displayName: 'Install .NET Core 3.x SDK'
+#     inputs:
+#       packageType: 'sdk'
+#       version: '3.1.100-preview3-014645'
+#       includePreviewVersions: true
+#   - powershell: |
+#       dotnet build -c $(Configuration) src\EventStore.sln
+#       if (-Not $?) { throw "Exit code is $?" }
+#     workingDirectory: $(Build.SourcesDirectory)
+#     displayName: Compile
+#   - powershell: |
+#       (Get-ChildItem -Attributes Directory src | % FullName) -Match '\.Tests$' | `
+#         ForEach-Object {
+#           dotnet test -v normal -c $(Configuration) --no-build --logger trx --blame --settings ci\ci.runsettings $_ -- RunConfiguration.TargetPlatform=x64
+#           if (-Not $?) { throw "Exit code is $?" }
+#         }
+#     workingDirectory: $(Build.SourcesDirectory)
+#     displayName: Test
+#     errorActionPreference: Stop
+#   - task: PublishTestResults@2
+#     displayName: Publish Test Results
+#     condition: succeededOrFailed()
+#     inputs:
+#       testRunTitle: "Windows (.NET Framework)"
+#       platform: "Windows"
+#       testRunner: VSTest
+#       testResultsFiles: '**/*.trx'
+#   - task: PublishBuildArtifacts@1
+#     condition: eq(variables['System.PullRequest.IsFork'], 'False')
+#     displayName: Publish Artifacts
+#     inputs:
+#       artifactName: windows-netcoreapp3-$(Configuration)
+#       pathToPublish: '$(Build.SourcesDirectory)\bin\'
 
-- job: macos_x64
-  strategy:
-    matrix:
-      RELEASE:
-        Configuration: release
-  displayName: 'macOS x64'
-  timeoutInMinutes: 30
-  pool:
-    vmImage: 'macOS 10.13'
-  steps:
-  - task: UseDotNet@1
-    displayName: 'Install .NET Core 3.x SDK'
-    inputs:
-      packageType: 'sdk'
-      version: '3.1.100'
-  - bash: dotnet build -c $(Configuration) src/EventStore.sln
-    displayName: Compile
-  - bash: |
-      EXIT_CODE=0
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests || EXIT_CODE=$?
-      exit $EXIT_CODE
-    condition: succeededOrFailed()
-    displayName: Run Tests
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
-    inputs:
-      testRunTitle: "MacOS 10.13"
-      platform: "MacOS 10.13"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: macos-netcoreapp3-{{ variables['Configuration'] }}
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+# - job: macos_x64
+#   strategy:
+#     matrix:
+#       RELEASE:
+#         Configuration: release
+#   displayName: 'macOS x64'
+#   timeoutInMinutes: 30
+#   pool:
+#     vmImage: 'macOS 10.13'
+#   steps:
+#   - task: UseDotNet@1
+#     displayName: 'Install .NET Core 3.x SDK'
+#     inputs:
+#       packageType: 'sdk'
+#       version: '3.1.100-preview3-014645'
+#       includePreviewVersions: true
+#   - bash: dotnet build -c $(Configuration) src/EventStore.sln
+#     displayName: Compile
+#   - bash: |
+#       dotnet run -c $(Configuration) -p src/EventStore.Sadness
+#     condition: succeededOrFailed()
+#     displayName: Run TCP Client API Tests
+#   - bash: |
+#       set -eo pipefail
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests
+#       dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests
+#     condition: succeededOrFailed()
+#     displayName: Run Tests
+#   - task: PublishTestResults@2
+#     displayName: Publish Test Results
+#     condition: succeededOrFailed()
+#     inputs:
+#       testRunTitle: "MacOS 10.13"
+#       platform: "MacOS 10.13"
+#       testRunner: VSTest
+#       testResultsFiles: '**/*.trx'
+#   - task: PublishBuildArtifacts@1
+#     condition: eq(variables['System.PullRequest.IsFork'], 'False')
+#     displayName: Publish Artifacts
+#     inputs:
+#       artifactName: macos-netcoreapp3-{{ variables['Configuration'] }}
+#       pathToPublish: '$(Build.SourcesDirectory)/bin/'
+# - job: ubuntu_x64
+#   strategy:
+#     matrix:
+#       RELEASE:
+#         Configuration: release
+
+#   displayName: Ubuntu 16.04 x64
+#   timeoutInMinutes: 30
+#   pool:
+#     vmImage: 'ubuntu-16.04'
+#   steps:
+#   - task: UseDotNet@1
+#     displayName: 'Install .NET Core 3.x SDK'
+#     inputs:
+#       packageType: 'sdk'
+#       version: '3.1.100-preview3-014645'
+#       includePreviewVersions: true
+#   - bash: dotnet build -c $(Configuration) src/EventStore.sln
+#     displayName: Compile
+#   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
+#     displayName: Run Tests
+#   - task: PublishTestResults@2
+#     displayName: Publish Test Results
+#     condition: succeededOrFailed()
+#     inputs:
+#       testRunTitle: "Ubuntu 16.04"
+#       platform: "Ubuntu 16.04"
+#       testRunner: VSTest
+#       testResultsFiles: '**/*.trx'
+#   - task: PublishBuildArtifacts@1
+#     condition: eq(variables['System.PullRequest.IsFork'], 'False')
+#     displayName: Publish Artifacts
+#     inputs:
+#       artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
+#       pathToPublish: '$(Build.SourcesDirectory)/bin/'
 
 - job: ubuntu_x64
-  strategy:
-    matrix:
-      RELEASE:
-        Configuration: release
-
-  displayName: Ubuntu 16.04 x64
+  displayName: Client Testing
   timeoutInMinutes: 30
   pool:
     vmImage: 'ubuntu-16.04'
+  
   steps:
-  - task: UseDotNet@1
-    displayName: 'Install .NET Core 3.x SDK'
+
+  - task: UseNode@1
     inputs:
-      packageType: 'sdk'
-      version: '3.1.100'
-  - bash: dotnet build -c $(Configuration) src/EventStore.sln
-    displayName: Compile
-  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
-    displayName: Run Tests
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    condition: succeededOrFailed()
+      version: '8.x'
+      checkLatest: true
+    displayName: Install Node 8.x
+  - task: CmdLine@2
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    env:
+        PULUMI_ACCESS_TOKEN: $(PULUMI_ACCESS_TOKEN)
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
     inputs:
-      testRunTitle: "Ubuntu 16.04"
-      platform: "Ubuntu 16.04"
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-  - task: PublishBuildArtifacts@1
-    condition: eq(variables['System.PullRequest.IsFork'], 'False')
-    displayName: Publish Artifacts
-    inputs:
-      artifactName: ubuntu1604-netcoreapp3-${{ variables['Configuration'] }}
-      pathToPublish: '$(Build.SourcesDirectory)/bin/'
+      script: |
+        set -e -x
+        curl -fsSL https://get.pulumi.com/ | bash
+        export PATH=$PATH:$HOME/.pulumi/bin
+        cd /home/vsts/work/1/s/ci/pulumi/es-1-node-amzon-linux-2
+        npm install
+        pulumi stack select arwinneil/es-1-node-amzon-linux-2/dev
+        pulumi config set pullNo $(System.PullRequest.PullRequestNumber)
+        # pulumi config set keyName $(EC2_KEY_NAME)
+        pulumi up --yes
+    displayName: Pulumi - Deploy Event Store Instance 

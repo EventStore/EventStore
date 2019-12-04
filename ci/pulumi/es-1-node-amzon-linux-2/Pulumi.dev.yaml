@@ -1,0 +1,3 @@
+config:
+  aws:region: us-west-2
+  es-1-node-amzon-linux-2:keyName: '[Neil]ChaosMonkey'
