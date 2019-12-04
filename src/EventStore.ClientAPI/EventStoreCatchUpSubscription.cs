@@ -36,8 +36,17 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		protected readonly ILogger Log;
 
+		/// <summary>
+		/// The <see cref="IEventStoreConnection"/>.
+		/// </summary>
 		protected readonly IEventStoreConnection Connection;
+		/// <summary>
+		/// Whether to resolve LinkTo events automatically
+		/// </summary>
 		protected readonly bool ResolveLinkTos;
+		/// <summary>
+		/// The <see cref="UserCredentials"/> associated with the subscription.
+		/// </summary>
 		protected readonly UserCredentials UserCredentials;
 
 		/// <summary>
@@ -64,8 +73,14 @@ namespace EventStore.ClientAPI {
 		protected readonly bool Verbose;
 
 		internal readonly ConcurrentQueueWrapper<Func<Task>> LiveQueue = new ConcurrentQueueWrapper<Func<Task>>();
+		/// <summary>
+		/// The underlying <see cref="EventStoreSubscription"/>.
+		/// </summary>
 		protected EventStoreSubscription Subscription;
 		private DropData _dropData;
+		/// <summary>
+		/// Whether or not to process events.
+		/// </summary>
 		protected volatile bool AllowProcessing;
 		private int _isProcessing;
 
@@ -222,8 +237,16 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <summary>
+		/// Subscribes to the stream.
+		/// </summary>
+		/// <returns></returns>
 		protected abstract Task SubscribeToStreamAsync();
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <returns></returns>
 		protected async Task ReadMissedHistoricEventsAsync() {
 			if (!ShouldStop) {
 				if (Verbose)
@@ -262,9 +285,21 @@ namespace EventStore.ClientAPI {
 			EnsureProcessingPushQueue();
 		}
 
+		/// <summary>
+		/// The callback invoked when the subscription switches to push notifications.
+		/// </summary>
+		/// <param name="eventStoreCatchUpSubscription"></param>
+		/// <param name="lastPosition"></param>
+		/// <returns></returns>
 		protected abstract Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription,
 			Position lastPosition);
 
+		/// <summary>
+		/// Enqueues a pushed event.
+		/// </summary>
+		/// <param name="subscription"></param>
+		/// <param name="e"></param>
+		/// <returns></returns>
 		protected Task EnqueuePushedEvent(EventStoreSubscription subscription, ResolvedEvent e) {
 			if (Verbose) {
 				Log.Debug("Catch-up Subscription {0} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
@@ -286,11 +321,22 @@ namespace EventStore.ClientAPI {
 			return TaskEx.CompletedTask;
 		}
 
+		/// <summary>
+		/// Invoked when the subscription is dropped.
+		/// </summary>
+		/// <param name="subscription"></param>
+		/// <param name="reason"></param>
+		/// <param name="exc"></param>
 		protected void ServerSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason,
 			Exception exc) {
 			EnqueueSubscriptionDropNotification(reason, exc);
 		}
 
+		/// <summary>
+		/// Enqueues a dropped notification for later processing.
+		/// </summary>
+		/// <param name="reason"></param>
+		/// <param name="error"></param>
 		protected void EnqueueSubscriptionDropNotification(SubscriptionDropReason reason, Exception error) {
 			// if drop data was already set -- no need to enqueue drop again, somebody did that already
 			var dropData = new DropData(reason, error);
@@ -301,6 +347,9 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <summary>
+		/// Forces the subscription to process the queue if necessary.
+		/// </summary>
 		protected void EnsureProcessingPushQueue() {
 			if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0)
 				ThreadPool.QueueUserWorkItem(_ => ProcessLiveQueueAsync());
@@ -317,6 +366,10 @@ namespace EventStore.ClientAPI {
 			} while (!LiveQueue.IsEmpty && Interlocked.CompareExchange(ref _isProcessing, 1, 0) == 0);
 		}
 
+		/// <summary>
+		/// Places an action on the queue.
+		/// </summary>
+		/// <param name="action"></param>
 		protected void EnqueueAction(Func<Task> action) {
 			LiveQueue.Enqueue(action);
 		}

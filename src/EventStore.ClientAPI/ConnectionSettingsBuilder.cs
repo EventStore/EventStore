@@ -47,6 +47,11 @@ namespace EventStore.ClientAPI {
 		internal ConnectionSettingsBuilder() {
 		}
 
+		/// <summary>
+		/// Configures the connection to use a custom <see cref="IHttpClient"/>.
+		/// </summary>
+		/// <param name="client">The <see cref="IHttpClient"/> to use.</param>
+		/// <returns></returns>
 		public ConnectionSettingsBuilder UseCustomHttpClient(IHttpClient client) {
 			_customHttpClient = client;
 			return this;

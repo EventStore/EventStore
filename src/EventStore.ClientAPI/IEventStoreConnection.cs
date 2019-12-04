@@ -359,11 +359,11 @@ namespace EventStore.ClientAPI {
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="checkpointReached">
 		/// A Task invoked and await when a checkpoint is reached.
-		/// Set <see cref="checkpointInterval" /> to define how often this method is called.
+		/// Set the checkpointInterval to define how often this method is called.
 		/// </param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="userCredentials">User credentials to use for the operation.</param>
-		/// <param name="checkpointInterval">Sets how often the <see cref="checkpointReached" /> is called.</param>
+		/// <param name="checkpointInterval">Sets how often the checkpointReached callback is called.</param>
 		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
 		Task<EventStoreSubscription> FilteredSubscribeToAllAsync(
 			bool resolveLinkTos,
@@ -532,7 +532,7 @@ namespace EventStore.ClientAPI {
 		/// Using <see cref="Position.Start" /> here will result in missing
 		/// the first event in the stream.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="checkpointIntervalMultiplier">Sets how often the <see cref="checkpointReached" /> is called. It is multiplied by the max search window.</param>
+		/// <param name="checkpointIntervalMultiplier">Sets how often the checkpointReached callback is called. It is multiplied by the max search window.</param>
 		/// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="userCredentials">User credentials to use for the operation.</param>
@@ -540,7 +540,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription.</param>
 		/// <param name="checkpointReached">
 		/// A Task invoked and await when a checkpoint is reached.
-		/// Set <see cref="checkpointIntervalMultiplier" /> to define how often this method is called.
+		/// Set the checkpointIntervalMultiplier to define how often this method is called.
 		/// </param>
 		/// <returns>An <see cref="EventStoreAllFilteredCatchUpSubscription"/> representing the subscription.</returns>
 		EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(

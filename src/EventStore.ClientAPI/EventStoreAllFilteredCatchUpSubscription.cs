@@ -8,6 +8,9 @@ using TaskEx = System.Threading.Tasks.Task;
 #endif
 
 namespace EventStore.ClientAPI {
+	/// <summary>
+	/// A catch-up subscription to all events in the Event Store with an applied filter.
+	/// </summary>
 	public class EventStoreAllFilteredCatchUpSubscription : EventStoreCatchUpSubscription {
 		private Position _lastProcessedPosition;
 		private Position _nextReadPosition;
@@ -36,6 +39,7 @@ namespace EventStore.ClientAPI {
 			_checkpointReached = checkpointReached;
 		}
 
+		/// <inheritdoc />
 		protected override Task<Position> ReadEventsTillAsync(IEventStoreConnection connection, bool resolveLinkTos,
 			UserCredentials userCredentials, long? lastCommitPosition, long? lastEventNumber) =>
 			ReadEventsInternalAsync(connection, resolveLinkTos, userCredentials, lastCommitPosition);
@@ -112,6 +116,7 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <inheritdoc />
 		protected override async Task TryProcessAsync(ResolvedEvent e) {
 			bool processed = false;
 			if (e.OriginalPosition > _lastProcessedPosition) {
@@ -164,6 +169,7 @@ namespace EventStore.ClientAPI {
 			return TaskEx.CompletedTask;
 		}
 
+		/// <inheritdoc />
 		protected override async Task SubscribeToStreamAsync() {
 			if (!ShouldStop) {
 				if (Verbose)
@@ -185,6 +191,7 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <inheritdoc />
 		protected override async Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription,
 			Position lastPosition) {
 			await CheckpointReachedAction(lastPosition).ConfigureAwait(false);
