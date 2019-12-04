@@ -5,6 +5,7 @@ on:
   push:
     branches:
     - master
+    - v6-master
 
 jobs:
   continuous-integration:
