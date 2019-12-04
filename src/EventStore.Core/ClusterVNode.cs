@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -118,10 +119,13 @@ namespace EventStore.Core {
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
+		private readonly X509Certificate2 _certificate;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
+
+		public X509Certificate2 Certificate => _certificate;
 
 		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder =>
 			_subsystems.Aggregate(builder
@@ -178,6 +182,7 @@ namespace EventStore.Core {
 
 			var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
 			_nodeInfo = vNodeSettings.NodeInfo;
+			_certificate = vNodeSettings.Certificate;
 			_mainBus = new InMemoryBus("MainBus");
 			_httpMessageHandler = vNodeSettings.CreateHttpMessageHandler?.Invoke();
 			_queueStatsManager = new QueueStatsManager();
