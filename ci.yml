@@ -18,8 +18,7 @@ jobs:
     displayName: 'Install .NET Core 3.x SDK'
     inputs:
       packageType: 'sdk'
-      version: '3.1.100-preview3-014645'
-      includePreviewVersions: true
+      version: '3.1.100'
   - powershell: |
       dotnet build -c $(Configuration) src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -65,8 +64,7 @@ jobs:
     displayName: 'Install .NET Core 3.x SDK'
     inputs:
       packageType: 'sdk'
-      version: '3.1.100-preview3-014645'
-      includePreviewVersions: true
+      version: '3.1.100'
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: |
@@ -111,8 +109,7 @@ jobs:
     displayName: 'Install .NET Core 3.x SDK'
     inputs:
       packageType: 'sdk'
-      version: '3.1.100-preview3-014645'
-      includePreviewVersions: true
+      version: '3.1.100'
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
