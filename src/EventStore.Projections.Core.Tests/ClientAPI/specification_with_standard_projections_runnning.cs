@@ -21,14 +21,15 @@ using EventStore.ClientAPI.Projections;
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
 	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
 		protected IEventStoreConnection _conn;
-		private ProjectionsSubsystem _projections;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
 		protected QueryManager _queryManager;
+#if DEBUG
 		private Task _projectionsCreated;
-
+		private ProjectionsSubsystem _projections;
+		private MiniNode _node;
+#endif
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
@@ -95,7 +96,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		protected async Task EnableStandardProjections() {
+#if DEBUG
 			await _projectionsCreated;
+#endif
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -125,9 +128,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		public override async Task TestFixtureTearDown() {
 			if (_conn != null)
 				_conn.Close();
-
+#if DEBUG
 			if (_node != null)
 				await _node.Shutdown();
+#endif
 			await base.TestFixtureTearDown();
 		}
 
@@ -152,10 +156,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 		}
 
 		protected void WaitIdle(int multiplier = 1) {
+#if DEBUG
 			_node.WaitIdle();
+#endif
 		}
 
+#pragma warning disable 1998
 		protected async Task AssertStreamTail(string streamId, params string[] events) {
+#pragma warning restore 1998
 #if DEBUG
 			await Task.Delay(TimeSpan.FromMilliseconds(500));
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin);
@@ -188,7 +196,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #endif
 		}
 
+#pragma warning disable 1998
 		protected async Task DumpStream(string streamId) {
+#pragma warning restore 1998
 #if DEBUG
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin);
 			switch (result.Status) {

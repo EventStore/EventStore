@@ -12,15 +12,13 @@ namespace EventStore.ClientAPI.Tests {
 					.SetReconnectionDelayTo(TimeSpan.Zero)
 					.FailOnNoServerResponse();
 
-				// ReSharper disable ConditionIsAlwaysTrueOrFalse
-				// ReSharper disable HeuristicUnreachableCode
+#pragma warning disable 0162
 #if DEBUG
 				if (UseLoggerBridge) {
 					builder = builder.UseCustomLogger(ConsoleLoggerBridge.Default);
 				}
-				// ReSharper restore HeuristicUnreachableCode
-				// ReSharper restore ConditionIsAlwaysTrueOrFalse
 #endif
+#pragma warning restore 0162
 				return builder;
 			}
 		}

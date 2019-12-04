@@ -17,7 +17,7 @@ namespace EventStore.Grpc.Streams {
 		}
 
 		[Fact]
-		public async Task one_event_is_read() {
+		public void one_event_is_read() {
 			Assert.Single(_fixture.Events);
 		}
 

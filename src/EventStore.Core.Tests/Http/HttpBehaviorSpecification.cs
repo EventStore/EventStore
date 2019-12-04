@@ -36,8 +36,8 @@ namespace EventStore.Core.Tests.Http {
 		private readonly System.Collections.Generic.List<HttpResponseMessage> _allResponses =
 			new System.Collections.Generic.List<HttpResponseMessage>();
 
-		private string _tag;
-		private NetworkCredential _defaultCredentials = null;
+		private string _tag = default;
+		private NetworkCredential _defaultCredentials;
 		protected HttpClient _client => _node.HttpClient;
 
 		public override async Task TestFixtureSetUp() {

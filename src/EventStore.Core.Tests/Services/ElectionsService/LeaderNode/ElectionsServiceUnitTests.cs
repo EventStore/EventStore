@@ -337,7 +337,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		public class TestCase {
-			private readonly string _name;
 			public int ExpectedMasterCandidateNode { get; set; }
 			public int? ResigningMaster { get; set; }
 			public int ProposingNode { get; set; }
