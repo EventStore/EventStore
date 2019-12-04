@@ -8,6 +8,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Settings;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index {
@@ -24,9 +25,10 @@ namespace EventStore.Core.Index {
 		private readonly List<List<PTable>> _map;
 		private readonly int _maxTablesPerLevel;
 		private readonly int _maxTableLevelsForAutomaticMerge;
+		private readonly int _pTableMaxReaderCount;
 
 		private IndexMap(int version, List<List<PTable>> tables, long prepareCheckpoint, long commitCheckpoint,
-			int maxTablesPerLevel, int maxTableLevelsForAutomaticMerge) {
+			int maxTablesPerLevel, int maxTableLevelsForAutomaticMerge, int pTableMaxReaderCount) {
 			Ensure.Nonnegative(version, "version");
 			if (prepareCheckpoint < -1) throw new ArgumentOutOfRangeException("prepareCheckpoint");
 			if (commitCheckpoint < -1) throw new ArgumentOutOfRangeException("commitCheckpoint");
@@ -40,6 +42,7 @@ namespace EventStore.Core.Index {
 			_map = CopyFrom(tables);
 			_maxTablesPerLevel = maxTablesPerLevel;
 			_maxTableLevelsForAutomaticMerge = maxTableLevelsForAutomaticMerge;
+			_pTableMaxReaderCount = pTableMaxReaderCount;
 			VerifyStructure();
 		}
 
@@ -107,9 +110,9 @@ namespace EventStore.Core.Index {
 				select table.Filename;
 		}
 
-		public static IndexMap CreateEmpty(int maxTablesPerLevel, int maxTableLevelsForAutomaticMerge) {
+		public static IndexMap CreateEmpty(int maxTablesPerLevel, int maxTableLevelsForAutomaticMerge, int pTableMaxReaderCount) {
 			return new IndexMap(IndexMapVersion, new List<List<PTable>>(), -1, -1, maxTablesPerLevel,
-				maxTableLevelsForAutomaticMerge);
+				maxTableLevelsForAutomaticMerge, pTableMaxReaderCount);
 		}
 
 		public static IndexMap FromFile(
@@ -119,9 +122,10 @@ namespace EventStore.Core.Index {
 			int cacheDepth,
 			bool skipIndexVerify,
 			int threads,
-			int maxAutoMergeLevel) {
+			int maxAutoMergeLevel,
+			int pTableMaxReaderCount) {
 			if (!File.Exists(filename))
-				return CreateEmpty(maxTablesPerLevel, maxAutoMergeLevel);
+				return CreateEmpty(maxTablesPerLevel, maxAutoMergeLevel, pTableMaxReaderCount);
 
 			using (var f = File.OpenRead(filename)) {
 				// calculate real MD5 hash except first 32 bytes which are string representation of stored hash
@@ -150,7 +154,7 @@ namespace EventStore.Core.Index {
 					//we are doing a logical upgrade of the version to have the new data, so we will change the version to match so that new files are saved with the right version
 					version = IndexMapVersion;
 					var tables = loadPTables
-						? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify, threads)
+						? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify, threads, pTableMaxReaderCount)
 						: new List<List<PTable>>();
 
 					if (!loadPTables && reader.ReadLine() != null)
@@ -159,7 +163,7 @@ namespace EventStore.Core.Index {
 								checkpoints));
 
 					return new IndexMap(version, tables, prepareCheckpoint, commitCheckpoint, maxTablesPerLevel,
-						maxAutoMergeLevel);
+						maxAutoMergeLevel, pTableMaxReaderCount);
 				}
 			}
 		}
@@ -240,7 +244,8 @@ namespace EventStore.Core.Index {
 
 		private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints,
 			int cacheDepth, bool skipIndexVerify,
-			int threads) {
+			int threads,
+			int pTableMaxReaderCount) {
 			var tables = new List<List<PTable>>();
 			try {
 				try {
@@ -263,7 +268,7 @@ namespace EventStore.Core.Index {
 								var path = Path.GetDirectoryName(indexmapFilename);
 								var ptablePath = Path.Combine(path, file);
 
-								ptable = PTable.FromFile(ptablePath, cacheDepth, skipIndexVerify);
+								ptable = PTable.FromFile(ptablePath, ESConsts.PTableInitialReaderCount, pTableMaxReaderCount, cacheDepth, skipIndexVerify);
 
 								lock (tables) {
 									InsertTableToTables(tables, level, position, ptable);
@@ -451,7 +456,9 @@ namespace EventStore.Core.Index {
 				if (tables[level].Count >= _maxTablesPerLevel) {
 					var filename = filenameProvider.GetFilenameNewTable();
 					PTable mergedTable = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt,
-						version, indexCacheDepth, skipIndexVerify);
+						version,
+						ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
+						indexCacheDepth, skipIndexVerify);
 
 					AddTableToTables(tables, level + 1, mergedTable);
 					toDelete.AddRange(tables[level]);
@@ -460,7 +467,7 @@ namespace EventStore.Core.Index {
 			}
 
 			var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel,
-				_maxTableLevelsForAutomaticMerge);
+				_maxTableLevelsForAutomaticMerge, _pTableMaxReaderCount);
 			return new MergeResult(indexMap, toDelete);
 		}
 
@@ -489,7 +496,8 @@ namespace EventStore.Core.Index {
 
 			var filename = filenameProvider.GetFilenameNewTable();
 			PTable mergedTable = PTable.MergeTo(tablesToMerge, filename, upgradeHash, existsAt, recordExistsAt,
-				version, indexCacheDepth, skipIndexVerify);
+				version, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
+				indexCacheDepth, skipIndexVerify);
 
 			for (int i = tables.Count - 1; i > _maxTableLevelsForAutomaticMerge; i--) {
 				tables.RemoveAt(i);
@@ -500,7 +508,7 @@ namespace EventStore.Core.Index {
 			toDelete.AddRange(tablesToMerge);
 
 			var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _maxTablesPerLevel,
-				_maxTableLevelsForAutomaticMerge);
+				_maxTableLevelsForAutomaticMerge, _pTableMaxReaderCount);
 			return new MergeResult(indexMap, toDelete);
 		}
 
@@ -521,7 +529,7 @@ namespace EventStore.Core.Index {
 						var oldTable = scavengedMap[level][i];
 
 						PTable scavenged = PTable.Scavenged(oldTable, filename, upgradeHash, existsAt, recordExistsAt,
-							version, out spaceSaved, indexCacheDepth, skipIndexVerify, ct);
+							version, out spaceSaved, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount, indexCacheDepth, skipIndexVerify, ct);
 
 						if (scavenged == null) {
 							return ScavengeResult.Failed(oldTable, level, i);
@@ -530,7 +538,7 @@ namespace EventStore.Core.Index {
 						scavengedMap[level][i] = scavenged;
 
 						var indexMap = new IndexMap(Version, scavengedMap, PrepareCheckpoint, CommitCheckpoint,
-							_maxTablesPerLevel, _maxTableLevelsForAutomaticMerge);
+							_maxTablesPerLevel, _maxTableLevelsForAutomaticMerge, _pTableMaxReaderCount);
 
 						return ScavengeResult.Success(indexMap, oldTable, scavenged, spaceSaved, level, i);
 					}

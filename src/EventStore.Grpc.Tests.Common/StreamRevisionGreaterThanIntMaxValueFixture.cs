@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using EventStore.Grpc.Tests.Common;
 using Xunit;
 
 namespace EventStore.Grpc {
@@ -102,7 +103,9 @@ namespace EventStore.Grpc {
 				new InMemoryCheckpoint(epochCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1),
-				Opts.ChunkInitialReaderCountDefault);
+				Constants.TFChunkInitialReaderCountDefault,
+				Constants.TFChunkMaxReaderCountDefault
+				);
 		}
 
 		private static TFChunkDbConfig CreateDbConfig(string pathName, ICheckpoint writerCheckpoint,
@@ -117,13 +120,15 @@ namespace EventStore.Grpc {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint,
-				Opts.ChunkInitialReaderCountDefault);
+				Constants.TFChunkInitialReaderCountDefault,
+				Constants.TFChunkMaxReaderCountDefault
+			);
 		}
 
 		private static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, initialReaderCount: 5, reduceFileCachePressure: false);
+				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 		}
 
 		protected new static IEnumerable<EventData> CreateTestEvents(int count)

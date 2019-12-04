@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 
 		[Test]
 		public void the_invalid_file_exception_is_thrown() {
-			var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, 16, false));
+			var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 16, false));
 			Assert.IsInstanceOf<InvalidFileException>(exc.InnerException);
 		}
 	}

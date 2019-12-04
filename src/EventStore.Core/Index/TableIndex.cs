@@ -12,6 +12,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
@@ -60,6 +61,7 @@ namespace EventStore.Core.Index {
 		private bool _initialized;
 		public const string ForceIndexVerifyFilename = ".forceverify";
 		private readonly int _maxAutoMergeIndexLevel;
+		private readonly int _pTableMaxReaderCount;
 
 		public TableIndex(string directory,
 			IHasher lowHasher,
@@ -68,20 +70,21 @@ namespace EventStore.Core.Index {
 			Func<TFReaderLease> tfReaderFactory,
 			byte ptableVersion,
 			int maxAutoMergeIndexLevel,
+			int pTableMaxReaderCount,
 			int maxSizeForMemory = 1000000,
 			int maxTablesPerLevel = 4,
 			bool additionalReclaim = false,
 			bool inMem = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
-			int initializationThreads = 1
-		) {
+			int initializationThreads = 1) {
 			Ensure.NotNullOrEmpty(directory, "directory");
 			Ensure.NotNull(memTableFactory, "memTableFactory");
 			Ensure.NotNull(lowHasher, "lowHasher");
 			Ensure.NotNull(highHasher, "highHasher");
 			Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
 			Ensure.Positive(initializationThreads, "initializationThreads");
+			Ensure.Positive(pTableMaxReaderCount, "pTableMaxReaderCount");
 
 			if (maxTablesPerLevel <= 1)
 				throw new ArgumentOutOfRangeException("maxTablesPerLevel");
@@ -106,6 +109,7 @@ namespace EventStore.Core.Index {
 			_highHasher = highHasher;
 
 			_maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
+			_pTableMaxReaderCount = pTableMaxReaderCount;
 		}
 
 		public void Initialize(long chaserCheckpoint) {
@@ -117,7 +121,7 @@ namespace EventStore.Core.Index {
 			_initialized = true;
 
 			if (_inMem) {
-				_indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel, int.MaxValue);
+				_indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel, int.MaxValue, _pTableMaxReaderCount);
 				_prepareCheckpoint = _indexMap.PrepareCheckpoint;
 				_commitCheckpoint = _indexMap.CommitCheckpoint;
 				return;
@@ -135,7 +139,7 @@ namespace EventStore.Core.Index {
 			// this can happen (very unlikely, though) on master crash
 			try {
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
+					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
 				if (_indexMap.CommitCheckpoint >= chaserCheckpoint) {
 					_indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
 					throw new CorruptIndexException(String.Format(
@@ -153,7 +157,7 @@ namespace EventStore.Core.Index {
 				File.Delete(indexmapFile);
 				DeleteForceIndexVerifyFile();
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
+					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
 			}
 
 			_prepareCheckpoint = _indexMap.PrepareCheckpoint;
@@ -296,6 +300,8 @@ namespace EventStore.Core.Index {
 					if (memtable != null) {
 						memtable.MarkForConversion();
 						ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
+							ESConsts.PTableInitialReaderCount,
+							_pTableMaxReaderCount,
 							_indexCacheDepth, _skipIndexVerify);
 					} else
 						ptable = (PTable)tableItem.Table;
@@ -455,7 +461,10 @@ namespace EventStore.Core.Index {
 
 				Log.Trace("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
 
-				var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth,
+				var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
+					ESConsts.PTableInitialReaderCount,
+					_pTableMaxReaderCount,
+					_indexCacheDepth,
 					_skipIndexVerify);
 				var swapped = false;
 				lock (_awaitingTablesLock) {
