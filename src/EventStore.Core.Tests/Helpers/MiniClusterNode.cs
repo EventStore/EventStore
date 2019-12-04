@@ -25,6 +25,8 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
+using EventStore.Core.Settings;
+using EventStore.Core.Tests.TransactionLog;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -109,7 +111,8 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault, readOnlyReplica: readOnlyReplica);
+				readOnlyReplica: readOnlyReplica,
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Info(
@@ -228,7 +231,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Opts.ChunkInitialReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

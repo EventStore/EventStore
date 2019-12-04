@@ -68,7 +68,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int IndexCacheDepth;
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
-		public readonly int ChunkInitialReaderCount;
 
 		public readonly bool BetterOrdering;
 		public readonly string Index;
@@ -85,6 +84,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
 		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
+		public int PTableMaxReaderCount;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -134,7 +134,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
-			int chunkInitialReaderCount,
+			int ptableMaxReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -231,7 +231,6 @@ namespace EventStore.Core.Cluster.Settings {
 			ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
 			ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			ConnectionQueueSizeThreshold = connectionQueueSizeThreshold;
-			ChunkInitialReaderCount = chunkInitialReaderCount;
 
 			VerifyDbHash = verifyDbHash;
 			MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -255,6 +254,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
 			CreateHttpMessageHandler = createHttpMessageHandler;
+			PTableMaxReaderCount = ptableMaxReaderCount;
 		}
 
 		public override string ToString() =>
@@ -279,7 +279,6 @@ namespace EventStore.Core.Cluster.Settings {
 			$"HTTPCachingDisabled: {DisableHTTPCaching}\n" + $"IndexPath: {Index}\n" +
 			$"ScavengeHistoryMaxAge: {ScavengeHistoryMaxAge}\n" +
 			$"ConnectionPendingSendBytesThreshold: {ConnectionPendingSendBytesThreshold}\n" +
-			$"ChunkInitialReaderCount: {ChunkInitialReaderCount}\n" +
 			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
 			$"InitializationThreads: {InitializationThreads}\n" + $"StructuredLog: {StructuredLog}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +

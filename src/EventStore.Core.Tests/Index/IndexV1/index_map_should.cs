@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memTable.Add(0, 1, 2);
-			_ptable = PTable.FromMemtable(memTable, _ptableFileName);
+			_ptable = PTable.FromMemtable(memTable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 		}
 
 		[TearDown]

@@ -5,7 +5,6 @@ using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -38,6 +37,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV3,
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,

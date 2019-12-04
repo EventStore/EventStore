@@ -41,12 +41,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 					table.Add((ulong)(0x010100000000 << (j + 1)), i + 1, i * j);
 				}
 
-				_tables.Add(PTable.FromMemtable(table, _files[i], skipIndexVerify: _skipIndexVerify));
+				_tables.Add(PTable.FromMemtable(table, _files[i], Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
 			}
 
 			_files.Add(GetTempFilePath());
 			_newtable = PTable.MergeTo(_tables, _files[4], (streamId, hash) => hash << 32 | hasher.Hash(streamId),
-				_ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion,
+				_ => true, _ => new System.Tuple<string, bool>("", true), _ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
