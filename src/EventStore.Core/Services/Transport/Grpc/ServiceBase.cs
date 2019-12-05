@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public GrpcBasicAuthenticationRequest(
 				TaskCompletionSource<IPrincipal> principalSource,
 				string name,
-				string suppliedPassword) : base(name, suppliedPassword) {
+				string suppliedPassword) : base("(GRPC)", name, suppliedPassword) {
 				_principalSource = principalSource;
 			}
 
