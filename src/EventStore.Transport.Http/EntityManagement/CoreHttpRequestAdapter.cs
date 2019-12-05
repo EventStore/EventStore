@@ -26,8 +26,8 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public string RawUrl => _inner.Path + (_inner.QueryString.HasValue ? _inner.QueryString.Value : null);
 
-		public IPEndPoint RemoteEndPoint => new IPEndPoint(
-			_inner.HttpContext.Connection.RemoteIpAddress, _inner.HttpContext.Connection.RemotePort);
+		public IPEndPoint RemoteEndPoint => _inner.HttpContext.Connection.RemoteIpAddress != null ? new IPEndPoint(
+			_inner.HttpContext.Connection.RemoteIpAddress, _inner.HttpContext.Connection.RemotePort) : null;
 
 		public Uri Url => new Uri(new Uri($"{_inner.Scheme}://{_inner.Host}"), RawUrl);
 
