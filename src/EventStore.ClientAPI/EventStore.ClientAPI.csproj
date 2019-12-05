@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<LangVersion>7.3</LangVersion>
 	</PropertyGroup>
 	<PropertyGroup>
 		<PackageId>EventStore.Client</PackageId>
