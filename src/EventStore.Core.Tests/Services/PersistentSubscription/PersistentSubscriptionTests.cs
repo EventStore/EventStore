@@ -339,10 +339,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				//add a subscriber
 				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 
-			//all 3 events should be received by the subscriber
-			Assert.AreEqual(3, envelope.Replies.Count);
+				//all 3 events should be received by the subscriber
+				Assert.AreEqual(3, envelope.Replies.Count);
+			});
 		}
 	}
+		
 
 	[TestFixture]
 	public class DeleteTests {
