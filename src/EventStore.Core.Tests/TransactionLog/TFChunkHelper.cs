@@ -1,3 +1,4 @@
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -17,8 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(chaserCheckpointPosition),
 				new InMemoryCheckpoint(epochCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
-				new InMemoryCheckpoint(-1),
-				Opts.ChunkInitialReaderCountDefault);
+				new InMemoryCheckpoint(-1), Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault);
 		}
 
 		public static TFChunkDbConfig CreateDbConfig(string pathName, ICheckpoint writerCheckpoint,
@@ -32,14 +32,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 				chaserCheckpoint,
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
-				replicationCheckpoint,
-				Opts.ChunkInitialReaderCountDefault);
+				replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault);
 		}
 
 		public static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, initialReaderCount: 5, reduceFileCachePressure: false);
+				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 		}
 	}
 }

@@ -7,48 +7,54 @@ using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_a_single_node : SpecificationWithDirectoryPerTestFixture {
 		protected MiniNode _node;
 
+		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(3);
+
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
 
 			BeforeNodeStarts();
 
-			_node.Start();
+			await _node.Start();
 
-			Given();
+			try {
+				await Given().WithTimeout(Timeout);
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
+			}
 		}
 
 		protected virtual void BeforeNodeStarts() {
 		}
 
-		protected virtual void Given() {
-		}
+		protected virtual Task Given() => Task.CompletedTask;
 
-		protected void ShutdownNode() {
-			_node.Shutdown(keepDb: true, keepPorts: true);
+		protected async Task ShutdownNode() {
+			await _node.Shutdown(keepDb: true);
 			_node = null;
 		}
 
-		protected void StartNode() {
+		protected Task StartNode() {
 			if (_node == null)
 				_node = new MiniNode(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
 
 			BeforeNodeStarts();
 
-			_node.Start();
+			return _node.Start();
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			_node.Shutdown();
+		public override async Task TestFixtureTearDown() {
+			await _node.Shutdown();
 			_node = null;
-			base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 		}
 	}
 }

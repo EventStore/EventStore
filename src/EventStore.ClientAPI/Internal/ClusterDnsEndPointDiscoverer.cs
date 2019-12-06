@@ -8,6 +8,7 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
+using System.Net.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI.Internal {
@@ -31,7 +32,7 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			IHttpClient client = null) {
+			HttpMessageHandler httpMessageHandler = null) {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
@@ -40,7 +41,7 @@ namespace EventStore.ClientAPI.Internal {
 			_managerExternalHttpPort = managerExternalHttpPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = client ?? new HttpAsyncClient(_gossipTimeout);
+			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
 			_nodePreference = nodePreference;
 		}
 
@@ -226,6 +227,12 @@ namespace EventStore.ClientAPI.Internal {
 					RandomShuffle(nodes, 0,
 						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
 					break;
+				case NodePreference.ReadOnlyReplica:
+					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))
+						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
+					RandomShuffle(nodes, 0,
+						nodes.Count(nodeEntry => IsReadOnlyReplicaState(nodeEntry.State)) - 1);
+					break;
 			}
 
 			var node = nodes.FirstOrDefault();
@@ -242,6 +249,12 @@ namespace EventStore.ClientAPI.Internal {
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
 			return new NodeEndPoints(normTcp, secTcp);
+		}
+
+		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
+			return state == ClusterMessages.VNodeState.ReadOnlyMasterless
+				|| state == ClusterMessages.VNodeState.PreReadOnlyReplica
+				|| state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}
 	}
 }

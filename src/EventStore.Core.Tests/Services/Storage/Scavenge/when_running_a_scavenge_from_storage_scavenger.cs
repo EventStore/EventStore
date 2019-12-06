@@ -22,27 +22,31 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private MiniNode _node;
 		private List<ResolvedEvent> _result;
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 
 			var scavengeMessage =
 				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal, 0, 1);
 			_node.Node.MainQueue.Publish(scavengeMessage);
 
-			When();
+			try {
+				await When().WithTimeout();
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
+			}
 		}
 
 		[TearDown]
-		public void TearDown() {
-			_node.Shutdown();
+		public async Task TearDown() {
+			await _node.Shutdown();
 		}
 
-		public void When() {
+		public async Task When() {
 			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, DefaultData.AdminCredentials)) {
-				conn.ConnectAsync().Wait();
+				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();
 

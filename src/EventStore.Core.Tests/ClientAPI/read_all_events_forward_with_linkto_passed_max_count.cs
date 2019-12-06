@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 
@@ -7,8 +8,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 	public class read_all_events_forward_with_linkto_passed_max_count : SpecificationWithLinkToToMaxCountDeletedEvents {
 		private StreamEventsSlice _read;
 
-		protected override void When() {
-			_read = _conn.ReadStreamEventsForwardAsync(LinkedStreamName, 0, 1, true).Result;
+		protected override async Task When() {
+			_read = await _conn.ReadStreamEventsForwardAsync(LinkedStreamName, 0, 1, true);
 		}
 
 		[Test]

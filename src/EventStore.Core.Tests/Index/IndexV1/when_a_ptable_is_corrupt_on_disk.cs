@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -21,15 +22,15 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_filename = GetTempFilePath();
 			_copiedfilename = GetTempFilePath();
 			var mtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			mtable.Add(0x010100000000, 0x0001, 0x0001);
 			mtable.Add(0x010500000000, 0x0001, 0x0002);
-			_table = PTable.FromMemtable(mtable, _filename);
+			_table = PTable.FromMemtable(mtable, _filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 			_table.Dispose();
 			File.Copy(_filename, _copiedfilename);
 			using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite)) {
@@ -39,16 +40,16 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override Task TearDown() {
 			_table.MarkForDestruction();
 			_table.WaitForDisposal(1000);
 
-			base.TearDown();
+			return base.TearDown();
 		}
 
 		[Test]
 		public void the_hash_is_invalid() {
-			var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, 16, false));
+			var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_copiedfilename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 16, false));
 			Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
 		}
 	}

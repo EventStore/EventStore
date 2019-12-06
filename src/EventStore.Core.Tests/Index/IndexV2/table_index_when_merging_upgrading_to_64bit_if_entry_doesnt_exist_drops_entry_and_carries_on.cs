@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.Services.Storage;
@@ -30,8 +31,8 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
 			var fakeReader = new TFReaderLease(new FakeIndexReader2());
@@ -41,7 +42,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
 				() => fakeReader,
 				PTableVersions.IndexV1,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 3,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
@@ -56,7 +57,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				() => new HashListMemTable(_ptableVersion, maxSize: 3),
 				() => fakeReader,
 				_ptableVersion,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 3,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
@@ -65,14 +66,14 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			_tableIndex.Add(1, Stream2, 1, 5);
 			_tableIndex.Add(1, Stream1, 1, 6);
 
-			Thread.Sleep(500);
+			await Task.Delay(500);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

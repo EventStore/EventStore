@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.Fakes;
@@ -18,8 +19,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		private FakeTFScavengerLog _log;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_indexDir = PathName;
 
@@ -30,7 +31,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV4,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
 				maxTablesPerLevel: 5);
 			_tableIndex.Initialize(long.MaxValue);
@@ -57,7 +58,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV4,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
 				maxTablesPerLevel: 5);
 
@@ -65,10 +66,10 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_tableIndex.Close();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

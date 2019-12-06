@@ -35,7 +35,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
 				.SetReconnectionDelayTo(TimeSpan.Zero)
 				.FailOnNoServerResponse()
-				.SetOperationTimeoutTo(TimeSpan.FromDays(1));
+				//.SetOperationTimeoutTo(TimeSpan.FromDays(1))
+				;
 			if (tcpType == TcpType.Ssl)
 				settings.UseSslConnection("ES", false);
 			return settings;

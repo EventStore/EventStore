@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Storage {
 			get { return _queueStats.Name; }
 		}
 
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Index Committer");
+		private readonly QueueStatsCollector _queueStats;
 
 		private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue =
 			new ConcurrentQueueWrapper<StorageMessage.CommitAck>();
@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher,
-			ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex) {
+			ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex, QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(indexCommitter, "indexCommitter");
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
@@ -76,6 +76,7 @@ namespace EventStore.Core.Services.Storage {
 			_writerCheckpoint = writerCheckpoint;
 			_commitCount = commitCount;
 			_tableIndex = tableIndex;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
 		public void Init(long checkpointPosition) {

@@ -199,6 +199,12 @@ namespace EventStore.ClientAPI {
 			if (useSslConnection)
 				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
+			if (nodePreference == NodePreference.ReadOnlyReplica && requireMaster) {
+				throw new ArgumentException($"Having the Node Preference set to {nodePreference} and Requires Master" +
+				                            $" to {requireMaster} will reconnect the client to a master node once" +
+				                            " an operation is performed.");
+			}
+
 			Log = log;
 			VerboseLogging = verboseLogging;
 			MaxQueueSize = maxQueueSize;

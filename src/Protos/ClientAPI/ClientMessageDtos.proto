@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 package EventStore.Client.Messages;
 
 enum OperationResult
@@ -196,6 +198,54 @@ message ReadAllEventsCompleted {
 	optional string error = 7;
 }
 
+message Filter{
+
+	enum FilterContext {
+        StreamId = 0;
+		EventType = 1;
+
+    }
+
+	enum FilterType {
+        Regex = 0;
+		Prefix = 1;
+    }
+
+    required FilterContext context = 1;    
+    required FilterType type = 2;    
+    repeated string data = 3;    
+}
+
+message FilteredReadAllEvents {
+    required int64 commit_position = 1;
+    required int64 prepare_position = 2;
+    required int32 max_count = 3;
+    optional int32 max_search_window = 4;
+    required bool resolve_link_tos = 5;
+    required bool require_master = 6;
+    required Filter filter = 7;
+}
+
+message FilteredReadAllEventsCompleted {
+
+    enum FilteredReadAllResult {
+        Success = 0;
+        NotModified = 1;
+        Error = 2;
+        AccessDenied = 3;
+    }
+    
+    required int64 commit_position = 1;
+    required int64 prepare_position = 2;
+    repeated ResolvedEvent events = 3;
+    required int64 next_commit_position = 4;
+    required int64 next_prepare_position = 5;
+    required bool is_end_of_stream = 6;
+
+    optional FilteredReadAllResult result = 7 [default = Success];
+    optional string error = 8;
+}
+
 message CreatePersistentSubscription {
 	required string subscription_group_name = 1;
 	required string event_stream_id = 2;
@@ -315,6 +365,18 @@ message SubscribeToStream {
 	required bool resolve_link_tos = 2;
 }
 
+message FilteredSubscribeToStream {
+	required string event_stream_id = 1;
+	required bool resolve_link_tos = 2;
+	required Filter filter = 3;
+	required int32 checkpoint_interval = 4;
+}
+
+message CheckpointReached {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+}
+
 message SubscriptionConfirmation {
 	required int64 last_commit_position = 1;
 	optional int64 last_event_number = 2;
@@ -346,6 +408,7 @@ message NotHandled {
 		NotReady = 0;
 		TooBusy = 1;
 		NotMaster = 2;
+		IsReadOnly = 3;
 	}
 	
 	required NotHandledReason reason = 1;

@@ -1,11 +1,16 @@
 using System;
-using System.IO;
 using EventStore.Common.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class PartitionState {
+		private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings {
+			DateParseHandling = DateParseHandling.None,
+		};
+		
 		public bool IsChanged(PartitionState newState) {
 			return State != newState.State || Result != newState.Result;
 		}
@@ -18,7 +23,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			JToken result = null;
 
 			if (!string.IsNullOrEmpty(serializedState)) {
-				var deserialized = JsonConvert.DeserializeObject(serializedState);
+				var deserialized = JsonConvert.DeserializeObject(serializedState, JsonSettings);
 				var array = deserialized as JArray;
 				if (array != null && array.Count > 0) {
 					state = array[0] as JToken;

@@ -121,6 +121,7 @@ namespace EventStore.Projections.Core {
 			if (_runProjections >= ProjectionType.System) {
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreService);
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_projectionCoreService);
+				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StopCoreTimeout>(_projectionCoreService);
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_projectionCoreServiceCommandReader);
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StopCore>(_projectionCoreServiceCommandReader);
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(_projectionCoreService);
@@ -146,6 +147,7 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionProcessingMessage.Failed>(_projectionCoreService);
+				coreInputBus.Subscribe<CoreProjectionStatusMessage.Suspended>(_projectionCoreService);
 				//NOTE: message forwarding is set up outside (for Read/Write events)
 
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_coreResponseWriter);
@@ -167,6 +169,7 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetState>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.GetStatistics>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Post>(_coreResponseWriter);
+				coreInputBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);

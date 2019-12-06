@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -43,9 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return (new SystemMessage.BecomeMaster(Guid.NewGuid()));
-				yield return (new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now)));
-				yield return (new SystemMessage.SystemCoreReady());
+				yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 				yield return (
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(_bus), _projectionMode, _projectionName,
@@ -182,7 +178,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 						_reader, new TFPos(100, 50), new TFPos(100, 50), "stream", 1, "stream", 1, false,
 						Guid.NewGuid(),
 						"type", false, new byte[0], new byte[0], 100, 33.3f));
-				_timeProvider.AddTime(TimeSpan.FromMinutes(6));
+				_timeProvider.AddToUtcTime(TimeSpan.FromMinutes(6));
 				yield return Yield;
 				foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
 					m.Envelope.ReplyWith(m.ReplyMessage);

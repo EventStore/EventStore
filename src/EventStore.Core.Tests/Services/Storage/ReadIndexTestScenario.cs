@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -48,8 +49,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			PerformAdditionalCommitChecks = performAdditionalChecks;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
@@ -78,6 +79,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
@@ -97,11 +100,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 				if (_completeLastChunkOnScavenge)
 					Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
 				_scavenger = new TFChunkScavenger(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex);
-				_scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks).Wait();
+				await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
 			}
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			ReadIndex.Close();
 			ReadIndex.Dispose();
 
@@ -110,7 +113,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Db.Close();
 			Db.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		protected abstract void WriteTestScenario();
@@ -120,13 +123,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			string data,
 			DateTime? timestamp = null,
 			Guid eventId = default(Guid),
-			bool retryOnFail = false) {
+			bool retryOnFail = false,
+			string eventType = "some-type") {
 			var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
 				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				Guid.NewGuid(),
 				eventStreamId,
 				eventNumber - 1,
-				"some-type",
+				eventType,
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
 				timestamp);

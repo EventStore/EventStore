@@ -111,6 +111,45 @@ namespace EventStore.ClientAPI.Internal {
 		}
 	}
 
+	internal class StartFilteredSubscriptionMessage : Message {
+		public readonly TaskCompletionSource<EventStoreSubscription> Source;
+
+		public readonly string StreamId;
+		public readonly bool ResolveLinkTos;
+		public readonly int CheckpointInterval;
+		public readonly Filter Filter;
+		public readonly UserCredentials UserCredentials;
+		public readonly Func<EventStoreSubscription, ResolvedEvent, Task> EventAppeared;
+		public readonly Func<EventStoreSubscription, Position, Task> CheckpointReached;
+		public readonly Action<EventStoreSubscription, SubscriptionDropReason, Exception> SubscriptionDropped;
+
+		public readonly int MaxRetries;
+		public readonly TimeSpan Timeout;
+
+		public StartFilteredSubscriptionMessage(TaskCompletionSource<EventStoreSubscription> source, string streamId,
+			bool resolveLinkTos, int checkpointInterval, Filter filter, UserCredentials userCredentials,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped, int maxRetries,
+			TimeSpan timeout) {
+			Ensure.NotNull(source, nameof(source));
+			Ensure.NotNull(filter, nameof(filter));
+			Ensure.NotNull(eventAppeared, nameof(eventAppeared));
+
+			Source = source;
+			StreamId = streamId;
+			Filter = filter;
+			ResolveLinkTos = resolveLinkTos;
+			UserCredentials = userCredentials;
+			EventAppeared = eventAppeared;
+			CheckpointReached = checkpointReached;
+			SubscriptionDropped = subscriptionDropped;
+			MaxRetries = maxRetries;
+			Timeout = timeout;
+			CheckpointInterval = checkpointInterval;
+		}
+	}
+
 	internal class StartPersistentSubscriptionMessage : Message {
 		public readonly TaskCompletionSource<PersistentEventStoreSubscription> Source;
 

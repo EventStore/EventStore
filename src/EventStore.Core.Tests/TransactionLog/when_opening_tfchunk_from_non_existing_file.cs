@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void it_should_throw_a_file_not_found_exception() {
 			Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(Filename, verifyHash: true,
-				unbufferedRead: false, initialReaderCount: 5, reduceFileCachePressure: false));
+				unbufferedRead: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, maxReaderCount: Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false));
 		}
 	}
 }

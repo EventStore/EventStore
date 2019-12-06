@@ -2,6 +2,7 @@
 
 namespace EventStore.Core.Services.TimerService {
 	public interface ITimeProvider {
-		DateTime Now { get; }
+		DateTime UtcNow { get; }
+		DateTime LocalTime { get; }
 	}
 }

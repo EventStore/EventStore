@@ -31,6 +31,53 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
+			public class PostBatch : ControlMessage {
+				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+				public override int MsgTypeId {
+					get { return TypeId; }
+				}
+
+				public ProjectionPost[] Projections { get; }
+
+				public PostBatch(
+					IEnvelope envelope, RunAs runAs, ProjectionPost[] projections)
+					: base(envelope, runAs) {
+						Projections = projections;
+				}
+
+				public class ProjectionPost
+				{
+					public ProjectionMode Mode { get; }
+					public RunAs RunAs {get;}
+					public string Name { get; }
+					public string HandlerType { get; }
+					public string Query { get; }
+					public bool Enabled { get;}
+					public bool CheckpointsEnabled{ get;}
+					public bool EmitEnabled { get; }
+					public bool EnableRunAs { get; }
+					public bool TrackEmittedStreams { get; }
+
+					public ProjectionPost(
+						ProjectionMode mode, RunAs runAs, string name, string handlerType, string query,
+						bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs,
+						bool trackEmittedStreams)
+					{
+						Mode = mode;
+						RunAs = runAs;
+						Name = name;
+						HandlerType = handlerType;
+						Query = query;
+						Enabled = enabled;
+						CheckpointsEnabled = checkpointsEnabled;
+						EmitEnabled = emitEnabled;
+						EnableRunAs = enableRunAs;
+						TrackEmittedStreams = trackEmittedStreams;
+					}
+				}
+			}
+
 			public class Post : ControlMessage {
 				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -950,10 +997,10 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly Guid EpochId;
+			public readonly Guid InstanceCorrelationId;
 
-			public Starting(Guid epochId) {
-				EpochId = epochId;
+			public Starting(Guid instanceCorrelationId) {
+				InstanceCorrelationId = instanceCorrelationId;
 			}
 		}
 

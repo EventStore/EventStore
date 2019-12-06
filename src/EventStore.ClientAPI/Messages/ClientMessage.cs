@@ -652,6 +652,147 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"Filter")]
+  public partial class Filter
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"context", DataFormat = DataFormat.TwosComplement)]
+    public readonly Filter.FilterContext Context;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"type", DataFormat = DataFormat.TwosComplement)]
+    public readonly Filter.FilterType Type;
+  
+    [ProtoMember(3, Name=@"data", DataFormat = DataFormat.Default)]
+    public readonly string[] Data;
+  
+    [ProtoContract(Name=@"FilterContext")]
+    public enum FilterContext
+    {
+            
+      [ProtoEnum(Name=@"StreamId", Value=0)]
+      StreamId = 0,
+            
+      [ProtoEnum(Name=@"EventType", Value=1)]
+      EventType = 1
+    }
+  
+    [ProtoContract(Name=@"FilterType")]
+    public enum FilterType
+    {
+            
+      [ProtoEnum(Name=@"Regex", Value=0)]
+      Regex = 0,
+            
+      [ProtoEnum(Name=@"Prefix", Value=1)]
+      Prefix = 1
+    }
+  
+    private Filter() {}
+  
+    public Filter(Filter.FilterContext context, Filter.FilterType type, string[] data)
+    {
+        Context = context;
+        Type = type;
+        Data = data;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"FilteredReadAllEvents")]
+  public partial class FilteredReadAllEvents
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
+    public readonly int MaxCount;
+  
+    [ProtoMember(4, IsRequired = false, Name=@"max_search_window", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? MaxSearchWindow;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"require_master", DataFormat = DataFormat.Default)]
+    public readonly bool RequireMaster;
+  
+    [ProtoMember(7, IsRequired = true, Name=@"filter", DataFormat = DataFormat.Default)]
+    public readonly Filter Filter;
+  
+    private FilteredReadAllEvents() {}
+  
+    public FilteredReadAllEvents(long commitPosition, long preparePosition, int maxCount, int? maxSearchWindow, bool resolveLinkTos, bool requireMaster, Filter filter)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+        MaxCount = maxCount;
+        MaxSearchWindow = maxSearchWindow;
+        ResolveLinkTos = resolveLinkTos;
+        RequireMaster = requireMaster;
+        Filter = filter;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"FilteredReadAllEventsCompleted")]
+  public partial class FilteredReadAllEventsCompleted
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    [ProtoMember(3, Name=@"events", DataFormat = DataFormat.Default)]
+    public readonly ResolvedEvent[] Events;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"next_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long NextCommitPosition;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long NextPreparePosition;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"is_end_of_stream", DataFormat = DataFormat.Default)]
+    public readonly bool IsEndOfStream;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"result", DataFormat = DataFormat.TwosComplement)]
+    public readonly FilteredReadAllEventsCompleted.FilteredReadAllResult Result;
+  
+    [ProtoMember(8, IsRequired = false, Name=@"error", DataFormat = DataFormat.Default)]
+    public readonly string Error;
+  
+    [ProtoContract(Name=@"FilteredReadAllResult")]
+    public enum FilteredReadAllResult
+    {
+            
+      [ProtoEnum(Name=@"Success", Value=0)]
+      Success = 0,
+            
+      [ProtoEnum(Name=@"NotModified", Value=1)]
+      NotModified = 1,
+            
+      [ProtoEnum(Name=@"Error", Value=2)]
+      Error = 2,
+            
+      [ProtoEnum(Name=@"AccessDenied", Value=3)]
+      AccessDenied = 3
+    }
+  
+    private FilteredReadAllEventsCompleted() {}
+  
+    public FilteredReadAllEventsCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition, bool isEndOfStream, FilteredReadAllEventsCompleted.FilteredReadAllResult result, string error)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+        Events = events;
+        NextCommitPosition = nextCommitPosition;
+        NextPreparePosition = nextPreparePosition;
+        IsEndOfStream = isEndOfStream;
+        Result = result;
+        Error = error;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"CreatePersistentSubscription")]
   public partial class CreatePersistentSubscription
   {
@@ -1067,6 +1208,50 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"FilteredSubscribeToStream")]
+  public partial class FilteredSubscribeToStream
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    public readonly string EventStreamId;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"filter", DataFormat = DataFormat.Default)]
+    public readonly Filter Filter;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"checkpoint_interval", DataFormat = DataFormat.TwosComplement)]
+    public readonly int CheckpointInterval;
+  
+    private FilteredSubscribeToStream() {}
+  
+    public FilteredSubscribeToStream(string eventStreamId, bool resolveLinkTos, Filter filter, int checkpointInterval)
+    {
+        EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
+        Filter = filter;
+        CheckpointInterval = checkpointInterval;
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"CheckpointReached")]
+  public partial class CheckpointReached
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long PreparePosition;
+  
+    private CheckpointReached() {}
+  
+    public CheckpointReached(long commitPosition, long preparePosition)
+    {
+        CommitPosition = commitPosition;
+        PreparePosition = preparePosition;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"SubscriptionConfirmation")]
   public partial class SubscriptionConfirmation
   {
@@ -1195,7 +1380,10 @@ namespace EventStore.ClientAPI.Messages
       TooBusy = 1,
             
       [ProtoEnum(Name=@"NotMaster", Value=2)]
-      NotMaster = 2
+      NotMaster = 2,
+            
+      [ProtoEnum(Name=@"IsReadOnly", Value=3)]
+      IsReadOnly = 3
     }
   
     private NotHandled() {}

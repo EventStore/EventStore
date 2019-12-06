@@ -4,6 +4,7 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 using EventStore.Core.Index.Hashes;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(false)]
@@ -20,34 +21,34 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x0101);
 			table.Add(0x010200000000, 0, 0x0102);
 			table.Add(0x010300000000, 0, 0x0103);
 			table.Add(0x010400000000, 0, 0x0104);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010500000000, 0, 0x0105);
 			table.Add(0x010600000000, 0, 0x0106);
 			table.Add(0x010700000000, 0, 0x0107);
 			table.Add(0x010800000000, 0, 0x0108);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1,
+				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV1, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -83,34 +84,34 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x0101);
 			table.Add(0x010200000000, 0, 0x0102);
 			table.Add(0x010300000000, 0, 0x0103);
 			table.Add(0x010400000000, 0, 0x0104);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010500000000, 0, 0x0105);
 			table.Add(0x010600000000, 0, 0x0106);
 			table.Add(0x010700000000, 0, 0x0107);
 			table.Add(0x010800000000, 0, 0x0108);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3,
+				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV3, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -146,40 +147,40 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 0x010100000000);
 			table.Add(0x010200000000, 0, 0x010200000000);
 			table.Add(0x010300000000, 0, 0x010300000000);
 			table.Add(0x010400000000, 0, 0x010400000000);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010500000000, 0, 0x010500000000);
 			table.Add(0x010600000000, 0, 0x010600000000);
 			table.Add(0x010700000000, 0, 0x010700000000);
 			table.Add(0x010800000000, 0, 0x010800000000);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
 			table.Add(0x010900000000, 0, 0x010900000000);
 			table.Add(0x101000000000, 0, 0x101000000000);
 			table.Add(0x111000000000, 0, 0x111000000000);
 			table.Add(0x121000000000, 0, 0x121000000000);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(), (streamId, hash) => hash + 1, x => true,
-				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2,
+				x => new Tuple<string, bool>(x.Stream.ToString(), true), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -224,9 +225,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			hasher = new Murmur3AUnsafe();
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
 			table.Add(0x010100000000, 2, 5);
@@ -234,28 +235,28 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010200000000, 2, 7);
 			table.Add(0x010400000000, 0, 8);
 			table.Add(0x010400000000, 1, 9);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 1, 10);
 			table.Add(0x010100000000, 2, 11);
 			table.Add(0x010500000000, 1, 12);
 			table.Add(0x010500000000, 2, 13);
 			table.Add(0x010500000000, 3, 14);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
 				(streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0,
-				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2,
+				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -275,8 +276,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}
@@ -299,44 +300,44 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			hasher = new Murmur3AUnsafe();
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 			_files.Add(GetTempFilePath());
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 1);
 			table.Add(0x010200000000, 0, 2);
 			table.Add(0x010300000000, 0, 3);
 			table.Add(0x010300000000, 1, 4);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV2, maxSize: 20);
 			table.Add(0x010100000000, 2, 5);
 			table.Add(0x010200000000, 1, 6);
 			table.Add(0x010200000000, 2, 7);
 			table.Add(0x010400000000, 0, 8);
 			table.Add(0x010400000000, 1, 9);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 1, 10);
 			table.Add(0x010100000000, 2, 11);
 			table.Add(0x010500000000, 1, 12);
 			table.Add(0x010500000000, 2, 13);
 			table.Add(0x010500000000, 3, 14);
-			_tables.Add(PTable.FromMemtable(table, GetTempFilePath()));
+			_tables.Add(PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault));
 			_newtable = PTable.MergeTo(_tables, GetTempFilePath(),
 				(streamId, hash) => hash << 32 | hasher.Hash(streamId), x => x.Position % 2 == 0,
-				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2,
+				x => new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0), PTableVersions.IndexV2, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_newtable.Dispose();
 			foreach (var ssTable in _tables) {
 				ssTable.Dispose();
 			}
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -357,8 +358,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}

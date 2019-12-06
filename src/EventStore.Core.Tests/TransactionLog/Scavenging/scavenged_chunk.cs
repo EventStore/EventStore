@@ -11,7 +11,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		[Test]
 		public void is_fully_resident_in_memory_when_cached() {
 			var map = new List<PosMap>();
-			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false, 5, false);
+			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false, false, false,
+				Constants.TFChunkInitialReaderCountDefault,
+				Constants.TFChunkMaxReaderCountDefault,
+				false);
 			long logPos = 0;
 			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
 				map.Add(new PosMap(logPos, (int)logPos));

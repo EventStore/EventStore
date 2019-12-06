@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -21,8 +22,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		public when_rebuilding_index_for_partially_persisted_transaction() : base(maxEntriesInMemTable: 10) {
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			ReadIndex.Close();
 			ReadIndex.Dispose();
@@ -36,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV2,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: MaxEntriesInMemTable);
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,

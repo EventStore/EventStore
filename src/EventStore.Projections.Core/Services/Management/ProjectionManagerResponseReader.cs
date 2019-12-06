@@ -48,14 +48,14 @@ namespace EventStore.Projections.Core.Services.Management {
 			_cancellationScope = new IODispatcherAsync.CancellationScope();
 			Log.Debug("PROJECTIONS: Starting Projection Manager Response Reader (reads from $projections-$master)");
 			_numberOfStartedWorkers = 0;
-			PerformStartReader(message.EpochId).Run();
+			PerformStartReader(message.InstanceCorrelationId).Run();
 		}
 
-		private IEnumerable<IODispatcherAsync.Step> PerformStartReader(Guid epochId) {
+		private IEnumerable<IODispatcherAsync.Step> PerformStartReader(Guid instanceCorrelationId) {
 			yield return
 				_ioDispatcher.BeginUpdateStreamAcl(
 					_cancellationScope,
-					ProjectionNamesBuilder.BuildControlStreamName(epochId),
+					ProjectionNamesBuilder.BuildControlStreamName(instanceCorrelationId),
 					ExpectedVersion.Any,
 					SystemAccount.Principal,
 					new StreamMetadata(maxAge: ProjectionNamesBuilder.ControlStreamMaxAge),
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			yield return
 				_ioDispatcher.BeginWriteEvents(
 					_cancellationScope,
-					ProjectionNamesBuilder.BuildControlStreamName(epochId),
+					ProjectionNamesBuilder.BuildControlStreamName(instanceCorrelationId),
 					ExpectedVersion.Any,
 					SystemAccount.Principal,
 					new[] {new Event(Guid.NewGuid(), "$response-reader-started", true, "{}", null)},
@@ -326,6 +326,22 @@ namespace EventStore.Projections.Core.Services.Management {
 							commandBody.Mode,
 							commandBody.Name,
 							commandBody.IncludeDeleted));
+					break;
+				}
+				case "$post-batch": {
+					var commandBody = resolvedEvent.Event.Data.ParseJson<PostBatchCommand>();
+					var projections = new List<ProjectionManagementMessage.Command.PostBatch.ProjectionPost>();
+					foreach (var proj in commandBody.Projections) {
+						projections.Add(new ProjectionManagementMessage.Command.PostBatch.ProjectionPost(
+							proj.Mode, proj.RunAs, proj.Name, proj.HandlerType, proj.Query,
+							proj.Enabled, proj.CheckpointsEnabled,
+							proj.EmitEnabled, proj.EnableRunAs, proj.TrackEmittedStreams));
+					}
+					_publisher.Publish(
+						new ProjectionManagementMessage.Command.PostBatch(
+							new NoopEnvelope(),
+							commandBody.RunAs,
+							projections.ToArray()));
 					break;
 				}
 				case "$post": {

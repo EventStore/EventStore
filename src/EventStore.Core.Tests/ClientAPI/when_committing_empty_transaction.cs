@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -13,32 +14,32 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private EventData _firstEvent;
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 
 			_firstEvent = TestEvent.NewTestEvent();
 
 			_connection = BuildConnection(_node);
-			_connection.ConnectAsync().Wait();
+			await _connection.ConnectAsync();
 
-			Assert.AreEqual(2, _connection.AppendToStreamAsync("test-stream",
+			Assert.AreEqual(2, (await _connection.AppendToStreamAsync("test-stream",
 				ExpectedVersion.NoStream,
 				_firstEvent,
 				TestEvent.NewTestEvent(),
-				TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+				TestEvent.NewTestEvent())).NextExpectedVersion);
 
-			using (var transaction = _connection.StartTransactionAsync("test-stream", 2).Result) {
-				Assert.AreEqual(2, transaction.CommitAsync().Result.NextExpectedVersion);
+			using (var transaction = await _connection.StartTransactionAsync("test-stream", 2)) {
+				Assert.AreEqual(2, (await transaction.CommitAsync()).NextExpectedVersion);
 			}
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override async Task TearDown() {
 			_connection.Close();
-			_node.Shutdown();
-			base.TearDown();
+			await _node.Shutdown();
+			await base.TearDown();
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
@@ -46,12 +47,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void following_append_with_correct_expected_version_are_commited_correctly() {
+		public async Task following_append_with_correct_expected_version_are_commited_correctly() {
 			Assert.AreEqual(4,
-				_connection.AppendToStreamAsync("test-stream", 2, TestEvent.NewTestEvent(), TestEvent.NewTestEvent())
-					.Result.NextExpectedVersion);
+				(await _connection.AppendToStreamAsync("test-stream", 2, TestEvent.NewTestEvent(),
+					TestEvent.NewTestEvent())
+				).NextExpectedVersion);
 
-			var res = _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false).Result;
+			var res = await _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
 			Assert.AreEqual(5, res.Events.Length);
 			for (int i = 0; i < 5; ++i) {
@@ -60,12 +62,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void following_append_with_expected_version_any_are_commited_correctly() {
+		public async Task following_append_with_expected_version_any_are_commited_correctly() {
 			Assert.AreEqual(4,
-				_connection.AppendToStreamAsync("test-stream", ExpectedVersion.Any, TestEvent.NewTestEvent(),
-					TestEvent.NewTestEvent()).Result.NextExpectedVersion);
+				(await _connection.AppendToStreamAsync("test-stream", ExpectedVersion.Any, TestEvent.NewTestEvent(),
+					TestEvent.NewTestEvent())).NextExpectedVersion);
 
-			var res = _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false).Result;
+			var res = await _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
 			Assert.AreEqual(5, res.Events.Length);
 			for (int i = 0; i < 5; ++i) {
@@ -74,12 +76,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void committing_first_event_with_expected_version_no_stream_is_idempotent() {
+		public async Task committing_first_event_with_expected_version_no_stream_is_idempotent() {
 			Assert.AreEqual(0,
-				_connection.AppendToStreamAsync("test-stream", ExpectedVersion.NoStream, _firstEvent).Result
-					.NextExpectedVersion);
+				(await _connection.AppendToStreamAsync("test-stream", ExpectedVersion.NoStream, _firstEvent))
+				.NextExpectedVersion);
 
-			var res = _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false).Result;
+			var res = await _connection.ReadStreamEventsForwardAsync("test-stream", 0, 100, false);
 			Assert.AreEqual(SliceReadStatus.Success, res.Status);
 			Assert.AreEqual(3, res.Events.Length);
 			for (int i = 0; i < 3; ++i) {
@@ -88,12 +90,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
-		public void trying_to_append_new_events_with_expected_version_no_stream_fails() {
-			Assert.That(
-				() => _connection.AppendToStreamAsync("test-stream", ExpectedVersion.NoStream, TestEvent.NewTestEvent())
-					.Result,
-				Throws.Exception.InstanceOf<AggregateException>()
-					.With.InnerException.InstanceOf<WrongExpectedVersionException>());
+		public async Task trying_to_append_new_events_with_expected_version_no_stream_fails() {
+			await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
+				_connection.AppendToStreamAsync("test-stream", ExpectedVersion.NoStream, TestEvent.NewTestEvent()));
 		}
 	}
 }

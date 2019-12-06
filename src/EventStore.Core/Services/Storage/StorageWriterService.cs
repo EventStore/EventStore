@@ -80,7 +80,8 @@ namespace EventStore.Core.Services.Storage {
 			TFChunkDb db,
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
-			IEpochManager epochManager) {
+			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -104,6 +105,7 @@ namespace EventStore.Core.Services.Storage {
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
+				queueStatsManager,
 				true,
 				TimeSpan.FromMilliseconds(500));
 			_tasks.Add(StorageWriterQueue.Start());
@@ -147,7 +149,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			if (_vnodeState != VNodeState.Master && message is StorageMessage.IMasterWriteMessage) {
+			if (_vnodeState != VNodeState.Master && _vnodeState != VNodeState.ResigningMaster && message is StorageMessage.IMasterWriteMessage) {
 				Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
 					_vnodeState);
 				var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
@@ -197,7 +199,9 @@ namespace EventStore.Core.Services.Storage {
 
 		void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
 			// if we are in states, that doesn't need to wait for chaser, ignore
-			if (_vnodeState != VNodeState.PreMaster && _vnodeState != VNodeState.PreReplica)
+			if (_vnodeState != VNodeState.PreMaster &&
+				_vnodeState != VNodeState.PreReplica &&
+				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
 			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed())

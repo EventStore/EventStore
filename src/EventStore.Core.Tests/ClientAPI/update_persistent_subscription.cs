@@ -15,21 +15,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
 
-		protected override void Given() {
-			_conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
+		protected override async Task Given() {
+			await _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
 				new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-			_conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
-				.Wait();
+			await _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials);
 		}
 
-		protected override void When() {
-		}
+		protected override Task When() => Task.CompletedTask;
 
 		[Test]
-		public void the_completion_succeeds() {
-			Assert.DoesNotThrow(() =>
-				_conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
-					.Wait());
+		public async Task the_completion_succeeds() {
+			await _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials);
 		}
 	}
 
@@ -46,11 +42,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private Exception _exception;
 		private Exception _caught = null;
 
-		protected override void Given() {
-			_conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
+		protected override async Task Given() {
+			await _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
 				new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-			_conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
-				.Wait();
+			await _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
+;
 			_conn.ConnectToPersistentSubscription(_stream, "existing", (x, y) => Task.CompletedTask,
 				(sub, reason, ex) => {
 					_dropped.Set();
@@ -59,10 +55,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				});
 		}
 
-		protected override void When() {
+		protected override async Task When() {
 			try {
-				_conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
-					.Wait();
+				await _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials);
 			} catch (Exception ex) {
 				_caught = ex;
 			}
@@ -90,19 +85,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
 
-		protected override void When() {
-		}
+		protected override Task When() => Task.CompletedTask;
 
 		[Test]
-		public void the_completion_fails_with_not_found() {
-			try {
-				_conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings,
-					DefaultData.AdminCredentials).Wait();
-				Assert.Fail("should have thrown");
-			} catch (Exception ex) {
-				Assert.IsInstanceOf<AggregateException>(ex);
-				Assert.IsInstanceOf<InvalidOperationException>(ex.InnerException);
-			}
+		public async Task the_completion_fails_with_not_found() {
+			await AssertEx.ThrowsAsync<InvalidOperationException>(
+				() => _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings,
+					DefaultData.AdminCredentials));
 		}
 	}
 
@@ -114,22 +103,17 @@ namespace EventStore.Core.Tests.ClientAPI {
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
 
-		protected override void When() {
-			_conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
+		protected override async Task When() {
+			await _conn.AppendToStreamAsync(_stream, ExpectedVersion.Any,
 				new EventData(Guid.NewGuid(), "whatever", true, Encoding.UTF8.GetBytes("{'foo' : 2}"), new Byte[0]));
-			_conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
-				.Wait();
+			await _conn.CreatePersistentSubscriptionAsync(_stream, "existing", _settings, DefaultData.AdminCredentials)
+;
 		}
 
 		[Test]
-		public void the_completion_fails_with_access_denied() {
-			try {
-				_conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, null).Wait();
-				Assert.Fail("should have thrown");
-			} catch (Exception ex) {
-				Assert.IsInstanceOf<AggregateException>(ex);
-				Assert.IsInstanceOf<AccessDeniedException>(ex.InnerException);
-			}
+		public async Task the_completion_fails_with_access_denied() {
+			await AssertEx.ThrowsAsync<AccessDeniedException>(
+				() => _conn.UpdatePersistentSubscriptionAsync(_stream, "existing", _settings, null));
 		}
 	}
 }

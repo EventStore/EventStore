@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Http;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -9,6 +10,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using HttpMethod = EventStore.Transport.Http.HttpMethod;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class ElectController : CommunicationController,
@@ -18,15 +20,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		ISender<ElectionMessage.Prepare>,
 		ISender<ElectionMessage.PrepareOk>,
 		ISender<ElectionMessage.Proposal>,
-		ISender<ElectionMessage.Accept> {
+		ISender<ElectionMessage.Accept>,
+		ISender<ElectionMessage.MasterIsResigning>,
+		ISender<ElectionMessage.MasterIsResigningOk>
+		{
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectController>();
 		private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 		private TimeSpan _operationTimeout;
 		private readonly HttpAsyncClient _client;
 
-		public ElectController(IPublisher publisher) : base(publisher) {
+		public ElectController(IPublisher publisher, HttpMessageHandler httpMessageHandler) : base(publisher) {
 			_operationTimeout = TimeSpan.FromMilliseconds(2000); //TODO make these configurable
-			_client = new HttpAsyncClient(_operationTimeout);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
@@ -48,6 +53,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/elections/accept", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnPostAccept);
+			service.RegisterAction(
+				new ControllerAction("/elections/masterisresigning", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
+				OnPostMasterIsResigning);
+			service.RegisterAction(
+				new ControllerAction("/elections/masterisresigningok", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None),
+				OnPostMasterIsResigningOk);
 		}
 
 		public void SubscribeSenders(HttpMessagePipe pipe) {
@@ -57,6 +68,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			pipe.RegisterSender<ElectionMessage.PrepareOk>(this);
 			pipe.RegisterSender<ElectionMessage.Proposal>(this);
 			pipe.RegisterSender<ElectionMessage.Accept>(this);
+			pipe.RegisterSender<ElectionMessage.MasterIsResigning>(this);
+			pipe.RegisterSender<ElectionMessage.MasterIsResigningOk>(this);
 		}
 
 		public void Send(ElectionMessage.ViewChange message, IPEndPoint endPoint) {
@@ -148,6 +161,36 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					/*Log.ErrorException(e, "Error occured while writing request (elections/accept)")*/
 				});
 		}
+		
+		public void Send(ElectionMessage.MasterIsResigning message, IPEndPoint endPoint) {
+			Ensure.NotNull(message, nameof(message));
+			Ensure.NotNull(endPoint, nameof(endPoint));
+
+			_client.Post(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/elections/masterisresigning"),
+				Codec.Json.To(new ElectionMessageDto.MasterIsResigningDto(message)),
+				Codec.Json.ContentType,
+				r => {
+					/*ignore*/
+				},
+				e => {
+					/*Log.ErrorException(e, "Error occured while writing request (elections/masterisresigning)")*/
+				});
+		}
+		
+		public void Send(ElectionMessage.MasterIsResigningOk message, IPEndPoint endPoint) {
+			Ensure.NotNull(message, nameof(message));
+			Ensure.NotNull(endPoint, nameof(endPoint));
+
+			_client.Post(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/elections/masterisresigningok"),
+				Codec.Json.To(new ElectionMessageDto.MasterIsResigningOkDto(message)),
+				Codec.Json.ContentType,
+				r => {
+					/*ignore*/
+				},
+				e => {
+					/*Log.ErrorException(e, "Error occured while writing request (elections/masterisresigningok)")*/
+				});
+		}
 
 		private void OnPost<TDto, TMessage>(HttpEntityManager manager, Func<TDto, TMessage> unwrapper)
 			where TDto : class
@@ -193,6 +236,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnPostAccept(HttpEntityManager manager, UriTemplateMatch match) {
 			OnPost(manager, (ElectionMessageDto.AcceptDto dto) => new ElectionMessage.Accept(dto));
+		}
+		
+		private void OnPostMasterIsResigning(HttpEntityManager manager, UriTemplateMatch match) {
+			OnPost(manager, (ElectionMessageDto.MasterIsResigningDto dto) => new ElectionMessage.MasterIsResigning(dto));
+		}
+		
+		private void OnPostMasterIsResigningOk(HttpEntityManager manager, UriTemplateMatch match) {
+			OnPost(manager, (ElectionMessageDto.MasterIsResigningOkDto dto) => new ElectionMessage.MasterIsResigningOk(dto));
 		}
 
 		private class PostState {

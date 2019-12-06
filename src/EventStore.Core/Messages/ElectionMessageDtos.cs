@@ -114,6 +114,7 @@ namespace EventStore.Core.Messages {
 			public int EpochNumber { get; set; }
 			public long EpochPosition { get; set; }
 			public Guid EpochId { get; set; }
+			public int NodePriority { get; set; }
 
 			public ProposalDto() {
 			}
@@ -134,6 +135,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = message.LastCommitPosition;
 				WriterCheckpoint = message.WriterCheckpoint;
 				ChaserCheckpoint = message.ChaserCheckpoint;
+				NodePriority = message.NodePriority;
 			}
 		}
 
@@ -162,6 +164,40 @@ namespace EventStore.Core.Messages {
 				MasterInternalHttpPort = message.MasterInternalHttp.Port;
 
 				View = message.View;
+			}
+		}
+		
+		public class MasterIsResigningDto {
+			public Guid MasterId { get; set; }
+			public string MasterInternalHttpAddress { get; set; }
+			public int MasterInternalHttpPort { get; set; }
+			public MasterIsResigningDto() {
+			}
+
+			public MasterIsResigningDto(ElectionMessage.MasterIsResigning message) {
+				MasterId = message.MasterId;
+				MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
+				MasterInternalHttpPort = message.MasterInternalHttp.Port;
+			}
+		}
+		
+		public class MasterIsResigningOkDto {
+			public Guid MasterId { get; set; }
+			public string MasterInternalHttpAddress { get; set; }
+			public int MasterInternalHttpPort { get; set; }
+			public Guid ServerId { get; set; }
+			public string ServerInternalHttpAddress { get; set; }
+			public int ServerInternalHttpPort { get; set; }
+			public MasterIsResigningOkDto() {
+			}
+
+			public MasterIsResigningOkDto(ElectionMessage.MasterIsResigningOk message) {
+				ServerId = message.ServerId;
+				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
+				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				MasterId = message.MasterId;
+				MasterInternalHttpAddress = message.MasterInternalHttp.Address.ToString();
+				MasterInternalHttpPort = message.MasterInternalHttp.Port;
 			}
 		}
 	}

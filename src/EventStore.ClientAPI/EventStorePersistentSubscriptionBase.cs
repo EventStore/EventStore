@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.SystemData;
-#if!NET452
+#if !NET452
 using TaskEx = System.Threading.Tasks.Task;
 
 #else
@@ -71,16 +71,14 @@ namespace EventStore.ClientAPI {
 			_autoAck = autoAck;
 		}
 
-		internal Task<EventStorePersistentSubscriptionBase> Start() {
+		internal async Task<EventStorePersistentSubscriptionBase> Start() {
 			_stopped.Reset();
 
-			var task = StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials, OnEventAppeared,
-				OnSubscriptionDropped, _settings).ContinueWith(t => {
-				_subscription = t.Result;
-				return this;
-			});
+			_subscription = await StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials,
+				OnEventAppeared,
+				OnSubscriptionDropped, _settings);
 
-			return task;
+			return this;
 		}
 
 		internal abstract Task<PersistentEventStoreSubscription> StartSubscription(
@@ -95,7 +93,7 @@ namespace EventStore.ClientAPI {
 		/// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
 		/// <param name="event">The <see cref="ResolvedEvent"></see> to acknowledge</param>
 		public void Acknowledge(ResolvedEvent @event) {
-			_subscription.NotifyEventsProcessed(new[] {@event.OriginalEvent.EventId});
+			_subscription.NotifyEventsProcessed(new[] { @event.OriginalEvent.EventId });
 		}
 
 		/// <summary>
@@ -116,7 +114,7 @@ namespace EventStore.ClientAPI {
 		/// <remarks>There is no need to ack a message if you have Auto Ack enabled</remarks>
 		/// <param name="eventId">The <see cref="ResolvedEvent"></see> OriginalEvent.EventId to acknowledge</param>
 		public void Acknowledge(Guid eventId) {
-			_subscription.NotifyEventsProcessed(new[] {eventId});
+			_subscription.NotifyEventsProcessed(new[] { eventId });
 		}
 
 		/// <summary>
@@ -138,7 +136,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="action">The <see cref="PersistentSubscriptionNakEventAction"></see> action to take</param>
 		/// <param name="reason">A string with a message as to why the failure is occurring</param>
 		public void Fail(ResolvedEvent @event, PersistentSubscriptionNakEventAction action, string reason) {
-			_subscription.NotifyEventsFailed(new[] {@event.OriginalEvent.EventId}, action, reason);
+			_subscription.NotifyEventsFailed(new[] { @event.OriginalEvent.EventId }, action, reason);
 		}
 
 		/// <summary>
@@ -162,7 +160,8 @@ namespace EventStore.ClientAPI {
 		/// <param name="timeout"></param>
 		/// <exception cref="TimeoutException"></exception>
 		public void Stop(TimeSpan timeout) {
-			if (_verbose) _log.Debug("Persistent Subscription to {0}: requesting stop...", _streamId);
+			if (_verbose)
+				_log.Debug("Persistent Subscription to {0}: requesting stop...", _streamId);
 			EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
 			if (!_stopped.Wait(timeout))
 				throw new TimeoutException(string.Format("Could not stop {0} in time.", GetType().Name));
@@ -203,7 +202,8 @@ namespace EventStore.ClientAPI {
 					while (_queue.TryDequeue(out e)) {
 						if (e.Event.Equals(DropSubscriptionEvent)) // drop subscription artificial ResolvedEvent
 						{
-							if (_dropData == null) throw new Exception("Drop reason not specified.");
+							if (_dropData == null)
+								throw new Exception("Drop reason not specified.");
 							DropSubscription(_dropData.Reason, _dropData.Error);
 							return;
 						}
@@ -216,7 +216,7 @@ namespace EventStore.ClientAPI {
 						try {
 							await _eventAppeared(this, e, e.RetryCount).ConfigureAwait(false);
 							if (_autoAck)
-								_subscription.NotifyEventsProcessed(new[] {e.Event.OriginalEvent.EventId});
+								_subscription.NotifyEventsProcessed(new[] { e.Event.OriginalEvent.EventId });
 							if (_verbose)
 								_log.Debug("Persistent Subscription to {0}: processed event ({1}, {2}, {3} @ {4}).",
 									_streamId,

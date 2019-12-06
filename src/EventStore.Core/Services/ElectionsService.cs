@@ -18,7 +18,7 @@ namespace EventStore.Core.Services {
 		Idle,
 		ElectingLeader,
 		Leader,
-		NonLeader,
+		Acceptor,
 		Shutdown
 	}
 
@@ -32,9 +32,13 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.Prepare>,
 		IHandle<ElectionMessage.PrepareOk>,
 		IHandle<ElectionMessage.Proposal>,
-		IHandle<ElectionMessage.Accept> {
-		private static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
-		private static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
+		IHandle<ElectionMessage.Accept>,
+		IHandle<ClientMessage.SetNodePriority>,
+		IHandle<ClientMessage.ResignNode>,
+		IHandle<ElectionMessage.MasterIsResigning>,
+		IHandle<ElectionMessage.MasterIsResigningOk> {
+		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectionsService>();
 		private static readonly IPEndPointComparer IPComparer = new IPEndPointComparer();
@@ -47,7 +51,8 @@ namespace EventStore.Core.Services {
 		private readonly ICheckpoint _chaserCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
-		private readonly int _nodePriority;
+		private int _nodePriority;
+		private readonly ITimeProvider _timeProvider;
 
 		private int _lastAttemptedView = -1;
 		private int _lastInstalledView = -1;
@@ -58,6 +63,7 @@ namespace EventStore.Core.Services {
 		private readonly Dictionary<Guid, ElectionMessage.PrepareOk> _prepareOkReceived =
 			new Dictionary<Guid, ElectionMessage.PrepareOk>();
 
+		private readonly HashSet<Guid> _masterIsResigningOkReceived = new HashSet<Guid>();
 		private readonly HashSet<Guid> _acceptsReceived = new HashSet<Guid>();
 
 		private MasterCandidate _masterProposal;
@@ -65,6 +71,7 @@ namespace EventStore.Core.Services {
 		private Guid? _lastElectedMaster;
 
 		private MemberInfo[] _servers;
+		private Guid? _resigningMasterInstanceId;
 
 		public ElectionsService(IPublisher publisher,
 			VNodeInfo nodeInfo,
@@ -73,14 +80,16 @@ namespace EventStore.Core.Services {
 			ICheckpoint chaserCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
-			int nodePriority) {
-			Ensure.NotNull(publisher, "publisher");
-			Ensure.NotNull(nodeInfo, "nodeInfo");
-			Ensure.Positive(clusterSize, "clusterSize");
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
-			Ensure.NotNull(epochManager, "epochManager");
-			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
+			int nodePriority,
+			ITimeProvider timeProvider) {
+			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(nodeInfo, nameof(nodeInfo));
+			Ensure.Positive(clusterSize, nameof(clusterSize));
+			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
+			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
+			Ensure.NotNull(epochManager, nameof(epochManager));
+			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
+			Ensure.NotNull(timeProvider, nameof(timeProvider));
 
 			_publisher = publisher;
 			_nodeInfo = nodeInfo;
@@ -91,18 +100,20 @@ namespace EventStore.Core.Services {
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
+			_timeProvider = timeProvider;
 
 			var ownInfo = GetOwnInfo();
 			_servers = new[] {
 				MemberInfo.ForVNode(nodeInfo.InstanceId,
-					DateTime.UtcNow,
+					_timeProvider.UtcNow,
 					VNodeState.Initializing,
 					true,
 					nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp,
 					nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
 					nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
-					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority)
+					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
+					nodeInfo.IsReadOnlyReplica)
 			};
 		}
 
@@ -118,6 +129,69 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
+			subscriber.Subscribe<ElectionMessage.MasterIsResigning>(this);
+			subscriber.Subscribe<ElectionMessage.MasterIsResigningOk>(this);
+			subscriber.Subscribe<ClientMessage.SetNodePriority>(this);
+			subscriber.Subscribe<ClientMessage.ResignNode>(this);
+		}
+
+		public void Handle(ClientMessage.SetNodePriority message) {
+			Log.Debug("Setting Node Priority to {nodePriority}.", message.NodePriority);
+			_nodePriority = message.NodePriority;
+			_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
+		}
+
+		public void Handle(ClientMessage.ResignNode message) {
+			if (_master != null && _nodeInfo.InstanceId == _master) {
+				_resigningMasterInstanceId = _master;
+				var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
+					_nodeInfo.InstanceId,
+					_nodeInfo.InternalHttp,
+					_nodeInfo.InstanceId,
+					_nodeInfo.InternalHttp);
+				_masterIsResigningOkReceived.Clear();
+				Handle(masterIsResigningMessageOk);
+				SendToAllExceptMe(new ElectionMessage.MasterIsResigning(
+					_nodeInfo.InstanceId, _nodeInfo.InternalHttp));
+			} else {
+				Log.Info("ELECTIONS: ONLY MASTER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
+			}
+		}
+
+		public void Handle(ElectionMessage.MasterIsResigning message) {
+			if (_nodeInfo.IsReadOnlyReplica) {
+				Log.Debug(
+					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFORE NOT ALLOWED TO ACKNOWLEDGE MASTER RESIGNATION.");
+				return;
+			}
+
+			Log.Debug("ELECTIONS: MASTER IS RESIGNING [{masterInternalHttp}, {masterId:B}].",
+				message.MasterInternalHttp, message.MasterId);
+			var masterIsResigningMessageOk = new ElectionMessage.MasterIsResigningOk(
+				message.MasterId,
+				message.MasterInternalHttp,
+				_nodeInfo.InstanceId,
+				_nodeInfo.InternalHttp);
+
+			_resigningMasterInstanceId = message.MasterId;
+			_publisher.Publish(new HttpMessage.SendOverHttp(message.MasterInternalHttp, masterIsResigningMessageOk,
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
+		}
+
+		public void Handle(ElectionMessage.MasterIsResigningOk message) {
+			Log.Debug(
+				"ELECTIONS: MASTER IS RESIGNING OK FROM [{serverInternalHttp},{serverId:B}] M=[{masterInternalHttp},{masterId:B}]).",
+				message.ServerInternalHttp,
+				message.ServerId,
+				message.MasterInternalHttp,
+				message.MasterId);
+			if (_masterIsResigningOkReceived.Add(message.ServerId) &&
+					_masterIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
+				Log.Debug(
+					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF MASTER [{masterInternalHttp},{masterId:B}]. NOW INITIATING MASTER RESIGNATION.",
+					message.MasterInternalHttp, message.MasterId);
+				_publisher.Publish(new SystemMessage.InitiateMasterResignation());
+			}
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -134,6 +208,9 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.StartElections message) {
 			if (_state == ElectionsState.Shutdown) return;
 			if (_state == ElectionsState.ElectingLeader) return;
+
+			if (_nodeInfo.IsReadOnlyReplica)
+				Log.Trace("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -175,7 +252,7 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _nodeInfo.InstanceId)) {
 				_publisher.Publish(new HttpMessage.SendOverHttp(server.InternalHttpEndPoint, message,
-					DateTime.Now.Add(LeaderElectionProgressTimeout)));
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 			}
 		}
 
@@ -232,12 +309,14 @@ namespace EventStore.Core.Services {
 					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttp}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
 					message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
-				ShiftToRegNonLeader();
+				ShiftToAcceptor();
 			}
 		}
 
 		private bool AmILeaderOf(int lastAttemptedView) {
-			var leader = _servers[lastAttemptedView % _servers.Length];
+			var serversExcludingNonPotentialLeaders = _servers.Where(x => !x.IsReadOnlyReplica).ToArray();
+			var leader =
+				serversExcludingNonPotentialLeaders[lastAttemptedView % serversExcludingNonPotentialLeaders.Length];
 			return leader.InstanceId == _nodeInfo.InstanceId;
 		}
 
@@ -262,11 +341,17 @@ namespace EventStore.Core.Services {
 				_lastAttemptedView, message.ServerInternalHttp, message.ServerId);
 
 			if (_state == ElectionsState.ElectingLeader) // install the view
-				ShiftToRegNonLeader();
+				ShiftToAcceptor();
+
+			if (_nodeInfo.IsReadOnlyReplica) {
+				Log.Info("ELECTIONS: READ ONLY REPLICA, NOT ACCEPTING PREPARE, NOT ELIGIBLE TO VOTE [{0}]",
+					_nodeInfo.InternalHttp);
+				return;
+			}
 
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new HttpMessage.SendOverHttp(message.ServerInternalHttp, prepareOk,
-				DateTime.Now.Add(LeaderElectionProgressTimeout)));
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {
@@ -277,10 +362,10 @@ namespace EventStore.Core.Services {
 				ownInfo.NodePriority);
 		}
 
-		private void ShiftToRegNonLeader() {
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_NONLEADER.", _lastAttemptedView);
+		private void ShiftToAcceptor() {
+			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_ACCEPTOR.", _lastAttemptedView);
 
-			_state = ElectionsState.NonLeader;
+			_state = ElectionsState.Acceptor;
 			_lastInstalledView = _lastAttemptedView;
 		}
 
@@ -292,16 +377,22 @@ namespace EventStore.Core.Services {
 			Log.Debug("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
 				FormatNodeInfo(msg.ServerInternalHttp, msg.ServerId,
 					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
-					msg.EpochNumber, msg.EpochPosition, msg.EpochId));
+					msg.EpochNumber, msg.EpochPosition, msg.EpochId, msg.NodePriority));
 
 			if (!_prepareOkReceived.ContainsKey(msg.ServerId)) {
 				_prepareOkReceived.Add(msg.ServerId, msg);
 				if (_prepareOkReceived.Count == _clusterSize / 2 + 1)
-					ShiftToRegLeader();
+					ShiftToLeader();
 			}
 		}
 
-		private void ShiftToRegLeader() {
+		private void ShiftToLeader() {
+			if (_nodeInfo.IsReadOnlyReplica) {
+				Log.Debug("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.",
+					_lastAttemptedView);
+				return;
+			}
+
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_LEADER.", _lastAttemptedView);
 
 			_state = ElectionsState.Leader;
@@ -312,7 +403,8 @@ namespace EventStore.Core.Services {
 			_acceptsReceived.Clear();
 			_masterProposal = null;
 
-			var master = GetBestMasterCandidate();
+			var master = GetBestMasterCandidate(_prepareOkReceived, _servers, _lastElectedMaster,
+				_resigningMasterInstanceId);
 			if (master == null) {
 				Log.Trace("ELECTIONS: (V={lastAttemptedView}) NO MASTER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
@@ -328,24 +420,24 @@ namespace EventStore.Core.Services {
 				master.InstanceId, master.InternalHttp,
 				_lastInstalledView,
 				master.EpochNumber, master.EpochPosition, master.EpochId,
-				master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint);
+				master.LastCommitPosition, master.WriterCheckpoint, master.ChaserCheckpoint, master.NodePriority);
 			Handle(new ElectionMessage.Accept(_nodeInfo.InstanceId, _nodeInfo.InternalHttp,
 				master.InstanceId, master.InternalHttp, _lastInstalledView));
 			SendToAllExceptMe(proposal);
 		}
 
-		private MasterCandidate GetBestMasterCandidate() {
-			if (_lastElectedMaster.HasValue) {
-				ElectionMessage.PrepareOk masterMsg;
-				if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
+		public static MasterCandidate GetBestMasterCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
+			MemberInfo[] servers, Guid? lastElectedMaster, Guid? resigningMasterInstanceId) {
+			if (lastElectedMaster.HasValue && lastElectedMaster.Value != resigningMasterInstanceId) {
+				if (received.TryGetValue(lastElectedMaster.Value, out var masterMsg)) {
 					return new MasterCandidate(masterMsg.ServerId, masterMsg.ServerInternalHttp,
 						masterMsg.EpochNumber, masterMsg.EpochPosition, masterMsg.EpochId,
 						masterMsg.LastCommitPosition, masterMsg.WriterCheckpoint, masterMsg.ChaserCheckpoint,
 						masterMsg.NodePriority);
 				}
 
-				var master = _servers.FirstOrDefault(x =>
-					x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
+				var master = servers.FirstOrDefault(x =>
+					x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
 				if (master != null) {
 					return new MasterCandidate(master.InstanceId, master.InternalHttpEndPoint,
 						master.EpochNumber, master.EpochPosition, master.EpochId,
@@ -354,12 +446,12 @@ namespace EventStore.Core.Services {
 				}
 			}
 
-			var best = _prepareOkReceived.Values
+			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.LastCommitPosition)
 				.ThenByDescending(x => x.WriterCheckpoint)
-				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ChaserCheckpoint)
+				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ServerId)
 				.FirstOrDefault();
 			if (best == null)
@@ -369,11 +461,14 @@ namespace EventStore.Core.Services {
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
 
-		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
-			MasterCandidate candidate) {
-			var master = _servers.FirstOrDefault(x =>
-				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
-			if (master != null) {
+		public static bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
+			MasterCandidate candidate, MemberInfo[] servers, Guid? lastElectedMaster, VNodeInfo nodeInfo,
+			MasterCandidate ownInfo,
+			Guid? resigningMaster) {
+			var master = servers.FirstOrDefault(x =>
+				x.IsAlive && x.InstanceId == lastElectedMaster && x.State == VNodeState.Master);
+
+			if (master != null && master.InstanceId != resigningMaster) {
 				if (candidate.InstanceId == master.InstanceId
 				    || candidate.EpochNumber > master.EpochNumber
 				    || (candidate.EpochNumber == master.EpochNumber && candidate.EpochId != master.EpochId))
@@ -387,10 +482,9 @@ namespace EventStore.Core.Services {
 				return false;
 			}
 
-			if (candidate.InstanceId == _nodeInfo.InstanceId)
+			if (candidate.InstanceId == nodeInfo.InstanceId)
 				return true;
 
-			var ownInfo = GetOwnInfo();
 			if (!IsCandidateGoodEnough(candidate, ownInfo)) {
 				Log.Debug(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE MASTER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. ME={ownInfo}.",
@@ -402,7 +496,7 @@ namespace EventStore.Core.Services {
 			return true;
 		}
 
-		private bool IsCandidateGoodEnough(MasterCandidate candidate, MasterCandidate ownInfo) {
+		private static bool IsCandidateGoodEnough(MasterCandidate candidate, MasterCandidate ownInfo) {
 			if (candidate.EpochNumber != ownInfo.EpochNumber)
 				return candidate.EpochNumber > ownInfo.EpochNumber;
 			if (candidate.LastCommitPosition != ownInfo.LastCommitPosition)
@@ -417,21 +511,26 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.Proposal message) {
 			if (_state == ElectionsState.Shutdown) return;
 			if (message.ServerId == _nodeInfo.InstanceId) return;
-			if (_state != ElectionsState.NonLeader) return;
+			if (_state != ElectionsState.Acceptor) return;
 			if (message.View != _lastInstalledView) return;
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
 			if (_servers.All(x => x.InstanceId != message.MasterId)) return;
 
 			var candidate = new MasterCandidate(message.MasterId, message.MasterInternalHttp,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
-				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, 0);
-			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId, candidate))
+				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
+
+			var ownInfo = GetOwnInfo();
+			if (!IsLegitimateMaster(message.View, message.ServerInternalHttp, message.ServerId,
+				candidate, _servers, _lastElectedMaster, _nodeInfo, ownInfo,
+				_resigningMasterInstanceId))
 				return;
 
 			Log.Debug(
-				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttp},{serverId:B}] M={candidateInfo}. ME={ownInfo}.",
+				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttp},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
 				_lastAttemptedView,
-				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()));
+				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
+				message.NodePriority);
 
 			if (_masterProposal == null) {
 				_masterProposal = candidate;
@@ -467,6 +566,7 @@ namespace EventStore.Core.Services {
 					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED MASTER = {masterInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_masterProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedMaster = _master;
+					_resigningMasterInstanceId = null;
 					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, master));
 				}
 			}
@@ -487,19 +587,19 @@ namespace EventStore.Core.Services {
 		private static string FormatNodeInfo(MasterCandidate candidate) {
 			return FormatNodeInfo(candidate.InternalHttp, candidate.InstanceId,
 				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,
-				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId);
+				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId, candidate.NodePriority);
 		}
 
 		private static string FormatNodeInfo(IPEndPoint serverEndPoint, Guid serverId,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			int epochNumber, long epochPosition, Guid epochId) {
-			return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B})",
+			int epochNumber, long epochPosition, Guid epochId, int priority) {
+			return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B},Priority={8})",
 				serverEndPoint, serverId,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochNumber, epochPosition, epochId);
+				epochNumber, epochPosition, epochId, priority);
 		}
 
-		private class MasterCandidate {
+		public class MasterCandidate {
 			public readonly Guid InstanceId;
 			public readonly IPEndPoint InternalHttp;
 

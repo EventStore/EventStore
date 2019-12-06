@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly MultiQueuedHandler _workersMultiHandler;
 
 		public StorageReaderService(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount,
-			ICheckpoint writerCheckpoint) {
+			ICheckpoint writerCheckpoint, QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -43,6 +43,8 @@ namespace EventStore.Core.Services.Storage {
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsBackward>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsForward>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsBackward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.CheckStreamAccess>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.BatchLogExpiredMessages>(readerWorkers[i]);
 			}
@@ -51,6 +53,7 @@ namespace EventStore.Core.Services.Storage {
 				_threadCount,
 				queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
 					string.Format("StorageReaderQueue #{0}", queueNum + 1),
+					queueStatsManager,
 					groupName: "StorageReaderQueue",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
@@ -61,6 +64,8 @@ namespace EventStore.Core.Services.Storage {
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsForward, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsBackward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.CheckStreamAccess, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.BatchLogExpiredMessages, Message>());
 		}

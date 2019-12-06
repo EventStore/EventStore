@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Storage {
 		private volatile bool _stop;
 		private volatile bool _systemStarted;
 
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
+		private readonly QueueStatsCollector _queueStats;
 
 		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private long _flushDelay;
@@ -60,7 +60,8 @@ namespace EventStore.Core.Services.Storage {
 			ICheckpoint writerCheckpoint,
 			ITransactionFileChaser chaser,
 			IIndexCommitterService indexCommitterService,
-			IEpochManager epochManager) {
+			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(masterBus, "masterBus");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaser, "chaser");
@@ -72,6 +73,7 @@ namespace EventStore.Core.Services.Storage {
 			_chaser = chaser;
 			_indexCommitterService = indexCommitterService;
 			_epochManager = epochManager;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Storage Chaser");
 
 			_flushDelay = 0;
 			_lastFlush = _watch.ElapsedTicks;

@@ -77,6 +77,22 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 		}
+		
+		public class InitiateMasterResignation : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+		
+		public class RequestQueueDrained : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
 		public abstract class StateChangeMessage : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -158,6 +174,18 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class BecomeResigningMaster : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeResigningMaster(Guid correlationId)
+				: base(correlationId, VNodeState.ResigningMaster) {
+			}
+		}
+
 		public abstract class ReplicaStateMessage : StateChangeMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -219,6 +247,43 @@ namespace EventStore.Core.Messages {
 			public BecomeSlave(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.Slave, master) {
 			}
 		}
+
+		public class BecomeReadOnlyMasterless : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyMasterless (Guid correlationId)
+				: base(correlationId, VNodeState.ReadOnlyMasterless) {
+			}
+		}
+
+		public class BecomePreReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomePreReadOnlyReplica(Guid correlationId, VNodeInfo master)
+				: base(correlationId, VNodeState.PreReadOnlyReplica, master) {
+			}
+		}
+
+		public class BecomeReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyReplica(Guid correlationId, VNodeInfo master)
+				: base(correlationId, VNodeState.ReadOnlyReplica, master) {
+			}
+		}
+
 
 		public class ServiceShutdown : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

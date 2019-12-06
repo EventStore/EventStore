@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
 using System;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV1, false)]
@@ -31,8 +32,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_mergeFile = GetTempFilePath();
 			_filename = GetTempFilePath();
@@ -42,25 +43,25 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			memtable.Add(0, 1, 0);
 
 			_result = _map.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				10, 20, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				20, 30, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				30, 40, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0,
 				skipIndexVerify: _skipIndexVerify);
 			_result.ToDelete.ForEach(x => x.MarkForDestruction());
 			_result = _result.MergedMap.AddPTable(
-				PTable.FromMemtable(memtable, GetTempFilePath(), skipIndexVerify: _skipIndexVerify),
+				PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify),
 				50, 60, (streamId, hash) => hash, _ => true, _ => new Tuple<string, bool>("", true),
 				new FakeFilenameProvider(_mergeFile + ".firstmerge", _mergeFile), _ptableVersion,
 				_maxAutoMergeIndexLevel, 0, skipIndexVerify: _skipIndexVerify);
@@ -68,12 +69,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
 			File.Delete(_filename);
 			File.Delete(_mergeFile);
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

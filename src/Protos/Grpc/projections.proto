@@ -1,0 +1,178 @@
+syntax = "proto3";
+package event_store.grpc.projections;
+option java_package = "com.eventstore.client.projections";
+
+import "google/protobuf/struct.proto";
+
+service Projections {
+	rpc Create (CreateReq) returns (CreateResp);
+	rpc Update (UpdateReq) returns (UpdateResp);
+	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Statistics (StatisticsReq) returns (stream StatisticsResp);
+	rpc Disable (DisableReq) returns (DisableResp);
+	rpc Enable (EnableReq) returns (EnableResp);
+	rpc Reset (ResetReq) returns (ResetResp);
+	rpc State (StateReq) returns (StateResp);
+	rpc Result (ResultReq) returns (ResultResp);
+}
+
+message CreateReq {
+	Options options = 1;
+
+	message Options {
+		oneof mode {
+			Empty one_time = 1;
+			Transient transient = 2;
+			Continuous continuous = 3;
+		}
+		string query = 4;
+
+		message Transient {
+			string name = 1;
+		}
+		message Continuous {
+			string name = 1;
+			bool track_emitted_streams = 2;
+		}
+	}
+	message Empty {
+	}
+}
+
+message CreateResp {
+}
+
+message UpdateReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		string query = 2;
+		oneof emit_options {
+			bool emit_enabled = 3;
+			Empty no_emit_options = 4;
+		}
+	}
+	message Empty {
+	}
+}
+
+message UpdateResp {
+}
+
+message DeleteReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		bool delete_emitted_streams = 2;
+		bool delete_state_stream = 3;
+		bool delete_checkpoint_stream = 4;
+	}
+}
+
+message DeleteResp {
+}
+
+message StatisticsReq {
+	Options options = 1;
+	message Options {
+		oneof mode {
+			string name = 1;
+			Empty all = 2;
+			Empty transient = 3;
+			Empty continuous = 4;
+			Empty one_time = 5;
+		}
+	}
+	message Empty {
+	}
+}
+
+message StatisticsResp {
+	Details details = 1;
+
+	message Details {
+		int64 coreProcessingTime = 1;
+		int64 version = 2;
+		int64 epoch = 3;
+		string effectiveName = 4;
+		int32 writesInProgress = 5;
+		int32 readsInProgress = 6;
+		int32 partitionsCached = 7;
+		string status = 8;
+		string stateReason = 9;
+		string name = 10;
+		string mode = 11;
+		string position = 12;
+		float progress = 13;
+		string lastCheckpoint = 14;
+		int64 eventsProcessedAfterRestart = 15;
+		string checkpointStatus = 16;
+		int64 bufferedEvents = 17;
+		int32 writePendingEventsBeforeCheckpoint = 18;
+		int32 writePendingEventsAfterCheckpoint = 19;
+	}
+}
+
+message StateReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		string partition = 2;
+	}
+}
+
+message StateResp {
+	google.protobuf.Value state = 1;
+}
+
+message ResultReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		string partition = 2;
+	}
+}
+
+message ResultResp {
+	google.protobuf.Value result = 1;
+}
+
+message ResetReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		bool write_checkpoint = 2;
+	}
+}
+
+message ResetResp {
+}
+
+
+message EnableReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+	}
+}
+
+message EnableResp {
+}
+
+message DisableReq {
+	Options options = 1;
+
+	message Options {
+		string name = 1;
+		bool write_checkpoint = 2;
+	}
+}
+
+message DisableResp {
+}

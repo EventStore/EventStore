@@ -56,6 +56,19 @@ namespace EventStore.Core.Services.Transport.Http {
 				new KeyValuePair<string, string>("Location", forwardUri.ToString()));
 		}
 
+		public static ResponseConfiguration DenyRequestBecauseReadOnly(Uri originalUrl, string targetHost, int targetPort) {
+			var srcBase =
+				new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, originalUrl.Host, originalUrl.Port),
+					UriKind.Absolute);
+			var targetBase = new Uri(string.Format("{0}://{1}:{2}/", originalUrl.Scheme, targetHost, targetPort),
+				UriKind.Absolute);
+			var forwardUri = new Uri(targetBase, srcBase.MakeRelativeUri(originalUrl));
+			return new ResponseConfiguration(HttpStatusCode.InternalServerError,
+				"Operation Not Supported on Read Only Replica", "text/plain",
+				Helper.UTF8NoBom,
+				new KeyValuePair<string, string>("Location", forwardUri.ToString()));
+		}
+
 		public static ResponseConfiguration NotFound() {
 			return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
 		}
@@ -248,6 +261,35 @@ namespace EventStore.Core.Services.Transport.Http {
 				return HandleNotHandled(entity.RequestedUrl, notHandled);
 			return InternalServerError();
 		}
+		
+		public static ResponseConfiguration ReadAllEventsBackwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+			Message message, bool headOfTf) {
+			var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
+			if (msg != null) {
+				switch (msg.Result) {
+					case FilteredReadAllResult.Success:
+						var codec = entity.ResponseCodec;
+						if (!headOfTf && msg.CurrentPos.CommitPosition <= msg.TfLastCommitPosition)
+							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+					case FilteredReadAllResult.NotModified:
+						return NotModified();
+					case FilteredReadAllResult.Error:
+						return InternalServerError(msg.Error);
+					case FilteredReadAllResult.AccessDenied:
+						return Unauthorized();
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
+
+			var notHandled = message as ClientMessage.NotHandled;
+			if (notHandled != null)
+				return HandleNotHandled(entity.RequestedUrl, notHandled);
+			return InternalServerError();
+		}
 
 		public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
@@ -266,6 +308,35 @@ namespace EventStore.Core.Services.Transport.Http {
 					case ReadAllResult.Error:
 						return InternalServerError(msg.Error);
 					case ReadAllResult.AccessDenied:
+						return Unauthorized();
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			}
+
+			var notHandled = message as ClientMessage.NotHandled;
+			if (notHandled != null)
+				return HandleNotHandled(entity.RequestedUrl, notHandled);
+			return InternalServerError();
+		}
+		
+		public static ResponseConfiguration ReadAllEventsForwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
+			Message message, bool headOfTf) {
+			var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
+			if (msg != null) {
+				switch (msg.Result) {
+					case FilteredReadAllResult.Success:
+						var codec = entity.ResponseCodec;
+						if (!headOfTf && msg.Events.Length == msg.MaxCount)
+							return Ok(codec.ContentType, codec.Encoding, null, MaxPossibleAge, msg.IsCachePublic);
+						var etag = GetPositionETag(msg.TfLastCommitPosition, codec.ContentType);
+						var cacheSeconds = GetCacheSeconds(msg.StreamMetadata);
+						return Ok(codec.ContentType, codec.Encoding, etag, cacheSeconds, msg.IsCachePublic);
+					case FilteredReadAllResult.NotModified:
+						return NotModified();
+					case FilteredReadAllResult.Error:
+						return InternalServerError(msg.Error);
+					case FilteredReadAllResult.AccessDenied:
 						return Unauthorized();
 					default:
 						throw new ArgumentOutOfRangeException();
@@ -367,6 +438,12 @@ namespace EventStore.Core.Services.Transport.Http {
 					if (masterInfo == null)
 						return InternalServerError("No master info available in response");
 					return TemporaryRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+				}
+				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
+					var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
+					if (masterInfo == null)
+						return InternalServerError("No master info available in response");
+					return DenyRequestBecauseReadOnly(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
 				}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));

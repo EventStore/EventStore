@@ -32,6 +32,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
 				OnPostMergeIndexes);
+			service.RegisterAction(
+				new ControllerAction("/admin/node/priority/{nodePriority}", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
+				OnSetNodePriority);
+			service.RegisterAction(
+				new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
+				OnResignNode);
 		}
 
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
@@ -138,6 +144,41 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			);
 
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
+		}
+
+		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {
+			if (entity.User != null &&
+			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+				Log.Info("Request to set node priority.");
+
+				int nodePriority;
+				var nodePriorityVariable = match.BoundVariables["nodePriority"];
+				if (nodePriorityVariable == null) {
+					SendBadRequest(entity, "Could not find expected `nodePriority` in the request body.");
+					return;
+				}
+
+				if (!int.TryParse(nodePriorityVariable, out nodePriority)) {
+					SendBadRequest(entity, "nodePriority must be an integer.");
+					return;
+				}
+				
+				Publish(new ClientMessage.SetNodePriority(nodePriority));
+				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+			} else {
+				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+			}
+		}
+
+		private void OnResignNode(HttpEntityManager entity, UriTemplateMatch match) {
+			if (entity.User != null &&
+			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+				Log.Info("Request to resign node.");
+				Publish(new ClientMessage.ResignNode());
+				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+			} else {
+				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+			}
 		}
 
 		private void LogReplyError(Exception exc) {

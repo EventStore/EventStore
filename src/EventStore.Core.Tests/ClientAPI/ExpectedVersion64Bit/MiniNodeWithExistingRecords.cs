@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords : SpecificationWithDirectoryPerTestFixture {
@@ -44,8 +45,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			string dbPath = Path.Combine(PathName, string.Format("mini-node-db-{0}", Guid.NewGuid()));
 
 			Bus = new InMemoryBus("bus");
@@ -82,23 +83,25 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 			// start node with our created DB
 			Node = new MiniNode(PathName, inMemDb: false, dbPath: dbPath);
-			Node.Start();
+			await Node.Start();
 
-			Given();
+			try {
+				await Given().WithTimeout();
+			} catch (Exception ex) {
+				throw new Exception("Given Failed", ex);
+			}
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			if (_store != null) {
-				_store.Dispose();
-			}
+		public override async Task TestFixtureTearDown() {
+			_store?.Dispose();
 
-			Node.Shutdown();
-			base.TestFixtureTearDown();
+			await Node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 
 		public abstract void WriteTestScenario();
-		public abstract void Given();
+		public abstract Task Given();
 
 		protected EventRecord WriteSingleEvent(string eventStreamId,
 			long eventNumber,

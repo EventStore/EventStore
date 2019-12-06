@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI {
@@ -215,6 +214,32 @@ namespace EventStore.ClientAPI {
 			UserCredentials userCredentials = null);
 
 		/// <summary>
+		/// Asynchronously reads all events in the node forward (e.g. beginning to end). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node forward (e.g. beginning to end). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
+
+
+		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).
 		/// </summary>
 		/// <param name="position">The position to start reading from.</param>
@@ -224,6 +249,31 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
 		Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
 			UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node backwards (e.g. end to beginning). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="maxSearchWindow">The maximum number of events examined before returning a slice.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, int maxSearchWindow, UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously reads all events in the node backwards (e.g. end to beginning). Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="position">The position to start reading from.</param>
+		/// <param name="maxCount">The maximum count to read.</param>
+		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
+		/// <param name="filter">An <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <returns>A <see cref="Task&lt;AllEventsSlice&gt;"/> containing the records read.</returns>
+		Task<AllEventsSlice> FilteredReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos,
+			Filter filter, UserCredentials userCredentials = null);
 
 		/// <summary>
 		/// Asynchronously subscribes to a single event stream. New events
@@ -295,6 +345,49 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
 		Task<EventStoreSubscription> SubscribeToAllAsync(
 			bool resolveLinkTos,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously subscribes to all events in Event Store. New
+		/// events written to the stream while the subscription is active
+		/// will be pushed to the client. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set <see cref="checkpointInterval" /> to define how often this method is called.
+		/// </param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <param name="checkpointInterval">Sets how often the <see cref="checkpointReached" /> is called.</param>
+		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
+		Task<EventStoreSubscription> FilteredSubscribeToAllAsync(
+			bool resolveLinkTos,
+			Filter filter,
+			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreSubscription, Position, Task> checkpointReached,
+			int checkpointInterval,
+			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
+
+		/// <summary>
+		/// Asynchronously subscribes to all events in Event Store. New
+		/// events written to the stream while the subscription is active
+		/// will be pushed to the client. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="resolveLinkTos">Whether to resolve Link events automatically.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <returns>A <see cref="Task&lt;EventStoreSubscription&gt;"/> representing the subscription.</returns>
+		Task<EventStoreSubscription> FilteredSubscribeToAllAsync(
+			bool resolveLinkTos,
+			Filter filter,
 			Func<EventStoreSubscription, ResolvedEvent, Task> eventAppeared,
 			Action<EventStoreSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null);
@@ -416,6 +509,88 @@ namespace EventStore.ClientAPI {
 			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
 			UserCredentials userCredentials = null);
 
+		/// <summary>
+		/// Subscribes to a all events. Existing events from lastCheckpoint
+		/// onwards are read from Event Store and presented to the user of
+		/// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
+		/// 
+		/// Once the end of the stream is read the subscription is
+		/// transparently (to the user) switched to push new events as
+		/// they are written.
+		/// 
+		/// The action liveProcessingStarted is called when the
+		/// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+		/// phase to the live subscription phase. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="lastCheckpoint">The position from which to start.
+		/// 
+		/// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
+		/// If events have already been received and resubscription from the same point
+		/// is desired, use the position representing the last event processed which
+		/// appeared on the subscription.
+		/// 
+		/// Using <see cref="Position.Start" /> here will result in missing
+		/// the first event in the stream.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="checkpointIntervalMultiplier">Sets how often the <see cref="checkpointReached" /> is called. It is multiplied by the max search window.</param>
+		/// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set <see cref="checkpointIntervalMultiplier" /> to define how often this method is called.
+		/// </param>
+		/// <returns>An <see cref="EventStoreAllFilteredCatchUpSubscription"/> representing the subscription.</returns>
+		EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(
+			Position? lastCheckpoint,
+			Filter filter,
+			CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Func<EventStoreCatchUpSubscription, Position, Task> checkpointReached,
+			int checkpointIntervalMultiplier,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
+		
+		/// <summary>
+		/// Subscribes to a all events. Existing events from lastCheckpoint
+		/// onwards are read from Event Store and presented to the user of
+		/// <see cref="EventStoreCatchUpSubscription"/> as if they had been pushed.
+		/// 
+		/// Once the end of the stream is read the subscription is
+		/// transparently (to the user) switched to push new events as
+		/// they are written.
+		/// 
+		/// The action liveProcessingStarted is called when the
+		/// <see cref="EventStoreCatchUpSubscription"/> switches from the reading
+		/// phase to the live subscription phase. Filters events based upon the passed in filter.
+		/// </summary>
+		/// <param name="lastCheckpoint">The position from which to start.
+		/// 
+		/// To receive all events in the database, use <see cref="AllCheckpoint.AllStart" />.
+		/// If events have already been received and resubscription from the same point
+		/// is desired, use the position representing the last event processed which
+		/// appeared on the subscription.
+		/// 
+		/// Using <see cref="Position.Start" /> here will result in missing
+		/// the first event in the stream.</param>
+		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
+		/// <param name="liveProcessingStarted">An action invoked when the subscription switches to newly-pushed events.</param>
+		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
+		/// <param name="userCredentials">User credentials to use for the operation.</param>
+		/// <param name="filter">A <see cref="Filter"/> to be applied to the read operation.</param>
+		/// <param name="settings">The <see cref="CatchUpSubscriptionSettings"/> for the subscription.</param>
+		/// <returns>An <see cref="EventStoreAllFilteredCatchUpSubscription"/> representing the subscription.</returns>
+		EventStoreAllFilteredCatchUpSubscription FilteredSubscribeToAllFrom(
+			Position? lastCheckpoint,
+			Filter filter,
+			CatchUpSubscriptionFilteredSettings settings,
+			Func<EventStoreCatchUpSubscription, ResolvedEvent, Task> eventAppeared,
+			Action<EventStoreCatchUpSubscription> liveProcessingStarted = null,
+			Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+			UserCredentials userCredentials = null);
 
 		/*
 	/// <summary>

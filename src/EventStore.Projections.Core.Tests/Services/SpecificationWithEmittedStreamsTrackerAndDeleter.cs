@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Helpers;
+﻿using System.Threading.Tasks;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI;
@@ -15,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected bool _trackEmittedStreams = true;
 		protected string _projectionName = "test_projection";
 
-		protected override void Given() {
+		protected override Task Given() {
 			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, new PublishEnvelope(_node.Node.MainQueue));
 			_node.Node.MainBus.Subscribe(_ioDispatcher.BackwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.ForwardReader);
@@ -30,6 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher,
 				_projectionNamesBuilder.GetEmittedStreamsName(),
 				_projectionNamesBuilder.GetEmittedStreamsCheckpointName());
+			return Task.CompletedTask;
 		}
 	}
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			}
 		}
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_expectedNumberOfRoleAssignments.Wait(5000);
 
 			var master = GetMaster();
@@ -63,11 +64,11 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 				Assert.Fail("Timed out waiting for subscriptions to confirm");
 			}
 
-			var events = new Event[] {new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0])};
+			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
 			var writeResult = ReplicationTestHelper.WriteEvent(master, events, _streamId);
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 
-			base.Given();
+			await base.Given();
 		}
 
 		[Test]
@@ -79,8 +80,6 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 		public void should_receive_event_on_slaves() {
 			if (!(_slaveSubscriptions[0].EventAppeared.Wait(2000) && _slaveSubscriptions[1].EventAppeared.Wait(2000))) {
 				Assert.Fail("Timed out waiting for slave subscriptions to get events");
-			} else {
-				Assert.Pass();
 			}
 		}
 	}

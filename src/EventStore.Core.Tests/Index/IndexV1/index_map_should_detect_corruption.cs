@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using NUnit.Framework;
@@ -28,8 +29,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_indexMapFileName = GetFilePathFor("index.map");
 			_ptableFileName = GetFilePathFor("ptable");
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 0, 0);
 			memtable.Add(1, 1, 100);
-			_ptable = PTable.FromMemtable(memtable, _ptableFileName, skipIndexVerify: _skipIndexVerify);
+			_ptable = PTable.FromMemtable(memtable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 
 			indexMap = indexMap.AddPTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
 				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion,
@@ -47,10 +48,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[TearDown]
-		public override void TearDown() {
-			if (_ptable != null)
-				_ptable.MarkForDestruction();
-			base.TearDown();
+		public override Task TearDown() {
+			_ptable?.MarkForDestruction();
+			return base.TearDown();
 		}
 
 		[Test]
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		[Test]
 		public void when_ptable_line_is_missing_one_number() {
 			var lines = File.ReadAllLines(_indexMapFileName);
-			File.WriteAllLines(_indexMapFileName, new[] {lines[0], lines[1], string.Format("0,{0}", _ptableFileName)});
+			File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], string.Format("0,{0}", _ptableFileName) });
 
 			Assert.Throws<CorruptIndexException>(() =>
 				IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		[Test]
 		public void when_ptable_line_constists_only_of_filename() {
 			var lines = File.ReadAllLines(_indexMapFileName);
-			File.WriteAllLines(_indexMapFileName, new[] {lines[0], lines[1], _ptableFileName});
+			File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], _ptableFileName });
 
 			Assert.Throws<CorruptIndexException>(() =>
 				IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));
@@ -132,7 +132,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		[Test]
 		public void when_ptable_line_is_missing_filename() {
 			var lines = File.ReadAllLines(_indexMapFileName);
-			File.WriteAllLines(_indexMapFileName, new[] {lines[0], lines[1], "0,0"});
+			File.WriteAllLines(_indexMapFileName, new[] { lines[0], lines[1], "0,0" });
 
 			Assert.Throws<CorruptIndexException>(() =>
 				IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2));

@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -23,6 +24,9 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
+using Microsoft.AspNetCore.Hosting;
+using EventStore.Core.Settings;
+using EventStore.Core.Tests.TransactionLog;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -48,16 +52,20 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		private readonly string _dbPath;
-		public ManualResetEvent StartedEvent;
+		private readonly bool _isReadOnlyReplica;
+		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
+
+		public Task Started => _started.Task;
 
 		public VNodeState NodeState = VNodeState.Unknown;
+		private readonly IWebHost _host;
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false) {
+			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -88,9 +96,7 @@ namespace EventStore.Core.Tests.Helpers {
 				new Data.GossipAdvertiseInfo(InternalTcpEndPoint, InternalTcpSecEndPoint,
 					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
 					InternalHttpEndPoint, ExternalHttpEndPoint,
-					null, null, 0, 0),
-				new[] {InternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)},
-				new[] {ExternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)}, enableTrustedAuth,
+					null, null, 0, 0), enableTrustedAuth,
 				ssl_connections.GetCertificate(), 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
@@ -105,7 +111,9 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
+				readOnlyReplica: readOnlyReplica,
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
+			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Info(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
@@ -123,47 +131,61 @@ namespace EventStore.Core.Tests.Helpers {
 				infoController: new InfoController(null, ProjectionType.None), subsystems: subsystems,
 				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
+
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(InternalHttpEndPoint);
+					o.Listen(ExternalHttpEndPoint);
+				})
+				.UseStartup(new MiniNode.ClusterVNodeStartup(Node))
+				.Build();
 		}
 
 		public void Start() {
 			StartingTime.Start();
 
-			StartedEvent = new ManualResetEvent(false);
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = VNodeState.Unknown; }));
-			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeMaster>(m => {
-					NodeState = VNodeState.Master;
-					StartedEvent.Set();
+				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+					NodeState = _isReadOnlyReplica ?
+VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 				}));
-			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeSlave>(m => {
-					NodeState = VNodeState.Slave;
-					StartedEvent.Set();
-				}));
-
+			if (!_isReadOnlyReplica) {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeMaster>(m => {
+						NodeState = VNodeState.Master;
+						_started.TrySetResult(true);
+					}));
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeSlave>(m => {
+						NodeState = VNodeState.Slave;
+						_started.TrySetResult(true);
+					}));
+			} else {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeReadOnlyReplica>(m => {
+						NodeState = VNodeState.ReadOnlyReplica;
+						_started.TrySetResult(true);
+					}));
+			}
+			_host.Start();
 			Node.Start();
 		}
 
-		public void Shutdown(bool keepDb = false, bool keepPorts = false) {
+		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			if (!Node.Stop(TimeSpan.FromSeconds(20), false, true))
-				throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
-
-			if (!keepPorts) {
-				PortsHelper.ReturnPort(InternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(InternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(InternalHttpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalHttpEndPoint.Port);
-			}
-
+			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20));
+			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);
 
 			StoppingTime.Stop();
 			RunningTime.Stop();
+		}
+
+		public void WaitIdle() {
+#if DEBUG
+			Node.QueueStatsManager.WaitIdle();
+#endif
 		}
 
 		private void TryDeleteDirectory(string directory) {
@@ -209,7 +231,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Opts.ChunkInitialReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

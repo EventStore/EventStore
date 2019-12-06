@@ -73,6 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_manager);
 
 			_bus.Subscribe<ProjectionManagementMessage.Command.Post>(_manager);
+			_bus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.Delete>(_manager);
@@ -88,7 +89,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
-			_bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
 			_bus.Subscribe(
 				CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(

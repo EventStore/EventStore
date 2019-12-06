@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections;
 using EventStore.Common.Utils;
 using EventStore.Projections.Core.Services;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_reading_registered_projections {
 	[TestFixture, TestFixtureSource(typeof(SystemProjectionNames))]
@@ -25,9 +25,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
 		}
 
 		protected override IEnumerable<WhenStep> When() {
-			yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-			yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-			yield return new SystemMessage.SystemCoreReady();
+			yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 		}
 
 		protected override bool GivenInitializeSystemProjections() {
@@ -45,8 +43,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
 		public void it_should_write_the_system_projection_created_event() {
 			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count(x =>
 				x.EventStreamId == ProjectionNamesBuilder.ProjectionsRegistrationStream &&
-				x.Events[0].EventType == ProjectionEventTypes.ProjectionCreated &&
-				Helper.UTF8NoBom.GetString(x.Events[0].Data) == _systemProjectionName));
+				x.Events.All(e => e.EventType == ProjectionEventTypes.ProjectionCreated) &&
+				x.Events.Any(e => Helper.UTF8NoBom.GetString(e.Data) == _systemProjectionName)));
 		}
 	}
 

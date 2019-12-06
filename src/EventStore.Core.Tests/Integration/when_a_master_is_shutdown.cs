@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture, Category("LongRunning"), Ignore("Flaky test - e.g. if multiple elections take place")]
@@ -25,13 +26,13 @@ namespace EventStore.Core.Tests.Integration {
 			base.BeforeNodesStart();
 		}
 
-		protected override void Given() {
+		protected override async Task Given() {
 			_expectedNumberOfEvents.Wait(5000);
 			var master = _nodes.First(x => x.NodeState == Data.VNodeState.Master);
-			ShutdownNode(master.DebugIndex);
+			await ShutdownNode(master.DebugIndex);
 			_expectedNumberOfEvents = new CountdownEvent(2 /*role assignments*/ + 1 /*epoch write*/);
 			_expectedNumberOfEvents.Wait(5000);
-			base.Given();
+			await base.Given();
 		}
 
 		private void Handle(SystemMessage.BecomeMaster msg) {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 using EventStore.Core.Services;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
@@ -10,12 +11,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_an_unprotected_resource : with_admin_user {
-			protected override void Given() {
-			}
-
-			protected override void When() {
+			protected override Task Given() => Task.CompletedTask;
+			protected override async Task When() {
 				SetDefaultCredentials(null);
-				GetJson<JObject>("/test-anonymous");
+				await GetJson<JObject>("/test-anonymous");
 			}
 
 			[Test]
@@ -25,18 +24,17 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 			[Test]
 			public void does_not_return_www_authenticate_header() {
-				Assert.Null(_lastResponse.Headers[HttpResponseHeader.WwwAuthenticate]);
+				Assert.IsEmpty(_lastResponse.Headers.WwwAuthenticate);
 			}
 		}
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_a_protected_resource : with_admin_user {
-			protected override void Given() {
-			}
+			protected override Task Given() => Task.CompletedTask;
 
-			protected override void When() {
+			protected override async Task When() {
 				SetDefaultCredentials(null);
-				GetJson<JObject>("/test1");
+				await GetJson<JObject>("/test1");
 			}
 
 			[Test]
@@ -46,20 +44,20 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 			[Test]
 			public void returns_www_authenticate_header() {
-				Assert.NotNull(_lastResponse.Headers[HttpResponseHeader.WwwAuthenticate]);
+				Assert.NotNull(_lastResponse.Headers.WwwAuthenticate);
 			}
 		}
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_a_protected_resource_with_credentials_provided : with_admin_user {
-			protected override void Given() {
-				var response = MakeJsonPost(
-					"/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+			protected override async Task Given() {
+				var response = await MakeJsonPost(
+					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			}
 
-			protected override void When() {
-				GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+			protected override async Task When() {
+				await GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
 			}
 
 			[Test]
@@ -70,14 +68,14 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_a_protected_resource_with_invalid_credentials_provided : with_admin_user {
-			protected override void Given() {
-				var response = MakeJsonPost(
-					"/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+			protected override async Task Given() {
+				var response = await MakeJsonPost(
+					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			}
 
-			protected override void When() {
-				GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "InvalidPassword!"));
+			protected override async Task When() {
+				await GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "InvalidPassword!"));
 			}
 
 			[Test]
@@ -88,16 +86,16 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : with_admin_user {
-			protected override void Given() {
-				var response = MakeJsonPost(
-					"/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+			protected override async Task Given() {
+				var response = await MakeJsonPost(
+					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-				response = MakePost("/users/test1/command/disable", _admin);
+				response = await MakePost("/users/test1/command/disable", _admin);
 				Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 			}
 
-			protected override void When() {
-				GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+			protected override async Task When() {
+				await GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
 			}
 
 			[Test]
@@ -108,17 +106,17 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 
 		[TestFixture, Category("LongRunning")]
 		class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : with_admin_user {
-			protected override void Given() {
-				var response = MakeRawJsonPost(
-					"/users/", new {LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!"}, _admin);
+			protected override async Task Given() {
+				var response = await MakeRawJsonPost(
+					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
 				Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 				Console.WriteLine("done with json post");
-				response = MakeDelete("/users/test1", _admin);
+				response = await MakeDelete("/users/test1", _admin);
 				Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 			}
 
-			protected override void When() {
-				GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
+			protected override async Task When() {
+				await GetJson<JObject>("/test1", credentials: new NetworkCredential("test1", "Pa55w0rd!"));
 			}
 
 			[Test]

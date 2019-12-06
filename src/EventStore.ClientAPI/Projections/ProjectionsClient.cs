@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
@@ -14,9 +15,9 @@ namespace EventStore.ClientAPI.Projections {
 		private readonly IHttpClient _client;
 		private readonly TimeSpan _operationTimeout;
 
-		public ProjectionsClient(ILogger log, TimeSpan operationTimeout, IHttpClient client) {
+		public ProjectionsClient(ILogger log, TimeSpan operationTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_operationTimeout = operationTimeout;
-			_client = client ?? new HttpAsyncClient(_operationTimeout);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		public Task Enable(EndPoint endPoint, string name, UserCredentials userCredentials = null,

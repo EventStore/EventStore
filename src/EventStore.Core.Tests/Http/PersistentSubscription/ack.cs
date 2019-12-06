@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Transport.Http;
 
@@ -15,27 +17,27 @@ using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	class when_acking_a_message : with_subscription_having_events {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 		private string _ackLink;
 
-		protected override void Given() {
-			base.Given();
-			var json = GetJson<JObject>(
+		protected override async Task Given() {
+			await base.Given();
+			var json = await GetJson<JObject>(
 				SubscriptionPath + "/1",
 				ContentType.CompetingJson,
 				_admin);
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-			_ackLink = ((JObject)json)["entries"].Children().First()["links"].Children()
+			_ackLink = json["entries"].Children().First()["links"].Children()
 				.First(x => x.Value<string>("relation") == "ack").Value<string>("uri");
 		}
 
 		[TearDown]
 		public void TearDown() {
-			_response.Close();
+			_response.Dispose();
 		}
 
-		protected override void When() {
-			_response = MakePost(_ackLink, _admin);
+		protected override async Task When() {
+			_response = await MakePost(_ackLink, _admin);
 		}
 
 		[Test]
@@ -45,27 +47,27 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	class when_acking_messages : with_subscription_having_events {
-		private HttpWebResponse _response;
+		private HttpResponseMessage _response;
 		private string _ackAllLink;
 
-		protected override void Given() {
-			base.Given();
-			var json = GetJson<JObject>(
+		protected override async Task Given() {
+			await base.Given();
+			var json = await GetJson<JObject>(
 				SubscriptionPath + "/" + Events.Count,
 				ContentType.CompetingJson,
 				_admin);
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-			_ackAllLink = ((JObject)json)["links"].Children().First(x => x.Value<string>("relation") == "ackAll")
+			_ackAllLink = json["links"].Children().First(x => x.Value<string>("relation") == "ackAll")
 				.Value<string>("uri");
 		}
 
 		[TearDown]
 		public void TearDown() {
-			_response.Close();
+			_response.Dispose();
 		}
 
-		protected override void When() {
-			_response = MakePost(_ackAllLink, _admin);
+		protected override async Task When() {
+			_response = await MakePost(_ackAllLink, _admin);
 		}
 
 		[Test]

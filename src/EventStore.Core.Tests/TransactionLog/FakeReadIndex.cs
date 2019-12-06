@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex : IReadIndex {
@@ -61,6 +62,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
 			throw new NotImplementedException();
 		}
 

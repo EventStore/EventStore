@@ -28,13 +28,14 @@ namespace EventStore.Core.Cluster {
 		public readonly Guid EpochId;
 
 		public readonly int NodePriority;
+		public readonly bool IsReadOnlyReplica;
 
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint) {
 			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, true,
 				internalHttpEndPoint, null, externalHttpEndPoint, null,
 				internalHttpEndPoint, externalHttpEndPoint,
-				-1, -1, -1, -1, -1, Guid.Empty, 0);
+				-1, -1, -1, -1, -1, Guid.Empty, 0, false);
 		}
 
 		public static MemberInfo ForVNode(Guid instanceId,
@@ -53,7 +54,8 @@ namespace EventStore.Core.Cluster {
 			long epochPosition,
 			int epochNumber,
 			Guid epochId,
-			int nodePriority) {
+			int nodePriority,
+			bool isReadOnlyReplica) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -61,7 +63,7 @@ namespace EventStore.Core.Cluster {
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				internalHttpEndPoint, externalHttpEndPoint,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochPosition, epochNumber, epochId, nodePriority);
+				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
 		}
 
 		private MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
@@ -69,7 +71,7 @@ namespace EventStore.Core.Cluster {
 			IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			long epochPosition, int epochNumber, Guid epochId, int nodePriority) {
+			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
@@ -97,6 +99,7 @@ namespace EventStore.Core.Cluster {
 			EpochId = epochId;
 
 			NodePriority = nodePriority;
+			IsReadOnlyReplica = isReadOnlyReplica;
 		}
 
 		internal MemberInfo(MemberInfoDto dto) {
@@ -123,6 +126,7 @@ namespace EventStore.Core.Cluster {
 			EpochNumber = dto.EpochNumber;
 			EpochId = dto.EpochId;
 			NodePriority = dto.NodePriority;
+			IsReadOnlyReplica = dto.IsReadOnlyReplica;
 		}
 
 		public bool Is(IPEndPoint endPoint) {
@@ -140,7 +144,8 @@ namespace EventStore.Core.Cluster {
 			long? lastCommitPosition = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
-			EpochRecord epoch = null) {
+			EpochRecord epoch = null,
+			int? nodePriority = null) {
 			return new MemberInfo(InstanceId,
 				DateTime.UtcNow,
 				state ?? State,
@@ -157,7 +162,8 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochPosition : EpochPosition,
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
-				NodePriority);
+				nodePriority ?? NodePriority,
+				IsReadOnlyReplica);
 		}
 
 		public override string ToString() {
@@ -166,6 +172,7 @@ namespace EventStore.Core.Cluster {
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalHttpEndPoint, ExternalHttpEndPoint, TimeStamp);
 			return string.Format(
+				"Priority: " + NodePriority + " " + 
 				"VND {0:B} <{1}> [{2}, {3}, {4}, {5}, {6}, {7}, {8}] {9}/{10}/{11}/E{12}@{13}:{14:B} | {15:yyyy-MM-dd HH:mm:ss.fff}",
 				InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 				InternalTcpEndPoint, InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
@@ -192,7 +199,8 @@ namespace EventStore.Core.Cluster {
 			       && other.EpochPosition == EpochPosition
 			       && other.EpochNumber == EpochNumber
 			       && other.EpochId == EpochId
-			       && other.NodePriority == NodePriority;
+			       && other.NodePriority == NodePriority
+				   && other.IsReadOnlyReplica == IsReadOnlyReplica;
 		}
 
 		public override bool Equals(object obj) {

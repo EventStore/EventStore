@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+    - v6-master
+
+jobs:
+  continuous-integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - container-runtime: bionic
+            runtime: linux-x64
+          - container-runtime: buster-slim
+            runtime: linux-x64
+    runs-on: ubuntu-latest
+    name: continuous-integration/github/${{ matrix.env.container-runtime }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Build
+      run: |
+        docker build \
+          --tag eventstore \
+          --build-arg RUNTIME=${RUNTIME} \
+          --build-arg CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
+          .
+      env:
+        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
+        RUNTIME: ${{ matrix.env.runtime }}
+    - name: Run Tests
+      run: |
+        docker build \
+          --target test \
+          --tag eventstore-test \
+          --build-arg RUNTIME=${RUNTIME} \
+          --build-arg CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
+          . && \
+          docker run \
+          --name tests \
+          eventstore-test
+    - name: Install Dotnet
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.2.103'
+    - name: Calculate Version
+      env:
+        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
+      run: |
+        dotnet tool install --global minver-cli --version 2.0.0
+        version=$(~/.dotnet/tools/minver \
+                           --tag-prefix=oss-v \
+                           --default-pre-release-phase=preview1 \
+                           --minimum-major-minor=6.0)-${CONTAINER_RUNTIME}
+        echo "::set-env name=VERSION::${version}"
+    - name: Docker Push
+      uses: jen20/action-docker-build@v1
+      if: github.event_name == 'push'
+      with:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
+        tag-latest: false
+        additional-tags: ${{ env.VERSION }}
+        registry: https://docker.pkg.github.com

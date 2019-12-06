@@ -82,6 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(_manager);
 			_bus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.Post>(_manager);
+			_bus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Command.Delete>(_manager);
@@ -98,17 +99,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.DeleteStreamCompleted>(_manager);
-			_bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
-			_bus.Subscribe<SystemMessage.SystemCoreReady>(_manager);
-			_bus.Subscribe<SystemMessage.EpochWritten>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(_manager);
+			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
 			_bus.Subscribe(
 				CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
 					starting => _queue.Publish(new ProjectionManagementMessage.ReaderReady())));
 
-			_bus.Subscribe<SystemMessage.StateChangeMessage>(_coordinator);
-			_bus.Subscribe<SystemMessage.SystemCoreReady>(_coordinator);
-			_bus.Subscribe<SystemMessage.EpochWritten>(_coordinator);
+			_bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(_coordinator);
+			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_coordinator);
 
 			if (GetInputQueue() != _processingQueues.First().Item2) {
 				_bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);

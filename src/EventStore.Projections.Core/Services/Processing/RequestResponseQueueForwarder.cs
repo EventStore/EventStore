@@ -31,14 +31,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Handle(ClientMessage.WriteEvents msg) {
 			_externalRequestQueue.Publish(
 				new ClientMessage.WriteEvents(
-					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false,
+					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), true,
 					msg.EventStreamId, msg.ExpectedVersion, msg.Events, msg.User));
 		}
 
 		public void Handle(ClientMessage.DeleteStream msg) {
 			_externalRequestQueue.Publish(
 				new ClientMessage.DeleteStream(
-					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), false,
+					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), true,
 					msg.EventStreamId, msg.ExpectedVersion, msg.HardDelete, msg.User));
 		}
 
@@ -74,14 +74,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 		void IHandle<ProjectionCoreServiceMessage.SubComponentStarted>.Handle(
 			ProjectionCoreServiceMessage.SubComponentStarted message) {
 			_externalRequestQueue.Publish(
-				new ProjectionCoreServiceMessage.SubComponentStarted(message.SubComponent)
+				new ProjectionCoreServiceMessage.SubComponentStarted(message.SubComponent, message.InstanceCorrelationId)
 			);
 		}
 
 		void IHandle<ProjectionCoreServiceMessage.SubComponentStopped>.Handle(
 			ProjectionCoreServiceMessage.SubComponentStopped message) {
 			_externalRequestQueue.Publish(
-				new ProjectionCoreServiceMessage.SubComponentStopped(message.SubComponent)
+				new ProjectionCoreServiceMessage.SubComponentStopped(message.SubComponent, message.QueueId)
 			);
 		}
 	}

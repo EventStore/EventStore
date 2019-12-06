@@ -138,8 +138,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
-			int initialReaderCount, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
-			var chunk = new TFChunk(filename, initialReaderCount, ESConsts.TFChunkMaxReaderCount,
+			int initialReaderCount, int maxReaderCount, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+			var chunk = new TFChunk(filename, initialReaderCount, maxReaderCount,
 				TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 			try {
 				chunk.InitCompleted(verifyHash, optimizeReadSideCache);
@@ -152,10 +152,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered,
-			bool writethrough, int initialReaderCount, bool reduceFileCachePressure) {
+			bool writethrough, int initialReaderCount, int maxReaderCount, bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
-				ESConsts.TFChunkMaxReaderCount,
+				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				false,
 				unbuffered,
@@ -179,11 +179,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			int initialReaderCount,
+			int maxReaderCount,
 			bool reduceFileCachePressure) {
 			var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
 			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid());
-			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount,
+			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount, maxReaderCount,
 				reduceFileCachePressure);
 		}
 
@@ -194,10 +195,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			int initialReaderCount,
+			int maxReaderCount,
 			bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
-				ESConsts.TFChunkMaxReaderCount,
+				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				inMem,
 				unbuffered,

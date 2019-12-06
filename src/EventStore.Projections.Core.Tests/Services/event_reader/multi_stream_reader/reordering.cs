@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 
 				yield return Yield;
 
-				_timeProvider.AddTime(TimeSpan.FromMilliseconds(300));
+				_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(300));
 
 				yield return Yield;
 			}

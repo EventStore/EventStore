@@ -47,6 +47,10 @@ namespace EventStore.ClientAPI.SystemData {
 		ReadAllEventsForwardCompleted = 0xB7,
 		ReadAllEventsBackward = 0xB8,
 		ReadAllEventsBackwardCompleted = 0xB9,
+		ReadAllEventsForwardFiltered = 0xBA,
+		ReadAllEventsForwardFilteredCompleted = 0xBB,
+		ReadAllEventsBackwardFiltered = 0xBC,
+		ReadAllEventsBackwardFilteredCompleted = 0xBE,
 
 		SubscribeToStream = 0xC0,
 		SubscriptionConfirmation = 0xC1,
@@ -64,6 +68,8 @@ namespace EventStore.ClientAPI.SystemData {
 		PersistentSubscriptionNakEvents = 0xCD,
 		UpdatePersistentSubscription = 0xCE,
 		UpdatePersistentSubscriptionCompleted = 0xCF,
+		SubscribeToStreamFiltered = 0xD2,
+		CheckpointReached = 0xD3,
 
 		ScavengeDatabase = 0xD0,
 		ScavengeDatabaseCompleted = 0xD1,
