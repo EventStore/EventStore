@@ -21,6 +21,7 @@
   <ItemGroup>
     <None Include="..\EventStore.Common\Log\log.config">
       <Link>log.config</Link>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
