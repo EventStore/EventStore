@@ -6,14 +6,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClusterNode;
-using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
-using EventStore.Projections.Core;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EventStore.Grpc {
@@ -40,7 +39,8 @@ namespace EventStore.Grpc {
 			_db = vNodeBuilder.GetDb();
 
 			_testServer = new TestServer(
-				webHostBuilder.UseStartup(new ClusterVNodeStartup(Node)));
+				webHostBuilder
+					.UseStartup(new TestClusterVNodeStartup(Node)));
 
 			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => new HttpClient(new ResponseVersionHandler {
 				InnerHandler = _testServer.CreateHandler()
@@ -48,6 +48,7 @@ namespace EventStore.Grpc {
 				Timeout = Timeout.InfiniteTimeSpan
 			});
 		}
+
 
 		protected abstract Task Given();
 		protected abstract Task When();
@@ -88,6 +89,23 @@ namespace EventStore.Grpc {
 
 				return response;
 			}
+		}
+
+		public class TestClusterVNodeStartup : IStartup {
+			private readonly ClusterVNode _node;
+
+			public TestClusterVNodeStartup(ClusterVNode node) {
+				if (node == null) throw new ArgumentNullException(nameof(node));
+				_node = node;
+			}
+
+			public IServiceProvider ConfigureServices(IServiceCollection services) => _node.ConfigureServices(services)
+				.BuildServiceProvider();
+
+			public void Configure(IApplicationBuilder app) => _node.Configure(app.Use(CompleteResponse));
+
+			private static RequestDelegate CompleteResponse(RequestDelegate next) => context =>
+				next(context).ContinueWith(_ => context.Response.Body.FlushAsync());
 		}
 	}
 }
