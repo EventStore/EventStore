@@ -145,6 +145,7 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <inheritdoc />
 		protected override async Task SubscribeToStreamAsync() {
 			if (!ShouldStop) {
 				if (Verbose)
@@ -160,6 +161,7 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <inheritdoc />
 		protected override Task LiveProcessingStarted(EventStoreCatchUpSubscription eventStoreCatchUpSubscription,
 			Position lastPosition) {
 			return TaskEx.CompletedTask;

@@ -38,17 +38,17 @@ namespace EventStore.Grpc.Streams {
 		}
 
 		[Fact(Skip = "Not Implemented")]
-		public async Task be_able_to_read_all_one_by_one_until_end_of_stream() {
+		public Task be_able_to_read_all_one_by_one_until_end_of_stream() {
 			throw new NotImplementedException();
 		}
 
 		[Fact(Skip = "Not Implemented")]
-		public async Task be_able_to_read_events_slice_at_time() {
+		public Task be_able_to_read_events_slice_at_time() {
 			throw new NotImplementedException();
 		}
 
 		[Fact(Skip = "Not Implemented")]
-		public async Task when_got_int_max_value_as_maxcount_should_throw() {
+		public Task when_got_int_max_value_as_maxcount_should_throw() {
 			throw new NotImplementedException();
 		}
 

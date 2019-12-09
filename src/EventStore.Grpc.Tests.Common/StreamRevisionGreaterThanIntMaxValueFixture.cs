@@ -131,7 +131,7 @@ namespace EventStore.Grpc {
 				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 		}
 
-		protected new static IEnumerable<EventData> CreateTestEvents(int count)
+		protected static IEnumerable<EventData> CreateTestEvents(int count)
 			=> Enumerable.Range(0, count).Select(CreateTestEvent);
 
 		protected static EventData CreateLinkToEvent(string originalStreamName, StreamRevision originalRevision)

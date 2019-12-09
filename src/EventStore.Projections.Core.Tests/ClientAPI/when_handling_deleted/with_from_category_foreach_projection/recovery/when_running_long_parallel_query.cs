@@ -43,7 +43,9 @@ fromCategory('stream').foreachStream().when({
 			await DumpStreamsAsync();
 		}
 
+#pragma warning disable 1998
 		private async Task DumpStreamsAsync() {
+#pragma warning restore 1998
 #if DEBUG
 			var result = await _conn.ReadAllEventsForwardAsync(Position.Start, 4096, false, _admin);
 			var top = result.Events.GroupBy(v => v.OriginalStreamId)

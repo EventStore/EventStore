@@ -25,7 +25,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			Assert.Equal(_fixture.Events[0].EventId, resolvedEvent.Event.EventId);
 		}
 
-		public class Fixture :EventStoreGrpcFixture, IAsyncLifetime {
+		public class Fixture : EventStoreGrpcFixture {
 			private readonly TaskCompletionSource<ResolvedEvent> _firstEventSource;
 			public Task<ResolvedEvent> FirstEvent => _firstEventSource.Task;
 			public readonly EventData[] Events;
@@ -42,12 +42,13 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 					new PersistentSubscriptionSettings(startFrom: StreamRevision.Start), TestCredentials.Root);
 			}
 
-			protected override async Task When() {
+			protected override Task When() {
 				_subscription = Client.PersistentSubscriptions.Subscribe(Stream, Group,
 					(subscription, e, r, ct) => {
 						_firstEventSource.TrySetResult(e);
 						return Task.CompletedTask;
 					});
+				return _subscription.Started;
 			}
 
 			public override Task DisposeAsync() {

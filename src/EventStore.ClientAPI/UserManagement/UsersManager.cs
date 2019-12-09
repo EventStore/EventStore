@@ -25,6 +25,7 @@ namespace EventStore.ClientAPI.UserManagement {
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
 		/// <param name="operationTimeout"></param>
 		/// <param name="tlsTerminatedEndpoint"></param>
+		/// <param name="httpMessageHandler"></param>
 		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout, bool tlsTerminatedEndpoint = false, HttpMessageHandler httpMessageHandler = null) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");

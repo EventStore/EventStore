@@ -27,7 +27,6 @@ namespace EventStore.Transport.Http.EntityManagement {
 		private int _processing;
 		private readonly string[] _allowedMethods;
 		private readonly Action<HttpEntity> _onRequestSatisfied;
-		private AsyncQueuedBufferWriter _asyncWriter;
 		private readonly ICodec _requestCodec;
 		private readonly ICodec _responseCodec;
 		private readonly Uri _responseUrl;

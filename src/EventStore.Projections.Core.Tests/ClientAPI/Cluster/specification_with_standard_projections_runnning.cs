@@ -218,7 +218,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #endif
 		}
 
+#pragma warning disable 1998
 		protected async Task AssertStreamTailAsync(string streamId, params string[] events) {
+#pragma warning restore 1998
 #if DEBUG
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin);
 			switch (result.Status) {
@@ -250,7 +252,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #endif
 		}
 
+#pragma warning disable 1998
 		protected async Task DumpStreamAsync(string streamId) {
+#pragma warning restore 1998
 #if DEBUG
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin);
 			switch (result.Status) {

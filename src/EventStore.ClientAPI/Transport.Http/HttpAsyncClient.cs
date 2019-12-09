@@ -9,6 +9,9 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI.Transport.Http {
+	/// <summary>
+	/// An HttpAsyncClient.
+	/// </summary>
 	public class HttpAsyncClient : IHttpClient {
 		private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 		private HttpClient _client;
@@ -18,11 +21,17 @@ namespace EventStore.ClientAPI.Transport.Http {
 			ServicePointManager.DefaultConnectionLimit = 800;
 		}
 
+		/// <summary>
+		/// Constructs an <see cref="HttpAsyncClient"/>.
+		/// </summary>
+		/// <param name="timeout"></param>
+		/// <param name="clientHandler"></param>
 		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler clientHandler = null) {
 			_client = clientHandler == null ? new HttpClient() : new HttpClient(clientHandler);
 			_client.Timeout = timeout;
 		}
 
+		/// <inheritdoc />
 		public void Get(string url, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException,
 			string hostHeader = "") {
@@ -33,6 +42,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 			Receive(HttpMethod.Get, url, userCredentials, onSuccess, onException, hostHeader);
 		}
 
+		/// <inheritdoc />
 		public void Post(string url, string body, string contentType, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException) {
 			Ensure.NotNull(url, "url");
@@ -44,6 +54,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 			Send(HttpMethod.Post, url, body, contentType, userCredentials, onSuccess, onException);
 		}
 
+		/// <inheritdoc />
 		public void Delete(string url, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException) {
 			Ensure.NotNull(url, "url");
@@ -53,6 +64,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 			Receive(HttpMethod.Delete, url, userCredentials, onSuccess, onException);
 		}
 
+		/// <inheritdoc />
 		public void Put(string url, string body, string contentType, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException) {
 			Ensure.NotNull(url, "url");
