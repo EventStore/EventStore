@@ -37,7 +37,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			context.CancellationToken.Register(source.SetCanceled);
 
 #pragma warning disable 4014
-			Task.Run(() => requestStream.ForEachAsync(HandleAckNack));
+			Task.Run(async () => {
+				while (await requestStream.MoveNext()) {
+					await HandleAckNack(requestStream.Current);
+				}
+			});
 #pragma warning restore 4014
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, _queue,
