@@ -118,6 +118,7 @@ namespace EventStore.Core {
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly X509Certificate2 _certificate;
+		private readonly ClusterVNodeSettings _vNodeSettings;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -144,7 +145,8 @@ namespace EventStore.Core {
 					.AddRouting()
 					.AddSingleton(InternalAuthenticationProvider)
 					.AddSingleton(_readIndex)
-					.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex))
+					.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex,
+						_vNodeSettings.MaxAppendSize))
 					.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
 					.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
 					.AddGrpc().Services,
@@ -179,6 +181,7 @@ namespace EventStore.Core {
 #endif
 
 			var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
+			_vNodeSettings = vNodeSettings;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_certificate = vNodeSettings.Certificate;
 			_mainBus = new InMemoryBus("MainBus");

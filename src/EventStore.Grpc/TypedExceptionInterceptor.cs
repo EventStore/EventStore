@@ -65,8 +65,7 @@ namespace EventStore.Grpc {
 				response.Dispose);
 		}
 
-
-		static Exception ConvertRpcException(RpcException ex)
+		private static Exception ConvertRpcException(RpcException ex)
 			=> ex.Trailers.TryGetValue(Constants.Exceptions.ExceptionKey, out var value) switch {
 				true => value switch {
 					Constants.Exceptions.AccessDenied => new AccessDeniedException(ex.Message, ex),
@@ -79,6 +78,8 @@ namespace EventStore.Grpc {
 						ex.Trailers.GetLongValueOrDefault(Constants.Exceptions.ExpectedVersion),
 						ex.Trailers.GetLongValueOrDefault(Constants.Exceptions.ActualVersion),
 						ex),
+					Constants.Exceptions.MaximumAppendSizeExceeded => new MaximumAppendSizeExceededException(
+						ex.Trailers.GetIntValueOrDefault(Constants.Exceptions.MaximumAppendSize), ex),
 					Constants.Exceptions.StreamNotFound => new StreamNotFoundException(
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.StreamName)?.Value, ex),
 					Constants.Exceptions.PersistentSubscriptionDoesNotExist => new

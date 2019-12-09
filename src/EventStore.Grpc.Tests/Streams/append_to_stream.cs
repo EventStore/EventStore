@@ -5,8 +5,7 @@ using Xunit;
 
 namespace EventStore.Grpc.Streams {
 	[Trait("Category", "Network")]
-	public class append_to_stream :
-		IClassFixture<append_to_stream.Fixture> {
+	public class append_to_stream : IClassFixture<append_to_stream.Fixture> {
 		private readonly Fixture _fixture;
 
 		public append_to_stream(Fixture fixture) {
@@ -14,8 +13,8 @@ namespace EventStore.Grpc.Streams {
 		}
 
 		public static IEnumerable<object[]> ExpectedVersionCreateStreamTestCases() {
-			yield return new object[] { AnyStreamRevision.Any, nameof(AnyStreamRevision.Any) };
-			yield return new object[] { AnyStreamRevision.NoStream, nameof(AnyStreamRevision.NoStream) };
+			yield return new object[] {AnyStreamRevision.Any, nameof(AnyStreamRevision.Any)};
+			yield return new object[] {AnyStreamRevision.NoStream, nameof(AnyStreamRevision.NoStream)};
 		}
 
 		[Theory, MemberData(nameof(ExpectedVersionCreateStreamTestCases))]
@@ -104,7 +103,7 @@ namespace EventStore.Grpc.Streams {
 			var stream = _fixture.GetStreamName();
 
 			var evnt = _fixture.CreateTestEvents().First();
-			var events = new []{evnt, evnt, evnt, evnt, evnt, evnt};
+			var events = new[] {evnt, evnt, evnt, evnt, evnt, evnt};
 
 			var writeResult = await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.Any, events);
 
@@ -337,7 +336,7 @@ namespace EventStore.Grpc.Streams {
 			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.Any);
 
 			var result = await _fixture.Client.ConditionalAppendToStreamAsync(stream, AnyStreamRevision.Any,
-					_fixture.CreateTestEvents());
+				_fixture.CreateTestEvents());
 
 			Assert.Equal(ConditionalWriteResult.StreamDeleted, result);
 		}

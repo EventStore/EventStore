@@ -134,6 +134,7 @@ namespace EventStore.Core {
 		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
+		private int _maxAppendSize;
 
 		private bool _gossipOnSingleNode;
 
@@ -233,6 +234,7 @@ namespace EventStore.Core {
 			_initializationThreads = Opts.InitializationThreadsDefault;
 
 			_readOnlyReplica = Opts.ReadOnlyReplicaDefault;
+			_maxAppendSize = Opts.MaxAppendSizeDefault;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1036,6 +1038,18 @@ namespace EventStore.Core {
 			return this;
 		}
 
+		public VNodeBuilder WithMaxAppendSize(int maxAppendSize) {
+			if (maxAppendSize <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), maxAppendSize, $"{nameof(maxAppendSize)} must be a positive number.");
+			}
+			if (maxAppendSize > 1024 * 1024 * 16) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), maxAppendSize, $"{nameof(maxAppendSize)} may not exceed 16MB.");
+			}
+
+			_maxAppendSize = maxAppendSize;
+			return this;
+		}
+
 		/// <summary>
 		/// Sets the Server SSL Certificate
 		/// </summary>
@@ -1371,6 +1385,7 @@ namespace EventStore.Core {
 				_disableFirstLevelHttpAuthorization,
 				_logFailedAuthenticationAttempts,
 				_readOnlyReplica,
+				_maxAppendSize,
 				_createHttpMessageHandler);
 
 			var infoController = new InfoController(options, _projectionType);
