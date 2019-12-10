@@ -32,17 +32,6 @@ jobs:
       env:
         CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
         RUNTIME: ${{ matrix.env.runtime }}
-    - name: Run Tests
-      run: |
-        docker build \
-          --target test \
-          --tag eventstore-test \
-          --build-arg RUNTIME=${RUNTIME} \
-          --build-arg CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
-          . && \
-          docker run \
-          --name tests \
-          eventstore-test
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1
       with:
