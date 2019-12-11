@@ -89,6 +89,9 @@ namespace EventStore.ClusterNode {
 
 		protected override void Create(ClusterNodeOptions opts) {
 			var dbPath = opts.Db;
+			
+			if(opts.Dev)
+				Log.Warn("DEVELOPMENT IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.");
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
