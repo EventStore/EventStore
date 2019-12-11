@@ -26,9 +26,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					All = new ReadReq.Types.Options.Types.AllOptions {
-						Start = new ReadReq.Types.Empty()
-					},
+					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(Position.Start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 					Filter = GetFilterOptions(filter)
 				}
@@ -56,12 +54,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					All = new ReadReq.Types.Options.Types.AllOptions {
-						Position = new ReadReq.Types.Options.Types.Position {
-							CommitPosition = start.CommitPosition,
-							PreparePosition = start.PreparePosition
-						}
-					},
+					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 					Filter = GetFilterOptions(filter)
 				}
@@ -77,10 +70,9 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					Stream = new ReadReq.Types.Options.Types.StreamOptions {
-						StreamName = streamName,
-						Start = new ReadReq.Types.Empty()
-					},
+					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(
+						streamName,
+						StreamRevision.Start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 				}
 			},
@@ -97,10 +89,7 @@ namespace EventStore.Grpc {
 				Options = new ReadReq.Types.Options {
 					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 					ResolveLinks = resolveLinkTos,
-					Stream = new ReadReq.Types.Options.Types.StreamOptions {
-						StreamName = streamName,
-						Revision = start
-					},
+					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName, start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 				}
 			},

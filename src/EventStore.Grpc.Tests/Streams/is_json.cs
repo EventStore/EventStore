@@ -31,7 +31,7 @@ namespace EventStore.Grpc.Streams {
 			var stream = GetStreamName(isJson, data, metadata);
 			var encoding = Helper.UTF8NoBom;
 			var eventData = new EventData(
-				Guid.NewGuid(),
+				Uuid.NewUuid(),
 				"-",
 				encoding.GetBytes(data),
 				encoding.GetBytes(metadata),

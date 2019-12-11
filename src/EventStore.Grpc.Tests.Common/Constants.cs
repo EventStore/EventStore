@@ -2,7 +2,7 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
-namespace EventStore.Grpc.Tests.Common {
+namespace EventStore.Grpc {
 	public class Constants {
 		public const int PTableInitialReaderCount = ESConsts.PTableInitialReaderCount;
 

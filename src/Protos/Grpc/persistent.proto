@@ -163,7 +163,7 @@ message UUID {
 	}
 
 	message Structured {
-		uint64 most_significant_bits = 1;
-		uint64 least_significant_bits = 2;
+		int64 most_significant_bits = 1;
+		int64 least_significant_bits = 2;
 	}
 }

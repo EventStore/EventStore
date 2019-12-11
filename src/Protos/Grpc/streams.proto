@@ -37,12 +37,14 @@ message ReadReq {
 			oneof revision_options {
 				uint64 revision = 2;
 				Empty start = 3;
+				Empty end = 4;
 			}
 		}
 		message AllOptions {
 			oneof all_options {
 				Position position = 1;
 				Empty start = 2;
+				Empty end = 3;
 			}
 		}
 		message SubscriptionOptions {
@@ -208,7 +210,7 @@ message UUID {
 	}
 
 	message Structured {
-		uint64 most_significant_bits = 1;
-		uint64 least_significant_bits = 2;
+		int64 most_significant_bits = 1;
+		int64 least_significant_bits = 2;
 	}
 }

@@ -26,7 +26,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 		public class Fixture : EventStoreGrpcFixture {
 			private readonly TaskCompletionSource<ResolvedEvent> _firstEventSource;
 			public Task<ResolvedEvent> FirstEvent => _firstEventSource.Task;
-			public Guid EventId => Events.Last().EventId;
+			public Uuid EventId => Events.Last().EventId;
 			public readonly EventData[] Events;
 			private PersistentSubscription _subscription;
 

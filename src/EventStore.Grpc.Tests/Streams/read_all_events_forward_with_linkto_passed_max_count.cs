@@ -34,7 +34,7 @@ namespace EventStore.Grpc.Streams {
 				await Client.AppendToStreamAsync(DeletedStream, AnyStreamRevision.Any, CreateTestEvents());
 				await Client.AppendToStreamAsync(LinkedStream, AnyStreamRevision.Any, new[] {
 					new EventData(
-						Guid.NewGuid(), SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes("0@" + DeletedStream),
+						Uuid.NewUuid(), SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes("0@" + DeletedStream),
 						Array.Empty<byte>(), false)
 				});
 			}

@@ -63,7 +63,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 #pragma warning restore 4014
 		}
 
-		public Task Ack(params Guid[] eventIds) {
+		public Task Ack(params Uuid[] eventIds) {
 			if (eventIds.Length > 2000) {
 				throw new ArgumentException();
 			}
@@ -71,7 +71,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			return AckInternal(eventIds);
 		}
 
-		public Task Ack(IEnumerable<Guid> eventIds) => Ack(eventIds.ToArray());
+		public Task Ack(IEnumerable<Uuid> eventIds) => Ack(eventIds.ToArray());
 
 		public Task Ack(params ResolvedEvent[] resolvedEvents) =>
 			Ack(Array.ConvertAll(resolvedEvents, resolvedEvent => resolvedEvent.OriginalEvent.EventId));
@@ -79,7 +79,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 		public Task Ack(IEnumerable<ResolvedEvent> resolvedEvents) =>
 			Ack(resolvedEvents.Select(resolvedEvent => resolvedEvent.OriginalEvent.EventId));
 
-		public Task Nack(PersistentSubscriptionNakEventAction action, string reason, params Guid[] eventIds) {
+		public Task Nack(PersistentSubscriptionNakEventAction action, string reason, params Uuid[] eventIds) {
 			if (eventIds.Length > 2000) {
 				throw new ArgumentException();
 			}
@@ -115,12 +115,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 										_ => default
 									}, _disposed.Token);
 								if (_autoAck) {
-									await AckInternal(
-										(current.Event.Link?.Id?.ValueCase ?? current.Event.Event.Id.ValueCase) switch {
-											UUID.ValueOneofCase.String => Guid.Parse(
-												(current.Event.Link?.Id ?? current.Event.Event.Id).String),
-											_ => throw new NotSupportedException()
-										});
+									await AckInternal(Uuid.FromDto(current.Event.Link?.Id ?? current.Event.Event.Id));
 								}
 							} catch (Exception ex) when (ex is ObjectDisposedException ||
 							                             ex is OperationCanceledException) {
@@ -163,10 +158,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 					? null
 					: new EventRecord(
 						e.StreamName,
-						e.Id.ValueCase switch {
-							UUID.ValueOneofCase.String => Guid.Parse(e.Id.String),
-							_ => throw new NotSupportedException()
-						},
+						Uuid.FromDto(e.Id),
 						new StreamRevision(e.StreamRevision),
 						new Position(e.CommitPosition, e.PreparePosition),
 						e.Metadata,
@@ -184,24 +176,20 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			_disposed.Dispose();
 		}
 
-		private Task AckInternal(params Guid[] ids) =>
+		private Task AckInternal(params Uuid[] ids) =>
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Ack = new ReadReq.Types.Ack {
 					Ids = {
-						Array.ConvertAll(ids, id => new UUID {
-							String = id.ToString("n")
-						})
+						Array.ConvertAll(ids, id => id.ToPersistentSubscriptionsDto())
 					}
 				}
 			});
 
-		private Task NackInternal(Guid[] ids, PersistentSubscriptionNakEventAction action, string reason) =>
+		private Task NackInternal(Uuid[] ids, PersistentSubscriptionNakEventAction action, string reason) =>
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Nack = new ReadReq.Types.Nack {
 					Ids = {
-						Array.ConvertAll(ids, id => new UUID {
-							String = id.ToString("n")
-						})
+						Array.ConvertAll(ids, id => id.ToPersistentSubscriptionsDto())
 					},
 					Action = action switch {
 						PersistentSubscriptionNakEventAction.Park => ReadReq.Types.Nack.Types.Action.Park,

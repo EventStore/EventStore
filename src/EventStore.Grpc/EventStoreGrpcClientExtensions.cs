@@ -19,7 +19,7 @@ namespace EventStore.Grpc {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			return client.AppendToStreamAsync(SystemStreams.SettingsStream, AnyStreamRevision.Any,
 				new[] {
-					new EventData(Guid.NewGuid(), SystemEventTypes.Settings,
+					new EventData(Uuid.NewUuid(), SystemEventTypes.Settings,
 						JsonSerializer.SerializeToUtf8Bytes(settings, SystemSettingsJsonSerializerOptions))
 				}, userCredentials, cancellationToken);
 		}
