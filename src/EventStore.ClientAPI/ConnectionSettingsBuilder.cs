@@ -399,11 +399,11 @@ namespace EventStore.ClientAPI {
 		/// If the server requires a specific Host header to be sent as part of the gossip
 		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
 		/// </summary>
-		/// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
 		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
-		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds) {
-			return SetGossipSeedEndPoints(false, gossipSeeds);
+		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params EndPoint[] gossipSeeds) {
+			return SetGossipSeedEndPoints(true, gossipSeeds);
 		}
 
 		/// <summary>
@@ -418,10 +418,10 @@ namespace EventStore.ClientAPI {
 		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
 		/// </summary>
 		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
-		/// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
 		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
-		public ConnectionSettingsBuilder SetGossipSeedEndPoints(bool seedOverTls, params IPEndPoint[] gossipSeeds) {
+		public ConnectionSettingsBuilder SetGossipSeedEndPoints(bool seedOverTls, params EndPoint[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
 				throw new ArgumentException("Empty FakeDnsEntries collection.");
 

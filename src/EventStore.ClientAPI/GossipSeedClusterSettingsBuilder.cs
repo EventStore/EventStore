@@ -27,7 +27,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public GossipSeedClusterSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds) {
-			return SetGossipSeedEndPoints(false, gossipSeeds);
+			return SetGossipSeedEndPoints(true, gossipSeeds);
 		}
 
 		/// <summary>
