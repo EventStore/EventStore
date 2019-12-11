@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -29,11 +29,16 @@ namespace EventStore.Core {
 		protected abstract Task Start();
 		public abstract Task Stop();
 
+		public virtual IEnumerable<OptionSource> MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
+			return effectiveOptions;
+		}
+
 		protected ProgramBase(string[] args) {
 			Application.RegisterExitAction(Exit);
 			try {
 				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
-					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile));
+					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
+					MutateEffectiveOptions);
 				if (options.Help) {
 					Console.WriteLine("Options:");
 					Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());

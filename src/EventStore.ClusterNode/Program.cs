@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -17,6 +17,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Rags;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
@@ -37,6 +38,21 @@ namespace EventStore.ClusterNode {
 		}
 
 		private Program(string[] args) : base(args) {	
+		}
+
+		public override IEnumerable<OptionSource> MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
+			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
+			return effectiveOptions.Select(x => {
+				if (x.Name == nameof(ClusterNodeOptions.MemDb)
+				    && x.Source == "<DEFAULT>"
+				    && bool.TryParse(developmentOption.Value.ToString(), out bool result) && result)
+				{
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				return x;
+			});
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -89,9 +105,10 @@ namespace EventStore.ClusterNode {
 
 		protected override void Create(ClusterNodeOptions opts) {
 			var dbPath = opts.Db;
-			
-			if(opts.Dev)
+
+			if (opts.Dev) {
 				Log.Warn("DEVELOPMENT IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.");
+			}
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
