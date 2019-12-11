@@ -428,6 +428,6 @@ namespace EventStore.Core.Util {
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
 
 		public const string WriteStatsToDbDescr = "Set this option to write statistics to the database.";
-		public const bool WriteStatsToDbDefault = true;
+		public const bool WriteStatsToDbDefault = false;
 	}
 }
