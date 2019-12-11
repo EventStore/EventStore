@@ -429,5 +429,8 @@ namespace EventStore.Core.Util {
 
 		public const string WriteStatsToDbDescr = "Set this option to write statistics to the database.";
 		public const bool WriteStatsToDbDefault = false;
+		
+		public const string DevDescr = "Enable Development Mode for Event Store.";
+		public const bool DevDefault = false;
 	}
 }

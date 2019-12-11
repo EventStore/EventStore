@@ -125,9 +125,7 @@ namespace EventStore.ClusterNode {
 				.UseKestrel(o => {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
 					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => {
-						if (_node.Certificate == null) {
-							listenOptions.UseHttps();
-						} else {
+						if (!opts.Dev) {
 							listenOptions.UseHttps(_node.Certificate);
 						}
 					});
