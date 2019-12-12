@@ -1,5 +1,4 @@
-﻿using EventStore.Common.Utils;
-using EventStore.Rags;
+﻿using EventStore.Rags;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +10,7 @@ namespace EventStore.Common.Options {
 		private static IEnumerable<OptionSource> _effectiveOptions;
 
 		public static TOptions Parse<TOptions>(string[] args, string environmentPrefix,
-			string defaultConfigLocation = null) where TOptions : class, IOptions, new() {
+			string defaultConfigLocation = null, Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutateEffectiveOptions = null) where TOptions : class, IOptions, new() {
 			_effectiveOptions = GetConfig<TOptions>(args, environmentPrefix, defaultConfigLocation)
 				.Flatten()
 				.Cleanup()
@@ -20,7 +19,9 @@ namespace EventStore.Common.Options {
 				.Select(ResolvePrecedence)
 				.EnsureExistence<TOptions>()
 				.EnsureCorrectType<TOptions>()
-				.FixNames<TOptions>();
+				.FixNames<TOptions>()
+				.Mutate<TOptions>(mutateEffectiveOptions);
+			
 			return _effectiveOptions.ApplyTo<TOptions>();
 		}
 
@@ -140,6 +141,9 @@ namespace EventStore.Common.Options {
 		public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources) {
 			return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
 		}
+		
+		public static IEnumerable<OptionSource> Mutate<TOptions>(this IEnumerable<OptionSource> optionSources, Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutator)
+			where TOptions : class => mutator != null ? mutator(optionSources) : optionSources;
 
 		public static IEnumerable<OptionSource> FixNames<TOptions>(this IEnumerable<OptionSource> optionSources)
 			where TOptions : class {

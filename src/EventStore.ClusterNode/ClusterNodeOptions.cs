@@ -312,6 +312,9 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.MaxAppendSizeDecr, Opts.AppGroup)]
 		public int MaxAppendSize { get; set; }
+		
+		[ArgDescription(Opts.DevDescr, Opts.AppGroup)]
+		public bool Dev { get; set; }
 
 		public ClusterNodeOptions() {
 			Config = "";
@@ -439,6 +442,8 @@ namespace EventStore.ClusterNode {
 
 			WriteStatsToDb = Opts.WriteStatsToDbDefault;
 			MaxAppendSize = Opts.MaxAppendSizeDefault;
+
+			Dev = Opts.DevDefault;
 		}
 	}
 }

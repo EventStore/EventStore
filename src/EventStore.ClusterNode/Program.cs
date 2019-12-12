@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
+using System.Linq;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -17,6 +17,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Rags;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
@@ -36,7 +37,29 @@ namespace EventStore.ClusterNode {
 			return p.Run();
 		}
 
-		private Program(string[] args) : base(args) {	
+		private Program(string[] args) : base(args) {
+		}
+
+		public override IEnumerable<OptionSource> MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
+			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
+			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
+			return effectiveOptions.Select(x => {
+				if (x.Name == nameof(ClusterNodeOptions.MemDb)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pfx");
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				return x;
+			});
 		}
 
 		protected override string GetLogsDirectory(ClusterNodeOptions options) {
@@ -90,6 +113,16 @@ namespace EventStore.ClusterNode {
 		protected override void Create(ClusterNodeOptions opts) {
 			var dbPath = opts.Db;
 
+			if (opts.Dev) {
+				Log.Warn(
+					"\n========================================================================================================\n" +
+					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
+					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
+					" - NOT WRITE ANY DATA TO DISK.\n" +
+					" - USE A SELF SIGNED CERTIFICATE.\n" +
+					"========================================================================================================\n");
+			}
+
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
 				if (Runtime.IsWindows)
@@ -124,17 +157,10 @@ namespace EventStore.ClusterNode {
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
-					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => {
-						if (_node.Certificate == null) {
-							listenOptions.UseHttps();
-						} else {
-							listenOptions.UseHttps(_node.Certificate);
-						}
-					});
+					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => listenOptions.UseHttps(_node.Certificate));
 				})
 				.UseStartup(new ClusterVNodeStartup(_node))
-				.ConfigureLogging(logging =>
-				{
+				.ConfigureLogging(logging => {
 					logging.ClearProviders();
 					logging.SetMinimumLevel(LogLevel.Warning);
 				})
@@ -345,8 +371,8 @@ namespace EventStore.ClusterNode {
 					options.CertificateThumbprint);
 			} else if (options.CertificateFile.IsNotEmptyString()) {
 				builder.WithServerCertificateFromFile(options.CertificateFile, options.CertificatePassword);
-			} else
-				Log.Warn("No server certificate specified.");
+			} else if (!options.Dev)
+				throw new Exception("An SSL Certificate is required unless development mode (--dev) is set.");
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
