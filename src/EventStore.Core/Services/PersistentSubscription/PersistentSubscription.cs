@@ -73,6 +73,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
 			Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
 			Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
+			if (persistentSubscriptionParams.ReadBatchSize >= persistentSubscriptionParams.BufferSize) {
+				throw new ArgumentOutOfRangeException($"{nameof(persistentSubscriptionParams.ReadBatchSize)} may not be greater than or equal to {nameof(persistentSubscriptionParams.BufferSize)}");
+			}
 			_nextEventToPullFrom = 0;
 			_totalTimeWatch = new Stopwatch();
 			_settings = persistentSubscriptionParams;
