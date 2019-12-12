@@ -28,6 +28,7 @@ namespace EventStore.Core {
 		protected abstract void Create(TOptions options);
 		protected abstract Task Start();
 		public abstract Task Stop();
+		private bool _skipRun;
 
 		public virtual IEnumerable<OptionSource> MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
 			return effectiveOptions;
@@ -42,9 +43,11 @@ namespace EventStore.Core {
 				if (options.Help) {
 					Console.WriteLine("Options:");
 					Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
+					_skipRun = true;
 				} else if (options.Version) {
 					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+					_skipRun = true;
 				} else {
 					PreInit(options);
 					Init(options);
@@ -82,6 +85,8 @@ namespace EventStore.Core {
 		}
 
 		public async Task<int> Run() {
+			if (_skipRun)
+				return 0;
 			try {
 				await _startupSource.Task;
 				await Start();
