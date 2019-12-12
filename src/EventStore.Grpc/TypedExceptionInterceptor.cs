@@ -52,10 +52,11 @@ namespace EventStore.Grpc {
 			}), response.ResponseHeadersAsync, response.GetStatus, response.GetTrailers, response.Dispose);
 		}
 
-		public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context,
+		public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(
+			ClientInterceptorContext<TRequest, TResponse> context,
 			AsyncDuplexStreamingCallContinuation<TRequest, TResponse> continuation) {
 			var response = continuation(context);
-			
+
 			return new AsyncDuplexStreamingCall<TRequest, TResponse>(
 				response.RequestStream,
 				new AsyncStreamReader<TResponse>(response.ResponseStream),

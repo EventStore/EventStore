@@ -10,18 +10,6 @@ using Grpc.Net.Client;
 using ReadReq = EventStore.Grpc.Streams.ReadReq;
 
 namespace EventStore.Grpc {
-	public class EventStoreGrpcClientSettings {
-		public Uri Address { get; set; }
-		public Interceptor[] Interceptors { get; set; } = Array.Empty<Interceptor>();
-		public string ConnectionName { get; set; } = $"ES-{Guid.NewGuid()}";
-		public Func<HttpClient> CreateHttpClient { get; set; }
-
-		public EventStoreGrpcClientSettings(Uri address) {
-			if (address == null) throw new ArgumentNullException(nameof(address));
-			Address = address;
-		}
-	}
-
 	public partial class EventStoreGrpcClient : IDisposable {
 		private static readonly JsonSerializerOptions StreamMetadataJsonSerializerOptions = new JsonSerializerOptions {
 			Converters = {
@@ -43,8 +31,12 @@ namespace EventStore.Grpc {
 			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
 				HttpClient = settings.CreateHttpClient?.Invoke()
 			});
+			var connectionName = settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
+
 			var callInvoker = settings.Interceptors.Aggregate(
-				_channel.CreateCallInvoker().Intercept(new TypedExceptionInterceptor()),
+				_channel.CreateCallInvoker()
+					.Intercept(new TypedExceptionInterceptor())
+					.Intercept(new ConnectionNameInterceptor(connectionName)),
 				(invoker, interceptor) => invoker.Intercept(interceptor));
 			_client = new Streams.Streams.StreamsClient(callInvoker);
 			PersistentSubscriptions = new EventStorePersistentSubscriptionsGrpcClient(callInvoker);
