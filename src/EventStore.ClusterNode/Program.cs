@@ -116,7 +116,7 @@ namespace EventStore.ClusterNode {
 			if (opts.Dev) {
 				Log.Warn(
 					"\n========================================================================================================\n" +
-					"DEVELOPMENT IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION.\n" +
+					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
 					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
 					" - NOT WRITE ANY DATA TO DISK.\n" +
 					" - USE A SELF SIGNED CERTIFICATE.\n" +
