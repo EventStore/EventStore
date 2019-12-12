@@ -38,7 +38,7 @@
 			<Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-		<Content Include="..\dev-ca\dev-cert.pem">
+		<Content Include="..\dev-ca\**\*">
 			<PackagePath>dev-ca</PackagePath>
 			<Link>dev-ca/%(RecursiveDir)%(Filename)%(Extension)</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

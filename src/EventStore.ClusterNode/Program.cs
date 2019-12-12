@@ -54,7 +54,7 @@ namespace EventStore.ClusterNode {
 				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
-					x.Value = Path.Combine(Locations.DevCertificateDirectory, "dev-cert.pem");
+					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pfx");
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
