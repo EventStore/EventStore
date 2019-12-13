@@ -68,7 +68,7 @@ namespace EventStore.Transport.Http.Server {
 		}
 
 		private void TryAddAcl(string address) {
-			if (Runtime.IsMono)
+			if (!Runtime.IsWindows)
 				return;
 
 			var args = string.Format("http add urlacl url={0} user=\"{1}\\{2}\"", address, Environment.UserDomainName,
