@@ -27,16 +27,17 @@ namespace EventStore.Grpc {
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
-					ResolveLinks = resolveLinkTos,
-					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
-					Count = maxCount,
-					Filter = GetFilterOptions(filter)
-				}
-			},
-			userCredentials,
-			cancellationToken);
+					Options = new ReadReq.Types.Options {
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
+						ResolveLinks = resolveLinkTos,
+						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
+						Count = maxCount,
+						Filter = GetFilterOptions(filter)
+					}
+				},
+				userCredentials,
+				cancellationToken)
+			.Select(ResolvedEventOrThrow);
 
 		/// <summary>
 		/// Asynchronously reads all events in the node backwards (e.g. end to beginning).
@@ -55,16 +56,17 @@ namespace EventStore.Grpc {
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
-					ResolveLinks = resolveLinkTos,
-					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
-					Count = maxCount,
-					Filter = GetFilterOptions(filter)
-				}
-			},
-			userCredentials,
-			cancellationToken);
+					Options = new ReadReq.Types.Options {
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						ResolveLinks = resolveLinkTos,
+						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
+						Count = maxCount,
+						Filter = GetFilterOptions(filter)
+					}
+				},
+				userCredentials,
+				cancellationToken)
+			.Select(ResolvedEventOrThrow);
 
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamForwardsAsync(
 			string streamName,
@@ -73,15 +75,17 @@ namespace EventStore.Grpc {
 			bool resolveLinkTos = false,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
-					ResolveLinks = resolveLinkTos,
-					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName, revision),
-					Count = count
-				}
-			},
-			userCredentials,
-			cancellationToken);
+					Options = new ReadReq.Types.Options {
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
+						ResolveLinks = resolveLinkTos,
+						Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName,
+							revision),
+						Count = count
+					}
+				},
+				userCredentials,
+				cancellationToken)
+			.Select(ResolvedEventOrThrow);
 
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamBackwardsAsync(
 			string streamName,
@@ -90,16 +94,24 @@ namespace EventStore.Grpc {
 			bool resolveLinkTos = false,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
-					ResolveLinks = resolveLinkTos,
-					Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName, revision),
-					Count = count
-				}
-			}, userCredentials,
-			cancellationToken);
+					Options = new ReadReq.Types.Options {
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						ResolveLinks = resolveLinkTos,
+						Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName,
+							revision),
+						Count = count
+					}
+				}, userCredentials,
+				cancellationToken)
+			.Select(ResolvedEventOrThrow);
 
-		private async IAsyncEnumerable<ResolvedEvent> ReadInternal(
+		private static ResolvedEvent ResolvedEventOrThrow((ResolvedEvent? resolvedEvent, Position? position) _) =>
+			(_.resolvedEvent.HasValue, _.position.HasValue) switch {
+				(true, false) => _.resolvedEvent.Value,
+				_ => throw new InvalidOperationException()
+			};
+
+		private async IAsyncEnumerable<(ResolvedEvent?, Position?)> ReadInternal(
 			ReadReq request,
 			UserCredentials userCredentials,
 			[EnumeratorCancellation] CancellationToken cancellationToken) {
@@ -118,24 +130,31 @@ namespace EventStore.Grpc {
 
 			await foreach (var e in call.ResponseStream
 				.ReadAllAsync(cancellationToken)
-				.Select(ConvertToResolvedEvent)
+				.Select(ConvertToResolvedEventAndCheckpointReached)
 				.WithCancellation(cancellationToken)
 				.ConfigureAwait(false)) {
 				yield return e;
 			}
 
-			ResolvedEvent ConvertToResolvedEvent(ReadResp response) =>
-				new ResolvedEvent(
-					ConvertToEventRecord(response.Event.Event),
-					ConvertToEventRecord(response.Event.Link),
-					response.Event.PositionCase switch {
-						ReadResp.Types.ReadEvent.PositionOneofCase.CommitPosition => new Position(
-							response.Event.CommitPosition, 0).ToInt64().commitPosition,
-						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => null,
-						_ => throw new InvalidOperationException()
-					});
+			(ResolvedEvent?, Position?) ConvertToResolvedEventAndCheckpointReached(ReadResp response) =>
+				response.ContentCase switch {
+					ReadResp.ContentOneofCase.Event => (new ResolvedEvent(
+						ConvertToEventRecord(response.Event.Event),
+						ConvertToEventRecord(response.Event.Link),
+						response.Event.PositionCase switch {
+							ReadResp.Types.ReadEvent.PositionOneofCase.CommitPosition => new Position(
+								response.Event.CommitPosition, 0).ToInt64().commitPosition,
+							ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => null,
+							_ => throw new InvalidOperationException()
+						}), null),
+					ReadResp.ContentOneofCase.CheckpointReached => (null,
+						new Position(
+							response.CheckpointReached.CommitPosition,
+							response.CheckpointReached.PreparePosition)),
+					_ => throw new InvalidOperationException()
+				};
 
-			EventRecord ConvertToEventRecord(ReadResp.Types.ReadEvent.Types.RecordedEvent e) =>
+			static EventRecord ConvertToEventRecord(ReadResp.Types.ReadEvent.Types.RecordedEvent e) =>
 				e == null
 					? null
 					: new EventRecord(

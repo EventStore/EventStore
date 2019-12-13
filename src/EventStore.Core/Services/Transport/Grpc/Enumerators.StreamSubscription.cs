@@ -13,7 +13,7 @@ using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
-		public class StreamSubscription : IAsyncEnumerator<ResolvedEvent> {
+		public class StreamSubscription : IAsyncEnumerator<(ResolvedEvent?, Position?)> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly bool _resolveLinks;
@@ -23,9 +23,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
 			private StreamRevision _nextRevision;
-			private ResolvedEvent _current;
+			private (ResolvedEvent?, Position?) _current;
 
-			public ResolvedEvent Current => _current;
+			public (ResolvedEvent?, Position?) Current => _current;
 
 			public StreamSubscription(IPublisher bus,
 				string streamName,
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 
@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				await readNextSource.Task.ConfigureAwait(false);
 
 				if (_buffer.TryDequeue(out current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 

@@ -5,16 +5,18 @@ using System.Threading.Tasks;
 
 namespace EventStore.Grpc {
 	public class StreamSubscription : IDisposable {
-		private readonly IAsyncEnumerable<ResolvedEvent> _events;
+		private readonly IAsyncEnumerable<(ResolvedEvent?, Position?)> _events;
 		private readonly Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> _eventAppeared;
 		private readonly Action<StreamSubscription, SubscriptionDroppedReason, Exception> _subscriptionDropped;
+		private readonly Func<StreamSubscription, Position, CancellationToken, Task> _checkpointReached;
 		private readonly CancellationTokenSource _disposed;
 		private int _subscriptionDroppedInvoked;
 
 		public StreamSubscription(
-			IAsyncEnumerable<ResolvedEvent> events,
+			IAsyncEnumerable<(ResolvedEvent?, Position?)> events,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default) {
+			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default) {
 			if (events == null) {
 				throw new ArgumentNullException(nameof(events));
 			}
@@ -27,6 +29,7 @@ namespace EventStore.Grpc {
 			_events = events;
 			_eventAppeared = eventAppeared;
 			_subscriptionDropped = subscriptionDropped;
+			_checkpointReached = checkpointReached ?? ((_, checkpoint, ct) => Task.CompletedTask);
 			_subscriptionDroppedInvoked = 0;
 
 			Task.Run(Subscribe);
@@ -35,14 +38,23 @@ namespace EventStore.Grpc {
 		private async Task Subscribe() {
 			subscribe:
 			try {
-				await foreach (var resolvedEvent in _events.ConfigureAwait(false)) {
+				await foreach (var (resolvedEvent, position) in _events.ConfigureAwait(false)) {
 					try {
 						if (_disposed.IsCancellationRequested) {
 							SubscriptionDropped(SubscriptionDroppedReason.Disposed);
 							return;
 						}
 
-						await _eventAppeared(this, resolvedEvent, _disposed.Token).ConfigureAwait(false);
+						if (resolvedEvent.HasValue && position.HasValue
+						    || !resolvedEvent.HasValue && !position.HasValue) {
+							throw new InvalidOperationException();
+						}
+
+						if (resolvedEvent.HasValue) {
+							await _eventAppeared(this, resolvedEvent.Value, _disposed.Token).ConfigureAwait(false);
+						} else {
+							await _checkpointReached(this, position.Value, _disposed.Token).ConfigureAwait(false);
+						}
 					} catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException) {
 						SubscriptionDropped(SubscriptionDroppedReason.Disposed);
 						return;
@@ -82,7 +94,7 @@ namespace EventStore.Grpc {
 			if (Interlocked.CompareExchange(ref _subscriptionDroppedInvoked, 1, 0) == 1) {
 				return;
 			}
-			
+
 			_subscriptionDropped?.Invoke(this, reason, ex);
 		}
 	}

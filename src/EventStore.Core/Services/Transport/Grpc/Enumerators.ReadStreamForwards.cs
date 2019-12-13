@@ -12,7 +12,7 @@ using EventStore.Grpc;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
-		public class ReadStreamForwards : IAsyncEnumerator<ResolvedEvent> {
+		public class ReadStreamForwards : IAsyncEnumerator<(ResolvedEvent?, Position?)> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly int _maxCount;
@@ -23,9 +23,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationTokenRegistration _tokenRegistration;
 			private StreamRevision _nextRevision;
 			private bool _isEnd;
-			private ResolvedEvent _current;
+			private (ResolvedEvent?, Position?) _current;
 			private int _readCount;
-			public ResolvedEvent Current => _current;
+			public (ResolvedEvent?, Position?) Current => _current;
 
 			public ReadStreamForwards(
 				IPublisher bus,
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+					_current = (current, null);
 					_readCount++;
 					return true;
 				}
@@ -89,7 +89,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				if (_buffer.TryDequeue(out current)) {
-					_current = current;
+					_current = (current, null);
 					_readCount++;
 					return true;
 				}

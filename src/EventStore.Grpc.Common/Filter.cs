@@ -62,6 +62,8 @@ namespace EventStore.Grpc {
 	internal
 #endif
 		struct EventTypeFilter : IEquatable<EventTypeFilter>, IEventFilter {
+		public static readonly EventTypeFilter ExcludeSystemEvents =
+			new EventTypeFilter(new RegularFilterExpression(new Regex(@"^[^\$].*")));
 		public PrefixFilterExpression[] Prefixes { get; }
 		public RegularFilterExpression Regex { get; }
 		public int? MaxSearchWindow { get; }
@@ -106,9 +108,6 @@ namespace EventStore.Grpc {
 #endif
 		struct RegularFilterExpression : IEquatable<RegularFilterExpression> {
 		public static readonly RegularFilterExpression None = default;
-
-		public static readonly RegularFilterExpression ExcludeSystemEvents =
-			new RegularFilterExpression(new Regex(@"^[^\$].*"));
 
 		private readonly string _value;
 

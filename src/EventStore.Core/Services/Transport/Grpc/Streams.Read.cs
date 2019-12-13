@@ -13,6 +13,7 @@ using FilterOptionsOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.Fil
 using ReadDirection = EventStore.Grpc.Streams.ReadReq.Types.Options.Types.ReadDirection;
 using StreamOptionsOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.StreamOptionsOneofCase;
 using UUID = EventStore.Grpc.Streams.UUID;
+
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
 		public override async Task Read(
@@ -32,7 +33,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					(StreamOptionsOneofCase.Stream,
 					CountOptionsOneofCase.Count,
 					ReadDirection.Forwards,
-					FilterOptionsOneofCase.NoFilter) => (IAsyncEnumerator<ResolvedEvent>)
+					FilterOptionsOneofCase.NoFilter) => (
+						IAsyncEnumerator<(ResolvedEvent? resolvedEvent, Position? position)>)
 					new Enumerators.ReadStreamForwards(
 						_queue,
 						request.Options.Stream.StreamName,
@@ -72,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => default(int?),
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
 							_ => throw new InvalidOperationException()
 						},
@@ -98,7 +100,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => default(int?),
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
 							_ => throw new InvalidOperationException()
 						},
@@ -133,6 +135,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.All.ToPosition(),
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
+						request.Options.CheckpointInterval,
 						user,
 						_readIndex,
 						context.CancellationToken),
@@ -140,9 +143,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				};
 
 			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
-				await responseStream.WriteAsync(new ReadResp {
-					Event = ConvertToReadEvent(enumerator.Current)
-				}).ConfigureAwait(false);
+				await responseStream.WriteAsync(
+					(enumerator.Current.resolvedEvent.HasValue, enumerator.Current.position.HasValue) switch {
+						(true, false) => new ReadResp {
+							Event = ConvertToReadEvent(enumerator.Current.resolvedEvent.Value)
+						},
+						(false, true) => new ReadResp {
+							CheckpointReached = new ReadResp.Types.CheckpointReached {
+								CommitPosition = enumerator.Current.position.Value.CommitPosition,
+								PreparePosition = enumerator.Current.position.Value.PreparePosition
+							}
+						}
+					}).ConfigureAwait(false);
 			}
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {

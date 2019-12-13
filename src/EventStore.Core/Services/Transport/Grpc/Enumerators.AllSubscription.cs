@@ -13,7 +13,7 @@ using EventStore.Grpc;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Enumerators {
-		public class AllSubscription : IAsyncEnumerator<ResolvedEvent> {
+		public class AllSubscription : IAsyncEnumerator<(ResolvedEvent?, Position?)> {
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
 			private readonly IPrincipal _user;
@@ -22,9 +22,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
 			private Position _nextPosition;
-			private ResolvedEvent _current;
+			private (ResolvedEvent?, Position?) _current;
 
-			public ResolvedEvent Current => _current;
+			public (ResolvedEvent?, Position?) Current => _current;
 
 			public AllSubscription(IPublisher bus,
 				Position position,
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 
@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				await readNextSource.Task.ConfigureAwait(false);
 
 				if (_buffer.TryDequeue(out current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 

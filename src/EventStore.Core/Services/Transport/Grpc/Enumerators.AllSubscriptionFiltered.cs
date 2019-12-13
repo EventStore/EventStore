@@ -14,24 +14,27 @@ using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
-		public class AllSubscriptionFiltered : IAsyncEnumerator<ResolvedEvent> {
+		public class AllSubscriptionFiltered : IAsyncEnumerator<(ResolvedEvent?, Position?)> {
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
 			private readonly IEventFilter _eventFilter;
+			private readonly int _checkpointInterval;
 			private readonly IPrincipal _user;
 			private readonly IReadIndex _readIndex;
 			private readonly CancellationTokenSource _disposedTokenSource;
-			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
+			private readonly ConcurrentQueue<(ResolvedEvent?, Position?)> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
 			private Position _nextPosition;
-			private ResolvedEvent _current;
+			private (ResolvedEvent?, Position?) _current;
+			private int _readsCompleted;
 
-			public ResolvedEvent Current => _current;
+			public (ResolvedEvent?, Position?) Current => _current;
 
 			public AllSubscriptionFiltered(IPublisher bus,
 				Position position,
 				bool resolveLinks,
 				IEventFilter eventFilter,
+				int checkpointInterval,
 				IPrincipal user,
 				IReadIndex readIndex,
 				CancellationToken cancellationToken) {
@@ -47,14 +50,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentNullException(nameof(eventFilter));
 				}
 
+				if (checkpointInterval < 0) {
+					throw new ArgumentOutOfRangeException(nameof(checkpointInterval));
+				}
+
 				_bus = bus;
 				_nextPosition = position;
 				_resolveLinks = resolveLinks;
 				_eventFilter = eventFilter;
+				_checkpointInterval = checkpointInterval;
 				_user = user;
 				_readIndex = readIndex;
 				_disposedTokenSource = new CancellationTokenSource();
-				_buffer = new ConcurrentQueue<ResolvedEvent>();
+				_buffer = new ConcurrentQueue<(ResolvedEvent?, Position?)>();
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 			}
 
@@ -110,12 +118,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					switch (completed.Result) {
 						case FilteredReadAllResult.Success:
 							foreach (var @event in completed.Events) {
-								_buffer.Enqueue(@event);
+								_buffer.Enqueue((@event, null));
 							}
 
 							_nextPosition = Position.FromInt64(
 								completed.NextPos.CommitPosition,
 								completed.NextPos.PreparePosition);
+							if (_readsCompleted++ % _checkpointInterval == 0) {
+								_buffer.Enqueue((null, _nextPosition));
+							}
 							readNextSource.TrySetResult(true);
 							return;
 						case FilteredReadAllResult.AccessDenied:

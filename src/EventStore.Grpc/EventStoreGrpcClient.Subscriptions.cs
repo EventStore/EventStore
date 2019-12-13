@@ -13,6 +13,11 @@ namespace EventStore.Grpc {
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set the checkpointInterval to define how often this method is called.
+		/// </param>
+		/// <param name="checkpointInterval">Sets how often the checkpointReached callback is called.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -21,6 +26,8 @@ namespace EventStore.Grpc {
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = null,
+			int checkpointInterval = 1,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => new StreamSubscription(ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
@@ -28,10 +35,11 @@ namespace EventStore.Grpc {
 					ResolveLinks = resolveLinkTos,
 					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(Position.Start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
-					Filter = GetFilterOptions(filter)
+					Filter = GetFilterOptions(filter),
+					CheckpointInterval = checkpointInterval
 				}
 			}, userCredentials,
-			cancellationToken), eventAppeared, subscriptionDropped);
+			cancellationToken), eventAppeared, subscriptionDropped, checkpointReached);
 
 		/// <summary>
 		/// Subscribes to all events from a checkpoint. This is exclusive of.
@@ -41,6 +49,11 @@ namespace EventStore.Grpc {
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
+		/// <param name="checkpointReached">
+		/// A Task invoked and await when a checkpoint is reached.
+		/// Set the checkpointInterval to define how often this method is called.
+		/// </param>
+		/// <param name="checkpointInterval">Sets how often the checkpointReached callback is called.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -49,6 +62,8 @@ namespace EventStore.Grpc {
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = null,
+			int checkpointInterval = int.MaxValue,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => new StreamSubscription(ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
@@ -56,10 +71,11 @@ namespace EventStore.Grpc {
 					ResolveLinks = resolveLinkTos,
 					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(start),
 					Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
-					Filter = GetFilterOptions(filter)
+					Filter = GetFilterOptions(filter),
+					CheckpointInterval = checkpointInterval
 				}
 			}, userCredentials,
-			cancellationToken), eventAppeared, subscriptionDropped);
+			cancellationToken), eventAppeared, subscriptionDropped, checkpointReached);
 
 		public StreamSubscription SubscribeToStream(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,

@@ -27,6 +27,7 @@ message ReadReq {
 			FilterOptions filter = 7;
 			Empty no_filter = 8;
 		}
+		int32 checkpoint_interval = 9;
 
 		enum ReadDirection {
 			Forwards = 0;
@@ -74,8 +75,10 @@ message ReadReq {
 }
 
 message ReadResp {
-	ReadEvent event = 1;
-
+	oneof content {
+		ReadEvent event = 1;
+		CheckpointReached checkpoint_reached = 2;
+	}
 	message ReadEvent {
 		RecordedEvent event = 1;
 		RecordedEvent link = 2;
@@ -94,6 +97,10 @@ message ReadResp {
 			bytes custom_metadata = 7;
 			bytes data = 8;
 		}
+	}
+	message CheckpointReached {
+		uint64 prepare_position = 1;
+		uint64 commit_position = 2;
 	}
 	message Empty {
 	}

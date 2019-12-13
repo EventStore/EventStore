@@ -22,7 +22,6 @@ namespace EventStore.Grpc {
 
 		public bool IsResolved => Link != null && Event != null;
 
-
 		public ResolvedEvent(EventRecord @event, EventRecord link, long? commitPosition) {
 			Event = @event;
 			Link = link;

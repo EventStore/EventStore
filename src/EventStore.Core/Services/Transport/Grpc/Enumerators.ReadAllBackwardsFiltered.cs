@@ -12,7 +12,7 @@ using EventStore.Grpc;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Enumerators {
-		public class ReadAllBackwardsFiltered : IAsyncEnumerator<ResolvedEvent> {
+		public class ReadAllBackwardsFiltered : IAsyncEnumerator<(ResolvedEvent?, Position?)> {
 			private readonly IPublisher _bus;
 			private readonly int _maxCount;
 			private readonly int _maxSearchWindow;
@@ -24,9 +24,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationTokenRegistration _tokenRegistration;
 			private Position _nextPosition;
 			private bool _isEnd;
-			private ResolvedEvent _current;
+			private (ResolvedEvent?, Position?) _current;
 
-			public ResolvedEvent Current => _current;
+			public (ResolvedEvent?, Position?) Current => _current;
 
 			public ReadAllBackwardsFiltered(
 				IPublisher bus,
@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				if (_buffer.TryDequeue(out current)) {
-					_current = current;
+					_current = (current, null);
 					return true;
 				}
 

@@ -22,8 +22,9 @@ namespace EventStore.Grpc.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAll(EventAppeared,
-				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
+			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared,
+				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))),
+				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -37,6 +38,12 @@ namespace EventStore.Grpc.Streams {
 				}
 
 				return Task.CompletedTask;
+			}
+
+			void SubscriptionDropped(StreamSubscription _, SubscriptionDroppedReason reason, Exception exception) {
+				if (exception != null) {
+					source.TrySetException(exception);
+				}
 			}
 
 			await source.Task.WithTimeout();
@@ -51,8 +58,9 @@ namespace EventStore.Grpc.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAll(EventAppeared,
-				false, filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
+			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared,
+				false, filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)),
+				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -66,6 +74,12 @@ namespace EventStore.Grpc.Streams {
 				}
 
 				return Task.CompletedTask;
+			}
+
+			void SubscriptionDropped(StreamSubscription _, SubscriptionDroppedReason reason, Exception exception) {
+				if (exception != null) {
+					source.TrySetException(exception);
+				}
 			}
 
 			await source.Task.WithTimeout();
@@ -84,8 +98,8 @@ namespace EventStore.Grpc.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAll(EventAppeared,
-				false, filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
+			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared,
+				false, filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))), subscriptionDropped:SubscriptionDropped);
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -99,6 +113,12 @@ namespace EventStore.Grpc.Streams {
 				}
 
 				return Task.CompletedTask;
+			}
+
+			void SubscriptionDropped(StreamSubscription _, SubscriptionDroppedReason reason, Exception exception) {
+				if (exception != null) {
+					source.TrySetException(exception);
+				}
 			}
 
 			await source.Task.WithTimeout();
@@ -117,8 +137,9 @@ namespace EventStore.Grpc.Streams {
 			var result = new List<ResolvedEvent>();
 			var source = new TaskCompletionSource<bool>();
 
-			_fixture.Client.SubscribeToAll(EventAppeared,
-				false, filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
+			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared,
+				false, filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)),
+				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -134,9 +155,51 @@ namespace EventStore.Grpc.Streams {
 				return Task.CompletedTask;
 			}
 
+			void SubscriptionDropped(StreamSubscription _, SubscriptionDroppedReason reason, Exception exception) {
+				if (exception != null) {
+					source.TrySetException(exception);
+				}
+			}
+
 			await source.Task.WithTimeout();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
+		}
+
+		[Fact]
+		public async Task checkpoint_reached() {
+			var streamName = _fixture.GetStreamName();
+			var events = _fixture.CreateTestEvents(10)
+				.ToArray();
+			var result = new List<ResolvedEvent>();
+			var checkpoints = new List<Position>();
+			var source = new TaskCompletionSource<bool>();
+			var checkpointInterval = 2;
+
+			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared,
+				filter: EventTypeFilter.ExcludeSystemEvents, checkpointReached: CheckpointReached, checkpointInterval: checkpointInterval);
+
+			await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.NoStream, events);
+			await source.Task.WithTimeout();
+			Assert.Equal(events.Length, result.Count);
+			Assert.All(checkpoints, checkpoint => Assert.True(checkpoint > Position.Start));
+
+			Task EventAppeared(StreamSubscription _, ResolvedEvent e, CancellationToken ct) {
+				if (e.OriginalStreamId != streamName) {
+					return Task.CompletedTask;
+				}
+				result.Add(e);
+
+				return Task.CompletedTask;
+			}
+
+			Task CheckpointReached(StreamSubscription _, Position checkpoint, CancellationToken ct) {
+				checkpoints.Add(checkpoint);
+
+				if (checkpoints.Count >= events.Length / checkpointInterval)
+					source.TrySetResult(true);
+				return Task.CompletedTask;
+			}
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
