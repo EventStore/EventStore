@@ -100,8 +100,8 @@ namespace EventStore.Grpc {
 				new InMemoryCheckpoint(epochCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1),
-				Constants.TFChunkInitialReaderCountDefault,
-				Constants.TFChunkMaxReaderCountDefault
+				TestConstants.TFChunkInitialReaderCountDefault,
+				TestConstants.TFChunkMaxReaderCountDefault
 				);
 		}
 
@@ -117,15 +117,15 @@ namespace EventStore.Grpc {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint,
-				Constants.TFChunkInitialReaderCountDefault,
-				Constants.TFChunkMaxReaderCountDefault
+				TestConstants.TFChunkInitialReaderCountDefault,
+				TestConstants.TFChunkMaxReaderCountDefault
 			);
 		}
 
 		private static TFChunk CreateNewChunk(string fileName, int chunkSize = 4096, bool isScavenged = false) {
 			return TFChunk.CreateNew(fileName, chunkSize, 0, 0,
 				isScavenged: isScavenged, inMem: false, unbuffered: false,
-				writethrough: false, initialReaderCount: Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
+				writethrough: false, initialReaderCount: TestConstants.TFChunkInitialReaderCountDefault, TestConstants.TFChunkMaxReaderCountDefault, reduceFileCachePressure: false);
 		}
 
 		protected static IEnumerable<EventData> CreateTestEvents(int count)

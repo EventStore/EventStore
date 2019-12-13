@@ -3,7 +3,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
 namespace EventStore.Grpc {
-	public class Constants {
+	public class TestConstants {
 		public const int PTableInitialReaderCount = ESConsts.PTableInitialReaderCount;
 
 		public const int PTableMaxReaderCountDefault = 	1 /* StorageWriter */

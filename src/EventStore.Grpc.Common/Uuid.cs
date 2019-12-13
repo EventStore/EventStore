@@ -22,7 +22,8 @@ namespace EventStore.Grpc {
 			return dto.ValueCase switch {
 				Streams.UUID.ValueOneofCase.String => new Uuid(dto.String),
 				Streams.UUID.ValueOneofCase.Structured => new Uuid(dto.Structured.MostSignificantBits,
-					dto.Structured.LeastSignificantBits)
+					dto.Structured.LeastSignificantBits),
+				_ => throw new ArgumentException($"Invalid argument: {dto.ValueCase}", nameof(dto))
 			};
 		}
 
@@ -32,7 +33,8 @@ namespace EventStore.Grpc {
 				PersistentSubscriptions.UUID.ValueOneofCase.String => new Uuid(dto.String),
 				PersistentSubscriptions.UUID.ValueOneofCase.Structured => new Uuid(
 					dto.Structured.MostSignificantBits,
-					dto.Structured.LeastSignificantBits)
+					dto.Structured.LeastSignificantBits),
+				_ => throw new ArgumentException($"Invalid argument: {dto.ValueCase}", nameof(dto))
 			};
 		}
 
