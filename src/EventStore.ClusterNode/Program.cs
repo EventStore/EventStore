@@ -87,27 +87,6 @@ namespace EventStore.ClusterNode {
 				throw new ApplicationInitializationException(
 					"The given ClusterSize is set to 1 but GossipSeeds are multiple. We will never be able to sync up with this configuration.");
 			}
-
-			//Never seen this problem occur on the .NET framework
-			if (!Runtime.IsMono)
-				return;
-
-			//0 indicates we should leave the machine defaults alone
-			if (options.MonoMinThreadpoolSize == 0)
-				return;
-
-			//Change the number of worker threads to be higher if our own setting
-			// is higher than the current value
-			int minWorkerThreads, minIocpThreads;
-			ThreadPool.GetMinThreads(out minWorkerThreads, out minIocpThreads);
-
-			if (minWorkerThreads >= options.MonoMinThreadpoolSize)
-				return;
-
-			if (!ThreadPool.SetMinThreads(options.MonoMinThreadpoolSize, minIocpThreads))
-				Log.Error(
-					"Cannot override the minimum number of Threadpool threads (machine default: {minWorkerThreads}, specified value: {monoMinThreadpoolSize})",
-					minWorkerThreads, options.MonoMinThreadpoolSize);
 		}
 
 		protected override void Create(ClusterNodeOptions opts) {
