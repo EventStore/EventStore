@@ -9,16 +9,20 @@ COPYRIGHT="Copyright 2019 Event Store Ltd. All rights reserved."
 # ------------ End of configuration -------------
 
 CONFIGURATION="Release"
+RUNTIME="linux-x64"
 BUILD_UI="no"
+NET_FRAMEWORK="netcoreapp3.1"
 
 function usage() {    
 cat <<EOF
 Usage:
-  $0 [<version=0.0.0.0>] [<configuration=Debug|Release>] [<build_ui=yes|no>]
+  $0 [<version=0.0.0.0>] [<configuration=Debug|Release>] [<runtime=linux-x64>] [<build_ui=yes|no>]
 
 version: EventStore build version. Versions must be complete four part identifiers valid for use on a .NET assembly.
 
 configuration: Build configuration. Valid configurations are: Debug, Release
+
+runtime: Runtime Identifier (linux-x64, ubuntu.18.04-x64, etc)
 
 build_ui: Whether or not to build the EventStore UI. Building the UI requires an installation of Node.js (v8.11.4+)
 
@@ -48,7 +52,8 @@ function checkParams() {
 
     version=$1
     configuration=$2
-    build_ui=$3
+    runtime=$3
+    build_ui=$4
 
     [[ $# -gt 4 ]] && usage
 
@@ -71,6 +76,13 @@ function checkParams() {
             echo "Invalid configuration: $configuration"
             usage
         fi
+    fi
+
+    if [[ "$runtime" == "" ]]; then
+        RUNTIME="linux-x64"
+        echo "Runtime defaulted to linux-64: $RUNTIME"
+    else
+        RUNTIME=$runtime
     fi
 
     if [[ "$build_ui" == "" ]]; then
@@ -159,7 +171,7 @@ function buildUI {
 function buildEventStore {
     patchVersionInfo
     rm -rf bin/
-    dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING src/EventStore.sln || err
+    dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING --runtime=$RUNTIME --framework=$NET_FRAMEWORK src/EventStore.sln || err
     revertVersionInfo
 }
 
@@ -169,7 +181,7 @@ function exitWithError {
 }
 
 detectOS
-checkParams "$1" "$2" "$3"
+checkParams "$1" "$2" "$3" "$4"
 
 echo "Running from base directory: $BASE_DIR"
 buildUI
