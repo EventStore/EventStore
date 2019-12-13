@@ -16,6 +16,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using EventStore.Core.Services;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Rags;
 using Microsoft.AspNetCore.Hosting;
@@ -48,6 +49,13 @@ namespace EventStore.ClusterNode {
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.CertificatePassword)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = SystemUsers.DefaultAdminPassword;
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
