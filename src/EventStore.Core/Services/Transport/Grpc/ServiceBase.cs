@@ -32,6 +32,13 @@ namespace EventStore.Grpc.Users {
 	}
 }
 
+namespace EventStore.Grpc.Operations {
+	partial class Operations {
+		partial class OperationsBase : ServiceBase {
+		}
+	}
+}
+
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {

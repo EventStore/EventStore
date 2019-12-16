@@ -4,7 +4,7 @@ using System.Text;
 using Grpc.Core;
 
 namespace EventStore.Grpc {
-	internal static class RequestMetadata {
+	public static class RequestMetadata {
 		public static Metadata Create(UserCredentials userCredentials) =>
 			userCredentials == null
 				? new Metadata()

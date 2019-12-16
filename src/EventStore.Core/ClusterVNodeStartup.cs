@@ -27,6 +27,7 @@ namespace EventStore.Core {
 
 		private static readonly PathString StreamsSegment = "/event_store.grpc.streams.Streams";
 		private static readonly PathString UsersSegment = "/event_store.grpc.users.Users";
+		private static readonly PathString OperationsSegment = "/event_store.grpc.operations.Operations";
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IQueuedHandler _mainQueue;
@@ -94,7 +95,10 @@ namespace EventStore.Core {
 								endpoint.MapGrpcService<Users>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Streams>())),
+								endpoint.MapGrpcService<Streams>()))
+				.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
+					inner => inner.UseRouting().UseEndpoints(endpoint =>
+						endpoint.MapGrpcService<Operations>())),
 					(b, subsystem) => subsystem.Configure(b))
 				.Use(_externalHttpService.MidFunc);
 
@@ -113,6 +117,7 @@ namespace EventStore.Core {
 							_vNodeSettings.MaxAppendSize))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
 						.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
+						.AddSingleton(new Operations(_mainQueue, _internalAuthenticationProvider))
 						.AddGrpc().Services,
 					(s, subsystem) => subsystem.ConfigureServices(s))
 				.BuildServiceProvider();

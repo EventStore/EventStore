@@ -54,6 +54,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					{Constants.Exceptions.StreamName, streamName}
 				});
 
+		public static Exception ScavengeNotFound(string scavengeId) =>
+			new RpcException(new Status(StatusCode.NotFound, "Scavenge id was invalid."),
+				new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.ScavengeNotFound},
+					{Constants.Exceptions.ScavengeId, scavengeId ?? string.Empty}
+				});
+
+
 		public static Exception WrongExpectedVersion(
 			string streamName,
 			long expectedVersion,

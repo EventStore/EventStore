@@ -20,6 +20,8 @@ namespace EventStore.Grpc {
 			public const string UserNotFound = "user-not-found";
 			public const string UserConflict = "user-conflict";
 
+			public const string ScavengeNotFound = "scavenge-not-found";
+
 			public const string ExpectedVersion = "expected-version";
 			public const string ActualVersion = "actual-version";
 			public const string StreamName = "stream-name";
@@ -27,6 +29,7 @@ namespace EventStore.Grpc {
 			public const string Reason = "reason";
 			public const string MaximumAppendSize = "maximum-append-size";
 			public const string RequiredMetadataProperties = "required-metadata-properties";
+			public const string ScavengeId = "scavenge-id";
 
 			public const string LoginName = "login-name";
 		}

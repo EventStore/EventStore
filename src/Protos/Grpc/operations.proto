@@ -1,0 +1,34 @@
+syntax = "proto3";
+package event_store.grpc.operations;
+option java_package = "com.eventstore.client.operations";
+
+service Operations {
+	rpc StartScavenge (StartScavengeReq) returns (ScavengeResp);
+	rpc StopScavenge (StopScavengeReq) returns (ScavengeResp);
+}
+
+message StartScavengeReq {
+	Options options = 1;
+	message Options {
+		int32 thread_count = 1;
+		int32 start_from_chunk = 2;
+	}
+}
+
+message StopScavengeReq {
+	Options options = 1;
+	message Options {
+		string scavenge_id = 1;
+	}
+}
+
+message ScavengeResp {
+	string scavenge_id = 1;
+	ScavengeResult scavenge_result = 2;
+
+	enum ScavengeResult {
+		Started = 0;
+		InProgress = 1;
+		Stopped = 2;
+	}
+}
