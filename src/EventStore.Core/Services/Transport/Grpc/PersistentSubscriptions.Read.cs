@@ -40,7 +40,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			string subscriptionId = default;
 			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
 
-			_ = requestStream.ForEachAsync(HandleAckNack);
+#pragma warning disable 4014
+			requestStream.ForEachAsync(HandleAckNack);
+#pragma warning restore 4014
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
 				_queue, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
