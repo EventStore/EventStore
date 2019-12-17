@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			_queue.Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, name, true));
 
-			foreach (var stats in Array.ConvertAll(await statsSource.Task, s => new StatisticsResp.Types.Details {
+			foreach (var stats in Array.ConvertAll(await statsSource.Task.ConfigureAwait(false), s => new StatisticsResp.Types.Details {
 				BufferedEvents = s.BufferedEvents,
 				CheckpointStatus = s.CheckpointStatus,
 				CoreProcessingTime = s.CoreProcessingTime,
@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				WritePendingEventsBeforeCheckpoint = s.WritePendingEventsBeforeCheckpoint,
 				WritesInProgress = s.WritesInProgress
 			})) {
-				await responseStream.WriteAsync(new StatisticsResp {Details = stats});
+				await responseStream.WriteAsync(new StatisticsResp { Details = stats }).ConfigureAwait(false);
 			}
 
 			void OnMessage(Message message) {

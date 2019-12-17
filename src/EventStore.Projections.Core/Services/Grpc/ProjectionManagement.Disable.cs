@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var name = options.Name;
 			var runAs = new ProjectionManagementMessage.RunAs(user);
@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				? (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs)
 				: new ProjectionManagementMessage.Command.Disable(envelope, name, runAs));
 
-			await disableSource.Task;
+			await disableSource.Task.ConfigureAwait(false);
 
 			return new DisableResp();
 

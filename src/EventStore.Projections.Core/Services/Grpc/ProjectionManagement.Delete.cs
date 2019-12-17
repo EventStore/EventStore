@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var deletedSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var name = options.Name;
 			var deleteCheckpointStream = options.DeleteCheckpointStream;
@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.Delete(envelope, name, runAs,
 				deleteCheckpointStream, deleteStateStream, deleteEmittedStreams));
 
-			await deletedSource.Task;
+			await deletedSource.Task.ConfigureAwait(false);
 
 			return new DeleteResp();
 
