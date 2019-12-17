@@ -35,14 +35,14 @@ namespace EventStore.Grpc {
 		private async Task Subscribe() {
 			subscribe:
 			try {
-				await foreach (var resolvedEvent in _events) {
+				await foreach (var resolvedEvent in _events.ConfigureAwait(false)) {
 					try {
 						if (_disposed.IsCancellationRequested) {
 							SubscriptionDropped(SubscriptionDroppedReason.Disposed);
 							return;
 						}
 
-						await _eventAppeared(this, resolvedEvent, _disposed.Token);
+						await _eventAppeared(this, resolvedEvent, _disposed.Token).ConfigureAwait(false);
 					} catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException) {
 						SubscriptionDropped(SubscriptionDroppedReason.Disposed);
 						return;
@@ -57,7 +57,7 @@ namespace EventStore.Grpc {
 					}
 				}
 			} catch (StreamNotFoundException) {
-				await Task.Delay(100);
+				await Task.Delay(100).ConfigureAwait(false);
 				goto subscribe;
 			} catch (Exception ex) {
 				try {

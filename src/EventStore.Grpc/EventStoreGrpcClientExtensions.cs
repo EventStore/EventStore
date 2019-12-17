@@ -34,7 +34,7 @@ namespace EventStore.Grpc {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
 				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken);
+					cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;
@@ -53,7 +53,7 @@ namespace EventStore.Grpc {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
 				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken);
+					cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;

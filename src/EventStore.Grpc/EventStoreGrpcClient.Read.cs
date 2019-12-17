@@ -119,7 +119,8 @@ namespace EventStore.Grpc {
 			await foreach (var e in call.ResponseStream
 				.ReadAllAsync(cancellationToken)
 				.Select(ConvertToResolvedEvent)
-				.WithCancellation(cancellationToken)) {
+				.WithCancellation(cancellationToken)
+				.ConfigureAwait(false)) {
 				yield return e;
 			}
 

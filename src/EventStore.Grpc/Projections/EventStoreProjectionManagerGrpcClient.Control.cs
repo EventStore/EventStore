@@ -10,7 +10,7 @@ namespace EventStore.Grpc.Projections {
 					Name = name
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 
 		public Task AbortAsync(string name, UserCredentials userCredentials = default,
@@ -29,7 +29,7 @@ namespace EventStore.Grpc.Projections {
 					WriteCheckpoint = writeCheckpoint
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 	}
 }

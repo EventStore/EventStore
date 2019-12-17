@@ -9,13 +9,13 @@ namespace EventStore.Grpc.Projections {
 	public partial class EventStoreProjectionManagerGrpcClient {
 		public async Task<JsonDocument> GetResultAsync(string name, string partition = default,
 			UserCredentials userCredentials = default, CancellationToken cancellationToken = default) {
-			var value = await GetResultInternalAsync(name, partition, userCredentials, cancellationToken);
+			var value = await GetResultInternalAsync(name, partition, userCredentials, cancellationToken).ConfigureAwait(false);
 
 			await using var stream = new MemoryStream();
 			await using var writer = new Utf8JsonWriter(stream);
 			var serializer = new ValueSerializer();
 			serializer.Write(writer, value, new JsonSerializerOptions());
-			await writer.FlushAsync(cancellationToken);
+			await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 			stream.Position = 0;
 
 			return JsonDocument.Parse(stream);
@@ -24,13 +24,13 @@ namespace EventStore.Grpc.Projections {
 		public async Task<T> GetResultAsync<T>(string name, string partition = default,
 			JsonSerializerOptions serializerOptions = default, UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			var value = await GetResultInternalAsync(name, partition, userCredentials, cancellationToken);
+			var value = await GetResultInternalAsync(name, partition, userCredentials, cancellationToken).ConfigureAwait(false);
 
 			await using var stream = new MemoryStream();
 			await using var writer = new Utf8JsonWriter(stream);
 			var serializer = new ValueSerializer();
 			serializer.Write(writer, value, new JsonSerializerOptions());
-			await writer.FlushAsync(cancellationToken);
+			await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 			stream.Position = 0;
 
 			return JsonSerializer.Deserialize<T>(stream.ToArray(), serializerOptions);
@@ -46,20 +46,20 @@ namespace EventStore.Grpc.Projections {
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
 
-			var response = await call.ResponseAsync;
+			var response = await call.ResponseAsync.ConfigureAwait(false);
 			return response.Result;
 		}
 
 		public async Task<JsonDocument> GetStateAsync(string name, string partition = default,
 			UserCredentials userCredentials = default, CancellationToken cancellationToken = default) {
-			var value = await GetStateInternalAsync(name, partition, userCredentials, cancellationToken);
+			var value = await GetStateInternalAsync(name, partition, userCredentials, cancellationToken).ConfigureAwait(false);
 
 			await using var stream = new MemoryStream();
 			await using var writer = new Utf8JsonWriter(stream);
 			var serializer = new ValueSerializer();
 			serializer.Write(writer, value, new JsonSerializerOptions());
 			stream.Position = 0;
-			await writer.FlushAsync(cancellationToken);
+			await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 
 			return JsonDocument.Parse(stream);
 		}
@@ -67,13 +67,13 @@ namespace EventStore.Grpc.Projections {
 		public async Task<T> GetStateAsync<T>(string name, string partition = default,
 			JsonSerializerOptions serializerOptions = default, UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			var value = await GetStateInternalAsync(name, partition, userCredentials, cancellationToken);
+			var value = await GetStateInternalAsync(name, partition, userCredentials, cancellationToken).ConfigureAwait(false);
 
 			await using var stream = new MemoryStream();
 			await using var writer = new Utf8JsonWriter(stream);
 			var serializer = new ValueSerializer();
 			serializer.Write(writer, value, new JsonSerializerOptions());
-			await writer.FlushAsync(cancellationToken);
+			await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 			stream.Position = 0;
 
 			return JsonSerializer.Deserialize<T>(stream.ToArray(), serializerOptions);
@@ -89,7 +89,7 @@ namespace EventStore.Grpc.Projections {
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
 
-			var response = await call.ResponseAsync;
+			var response = await call.ResponseAsync.ConfigureAwait(false);
 			return response.State;
 		}
 
