@@ -851,12 +851,25 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly bool _emitEnabled;
 			private readonly ProjectionSourceDefinition _definition;
 			private readonly ProjectionOutputConfig _outputConfig;
+			private readonly string _projectionType;
+			private readonly bool? _trackEmittedStreams;
+			private readonly bool? _checkpointsEnabled;
 
-			public ProjectionQuery(string name, string query, bool emitEnabled, ProjectionSourceDefinition definition,
+			public ProjectionQuery(
+				string name,
+				string query,
+				bool emitEnabled,
+				string projectionType,
+				bool? trackEmittedStreams,
+				bool? checkpointsEnabled,
+				ProjectionSourceDefinition definition,
 				ProjectionOutputConfig outputConfig) {
 				_name = name;
 				_query = query;
 				_emitEnabled = emitEnabled;
+				_projectionType = projectionType;
+				_trackEmittedStreams = trackEmittedStreams;
+				_checkpointsEnabled = checkpointsEnabled;
 				_definition = definition;
 				_outputConfig = outputConfig;
 			}
@@ -871,6 +884,18 @@ namespace EventStore.Projections.Core.Messages {
 
 			public bool EmitEnabled {
 				get { return _emitEnabled; }
+			}
+
+			public bool? TrackEmittedStreams {
+				get { return _trackEmittedStreams; }
+			}
+			
+			public bool? CheckpointsEnabled {
+				get { return _checkpointsEnabled; }
+			}
+
+			public string Type {
+				get { return _projectionType; }
 			}
 
 			public ProjectionSourceDefinition Definition {
