@@ -52,7 +52,7 @@ dependencies
 *.cache
 *.ncrunchsolution
 *.ncrunchproject
-src/.vs/
+**/.vs/
 
 .idea
 
