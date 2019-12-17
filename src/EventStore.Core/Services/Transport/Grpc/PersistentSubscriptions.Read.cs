@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var correlationId = Guid.NewGuid();
 			var source = new TaskCompletionSource<bool>();
 			string subscriptionId = default;
-			context.CancellationToken.Register(source.SetCanceled);
+			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
 
 #pragma warning disable 4014
 			Task.Run(() => requestStream.ForEachAsync(HandleAckNack));
@@ -125,6 +125,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<(ResolvedEvent, int, Exception)> _sendQueue;
 			private readonly TaskCompletionSource<string> _subscriptionIdSource;
+			private readonly CancellationTokenRegistration _tokenRegistration;
 
 			public Task<string> Started => _subscriptionIdSource.Task;
 
@@ -159,7 +160,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_disposedTokenSource = new CancellationTokenSource();
 				_sendQueue = new ConcurrentQueue<(ResolvedEvent, int, Exception)>();
 				_subscriptionIdSource = new TaskCompletionSource<string>();
-				cancellationToken.Register(_disposedTokenSource.Dispose);
+				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 
 				queue.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
 					new CallbackEnvelope(OnMessage), correlationId, correlationId.ToString(), groupName, streamName, bufferSize,
@@ -209,6 +210,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public ValueTask DisposeAsync() {
 				_disposedTokenSource.Dispose();
+				_tokenRegistration.Dispose();
 				return default;
 			}
 

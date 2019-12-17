@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly IPrincipal _user;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
-
+			private readonly CancellationTokenRegistration _tokenRegistration;
 			private Position _nextPosition;
 			private bool _isEnd;
 			private ResolvedEvent _current;
@@ -44,12 +44,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
-				cancellationToken.Register(_disposedTokenSource.Dispose);
+				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 			}
 
 
 			public ValueTask DisposeAsync() {
 				_disposedTokenSource.Dispose();
+				_tokenRegistration.Dispose();
 				return default;
 			}
 
