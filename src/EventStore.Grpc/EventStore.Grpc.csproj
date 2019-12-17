@@ -17,6 +17,10 @@
 		<PackageTags>eventstore client grpc</PackageTags>
 	</PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="Google.Protobuf" Version="3.10.0" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.24.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.24.0">
