@@ -81,14 +81,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					nextRevision, 32,
 					_resolveLinks, false, default, _user));
 
-				await readNextSource.Task;
+				await readNextSource.Task.ConfigureAwait(false);
 
 				if (_buffer.TryDequeue(out current)) {
 					_current = current;
 					return true;
 				}
 
-				await Task.Delay(100, _disposedTokenSource.Token);
+				await Task.Delay(100, _disposedTokenSource.Token).ConfigureAwait(false);
 
 				goto ReadLoop;
 

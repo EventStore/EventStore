@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var changePasswordSource = new TaskCompletionSource<bool>();
 
@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				options.CurrentPassword,
 				options.NewPassword));
 
-			await changePasswordSource.Task;
+			await changePasswordSource.Task.ConfigureAwait(false);
 
 			return new ChangePasswordResp();
 

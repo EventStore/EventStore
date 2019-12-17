@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var readDirection = options.ReadDirection;
 			var filterOptionsCase = options.FilterOptionsCase;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			await using var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
@@ -139,10 +139,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_ => throw new InvalidOperationException()
 				};
 
-			while (await enumerator.MoveNextAsync()) {
+			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
 				await responseStream.WriteAsync(new ReadResp {
 					Event = ConvertToReadEvent(enumerator.Current)
-				});
+				}).ConfigureAwait(false);
 			}
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {

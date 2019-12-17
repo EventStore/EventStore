@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var settings = request.Options.Settings;
 			var correlationId = Guid.NewGuid();
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			_queue.Publish(new ClientMessage.UpdatePersistentSubscription(
 				correlationId,
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				default,
 				default));
 
-			return await updatePersistentSubscriptionSource.Task;
+			return await updatePersistentSubscriptionSource.Task.ConfigureAwait(false);
 
 			void HandleUpdatePersistentSubscriptionCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {

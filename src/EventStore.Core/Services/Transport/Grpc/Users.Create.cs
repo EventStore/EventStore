@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var createSource = new TaskCompletionSource<bool>();
 
@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				options.Groups.ToArray(),
 				options.Password));
 
-			await createSource.Task;
+			await createSource.Task.ConfigureAwait(false);
 
 			return new CreateResp();
 

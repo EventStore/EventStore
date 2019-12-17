@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<AppendResp> Append(
 			IAsyncStreamReader<AppendReq> requestStream,
 			ServerCallContext context) {
-			if (!await requestStream.MoveNext())
+			if (!await requestStream.MoveNext().ConfigureAwait(false))
 				throw new InvalidOperationException();
 
 			if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.Options)
@@ -31,14 +31,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
 			var events = new List<Event>();
 
 			var size = 0;
-			while (await requestStream.MoveNext()) {
+			while (await requestStream.MoveNext().ConfigureAwait(false)) {
 				if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.ProposedMessage)
 					throw new InvalidOperationException();
 
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				events.ToArray(),
 				user));
 
-			return await appendResponseSource.Task;
+			return await appendResponseSource.Task.ConfigureAwait(false);
 
 			void HandleWriteEventsCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
