@@ -20,7 +20,7 @@ namespace EventStore.Grpc.Projections {
 				},
 				RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
 
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 	}
 }

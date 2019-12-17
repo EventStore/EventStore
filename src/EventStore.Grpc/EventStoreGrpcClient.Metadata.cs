@@ -16,7 +16,7 @@ namespace EventStore.Grpc {
 				metadata = await ReadStreamBackwardsAsync(SystemStreams.MetastreamOf(streamName), StreamRevision.End, 1,
 					false,
 					userCredentials: userCredentials,
-					cancellationToken: cancellationToken).FirstOrDefaultAsync(cancellationToken);
+					cancellationToken: cancellationToken).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 			} catch (StreamNotFoundException) {
 				return StreamMetadataResult.None(streamName);
 			}

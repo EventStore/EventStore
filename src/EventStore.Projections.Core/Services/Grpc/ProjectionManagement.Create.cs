@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var createdSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			const string handlerType = "JS";
 			var name = options.ModeCase switch {
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
 				handlerType, options.Query, enabled, checkpointsEnables, emitEnabled, trackEmittedStreams, true));
 
-			await createdSource.Task;
+			await createdSource.Task.ConfigureAwait(false);
 
 			return new CreateResp();
 

@@ -111,7 +111,7 @@ namespace EventStore.Grpc {
 
 			public async Task<bool> MoveNext(CancellationToken cancellationToken) {
 				try {
-					return await _inner.MoveNext(cancellationToken);
+					return await _inner.MoveNext(cancellationToken).ConfigureAwait(false);
 				} catch (RpcException ex) {
 					throw ConvertRpcException(ex);
 				}

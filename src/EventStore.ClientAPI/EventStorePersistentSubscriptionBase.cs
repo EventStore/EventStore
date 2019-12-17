@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI {
 
 			_subscription = await StartSubscription(_subscriptionId, _streamId, _bufferSize, _userCredentials,
 				OnEventAppeared,
-				OnSubscriptionDropped, _settings);
+				OnSubscriptionDropped, _settings).ConfigureAwait(false);
 
 			return this;
 		}

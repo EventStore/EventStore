@@ -39,7 +39,7 @@ namespace EventStore.Grpc {
 			using var call = _client.Append(RequestMetadata.Create(userCredentials),
 				cancellationToken: cancellationToken);
 
-			await call.RequestStream.WriteAsync(header);
+			await call.RequestStream.WriteAsync(header).ConfigureAwait(false);
 
 			foreach (var e in eventData)
 				await call.RequestStream.WriteAsync(new AppendReq {
@@ -54,11 +54,11 @@ namespace EventStore.Grpc {
 							{Constants.Metadata.IsJson, e.IsJson.ToString().ToLowerInvariant()}
 						}
 					}
-				});
+				}).ConfigureAwait(false);
 
-			await call.RequestStream.CompleteAsync();
+			await call.RequestStream.CompleteAsync().ConfigureAwait(false);
 
-			var response = await call.ResponseAsync;
+			var response = await call.ResponseAsync.ConfigureAwait(false);
 
 			return new WriteResult(
 				response.CurrentRevisionOptionsCase == AppendResp.CurrentRevisionOptionsOneofCase.NoStream

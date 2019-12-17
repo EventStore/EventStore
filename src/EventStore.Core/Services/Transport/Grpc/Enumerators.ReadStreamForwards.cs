@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_nextRevision.ToInt64(), Math.Min(_maxCount, 32),
 					_resolveLinks, false, default, _user));
 
-				if (!await readNextSource.Task) {
+				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;
 				}
 

@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					commitPosition, preparePosition, Math.Min(_maxCount, 32),
 					_resolveLinks, false, _maxSearchWindow, default, _eventFilter, _user));
 
-				if (!await readNextSource.Task) {
+				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;
 				}
 

@@ -12,7 +12,7 @@ namespace EventStore.Grpc.Projections {
 					Query = query
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 
 		public async Task CreateContinuousAsync(string name, string query, bool trackEmittedStreams = false,
@@ -26,7 +26,7 @@ namespace EventStore.Grpc.Projections {
 					Query = query
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 
 		public async Task CreateTransientAsync(string name, string query, UserCredentials userCredentials = default,
@@ -39,7 +39,7 @@ namespace EventStore.Grpc.Projections {
 					Query = query
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
-			await call.ResponseAsync;
+			await call.ResponseAsync.ConfigureAwait(false);
 		}
 	}
 }

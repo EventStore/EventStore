@@ -50,7 +50,7 @@ namespace EventStore.Grpc.Users {
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);
 
-			await call.ResponseStream.MoveNext();
+			await call.ResponseStream.MoveNext().ConfigureAwait(false);
 			var userDetails = call.ResponseStream.Current.UserDetails;
 			return ConvertUserDetails(userDetails);
 		}
@@ -105,7 +105,8 @@ namespace EventStore.Grpc.Users {
 			await foreach (var userDetail in call.ResponseStream
 				.ReadAllAsync(cancellationToken)
 				.Select(x => ConvertUserDetails(x.UserDetails))
-				.WithCancellation(cancellationToken)) {
+				.WithCancellation(cancellationToken)
+				.ConfigureAwait(false)) {
 				yield return userDetail;
 			}
 		}

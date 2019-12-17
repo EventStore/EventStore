@@ -35,7 +35,8 @@ namespace EventStore.Grpc.Projections {
 			await foreach (var projectionDetails in call.ResponseStream
 				.ReadAllAsync(cancellationToken)
 				.Select(ConvertToProjectionDetails)
-				.WithCancellation(cancellationToken)) {
+				.WithCancellation(cancellationToken)
+				.ConfigureAwait(false)) {
 				yield return projectionDetails;
 			}
 		}

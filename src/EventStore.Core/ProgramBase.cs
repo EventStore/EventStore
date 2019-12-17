@@ -88,10 +88,10 @@ namespace EventStore.Core {
 			if (_skipRun)
 				return 0;
 			try {
-				await _startupSource.Task;
-				await Start();
-				var exitCode = await _exitSource.Task;
-				await Stop();
+				await _startupSource.Task.ConfigureAwait(false);
+				await Start().ConfigureAwait(false);
+				var exitCode = await _exitSource.Task.ConfigureAwait(false);
+				await Stop().ConfigureAwait(false);
 
 				return exitCode;
 			} catch (Exception ex) {

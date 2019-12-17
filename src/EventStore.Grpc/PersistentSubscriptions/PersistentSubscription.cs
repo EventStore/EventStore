@@ -45,10 +45,10 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			try {
 				await _call.RequestStream.WriteAsync(new ReadReq {
 					Options = _options
-				});
+				}).ConfigureAwait(false);
 
 				if (!await _call.ResponseStream.MoveNext(_disposed.Token)
-				    || _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.Empty) {
+.ConfigureAwait(false) || _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.Empty) {
 					throw new InvalidOperationException();
 				}
 			} catch (Exception ex) {
@@ -104,18 +104,19 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 
 		private async Task Subscribe() {
 			try {
-				while (await _call.ResponseStream.MoveNext() && !_disposed.IsCancellationRequested) {
+				while (await _call.ResponseStream.MoveNext().ConfigureAwait(false) && !_disposed.IsCancellationRequested) {
 					var current = _call.ResponseStream.Current;
 					switch (current.ContentCase) {
 						case ReadResp.ContentOneofCase.Event:
 							try {
 								await _eventAppeared(this, ConvertToResolvedEvent(current),
-									current.Event.CountCase switch {
+									current.Event.CountCase switch
+									{
 										ReadResp.Types.ReadEvent.CountOneofCase.RetryCount => current.Event.RetryCount,
 										_ => default
-									}, _disposed.Token);
+									}, _disposed.Token).ConfigureAwait(false);
 								if (_autoAck) {
-									await AckInternal(Uuid.FromDto(current.Event.Link?.Id ?? current.Event.Event.Id));
+									await AckInternal(Uuid.FromDto(current.Event.Link?.Id ?? current.Event.Event.Id)).ConfigureAwait(false);
 								}
 							} catch (Exception ex) when (ex is ObjectDisposedException ||
 							                             ex is OperationCanceledException) {

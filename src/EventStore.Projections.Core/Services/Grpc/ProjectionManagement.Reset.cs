@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var name = options.Name;
 			var runAs = new ProjectionManagementMessage.RunAs(user);
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			_queue.Publish(new ProjectionManagementMessage.Command.Reset(envelope, name, runAs));
 
-			await resetSource.Task;
+			await resetSource.Task.ConfigureAwait(false);
 
 			return new ResetResp();
 

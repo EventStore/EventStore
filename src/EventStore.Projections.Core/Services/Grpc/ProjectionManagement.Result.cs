@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
 
 			return new ResultResp {
-				Result = await resetSource.Task
+				Result = await resetSource.Task.ConfigureAwait(false)
 			};
 
 			void OnMessage(Message message) {
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
 
 			return new StateResp {
-				State = await resetSource.Task
+				State = await resetSource.Task.ConfigureAwait(false)
 			};
 
 			void OnMessage(Message message) {

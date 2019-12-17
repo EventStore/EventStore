@@ -82,14 +82,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					correlationId, correlationId, new CallbackEnvelope(OnMessage), commitPosition, preparePosition, 32,
 					_resolveLinks, false, 32, default, _eventFilter, _user));
 
-				await readNextSource.Task;
+				await readNextSource.Task.ConfigureAwait(false);
 
 				if (_buffer.TryDequeue(out current)) {
 					_current = current;
 					return true;
 				}
 
-				await Task.Delay(100, _disposedTokenSource.Token);
+				await Task.Delay(100, _disposedTokenSource.Token).ConfigureAwait(false);
 
 				goto ReadLoop;
 

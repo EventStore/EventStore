@@ -24,9 +24,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var position = await DeleteInternal(streamName, expectedVersion, user, false);
+			var position = await DeleteInternal(streamName, expectedVersion, user, false).ConfigureAwait(false);
 
 			return position.HasValue
 				? new DeleteResp {
@@ -55,9 +55,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var position = await DeleteInternal(streamName, expectedVersion, user, true);
+			var position = await DeleteInternal(streamName, expectedVersion, user, true).ConfigureAwait(false);
 
 			return position.HasValue
 				? new TombstoneResp {
@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				hardDelete,
 				user));
 
-			return await deleteResponseSource.Task;
+			return await deleteResponseSource.Task.ConfigureAwait(false);
 
 			void HandleStreamDeletedCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled &&

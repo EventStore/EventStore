@@ -83,7 +83,7 @@ namespace EventStore.ClientAPI {
 				await TryProcessAsync(e).ConfigureAwait(false);
 			}
 
-			await ProcessClientSideCheckpointReached(slice.NextPosition);
+			await ProcessClientSideCheckpointReached(slice.NextPosition).ConfigureAwait(false);
 			_nextReadPosition = slice.NextPosition;
 
 			var done = lastCommitPosition == null
@@ -102,7 +102,7 @@ namespace EventStore.ClientAPI {
 			_checkpointIntervalCurrent++;
 
 			if (_checkpointIntervalCurrent >= _checkpointIntervalMultiplier) {
-				await TryProcessCheckpointReachedAsync(position);
+				await TryProcessCheckpointReachedAsync(position).ConfigureAwait(false);
 				_checkpointIntervalCurrent = 0;
 			}
 		}

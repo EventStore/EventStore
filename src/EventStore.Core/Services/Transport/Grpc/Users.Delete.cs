@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var deleteSource = new TaskCompletionSource<bool>();
 
@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			_queue.Publish(new UserManagementMessage.Delete(envelope, user, options.LoginName));
 
-			await deleteSource.Task;
+			await deleteSource.Task.ConfigureAwait(false);
 
 			return new DeleteResp();
 

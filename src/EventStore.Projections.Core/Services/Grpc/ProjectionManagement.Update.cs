@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var updatedSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			const string handlerType = "JS";
 			var name = options.Name;
@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				new ProjectionManagementMessage.Command.UpdateQuery(envelope, name, runAs, handlerType, query,
 					emitEnabled));
 
-			await updatedSource.Task;
+			await updatedSource.Task.ConfigureAwait(false);
 
 			return new UpdateResp();
 

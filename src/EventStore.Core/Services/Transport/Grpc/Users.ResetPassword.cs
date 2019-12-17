@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			var resetPasswordSource = new TaskCompletionSource<bool>();
 
@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_queue.Publish(
 				new UserManagementMessage.ResetPassword(envelope, user, options.LoginName, options.NewPassword));
 
-			await resetPasswordSource.Task;
+			await resetPasswordSource.Task.ConfigureAwait(false);
 
 			return new ResetPasswordResp();
 

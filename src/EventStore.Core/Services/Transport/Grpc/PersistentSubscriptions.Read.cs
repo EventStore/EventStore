@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
-			if (!await requestStream.MoveNext()) {
+			if (!await requestStream.MoveNext().ConfigureAwait(false)) {
 				return;
 			}
 
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			var options = requestStream.Current.Options;
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 			var correlationId = Guid.NewGuid();
 			var source = new TaskCompletionSource<bool>();
 			string subscriptionId = default;
@@ -43,16 +43,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, _queue,
 				options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
-			subscriptionId = await enumerator.Started;
+			subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
 			await responseStream.WriteAsync(new ReadResp {
 				Empty = new ReadResp.Types.Empty()
-			});
+			}).ConfigureAwait(false);
 
-			while (await enumerator.MoveNextAsync()) {
+			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
 				await responseStream.WriteAsync(new ReadResp {
 					Event = ConvertToReadEvent(enumerator.Current)
-				});
+				}).ConfigureAwait(false);
 			}
 
 			Task HandleAckNack(ReadReq request) {
@@ -216,7 +216,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				(ResolvedEvent, int, Exception) _;
 
 				while (!_sendQueue.TryDequeue(out _)) {
-					await Task.Delay(1, _disposedTokenSource.Token);
+					await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
 				}
 
 				var (resolvedEvent, retryCount, exception) = _;

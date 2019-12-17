@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>();
 			var correlationId = Guid.NewGuid();
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders);
+			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
 			_queue.Publish(new ClientMessage.DeletePersistentSubscription(
 				correlationId,
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.Options.GroupName,
 				user));
 
-			return await createPersistentSubscriptionSource.Task;
+			return await createPersistentSubscriptionSource.Task.ConfigureAwait(false);
 
 			void HandleDeletePersistentSubscriptionCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
