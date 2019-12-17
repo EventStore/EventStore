@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<Platform>x64</Platform>
-		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
 		<PackageId>EventStore.Grpc.Client</PackageId>
 		<Authors>Event Store Ltd</Authors>
