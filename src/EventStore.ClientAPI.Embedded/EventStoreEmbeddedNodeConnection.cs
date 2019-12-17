@@ -894,7 +894,7 @@ namespace EventStore.ClientAPI.Embedded {
 				GetUserCredentials(_settings, userCredentials), source.SetException, user =>
 					new ClientMessage.TransactionWrite(corrId, corrId, envelope, false,
 						transaction.TransactionId, events.ConvertToEvents(), user));
-			await source.Task;
+			await source.Task.ConfigureAwait(false);
 		}
 
 		public async Task<WriteResult> CommitTransactionAsync(EventStoreTransaction transaction,
