@@ -328,12 +328,5 @@ namespace EventStore.Projections.Core {
 			Stopping,
 			Stopped
 		}
-
-		private static bool IsGrpc(HttpContext context) =>
-			context.Request.Headers.TryGetValue("content-type", out var contentType) &&
-			MediaTypeHeaderValue.TryParse(new StringSegment(contentType), out var contentTypeHeader) &&
-			contentTypeHeader.Type == Grpc.Type &&
-			contentTypeHeader.SubTypeWithoutSuffix == Grpc.SubTypeWithoutSuffix;
-
 	}
 }
