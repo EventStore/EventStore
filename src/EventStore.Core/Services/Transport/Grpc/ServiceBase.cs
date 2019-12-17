@@ -36,7 +36,7 @@ namespace EventStore.Grpc.Users {
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
 		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider, Metadata requestHeaders) {
-			var principalSource = new TaskCompletionSource<IPrincipal>();
+			var principalSource = new TaskCompletionSource<IPrincipal>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			if (AuthenticationHeaderValue.TryParse(
 				    requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.Authorization)?.Value,

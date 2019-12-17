@@ -11,7 +11,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var disableSource = new TaskCompletionSource<bool>();
+			var disableSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 

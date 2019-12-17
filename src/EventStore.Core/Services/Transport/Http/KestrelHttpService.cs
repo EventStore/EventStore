@@ -102,7 +102,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				return next();
 			}
 
-			var tcs = new TaskCompletionSource<bool>();
+			var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var entity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
 				new CoreHttpResponseAdapter(context.Response), context.User, _logHttpRequests,
 				_advertiseAsAddress, _advertiseAsPort, () => tcs.TrySetResult(true));

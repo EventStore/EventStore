@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var detailsSource = new TaskCompletionSource<UserManagementMessage.UserData[]>();
+			var detailsSource = new TaskCompletionSource<UserManagementMessage.UserData[]>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 

@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
 		private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim(false, 1);
 		private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public Task Task {
 			get { return _tcs.Task; }

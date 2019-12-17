@@ -18,8 +18,8 @@ namespace EventStore.Core {
 		protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
 
-		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
-		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		protected abstract string GetLogsDirectory(TOptions options);
 		protected abstract bool GetIsStructuredLog(TOptions options);

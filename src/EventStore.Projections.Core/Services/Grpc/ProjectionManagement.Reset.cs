@@ -9,7 +9,7 @@ using Grpc.Core;
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task<ResetResp> Reset(ResetReq request, ServerCallContext context) {
-			var resetSource = new TaskCompletionSource<bool>();
+			var resetSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var options = request.Options;
 

@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.TimerService {
 		private volatile bool _stop;
 
 		private readonly QueueStatsCollector _queueStats;
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public Task Task {
 			get { return _tcs.Task; }

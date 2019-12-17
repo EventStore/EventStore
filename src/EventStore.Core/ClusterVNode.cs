@@ -108,7 +108,7 @@ namespace EventStore.Core {
 		private readonly KestrelHttpService _externalHttpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
-		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 		private readonly IReadIndex _readIndex;
 
@@ -154,7 +154,7 @@ namespace EventStore.Core {
 				(s, subsystem) => subsystem.ConfigureServices(s));
 
 #if DEBUG
-		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
+		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 		public object _taskAddLock = new object();
 #endif
 
@@ -774,7 +774,7 @@ namespace EventStore.Core {
 				var oldTrigger = _taskAddedTrigger;
 
 				//create and add new trigger task to list
-				_taskAddedTrigger = new TaskCompletionSource<bool>();
+				_taskAddedTrigger = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 				_tasks.Add(_taskAddedTrigger.Task);
 
 				//remove old trigger task from list

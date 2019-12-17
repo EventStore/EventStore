@@ -11,7 +11,7 @@ using static EventStore.Grpc.Projections.UpdateReq.Types.Options;
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
-			var updatedSource = new TaskCompletionSource<bool>();
+			var updatedSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var options = request.Options;
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);

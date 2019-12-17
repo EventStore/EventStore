@@ -35,7 +35,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			_eventAppeared = eventAppeared;
 			_subscriptionDropped = subscriptionDropped;
 			_disposed = new CancellationTokenSource();
-			_started = new TaskCompletionSource<bool>();
+			_started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			Task.Run(Start);
 		}
 

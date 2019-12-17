@@ -10,7 +10,7 @@ using static EventStore.Core.Messages.ClientMessage.DeletePersistentSubscription
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
-			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>();
+			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var correlationId = Guid.NewGuid();
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);

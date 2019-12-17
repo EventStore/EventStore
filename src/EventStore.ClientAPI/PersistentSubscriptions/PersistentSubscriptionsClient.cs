@@ -63,7 +63,7 @@ namespace EventStore.ClientAPI.PersistentSubscriptions {
 
 
 		private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode) {
-			TaskCompletionSource<string> source = TaskCompletionSourceFactory.Create<string>();
+			TaskCompletionSource<string> source = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 			_client.Get(url, userCredentials, response => {
 				if (response.HttpStatusCode == expectedCode)
 					source.SetResult(response.Body);
@@ -79,7 +79,7 @@ namespace EventStore.ClientAPI.PersistentSubscriptions {
 
 		private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode) {
 			TaskCompletionSource<object> source =
-				TaskCompletionSourceFactory.Create<object>();
+				new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 			_client.Post(url, content, "application/json", userCredentials, response => {
 				if (response.HttpStatusCode == expectedCode)
 					source.SetResult(null);

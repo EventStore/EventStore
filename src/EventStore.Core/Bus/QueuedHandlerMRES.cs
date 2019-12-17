@@ -42,8 +42,7 @@ namespace EventStore.Core.Bus {
 
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
-
+		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public QueuedHandlerMRES(IHandle<Message> consumer,
 			string name,
