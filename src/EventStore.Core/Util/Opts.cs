@@ -366,6 +366,9 @@ namespace EventStore.Core.Util {
 			"Sets this node as a read only replica that is not allowed to participate in elections or accept writes from clients.";
 		public static readonly bool ReadOnlyReplicaDefault = false;
 
+		public const string UnsafeAllowSurplusNodesDescr = "Allow more nodes than the cluster size to join the cluster as clones. (UNSAFE: can cause data loss if a clone is promoted as master)";
+		public static readonly bool UnsafeAllowSurplusNodesDefault = false;
+
 		/*
 		 *  MANAGER OPTIONS
 		 */

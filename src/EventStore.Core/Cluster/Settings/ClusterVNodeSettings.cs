@@ -87,6 +87,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool ReadOnlyReplica;
 		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
 		public int PTableMaxReaderCount;
+		public readonly bool UnsafeAllowSurplusNodes;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -158,7 +159,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logFailedAuthenticationAttempts = false,
 			bool readOnlyReplica = false,
 			int maxAppendSize = 1024 * 1024,
-			Func<HttpMessageHandler> createHttpMessageHandler = null) {
+			Func<HttpMessageHandler> createHttpMessageHandler = null,
+			bool unsafeAllowSurplusNodes = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -264,6 +266,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAppendSize = maxAppendSize;
 			CreateHttpMessageHandler = createHttpMessageHandler;
 			PTableMaxReaderCount = ptableMaxReaderCount;
+			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 		}
 
 		public override string ToString() =>
@@ -291,6 +294,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
 			$"InitializationThreads: {InitializationThreads}\n" + $"StructuredLog: {StructuredLog}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
-			$"ReadOnlyReplica: {ReadOnlyReplica}\n";
+			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
+			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n";
 	}
 }

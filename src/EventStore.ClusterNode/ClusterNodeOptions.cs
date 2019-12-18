@@ -253,6 +253,7 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
 		public bool UnsafeDisableFlushToDisk { get; set; }
 
+
 		[ArgDescription(Opts.BetterOrderingDescr, Opts.DbGroup)]
 		public bool BetterOrdering { get; set; }
 
@@ -279,6 +280,9 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.ReadOnlyReplicaDescr, Opts.ClusterGroup)]
 		public bool ReadOnlyReplica { get; set; }
+
+		[ArgDescription(Opts.UnsafeAllowSurplusNodesDescr, Opts.ClusterGroup)]
+		public bool UnsafeAllowSurplusNodes { get; set; }
 
 		[ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
 		public bool EnableHistograms { get; set; }
@@ -350,6 +354,7 @@ namespace EventStore.ClusterNode {
 			ClusterGossipPort = Opts.ClusterGossipPortDefault;
 			GossipSeed = Opts.GossipSeedDefault;
 			ReadOnlyReplica = Opts.ReadOnlyReplicaDefault;
+			UnsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
 
 			StatsPeriodSec = Opts.StatsPeriodDefault;
 

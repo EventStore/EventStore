@@ -51,6 +51,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IPublisher _tcpSendPublisher;
 		private readonly IEpochManager _epochManager;
 		private readonly int _clusterSize;
+		private readonly bool _unsafeAllowSurplusNodes;
 
 		private readonly Thread _mainLoopThread;
 		private volatile bool _stop;
@@ -79,6 +80,7 @@ namespace EventStore.Core.Services.Replication {
 			IPublisher tcpSendPublisher,
 			IEpochManager epochManager,
 			int clusterSize,
+			bool unsafeAllowSurplusNodes,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
@@ -93,6 +95,7 @@ namespace EventStore.Core.Services.Replication {
 			_tcpSendPublisher = tcpSendPublisher;
 			_epochManager = epochManager;
 			_clusterSize = clusterSize;
+			_unsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Master Replication Service");
 
 			_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
@@ -612,17 +615,22 @@ namespace EventStore.Core.Services.Replication {
 				cloneIndex++;
 			}
 
-			//drop surplus of clones
-			while (cloneIndex < candidates.Length && candidates[cloneIndex].State != ReplicaState.Clone) {
-				cloneIndex++;
-			}
+			//drop surplus of clones unless the unsafe option is enabled
+			if (!_unsafeAllowSurplusNodes) {
+				while (cloneIndex < candidates.Length && candidates[cloneIndex].State != ReplicaState.Clone) {
+					cloneIndex++;
+				}
 
-			while (cloneIndex < candidates.Length && candidates[cloneIndex].State == ReplicaState.Clone) {
-				var cloneToDrop = candidates[cloneIndex];
-				cloneToDrop.SendMessage(new ReplicationMessage.DropSubscription(_instanceId, cloneToDrop.SubscriptionId));
-				Log.Debug("There is a surplus of nodes in the cluster. Dropped clone: C:{connectionId:B}, S:{subscriptionId:B}.", cloneToDrop.ConnectionId, cloneToDrop.SubscriptionId);
+				while (cloneIndex < candidates.Length && candidates[cloneIndex].State == ReplicaState.Clone) {
+					var cloneToDrop = candidates[cloneIndex];
+					cloneToDrop.SendMessage(
+						new ReplicationMessage.DropSubscription(_instanceId, cloneToDrop.SubscriptionId));
+					Log.Debug(
+						"There is a surplus of nodes in the cluster. Dropped clone: C:{connectionId:B}, S:{subscriptionId:B}.",
+						cloneToDrop.ConnectionId, cloneToDrop.SubscriptionId);
 
-				cloneIndex++;
+					cloneIndex++;
+				}
 			}
 		}
 

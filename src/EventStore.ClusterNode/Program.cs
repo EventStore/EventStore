@@ -367,6 +367,8 @@ namespace EventStore.ClusterNode {
 				builder.WithStructuredLogging(options.StructuredLog);
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
+			if(options.UnsafeAllowSurplusNodes)
+				builder.WithUnsafeAllowSurplusNodes();
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
