@@ -43,11 +43,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_ca
 				NoOtherStreams();
 
 				_subscriptionId = Guid.NewGuid();
-				_readerStrategy = new ParallelQueryAllStreamsMasterReaderStrategy(
-					"test",
-					0,
-					SystemAccount.Principal,
-					_timeProvider);
+				// TODO: What reader strategy should we be using here?
+//				_readerStrategy = new ParallelQueryAllStreamsMasterReaderStrategy(
+//					"test",
+//					0,
+//					SystemAccount.Principal,
+//					_timeProvider);
 				_readerSubscriptionOptions = new ReaderSubscriptionOptions(
 					checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100,
 					checkpointAfterMs: 10000,

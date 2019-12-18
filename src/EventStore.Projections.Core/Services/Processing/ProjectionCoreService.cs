@@ -49,7 +49,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ITimeProvider _timeProvider;
 		private readonly ProcessingStrategySelector _processingStrategySelector;
 
-		private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private readonly ISingletonTimeoutScheduler _timeoutScheduler;
 
 		private bool _stopping;
@@ -64,19 +63,16 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
-			SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
 			ISingletonTimeoutScheduler timeoutScheduler) {
 			_workerId = workerId;
 			_inputQueue = inputQueue;
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
 			_timeoutScheduler = timeoutScheduler;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_timeProvider = timeProvider;
 			_processingStrategySelector = new ProcessingStrategySelector(
-				_subscriptionDispatcher,
-				_spoolProcessingResponseDispatcher);
+				_subscriptionDispatcher);
 		}
 
 		public ILogger Logger {

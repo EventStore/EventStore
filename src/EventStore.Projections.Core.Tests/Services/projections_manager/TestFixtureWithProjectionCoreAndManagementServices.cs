@@ -142,7 +142,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				writerCheckpoint,
 				runHeadingReader: true, faultOutOfOrderProjections: true);
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(inputQueue);
-			var spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(GetInputQueue());
 
 			bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
@@ -159,13 +158,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-			bus.Subscribe(spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 
 			var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
-//            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(
-//                output,
-//                ioDispatcher,
-//                workerId.ToString("N"));
 
 			var coreService = new ProjectionCoreService(
 				workerId,
@@ -174,7 +168,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				_subscriptionDispatcher,
 				_timeProvider,
 				ioDispatcher,
-				spoolProcessingResponseDispatcher,
 				timeoutScheduler);
 
 			bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(coreService);

@@ -12,15 +12,15 @@ namespace EventStore.Projections.Core.Services {
 			: base(publisher, v => v.SubscriptionId, v => v.SubscriptionId) {
 		}
 	}
-
-	public sealed class SpooledStreamReadingDispatcher :
-		PublishSubscribeDispatcher
-		<Tuple<Guid, string>, ReaderSubscriptionManagement.SpoolStreamReading,
-			ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResultBase> {
-		public SpooledStreamReadingDispatcher(IPublisher publisher)
-			: base(
-				publisher, reading => Tuple.Create(reading.SubscriptionId, reading.StreamId),
-				reading => Tuple.Create(reading.SubscriptionId, reading.Partition)) {
-		}
-	}
+//
+//	public sealed class SpooledStreamReadingDispatcher :
+//		PublishSubscribeDispatcher
+//		<Tuple<Guid, string>, ReaderSubscriptionManagement.SpoolStreamReading,
+//			ReaderSubscriptionManagement.SpoolStreamReading, PartitionProcessingResultBase> {
+//		public SpooledStreamReadingDispatcher(IPublisher publisher)
+//			: base(
+//				publisher, reading => Tuple.Create(reading.SubscriptionId, reading.StreamId),
+//				reading => Tuple.Create(reading.SubscriptionId, reading.Partition)) {
+//		}
+//	}
 }

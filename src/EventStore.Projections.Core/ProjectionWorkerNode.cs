@@ -27,7 +27,6 @@ namespace EventStore.Projections.Core {
 		private readonly FeedReaderService _feedReaderService;
 		private readonly IODispatcher _ioDispatcher;
 
-		private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private readonly ProjectionCoreResponseWriter _coreResponseWriter;
 
 		public ProjectionWorkerNode(
@@ -45,7 +44,6 @@ namespace EventStore.Projections.Core {
 
 			IPublisher publisher = CoreOutput;
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
-			_spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(publisher);
 
 			_ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
 			_eventReaderCoreService = new EventReaderCoreService(
@@ -72,7 +70,6 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					_spoolProcessingResponseDispatcher,
 					timeoutScheduler);
 
 				var responseWriter = new ResponseWriter(_ioDispatcher);
@@ -106,9 +103,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 			coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.Failed>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionMeasured>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingProgress>());
 
 			coreInputBus.Subscribe(_feedReaderService);
 
