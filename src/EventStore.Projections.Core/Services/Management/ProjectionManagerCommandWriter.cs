@@ -14,7 +14,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionManagementMessage.Dispose>,
 			IHandle<CoreProjectionManagementMessage.GetState>,
 			IHandle<CoreProjectionManagementMessage.GetResult>,
-			IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>,
 			IHandle<ProjectionManagementMessage.Starting> {
 		private readonly IMultiStreamMessageWriter _commandWriter;
 
@@ -102,14 +101,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				Partition = message.Partition
 			};
 			_commandWriter.PublishResponse("$get-result", message.WorkerId, command);
-		}
-
-		public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message) {
-			var command = new SlaveProjectionsStartedResponse {
-				CorrelationId = message.CoreProjectionCorrelationId.ToString("N"),
-				SlaveProjections = message.SlaveProjections,
-			};
-			_commandWriter.PublishResponse("$slave-projections-started", message.WorkerId, command);
 		}
 	}
 }

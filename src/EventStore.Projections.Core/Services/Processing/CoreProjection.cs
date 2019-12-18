@@ -1,15 +1,10 @@
 using System;
-using System.Diagnostics;
 using System.Security.Principal;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -20,8 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		ICoreProjection,
 		ICoreProjectionForProcessingPhase,
 		IHandle<CoreProjectionManagementMessage.GetState>,
-		IHandle<CoreProjectionManagementMessage.GetResult>,
-		IHandle<ProjectionManagementMessage.SlaveProjectionsStarted> {
+		IHandle<CoreProjectionManagementMessage.GetResult> {
 		[Flags]
 		private enum State : uint {
 			Initial = 0x80000000,
@@ -74,13 +68,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly bool _requiresRootPartition;
 		private readonly Action<ProjectionStatistics> _enrichStatistics;
 
-		private SlaveProjectionCommunicationChannels _slaveProjections;
 		private int _statisticsSequentialNumber;
 		private bool _disposed;
-
-		private MasterCoreProjectionResponseReader _masterProjectionResponseReader;
-		//NOTE: this is only for slave projections (TBD)
-
 
 		public CoreProjection(
 			ProjectionProcessingStrategy projectionProcessingStrategy,
@@ -211,7 +200,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterSuspended() {
 			EnsureUnsubscribed();
-			_masterProjectionResponseReader?.Stop();
 			_publisher.Publish(new CoreProjectionStatusMessage.Suspended(_projectionCorrelationId));
 		}
 
@@ -307,8 +295,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				BeginPhase(projectionProcessingPhase, checkpointTag, rootPartitionState);
 				GoToState(State.StateLoaded);
 				if (_startOnLoad) {
-					if (_slaveProjections != null)
-						_projectionProcessingPhase.AssignSlaves(_slaveProjections);
 					_projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
 				} else
 					GoToState(State.Stopped);
@@ -342,7 +328,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			//
 			CompleteCheckpointSuggestedWorkItem();
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			GoToState(State.Initial);
 			Start();
 		}
@@ -355,26 +340,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_projectionProcessingPhase != null)
 				_projectionProcessingPhase.EnsureUnsubscribed();
 		}
-
-
-		private void StopSlaveProjections() {
-			if (_masterProjectionResponseReader != null)
-				_masterProjectionResponseReader.Stop();
-			//TODO: encapsulate into StopSlaveProjections message?
-			var slaveProjections = _slaveProjections;
-			if (slaveProjections != null) {
-				_slaveProjections = null;
-				foreach (var group in slaveProjections.Channels) {
-					foreach (var channel in group.Value) {
-						_publisher.Publish(
-							new ProjectionManagementMessage.Command.Delete(
-								new NoopEnvelope(), channel.ManagedProjectionName,
-								ProjectionManagementMessage.RunAs.System, true, true, false));
-					}
-				}
-			}
-		}
-
 
 		private void GoToState(State state) {
 			if (_state == State.Suspended) {
@@ -441,7 +406,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					EnterInitial();
 					break;
 				case State.StartSlaveProjectionsRequested:
-					EnterStartSlaveProjectionsRequested();
+					// TODO: Remove this state
 					break;
 				case State.LoadStateRequested:
 					EnterLoadStateRequested();
@@ -500,23 +465,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			// NOTE: this is to workaround exception in GetState requests submitted by client
 		}
 
-		private void EnterStartSlaveProjectionsRequested() {
-			_masterProjectionResponseReader = new MasterCoreProjectionResponseReader(
-				_publisher,
-				_ioDispatcher,
-				_workerId,
-				_projectionCorrelationId);
-			_masterProjectionResponseReader.Start();
-			_publisher.Publish(
-				new ProjectionManagementMessage.Command.StartSlaveProjections(
-					new PublishEnvelope(_inputQueue),
-					new ProjectionManagementMessage.RunAs(_runAs),
-					_name,
-					_projectionProcessingStrategy.GetSlaveProjections(),
-					_workerId,
-					_projectionCorrelationId));
-		}
-
 		private void EnterLoadStateRequested() {
 			_checkpointReader.BeginLoadState();
 		}
@@ -547,7 +495,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterStopped() {
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			_publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _name, _completed));
 		}
 
@@ -557,7 +504,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterFaulted() {
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			_publisher.Publish(
 				new CoreProjectionStatusMessage.Faulted(_projectionCorrelationId, _faultedReason));
 		}
@@ -573,8 +519,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
 				var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
 				BeginPhase(nextPhase, nextPhaseZeroPosition, null);
-				if (_slaveProjections != null)
-					_projectionProcessingPhase.AssignSlaves(_slaveProjections);
 				_projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
 			}
 		}
@@ -612,7 +556,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Dispose() {
 			_disposed = true;
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			if (_projectionProcessingPhase != null)
 				_projectionProcessingPhase.Dispose();
 		}
@@ -688,11 +631,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void Subscribed() {
 			GoToState(State.Subscribed);
-		}
-
-		public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message) {
-			_slaveProjections = message.SlaveProjections;
-			GoToState(State.LoadStateRequested);
 		}
 	}
 }

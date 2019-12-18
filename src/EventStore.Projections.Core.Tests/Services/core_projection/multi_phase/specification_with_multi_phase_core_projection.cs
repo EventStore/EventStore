@@ -197,10 +197,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 			public void Complete() {
 				_specification._coreProjection.CompletePhase();
 			}
-
-			public void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections) {
-				throw new NotImplementedException();
-			}
 		}
 
 		internal class FakeCheckpointManager : ICoreProjectionCheckpointManager, IEmittedEventWriter {

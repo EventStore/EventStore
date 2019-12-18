@@ -610,13 +610,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 		}
 
-		public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message) {
-			Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned> action;
-			if (_awaitingSlaveProjections.TryGetValue(message.ProjectionId, out action)) {
-				action(message);
-			}
-		}
-
 		public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message) {
 			_readDispatcher.Handle(message);
 		}
@@ -637,7 +630,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			var deletedEventId = Guid.NewGuid();
 			DeleteProjection(message,
 				expVer => {
-					_awaitingSlaveProjections.Remove(message.Id); // if any disconnected in error
 					_projections.Remove(message.Name);
 					_projectionsMap.Remove(message.Id);
 					_projectionsRegistrationState.Remove(message.Name);
@@ -1259,10 +1251,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			_lastUsedQueue++;
 			return queueIndex;
 		}
-
-		private readonly Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>
-			_awaitingSlaveProjections =
-				new Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>();
 
 		public class PendingProjection {
 			public ProjectionMode Mode { get; }

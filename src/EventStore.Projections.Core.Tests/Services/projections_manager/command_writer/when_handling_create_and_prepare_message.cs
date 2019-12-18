@@ -35,7 +35,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
 				true,
 				true,
 				true,
-				true,
 				10000,
 				1);
 		}
@@ -72,7 +71,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
 			Assert.AreEqual(_config.CheckpointsEnabled, command.Config.CheckpointsEnabled);
 			Assert.AreEqual(_config.CreateTempStreams, command.Config.CreateTempStreams);
 			Assert.AreEqual(_config.EmitEventEnabled, command.Config.EmitEventEnabled);
-			Assert.AreEqual(_config.IsSlaveProjection, command.Config.IsSlaveProjection);
 			Assert.AreEqual(_config.MaxWriteBatchLength, command.Config.MaxWriteBatchLength);
 			Assert.AreEqual(_config.PendingEventsThreshold, command.Config.PendingEventsThreshold);
 			Assert.AreEqual(_config.MaximumAllowedWritesInFlight, command.Config.MaximumAllowedWritesInFlight);

@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -59,7 +56,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreProjection);
 			_bus.Subscribe(new AdHocHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
 			_bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
-			_bus.Subscribe<PartitionProcessingResultOutputBase>(dispatcher);
 			PreWhen();
 			When();
 		}
@@ -97,12 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			return new ProjectionConfig(
 				null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
 				GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
-				GivenStopOnEof(), GivenIsSlaveProjection(), GivenTrackEmittedStreams(), GivenCheckpointAfterMs(),
+				GivenStopOnEof(), GivenTrackEmittedStreams(), GivenCheckpointAfterMs(),
 				GivenMaximumAllowedWritesInFlight());
-		}
-
-		protected virtual bool GivenIsSlaveProjection() {
-			return false;
 		}
 
 		protected virtual int GivenMaxWriteBatchLength() {

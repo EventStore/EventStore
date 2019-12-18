@@ -124,10 +124,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_coreProjection.EnsureTickPending();
 		}
 
-		public virtual void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections) {
-			throw new NotSupportedException();
-		}
-
 		public void ProcessEvent() {
 			_processingQueue.ProcessEvent();
 			EnsureUpdateStatisticksTickPending();
@@ -544,11 +540,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_wasReaderAssigned)
 				return;
 			_wasReaderAssigned = true;
-			if (_projectionConfig.IsSlaveProjection)
-				_publisher.Publish(
-					new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
-						_projectionCorrelationId,
-						message.SubscriptionId));
 			_coreProjection.Subscribed();
 		}
 

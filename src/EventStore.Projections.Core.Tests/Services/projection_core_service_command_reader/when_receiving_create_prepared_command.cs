@@ -88,7 +88,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 			Assert.AreEqual(true, createPrepared.Config.CheckpointsEnabled);
 			Assert.AreEqual(true, createPrepared.Config.CreateTempStreams);
 			Assert.AreEqual(false, createPrepared.Config.StopOnEof);
-			Assert.AreEqual(false, createPrepared.Config.IsSlaveProjection);
 			var projectionSourceDefinition = createPrepared.SourceDefinition as IQuerySources;
 			Assert.IsNotNull(projectionSourceDefinition);
 			Assert.AreEqual(false, projectionSourceDefinition.AllEvents);

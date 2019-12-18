@@ -25,7 +25,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IHandle<CoreProjectionManagementMessage.Kill>,
 			IHandle<CoreProjectionManagementMessage.GetState>,
 			IHandle<CoreProjectionManagementMessage.GetResult>,
-			IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>,
 			IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
 			IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>,
 			IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>,
@@ -288,12 +287,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Handle(CoreProjectionProcessingMessage.Failed message) {
 			CoreProjection projection;
 			if (_projections.TryGetValue(message.ProjectionId, out projection))
-				projection.Handle(message);
-		}
-
-		public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message) {
-			CoreProjection projection;
-			if (_projections.TryGetValue(message.CoreProjectionCorrelationId, out projection))
 				projection.Handle(message);
 		}
 

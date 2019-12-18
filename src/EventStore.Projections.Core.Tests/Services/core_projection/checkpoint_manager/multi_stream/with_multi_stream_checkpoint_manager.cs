@@ -34,7 +34,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
 			_projectionVersion = new ProjectionVersion(3, 1, 2);
 			_projectionConfig = new ProjectionConfig(SystemAccount.Principal, 10, 1000, 1000, 10, true, true, true,
-				false,
 				false, false, 5000, 10);
 			_positionTagger = new MultiStreamPositionTagger(3, _streams);
 			_positionTagger.AdjustTag(CheckpointTag.FromStreamPositions(3,

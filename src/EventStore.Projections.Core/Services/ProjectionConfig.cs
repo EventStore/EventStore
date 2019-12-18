@@ -13,14 +13,13 @@ namespace EventStore.Projections.Core.Services {
 		private readonly bool _checkpointsEnabled;
 		private readonly bool _createTempStreams;
 		private readonly bool _stopOnEof;
-		private readonly bool _isSlaveProjection;
 		private readonly bool _trackEmittedStreams;
 		private readonly int _checkpointAfterMs;
 		private readonly int _maximumAllowedWritesInFlight;
 
 		public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
 			int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
-			bool createTempStreams, bool stopOnEof, bool isSlaveProjection, bool trackEmittedStreams,
+			bool createTempStreams, bool stopOnEof, bool trackEmittedStreams,
 			int checkpointAfterMs, int maximumAllowedWritesInFlight) {
 			if (checkpointsEnabled) {
 				if (checkpointHandledThreshold <= 0)
@@ -49,7 +48,6 @@ namespace EventStore.Projections.Core.Services {
 			_checkpointsEnabled = checkpointsEnabled;
 			_createTempStreams = createTempStreams;
 			_stopOnEof = stopOnEof;
-			_isSlaveProjection = isSlaveProjection;
 			_trackEmittedStreams = trackEmittedStreams;
 			_checkpointAfterMs = checkpointAfterMs;
 			_maximumAllowedWritesInFlight = maximumAllowedWritesInFlight;
@@ -91,10 +89,6 @@ namespace EventStore.Projections.Core.Services {
 			get { return _runAs; }
 		}
 
-		public bool IsSlaveProjection {
-			get { return _isSlaveProjection; }
-		}
-
 		public bool TrackEmittedStreams {
 			get { return _trackEmittedStreams; }
 		}
@@ -108,15 +102,8 @@ namespace EventStore.Projections.Core.Services {
 		}
 
 		public static ProjectionConfig GetTest() {
-			return new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, false, true, 10000,
+			return new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
 				1);
-		}
-
-		public ProjectionConfig SetIsSlave() {
-			return new ProjectionConfig(
-				_runAs, CheckpointHandledThreshold, CheckpointUnhandledBytesThreshold, PendingEventsThreshold,
-				MaxWriteBatchLength, EmitEventEnabled, _checkpointsEnabled, CreateTempStreams, StopOnEof, true, true,
-				_checkpointAfterMs, _maximumAllowedWritesInFlight);
 		}
 	}
 }

@@ -21,7 +21,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		//TODO: remove from - it is passed for validation purpose only
 		void Subscribe(CheckpointTag from, bool fromCheckpoint);
-		void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections);
 
 		void ProcessEvent();
 

@@ -228,24 +228,5 @@ namespace EventStore.Projections.Core.Messages {
 				: base(projectionId, workerId) {
 			}
 		}
-
-		public sealed class
-			SlaveProjectionReaderAssigned : CoreProjectionStatusMessage.CoreProjectionStatusMessageBase {
-			private readonly Guid _subscriptionId;
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public SlaveProjectionReaderAssigned(Guid projectionId, Guid subscriptionId)
-				: base(projectionId) {
-				_subscriptionId = subscriptionId;
-			}
-
-			public Guid SubscriptionId {
-				get { return _subscriptionId; }
-			}
-		}
 	}
 }

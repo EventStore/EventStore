@@ -128,7 +128,6 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe<CoreProjectionManagementMessage.Dispose>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.GetState>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.GetResult>(projectionManagerCommandWriter);
-			mainBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(projectionManagerCommandWriter);
 		}
 
 		private static void SubscribeOutputBus(

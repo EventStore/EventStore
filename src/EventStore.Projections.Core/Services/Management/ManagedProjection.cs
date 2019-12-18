@@ -947,7 +947,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				checkpointsEnabled,
 				createTempStreams,
 				stopOnEof,
-				false,
 				trackEmittedStreams,
 				checkpointAfterMs,
 				maximumAllowedWritesInFlight);

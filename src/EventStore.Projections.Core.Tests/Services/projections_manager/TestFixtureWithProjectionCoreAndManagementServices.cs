@@ -11,7 +11,6 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -107,10 +106,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_coordinator);
 
 			if (GetInputQueue() != _processingQueues.First().Item2) {
-				_bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
 				_bus.Subscribe<CoreProjectionManagementControlMessage>(
 					_managerMessageDispatcher);
-				_bus.Subscribe<PartitionProcessingResultOutputBase>(_managerMessageDispatcher);
 				_bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
 			}
 
@@ -195,7 +192,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe<ReaderCoreServiceMessage.StartReader>(readerService);
 			bus.Subscribe<ReaderCoreServiceMessage.StopReader>(readerService);
 			bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(coreService);
-			bus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(coreService);
 			bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(readerService);
@@ -222,16 +218,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Faulted>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<CoreProjectionStatusMessage.Prepared>(GetInputQueue()));
 				output_.Subscribe(
-					Forwarder.Create<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(GetInputQueue()));
-				output_.Subscribe(
 					Forwarder.Create<CoreProjectionStatusMessage.ProjectionWorkerStarted>(GetInputQueue()));
 				output_.Subscribe(
 					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));
-				output_.Subscribe(Forwarder.Create<PartitionProcessingResultBase>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(GetInputQueue()));
-				output_.Subscribe(Forwarder.Create<PartitionProcessingResultOutputBase>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
 				var forwarder = new RequestResponseQueueForwarder(
