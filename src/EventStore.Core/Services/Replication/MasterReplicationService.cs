@@ -611,6 +611,19 @@ namespace EventStore.Core.Services.Replication {
 				newSlave.SendMessage(new ReplicationMessage.SlaveAssignment(_instanceId, newSlave.SubscriptionId));
 				cloneIndex++;
 			}
+
+			//drop surplus of clones
+			while (cloneIndex < candidates.Length && candidates[cloneIndex].State != ReplicaState.Clone) {
+				cloneIndex++;
+			}
+
+			while (cloneIndex < candidates.Length && candidates[cloneIndex].State == ReplicaState.Clone) {
+				var cloneToDrop = candidates[cloneIndex];
+				cloneToDrop.SendMessage(new ReplicationMessage.DropSubscription(_instanceId, cloneToDrop.SubscriptionId));
+				Log.Debug("There is a surplus of nodes in the cluster. Dropped clone: C:{connectionId:B}, S:{subscriptionId:B}.", cloneToDrop.ConnectionId, cloneToDrop.SubscriptionId);
+
+				cloneIndex++;
+			}
 		}
 
 		public QueueStats GetStatistics() {

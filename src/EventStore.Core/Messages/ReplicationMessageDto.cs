@@ -288,5 +288,20 @@ namespace EventStore.Core.Messages {
 				SubscriptionId = subscriptionId;
 			}
 		}
+
+		[ProtoContract]
+		public class DropSubscription {
+			[ProtoMember(1)] public byte[] MasterId { get; set; }
+
+			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
+
+			public DropSubscription() {
+			}
+
+			public DropSubscription(byte[] masterId, byte[] subscriptionId) {
+				MasterId = masterId;
+				SubscriptionId = subscriptionId;
+			}
+		}
 	}
 }

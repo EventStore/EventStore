@@ -11,6 +11,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		SlaveAssignment = 0x07,
 		CloneAssignment = 0x08,
+		DropSubscription = 0x09,
 
 		SubscribeReplica = 0x10,
 		ReplicaLogPositionAck = 0x11,
