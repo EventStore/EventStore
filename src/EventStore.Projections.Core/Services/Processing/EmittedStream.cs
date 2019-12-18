@@ -61,8 +61,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private bool _disposed;
 		private bool _recoveryCompleted;
 		private Event _submittedWriteMetaStreamEvent;
-		private const int MaxRetryCount = 5;
+		private const int MaxRetryCount = 12;
+		private const int MinAttemptWarnThreshold = 5;
 		private Guid _pendingRequestCorrelationId;
+		private Random _random = new Random();
 
 		public class WriterConfiguration {
 			private readonly IPrincipal _writeAs;
@@ -443,7 +445,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void PublishWriteMetaStream(int retryCount) {
-			var delayInSeconds = MaxRetryCount - retryCount;
+			int attempt = MaxRetryCount - retryCount + 1;
+			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
+			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
+				_logger.Warn("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+					attempt,
+					_metadataStreamId,
+					delayInSeconds);
+			}
+
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
 					_metadataStreamId, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
@@ -592,7 +602,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			_awaitingWriteCompleted = true;
-			var delayInSeconds = MaxRetryCount - retryCount;
+			int attempt = MaxRetryCount - retryCount + 1;
+			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
+			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
+				_logger.Warn("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+					attempt,
+					_streamId,
+					delayInSeconds);
+			}
+
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
 					_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
@@ -603,6 +621,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 						_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
 						m => HandleWriteEventsCompleted(m, retryCount)));
 			}
+		}
+
+		private int CalculateBackoffTimeSecs(int attempt) {
+			attempt--;
+			if (attempt == 0) return 0;
+			var expBackoff = attempt < 9 ? (1 << attempt) : 256;
+			return _random.Next(1, expBackoff + 1);
 		}
 
 		private void EnsureCheckpointNotRequested() {
