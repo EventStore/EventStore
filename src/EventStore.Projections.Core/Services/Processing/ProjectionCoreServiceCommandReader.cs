@@ -231,21 +231,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 							commandBody.Query));
 					break;
 				}
-				case "$create-and-prepare-slave": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<CreateAndPrepareSlaveCommand>();
-					_publisher.Publish(
-						new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-							Guid.ParseExact(commandBody.Id, "N"),
-							Guid.Empty,
-							commandBody.Name,
-							commandBody.Version,
-							commandBody.Config.ToConfig(),
-							Guid.ParseExact(commandBody.MasterWorkerId, "N"),
-							Guid.ParseExact(commandBody.MasterCoreProjectionId, "N"),
-							commandBody.HandlerType,
-							commandBody.Query));
-					break;
-				}
 				case "$spool-stream-reading": {
 					var commandBody = resolvedEvent.Event.Data.ParseJson<SpoolStreamReadingCommand>();
 					_publisher.Publish(

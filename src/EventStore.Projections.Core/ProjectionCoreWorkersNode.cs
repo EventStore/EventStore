@@ -56,14 +56,6 @@ namespace EventStore.Projections.Core {
 				coreOutput.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(forwarder);
 
 				if (projectionsStandardComponents.RunProjections >= ProjectionType.System) {
-					var slaveProjectionResponseWriter = projectionNode.SlaveProjectionResponseWriter;
-					coreOutput.Subscribe<PartitionMeasuredOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingProgressOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingResultOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(
-						slaveProjectionResponseWriter);
-
-
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(

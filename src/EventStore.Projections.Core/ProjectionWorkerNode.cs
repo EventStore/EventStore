@@ -29,7 +29,6 @@ namespace EventStore.Projections.Core {
 
 		private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private readonly ProjectionCoreResponseWriter _coreResponseWriter;
-		private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
 
 		public ProjectionWorkerNode(
 			Guid workerId,
@@ -65,7 +64,6 @@ namespace EventStore.Projections.Core {
 					workerId.ToString("N"));
 
 				var multiStreamWriter = new MultiStreamMessageWriter(_ioDispatcher);
-				_slaveProjectionResponseWriter = new SlaveProjectionResponseWriter(multiStreamWriter);
 
 				_projectionCoreService = new ProjectionCoreService(
 					workerId,
@@ -84,10 +82,6 @@ namespace EventStore.Projections.Core {
 
 		public InMemoryBus CoreOutput {
 			get { return _coreOutput; }
-		}
-
-		public SlaveProjectionResponseWriter SlaveProjectionResponseWriter {
-			get { return _slaveProjectionResponseWriter; }
 		}
 
 		public void SetupMessaging(IBus coreInputBus) {
@@ -127,7 +121,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionCoreService);
-				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);

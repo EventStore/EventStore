@@ -18,7 +18,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IHandle<ProjectionCoreServiceMessage.CoreTick>,
 			IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
 			IHandle<CoreProjectionManagementMessage.CreatePrepared>,
-			IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
 			IHandle<CoreProjectionManagementMessage.Dispose>,
 			IHandle<CoreProjectionManagementMessage.Start>,
 			IHandle<CoreProjectionManagementMessage.LoadStopped>,
@@ -209,35 +208,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			} catch (Exception ex) {
 				_publisher.Publish(
 					new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
-			}
-		}
-
-		public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message) {
-			try {
-				var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query);
-
-				string name = message.Name;
-				var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
-				var projectionVersion = message.Version;
-				var projectionConfig = message.Config.SetIsSlave();
-				var projectionProcessingStrategy =
-					_processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
-						name,
-						projectionVersion,
-						sourceDefinition,
-						projectionConfig,
-						stateHandler,
-						message.MasterWorkerId,
-						_publisher,
-						message.MasterCoreProjectionId,
-						this);
-				CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
-				_publisher.Publish(
-					new CoreProjectionStatusMessage.Prepared(
-						message.ProjectionId,
-						sourceDefinition));
-			} catch (Exception ex) {
-				_publisher.Publish(new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
 			}
 		}
 

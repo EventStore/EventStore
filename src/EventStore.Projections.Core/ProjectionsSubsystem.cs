@@ -16,7 +16,6 @@ using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 namespace EventStore.Projections.Core {

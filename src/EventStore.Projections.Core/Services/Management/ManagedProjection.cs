@@ -106,11 +106,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private long _lastWrittenVersion = -1;
 
 		private IPrincipal _runAs;
-		//TODO: slave (extract into derived class)
 
-		private readonly bool _isSlave;
-		private readonly Guid _slaveMasterWorkerId;
-		private readonly Guid _slaveMasterCorrelationId;
 		internal bool Prepared;
 		internal bool Created;
 		private bool _pendingWritePersistedState;
@@ -143,10 +139,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				<CoreProjectionManagementMessage.GetResult, CoreProjectionStatusMessage.ResultReport>
 				getResultDispatcher,
 			IODispatcher ioDispatcher,
-			TimeSpan projectionQueryExpiry,
-			bool isSlave = false,
-			Guid slaveMasterWorkerId = default(Guid),
-			Guid slaveMasterCorrelationId = default(Guid)) {
+			TimeSpan projectionQueryExpiry) {
 			if (id == Guid.Empty) throw new ArgumentException("id");
 			if (name == null) throw new ArgumentNullException("name");
 			if (output == null) throw new ArgumentNullException("output");
@@ -164,9 +157,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			_readDispatcher = readDispatcher;
 			_output = output;
 			_timeProvider = timeProvider;
-			_isSlave = isSlave;
-			_slaveMasterWorkerId = slaveMasterWorkerId;
-			_slaveMasterCorrelationId = slaveMasterCorrelationId;
 			_getStateDispatcher = getStateDispatcher;
 			_getResultDispatcher = getResultDispatcher;
 			_lastAccessed = _timeProvider.UtcNow;
@@ -596,7 +586,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private bool IsExpiredProjection() {
-			return Mode == ProjectionMode.Transient && !_isSlave &&
+			return Mode == ProjectionMode.Transient && 
 			       _lastAccessed.Add(_projectionsQueryExpiry) < _timeProvider.UtcNow && _persistedStateLoaded;
 		}
 
@@ -830,20 +820,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private Message CreateCreateAndPrepareMessage(ProjectionConfig config) {
-			var createProjectionMessage = _isSlave
-				? (Message)
-				new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-					Id,
-					_workerId,
-					_name,
-					new ProjectionVersion(_projectionId, PersistedProjectionState.Epoch ?? 0,
-						PersistedProjectionState.Version ?? 0),
-					config,
-					_slaveMasterWorkerId,
-					_slaveMasterCorrelationId,
-					HandlerType,
-					Query)
-				: new CoreProjectionManagementMessage.CreateAndPrepare(
+			var createProjectionMessage = new CoreProjectionManagementMessage.CreateAndPrepare(
 					Id,
 					_workerId,
 					_name,

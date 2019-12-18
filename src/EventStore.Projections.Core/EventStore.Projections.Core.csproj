@@ -3,6 +3,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Platform>x64</Platform>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
   <ItemGroup>
 		<PackageReference Include="Grpc.Tools" Version="2.24.0">

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 

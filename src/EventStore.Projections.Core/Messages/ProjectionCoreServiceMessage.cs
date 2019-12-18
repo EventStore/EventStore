@@ -1,6 +1,5 @@
 using System;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionCoreServiceMessage {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -88,7 +87,6 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Abort>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Reset>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.GetConfig>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateConfig>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(projectionManager);
@@ -102,8 +100,6 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<CoreProjectionStatusMessage.StateReport>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(projectionManager);
-				mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(projectionManager);
-				mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.ReaderReady>(projectionManager);
 				mainBus.Subscribe<ProjectionSubsystemMessage.StartComponents>(projectionManager);
 				mainBus.Subscribe<ProjectionSubsystemMessage.StopComponents>(projectionManager);
@@ -125,7 +121,6 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.Start>(projectionManagerCommandWriter);
 			mainBus.Subscribe<CoreProjectionManagementMessage.Stop>(projectionManagerCommandWriter);
