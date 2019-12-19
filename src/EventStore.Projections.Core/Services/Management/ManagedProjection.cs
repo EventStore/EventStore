@@ -354,6 +354,9 @@ namespace EventStore.Projections.Core.Services.Management {
 					_name,
 					Query,
 					emitEnabled,
+					PersistedProjectionState.Mode.ToString(),
+					PersistedProjectionState.TrackEmittedStreams,
+					!PersistedProjectionState.CheckpointsDisabled,
 					PersistedProjectionState.SourceDefinition,
 					projectionOutputConfig));
 		}
