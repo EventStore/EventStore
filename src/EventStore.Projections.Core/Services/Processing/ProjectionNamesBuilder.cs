@@ -26,7 +26,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public static TimeSpan MasterStreamMaxAge = TimeSpan.FromHours(2);
 		public static TimeSpan ControlStreamMaxAge = TimeSpan.FromMinutes(5);
-		public static TimeSpan SlaveProjectionControlStreamMaxAge = TimeSpan.FromHours(2);
 		public static TimeSpan CoreControlStreamMaxAge = TimeSpan.FromHours(2);
 
 		private ProjectionNamesBuilder(string name)

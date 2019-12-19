@@ -31,7 +31,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
                              ""checkpointsEnabled"":true,
                              ""createTempStreams"":true,
                              ""stopOnEof"":false,
-                             ""isSlaveProjection"":false,
                          },
                          ""sourceDefinition"":{
                              ""allEvents"":false,   

@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		[Flags]
 		private enum State : uint {
 			Initial = 0x80000000,
-			StartSlaveProjectionsRequested = 0x1,
+//			StartSlaveProjectionsRequested = 0x1,
 			LoadStateRequested = 0x2,
 			StateLoaded = 0x4,
 			Subscribed = 0x8,
@@ -398,9 +398,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			switch (state) {
 				case State.Initial:
 					EnterInitial();
-					break;
-				case State.StartSlaveProjectionsRequested:
-					// TODO: Remove this state
 					break;
 				case State.LoadStateRequested:
 					EnterLoadStateRequested();
