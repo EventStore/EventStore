@@ -222,16 +222,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_subscriptionMessageSequenceNumber++));
 		}
 
-		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message) {
-			if (_eofReached)
-				return; // self eof-reached, but reader is still running
-
-			_publisher.Publish(
-				new EventReaderSubscriptionMessage.PartitionMeasured(
-					_subscriptionId, message.Partition, message.Size,
-					_subscriptionMessageSequenceNumber++));
-		}
-
 		public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message) {
 			if (_eofReached)
 				return; // self eof-reached, but reader is still running

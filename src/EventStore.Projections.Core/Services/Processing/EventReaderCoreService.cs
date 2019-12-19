@@ -25,9 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<ReaderSubscriptionMessage.EventReaderEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
-		IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
-		IHandle<ReaderSubscriptionMessage.Faulted>,
-		IHandle<ReaderCoreServiceMessage.ReaderTick> {
+		IHandle<ReaderSubscriptionMessage.Faulted> {
 		public const string SubComponentName = "EventReaderCoreService";
 		
 		private readonly IPublisher _publisher;
@@ -215,15 +213,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_subscriptions[projectionId].Handle(message);
 		}
 
-		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message) {
-			Guid projectionId;
-			if (_stopped)
-				return;
-			if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
-				return; // unsubscribed
-			_subscriptions[projectionId].Handle(message);
-		}
-
 		public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message) {
 			Guid projectionId;
 			if (_stopped)
@@ -345,10 +334,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void Handle(ReaderCoreServiceMessage.StopReader message) {
 			StopReaders(message);
-		}
-
-		public void Handle(ReaderCoreServiceMessage.ReaderTick message) {
-			message.Action();
 		}
 	}
 }

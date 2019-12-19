@@ -55,7 +55,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreProjection);
 			_bus.Subscribe<CoreProjectionProcessingMessage.Failed>(_coreProjection);
 			_bus.Subscribe(new AdHocHandler<ProjectionCoreServiceMessage.CoreTick>(tick => tick.Action()));
-			_bus.Subscribe(new AdHocHandler<ReaderCoreServiceMessage.ReaderTick>(tick => tick.Action()));
 			PreWhen();
 			When();
 		}

@@ -31,10 +31,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return false;
 		}
 
-		public override SlaveProjectionDefinitions GetSlaveProjections() {
-			return null;
-		}
-
 		protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
 			IPublisher publisher,
 			IPublisher inputQueue,

@@ -49,7 +49,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionStatusMessage.StateReport>,
 			IHandle<CoreProjectionStatusMessage.ResultReport>,
 			IHandle<CoreProjectionStatusMessage.StatisticsReport>,
-			IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
 			IHandle<ProjectionManagementMessage.ReaderReady> {
 		public const int ProjectionQueryId = -2;
 		public const int ProjectionCreationRetryCount = 1;
@@ -656,24 +655,6 @@ namespace EventStore.Projections.Core.Services.Management {
 					SystemAccount.Principal);
 
 			BeginWriteProjectionDeleted(writeDelete, message, completed);
-		}
-
-		public void Handle(ProjectionManagementMessage.RegisterSystemProjection message) {
-			if (!_projections.ContainsKey(message.Name)) {
-				Handle(
-					new ProjectionManagementMessage.Command.Post(
-						new PublishEnvelope(_inputQueue),
-						ProjectionMode.Continuous,
-						message.Name,
-						ProjectionManagementMessage.RunAs.System,
-						message.Handler,
-						message.Query,
-						true,
-						true,
-						true,
-						true,
-						enableRunAs: true));
-			}
 		}
 
 		public void Dispose() {

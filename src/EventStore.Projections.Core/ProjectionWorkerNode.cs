@@ -90,8 +90,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
-			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
@@ -158,7 +156,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
 			}
 
-			coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_eventReaderCoreService);
@@ -171,7 +168,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.Faulted>(_eventReaderCoreService);
 			//NOTE: message forwarding is set up outside (for Read/Write events)

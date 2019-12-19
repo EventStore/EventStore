@@ -75,10 +75,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 				CoreProjectionCheckpointWriter coreProjectionCheckpointWriter) {
 				return new IProjectionProcessingPhase[] {_phase1, _phase2};
 			}
-
-			public override SlaveProjectionDefinitions GetSlaveProjections() {
-				return null;
-			}
 		}
 
 		internal class FakeProjectionProcessingPhase : IProjectionProcessingPhase {

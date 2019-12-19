@@ -82,7 +82,5 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
 			CoreProjectionCheckpointWriter coreProjectionCheckpointWriter);
-
-		public abstract SlaveProjectionDefinitions GetSlaveProjections();
 	}
 }

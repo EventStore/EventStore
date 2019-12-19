@@ -146,7 +146,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
 			bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
-			bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
 			bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 			bus.Subscribe(
@@ -191,12 +190,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe<ReaderCoreServiceMessage.StartReader>(readerService);
 			bus.Subscribe<ReaderCoreServiceMessage.StopReader>(readerService);
 			bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(coreService);
-			bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(readerService);
-			bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(readerService);

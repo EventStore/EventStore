@@ -17,7 +17,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 		protected TestHandler<EventReaderSubscriptionMessage.NotAuthorized> _notAuthorizedHandler;
 		protected TestHandler<EventReaderSubscriptionMessage.EofReached> _eofHandler;
 		protected TestHandler<EventReaderSubscriptionMessage.PartitionEofReached> _partitionEofHandler;
-		protected TestHandler<EventReaderSubscriptionMessage.PartitionMeasured> _partitionMeasuredHandler;
 		protected TestHandler<EventReaderSubscriptionMessage.PartitionDeleted> _partitionDeletedHandler;
 		protected IReaderSubscription _subscription;
 		protected ITimeProvider _timeProvider;
@@ -45,7 +44,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 			_notAuthorizedHandler = new TestHandler<EventReaderSubscriptionMessage.NotAuthorized>();
 			_eofHandler = new TestHandler<EventReaderSubscriptionMessage.EofReached>();
 			_partitionEofHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionEofReached>();
-			_partitionMeasuredHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionMeasured>();
 			_partitionDeletedHandler = new TestHandler<EventReaderSubscriptionMessage.PartitionDeleted>();
 
 			_bus.Subscribe(_eventHandler);
@@ -53,7 +51,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 			_bus.Subscribe(_progressHandler);
 			_bus.Subscribe(_eofHandler);
 			_bus.Subscribe(_partitionEofHandler);
-			_bus.Subscribe(_partitionMeasuredHandler);
 			_readerStrategy = CreateCheckpointStrategy();
 			_subscription = CreateProjectionSubscription();
 

@@ -156,13 +156,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Start() {
 			EnsureState(State.Initial);
 			_startOnLoad = true;
-
-			var slaveProjectionDefinitions = _projectionProcessingStrategy.GetSlaveProjections();
-			if (slaveProjectionDefinitions != null) {
-				GoToState(State.StartSlaveProjectionsRequested);
-			} else {
-				GoToState(State.LoadStateRequested);
-			}
+			GoToState(State.LoadStateRequested);
 		}
 
 		public void LoadStopped() {
