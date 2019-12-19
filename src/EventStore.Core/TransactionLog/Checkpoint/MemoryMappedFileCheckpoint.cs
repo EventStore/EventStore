@@ -34,7 +34,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 				FileShare.ReadWrite);
 			_fileStream.SetLength(sizeof(long));
 			_file = MemoryMappedFile.CreateFromFile(_fileStream,
-				Guid.NewGuid().ToString(),
+				null,
 				sizeof(long),
 				MemoryMappedFileAccess.ReadWrite,
 				HandleInheritability.None,

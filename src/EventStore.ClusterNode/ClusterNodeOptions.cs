@@ -30,9 +30,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.DisableHttpCachingDescr, Opts.AppGroup)]
 		public bool DisableHTTPCaching { get; set; }
 
-		[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
-		public int MonoMinThreadpoolSize { get; set; }
-
 		[ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
 		public IPAddress IntIp { get; set; }
 
@@ -323,8 +320,6 @@ namespace EventStore.ClusterNode {
 			Log = Locations.DefaultLogDirectory;
 			Defines = Opts.DefinesDefault;
 			WhatIf = Opts.WhatIfDefault;
-
-			MonoMinThreadpoolSize = Opts.MonoMinThreadpoolSizeDefault;
 
 			IntIp = Opts.InternalIpDefault;
 			ExtIp = Opts.ExternalIpDefault;

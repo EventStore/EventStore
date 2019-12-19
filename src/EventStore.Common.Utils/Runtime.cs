@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace EventStore.Common.Utils {
 	public static class Runtime {
-		public static bool IsMono => !IsWindows;
-
 		public static readonly bool IsUnixOrMac = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) |
 												  RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 

@@ -38,12 +38,8 @@ namespace EventStore.Grpc {
 
 			var writerCheckFilename = Path.Combine(databasePath, Checkpoint.Writer + ".chk");
 			var chaserCheckFilename = Path.Combine(databasePath, Checkpoint.Chaser + ".chk");
-			var writerCheckpoint = Runtime.IsMono
-				? (ICheckpoint)new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true)
-				: new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-			var chaserCheckpoint = Runtime.IsMono
-				? (ICheckpoint)new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true)
-				: new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+			var writerCheckpoint = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+			var chaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 
 			var db = new TFChunkDb(CreateDbConfig(databasePath, writerCheckpoint, chaserCheckpoint,
 				TFConsts.ChunkSize));
