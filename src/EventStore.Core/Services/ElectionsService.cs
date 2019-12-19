@@ -322,6 +322,15 @@ namespace EventStore.Core.Services {
 
 		private void ShiftToPreparePhase() {
 			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO PREPARE PHASE.", _lastAttemptedView);
+			var aliveNodes = _servers.Where(x => x.IsAlive).ToArray();
+			if (_lastElectedMaster == null &&
+			    aliveNodes.Any(x => x.State == VNodeState.Master && x.InstanceId != _nodeInfo.InstanceId)&&
+			    aliveNodes.Any(x => x.State == VNodeState.Slave && x.InstanceId != _nodeInfo.InstanceId)) {
+				var master = aliveNodes.First(x => x.State == VNodeState.Master);
+				Log.Debug("ELECTIONS: (V={lastAttemptedView}) SKIPPING BEING LEADER OF ELECTIONS DUE TO AN EXISTING MASTER [{masterInternalHttp}, {masterId:B}] BEING PRESENT.",
+					_lastAttemptedView, master.InternalHttpEndPoint, master.InstanceId);
+				return;
+			}
 
 			_lastInstalledView = _lastAttemptedView;
 			_prepareOkReceived.Clear();

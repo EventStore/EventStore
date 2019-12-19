@@ -481,6 +481,26 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
 		}
 	}
+	
+	public class when_receiving_view_change_from_majority_and_existing_slave_and_master_exists : ElectionsFixture {
+		public when_receiving_view_change_from_majority_and_existing_slave_and_master_exists() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Slave, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Master, true, _epochId))));
+		}
+
+		[Test]
+		public void should_ignore_the_majority_view_change() {
+			_sut.Handle(new ElectionMessage.StartElections());
+			_publisher.Messages.Clear();
+
+			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
+
+			Assert.IsEmpty(_publisher.Messages);
+		}
+	}
 
 	public class when_receiving_a_prepare_when_node_is_shutting_down : ElectionsFixture {
 		public when_receiving_a_prepare_when_node_is_shutting_down() :
