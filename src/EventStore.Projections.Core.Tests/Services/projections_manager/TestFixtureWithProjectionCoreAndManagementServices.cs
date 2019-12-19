@@ -108,7 +108,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			if (GetInputQueue() != _processingQueues.First().Item2) {
 				_bus.Subscribe<CoreProjectionManagementControlMessage>(
 					_managerMessageDispatcher);
-				_bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(_managerMessageDispatcher);
 			}
 
 			foreach (var q in _processingQueues)
@@ -205,8 +204,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe<ReaderSubscriptionManagement.Resume>(readerService);
 			bus.Subscribe<ReaderSubscriptionManagement.Subscribe>(readerService);
 			bus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(readerService);
-			bus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReadingCore>(readerService);
-			bus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(readerService);
 
 			if (output_ != null) {
 				bus.Subscribe(new UnwrapEnvelopeHandler());
@@ -223,7 +220,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(GetInputQueue()));
-				output_.Subscribe(Forwarder.Create<ReaderSubscriptionManagement.SpoolStreamReading>(GetInputQueue()));
 				output_.Subscribe(Forwarder.Create<Message>(inputQueue)); // forward all
 
 				var forwarder = new RequestResponseQueueForwarder(

@@ -231,16 +231,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 							commandBody.Query));
 					break;
 				}
-				case "$spool-stream-reading": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<SpoolStreamReadingCommand>();
-					_publisher.Publish(
-						new ReaderSubscriptionManagement.SpoolStreamReadingCore(
-							Guid.ParseExact(commandBody.SubscriptionId, "N"),
-							commandBody.StreamId,
-							commandBody.CatalogSequenceNumber,
-							commandBody.LimitingCommitPosition));
-					break;
-				}
 				case "$load-stopped": {
 					var commandBody = resolvedEvent.Event.Data.ParseJson<LoadStoppedCommand>();
 					_publisher.Publish(

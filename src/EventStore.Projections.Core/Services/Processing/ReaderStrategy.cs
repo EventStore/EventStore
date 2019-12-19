@@ -30,19 +30,19 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly string _tag;
 		private readonly int _phase;
 
-		public static IReaderStrategy CreateExternallyFedReaderStrategy(
-			string tag,
-			int phase,
-			ITimeProvider timeProvider,
-			IPrincipal runAs,
-			long limitingCommitPosition) {
-			var readerStrategy = new ExternallyFedReaderStrategy(
-				tag,
-				phase,
-				timeProvider,
-				limitingCommitPosition);
-			return readerStrategy;
-		}
+//		public static IReaderStrategy CreateExternallyFedReaderStrategy(
+//			string tag,
+//			int phase,
+//			ITimeProvider timeProvider,
+//			IPrincipal runAs,
+//			long limitingCommitPosition) {
+//			var readerStrategy = new ExternallyFedReaderStrategy(
+//				tag,
+//				phase,
+//				timeProvider,
+//				limitingCommitPosition);
+//			return readerStrategy;
+//		}
 
 		public static IReaderStrategy Create(
 			string tag,

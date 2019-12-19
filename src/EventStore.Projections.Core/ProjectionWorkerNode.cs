@@ -165,8 +165,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Resume>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReadingCore>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_eventReaderCoreService);
