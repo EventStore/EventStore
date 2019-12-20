@@ -63,7 +63,7 @@ namespace EventStore.Grpc.Streams {
 			public async Task throws_not_found() {
 				await using var fixture = new Fixture { DeleteDirectory = true };
 
-				await fixture.Node.StartAndWaitUntilReady();
+				await fixture.Node.StartAsync(true);
 
 				await Assert.ThrowsAsync<StreamNotFoundException>(
 					() => fixture.Client.ReadStreamForwardsAsync(Stream1, StreamRevision.Start, 1, true)
@@ -85,7 +85,7 @@ namespace EventStore.Grpc.Streams {
 			public async Task throws_not_found() {
 				await using var fixture = new Fixture { DeleteDirectory = true };
 
-				await fixture.Node.StartAndWaitUntilReady();
+				await fixture.Node.StartAsync(true);
 
 				await Assert.ThrowsAsync<StreamNotFoundException>(
 					() => fixture.Client.ReadStreamBackwardsAsync(Stream1, StreamRevision.End, 1, true)

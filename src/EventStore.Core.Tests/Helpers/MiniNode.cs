@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public async Task Start() {
 			StartingTime.Start();
 
-			await Node.StartAndWaitUntilReady().WithTimeout(TimeSpan.FromSeconds(60))
+			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
 				.ConfigureAwait(false); //starts the node
 
 			StartingTime.Stop();
@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private async Task StartMiniNode(Task monitorFailuresTask) {
 			StartingTime.Start();
 
-			var startNodeTask = Node.StartAndWaitUntilReady(); //starts the node
+			var startNodeTask = Node.StartAsync(true); //starts the node
 
 			await Task.WhenAny(
 				monitorFailuresTask,

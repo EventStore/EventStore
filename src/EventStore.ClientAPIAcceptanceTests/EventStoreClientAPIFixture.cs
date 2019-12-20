@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		public async Task InitializeAsync() {
-			await _node.StartAndWaitUntilReady();
+			await _node.StartAsync(true);
 			await Connections[true].ConnectAsync();
 			await Connections[false].ConnectAsync();
 		}

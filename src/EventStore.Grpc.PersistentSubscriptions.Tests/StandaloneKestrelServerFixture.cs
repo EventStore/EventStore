@@ -62,7 +62,7 @@ namespace EventStore.Grpc {
 		}
 
 		public virtual async Task InitializeAsync() {
-			await _node.StartAndWaitUntilReady();
+			await _node.StartAsync(true);
 			await _host.StartAsync();
 		}
 

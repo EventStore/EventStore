@@ -62,7 +62,7 @@ namespace EventStore.Grpc {
 			=> new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
 
 		public virtual async Task InitializeAsync() {
-			await Node.StartAndWaitUntilReady();
+			await Node.StartAsync(true);
 			await Given().WithTimeout(TimeSpan.FromMinutes(5));
 			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}
