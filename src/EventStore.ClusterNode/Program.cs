@@ -479,7 +479,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		public override Task Stop() {
-			return Task.WhenAll(_node.Stop(), _host.StopAsync());
+			return Task.WhenAll(_node.StopAsync(), _host.StopAsync());
 		}
 
 		protected override void OnProgramExit() {

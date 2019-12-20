@@ -730,7 +730,7 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task Stop() {
+		public async Task StopAsync() {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			if (_subsystems != null) {

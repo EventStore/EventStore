@@ -67,7 +67,7 @@ namespace EventStore.Grpc {
 		}
 
 		public virtual async Task DisposeAsync() {
-			await _node.Stop();
+			await _node.StopAsync();
 			_db.Dispose();
 			await _host.StopAsync();
 			_host.Dispose();

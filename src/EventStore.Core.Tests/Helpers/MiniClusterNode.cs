@@ -173,7 +173,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 
 		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20));
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
 			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);

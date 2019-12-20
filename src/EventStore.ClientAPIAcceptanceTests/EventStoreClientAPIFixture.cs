@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI.Tests {
 		public Task DisposeAsync() {
 			Connections[true].Dispose();
 			Connections[false].Dispose();
-			return _node.Stop().WithTimeout();
+			return _node.StopAsync().WithTimeout();
 		}
 
 		ValueTask IAsyncDisposable.DisposeAsync() => new ValueTask(DisposeAsync());
