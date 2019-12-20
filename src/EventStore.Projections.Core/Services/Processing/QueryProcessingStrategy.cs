@@ -50,8 +50,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
 			IProjectionProcessingPhase writeResultsPhase;
-			if (GetProducesRunningResults()
-			    || !string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
+			// TODO: Verify this check
+			if (GetProducesRunningResults() && _sourceDefinition.ByStreams)
 				writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
 					publisher,
 					1,

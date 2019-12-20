@@ -533,23 +533,6 @@ var $projections = {
 			sources.categories.push(sourceCategory);
 		}
 
-		function fromStreamCatalog(streamCatalog, transformer) {
-			sources.catalogStream = streamCatalog;
-			sources.options.definesCatalogTransform = transformer != null;
-			catalogEventTransformer = function(streamId, ev) {
-				return transformer(ev);
-			};
-		}
-
-		function fromStreamsMatching(filter) {
-			sources.catalogStream = "$all";
-			sources.options.definesCatalogTransform = true;
-			catalogEventTransformer = function(streamId, ev) {
-				return filter(streamId, ev) ? streamId : null;
-			};
-			byStream();
-		}
-
 		function byStream() {
 			sources.byStreams = true;
 		}
@@ -602,8 +585,6 @@ var $projections = {
 			fromAll: fromAll,
 			fromCategory: fromCategory,
 			fromStream: fromStream,
-			fromStreamCatalog: fromStreamCatalog,
-			fromStreamsMatching: fromStreamsMatching,
 
 			byStream: byStream,
 			partitionBy: partitionBy,

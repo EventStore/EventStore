@@ -6,8 +6,6 @@ namespace EventStore.Projections.Core.Messages {
 
 		string[] Streams { get; }
 
-		string CatalogStream { get; }
-
 		bool AllEvents { get; }
 
 		string[] Events { get; }
@@ -17,8 +15,6 @@ namespace EventStore.Projections.Core.Messages {
 		bool ByCustomPartitions { get; }
 
 		bool DefinesStateTransform { get; }
-
-		bool DefinesCatalogTransform { get; }
 
 		bool DefinesFold { get; }
 

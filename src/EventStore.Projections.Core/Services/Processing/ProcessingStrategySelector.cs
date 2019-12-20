@@ -23,37 +23,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IQuerySources sourceDefinition,
 			ProjectionConfig projectionConfig,
 			IProjectionStateHandler stateHandler, string handlerType, string query) {
-			if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams
-			    && sourceDefinition.DefinesFold && !string.IsNullOrEmpty(sourceDefinition.CatalogStream)) {
-				return new ParallelQueryProcessingStrategy(
-					name,
-					projectionVersion,
-					stateHandler,
-					projectionConfig,
-					sourceDefinition,
-					handlerType,
-					query,
-					namesBuilder,
-					_logger,
-					_spoolProcessingResponseDispatcher,
-					_subscriptionDispatcher);
-			}
-
-			if (!sourceDefinition.DisableParallelismOption && projectionConfig.StopOnEof && sourceDefinition.ByStreams
-			    && sourceDefinition.DefinesFold && sourceDefinition.HasCategories()) {
-				return new ParallelQueryProcessingStrategy(
-					name,
-					projectionVersion,
-					stateHandler,
-					projectionConfig,
-					sourceDefinition,
-					handlerType,
-					query,
-					namesBuilder,
-					_logger,
-					_spoolProcessingResponseDispatcher,
-					_subscriptionDispatcher);
-			}
 
 			return projectionConfig.StopOnEof
 				? (ProjectionProcessingStrategy)

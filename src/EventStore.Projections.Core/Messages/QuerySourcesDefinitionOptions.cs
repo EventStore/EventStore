@@ -13,9 +13,6 @@ namespace EventStore.Projections.Core.Messages {
 		[DataMember(Name = "definesStateTransform")]
 		public bool DefinesStateTransform { get; set; }
 
-		[DataMember(Name = "definesCatalogTransform")]
-		public bool DefinesCatalogTransform { get; set; }
-
 		[DataMember(Name = "resultStreamName")]
 		public string ResultStreamName { get; set; }
 

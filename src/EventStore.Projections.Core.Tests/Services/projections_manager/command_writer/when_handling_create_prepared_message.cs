@@ -93,14 +93,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
 			Assert.AreEqual(_definition.AllStreams, command.SourceDefinition.AllStreams);
 			Assert.AreEqual(_definition.ByCustomPartitions, command.SourceDefinition.ByCustomPartitions);
 			Assert.AreEqual(_definition.ByStreams, command.SourceDefinition.ByStreams);
-			Assert.AreEqual(_definition.CatalogStream, command.SourceDefinition.CatalogStream);
 			Assert.AreEqual(_definition.Categories, command.SourceDefinition.Categories);
 			Assert.AreEqual(_definition.Events, command.SourceDefinition.Events);
 			Assert.AreEqual(_definition.LimitingCommitPosition, command.SourceDefinition.LimitingCommitPosition);
 			Assert.AreEqual(_definition.Streams, command.SourceDefinition.Streams);
-			Assert.AreEqual(
-				_definition.Options.DefinesCatalogTransform,
-				command.SourceDefinition.Options.DefinesCatalogTransform);
 			Assert.AreEqual(_definition.Options.DefinesFold, command.SourceDefinition.Options.DefinesFold);
 			Assert.AreEqual(
 				_definition.Options.DefinesStateTransform,

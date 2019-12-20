@@ -19,18 +19,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		[DataMember] public string[] Streams { get; set; }
 
-		[DataMember] public string CatalogStream { get; set; }
-
 		[DataMember] public long? LimitingCommitPosition { get; set; }
 
 		[DataMember] public QuerySourceOptions Options { get; set; }
 
 		bool IQuerySources.DefinesStateTransform {
 			get { return Options != null && Options.DefinesStateTransform; }
-		}
-
-		bool IQuerySources.DefinesCatalogTransform {
-			get { return Options != null && Options.DefinesCatalogTransform; }
 		}
 
 		bool IQuerySources.ProducesResults {
@@ -86,12 +80,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 				Categories = (sources.Categories ?? new string[0]).ToArray(),
 				Events = (sources.Events ?? new string[0]).ToArray(),
 				Streams = (sources.Streams ?? new string[0]).ToArray(),
-				CatalogStream = sources.CatalogStream,
 				LimitingCommitPosition = sources.LimitingCommitPosition,
 				Options =
 					new QuerySourceOptions {
 						DefinesStateTransform = sources.DefinesStateTransform,
-						DefinesCatalogTransform = sources.DefinesCatalogTransform,
 						ProducesResults = sources.ProducesResults,
 						DefinesFold = sources.DefinesFold,
 						HandlesDeletedNotifications = sources.HandlesDeletedNotifications,
@@ -122,8 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			                                         ByCustomPartitions.Equals(other.ByCustomPartitions)
 			                                         && Equals(Categories, other.Categories) &&
 			                                         Equals(Events, other.Events)
-			                                         && Equals(Streams, other.Streams) &&
-			                                         string.Equals(CatalogStream, other.CatalogStream)
+			                                         && Equals(Streams, other.Streams)
 			                                         && LimitingCommitPosition == other.LimitingCommitPosition &&
 			                                         Equals(Options, other.Options);
 		}
@@ -141,7 +132,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				hashCode = (hashCode * 397) ^ AllStreams.GetHashCode();
 				hashCode = (hashCode * 397) ^ ByStream.GetHashCode();
 				hashCode = (hashCode * 397) ^ ByCustomPartitions.GetHashCode();
-				hashCode = (hashCode * 397) ^ (CatalogStream != null ? CatalogStream.GetHashCode() : 0);
 				hashCode = (hashCode * 397) ^ LimitingCommitPosition.GetHashCode();
 				hashCode = (hashCode * 397) ^ (Options != null ? Options.GetHashCode() : 0);
 				return hashCode;

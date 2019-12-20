@@ -98,7 +98,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 			Assert.That(new[] {"account"}.SequenceEqual(projectionSourceDefinition.Categories));
 			Assert.That(new[] {"added", "removed"}.SequenceEqual(projectionSourceDefinition.Events));
 			Assert.That(new string[] { }.SequenceEqual(projectionSourceDefinition.Streams));
-			Assert.AreEqual("", projectionSourceDefinition.CatalogStream);
 			Assert.AreEqual(100000, projectionSourceDefinition.LimitingCommitPosition);
 			Assert.AreEqual("ResultStreamName", projectionSourceDefinition.ResultStreamNameOption);
 			Assert.AreEqual(
@@ -108,7 +107,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 			Assert.AreEqual(0, projectionSourceDefinition.ProcessingLagOption);
 			Assert.AreEqual(false, projectionSourceDefinition.IsBiState);
 			Assert.AreEqual(false, projectionSourceDefinition.DefinesStateTransform);
-			Assert.AreEqual(false, projectionSourceDefinition.DefinesCatalogTransform);
 			Assert.AreEqual(true, projectionSourceDefinition.ProducesResults);
 			Assert.AreEqual(false, projectionSourceDefinition.DefinesFold);
 			Assert.AreEqual(false, projectionSourceDefinition.HandlesDeletedNotifications);
