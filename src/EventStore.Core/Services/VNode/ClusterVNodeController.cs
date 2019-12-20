@@ -254,6 +254,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.BecomeClone>().Do(Handle)
 				.When<SystemMessage.BecomeSlave>().Do(Handle)
 				.InState(VNodeState.Clone)
+				.When<ReplicationMessage.DropSubscription>().Do(Handle)
 				.When<ReplicationMessage.SlaveAssignment>().Do(Handle)
 				.When<SystemMessage.BecomeSlave>().Do(Handle)
 				.InState(VNodeState.Slave)
@@ -971,6 +972,18 @@ namespace EventStore.Core.Services.VNode {
 					message.MasterId);
 				_outputBus.Publish(message);
 				_fsm.Handle(new SystemMessage.BecomeClone(_stateCorrelationId, _master));
+			}
+		}
+
+		private void Handle(ReplicationMessage.DropSubscription message) {
+			if (IsLegitimateReplicationMessage(message)) {
+				Log.Info(
+					"========== [{internalHttp}] DROP SUBSCRIPTION REQUEST RECEIVED FROM [{internalTcp},{internalSecureTcp},{masterId:B}]. THIS MEANS THAT THERE IS A SURPLUS OF NODES IN THE CLUSTER, SHUTTING DOWN.",
+					_nodeInfo.InternalHttp,
+					_master.InternalTcp,
+					_master.InternalSecureTcp == null ? "n/a" : _master.InternalSecureTcp.ToString(),
+					message.MasterId);
+				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
 			}
 		}
 
