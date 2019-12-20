@@ -731,7 +731,7 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task Stop() {
+		public async Task StopAsync() {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			if (_subsystems != null) {
@@ -787,11 +787,15 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public async Task<ClusterVNode> StartAndWaitUntilReady() {
+		public async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
-				_ => tcs.TrySetResult(this)));
+			if (waitUntilReady) {
+				_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
+					_ => tcs.TrySetResult(this)));
+			} else {
+				tcs.TrySetResult(this);
+			}
 
 			Start();
 

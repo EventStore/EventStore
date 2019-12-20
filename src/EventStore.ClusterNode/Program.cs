@@ -477,11 +477,11 @@ namespace EventStore.ClusterNode {
 		}
 
 		protected override Task Start() {
-			return Task.WhenAll(_node.StartAndWaitUntilReady(), _host.StartAsync());
+			return Task.WhenAll(_node.StartAsync(false), _host.StartAsync());
 		}
 
 		public override Task Stop() {
-			return Task.WhenAll(_node.Stop(), _host.StopAsync());
+			return Task.WhenAll(_node.StopAsync(), _host.StopAsync());
 		}
 
 		protected override void OnProgramExit() {
