@@ -533,20 +533,25 @@ namespace EventStore.Core {
 				vNodeSettings.BetterOrdering);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
+			
 			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
 			_mainBus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+			
 			_mainBus.Subscribe<StorageMessage.CheckStreamAccessCompleted>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
+			
 			_mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
 			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+			
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+
 			_mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 
 			// SUBSCRIPTIONS

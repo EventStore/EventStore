@@ -49,7 +49,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private bool _completed;
 		private bool _initialized;
 		private bool _betterOrdering;
-		private long _commitPosition;
+		private long _transactionCommitPosition;
+		private long _systemCommittedPosition;
 
 		protected TwoPhaseRequestManagerBase(IPublisher publisher,
 			int prepareCount,
@@ -67,7 +68,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_betterOrdering = betterOrdering;
 
 			_awaitingPrepare = prepareCount;
-			_commitPosition = long.MaxValue;
+			_transactionCommitPosition = long.MaxValue;
+			_systemCommittedPosition = long.MinValue;
 		}
 
 		protected abstract void OnSecurityAccessGranted(Guid internalCorrId);
@@ -142,9 +144,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Handle(StorageMessage.AlreadyCommitted message) {
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", _clientCorrId,
 				message);
-			
+			_transactionCommitPosition = message.LogPosition;
 			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, -1, -1);
-			_commitPosition = message.LogPosition;
+			if (_systemCommittedPosition >= _transactionCommitPosition) { SuccessClusterCommitted(); }
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -167,14 +169,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Handle(StorageMessage.CommitAck message) {
 			if (_completed) { return; }
 
-			_commitPosition = message.LogPosition;
+			_transactionCommitPosition = message.LogPosition;
 			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, message.LogPosition,
 				message.LogPosition);
+			if (_systemCommittedPosition >= _transactionCommitPosition) { SuccessClusterCommitted(); }
 		}
 
 		public void Handle(CommitMessage.CommittedTo message) {
 			if (_completed) { return; }
-			if (message.LogPosition >= _commitPosition) { SuccessClusterCommitted(); }
+			_systemCommittedPosition = message.LogPosition;
+			if (_systemCommittedPosition >= _transactionCommitPosition) { SuccessClusterCommitted(); }
 		}
 
 		protected virtual void SuccessLocalCommitted(long firstEventNumber, long lastEventNumber, long preparePosition,

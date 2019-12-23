@@ -10,6 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
 	public class when_write_stream_completes_successfully : RequestManagerSpecification {
+		private long _commitLogPosition = 100;
 		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
 			return new WriteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
@@ -17,10 +18,11 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
 				ExpectedVersion.Any, new[] {DummyEvent()}, null);
+			yield return new StorageMessage.CommitAck(InternalCorrId, _commitLogPosition, 2, 3, 3);
 		}
 
 		protected override Message When() {
-			return new StorageMessage.CommitReplicated(InternalCorrId, 100, 2, 3, 3);
+			return new CommitMessage.CommittedTo(_commitLogPosition);
 		}
 
 		[Test]
