@@ -93,12 +93,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			return new ProjectionConfig(
 				null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, GivenPendingEventsThreshold(),
 				GivenMaxWriteBatchLength(), GivenEmitEventEnabled(), GivenCheckpointsEnabled(), _createTempStreams,
-				GivenStopOnEof(), GivenIsSlaveProjection(), GivenTrackEmittedStreams(), GivenCheckpointAfterMs(),
+				GivenStopOnEof(), GivenTrackEmittedStreams(), GivenCheckpointAfterMs(),
 				GivenMaximumAllowedWritesInFlight());
-		}
-
-		protected virtual bool GivenIsSlaveProjection() {
-			return false;
 		}
 
 		protected virtual int GivenMaxWriteBatchLength() {

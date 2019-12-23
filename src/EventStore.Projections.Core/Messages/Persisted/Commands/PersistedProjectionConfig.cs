@@ -15,7 +15,6 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands {
 		public bool CheckpointsEnabled;
 		public bool CreateTempStreams;
 		public bool StopOnEof;
-		public bool IsSlaveProjection;
 		public bool TrackEmittedStreams;
 		public int CheckpointAfterMs;
 		public int MaximumAllowedWritesInFlight;
@@ -37,7 +36,6 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands {
 			CheckpointsEnabled = config.CheckpointsEnabled;
 			CreateTempStreams = config.CreateTempStreams;
 			StopOnEof = config.StopOnEof;
-			IsSlaveProjection = config.IsSlaveProjection;
 			TrackEmittedStreams = config.TrackEmittedStreams;
 			CheckpointAfterMs = config.CheckpointAfterMs;
 			MaximumAllowedWritesInFlight = config.MaximumAllowedWritesInFlight;
@@ -57,7 +55,6 @@ namespace EventStore.Projections.Core.Messages.Persisted.Commands {
 					CheckpointsEnabled,
 					CreateTempStreams,
 					StopOnEof,
-					IsSlaveProjection,
 					TrackEmittedStreams,
 					CheckpointAfterMs,
 					MaximumAllowedWritesInFlight);
