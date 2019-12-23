@@ -17,6 +17,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		public override void When() {
 			BecomeMaster();
+			_service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));			
 			_service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
 		}
 
