@@ -25,7 +25,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<ReaderSubscriptionMessage.EventReaderEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
-		IHandle<ReaderSubscriptionMessage.EventReaderPartitionMeasured>,
 		IHandle<ReaderSubscriptionMessage.Faulted>,
 		IHandle<ReaderCoreServiceMessage.ReaderTick> {
 		public const string SubComponentName = "EventReaderCoreService";
@@ -209,15 +208,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_stopped)
 				return;
 			if (_runHeadingReader && _headingEventReader.Handle(message))
-				return;
-			if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
-				return; // unsubscribed
-			_subscriptions[projectionId].Handle(message);
-		}
-
-		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message) {
-			Guid projectionId;
-			if (_stopped)
 				return;
 			if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
 				return; // unsubscribed

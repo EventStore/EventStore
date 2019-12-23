@@ -10,7 +10,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<EventReaderSubscriptionMessage.CommittedEventReceived>,
 		IHandle<EventReaderSubscriptionMessage.PartitionEofReached>,
 		IHandle<EventReaderSubscriptionMessage.PartitionDeleted>,
-		IHandle<EventReaderSubscriptionMessage.PartitionMeasured>,
 		IEventProcessingProjectionPhase {
 		private readonly IProjectionStateHandler _projectionStateHandler;
 		private readonly bool _definesStateTransform;
@@ -418,17 +417,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public override void Dispose() {
 			if (_projectionStateHandler != null)
 				_projectionStateHandler.Dispose();
-		}
-
-		public void Handle(EventReaderSubscriptionMessage.PartitionMeasured message) {
-			if (IsOutOfOrderSubscriptionMessage(message))
-				return;
-			RegisterSubscriptionMessage(message);
-			try {
-				_resultWriter.WritePartitionMeasured(message.SubscriptionId, message.Partition, message.Size);
-			} catch (Exception ex) {
-				_coreProjection.SetFaulted(ex);
-			}
 		}
 	}
 }
