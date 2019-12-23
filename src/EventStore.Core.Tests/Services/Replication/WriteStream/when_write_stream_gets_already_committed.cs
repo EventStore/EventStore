@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		protected override Message When() {
-			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1);
+			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, 1);
 		}
 
 		[Test]

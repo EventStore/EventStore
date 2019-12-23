@@ -9,6 +9,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private string _eventStreamId;
 		private long _expectedVersion;
 		private bool _hardDelete;
+		private ClientMessage.DeleteStreamCompleted _responseMsg;
 
 		public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,
 			int prepareCount,
@@ -33,12 +34,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					liveUntil: NextTimeoutTime - TimeoutOffset));
 		}
 
-		protected override void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber,
+		protected override void SuccessLocalCommitted(long firstEventNumber, long lastEventNumber,
 			long preparePosition, long commitPosition) {
-			base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
-			var responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null,
+			base.SuccessLocalCommitted(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
+			_responseMsg = new ClientMessage.DeleteStreamCompleted(ClientCorrId, OperationResult.Success, null,
 				preparePosition, commitPosition);
-			ResponseEnvelope.ReplyWith(responseMsg);
+
+		}
+
+		protected override void SuccessClusterCommitted() {
+			base.SuccessClusterCommitted();
+			ResponseEnvelope.ReplyWith(_responseMsg);
 		}
 
 		protected override void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1) {

@@ -306,18 +306,20 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
+			public readonly long LogPosition;
 
 			public AlreadyCommitted(Guid correlationId, string eventStreamId, long firstEventNumber,
-				long lastEventNumber) {
+				long lastEventNumber, long logPosition) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
-
+				Ensure.Positive(logPosition, nameof(logPosition));
 
 				CorrelationId = correlationId;
 				EventStreamId = eventStreamId;
 				FirstEventNumber = firstEventNumber;
 				LastEventNumber = lastEventNumber;
+				LogPosition = logPosition;
 			}
 
 			public override string ToString() {

@@ -146,6 +146,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (result.Success) {
 				_queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
+				_masterBus.Publish(new CommitMessage.LogWrittenTo(result.RecordPostPosition));
 				ProcessLogRecord(result);
 				_queueStats.ProcessingEnded(1);
 			}

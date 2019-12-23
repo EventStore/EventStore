@@ -11,7 +11,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.RequestManager {
-	public interface IRequestManager : IHandle<StorageMessage.RequestManagerTimerTick> {
+	public interface IRequestManager : IHandle<StorageMessage.RequestManagerTimerTick>, IHandle<CommitMessage.CommittedTo> {
 	}
 
 	public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
@@ -24,7 +24,8 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.CheckStreamAccessCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitReplicated>,
+		IHandle<StorageMessage.CommitAck>,
+		IHandle<CommitMessage.CommittedTo>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
@@ -126,8 +127,14 @@ namespace EventStore.Core.Services.RequestManager {
 			DispatchInternal(message.CorrelationId, message);
 		}
 
-		public void Handle(StorageMessage.CommitReplicated message) {
+		public void Handle(StorageMessage.CommitAck message) {
 			DispatchInternal(message.CorrelationId, message);
+		}
+
+		public void Handle(CommitMessage.CommittedTo message) {
+			foreach (var currentRequest in _currentRequests) {
+				currentRequest.Value.Handle(message);
+			}
 		}
 
 		public void Handle(StorageMessage.WrongExpectedVersion message) {

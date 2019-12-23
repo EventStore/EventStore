@@ -25,6 +25,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private Guid _internalCorrId;
 		private Guid _clientCorrId;
 
+		private long _commitPosition;
+
 		private long _transactionId = -1;
 
 		private bool _completed;
@@ -93,7 +95,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 			_bus.Publish(new StorageMessage.WriteTransactionData(_internalCorrId, _publishEnvelope, _transactionId,
 				request.Events));
-			CompleteSuccessRequest();
+			
+			//todo: review the whole process here, there is some possibly self referential behavior that's not clear
+			SuccessClusterCommitted();
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -104,8 +108,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					"Unexpected PrepareAck with flags [{0}] arrived (LogPosition: {1}, InternalCorrId: {2:B}, ClientCorrId: {3:B}).",
 					message.Flags, message.LogPosition, message.CorrelationId, _clientCorrId));
 			_transactionId = message.LogPosition;
-			CompleteSuccessRequest();
+			SuccessLocalCommitted(message.LogPosition);
 		}
+		
 
 		public void Handle(StorageMessage.WrongExpectedVersion message) {
 			CompleteFailedRequest(OperationResult.WrongExpectedVersion, "Wrong expected version.");
@@ -125,8 +130,15 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 			CompleteFailedRequest(OperationResult.PrepareTimeout, "Prepare phase timeout.");
 		}
+		public void Handle(CommitMessage.CommittedTo message) {
+			if (_completed) { return; }
+			if (message.LogPosition >= _commitPosition) { SuccessClusterCommitted(); }
+		}
+		private void SuccessLocalCommitted(long position) {
+			_commitPosition = position;
+		}
 
-		private void CompleteSuccessRequest() {
+		private void SuccessClusterCommitted() {
 			_completed = true;
 			Message responseMsg;
 			switch (_requestType) {

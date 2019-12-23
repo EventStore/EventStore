@@ -1,31 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
 	internal class FakeEpochManager : IEpochManager {
-		public int LastEpochNumber {
-			get { return -1; }
-		}
 
+		public int LastEpochNumber => _epochs.Any() ? _epochs.Last().EpochNumber : -1;
+		private List<EpochRecord> _epochs = new List<EpochRecord>();
 		public void Init() {
 		}
 
 		public EpochRecord GetLastEpoch() {
-			return null;
+			return _epochs.Any() ? _epochs.Last() : null;
 		}
 
 		public EpochRecord[] GetLastEpochs(int maxCount) {
-			throw new NotImplementedException();
+			if (maxCount >= _epochs.Count) {
+				return _epochs.ToArray();
+			} else {
+				return _epochs.Skip(_epochs.Count - maxCount).ToArray();
+			}
 		}
 
 		public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound) {
-			throw new NotImplementedException();
+			var epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
+			if (throwIfNotFound && epoch == null)
+				throw new ArgumentOutOfRangeException(nameof(epochNumber), "Epoch not Found");
+			return epoch;
 		}
 
 		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
-			throw new NotImplementedException();
+			return GetEpoch(epochNumber,throwIfNotFound);
 		}
 
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
@@ -37,11 +44,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		public void SetLastEpoch(EpochRecord epoch) {
-			throw new NotImplementedException();
+			_epochs.Add(epoch);
 		}
 
 		public IEnumerable<EpochRecord> GetCachedEpochs() {
-			throw new NotImplementedException();
+			return _epochs;
 		}
 	}
 }

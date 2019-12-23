@@ -173,10 +173,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= endEventNumber;
+					//todo: the new index should hold the log positions removing this read
+					var idempotentEvent = _indexReader.ReadEvent(streamId, endEventNumber);
+					var logPos = idempotentEvent.Result == ReadEventResult.Success
+						? idempotentEvent.Record.LogPosition : -1; 
+					//todo: what if it fails? idempotent isn't really valid at that point, is it really a risk?
 					if(isReplicated)
-						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false);
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 					else
-						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false);
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 				}
 			}
 
@@ -211,10 +216,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= eventNumber;
+					//todo: the new index should hold the log positions removing this read
+					var idempotentEvent = _indexReader.ReadEvent(streamId, eventNumber);
+					var logPos = idempotentEvent.Result == ReadEventResult.Success
+						? idempotentEvent.Record.LogPosition : -1; 
+					//todo: what if it fails? idempotent isn't really valid at that point, is it really a risk?
 					if(isReplicated)
-						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false,logPos);
 					else
-						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, expectedVersion + 1, eventNumber, false, logPos);
 				}
 			}
 

@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	[TestFixture]
-	public class when_3_node_cluster_receives_2_commit_acks : with_index_committer_service {
+	public class when_3_node_cluster_receives_log_committed : with_index_committer_service {
 		private CountdownEvent _eventsReplicated = new CountdownEvent(1);
 
 		private Guid _correlationId = Guid.NewGuid();
@@ -16,8 +16,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			_publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			_service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));
-			_service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
+			_service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(_timeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");

@@ -7,6 +7,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase,
 		IHandle<ClientMessage.WriteEvents> {
 		private ClientMessage.WriteEvents _request;
+		private ClientMessage.WriteEventsCompleted _responseMsg;
 
 		public WriteStreamTwoPhaseRequestManager(IPublisher publisher,
 			int prepareCount,
@@ -29,14 +30,18 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					liveUntil: NextTimeoutTime - TimeoutOffset));
 			_request = null;
 		}
-
-		protected override void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber,
+		
+		protected override void SuccessLocalCommitted(long firstEventNumber, long lastEventNumber,
 			long preparePosition, long commitPosition) {
-			base.CompleteSuccessRequest(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
-			ResponseEnvelope.ReplyWith(new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber,
-				lastEventNumber, preparePosition, commitPosition));
+			base.SuccessLocalCommitted(firstEventNumber, lastEventNumber, preparePosition, commitPosition);
+			_responseMsg = new ClientMessage.WriteEventsCompleted(ClientCorrId, firstEventNumber,
+				lastEventNumber, preparePosition, commitPosition);
 		}
 
+		protected override void SuccessClusterCommitted() {
+			base.SuccessClusterCommitted();
+			ResponseEnvelope.ReplyWith(_responseMsg);
+		}
 		protected override void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1) {
 			base.CompleteFailedRequest(result, error, currentVersion);
 			ResponseEnvelope.ReplyWith(

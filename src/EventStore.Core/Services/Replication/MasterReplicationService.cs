@@ -28,7 +28,8 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
 		IHandle<ReplicationMessage.ReplicaLogPositionAck>,
-		IHandle<ReplicationMessage.GetReplicationStats> {
+		IHandle<ReplicationMessage.GetReplicationStats>,
+		IHandle<CommitMessage.LogCommittedTo> {
 		public const int MaxQueueSize = 100;
 		public const int CloneThreshold = 1024;
 		public const int SlaveLagThreshold = 256 * 1024;
@@ -150,9 +151,13 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationMessage.ReplicaLogPositionAck message) {
-			ReplicaSubscription subscription;
-			if (_subscriptions.TryGetValue(message.SubscriptionId, out subscription))
+			if (_subscriptions.TryGetValue(message.SubscriptionId, out var subscription)) {
 				Interlocked.Exchange(ref subscription.AckedLogPosition, message.ReplicationLogPosition);
+				if (subscription.IsPromotable) {
+					_publisher.Publish(new CommitMessage.ReplicaLogWrittenTo(message.ReplicationLogPosition,
+						message.SubscriptionId));
+				}
+			}
 		}
 
 		public void Handle(ReplicationMessage.GetReplicationStats message) {
@@ -426,8 +431,8 @@ namespace EventStore.Core.Services.Replication {
 				}
 
 				if (subscription.SendQueueSize >= MaxQueueSize
-				    || subscription.LogPosition - Interlocked.Read(ref subscription.AckedLogPosition) >=
-				    ReplicaSendWindow)
+					|| subscription.LogPosition - Interlocked.Read(ref subscription.AckedLogPosition) >=
+					ReplicaSendWindow)
 					continue;
 
 				if (subscription.BulkReader == null) throw new Exception("BulkReader is null for subscription.");
@@ -439,7 +444,7 @@ namespace EventStore.Core.Services.Replication {
 						dataFound = true;
 
 					if (subscription.State == ReplicaState.CatchingUp &&
-					    masterCheckpoint - subscription.LogPosition <= CloneThreshold) {
+						masterCheckpoint - subscription.LogPosition <= CloneThreshold) {
 						subscription.State = ReplicaState.Clone;
 						subscription.SendMessage(
 							new ReplicationMessage.CloneAssignment(_instanceId, subscription.SubscriptionId));
@@ -558,7 +563,7 @@ namespace EventStore.Core.Services.Replication {
 					candidate.LagOccurences = i < desiredSlaveCount ? 0 : candidate.LagOccurences + 1;
 
 					if (candidate.LagOccurences >= LagOccurencesThreshold
-					    && masterCheckpoint - candidate.LogPosition >= SlaveLagThreshold) {
+						&& masterCheckpoint - candidate.LogPosition >= SlaveLagThreshold) {
 						++laggedSlaves;
 					}
 				}
@@ -612,7 +617,13 @@ namespace EventStore.Core.Services.Replication {
 				cloneIndex++;
 			}
 		}
-
+		public void Handle(CommitMessage.LogCommittedTo message) {
+			//todo: if the node is busy and misses an update it might be a long time till the next update do we need check if they get too stale?
+			foreach (var subscription in _subscriptions.Values) {
+				if (subscription.IsConnectionClosed ||subscription.SendQueueSize >= MaxQueueSize) { continue;}
+				subscription.SendMessage(message);
+			}
+		}
 		public QueueStats GetStatistics() {
 			return _queueStats.GetStatistics(_subscriptions.Count);
 		}
