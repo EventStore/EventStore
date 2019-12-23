@@ -150,6 +150,10 @@ namespace EventStore.Core.Services.Storage {
 			lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
 
 			_replicationCheckpoint.Write(message.LogPosition);
+			if (_state == VNodeState.Master) {
+				_publisher.Publish(new CommitMessage.IndexWrittenTo(message.LogPosition));
+			}
+			//todo: remove this
 			_publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 		}
@@ -197,15 +201,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage msg) {
-			if (_state == VNodeState.Master && msg.State != VNodeState.Master) {
-				var commits = _commitAcks.GetAllCommitAcks();
-				foreach (var commit in commits) {
-					CommitReplicated(commit.CommitAcks[0]);
-				}
-
-				_commitAcks.ClearCommitAcks();
-			}
-
+			//TODO-commit-tracker: if we are a deposed master do we need to clear the pending uncommitted writes?
 			_state = msg.State;
 		}
 
@@ -215,24 +211,21 @@ namespace EventStore.Core.Services.Storage {
 		public void Handle(StorageMessage.CommitAck message) {
 			_commitAcks.AddCommitAck(message);
 		}
-		
+
 		public void Handle(CommitMessage.LogCommittedTo message) {
 			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
-			if (message.LogPosition <= checkpoint) return;
-			
+			if (message.LogPosition <= checkpoint)
+				return;
+
 			var commits = _commitAcks.GetCommitAcksUpTo(message.LogPosition);
 			foreach (var commit in commits) {
-				CommitReplicated(commit.CommitAcks[0]);
+#if DEBUG
+				_queueStats.Enqueued();
+#endif
+				_replicatedQueue.Enqueue(commit.CommitAcks[0]);
+				_addMsgSignal.Set();
 			}
 			_commitAcks.RemoveCommitAcks(commits);
-		}
-
-		private void CommitReplicated(StorageMessage.CommitAck message) {
-#if DEBUG
-			_queueStats.Enqueued();
-#endif
-			_replicatedQueue.Enqueue(message);
-			_addMsgSignal.Set();
 		}
 
 		public QueueStats GetStatistics() {
@@ -321,7 +314,7 @@ namespace EventStore.Core.Services.Storage {
 			public List<CommitAckNode> GetCommitAcksUpTo(long position) {
 
 				var currentNode = _commitAcksLinkedList.First;
-				var result = new List<CommitAckNode>();				
+				var result = new List<CommitAckNode>();
 				while (currentNode != null && currentNode.Value.LogPosition <= position) {
 					result.Add(currentNode.Value);
 					currentNode = currentNode.Next;
