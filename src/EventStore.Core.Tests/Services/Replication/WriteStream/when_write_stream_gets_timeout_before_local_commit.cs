@@ -5,19 +5,19 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
-	public class when_write_stream_gets_commit_timeout_after_commit_replicated : RequestManagerSpecification {
+	public class when_write_stream_gets_timeout_before_local_commit : RequestManagerSpecification {
 		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
 			return new WriteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] {DummyEvent()}, null);
-			yield return new StorageMessage.CommitReplicated(InternalCorrId, 1, 1, 0, 0);
+				ExpectedVersion.Any, new[] {DummyEvent()}, null);			
 		}
 
 		protected override Message When() {
@@ -25,8 +25,15 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		[Test]
-		public void no_messages_are_published() {
-			Assert.That(Produced.Count == 0);
+		public void request_completed_as_failed_published() {
+			Assert.AreEqual(1, Produced.Count);
+			Assert.AreEqual(false, ((StorageMessage.RequestCompleted)Produced[0]).Success);
+		}
+
+		[Test]
+		public void the_envelope_is_replied_to() {
+			Assert.AreEqual(1, Envelope.Replies.Count);
+
 		}
 	}
 }

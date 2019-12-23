@@ -4,35 +4,35 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
-	[TestFixture, Ignore("There is no specialized prepare/commit timeout messages, so not possible to test this.")]
-	public class when_write_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification {
+	[TestFixture]
+	public class when_write_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification {
+		private long _commitLogPosition = 1000;
 		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
 			return new WriteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] {DummyEvent()}, null);
-			yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
-			yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.SingleWrite);
+				ExpectedVersion.Any, new[] { DummyEvent() }, null);
+			yield return new CommitMessage.CommittedTo(_commitLogPosition - 1);
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick();
+			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, _commitLogPosition);
 		}
 
 		[Test]
-		public void no_messages_are_published() {
-			Assert.AreEqual(0, Produced.Count);
+		public void successful_request_message_is_not_published() {
+			Assert.That(Produced.IsEmpty());
 		}
 
 		[Test]
 		public void the_envelope_is_not_replied_to() {
-			Assert.AreEqual(0, Envelope.Replies.Count);
+			Assert.That(Envelope.Replies.IsEmpty());
 		}
 	}
 }
