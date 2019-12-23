@@ -468,49 +468,6 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class StartSlaveProjections : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
-				private readonly string _name;
-				private readonly SlaveProjectionDefinitions _slaveProjections;
-				private readonly Guid _masterWorkerId;
-				private readonly Guid _masterCorrelationId;
-
-				public StartSlaveProjections(
-					IEnvelope envelope,
-					RunAs runAs,
-					string name,
-					SlaveProjectionDefinitions slaveProjections,
-					Guid masterWorkerId,
-					Guid masterCorrelationId)
-					: base(envelope, runAs) {
-					_name = name;
-					_slaveProjections = slaveProjections;
-					_masterCorrelationId = masterCorrelationId;
-					_masterWorkerId = masterWorkerId;
-				}
-
-				public string Name {
-					get { return _name; }
-				}
-
-				public SlaveProjectionDefinitions SlaveProjections {
-					get { return _slaveProjections; }
-				}
-
-				public Guid MasterCorrelationId {
-					get { return _masterCorrelationId; }
-				}
-
-				public Guid MasterWorkerId {
-					get { return _masterWorkerId; }
-				}
-			}
-
 			public class GetStatistics : Message {
 				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1034,39 +991,6 @@ namespace EventStore.Projections.Core.Messages {
 
 			public override int MsgTypeId {
 				get { return TypeId; }
-			}
-		}
-
-		public class SlaveProjectionsStarted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			private readonly Guid _coreProjectionCorrelationId;
-			private readonly Guid _workerId;
-			private readonly SlaveProjectionCommunicationChannels _slaveProjections;
-
-			public SlaveProjectionsStarted(
-				Guid coreProjectionCorrelationId,
-				Guid workerId,
-				SlaveProjectionCommunicationChannels slaveProjections) {
-				_coreProjectionCorrelationId = coreProjectionCorrelationId;
-				_workerId = workerId;
-				_slaveProjections = slaveProjections;
-			}
-
-			public Guid CoreProjectionCorrelationId {
-				get { return _coreProjectionCorrelationId; }
-			}
-
-			public SlaveProjectionCommunicationChannels SlaveProjections {
-				get { return _slaveProjections; }
-			}
-
-			public Guid WorkerId {
-				get { return _workerId; }
 			}
 		}
 

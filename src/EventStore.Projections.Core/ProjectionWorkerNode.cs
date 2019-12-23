@@ -121,7 +121,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Kill>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionCoreService);
-				coreInputBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(_projectionCoreService);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_ioDispatcher.ForwardReader);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
 				coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_ioDispatcher.Writer);
@@ -139,8 +138,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_coreResponseWriter);
-				coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
-					_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Started>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
@@ -158,7 +155,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
-				coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
 			}
 
@@ -169,8 +165,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Resume>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReadingCore>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_eventReaderCoreService);

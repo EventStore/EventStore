@@ -7,23 +7,12 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionManagerMessageDispatcher
-		: IHandle<ReaderSubscriptionManagement.SpoolStreamReading>,
-			IHandle<CoreProjectionManagementControlMessage> {
+		: IHandle<CoreProjectionManagementControlMessage> {
 		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 		private readonly IDictionary<Guid, IPublisher> _queueMap;
 
 		public ProjectionManagerMessageDispatcher(IDictionary<Guid, IPublisher> queueMap) {
 			_queueMap = queueMap;
-		}
-
-		public void Handle(ReaderSubscriptionManagement.SpoolStreamReading message) {
-			DispatchWorkerMessage(
-				new ReaderSubscriptionManagement.SpoolStreamReadingCore(
-					message.SubscriptionId,
-					message.StreamId,
-					message.CatalogSequenceNumber,
-					message.LimitingCommitPosition),
-				message.WorkerId);
 		}
 
 		public void Handle(CoreProjectionManagementControlMessage message) {

@@ -833,20 +833,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private Message CreateCreateAndPrepareMessage(ProjectionConfig config) {
-			var createProjectionMessage = _isSlave
-				? (Message)
-				new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-					Id,
-					_workerId,
-					_name,
-					new ProjectionVersion(_projectionId, PersistedProjectionState.Epoch ?? 0,
-						PersistedProjectionState.Version ?? 0),
-					config,
-					_slaveMasterWorkerId,
-					_slaveMasterCorrelationId,
-					HandlerType,
-					Query)
-				: new CoreProjectionManagementMessage.CreateAndPrepare(
+			return new CoreProjectionManagementMessage.CreateAndPrepare(
 					Id,
 					_workerId,
 					_name,
@@ -855,7 +842,6 @@ namespace EventStore.Projections.Core.Services.Management {
 					config,
 					HandlerType,
 					Query);
-			return createProjectionMessage;
 		}
 
 		private CoreProjectionManagementMessage.CreatePrepared CreatePreparedMessage(ProjectionConfig config) {

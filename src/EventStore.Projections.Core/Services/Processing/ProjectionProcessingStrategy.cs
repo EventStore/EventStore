@@ -68,7 +68,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public abstract bool GetUseCheckpoints();
 		public abstract bool GetRequiresRootPartition();
 		public abstract bool GetProducesRunningResults();
-		public abstract bool GetIsSlaveProjection();
 		public abstract void EnrichStatistics(ProjectionStatistics info);
 
 		public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
@@ -82,7 +81,5 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
 			CoreProjectionCheckpointWriter coreProjectionCheckpointWriter);
-
-		public abstract SlaveProjectionDefinitions GetSlaveProjections();
 	}
 }

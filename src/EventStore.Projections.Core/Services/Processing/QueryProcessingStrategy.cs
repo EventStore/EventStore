@@ -28,14 +28,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return !_sourceDefinition.DefinesFold;
 		}
 
-		public override bool GetIsSlaveProjection() {
-			return false;
-		}
-
-		public override SlaveProjectionDefinitions GetSlaveProjections() {
-			return null;
-		}
-
 		protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
 			IPublisher publisher, IPublisher inputQueue, Guid projectionCorrelationId,
 			ProjectionNamesBuilder namingBuilder,

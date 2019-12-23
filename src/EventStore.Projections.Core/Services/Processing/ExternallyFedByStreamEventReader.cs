@@ -9,9 +9,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
-	public class ExternallyFedByStreamEventReader : EventReader,
-		IHandle<ReaderSubscriptionManagement.SpoolStreamReadingCore>,
-		IHandle<ReaderSubscriptionManagement.CompleteSpooledStreamReading> {
+	public class ExternallyFedByStreamEventReader : EventReader {
 		private readonly IODispatcher _ioDispatcher;
 		private long? _limitingCommitPosition;
 		private readonly ITimeProvider _timeProvider;
@@ -159,12 +157,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			//TODO: consider passing phase from outside instead of using 0 (above)
 		}
 
-		public void Handle(ReaderSubscriptionManagement.SpoolStreamReadingCore message) {
-			EnsureLimitingCommitPositionSet(message.LimitingCommitPosition);
-			BeginReadStreamLength(message.StreamId);
-			EnqueueStreamForProcessing(message.StreamId, message.CatalogSequenceNumber);
-		}
-
 		private void BeginReadStreamLength(string streamId) {
 			var requestId = _ioDispatcher.ReadBackward(
 				streamId, -1, 1, false, ReadAs, completed => {
@@ -204,10 +196,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 						"ExternallyFedByStreamEventReader cannot be used with different limiting commit positions.  "
 						+ "Currently set: {0}. New: {1}", _limitingCommitPosition, limitingCommitPosition));
 			_limitingCommitPosition = limitingCommitPosition;
-		}
-
-		public void Handle(ReaderSubscriptionManagement.CompleteSpooledStreamReading message) {
-			CompleteStreamProcessing();
 		}
 	}
 }

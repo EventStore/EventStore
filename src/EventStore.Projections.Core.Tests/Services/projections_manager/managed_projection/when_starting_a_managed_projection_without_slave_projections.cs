@@ -13,8 +13,6 @@ using EventStore.Core.Util;
 using NUnit.Framework;
 using TestFixtureWithExistingEvents =
 	EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
-using EventStore.Core.Helpers;
-using EventStore.Core.Tests.Fakes;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
 	[TestFixture]
@@ -88,13 +86,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 				new CoreProjectionStatusMessage.Prepared(
 					_coreProjectionId, projectionSourceDefinition));
 			yield break;
-		}
-
-		[Test]
-		public void does_not_publish_start_slave_projections_message() {
-			var startSlaveProjectionsMessage =
-				HandledMessages.OfType<ProjectionManagementMessage.Command.StartSlaveProjections>().LastOrDefault();
-			Assert.IsNull(startSlaveProjectionsMessage);
 		}
 
 		[Test]

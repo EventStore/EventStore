@@ -36,7 +36,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionManagementMessage.Command.Abort>,
 			IHandle<ProjectionManagementMessage.Command.SetRunAs>,
 			IHandle<ProjectionManagementMessage.Command.Reset>,
-			IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
 			IHandle<ProjectionManagementMessage.Command.GetConfig>,
 			IHandle<ProjectionManagementMessage.Command.UpdateConfig>,
 			IHandle<ProjectionSubsystemMessage.StartComponents>,
@@ -50,9 +49,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionStatusMessage.StateReport>,
 			IHandle<CoreProjectionStatusMessage.ResultReport>,
 			IHandle<CoreProjectionStatusMessage.StatisticsReport>,
-			IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
 			IHandle<ProjectionManagementMessage.RegisterSystemProjection>,
-			IHandle<CoreProjectionStatusMessage.ProjectionWorkerStarted>,
 			IHandle<ProjectionManagementMessage.ReaderReady> {
 		public const int ProjectionQueryId = -2;
 		public const int ProjectionCreationRetryCount = 1;
@@ -613,13 +610,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 		}
 
-		public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message) {
-			Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned> action;
-			if (_awaitingSlaveProjections.TryGetValue(message.ProjectionId, out action)) {
-				action(message);
-			}
-		}
-
 		public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message) {
 			_readDispatcher.Handle(message);
 		}
@@ -640,7 +630,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			var deletedEventId = Guid.NewGuid();
 			DeleteProjection(message,
 				expVer => {
-					_awaitingSlaveProjections.Remove(message.Id); // if any disconnected in error
 					_projections.Remove(message.Name);
 					_projectionsMap.Remove(message.Id);
 					_projectionsRegistrationState.Remove(message.Name);
@@ -1273,123 +1262,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			var queueIndex = _lastUsedQueue;
 			_lastUsedQueue++;
 			return queueIndex;
-		}
-
-		private readonly Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>
-			_awaitingSlaveProjections =
-				new Dictionary<Guid, Action<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>>();
-
-
-		public void Handle(ProjectionManagementMessage.Command.StartSlaveProjections message) {
-			var result = new Dictionary<string, SlaveProjectionCommunicationChannel[]>();
-			var counter = 0;
-			foreach (var g in message.SlaveProjections.Definitions) {
-				var @group = g;
-				switch (g.RequestedNumber) {
-					case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.One:
-					case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerNode: {
-						var resultArray = new SlaveProjectionCommunicationChannel[1];
-						result.Add(g.Name, resultArray);
-						counter++;
-						int queueIndex = GetNextWorkerIndex();
-						CINP(
-							message,
-							@group,
-							resultArray,
-							queueIndex,
-							0,
-							() => CheckSlaveProjectionsStarted(message, ref counter, result));
-						break;
-					}
-					case SlaveProjectionDefinitions.SlaveProjectionRequestedNumber.OnePerThread: {
-						var resultArray = new SlaveProjectionCommunicationChannel[_workers.Length];
-						result.Add(g.Name, resultArray);
-
-						for (int index = 0; index < _workers.Length; index++) {
-							counter++;
-							CINP(
-								message,
-								@group,
-								resultArray,
-								index,
-								index,
-								() => CheckSlaveProjectionsStarted(message, ref counter, result));
-						}
-
-						break;
-					}
-					default:
-						throw new NotSupportedException();
-				}
-			}
-		}
-
-		private static void CheckSlaveProjectionsStarted(
-			ProjectionManagementMessage.Command.StartSlaveProjections message,
-			ref int counter,
-			Dictionary<string, SlaveProjectionCommunicationChannel[]> result) {
-			counter--;
-			if (counter == 0)
-				message.Envelope.ReplyWith(
-					new ProjectionManagementMessage.SlaveProjectionsStarted(
-						message.MasterCorrelationId,
-						message.MasterWorkerId,
-						new SlaveProjectionCommunicationChannels(result)));
-		}
-
-		private void CINP(
-			ProjectionManagementMessage.Command.StartSlaveProjections message,
-			SlaveProjectionDefinitions.Definition @group,
-			SlaveProjectionCommunicationChannel[] resultArray,
-			int queueIndex,
-			int arrayIndex,
-			Action completed) {
-			var projectionCorrelationId = Guid.NewGuid();
-			var slaveProjectionName = message.Name + "-" + @group.Name + "-" + queueIndex;
-			_awaitingSlaveProjections.Add(
-				projectionCorrelationId,
-				assigned => {
-					var queueWorkerId = _workers[queueIndex];
-
-					resultArray[arrayIndex] = new SlaveProjectionCommunicationChannel(
-						slaveProjectionName,
-						queueWorkerId,
-						assigned.SubscriptionId);
-					completed();
-
-					_awaitingSlaveProjections.Remove(projectionCorrelationId);
-				});
-
-
-			var initializer = new NewProjectionInitializer(
-				ProjectionQueryId,
-				slaveProjectionName,
-				@group.Mode,
-				@group.HandlerType,
-				@group.Query,
-				true,
-				@group.EmitEnabled,
-				@group.CheckpointsEnabled,
-				@group.EnableRunAs,
-				@group.TrackEmittedStreams,
-				@group.RunAs1,
-				replyEnvelope: null);
-
-			initializer.CreateAndInitializeNewProjection(
-				this,
-				projectionCorrelationId,
-				_workers[queueIndex],
-				true,
-				message.MasterWorkerId,
-				message.MasterCorrelationId);
-		}
-
-		public void Handle(CoreProjectionStatusMessage.ProjectionWorkerStarted message) {
-			RebalanceWork();
-		}
-
-		private void RebalanceWork() {
-			//
 		}
 
 		public class PendingProjection {
