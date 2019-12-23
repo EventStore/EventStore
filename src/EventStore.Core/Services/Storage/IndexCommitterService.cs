@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Storage {
 		IMonitoredQueue,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<StorageMessage.CommitAck>,
+		IHandle<CommitMessage.LogCommittedTo>,
 		IHandle<ClientMessage.MergeIndexes> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
 		private readonly IIndexCommitter _indexCommitter;
@@ -212,31 +212,15 @@ namespace EventStore.Core.Services.Storage {
 			_stop = true;
 		}
 
-		public void Handle(StorageMessage.CommitAck message) {
-			if (_state != VNodeState.Master || _commitCount == 1) {
-#if DEBUG
-				_queueStats.Enqueued();
-#endif
-				_replicatedQueue.Enqueue(message);
-				_addMsgSignal.Set();
-				return;
-			}
-
+		
+		public void Handle(CommitMessage.LogCommittedTo message) {
 			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
 			if (message.LogPosition <= checkpoint) return;
-
-			var res = _commitAcks.AddCommitAck(message);
-			if (res.IsReplicated(_commitCount)) {
-				EnqueueCommitsUpToPosition(message);
-			}
-		}
-
-		private void EnqueueCommitsUpToPosition(StorageMessage.CommitAck message) {
-			var commits = _commitAcks.GetCommitAcksUpTo(message);
+			
+			var commits = _commitAcks.GetCommitAcksUpTo(message.LogPosition);
 			foreach (var commit in commits) {
 				CommitReplicated(commit.CommitAcks[0]);
 			}
-
 			_commitAcks.RemoveCommitAcks(commits);
 		}
 
@@ -331,29 +315,17 @@ namespace EventStore.Core.Services.Storage {
 
 				return result;
 			}
+			public List<CommitAckNode> GetCommitAcksUpTo(long position) {
 
-			public List<CommitAckNode> GetCommitAcksUpTo(StorageMessage.CommitAck message) {
-				LinkedListNode<CommitAckNode> commitAckNode;
-
-				if (_commitAckNodes.TryGetValue(message.CorrelationId, out commitAckNode)) {
-					var currentNode = commitAckNode;
-					// Ensure that we have all nodes at this position
-					while (currentNode.Next != null &&
-					       currentNode.Next.Value.LogPosition == currentNode.Value.LogPosition) {
-						currentNode = currentNode.Next;
-					}
-
-					var result = new List<CommitAckNode>();
-					do {
-						result.Add(currentNode.Value);
-						currentNode = currentNode.Previous;
-					} while (currentNode != null);
-
-					result.Reverse();
-					return result;
-				} else {
-					throw new InvalidOperationException("Commit ack not present in node list.");
+				var currentNode = _commitAcksLinkedList.First;
+				var result = new List<CommitAckNode>();
+				//todo: < or <= confirm we are using the post position for tracking the log i.e. <
+				while (currentNode != null && currentNode.Value.LogPosition < position) {
+					result.Add(currentNode.Value);
+					currentNode = currentNode.Next;
 				}
+
+				return result;
 			}
 
 			public void ClearCommitAcks() {

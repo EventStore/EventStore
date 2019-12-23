@@ -1,8 +1,23 @@
+using System;
 using EventStore.Common.Utils;
 using ProtoBuf;
 
 namespace EventStore.Core.Messages {
 	public static class ReplicationMessageDto {
+		[ProtoContract]
+		public class ReplicaLogWrite {
+			[ProtoMember(1)] public long LogPosition { get; set; }
+
+			[ProtoMember(2)] public byte[] ReplicaId { get; set; }
+
+			public ReplicaLogWrite() {
+			}
+
+			public ReplicaLogWrite(long logPosition, byte[] replicaId) {
+				LogPosition = logPosition;
+				ReplicaId =replicaId;
+			}
+		}
 		[ProtoContract]
 		public class PrepareAck {
 			[ProtoMember(1)] public long LogPosition { get; set; }

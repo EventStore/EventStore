@@ -37,6 +37,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Transport.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -295,13 +296,25 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
+
+			//COMMIT TRACKING
+			var commitTracker =
+				new CommitTrackerService(_mainQueue, CommitLevel.MasterIndexed, vNodeSettings.ClusterNodeCount);
+			AddTask(commitTracker.Task);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(commitTracker);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(commitTracker);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(commitTracker);
+			_mainBus.Subscribe<CommitMessage.LogWrittenTo>(commitTracker);
+			_mainBus.Subscribe<CommitMessage.IndexWrittenTo>(commitTracker);
+			_mainBus.Subscribe<CommitMessage.ReplicaLogWrittenTo>(commitTracker);
+
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
 				db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
 			AddTask(indexCommitterService.Task);
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
-			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
+			_mainBus.Subscribe<CommitMessage.LogCommittedTo>(indexCommitterService);
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
 			var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
@@ -505,8 +518,9 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.CheckStreamAccessCompleted>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.CommitReplicated>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
@@ -639,6 +653,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
+				_mainBus.Subscribe<CommitMessage.LogCommittedTo>(masterReplicationService);
 				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(masterReplicationService);
 
 				// REPLICA REPLICATION

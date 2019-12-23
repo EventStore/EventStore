@@ -5,6 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Commit;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Services.Replication;
 using NUnit.Framework;
@@ -30,6 +31,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected IndexCommitterService _service;
 		protected FakeIndexCommitter _indexCommitter;
 		protected ITFChunkScavengerLogManager _tfChunkScavengerLogManager;
+		protected CommitTrackerService _commitTracker;
 
 		protected int _expectedCommitReplicatedMessages;
 
@@ -44,12 +46,16 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			_service = new IndexCommitterService(_indexCommitter, _publisher, _replicationCheckpoint, _writerCheckpoint,
 				_commitCount, _tableIndex, new QueueStatsManager());
 			_service.Init(0);
+			_commitTracker = new CommitTrackerService(_publisher, CommitLevel.MasterIndexed,3);
+			_commitTracker.Start();
+			_publisher.Subscribe<CommitMessage.LogCommittedTo>(_service);
 			When();
 		}
 
 		[OneTimeTearDown]
 		public virtual void TestFixtureTearDown() {
 			_service.Stop();
+			_commitTracker.Stop();
 		}
 
 		public abstract void When();
@@ -84,15 +90,20 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		protected void BecomeMaster() {
 			_service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			_commitTracker.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {
 			_service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			_commitTracker.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
 		protected void BecomeSlave() {
 			var masterIPEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 			_service.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
+				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
+				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false)));
+			_commitTracker.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false)));
 		}

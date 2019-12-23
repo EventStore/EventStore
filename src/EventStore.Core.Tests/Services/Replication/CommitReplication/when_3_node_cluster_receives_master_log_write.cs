@@ -4,13 +4,13 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	[TestFixture]
-	public class when_3_node_cluster_receives_1_commit_ack : with_index_committer_service {
+	public class when_3_node_cluster_receives_master_log_write : with_index_committer_service {
 		private long _logPosition = 4000;
 
 		public override void When() {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			_service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0, true));
+			_commitTracker.Handle(new CommitMessage.LogWrittenTo(_logPosition));
 		}
 
 		[Test]

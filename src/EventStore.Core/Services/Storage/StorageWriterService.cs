@@ -524,10 +524,14 @@ namespace EventStore.Core.Services.Storage {
 					envelope.ReplyWith(new StorageMessage.StreamDeleted(correlationId));
 					break;
 				case CommitDecision.Idempotent:
+				case CommitDecision.IdempotentNotReady:
+					//the transaction will wait for the commit if not ready
 					envelope.ReplyWith(new StorageMessage.AlreadyCommitted(correlationId,
 						result.EventStreamId,
 						result.StartEventNumber,
-						result.EndEventNumber));
+						result.EndEventNumber,
+						result.IdempotentLogPosition
+						));
 					break;
 				case CommitDecision.CorruptedIdempotency:
 					// in case of corrupted idempotency (part of transaction is ok, other is different)
@@ -536,10 +540,6 @@ namespace EventStore.Core.Services.Storage {
 					break;
 				case CommitDecision.InvalidTransaction:
 					envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));
-					break;
-				case CommitDecision.IdempotentNotReady:
-					//just drop the write and wait for the client to retry
-					Log.Debug("Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.", result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();

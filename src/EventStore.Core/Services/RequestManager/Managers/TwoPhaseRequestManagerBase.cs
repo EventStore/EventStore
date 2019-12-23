@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.CheckStreamAccessCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitReplicated>,
+		IHandle<StorageMessage.CommitAck>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.RequestManagerTimerTick> {
@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private bool _completed;
 		private bool _initialized;
 		private bool _betterOrdering;
+		private long _commitPosition;
 
 		protected TwoPhaseRequestManagerBase(IPublisher publisher,
 			int prepareCount,
@@ -66,6 +67,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_betterOrdering = betterOrdering;
 
 			_awaitingPrepare = prepareCount;
+			_commitPosition = long.MaxValue;
 		}
 
 		protected abstract void OnSecurityAccessGranted(Guid internalCorrId);
@@ -140,8 +142,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Handle(StorageMessage.AlreadyCommitted message) {
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", _clientCorrId,
 				message);
-			CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, -1, -1);
-			//TODO GFY WE NEED TO GET THE LOG POSITION HERE WHEN ITS AN IDEMPOTENT WRITE
+			
+			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, -1, -1);
+			_commitPosition = message.LogPosition;
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -161,16 +164,23 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			}
 		}
 
-		public void Handle(StorageMessage.CommitReplicated message) {
-			if (_completed)
-				return;
+		public void Handle(StorageMessage.CommitAck message) {
+			if (_completed) { return; }
 
-			CompleteSuccessRequest(message.FirstEventNumber, message.LastEventNumber, message.LogPosition,
+			_commitPosition = message.LogPosition;
+			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, message.LogPosition,
 				message.LogPosition);
 		}
 
-		protected virtual void CompleteSuccessRequest(long firstEventNumber, long lastEventNumber, long preparePosition,
+		public void Handle(CommitMessage.CommittedTo message) {
+			if (_completed) { return; }
+			if (message.LogPosition >= _commitPosition) { SuccessClusterCommitted(); }
+		}
+
+		protected virtual void SuccessLocalCommitted(long firstEventNumber, long lastEventNumber, long preparePosition,
 			long commitPosition) {
+		}
+		protected virtual void SuccessClusterCommitted() {
 			_completed = true;
 			Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
 		}

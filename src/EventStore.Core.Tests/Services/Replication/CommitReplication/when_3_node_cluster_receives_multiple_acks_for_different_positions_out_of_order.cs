@@ -21,11 +21,11 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition1);
 			AddPendingPrepare(_logPosition2);
-			_service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0, true));
-			_service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0, true));
+			_commitTracker.Handle(new CommitMessage.LogWrittenTo( _logPosition2));
+			_commitTracker.Handle(new CommitMessage.LogWrittenTo( _logPosition1));
 
 			// Reach quorum for middle commit
-			_service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0));
+			_commitTracker.Handle(new CommitMessage.ReplicaLogWrittenTo( _logPosition2, Guid.NewGuid()));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(_timeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");
