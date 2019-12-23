@@ -11,29 +11,36 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
-			_replicationPosition = 4000;
+			ReplicationPosition = 4000;
 			base.TestFixtureSetUp();
 		}
 
 		public override void When() {
 			BecomeMaster();
-			_service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));			
-			_service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));			
+			Service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
 		}
 
 		[Test]
 		public void replication_checkpoint_should_not_have_been_updated() {
-			Assert.AreEqual(_replicationPosition, _replicationCheckpoint.ReadNonFlushed());
+			Assert.AreEqual(ReplicationPosition, ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]
 		public void commit_replicated_message_should_not_have_been_published() {
-			Assert.AreEqual(0, _handledMessages.Count);
+			Assert.AreEqual(0, CommitReplicatedMgs.Count);
 		}
-
+		[Test]
+		public void index_written_message_should_have_not_been_published() {
+			Assert.AreEqual(0, IndexWrittenMgs.Count);
+		}
+		[Test]
+		public void index_written_message_should_not_have_been_published() {
+			Assert.AreEqual(0, IndexWrittenMgs.Count);
+		}
 		[Test]
 		public void index_should_not_have_been_updated() {
-			Assert.AreEqual(0, _indexCommitter.CommittedPrepares.Count);
+			Assert.AreEqual(0, IndexCommitter.CommittedPrepares.Count);
 		}
 	}
 }

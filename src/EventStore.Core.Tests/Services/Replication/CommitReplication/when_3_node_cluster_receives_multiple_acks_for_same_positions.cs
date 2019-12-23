@@ -15,33 +15,39 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private long _logPosition = 1000;
 
 		public override void When() {
-			_publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
+			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			_service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0, true));
-			_service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0, true));
-			_service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
-			_service.Handle(new CommitMessage.LogCommittedTo( _logPosition));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0, true));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0, true));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
+			Service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
 
-			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(_timeoutSeconds))) {
+			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");
 			}
 		}
 
 		[Test]
 		public void replication_checkpoint_should_have_been_updated() {
-			Assert.AreEqual(_logPosition, _replicationCheckpoint.ReadNonFlushed());
+			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]
 		public void commit_replicated_message_should_have_been_published_for_the_event() {
-			Assert.AreEqual(2, _handledMessages.Count);
+			Assert.AreEqual(2, CommitReplicatedMgs.Count);
+		}
+		[Test]
+		public void index_written_message_should_have_been_published_for_the_event() {
+			Assert.AreEqual(2, IndexWrittenMgs.Count);
+			Assert.AreEqual(_logPosition, IndexWrittenMgs[0].LogPosition);
+			Assert.AreEqual(_logPosition, IndexWrittenMgs[1].LogPosition);
 		}
 
 		[Test]
 		public void index_should_have_been_updated() {
-			Assert.AreEqual(1, _indexCommitter.CommittedPrepares.Count);
-			Assert.AreEqual(_logPosition, _indexCommitter.CommittedPrepares[0].LogPosition);
+			Assert.AreEqual(1, IndexCommitter.CommittedPrepares.Count);
+			Assert.AreEqual(_logPosition, IndexCommitter.CommittedPrepares[0].LogPosition);
 		}
 	}
 }

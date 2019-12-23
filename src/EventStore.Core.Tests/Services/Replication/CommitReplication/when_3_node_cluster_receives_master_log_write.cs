@@ -10,23 +10,26 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public override void When() {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			_service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));	
-			_publisher.Publish(new CommitMessage.LogWrittenTo(_logPosition));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));	
+			Publisher.Publish(new CommitMessage.LogWrittenTo(_logPosition));
 		}
 
 		[Test]
 		public void replication_checkpoint_should_not_be_updated() {
-			Assert.AreEqual(0, _replicationCheckpoint.ReadNonFlushed());
+			Assert.AreEqual(0, ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]
 		public void commit_replicated_message_should_not_be_sent() {
-			Assert.AreEqual(0, _handledMessages.Count);
+			Assert.AreEqual(0, CommitReplicatedMgs.Count);
 		}
-
+		[Test]
+		public void index_written_message_should_not_have_been_published() {
+			Assert.AreEqual(0, IndexWrittenMgs.Count);		
+		}
 		[Test]
 		public void index_should_not_have_been_updated() {
-			Assert.AreEqual(0, _indexCommitter.CommittedPrepares.Count);
+			Assert.AreEqual(0, IndexCommitter.CommittedPrepares.Count);
 		}
 	}
 }
