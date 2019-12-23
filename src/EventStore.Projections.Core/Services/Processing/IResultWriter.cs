@@ -7,8 +7,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Guid subscriptionId, string partition, string resultBody, CheckpointTag causedBy, Guid causedByGuid,
 			string correlationId);
 
-		void WritePartitionMeasured(Guid subscriptionId, string partition, long size);
-
 		void WriteRunningResult(EventProcessedResult result);
 
 		void AccountPartition(EventProcessedResult result);

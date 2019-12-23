@@ -1168,9 +1168,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				ProjectionManager projectionManager,
 				Guid projectionCorrelationId,
 				Guid workerId,
-				bool isSlave = false,
-				Guid slaveMasterWorkerId = default(Guid),
-				Guid slaveMasterCorrelationId = default(Guid),
 				long? version = -1) {
 				var projection = projectionManager.CreateManagedProjectionInstance(
 					_name,

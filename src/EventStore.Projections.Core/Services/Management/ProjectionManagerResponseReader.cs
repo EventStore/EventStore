@@ -17,7 +17,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Management {
-	//TODO: response reader must start before Manager (otherwise misses first responses at least in case with pre-registered workers)
 	public class ProjectionManagerResponseReader : IHandle<ProjectionManagementMessage.Starting>,
 		IHandle<ProjectionManagementMessage.Internal.ReadTimeout> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionManagerResponseReader>();

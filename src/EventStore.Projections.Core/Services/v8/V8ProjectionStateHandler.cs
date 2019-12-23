@@ -121,19 +121,6 @@ namespace EventStore.Projections.Core.Services.v8 {
 				return partition;
 		}
 
-		public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data) {
-			CheckDisposed();
-			if (data == null) throw new ArgumentNullException("data");
-
-			return _query.TransformCatalogEvent(
-				(data.Data ?? "").Trim(), // trimming data passed to a JS 
-				new[] {
-					data.IsJson ? "1" : "", data.EventStreamId, data.EventType ?? "", "",
-					data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
-					data.PositionMetadata ?? "", data.EventStreamId, data.StreamMetadata ?? ""
-				});
-		}
-
 		public bool ProcessEvent(
 			string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
 			out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
