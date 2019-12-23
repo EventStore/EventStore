@@ -140,7 +140,7 @@ Function Start-Build{
             }
             Exec { npm install bower@~1.8.4 -g }
             Exec { bower install --allow-root }
-            Exec { npm install gulp@~3.8.8 -g }
+            Exec { npm install gulp@~3.8.8 -g --force}
             Exec { npm install }
             Exec { gulp dist }        
             Exec { mv es-dist $uiDistDirectory }
