@@ -15,7 +15,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			_publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			_commitTracker.Handle(new CommitMessage.LogWrittenTo(_logPosition));
+			_service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0, true));
+			_service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
 			BecomeUnknown();
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(_timeoutSeconds))) {

@@ -29,6 +29,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<CommitMessage.LogCommittedTo>,
+		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
 		private readonly IIndexCommitter _indexCommitter;
@@ -211,7 +212,9 @@ namespace EventStore.Core.Services.Storage {
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
 			_stop = true;
 		}
-
+		public void Handle(StorageMessage.CommitAck message) {
+			_commitAcks.AddCommitAck(message);
+		}
 		
 		public void Handle(CommitMessage.LogCommittedTo message) {
 			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
@@ -318,9 +321,8 @@ namespace EventStore.Core.Services.Storage {
 			public List<CommitAckNode> GetCommitAcksUpTo(long position) {
 
 				var currentNode = _commitAcksLinkedList.First;
-				var result = new List<CommitAckNode>();
-				//todo: < or <= confirm we are using the post position for tracking the log i.e. <
-				while (currentNode != null && currentNode.Value.LogPosition < position) {
+				var result = new List<CommitAckNode>();				
+				while (currentNode != null && currentNode.Value.LogPosition <= position) {
 					result.Add(currentNode.Value);
 					currentNode = currentNode.Next;
 				}

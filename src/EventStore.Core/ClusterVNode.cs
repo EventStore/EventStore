@@ -337,6 +337,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
 			_mainBus.Subscribe<CommitMessage.LogCommittedTo>(indexCommitterService);
+			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
 			var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
