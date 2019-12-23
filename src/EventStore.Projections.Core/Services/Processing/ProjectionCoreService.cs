@@ -18,7 +18,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IHandle<ProjectionCoreServiceMessage.CoreTick>,
 			IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
 			IHandle<CoreProjectionManagementMessage.CreatePrepared>,
-			IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
 			IHandle<CoreProjectionManagementMessage.Dispose>,
 			IHandle<CoreProjectionManagementMessage.Start>,
 			IHandle<CoreProjectionManagementMessage.LoadStopped>,
@@ -50,7 +49,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ITimeProvider _timeProvider;
 		private readonly ProcessingStrategySelector _processingStrategySelector;
 
-		private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private readonly ISingletonTimeoutScheduler _timeoutScheduler;
 
 		private bool _stopping;
@@ -65,19 +63,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
-			SpooledStreamReadingDispatcher spoolProcessingResponseDispatcher,
 			ISingletonTimeoutScheduler timeoutScheduler) {
 			_workerId = workerId;
 			_inputQueue = inputQueue;
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_spoolProcessingResponseDispatcher = spoolProcessingResponseDispatcher;
 			_timeoutScheduler = timeoutScheduler;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_timeProvider = timeProvider;
-			_processingStrategySelector = new ProcessingStrategySelector(
-				_subscriptionDispatcher,
-				_spoolProcessingResponseDispatcher);
+			_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher);
 		}
 
 		public ILogger Logger {
@@ -209,35 +203,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			} catch (Exception ex) {
 				_publisher.Publish(
 					new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
-			}
-		}
-
-		public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message) {
-			try {
-				var stateHandler = CreateStateHandler(_timeoutScheduler, _logger, message.HandlerType, message.Query);
-
-				string name = message.Name;
-				var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
-				var projectionVersion = message.Version;
-				var projectionConfig = message.Config.SetIsSlave();
-				var projectionProcessingStrategy =
-					_processingStrategySelector.CreateSlaveProjectionProcessingStrategy(
-						name,
-						projectionVersion,
-						sourceDefinition,
-						projectionConfig,
-						stateHandler,
-						message.MasterWorkerId,
-						_publisher,
-						message.MasterCoreProjectionId,
-						this);
-				CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
-				_publisher.Publish(
-					new CoreProjectionStatusMessage.Prepared(
-						message.ProjectionId,
-						sourceDefinition));
-			} catch (Exception ex) {
-				_publisher.Publish(new CoreProjectionStatusMessage.Faulted(message.ProjectionId, ex.Message));
 			}
 		}
 

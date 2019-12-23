@@ -1,14 +1,11 @@
 using System;
-using System.Diagnostics;
 using System.Security.Principal;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Utils;
 
@@ -77,10 +74,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private SlaveProjectionCommunicationChannels _slaveProjections;
 		private int _statisticsSequentialNumber;
 		private bool _disposed;
-
-		private MasterCoreProjectionResponseReader _masterProjectionResponseReader;
-		//NOTE: this is only for slave projections (TBD)
-
 
 		public CoreProjection(
 			ProjectionProcessingStrategy projectionProcessingStrategy,
@@ -211,7 +204,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterSuspended() {
 			EnsureUnsubscribed();
-			_masterProjectionResponseReader?.Stop();
 			_publisher.Publish(new CoreProjectionStatusMessage.Suspended(_projectionCorrelationId));
 		}
 
@@ -358,8 +350,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 
 		private void StopSlaveProjections() {
-			if (_masterProjectionResponseReader != null)
-				_masterProjectionResponseReader.Stop();
 			//TODO: encapsulate into StopSlaveProjections message?
 			var slaveProjections = _slaveProjections;
 			if (slaveProjections != null) {
@@ -441,7 +431,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 					EnterInitial();
 					break;
 				case State.StartSlaveProjectionsRequested:
-					EnterStartSlaveProjectionsRequested();
 					break;
 				case State.LoadStateRequested:
 					EnterLoadStateRequested();
@@ -498,23 +487,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, CheckpointTag.Empty),
 					null);
 			// NOTE: this is to workaround exception in GetState requests submitted by client
-		}
-
-		private void EnterStartSlaveProjectionsRequested() {
-			_masterProjectionResponseReader = new MasterCoreProjectionResponseReader(
-				_publisher,
-				_ioDispatcher,
-				_workerId,
-				_projectionCorrelationId);
-			_masterProjectionResponseReader.Start();
-			_publisher.Publish(
-				new ProjectionManagementMessage.Command.StartSlaveProjections(
-					new PublishEnvelope(_inputQueue),
-					new ProjectionManagementMessage.RunAs(_runAs),
-					_name,
-					_projectionProcessingStrategy.GetSlaveProjections(),
-					_workerId,
-					_projectionCorrelationId));
 		}
 
 		private void EnterLoadStateRequested() {

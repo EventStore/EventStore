@@ -9,7 +9,6 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
@@ -95,9 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe(
 				CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
 					starting => _queue.Publish(new ProjectionManagementMessage.ReaderReady())));
-			_bus.Subscribe<PartitionProcessingResultBase>(_managerMessageDispatcher);
 			_bus.Subscribe<CoreProjectionManagementControlMessage>(_managerMessageDispatcher);
-			_bus.Subscribe<PartitionProcessingResultOutputBase>(_managerMessageDispatcher);
 
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
