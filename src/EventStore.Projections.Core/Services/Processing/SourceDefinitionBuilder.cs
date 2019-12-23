@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
-	public sealed class SourceDefinitionBuilder : IQuerySources // name it!!
+	public sealed class SourceDefinitionBuilder : IQuerySources
 	{
 		private readonly QuerySourceOptions _options = new QuerySourceOptions();
 		private bool _allStreams;
@@ -42,10 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void SetIncludeLinks(bool includeLinks = true) {
 			_options.IncludeLinks = includeLinks;
-		}
-
-		public void SetDisableParallelism(bool disableParallelism = true) {
-			_options.DisableParallelism = disableParallelism;
 		}
 
 		public void IncludeEvent(string eventName) {
@@ -153,10 +149,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			get { return _options.IncludeLinks; }
 		}
 
-		public bool DisableParallelismOption {
-			get { return _options.DisableParallelism; }
-		}
-
 		public string ResultStreamNameOption {
 			get { return _options.ResultStreamName; }
 		}
@@ -213,8 +205,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		[DataMember] public bool HandlesDeletedNotifications { get; set; }
 
 		[DataMember] public bool IncludeLinks { get; set; }
-
-		[DataMember] public bool DisableParallelism { get; set; }
 
 		protected bool Equals(QuerySourceOptions other) {
 			return string.Equals(ResultStreamName, other.ResultStreamName)

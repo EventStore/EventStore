@@ -80,7 +80,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.project
 			Assert.AreEqual(false, projectionSourceDefinition.DefinesFold);
 			Assert.AreEqual(false, projectionSourceDefinition.HandlesDeletedNotifications);
 			Assert.AreEqual(true, projectionSourceDefinition.IncludeLinksOption);
-			Assert.AreEqual(true, projectionSourceDefinition.DisableParallelismOption);
 		}
 	}
 }

@@ -43,10 +43,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			get { return Options != null && Options.IncludeLinks; }
 		}
 
-		bool IQuerySources.DisableParallelismOption {
-			get { return Options != null && Options.DisableParallelism; }
-		}
-
 		string IQuerySources.ResultStreamNameOption {
 			get { return Options != null ? Options.ResultStreamName : null; }
 		}
@@ -88,7 +84,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 						DefinesFold = sources.DefinesFold,
 						HandlesDeletedNotifications = sources.HandlesDeletedNotifications,
 						IncludeLinks = sources.IncludeLinksOption,
-						DisableParallelism = sources.DisableParallelismOption,
 						PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
 						ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
 						IsBiState = sources.IsBiState,

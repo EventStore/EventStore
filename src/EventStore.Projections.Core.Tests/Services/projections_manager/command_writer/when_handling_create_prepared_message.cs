@@ -99,8 +99,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.command
 			Assert.AreEqual(
 				_definition.Options.DefinesStateTransform,
 				command.SourceDefinition.Options.DefinesStateTransform);
-			Assert.AreEqual(_definition.Options.DisableParallelism,
-				command.SourceDefinition.Options.DisableParallelism);
 			Assert.AreEqual(
 				_definition.Options.HandlesDeletedNotifications,
 				command.SourceDefinition.Options.HandlesDeletedNotifications);
