@@ -940,38 +940,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public sealed class RequestSystemProjections : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public readonly IEnvelope Envelope;
-
-			public RequestSystemProjections(IEnvelope envelope) {
-				Envelope = envelope;
-			}
-		}
-
-		public sealed class RegisterSystemProjection : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public readonly string Name;
-			public readonly string Handler;
-			public readonly string Query;
-
-			public RegisterSystemProjection(string name, string handler, string query) {
-				Name = name;
-				Handler = handler;
-				Query = query;
-			}
-		}
-
 		public sealed class Starting : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 

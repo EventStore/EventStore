@@ -11,8 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	public abstract class TestFixtureWithExistingEvents : EventStore.Core.Tests.Helpers.TestFixtureWithExistingEvents,
-		IHandle<ProjectionCoreServiceMessage.CoreTick>,
-		IHandle<ReaderCoreServiceMessage.ReaderTick> {
+		IHandle<ProjectionCoreServiceMessage.CoreTick> {
 		protected
 			ReaderSubscriptionDispatcher
 			_subscriptionDispatcher;
@@ -45,7 +44,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 			_bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(this);
-			_bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(this);
 
 			AwakeService = new AwakeService();
 			_bus.Subscribe<StorageMessage.EventCommitted>(AwakeService);
@@ -56,11 +54,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		public void Handle(ProjectionCoreServiceMessage.CoreTick message) {
-			if (_ticksAreHandledImmediately)
-				message.Action();
-		}
-
-		public void Handle(ReaderCoreServiceMessage.ReaderTick message) {
 			if (_ticksAreHandledImmediately)
 				message.Action();
 		}

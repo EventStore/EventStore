@@ -194,7 +194,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe<ReaderCoreServiceMessage.StartReader>(readerService);
 			bus.Subscribe<ReaderCoreServiceMessage.StopReader>(readerService);
 			bus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(coreService);
-			bus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(readerService);
 			bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(readerService);

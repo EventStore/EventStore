@@ -156,7 +156,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
 			}
 
-			coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_eventReaderCoreService);

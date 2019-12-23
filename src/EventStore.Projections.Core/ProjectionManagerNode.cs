@@ -90,10 +90,8 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Reset>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.GetConfig>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateConfig>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Started>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Faulted>(projectionManager);
@@ -141,8 +139,6 @@ namespace EventStore.Projections.Core {
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
 			managerOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 			managerOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
-			managerOutput.Subscribe(
-				Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(standardComponents.MainQueue));
 			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.MasterInputQueue));
 
 			managerOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
