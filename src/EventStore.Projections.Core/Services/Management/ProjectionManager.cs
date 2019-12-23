@@ -1195,10 +1195,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					_name,
 					_projectionId,
 					projectionCorrelationId,
-					workerId,
-					isSlave,
-					slaveMasterWorkerId,
-					slaveMasterCorrelationId);
+					workerId);
 				projection.InitializeNew(
 					new ManagedProjection.PersistedState {
 						Enabled = _enabled,
@@ -1223,10 +1220,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			string name,
 			long projectionId,
 			Guid projectionCorrelationId,
-			Guid workerID,
-			bool isSlave = false,
-			Guid slaveMasterWorkerId = default(Guid),
-			Guid slaveMasterCorrelationId = default(Guid)) {
+			Guid workerID) {
 			var enabledToRun = IsProjectionEnabledToRunByMode(name);
 			var workerId = workerID;
 			var managedProjectionInstance = new ManagedProjection(
@@ -1244,10 +1238,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				_getStateDispatcher,
 				_getResultDispatcher,
 				_ioDispatcher,
-				_projectionsQueryExpiry,
-				isSlave,
-				slaveMasterWorkerId,
-				slaveMasterCorrelationId);
+				_projectionsQueryExpiry);
 
 			_projectionsMap.Add(projectionCorrelationId, name);
 			_projections.Add(name, managedProjectionInstance);
