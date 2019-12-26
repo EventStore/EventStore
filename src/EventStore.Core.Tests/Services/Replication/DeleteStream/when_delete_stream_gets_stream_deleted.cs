@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
@@ -10,8 +11,8 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	[TestFixture]
 	public class when_delete_stream_gets_stream_deleted : RequestManagerSpecification {
-		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
-			return new DeleteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
+		protected override IRequestManager OnManager(FakePublisher publisher) {
+			return new DeleteStreamRequestManager(publisher, CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

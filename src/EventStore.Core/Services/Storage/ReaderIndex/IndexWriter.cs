@@ -173,11 +173,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= endEventNumber;
-					//todo: the new index should hold the log positions removing this read
+					//todo-clc: the new index should hold the log positions removing this read
+					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
+					//in that case the position will need to come from the pre-index
 					var idempotentEvent = _indexReader.ReadEvent(streamId, endEventNumber);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
-						? idempotentEvent.Record.LogPosition : -1; 
-					//todo: what if it fails? idempotent isn't really valid at that point, is it really a risk?
+						? idempotentEvent.Record.LogPosition : -1; 					
 					if(isReplicated)
 						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 					else
@@ -216,11 +217,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= eventNumber;
-					//todo: the new index should hold the log positions removing this read
+					//todo-clc: the new index should hold the log positions removing this read
+					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
+					//in that case the position will need to come from the pre-index
 					var idempotentEvent = _indexReader.ReadEvent(streamId, eventNumber);
 					var logPos = idempotentEvent.Result == ReadEventResult.Success
 						? idempotentEvent.Record.LogPosition : -1; 
-					//todo: what if it fails? idempotent isn't really valid at that point, is it really a risk?
 					if(isReplicated)
 						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false,logPos);
 					else

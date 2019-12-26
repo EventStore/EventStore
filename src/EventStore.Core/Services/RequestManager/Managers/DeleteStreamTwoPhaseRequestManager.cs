@@ -4,26 +4,25 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
-	public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase,
+	public class DeleteStreamRequestManager : SinglePhaseRequestManagerBase,
 		IHandle<ClientMessage.DeleteStream> {
 		private string _eventStreamId;
 		private long _expectedVersion;
 		private bool _hardDelete;
 		private ClientMessage.DeleteStreamCompleted _responseMsg;
 
-		public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,
-			int prepareCount,
-			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout,
+		public DeleteStreamRequestManager(
+			IPublisher publisher,
+			TimeSpan timeout,
 			bool betterOrdering)
-			: base(publisher, prepareCount, prepareTimeout, commitTimeout, betterOrdering) {
+			: base(publisher, timeout, betterOrdering) {
 		}
 
 		public void Handle(ClientMessage.DeleteStream request) {
 			_eventStreamId = request.EventStreamId;
 			_expectedVersion = request.ExpectedVersion;
 			_hardDelete = request.HardDelete;
-			InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId,
+			Init(request.Envelope, request.InternalCorrId, request.CorrelationId, request.EventStreamId,
 				request.User, StreamAccessType.Delete);
 		}
 

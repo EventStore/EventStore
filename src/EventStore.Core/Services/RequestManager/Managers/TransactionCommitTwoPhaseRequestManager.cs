@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		public void Handle(ClientMessage.TransactionCommit request) {
 			_transactionId = request.TransactionId;
-			InitTwoPhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+			Init(request.Envelope, request.InternalCorrId, request.CorrelationId,
 				request.TransactionId, request.User, StreamAccessType.Write);
 		}
 

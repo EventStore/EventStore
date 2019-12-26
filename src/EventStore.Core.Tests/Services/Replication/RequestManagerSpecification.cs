@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
@@ -13,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 		protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
 		protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 
-		protected TwoPhaseRequestManagerBase Manager;
+		protected IRequestManager Manager;
 		protected List<Message> Produced;
 		protected FakePublisher Publisher;
 		protected Guid InternalCorrId = Guid.NewGuid();
@@ -22,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 		protected byte[] EventData = new byte[255];
 		protected FakeEnvelope Envelope;
 
-		protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
+		protected abstract IRequestManager OnManager(FakePublisher publisher);
 		protected abstract IEnumerable<Message> WithInitialMessages();
 		protected abstract Message When();
 

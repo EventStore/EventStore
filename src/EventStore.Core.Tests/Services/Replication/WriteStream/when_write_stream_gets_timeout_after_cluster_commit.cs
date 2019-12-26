@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
@@ -11,8 +12,8 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
 	public class when_write_stream_gets_timeout_after_cluster_commit : RequestManagerSpecification {
 		long _commitPosition = 100;
-		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
-			return new WriteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
+		protected override IRequestManager OnManager(FakePublisher publisher) {
+			return new WriteStreamRequestManager(publisher,  CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -27,8 +28,13 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		[Test]
-		public void no_messages_are_published() {
+		public void no_additional_messages_are_published() {
 			Assert.That(Produced.Count == 0);
+		}
+		[Test]
+		public void the_envelope_has_single_successful_reply() {
+			Assert.AreEqual(1, Envelope.Replies.Count);
+			Assert.AreEqual(OperationResult.Success, ((ClientMessage.WriteEventsCompleted)Envelope.Replies[0]).Result);
 		}
 	}
 }

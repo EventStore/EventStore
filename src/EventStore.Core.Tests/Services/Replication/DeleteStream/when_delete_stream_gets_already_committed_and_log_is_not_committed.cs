@@ -1,16 +1,18 @@
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	[TestFixture]
-	public class when_delete_stream_gets_commit_timeout_after_commit_replicated : RequestManagerSpecification {
+	public class when_delete_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification {
+		private long _commitPosition = 3000;
 		protected override IRequestManager OnManager(FakePublisher publisher) {
 			return new DeleteStreamRequestManager(publisher, CommitTimeout, false);
 		}
@@ -18,17 +20,21 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123",
 				ExpectedVersion.Any, true, null);
-			yield return new StorageMessage.CommitReplicated(InternalCorrId, 1, 1, 0, 0);
+			yield return new CommitMessage.CommittedTo(_commitPosition -1);
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick(
-				DateTime.UtcNow + TimeSpan.FromTicks(CommitTimeout.Ticks / 2));
+			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, _commitPosition);
 		}
 
 		[Test]
 		public void no_messages_are_published() {
-			Assert.That(Produced.Count == 0);
+			Assert.That(!Produced.Any());
+		}
+
+		[Test]
+		public void the_envelope_is_not_replied_to() {
+			Assert.That(!Envelope.Replies.Any());
 		}
 	}
 }

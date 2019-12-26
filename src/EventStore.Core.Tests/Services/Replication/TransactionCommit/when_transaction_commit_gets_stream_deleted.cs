@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
@@ -9,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit {
 	[TestFixture]
 	public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification {
-		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
+		protected override IRequestManager OnManager(FakePublisher publisher) {
 			return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
 

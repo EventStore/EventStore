@@ -4,22 +4,21 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
-	public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase,
+	public class WriteStreamRequestManager : SinglePhaseRequestManagerBase,
 		IHandle<ClientMessage.WriteEvents> {
 		private ClientMessage.WriteEvents _request;
 		private ClientMessage.WriteEventsCompleted _responseMsg;
 
-		public WriteStreamTwoPhaseRequestManager(IPublisher publisher,
-			int prepareCount,
-			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout,
+		public WriteStreamRequestManager(
+			IPublisher publisher,
+			TimeSpan timeout,
 			bool betterOrdering)
-			: base(publisher, prepareCount, prepareTimeout, commitTimeout, betterOrdering) {
+			: base(publisher,timeout, betterOrdering) {
 		}
 
 		public void Handle(ClientMessage.WriteEvents request) {
 			_request = request;
-			InitNoPreparePhase(request.Envelope, request.InternalCorrId, request.CorrelationId,
+			Init(request.Envelope, request.InternalCorrId, request.CorrelationId,
 				request.EventStreamId, request.User, StreamAccessType.Write);
 		}
 
