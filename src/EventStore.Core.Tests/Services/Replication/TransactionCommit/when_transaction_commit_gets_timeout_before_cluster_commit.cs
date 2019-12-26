@@ -6,22 +6,25 @@ using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit {
-	[TestFixture]
-	public class when_transaction_commit_gets_prepare_timeout_before_prepares : RequestManagerSpecification {
+	public class when_transaction_commit_gets_timeout_before_cluster_commit : RequestManagerSpecification {
 		protected override IRequestManager OnManager(FakePublisher publisher) {
 			return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, true, 4, null);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, 100, PrepareFlags.Data);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, 200, PrepareFlags.Data);
+			yield return new StorageMessage.CommitAck(InternalCorrId, 300, 100, 1, 2);
 		}
 
 		protected override Message When() {
 			return new StorageMessage.RequestManagerTimerTick(
-				DateTime.UtcNow + PrepareTimeout + TimeSpan.FromMinutes(5));
+				DateTime.UtcNow + PrepareTimeout + CommitTimeout + TimeSpan.FromMinutes(5));
 		}
 
 		[Test]

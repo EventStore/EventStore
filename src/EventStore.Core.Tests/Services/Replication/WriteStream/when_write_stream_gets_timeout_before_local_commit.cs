@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -11,8 +12,8 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
 	public class when_write_stream_gets_timeout_before_local_commit : RequestManagerSpecification {
-		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
-			return new WriteStreamTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
+		protected override IRequestManager OnManager(FakePublisher publisher) {
+			return new WriteStreamRequestManager(publisher,  CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

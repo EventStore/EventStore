@@ -66,16 +66,14 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
-			var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _prepareTimeout, _commitTimeout,
-				_betterOrdering);
+			var manager = new WriteStreamRequestManager(_bus, _commitTimeout, _betterOrdering);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Handle(message);
 		}
 
 		public void Handle(ClientMessage.DeleteStream message) {
-			var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _prepareTimeout, _commitTimeout,
-				_betterOrdering);
+			var manager = new DeleteStreamRequestManager(_bus, _commitTimeout, _betterOrdering);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Handle(message);

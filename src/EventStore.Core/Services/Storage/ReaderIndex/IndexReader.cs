@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new IndexReadEventResult(ReadEventResult.StreamDeleted, metadata, lastEventNumber,
 					originalStreamExists);
 			if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
-				return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber,
+				return new IndexReadEventResult(ReadEventResult.NoStream, metadata,lastEventNumber,
 					originalStreamExists);
 			if (lastEventNumber == EventNumber.Invalid)
 				return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber,
@@ -99,15 +99,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
 			if (metadata.TruncateBefore.HasValue)
 				minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
-
+			//todo-clc: confirm this logic, it seems that reads less than min should be invaild rather than found
 			if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-				return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
+				return new IndexReadEventResult(ReadEventResult.NotFound, metadata,  lastEventNumber,
 					originalStreamExists);
 
 			PrepareLogRecord prepare = ReadPrepareInternal(reader, streamId, eventNumber);
 			if (prepare != null) {
 				if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
-					return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
+					return new IndexReadEventResult(ReadEventResult.NotFound, metadata,  lastEventNumber,
 						originalStreamExists);
 				return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare),
 					metadata, lastEventNumber, originalStreamExists);

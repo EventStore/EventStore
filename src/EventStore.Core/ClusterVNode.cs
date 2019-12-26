@@ -321,7 +321,7 @@ namespace EventStore.Core {
 
 			//COMMIT TRACKING
 			var commitTracker =
-				new CommitTrackerService(_mainQueue, CommitLevel.MasterIndexed, vNodeSettings.ClusterNodeCount);
+				new CommitTrackerService(_mainQueue, CommitLevel.ClusterWrite, vNodeSettings.ClusterNodeCount);
 			AddTask(commitTracker.Task);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(commitTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(commitTracker);

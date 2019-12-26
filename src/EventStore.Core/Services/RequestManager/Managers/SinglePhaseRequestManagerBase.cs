@@ -10,10 +10,9 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
-	public abstract class TwoPhaseRequestManagerBase : IRequestManager,
+	public abstract class SinglePhaseRequestManagerBase : IRequestManager,
 		IHandle<StorageMessage.CheckStreamAccessCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
-		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.StreamDeleted>,
@@ -36,46 +35,40 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			get { return _nextTimeoutTime; }
 		}
 
-		protected readonly TimeSpan PrepareTimeout;
-		protected readonly TimeSpan CommitTimeout;
+		protected readonly TimeSpan Timeout;
 		private IEnvelope _responseEnvelope;
 		private Guid _internalCorrId;
 		private Guid _clientCorrId;
-		private long _transactionId = -1;
 
-		private int _awaitingPrepare;
 		private DateTime _nextTimeoutTime;
 
+		private bool _localCommited;
 		private bool _completed;
 		private bool _initialized;
 		private bool _betterOrdering;
 		private long _transactionCommitPosition;
 		private long _systemCommittedPosition;
 
-		protected TwoPhaseRequestManagerBase(IPublisher publisher,
-			int prepareCount,
-			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout,
+		protected SinglePhaseRequestManagerBase(
+			IPublisher publisher,
+			TimeSpan timeout,
 			bool betterOrdering) {
 			Ensure.NotNull(publisher, "publisher");
-			Ensure.Positive(prepareCount, "prepareCount");
 
 			Publisher = publisher;
 			PublishEnvelope = new PublishEnvelope(publisher);
 
-			PrepareTimeout = prepareTimeout;
-			CommitTimeout = commitTimeout;
+			Timeout = timeout;
 			_betterOrdering = betterOrdering;
 
-			_awaitingPrepare = prepareCount;
 			_transactionCommitPosition = long.MaxValue;
 			_systemCommittedPosition = long.MinValue;
 		}
 
 		protected abstract void OnSecurityAccessGranted(Guid internalCorrId);
-		
+
 		protected void Init(IEnvelope responseEnvelope, Guid internalCorrId, Guid clientCorrId,
-			long transactionId, IPrincipal user, StreamAccessType accessType) {
+			string eventStreamId, IPrincipal user, StreamAccessType accessType) {
 			if (_initialized)
 				throw new InvalidOperationException();
 
@@ -84,12 +77,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_responseEnvelope = responseEnvelope;
 			_internalCorrId = internalCorrId;
 			_clientCorrId = clientCorrId;
-			_transactionId = transactionId;
 
-			_nextTimeoutTime = DateTime.UtcNow + PrepareTimeout;
-
+			_nextTimeoutTime = DateTime.UtcNow + Timeout;
 			Publisher.Publish(new StorageMessage.CheckStreamAccess(
-				PublishEnvelope, internalCorrId, null, transactionId, accessType, user));
+				PublishEnvelope, internalCorrId, eventStreamId, null, accessType, user, _betterOrdering));
 		}
 
 		public void Handle(StorageMessage.CheckStreamAccessCompleted message) {
@@ -117,36 +108,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
 			if (_completed || message.UtcNow < _nextTimeoutTime)
 				return;
-
-			if (_awaitingPrepare != 0)
-				CompleteFailedRequest(OperationResult.PrepareTimeout, "Prepare phase timeout.");
-			else
-				CompleteFailedRequest(OperationResult.CommitTimeout, "Commit phase timeout.");
+			CompleteFailedRequest(OperationResult.CommitTimeout, "Commit phase timeout.");
 		}
 
 		public void Handle(StorageMessage.AlreadyCommitted message) {
+			if (_completed || _localCommited) { return; }
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", _clientCorrId,
 				message);
 			_transactionCommitPosition = message.LogPosition;
-			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, -1, -1);
+			SuccessLocalCommitted(message.FirstEventNumber, message.LastEventNumber, message.LogPosition, message.LogPosition);
 			if (_systemCommittedPosition >= _transactionCommitPosition) { SuccessClusterCommitted(); }
-		}
-
-		public void Handle(StorageMessage.PrepareAck message) {
-			if (_completed)
-				return;
-
-			if (_transactionId == -1)
-				throw new Exception("TransactionId was not set, transactionId = -1.");
-
-			if (message.Flags.HasAnyOf(PrepareFlags.TransactionEnd)) {
-				_awaitingPrepare -= 1;
-				if (_awaitingPrepare == 0) {
-					Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, PublishEnvelope,
-						_transactionId));
-					_nextTimeoutTime = DateTime.UtcNow + CommitTimeout;
-				}
-			}
 		}
 
 		public void Handle(StorageMessage.CommitAck message) {
@@ -166,8 +137,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected virtual void SuccessLocalCommitted(long firstEventNumber, long lastEventNumber, long preparePosition,
 			long commitPosition) {
+			_localCommited = true;
 		}
+
 		protected virtual void SuccessClusterCommitted() {
+			if (_completed) { return; }
 			_completed = true;
 			Publisher.Publish(new StorageMessage.RequestCompleted(_internalCorrId, true));
 		}

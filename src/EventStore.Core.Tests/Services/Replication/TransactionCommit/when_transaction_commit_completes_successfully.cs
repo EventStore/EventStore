@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
@@ -10,19 +11,23 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit {
 	[TestFixture]
 	public class when_transaction_commit_completes_successfully : RequestManagerSpecification {
-		protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher) {
+		private long _commitPosition =3000;
+		private long _transactionPostion = 1000;
+		private int transactionId = 2341;
+		protected override IRequestManager OnManager(FakePublisher publisher) {
 			return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, true, 4, null);
-			yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-			yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
-			yield return new StorageMessage.PrepareAck(InternalCorrId, 1, PrepareFlags.StreamDelete);
+			yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, true, transactionId, null);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPostion, PrepareFlags.Data);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPostion + 100, PrepareFlags.Data);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPostion + 200, PrepareFlags.Data);
+			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, _transactionPostion, 1, 3);
 		}
 
 		protected override Message When() {
-			return new StorageMessage.CommitReplicated(InternalCorrId, 100, 2, 3, 3);
+			return new CommitMessage.CommittedTo(_commitPosition);
 		}
 
 		[Test]
