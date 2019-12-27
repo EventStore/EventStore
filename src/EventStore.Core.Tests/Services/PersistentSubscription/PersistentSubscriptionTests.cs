@@ -898,7 +898,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			messageParker.BeginParkMessage(parkedEvent, "parked", (ev, res) => { });
 
 			//retry parked events (this sets correct _state flag so that we can call HandleParkedReadCompleted below)
-			sub.RetryAllParkedMessages();
+			sub.RetryParkedMessages(null);
 
 			//handle parked event 15@$persistentsubscription-streamName::groupName-parked
 			//this should send the parked event to the retry buffer.
@@ -1529,16 +1529,135 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(0, parker.BeginReadEndSequenceCount);
 
 			//retry all parked messages
-			sub.RetryAllParkedMessages();
+			sub.RetryParkedMessages(null);
 
 			//this should invoke message parker's BeginReadEndSequence
 			Assert.AreEqual(1, parker.BeginReadEndSequenceCount);
 
 			//retry all parked messages again
-			sub.RetryAllParkedMessages();
+			sub.RetryParkedMessages(null);
 
 			//this should invoke message parker's BeginReadEndSequence again
 			Assert.AreEqual(2, parker.BeginReadEndSequenceCount);
+		}
+
+		[Test]
+		public void retrying_parked_messages_with_stop_at_invokes_readend() {
+			//setup the persistent subscription
+			var reader = new FakeCheckpointReader();
+			var parker = new FakeMessageParker();
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+					.WithEventLoader(new FakeStreamReader(x => { }))
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+					.WithMessageParker(parker)
+					.StartFromBeginning());
+			reader.Load(null);
+
+			Assert.AreEqual(0, parker.BeginReadEndSequenceCount);
+
+			//retry parked messages stop at version 5000
+			sub.RetryParkedMessages(5000);
+			
+			//this should invoke message parker's BeginReadEndSequence
+			Assert.AreEqual(1, parker.BeginReadEndSequenceCount);
+		}
+
+
+		[Test]
+		public void retrying_parked_messages_without_stop_at_replays_all_parkedEvents() {
+			var messageParker = new FakeMessageParker();
+			var reader = new FakeCheckpointReader();
+
+			List<int> loadCount = new List<int>();
+
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, onEventsFound) => loadCount.Add(countToLoad)))
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+					.WithMessageParker(messageParker)
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(1));
+			reader.Load(null);
+			
+			loadCount.Clear(); // clear loads from checkpoint reader
+			
+			var clientConnectionId = Guid.NewGuid();
+			var clientCorrelationId = Guid.NewGuid();
+			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
+
+			//park 19 events
+			var parkedEvents = Enumerable.Range(0, 19)
+				.Select(v => Helper.BuildFakeEvent(Guid.NewGuid(), "type", "$persistentsubscription-streamName::groupName-parked", v)).ToArray();
+			foreach (var parkedEvent in parkedEvents) {
+				messageParker.BeginParkMessage(parkedEvent, "parked", (ev, res) => { });
+			}
+			
+			sub.RetryParkedMessages(null);
+			
+			Assert.AreEqual(19, loadCount[0]);
+			
+			sub.HandleParkedReadCompleted(
+				parkedEvents,
+				19,
+				true,
+				20);
+			
+			Assert.AreEqual(19, messageParker.MarkedAsProcessed);
+			Assert.AreEqual(19, sub.OutstandingMessageCount);
+
+		}
+		
+		[Test]
+		public void retrying_parked_messages_with_stop_at_replays_parkedEvents_until_that_version() {
+			var messageParker = new FakeMessageParker();
+			var reader = new FakeCheckpointReader();
+
+			List<int> loadCount = new List<int>();
+
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, onEventsFound) => loadCount.Add(countToLoad)))
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
+					.WithMessageParker(messageParker)
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(1));
+			reader.Load(null);
+			
+			loadCount.Clear(); // clear loads from checkpoint reader
+			
+			var clientConnectionId = Guid.NewGuid();
+			var clientCorrelationId = Guid.NewGuid();
+			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
+
+			//park 19 events
+			var parkedEvents = Enumerable.Range(0, 19)
+				.Select(v => Helper.BuildFakeEvent(Guid.NewGuid(), "type", "$persistentsubscription-streamName::groupName-parked", v)).ToArray();
+			foreach (var parkedEvent in parkedEvents) {
+				messageParker.BeginParkMessage(parkedEvent, "parked", (ev, res) => { });
+			}
+
+			var stopAt = 7L;
+			sub.RetryParkedMessages(stopAt);
+			
+			// stopAt == Count
+			Assert.AreEqual(stopAt, loadCount[0]);
+
+			sub.HandleParkedReadCompleted(
+				parkedEvents.Where(re => re.OriginalEventNumber < 7).ToArray(),
+				7,
+				false,
+				stopAt);
+			
+			Assert.AreEqual(7, messageParker.MarkedAsProcessed);
+			
+			Assert.AreEqual(7, sub.OutstandingMessageCount);
+
 		}
 	}
 

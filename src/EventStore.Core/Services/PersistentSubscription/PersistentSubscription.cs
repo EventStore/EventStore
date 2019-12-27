@@ -400,7 +400,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			});
 		}
 
-		public void RetryAllParkedMessages() {
+		
+		public void RetryParkedMessages(long? stopAt) {
 			lock (_lock) {
 				if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) > 0)
 					return; //already replaying
@@ -411,7 +412,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						return; //nothing to do.
 					}
 
-					TryReadingParkedMessagesFrom(0, end.Value + 1);
+					var stopRead = stopAt.HasValue ? Math.Min(stopAt.Value, end.Value + 1) : end.Value + 1;
+					TryReadingParkedMessagesFrom(0, stopRead);
 				});
 			}
 		}
@@ -428,8 +430,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				(events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
 		}
 
-		public void HandleParkedReadCompleted(ResolvedEvent[] events, long newposition, bool isEndofStrem,
-			long stopAt) {
+		public void HandleParkedReadCompleted(ResolvedEvent[] events, long newposition, bool isEndofStream, long stopAt) {
 			lock (_lock) {
 				if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0)
 					return;
@@ -447,7 +448,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 				TryPushingMessagesToClients();
 
-				if (isEndofStrem || stopAt <= newposition) {
+				if (isEndofStream || stopAt <= newposition) {
 					var replayedEnd = newposition == -1 ? stopAt : Math.Min(stopAt, newposition);
 					_settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd);
 					_state ^= PersistentSubscriptionState.ReplayingParkedMessages;

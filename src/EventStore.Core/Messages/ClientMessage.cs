@@ -1424,8 +1424,8 @@ namespace EventStore.Core.Messages {
 				SubscriptionId = subscriptionId;
 			}
 		}
-
-		public class ReplayAllParkedMessages : ReadRequestMessage {
+		
+		public class ReplayParkedMessages : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1434,12 +1434,14 @@ namespace EventStore.Core.Messages {
 
 			public readonly string EventStreamId;
 			public readonly string GroupName;
+			public readonly long? StopAt;
 
-			public ReplayAllParkedMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string eventStreamId, string groupName, IPrincipal user)
+			public ReplayParkedMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				string eventStreamId, string groupName, long? stopAt, IPrincipal user)
 				: base(internalCorrId, correlationId, envelope, user) {
 				EventStreamId = eventStreamId;
 				GroupName = groupName;
+				StopAt = stopAt;
 			}
 		}
 
