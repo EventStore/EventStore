@@ -16,6 +16,7 @@ using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
 using System.Threading.Tasks;
+using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	[TestFixture]
@@ -287,7 +288,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		public async Task
 			when_reading_end_of_stream_and_a_live_event_is_received_subscription_should_read_stream_again() {
 			var eventsFoundSource = new TaskCompletionSource<bool>();
-			var envelope = new FakeEnvelope();
+			var eventsReceived = 0;
+			var allEventsReceived = new TaskCompletionSource<bool>();
+			var envelope = new CallbackEnvelope(msg => {
+				eventsReceived++;
+				if (eventsReceived == 3) allEventsReceived.TrySetResult(true);
+			});
 			var checkpointReader = new FakeCheckpointReader();
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
 				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
@@ -335,13 +341,13 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
 
 			//a subscriber coming in a while later, should receive all 3 events
-			await Task.Delay(500).ContinueWith((action) => {
-				//add a subscriber
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			await Task.Delay(500);
+			//add a subscriber
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 
-				//all 3 events should be received by the subscriber
-				Assert.AreEqual(3, envelope.Replies.Count);
-			});
+			if (!await allEventsReceived.Task.WithTimeout(TimeSpan.FromMilliseconds(500))) {
+				Assert.Fail("Timed out waiting for all events to be received");
+			}
 		}
 	}
 
