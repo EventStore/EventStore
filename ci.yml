@@ -67,17 +67,7 @@ jobs:
       version: '3.1.100'
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
-  - bash: |
-      EXIT_CODE=0
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Rags.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.ClientAPI.Embedded.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.PersistentSubscriptions.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.Projections.Tests || EXIT_CODE=$?
-      dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings src/EventStore.Grpc.UserManagement.Tests || EXIT_CODE=$?
-      exit $EXIT_CODE
-    condition: succeededOrFailed()
+  - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
     displayName: Run Tests
   - task: PublishTestResults@2
     displayName: Publish Test Results
