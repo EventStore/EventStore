@@ -42,8 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
 			IProjectionProcessingPhase writeResultsPhase;
-			// TODO: Verify this check
-			if (GetProducesRunningResults() && _sourceDefinition.ByStreams)
+			if (GetProducesRunningResults())
 				writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
 					publisher,
 					1,
