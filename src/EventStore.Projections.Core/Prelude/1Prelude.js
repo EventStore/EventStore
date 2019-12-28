@@ -158,20 +158,6 @@ function scope($on, $notify) {
 		};
 	}
 
-	function fromStreamCatalog(streamCatalog, transformer) {
-		eventProcessor.fromStreamCatalog(streamCatalog, transformer ? transformer : null);
-		return {
-			foreachStream: foreachStream,
-		};
-	}
-
-	function fromStreamsMatching(filter) {
-		eventProcessor.fromStreamsMatching(filter);
-		return {
-			when: when,
-		};
-	}
-
 	function fromStreams(streams) {
 		var arr = Array.isArray(streams) ? streams : arguments;
 		for (var i = 0; i < arr.length; i++)
@@ -252,8 +238,6 @@ function scope($on, $notify) {
 		fromStream: fromStream,
 		fromStreams: fromStreams,
 		fromCategories: fromCategories,
-		fromStreamCatalog: fromStreamCatalog,
-		fromStreamsMatching: fromStreamsMatching,
 
 		options: options,
 		emit: emit,

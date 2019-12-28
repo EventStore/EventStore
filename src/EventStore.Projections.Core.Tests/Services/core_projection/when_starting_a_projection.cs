@@ -41,8 +41,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
-			_bus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 			_bus.Subscribe(
@@ -56,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_ioDispatcher);
 			IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 			_projectionConfig =
-				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, false, true, 10000, 1);
+				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, true, 10000, 1);
 			var version = new ProjectionVersion(1, 0, 0);
 			var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
 				"projection", version, projectionStateHandler, _projectionConfig,

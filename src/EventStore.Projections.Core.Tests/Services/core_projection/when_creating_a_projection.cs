@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 
 		private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-			null, 5, 10, 1000, 250, true, true, true, true, false, true, 10000, 1);
+			null, 5, 10, 1000, 250, true, true, true, true, true, 10000, 1);
 
 		private IODispatcher _ioDispatcher;
 
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.Throws<ArgumentException>(() => {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
-				var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false, false,
+				var projectionConfig = new ProjectionConfig(null, 10, 5, 1000, 250, true, true, false, false,
 					true, 10000, 1);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.Throws<ArgumentOutOfRangeException>(() => {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
-				var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false, false,
+				var projectionConfig = new ProjectionConfig(null, -1, 10, 1000, 250, true, true, false, false,
 					true, 10000, 1);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",
@@ -254,7 +254,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.Throws<ArgumentOutOfRangeException>(() => {
 				IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 				var version = new ProjectionVersion(1, 0, 0);
-				var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false, false,
+				var projectionConfig = new ProjectionConfig(null, 0, 10, 1000, 250, true, true, false, false,
 					true, 10000, 1);
 				new ContinuousProjectionProcessingStrategy(
 					"projection",

@@ -10,7 +10,6 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -56,14 +55,6 @@ namespace EventStore.Projections.Core {
 				coreOutput.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(forwarder);
 
 				if (projectionsStandardComponents.RunProjections >= ProjectionType.System) {
-					var slaveProjectionResponseWriter = projectionNode.SlaveProjectionResponseWriter;
-					coreOutput.Subscribe<PartitionMeasuredOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingProgressOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingResultOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(
-						slaveProjectionResponseWriter);
-
-
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(

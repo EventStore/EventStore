@@ -17,7 +17,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Settings;
 
 namespace EventStore.Projections.Core.Services.Management {
-	//TODO: response reader must start before Manager (otherwise misses first responses at least in case with pre-registered workers)
 	public class ProjectionManagerResponseReader : IHandle<ProjectionManagementMessage.Starting>,
 		IHandle<ProjectionManagementMessage.Internal.ReadTimeout> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionManagerResponseReader>();
@@ -256,14 +255,6 @@ namespace EventStore.Projections.Core.Services.Management {
 							commandBody.Position));
 					break;
 				}
-				case "$slave-projection-reader-assigned": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<SlaveProjectionReaderAssigned>();
-					_publisher.Publish(
-						new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
-							Guid.ParseExact(commandBody.Id, "N"),
-							Guid.ParseExact(commandBody.SubscriptionId, "N")));
-					break;
-				}
 				case "$abort": {
 					var commandBody = resolvedEvent.Event.Data.ParseJson<AbortCommand>();
 					_publisher.Publish(
@@ -378,18 +369,6 @@ namespace EventStore.Projections.Core.Services.Management {
 							commandBody.Name,
 							commandBody.RunAs,
 							commandBody.SetRemove));
-					break;
-				}
-				case "$start-slave-projections": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<StartSlaveProjectionsCommand>();
-					_publisher.Publish(
-						new ProjectionManagementMessage.Command.StartSlaveProjections(
-							new PublishEnvelope(_publisher),
-							commandBody.RunAs,
-							commandBody.Name,
-							commandBody.SlaveProjections,
-							Guid.ParseExact(commandBody.MasterWorkerId, "N"),
-							Guid.ParseExact(commandBody.MasterCorrelationId, "N")));
 					break;
 				}
 				case "$delete": {

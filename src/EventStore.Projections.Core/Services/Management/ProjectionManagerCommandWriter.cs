@@ -7,7 +7,6 @@ namespace EventStore.Projections.Core.Services.Management {
 	public sealed class ProjectionManagerCommandWriter
 		: IHandle<CoreProjectionManagementMessage.CreatePrepared>,
 			IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
-			IHandle<CoreProjectionManagementMessage.CreateAndPrepareSlave>,
 			IHandle<CoreProjectionManagementMessage.LoadStopped>,
 			IHandle<CoreProjectionManagementMessage.Start>,
 			IHandle<CoreProjectionManagementMessage.Stop>,
@@ -15,7 +14,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionManagementMessage.Dispose>,
 			IHandle<CoreProjectionManagementMessage.GetState>,
 			IHandle<CoreProjectionManagementMessage.GetResult>,
-			IHandle<ProjectionManagementMessage.SlaveProjectionsStarted>,
 			IHandle<ProjectionManagementMessage.Starting> {
 		private readonly IMultiStreamMessageWriter _commandWriter;
 
@@ -50,20 +48,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				Version = message.Version,
 			};
 			_commandWriter.PublishResponse("$create-and-prepare", message.WorkerId, command);
-		}
-
-		public void Handle(CoreProjectionManagementMessage.CreateAndPrepareSlave message) {
-			var command = new CreateAndPrepareSlaveCommand {
-				Config = new PersistedProjectionConfig(message.Config),
-				HandlerType = message.HandlerType,
-				Id = message.ProjectionId.ToString("N"),
-				Name = message.Name,
-				Query = message.Query,
-				Version = message.Version,
-				MasterCoreProjectionId = message.MasterCoreProjectionId.ToString("N"),
-				MasterWorkerId = message.MasterWorkerId.ToString("N")
-			};
-			_commandWriter.PublishResponse("$create-and-prepare-slave", message.WorkerId, command);
 		}
 
 		public void Handle(CoreProjectionManagementMessage.LoadStopped message) {
@@ -117,14 +101,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				Partition = message.Partition
 			};
 			_commandWriter.PublishResponse("$get-result", message.WorkerId, command);
-		}
-
-		public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message) {
-			var command = new SlaveProjectionsStartedResponse {
-				CorrelationId = message.CoreProjectionCorrelationId.ToString("N"),
-				SlaveProjections = message.SlaveProjections,
-			};
-			_commandWriter.PublishResponse("$slave-projections-started", message.WorkerId, command);
 		}
 	}
 }

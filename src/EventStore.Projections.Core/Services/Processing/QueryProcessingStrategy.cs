@@ -28,14 +28,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return !_sourceDefinition.DefinesFold;
 		}
 
-		public override bool GetIsSlaveProjection() {
-			return false;
-		}
-
-		public override SlaveProjectionDefinitions GetSlaveProjections() {
-			return null;
-		}
-
 		protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
 			IPublisher publisher, IPublisher inputQueue, Guid projectionCorrelationId,
 			ProjectionNamesBuilder namingBuilder,
@@ -50,8 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
 			IProjectionProcessingPhase writeResultsPhase;
-			if (GetProducesRunningResults()
-			    || !string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
+			if (GetProducesRunningResults())
 				writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
 					publisher,
 					1,

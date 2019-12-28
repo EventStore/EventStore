@@ -26,10 +26,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 			_receivedPartitionDeletedNotifications =
 				new List<ReaderSubscriptionMessage.EventReaderPartitionDeleted>();
 
-		private readonly List<ReaderSubscriptionMessage.EventReaderPartitionMeasured>
-			_receivedPartitionMeasuredNotifications =
-				new List<ReaderSubscriptionMessage.EventReaderPartitionMeasured>();
-
 		private readonly List<ReaderSubscriptionMessage.EventReaderNotAuthorized> _receivedNotAuthorizedNotifications =
 			new List<ReaderSubscriptionMessage.EventReaderNotAuthorized>();
 
@@ -87,10 +83,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
 			_receivedPartitionDeletedNotifications.Add(message);
-		}
-
-		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionMeasured message) {
-			_receivedPartitionMeasuredNotifications.Add(message);
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderNotAuthorized message) {

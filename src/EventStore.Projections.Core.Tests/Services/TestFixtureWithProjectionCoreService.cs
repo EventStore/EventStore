@@ -9,7 +9,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -53,7 +52,6 @@ namespace EventStore.Projections.Core.Tests.Services {
 			ReaderSubscriptionDispatcher
 			_subscriptionDispatcher;
 
-		private SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private ISingletonTimeoutScheduler _timeoutScheduler;
 		protected Guid _workerId;
 
@@ -68,12 +66,10 @@ namespace EventStore.Projections.Core.Tests.Services {
 				runHeadingReader: true, faultOutOfOrderProjections: true);
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher(_bus);
-			_spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(_bus);
 			_timeoutScheduler = new TimeoutScheduler();
 			_workerId = Guid.NewGuid();
 			_service = new ProjectionCoreService(
-				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher,
-				_spoolProcessingResponseDispatcher, _timeoutScheduler);
+				_workerId, _bus, _bus, _subscriptionDispatcher, new RealTimeProvider(), ioDispatcher, _timeoutScheduler);
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
 			_bus.Subscribe(_subscriptionDispatcher
@@ -81,8 +77,6 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
-			_bus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 			_bus.Subscribe(
@@ -90,7 +84,6 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-			_bus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
 			
 			var instanceCorrelationId = Guid.NewGuid();
 			_readerService.Handle(new ReaderCoreServiceMessage.StartReader(instanceCorrelationId));

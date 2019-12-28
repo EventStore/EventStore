@@ -63,7 +63,6 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_com
 			Assert.AreEqual(true, createPrepare.Config.CheckpointsEnabled);
 			Assert.AreEqual(true, createPrepare.Config.CreateTempStreams);
 			Assert.AreEqual(false, createPrepare.Config.StopOnEof);
-			Assert.AreEqual(false, createPrepare.Config.IsSlaveProjection);
 		}
 	}
 }

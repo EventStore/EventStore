@@ -128,32 +128,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class PartitionMeasured : EventReaderSubscriptionMessageBase {
-			private readonly string _partition;
-			private readonly long _size;
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public string Partition {
-				get { return _partition; }
-			}
-
-			public long Size {
-				get { return _size; }
-			}
-
-			public PartitionMeasured(
-				Guid subscriptionId, string partition, long size, long subscriptionMessageSequenceNumber,
-				object source = null)
-				: base(subscriptionId, null, 100.0f, subscriptionMessageSequenceNumber, source) {
-				_partition = partition;
-				_size = size;
-			}
-		}
-
 		/// <summary>
 		/// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
 		/// to appear at the same sequence position in a recovery 

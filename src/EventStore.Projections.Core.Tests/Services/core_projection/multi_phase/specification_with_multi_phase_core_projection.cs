@@ -55,10 +55,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 				return true;
 			}
 
-			public override bool GetIsSlaveProjection() {
-				return false;
-			}
-
 			public override void EnrichStatistics(ProjectionStatistics info) {
 			}
 
@@ -74,10 +70,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 				IODispatcher ioDispatcher,
 				CoreProjectionCheckpointWriter coreProjectionCheckpointWriter) {
 				return new IProjectionProcessingPhase[] {_phase1, _phase2};
-			}
-
-			public override SlaveProjectionDefinitions GetSlaveProjections() {
-				return null;
 			}
 		}
 
@@ -196,10 +188,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
 			public void Complete() {
 				_specification._coreProjection.CompletePhase();
-			}
-
-			public void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections) {
-				throw new NotImplementedException();
 			}
 		}
 

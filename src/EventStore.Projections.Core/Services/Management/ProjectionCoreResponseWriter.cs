@@ -9,7 +9,6 @@ namespace EventStore.Projections.Core.Services.Management {
 	public sealed class ProjectionCoreResponseWriter
 		: IHandle<CoreProjectionStatusMessage.Faulted>,
 			IHandle<CoreProjectionStatusMessage.Prepared>,
-			IHandle<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>,
 			IHandle<CoreProjectionStatusMessage.Started>,
 			IHandle<CoreProjectionStatusMessage.StatisticsReport>,
 			IHandle<CoreProjectionStatusMessage.Stopped>,
@@ -26,7 +25,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionManagementMessage.Command.PostBatch>,
 			IHandle<ProjectionManagementMessage.Command.Reset>,
 			IHandle<ProjectionManagementMessage.Command.SetRunAs>,
-			IHandle<ProjectionManagementMessage.Command.StartSlaveProjections>,
 			IHandle<ProjectionManagementMessage.Command.UpdateQuery>,
 			IHandle<ProjectionManagementMessage.Command.Delete>,
 			IHandle<ProjectionCoreServiceMessage.StartCore> {
@@ -51,14 +49,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				SourceDefinition = message.SourceDefinition,
 			};
 			_writer.PublishCommand("$prepared", command);
-		}
-
-		public void Handle(CoreProjectionManagementMessage.SlaveProjectionReaderAssigned message) {
-			var command = new SlaveProjectionReaderAssigned {
-				Id = message.ProjectionId.ToString("N"),
-				SubscriptionId = message.SubscriptionId.ToString("N"),
-			};
-			_writer.PublishCommand("$slave-projection-reader-assigned", command);
 		}
 
 		public void Handle(CoreProjectionStatusMessage.Started message) {
@@ -213,17 +203,6 @@ namespace EventStore.Projections.Core.Services.Management {
 				SetRemove = message.Action,
 			};
 			_writer.PublishCommand("$set-runas", command);
-		}
-
-		public void Handle(ProjectionManagementMessage.Command.StartSlaveProjections message) {
-			var command = new StartSlaveProjectionsCommand {
-				Name = message.Name,
-				RunAs = message.RunAs,
-				MasterCorrelationId = message.MasterCorrelationId.ToString("N"),
-				MasterWorkerId = message.MasterWorkerId.ToString("N"),
-				SlaveProjections = message.SlaveProjections,
-			};
-			_writer.PublishCommand("$start-slave-projections", command);
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateQuery message) {

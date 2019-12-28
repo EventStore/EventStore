@@ -231,31 +231,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 							commandBody.Query));
 					break;
 				}
-				case "$create-and-prepare-slave": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<CreateAndPrepareSlaveCommand>();
-					_publisher.Publish(
-						new CoreProjectionManagementMessage.CreateAndPrepareSlave(
-							Guid.ParseExact(commandBody.Id, "N"),
-							Guid.Empty,
-							commandBody.Name,
-							commandBody.Version,
-							commandBody.Config.ToConfig(),
-							Guid.ParseExact(commandBody.MasterWorkerId, "N"),
-							Guid.ParseExact(commandBody.MasterCoreProjectionId, "N"),
-							commandBody.HandlerType,
-							commandBody.Query));
-					break;
-				}
-				case "$spool-stream-reading": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<SpoolStreamReadingCommand>();
-					_publisher.Publish(
-						new ReaderSubscriptionManagement.SpoolStreamReadingCore(
-							Guid.ParseExact(commandBody.SubscriptionId, "N"),
-							commandBody.StreamId,
-							commandBody.CatalogSequenceNumber,
-							commandBody.LimitingCommitPosition));
-					break;
-				}
 				case "$load-stopped": {
 					var commandBody = resolvedEvent.Event.Data.ParseJson<LoadStoppedCommand>();
 					_publisher.Publish(
@@ -306,15 +281,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 							Guid.ParseExact(commandBody.Id, "N"),
 							commandBody.Partition,
 							Guid.Empty));
-					break;
-				}
-				case "$slave-projections-started": {
-					var commandBody = resolvedEvent.Event.Data.ParseJson<SlaveProjectionsStartedResponse>();
-					_publisher.Publish(
-						new ProjectionManagementMessage.SlaveProjectionsStarted(
-							Guid.ParseExact(commandBody.CorrelationId, "N"),
-							Guid.Empty,
-							commandBody.SlaveProjections));
 					break;
 				}
 				default:
