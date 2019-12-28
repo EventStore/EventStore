@@ -286,7 +286,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			var socket = Interlocked.Exchange(ref _socket, null);
 			if (socket != null) {
 				Helper.EatException(() => socket.Shutdown(SocketShutdown.Both));
-				Helper.EatException(() => socket.Close(TcpConfiguration.SocketCloseTimeoutSecs));
+				Helper.EatException(() => socket.Close());
 			}
 		}
 
