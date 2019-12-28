@@ -302,8 +302,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
-			if (!requireMaster && _httpForwarder.ForwardRequest(manager))
-				return;
 			PostEntry(manager, expectedVersion, requireMaster, stream, includedId, includedType);
 		}
 
@@ -339,8 +337,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
-			if (!requireMaster && _httpForwarder.ForwardRequest(manager))
-				return;
 			PostEntry(manager, expectedVersion, requireMaster, stream, id, includedType);
 		}
 
@@ -369,8 +365,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
-			if (!requireMaster && _httpForwarder.ForwardRequest(manager))
-				return;
 			var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted,
 				Configure.DeleteStreamCompleted);
 			var corrId = Guid.NewGuid();
@@ -523,8 +517,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
-			if (!requireMaster && _httpForwarder.ForwardRequest(manager))
-				return;
 			PostEntry(manager, expectedVersion, requireMaster, SystemStreams.MetastreamOf(stream), includedId,
 				includedType);
 		}
@@ -658,6 +650,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
+			if (!GetResolveLinkTos(manager, out var resolveLinkTos)) {
+				SendBadRequest(manager, $"{SystemHeaders.ResolveLinkTos} header in wrong format.");
+			}
 			bool requireMaster;
 			if (!GetRequireMaster(manager, out requireMaster)) {
 				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireMaster));
@@ -670,8 +665,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, position == TFPos.HeadOfTf));
 			var corrId = Guid.NewGuid();
 			Publish(new ClientMessage.ReadAllEventsBackward(corrId, corrId, envelope,
-				position.CommitPosition, position.PreparePosition, count,
-				requireMaster, true, GetETagTFPosition(manager), manager.User));
+				position.CommitPosition, position.PreparePosition, count, resolveLinkTos,
+				requireMaster, GetETagTFPosition(manager), manager.User));
 		}
 
 		private void GetAllEventsBackwardFiltered(HttpEntityManager manager, UriTemplateMatch match) {
@@ -730,6 +725,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return SendBadRequest(manager, string.Format("Invalid position argument: {0}", pos));
 			if (!int.TryParse(cnt, out count) || count <= 0)
 				return SendBadRequest(manager, string.Format("Invalid count argument: {0}", cnt));
+			if (!GetResolveLinkTos(manager, out var resolveLinkTos))
+				return SendBadRequest(manager, $"{SystemHeaders.ResolveLinkTos} header in wrong format.");
 			bool requireMaster;
 			if (!GetRequireMaster(manager, out requireMaster))
 				return SendBadRequest(manager,
@@ -744,8 +741,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf: false));
 			var corrId = Guid.NewGuid();
 			Publish(new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
-				position.CommitPosition, position.PreparePosition, count,
-				requireMaster, true, GetETagTFPosition(manager), manager.User,
+				position.CommitPosition, position.PreparePosition, count, resolveLinkTos,
+				requireMaster, GetETagTFPosition(manager), manager.User,
 				longPollTimeout));
 			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
 		}
