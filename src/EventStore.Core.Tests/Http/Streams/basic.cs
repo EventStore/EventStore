@@ -480,7 +480,47 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _response.StatusCode);
 			}
 		}
+		
+		public class when_posting_an_event_with_type : with_admin_user {
+			private HttpResponseMessage _response;
+			private readonly JArray _data = JArray.Parse(@"[{
+					""eventId"": ""fd0489ed-80a5-4004-ad79-1282f657ee27"",
+					""eventType"": ""TestType"",
+					""data"": {
+						""$type"": ""foo_type"",
+						""what"": {
+							""$type"": ""bar_type"",
+							""e622b9f3-ca43-4cf2-9433-8c59b2cb2d3c"": {
+								""$type"": ""baz_type"",
+								""another"": ""value""
+							}
+						},
+					},
+					""metadata"": {
+						""$type"": ""qux_type"",
+					}
+				}]");
 
+			protected override Task Given() => Task.CompletedTask;
+
+			protected override async Task When() {
+				_response = await MakeArrayEventsPost(
+					TestStream, _data);
+			}
+
+			[Test]
+			public async Task the_json_data_retains_the_type() {
+				var json = await GetJson<JObject>(_response.Headers.GetLocationAsString(), extra: "embed=tryharder", accept: ContentType.AtomJson);
+				HelperExtensions.AssertJson(_data.First()["data"], JObject.Parse(json["content"]["data"].ToString()));
+			}
+			
+			[Test]
+			public async Task the_metadata_retains_the_type() {
+				var json = await GetJson<JObject>(_response.Headers.GetLocationAsString(), extra: "embed=tryharder", accept: ContentType.AtomJson);
+				HelperExtensions.AssertJson(_data.First()["metadata"], JObject.Parse(json["content"]["metadata"].ToString()));
+			}
+		}
+		
 		[TestFixture, Category("LongRunning")]
 		public class when_posting_an_event_with_date_time : with_admin_user {
 			private HttpResponseMessage _response;
