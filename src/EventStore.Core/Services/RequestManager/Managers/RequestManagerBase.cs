@@ -183,7 +183,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				Committed();
 			}
 		}
-
 		public void Handle(CommitMessage.CommittedTo message) {
 			if (_completeOnLogCommitted) { return; }
 			CommitPositionUpdated(message.LogPosition);
@@ -201,8 +200,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				Committed();
 			}
 		}
-
-
 		protected virtual void Committed() {
 			if (_complete) { return; }
 			_complete = true;
@@ -231,16 +228,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_complete || _allEventsWritten) { return; }
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
 				message);
-			if (message.LogPosition > _lastEventPosition) {
-				_lastEventPosition = message.LogPosition;
+
+			lock (_prepareLogPositions) {
+				_prepareLogPositions.Clear();
+				_prepareLogPositions.Add(message.LogPosition);
+
+				FirstEventNumber = message.FirstEventNumber;
+				LastEventNumber = message.LastEventNumber;
+				CommitPosition = message.LogPosition;
+				Committed();
 			}
-			FirstEventNumber = message.FirstEventNumber;
-			LastEventNumber = message.LastEventNumber;
-			CommitPosition = message.LogPosition;
-			_allPreparesWritten = true;
-			_commitRecieved = true;
-			_allEventsWritten = true;
-			AllEventsWritten();
 		}
 
 		private void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1) {
