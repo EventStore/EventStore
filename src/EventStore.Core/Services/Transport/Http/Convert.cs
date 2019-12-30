@@ -255,21 +255,21 @@ namespace EventStore.Core.Services.Transport.Http {
 			var feed = new FeedElement();
 			feed.SetTitle(string.Format("Messages for '{0}/{1}'", streamId, groupName));
 			feed.SetId(self);
-			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
-				? msg.Events[msg.Events.Length - 1].Event.TimeStamp
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].ResolvedEvent.Event != null
+				? msg.Events[msg.Events.Length - 1].ResolvedEvent.Event.TimeStamp
 				: DateTime.MinValue.ToUniversalTime());
 			feed.SetAuthor(AtomSpecs.Author);
 
 			if (msg.Events != null && msg.Events.Length > 0) {
 				var ackAllQueryString = String.Format("?ids={0}",
-					String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+					String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
 				var ackAll =
 					HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) +
 					ackAllQueryString;
 				feed.AddLink("ackAll", ackAll);
 
 				var nackAllQueryString = String.Format("?ids={0}",
-					String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+					String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
 				var nackAll =
 					HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack", escapedStreamId, escapedGroupName) +
 					nackAllQueryString;
@@ -282,13 +282,14 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			feed.AddLink("self", self);
 			for (int i = msg.Events.Length - 1; i >= 0; --i) {
-				var entry = ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent);
+				var entry = ToEntry(msg.Events[i].ResolvedEvent.WithoutPosition(), requestedUrl, embedContent);
 				var ack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack/{2}", escapedStreamId,
-					escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+					escapedGroupName, msg.Events[i].ResolvedEvent.OriginalEvent.EventId);
 				var nack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack/{2}", escapedStreamId,
-					escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+					escapedGroupName, msg.Events[i].ResolvedEvent.OriginalEvent.EventId);
 				entry.AddLink("ack", ack);
 				entry.AddLink("nack", nack);
+				entry.AddCustom("retryCount", msg.Events[i].RetryCount);
 				feed.AddEntry(entry);
 			}
 
