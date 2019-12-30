@@ -111,3 +111,7 @@ src/.vscode/
 
 #NCrunch
 _NCrunch_*/
+
+#VisualStudio
+*.playlist
+launchSettings.json
