@@ -11,9 +11,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
 
 namespace EventStore.Core.Services.RequestManager {
-	public interface IRequestManager : IHandle<StorageMessage.RequestManagerTimerTick>, IHandle<CommitMessage.CommittedTo> {
-	}
-
+	
 	public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
@@ -26,6 +24,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<CommitMessage.CommittedTo>,
+		IHandle<CommitMessage.LogCommittedTo>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
@@ -33,7 +32,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly IPublisher _bus;
 		private readonly TimerMessage.Schedule _tickRequestMessage;
-		private readonly Dictionary<Guid, IRequestManager> _currentRequests = new Dictionary<Guid, IRequestManager>();
+		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
 		private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
 		private const string _requestManagerHistogram = "request-manager";
 		private readonly bool _betterOrdering;
@@ -66,39 +65,84 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
-			var manager = new WriteStreamRequestManager(_bus, _commitTimeout, _betterOrdering);
-			_currentRequests.Add(message.InternalCorrId, manager);
+			var manager = new WriteEvents(
+								_bus,
+								_commitTimeout,
+								message.Envelope,
+								message.InternalCorrId,
+								message.CorrelationId,
+								message.EventStreamId,								
+								_betterOrdering,
+								message.ExpectedVersion,
+								message.User,
+								message.Events);
+			_currentRequests.Add(message.InternalCorrId, manager);			
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
-			manager.Handle(message);
+			manager.Start();
 		}
 
 		public void Handle(ClientMessage.DeleteStream message) {
-			var manager = new DeleteStreamRequestManager(_bus, _commitTimeout, _betterOrdering);
+			var manager = new DeleteStream(
+								_bus,
+								_commitTimeout,
+								message.Envelope,
+								message.InternalCorrId,
+								message.CorrelationId,
+								message.EventStreamId,
+								_betterOrdering,
+								message.ExpectedVersion,
+								message.User,
+								message.HardDelete);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
-			manager.Handle(message);
+			manager.Start();
 		}
 
 		public void Handle(ClientMessage.TransactionStart message) {
-			var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
+			var manager = new TransactionStart(
+								_bus,
+								_prepareTimeout,
+								message.Envelope,
+								message.InternalCorrId,
+								message.CorrelationId,
+								message.EventStreamId,
+								_betterOrdering,
+								message.ExpectedVersion,
+								message.User);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
-			manager.Handle(message);
+			manager.Start();
 		}
 
 		public void Handle(ClientMessage.TransactionWrite message) {
-			var manager = new SingleAckRequestManager(_bus, _prepareTimeout, _betterOrdering);
+			var manager = new TransactionWrite(
+								_bus,
+								_prepareTimeout,
+								message.Envelope,
+								message.InternalCorrId,
+								message.CorrelationId,
+								_betterOrdering,
+								message.Events,
+								message.TransactionId);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
-			manager.Handle(message);
+			manager.Start();
 		}
 
 		public void Handle(ClientMessage.TransactionCommit message) {
-			var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _prepareTimeout,
-				_commitTimeout, _betterOrdering);
+			var manager = new TransactionCommit(
+								_bus,
+								_prepareTimeout,
+								_commitTimeout,
+								message.Envelope,
+								message.InternalCorrId,
+								message.CorrelationId,
+								message.TransactionId,
+								_betterOrdering,
+								message.User);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
-			manager.Handle(message);
+			manager.Start();
 		}
 
 		public void Handle(StorageMessage.RequestCompleted message) {
@@ -134,7 +178,11 @@ namespace EventStore.Core.Services.RequestManager {
 				currentRequest.Value.Handle(message);
 			}
 		}
-
+		public void Handle(CommitMessage.LogCommittedTo message) {
+			foreach (var currentRequest in _currentRequests) {
+				currentRequest.Value.Handle(message);
+			}
+		}
 		public void Handle(StorageMessage.WrongExpectedVersion message) {
 			DispatchInternal(message.CorrelationId, message);
 		}
@@ -151,7 +199,7 @@ namespace EventStore.Core.Services.RequestManager {
 			foreach (var currentRequest in _currentRequests) {
 				currentRequest.Value.Handle(message);
 			}
-
+			//todo-clc: if we have become resigning master should all requests be actively disposed?
 			if (_nodeState == VNodeState.ResigningMaster && _currentRequests.Count == 0) {
 				_bus.Publish(new SystemMessage.RequestQueueDrained());
 			}
@@ -160,18 +208,16 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
-			IRequestManager manager;
-			if (_currentRequests.TryGetValue(correlationId, out manager)) {
+			
+			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
 				var x = manager as IHandle<T>;
-				if (x != null) {
-					// message received for a dead request?
-					x.Handle(message);
-				}
+				x?.Handle(message);
 			}
+			//else message received for a dead request? 
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			_nodeState = message.State;
+			_nodeState = message.State;			
 		}
 	}
 }
