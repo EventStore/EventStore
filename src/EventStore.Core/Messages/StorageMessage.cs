@@ -154,7 +154,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionPrepare : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionEnd : Message, IFlushableMessage, IMasterWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -167,7 +167,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly DateTime LiveUntil;
 
-			public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId,
+			public WriteTransactionEnd(Guid correlationId, IEnvelope envelope, long transactionId,
 				DateTime liveUntil) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
