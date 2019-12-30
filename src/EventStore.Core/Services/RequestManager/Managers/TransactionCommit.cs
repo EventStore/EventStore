@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long transactionId,
 					bool betterOrdering,
 					IPrincipal user,
-					long currentCommittedPosition =0)
+					long currentCommittedPosition = 0)
 			: base(
 					 publisher,
 					 prepareTimeout,
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TransactionId,
 					FirstEventNumber,
 					LastEventNumber,
-					CommitPosition,  //not technically correct, but matches current behavior correctly
+					CommitPosition,   //not technically correct, but matches current behavior correctly
 					CommitPosition);
 
 		protected override Message ClientFailMsg =>
