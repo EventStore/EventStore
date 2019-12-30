@@ -8,18 +8,27 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
 
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	[TestFixture]
-	public class when_delete_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification {
+	public class when_delete_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification<DeleteStreamManager> {
 		private long _commitPosition = 3000;
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamRequestManager(publisher, CommitTimeout, false);
+		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
+			return new DeleteStreamManager(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, true, null);
 			yield return new CommitMessage.CommittedTo(_commitPosition -1);
 		}
 

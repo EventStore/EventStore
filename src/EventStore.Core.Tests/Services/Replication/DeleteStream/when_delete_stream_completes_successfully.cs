@@ -7,17 +7,26 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
 
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	[TestFixture]
-	public class when_delete_stream_completes_successfully : RequestManagerSpecification {
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamRequestManager(publisher, CommitTimeout, false);
+	public class when_delete_stream_completes_successfully : RequestManagerSpecification<DeleteStreamManager> {
+		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
+			return new DeleteStreamManager(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				false);
 		}
 
-		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, true, null);
+		protected override IEnumerable<Message> WithInitialMessages() {			
 			yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
 		}
 

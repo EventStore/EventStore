@@ -6,19 +6,31 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using WriteEventsMgr =EventStore.Core.Services.RequestManager.Managers.WriteEvents;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
-	public class when_write_stream_gets_timeout_after_cluster_commit : RequestManagerSpecification {
-		long _commitPosition = 100;
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new WriteStreamRequestManager(publisher,  CommitTimeout, false);
+	public class when_write_stream_gets_timeout_after_cluster_commit : RequestManagerSpecification<WriteEventsMgr> {
+		private long _prepareLogPosition = 100;
+		private long _commitPosition = 100;
+		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
+			return new WriteEventsMgr(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				new[] {DummyEvent()});
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] {DummyEvent()}, null);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 1, 0, 0);
 			yield return new CommitMessage.CommittedTo(_commitPosition);
 		}

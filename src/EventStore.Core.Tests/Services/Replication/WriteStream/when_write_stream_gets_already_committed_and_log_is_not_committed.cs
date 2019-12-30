@@ -7,18 +7,27 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using WriteEventsMgr =EventStore.Core.Services.RequestManager.Managers.WriteEvents;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
-	public class when_write_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification {
+	public class when_write_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification<WriteEventsMgr> {
 		private long _commitLogPosition = 1000;
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new WriteStreamRequestManager(publisher,  CommitTimeout, false);
+		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
+			return new WriteEventsMgr(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				new[] {DummyEvent()});
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] { DummyEvent() }, null);
 			yield return new CommitMessage.CommittedTo(_commitLogPosition - 1);
 		}
 
