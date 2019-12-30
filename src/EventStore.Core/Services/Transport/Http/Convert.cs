@@ -289,7 +289,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					escapedGroupName, msg.Events[i].ResolvedEvent.OriginalEvent.EventId);
 				entry.AddLink("ack", ack);
 				entry.AddLink("nack", nack);
-				entry.AddCustom("retryCount", msg.Events[i].RetryCount);
+				entry.AddRetryCount(msg.Events[i].RetryCount);
 				feed.AddEntry(entry);
 			}
 
