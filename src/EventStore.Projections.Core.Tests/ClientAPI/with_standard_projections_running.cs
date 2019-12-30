@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Bus;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -18,11 +19,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			}
 
 			[Test, Category("Network")]
-			public async Task deleted_stream_events_are_indexed() {
-				var slice = await _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin);
-				Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-				Assert.AreEqual(3, slice.Events.Length);
+			public void deleted_stream_events_are_indexed() {
+				StreamEventsSlice slice = null;
+				AssertEx.IsOrBecomesTrue(() => {
+					slice = _conn.ReadStreamEventsForwardAsync("$ce-cat", 0, 10, true, _admin).Result;
+					Assert.AreEqual(SliceReadStatus.Success, slice.Status);
+					return 3 == slice.Events.Length;
+				});
 				var deletedLinkMetadata = slice.Events[2].Link.Metadata;
 				Assert.IsNotNull(deletedLinkMetadata);
 
@@ -33,11 +36,11 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			}
 
 			[Test, Category("Network")]
-			public async Task deleted_stream_events_are_indexed_as_deleted() {
-				var slice = await _conn.ReadStreamEventsForwardAsync("$et-$deleted", 0, 10, true, _admin);
-				Assert.AreEqual(SliceReadStatus.Success, slice.Status);
-
-				Assert.AreEqual(1, slice.Events.Length);
+			public void deleted_stream_events_are_indexed_as_deleted() {
+				AssertEx.IsOrBecomesTrue(() => {
+					var slice = _conn.ReadStreamEventsForwardAsync("$et-$deleted", 0, 10, true, _admin).Result;
+					return SliceReadStatus.Success == slice.Status && slice.Events.Length == 1;
+				});				
 			}
 
 			protected override async Task When() {
