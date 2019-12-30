@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WriteDelete>,
 		IHandle<StorageMessage.WriteTransactionStart>,
 		IHandle<StorageMessage.WriteTransactionData>,
-		IHandle<StorageMessage.WriteTransactionPrepare>,
+		IHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
@@ -118,7 +118,7 @@ namespace EventStore.Core.Services.Storage {
 			SubscribeToMessage<StorageMessage.WriteDelete>();
 			SubscribeToMessage<StorageMessage.WriteTransactionStart>();
 			SubscribeToMessage<StorageMessage.WriteTransactionData>();
-			SubscribeToMessage<StorageMessage.WriteTransactionPrepare>();
+			SubscribeToMessage<StorageMessage.WriteTransactionEnd>();
 			SubscribeToMessage<StorageMessage.WriteCommit>();
 		}
 
@@ -442,7 +442,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<StorageMessage.WriteTransactionPrepare>.Handle(StorageMessage.WriteTransactionPrepare message) {
+		void IHandle<StorageMessage.WriteTransactionEnd>.Handle(StorageMessage.WriteTransactionEnd message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
 				if (message.LiveUntil < DateTime.UtcNow)

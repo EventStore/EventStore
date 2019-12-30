@@ -299,7 +299,7 @@ namespace EventStore.Core {
 
 			//COMMIT TRACKING
 			var commitTracker =
-				new CommitTrackerService(_mainQueue, CommitLevel.ClusterWrite, vNodeSettings.ClusterNodeCount);
+				new CommitTrackerService(_mainQueue, CommitLevel.MasterIndexed, vNodeSettings.ClusterNodeCount);
 			AddTask(commitTracker.Task);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(commitTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(commitTracker);
@@ -523,6 +523,7 @@ namespace EventStore.Core {
 			
 			_mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+			_mainBus.Subscribe<CommitMessage.LogCommittedTo>(requestManagement);
 			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
 			
@@ -671,8 +672,8 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
-				_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
-				_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
+				//_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
+				//_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
 				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
 			}
 
