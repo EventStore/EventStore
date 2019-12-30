@@ -34,8 +34,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private readonly IEnvelope _clientResponseEnvelope;
 		protected readonly Guid InternalCorrId;
 		protected readonly Guid ClientCorrId;
-		protected readonly string StreamId;
-		protected readonly IPrincipal User;
 		protected readonly long ExpectedVersion;
 		protected OperationResult Result;
 		protected long FirstEventNumber = -1;
@@ -44,7 +42,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected long FailureCurrentVersion = -1;
 		protected long TransactionId;
 
-		private bool _betterOrdering;
 		private bool _completeOnLogCommitted;
 		private long _committedPosition;
 		private long _lastEventPosition;
@@ -76,7 +73,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private bool _commitRecieved;
 		private int _prepareCount;
-		private bool _authenicate;
 
 		protected DateTime NextTimeoutTime;
 		private readonly TimeSpan _timeoutOffset = TimeSpan.FromMilliseconds(30);
@@ -88,14 +84,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				IEnvelope clientResponseEnvelope,
 				Guid internalCorrId,
 				Guid clientCorrId,
-				string streamId,
-				bool betterOrdering,
 				long expectedVersion,
-				IPrincipal user,
 				int prepareCount = 0,
 				long transactionId = -1,
 				bool waitForCommit = false,
-				bool authenticate = true,
 				bool completeOnLogCommitted = false,
 				long currentLogPosition = 0) {
 			Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
@@ -111,31 +103,22 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			InternalCorrId = internalCorrId;
 			ClientCorrId = clientCorrId;
 			WriteReplyEnvelope = new PublishEnvelope(Publisher);
-			StreamId = streamId;
-			_betterOrdering = betterOrdering;
-			User = user;
 			ExpectedVersion = expectedVersion;
 			_prepareCount = prepareCount;
 			TransactionId = transactionId;
 			_commitRecieved = !waitForCommit; //if not waiting for commit flag as true
 			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true
-			_authenicate = authenticate;
 			_completeOnLogCommitted = completeOnLogCommitted;
 			_committedPosition = currentLogPosition;
 		}
 		protected DateTime LiveUntil => NextTimeoutTime - _timeoutOffset;
-		public abstract Message WriteRequestMsg { get; }
+		protected abstract Message AccessRequestMsg { get; }
+		protected abstract Message WriteRequestMsg { get; }
 		protected abstract Message ClientSuccessMsg { get; }
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
-			if (_authenicate) {
-				long? transactionId = TransactionId == -1 ? (long?)null : TransactionId;
-				Publisher.Publish(new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope, InternalCorrId, StreamId, transactionId, StreamAccessType.Write, User, _betterOrdering));
-			} else {
-				Publisher.Publish(WriteRequestMsg);
-			}
+			Publisher.Publish(AccessRequestMsg ?? WriteRequestMsg);
 		}
 		public void Handle(StorageMessage.CheckStreamAccessCompleted message) {
 			if (_complete) { return; }

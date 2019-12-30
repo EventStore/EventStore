@@ -123,7 +123,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,
-								_betterOrdering,
 								message.Events,
 								message.TransactionId,
 								_logCommittedPosition);

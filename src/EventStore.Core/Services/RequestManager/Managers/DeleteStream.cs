@@ -3,10 +3,14 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class DeleteStream : RequestManagerBase {
 		private readonly bool _hardDelete;
+		private readonly string _streamId;
+		private readonly bool _betterOrdering;
+		private readonly IPrincipal _user;
 
 		public DeleteStream(
 					IPublisher publisher,
@@ -19,28 +23,39 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					IPrincipal user,
 					bool hardDelete,
-					long currentCommittedPosition =0)
+					long currentCommittedPosition = 0)
 			: base(
 					 publisher,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
-					 streamId,
-					 betterOrdering,
 					 expectedVersion,
-					 user,
 					 prepareCount: 0,
 					 waitForCommit: true,
 					 currentLogPosition: currentCommittedPosition) {
 			_hardDelete = hardDelete;
+			_streamId = streamId;
+			_betterOrdering = betterOrdering;
+			_user = user;
 		}
 
-		public override Message WriteRequestMsg =>
+		protected override Message AccessRequestMsg =>
+				new StorageMessage.CheckStreamAccess(
+						WriteReplyEnvelope,
+						InternalCorrId,
+						_streamId,
+						null,
+						StreamAccessType.Delete,
+						_user,
+						_betterOrdering);
+
+
+		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteDelete(
 					InternalCorrId,
 					WriteReplyEnvelope,
-					StreamId,
+					_streamId,
 					ExpectedVersion,
 					_hardDelete,
 					LiveUntil);
