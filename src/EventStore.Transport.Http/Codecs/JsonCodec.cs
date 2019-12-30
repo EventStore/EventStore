@@ -19,6 +19,7 @@ namespace EventStore.Transport.Http.Codecs {
 			DefaultValueHandling = DefaultValueHandling.Ignore,
 			MissingMemberHandling = MissingMemberHandling.Ignore,
 			TypeNameHandling = TypeNameHandling.None,
+			MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
 			Converters = new JsonConverter[] {
 				new StringEnumConverter()
 			}
