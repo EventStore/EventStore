@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TransactionId,
 					FirstEventNumber,
 					LastEventNumber,
-					FirstPrepare,
+					CommitPosition,  //not technically correct, but matches current behavior correctly
 					CommitPosition);
 
 		protected override Message ClientFailMsg =>
