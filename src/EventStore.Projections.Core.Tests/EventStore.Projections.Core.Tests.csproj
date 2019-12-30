@@ -4,6 +4,12 @@
     <Platform>x64</Platform>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Playground\Launchpad.cs" />
+    <Compile Remove="Playground\Launchpad2.cs" />
+    <Compile Remove="Playground\Launchpad3.cs" />
+    <Compile Remove="Playground\LaunchpadBase.cs" />
+  </ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
