@@ -307,9 +307,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	}
 
 	[TestFixture, Explicit]
-	public class TestTest : specification_with_standard_projections_runnning {
+	public class vnode_cluster_specification : specification_with_standard_projections_runnning {
 		[Test, Explicit]
-		public async Task Test() {
+		public async Task vnode_cluster_starts() {
 			await PostProjection(@"fromStream('$user-admin').outputState()");
 			await AssertStreamTailAsync("$projections-test-projection-result", "Result:{}");
 		}
