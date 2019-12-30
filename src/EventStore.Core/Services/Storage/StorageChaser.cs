@@ -230,7 +230,7 @@ namespace EventStore.Core.Services.Storage {
 						lastEventNumber,
 						true));
 				}
-			} else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) {
+			} else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.Data)) {
 				_masterBus.Publish(
 					new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
 			}
