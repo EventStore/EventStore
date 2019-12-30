@@ -7,17 +7,27 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using WriteEventsMgr =EventStore.Core.Services.RequestManager.Managers.WriteEvents;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
-	public class when_write_stream_gets_stream_deleted : RequestManagerSpecification {
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new WriteStreamRequestManager(publisher,  CommitTimeout, false);
+	public class when_write_stream_gets_stream_deleted : RequestManagerSpecification<WriteEventsMgr> {
+		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
+				return new WriteEventsMgr(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				new[] {DummyEvent()});
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] {DummyEvent()}, null);
+			yield break;
 		}
 
 		protected override Message When() {

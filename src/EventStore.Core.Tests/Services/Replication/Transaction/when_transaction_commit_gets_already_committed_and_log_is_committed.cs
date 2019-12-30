@@ -1,22 +1,30 @@
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager;
-using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using TransactionCommitMgr = EventStore.Core.Services.RequestManager.Managers.TransactionCommit;
 
-namespace EventStore.Core.Tests.Services.Replication.TransactionCommit {
+namespace EventStore.Core.Tests.Services.Replication.Transaction {
 	[TestFixture]
-	public class when_transaction_commit_gets_already_committed_and_log_is_committed : RequestManagerSpecification {
+	public class when_transaction_commit_gets_already_committed_and_log_is_committed : RequestManagerSpecification<TransactionCommitMgr> {
 		private long _commitPosition = 1000;
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
+		private int transactionId = 2341;
+		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
+			return new TransactionCommitMgr(
+				publisher,
+				PrepareTimeout,
+				CommitTimeout,
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				transactionId,
+				true,				
+				null);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.TransactionCommit(InternalCorrId, ClientCorrId, Envelope, true, 4, null);
 			yield return new CommitMessage.CommittedTo(_commitPosition);
 		}
 

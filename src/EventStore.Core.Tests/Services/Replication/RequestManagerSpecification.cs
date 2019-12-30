@@ -10,11 +10,11 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication {
-	public abstract class RequestManagerSpecification {
+	public abstract class RequestManagerSpecification<TManager> where TManager : RequestManagerBase {
 		protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
 		protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 
-		protected IRequestManager Manager;
+		protected TManager Manager;
 		protected List<Message> Produced;
 		protected FakePublisher Publisher;
 		protected Guid InternalCorrId = Guid.NewGuid();
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 		protected byte[] EventData = new byte[255];
 		protected FakeEnvelope Envelope;
 
-		protected abstract IRequestManager OnManager(FakePublisher publisher);
+		protected abstract TManager OnManager(FakePublisher publisher);
 		protected abstract IEnumerable<Message> WithInitialMessages();
 		protected abstract Message When();
 
@@ -36,6 +36,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 			Publisher = new FakePublisher();
 			Envelope = new FakeEnvelope();
 			Manager = OnManager(Publisher);
+			Manager.Start();
 			foreach (var m in WithInitialMessages()) {
 				Manager.AsDynamic().Handle(m);
 			}

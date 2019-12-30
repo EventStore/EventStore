@@ -8,16 +8,26 @@ using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
 
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
-	public class when_delete_stream_gets_timeout_before_local_commit : RequestManagerSpecification {
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamRequestManager(publisher, CommitTimeout, false);
+	public class when_delete_stream_gets_timeout_before_local_commit : RequestManagerSpecification<DeleteStreamManager> {
+		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
+			return new DeleteStreamManager(
+				publisher, 
+				CommitTimeout, 
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				false);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.DeleteStream(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, true, null);
+			yield break;
 		}
 
 		protected override Message When() {

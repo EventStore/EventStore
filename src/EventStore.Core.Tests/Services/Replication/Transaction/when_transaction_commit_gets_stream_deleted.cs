@@ -1,17 +1,27 @@
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager;
-using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using TransactionCommitMgr = EventStore.Core.Services.RequestManager.Managers.TransactionCommit;
 
-namespace EventStore.Core.Tests.Services.Replication.TransactionCommit {
+namespace EventStore.Core.Tests.Services.Replication.Transaction {
 	[TestFixture]
-	public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification {
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new TransactionCommitTwoPhaseRequestManager(publisher, 3, PrepareTimeout, CommitTimeout, false);
+	public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification<TransactionCommitMgr> {
+		
+		private int transactionId = 2341;
+		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
+			return new TransactionCommitMgr(
+				publisher,
+				PrepareTimeout,
+				CommitTimeout,
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				transactionId,
+				true,				
+				null);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

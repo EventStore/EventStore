@@ -2,23 +2,34 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager;
-using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using WriteEventsMgr = EventStore.Core.Services.RequestManager.Managers.WriteEvents;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
-	public class when_write_stream_completes_successfully : RequestManagerSpecification {
+	public class when_write_stream_completes_successfully : RequestManagerSpecification<WriteEventsMgr> {
+		private long _prepareLogPosition = 100;
 		private long _commitLogPosition = 100;
-		protected override IRequestManager OnManager(FakePublisher publisher) {
-			return new WriteStreamRequestManager(publisher, CommitTimeout, false);
+
+		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
+			return new WriteEventsMgr(
+				publisher,
+				CommitTimeout,
+				Envelope,
+				InternalCorrId,
+				ClientCorrId,
+				"test123",
+				true,
+				ExpectedVersion.Any,
+				null,
+				new[] { DummyEvent() });
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, "test123",
-				ExpectedVersion.Any, new[] {DummyEvent()}, null);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitLogPosition, 2, 3, 3);
 		}
 
