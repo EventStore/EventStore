@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected long LastEventNumber = -1;
 		protected string FailureMessage = string.Empty;
 		protected long FailureCurrentVersion = -1;
-		protected long TransactionId = -1;
+		protected long TransactionId;
 
 		private bool _betterOrdering;
 		private bool _completeOnLogCommitted;
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					lock (_prepareLogPositions) {
 						if (_prepareLogPositions.Count > 0) {
 							// get the lowest prepare log position for this request
-							// not gauranteed to be the TransationId in multi-request writes
+							// not guaranteed to be the TransactionId in multi-request writes
 							var positions = _prepareLogPositions.ToArray();
 							Array.Sort(positions);
 							logPosition = positions[positions.Length - 1];
@@ -96,7 +96,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				long transactionId = -1,
 				bool waitForCommit = false,
 				bool authenticate = true,
-				bool completeOnLogCommitted = false) {
+				bool completeOnLogCommitted = false,
+				long currentLogPosition = 0) {
 			Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
 			Ensure.NotEmptyGuid(clientCorrId, nameof(clientCorrId));
 			Ensure.NotNull(publisher, nameof(publisher));
@@ -120,6 +121,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true
 			_authenicate = authenticate;
 			_completeOnLogCommitted = completeOnLogCommitted;
+			_committedPosition = currentLogPosition;
 		}
 		protected DateTime LiveUntil => NextTimeoutTime - _timeoutOffset;
 		public abstract Message WriteRequestMsg { get; }
@@ -235,6 +237,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			FirstEventNumber = message.FirstEventNumber;
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
+			_allPreparesWritten = true;
 			_commitRecieved = true;
 			_allEventsWritten = true;
 			AllEventsWritten();
@@ -251,7 +254,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 
 		#region IDisposable Support
-		private bool _disposed = false; // To detect redundant calls
+		private bool _disposed; // To detect redundant calls
 
 		protected virtual void Dispose(bool disposing) {
 			if (!_disposed) {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Security.Principal;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
@@ -13,31 +12,33 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					IPublisher publisher,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
-					Guid interalCorrId,
+					Guid internalCorrId,
 					Guid clientCorrId,
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
 					IPrincipal user,
-					bool hardDelete)
+					bool hardDelete,
+					long currentCommittedPosition =0)
 			: base(
 					 publisher,
 					 timeout,
 					 clientResponseEnvelope,
-					 interalCorrId,
+					 internalCorrId,
 					 clientCorrId,
 					 streamId,
 					 betterOrdering,
 					 expectedVersion,
 					 user,
 					 prepareCount: 0,
-					 waitForCommit: true) {
+					 waitForCommit: true,
+					 currentLogPosition: currentCommittedPosition) {
 			_hardDelete = hardDelete;
 		}
 
 		public override Message WriteRequestMsg =>
 			new StorageMessage.WriteDelete(
-					InternalCorrId, 
+					InternalCorrId,
 					WriteReplyEnvelope,
 					StreamId,
 					ExpectedVersion,
@@ -46,7 +47,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected override Message ClientSuccessMsg =>
 			 new ClientMessage.DeleteStreamCompleted(
-				 ClientCorrId, 
+				 ClientCorrId,
 				 OperationResult.Success,
 				 null,
 				 FirstPrepare,

@@ -15,7 +15,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					IPrincipal user)
+					IPrincipal user,
+					long currentLogPosition = 0)
 			: base(
 					 publisher,
 					 timeout,
@@ -27,7 +28,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 expectedVersion,
 					 user,
 					 1,
-					 completeOnLogCommitted: true) { }
+					 completeOnLogCommitted: true,
+					 currentLogPosition: currentLogPosition) { }
 
 		public override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionStart(
@@ -36,7 +38,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					StreamId,
 					ExpectedVersion,
 					LiveUntil);
-		
+
 
 		protected override Message ClientSuccessMsg =>
 			 new ClientMessage.TransactionStartCompleted(
@@ -51,6 +53,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 						TransactionId,
 						Result,
 						FailureMessage);
-		
+
 	}
 }
