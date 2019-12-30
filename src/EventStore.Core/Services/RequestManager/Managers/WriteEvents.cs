@@ -12,50 +12,52 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					IPublisher publisher,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
-					Guid interalCorrId,
+					Guid internalCorrId,
 					Guid clientCorrId,
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
 					IPrincipal user,
-					Event[] events)
+					Event[] events,
+					long currentCommitPosition = 0)
 			: base(
 					 publisher,
 					 timeout,
 					 clientResponseEnvelope,
-					 interalCorrId,
+					 internalCorrId,
 					 clientCorrId,
 					 streamId,
 					 betterOrdering,
 					 expectedVersion,
 					 user,
-					 prepareCount: 0,					 
-					 waitForCommit: true) {
+					 prepareCount: 0,
+					 waitForCommit: true,
+					 currentLogPosition: currentCommitPosition) {
 			_events = events;
-			}
+		}
 
 		public override Message WriteRequestMsg =>
 			new StorageMessage.WritePrepares(
-					InternalCorrId, 
-					WriteReplyEnvelope, 
-					StreamId, 
-					ExpectedVersion, 
+					InternalCorrId,
+					WriteReplyEnvelope,
+					StreamId,
+					ExpectedVersion,
 					_events,
 					LiveUntil);
-		
+
 
 		protected override Message ClientSuccessMsg =>
 			 new ClientMessage.WriteEventsCompleted(
-				 ClientCorrId, 
+				 ClientCorrId,
 				 FirstEventNumber,
-				 LastEventNumber, 
-				 FirstPrepare, 
+				 LastEventNumber,
+				 FirstPrepare,
 				 CommitPosition);
 
 		protected override Message ClientFailMsg =>
 			 new ClientMessage.WriteEventsCompleted(
-				 ClientCorrId, 
-				 Result, 
+				 ClientCorrId,
+				 Result,
 				 FailureMessage,
 				 FailureCurrentVersion);
 	}

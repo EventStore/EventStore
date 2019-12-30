@@ -36,25 +36,24 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
 		private const string _requestManagerHistogram = "request-manager";
 		private readonly bool _betterOrdering;
-		private readonly int _prepareCount;
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
+		private long _committedPosition;
+		private long _logCommittedPosition;
+
 		private VNodeState _nodeState;
 
 		public RequestManagementService(IPublisher bus,
-			int prepareCount,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
 			bool betterOrdering) {
 			Ensure.NotNull(bus, "bus");
-			Ensure.Nonnegative(prepareCount, "prepareCount");
 
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
 				new PublishEnvelope(bus),
 				new StorageMessage.RequestManagerTimerTick());
 
-			_prepareCount = prepareCount;
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
 			_betterOrdering = betterOrdering;
@@ -75,7 +74,8 @@ namespace EventStore.Core.Services.RequestManager {
 								_betterOrdering,
 								message.ExpectedVersion,
 								message.User,
-								message.Events);
+								message.Events,
+								_committedPosition);
 			_currentRequests.Add(message.InternalCorrId, manager);			
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -92,7 +92,8 @@ namespace EventStore.Core.Services.RequestManager {
 								_betterOrdering,
 								message.ExpectedVersion,
 								message.User,
-								message.HardDelete);
+								message.HardDelete,
+								_committedPosition);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -108,7 +109,8 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								_betterOrdering,
 								message.ExpectedVersion,
-								message.User);
+								message.User,
+								_logCommittedPosition);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -123,7 +125,8 @@ namespace EventStore.Core.Services.RequestManager {
 								message.CorrelationId,
 								_betterOrdering,
 								message.Events,
-								message.TransactionId);
+								message.TransactionId,
+								_logCommittedPosition);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -139,7 +142,8 @@ namespace EventStore.Core.Services.RequestManager {
 								message.CorrelationId,
 								message.TransactionId,
 								_betterOrdering,
-								message.User);
+								message.User,
+								_committedPosition);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -174,11 +178,13 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(CommitMessage.CommittedTo message) {
+			_committedPosition = message.LogPosition;
 			foreach (var currentRequest in _currentRequests) {
 				currentRequest.Value.Handle(message);
 			}
 		}
 		public void Handle(CommitMessage.LogCommittedTo message) {
+			_logCommittedPosition = message.LogPosition;
 			foreach (var currentRequest in _currentRequests) {
 				currentRequest.Value.Handle(message);
 			}

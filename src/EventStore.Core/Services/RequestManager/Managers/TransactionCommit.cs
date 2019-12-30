@@ -17,7 +17,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid clientCorrId,
 					long transactionId,
 					bool betterOrdering,
-					IPrincipal user)
+					IPrincipal user,
+					long currentCommittedPosition =0)
 			: base(
 					 publisher,
 					 prepareTimeout,
@@ -30,7 +31,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 user: user,
 					 transactionId: transactionId,
 					 prepareCount: 1,
-					 waitForCommit: true) {
+					 waitForCommit: true,
+					 currentLogPosition: currentCommittedPosition) {
 			_commitTimeout = commitTimeout + TimeSpan.FromSeconds(2);
 		}
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -16,7 +15,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid clientCorrId,
 					bool betterOrdering,
 					Event[] events,
-					long transactionId)
+					long transactionId,
+					long currentLogPosition = 0)
 			: base(
 					 publisher,
 					 timeout,
@@ -30,7 +30,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: events.Length,
 					 transactionId,
 					 authenticate: false,
-					 completeOnLogCommitted: true) {
+					 completeOnLogCommitted: true,
+					 currentLogPosition: currentLogPosition) {
 			_events = events;
 		}
 

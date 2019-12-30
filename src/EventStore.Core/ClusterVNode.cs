@@ -526,8 +526,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(forwardingService);
 
 			// REQUEST MANAGEMENT
-			var requestManagement = new RequestManagementService(_mainQueue,
-				vNodeSettings.PrepareAckCount,
+			var requestManagement = new RequestManagementService(
+				_mainQueue,
 				vNodeSettings.PrepareTimeout,
 				vNodeSettings.CommitTimeout,
 				vNodeSettings.BetterOrdering);
