@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				 ClientCorrId,
 				 OperationResult.Success,
 				 null,
-				 FirstPrepare,
+				 CommitPosition,  //not technically correct, but matches current behavior correctly
 				 CommitPosition);
 
 		protected override Message ClientFailMsg =>
