@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Commit {
 		public void Stop() {
 			_stop = true;
 		}
-		public bool IsIdle(){ return Interlocked.Read(ref _idle) == 1; }
+		public bool IsIdle() { return Interlocked.Read(ref _idle) == 1; }
 		public void TrackReplication() {
 			try {
 				while (!_stop) {
@@ -82,8 +82,8 @@ namespace EventStore.Core.Services.Commit {
 							Interlocked.Exchange(ref _previousCommittedPosition, commitPos);
 						}
 					}
-					_idle = 1;					
-					SpinWait.SpinUntil(()=> false,TimeSpan.FromMilliseconds(1));
+					_idle = 1;
+					SpinWait.SpinUntil(() => false, TimeSpan.FromMilliseconds(1));
 					_commitChanged.Wait(100);
 					_idle = 0;
 				}
@@ -102,9 +102,12 @@ namespace EventStore.Core.Services.Commit {
 
 		private void UpdateCommitPosition() {
 
-			var logCommittedTo = UpdateLogCommittedPos();
-
+			UpdateLogCommittedPos();
+			var logCommittedTo = Interlocked.Read(ref _logCommittedPosition);
 			switch (_level) {
+				case CommitLevel.MasterWrite:
+					Interlocked.Exchange(ref _committedPosition, _masterLogPosition);
+					break;
 				case CommitLevel.ClusterWrite:
 					Interlocked.Exchange(ref _committedPosition, logCommittedTo);
 					break;
@@ -118,31 +121,44 @@ namespace EventStore.Core.Services.Commit {
 			_commitChanged.Set();
 		}
 
-		private long UpdateLogCommittedPos() {
-			var logCommitted = Interlocked.Read(ref _logCommittedPosition);
-			var masterPos = Interlocked.Read(ref _masterLogPosition);
-			if (masterPos <= logCommitted) { return logCommitted; }
-
-			var minReplicas = _quorumSize - 1; //total - master = min replicas
-			if (minReplicas == 0) {
-				Interlocked.Exchange(ref _logCommittedPosition, masterPos);
-				return masterPos;
+		private void UpdateLogCommittedPos() {
+			if(_level == CommitLevel.MasterWrite){
+				Interlocked.Exchange(ref _logCommittedPosition, _masterLogPosition);
+				return;
 			}
+			switch (_level) {
+				case CommitLevel.MasterWrite:
+					Interlocked.Exchange(ref _logCommittedPosition, _masterLogPosition);
+					break;
+				case CommitLevel.ClusterWrite:
+				case CommitLevel.MasterIndexed:
+					var logCommitted = Interlocked.Read(ref _logCommittedPosition);
+					var masterPos = Interlocked.Read(ref _masterLogPosition);
+					if (masterPos <= logCommitted) { return; }
 
-			long[] positions;
-			lock (_replicaLogPositions) {
-				positions = _replicaLogPositions.Values.ToArray();
+					var minReplicas = _quorumSize - 1; //total - master = min replicas
+					if (minReplicas == 0) {
+						Interlocked.Exchange(ref _logCommittedPosition, masterPos);
+						return;
+					}
+
+					long[] positions;
+					lock (_replicaLogPositions) {
+						positions = _replicaLogPositions.Values.ToArray();
+					}
+
+					if (positions.Length < minReplicas) { return; }
+
+					Array.Sort(positions);
+					var furthestReplicatedPosition = positions[minReplicas - 1];
+					if (furthestReplicatedPosition <= logCommitted) { return; }
+
+					var logCommittedTo = Math.Min(masterPos, furthestReplicatedPosition);
+					Interlocked.Exchange(ref _logCommittedPosition, logCommittedTo);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
 			}
-
-			if (positions.Length < minReplicas) { return logCommitted; }
-
-			Array.Sort(positions);
-			var furthestReplicatedPosition = positions[minReplicas - 1];
-			if (furthestReplicatedPosition <= logCommitted) { return logCommitted; }
-
-			var logCommittedTo = Math.Min(masterPos, furthestReplicatedPosition);
-			Interlocked.Exchange(ref _logCommittedPosition, logCommittedTo);
-			return logCommittedTo;
 		}
 
 
