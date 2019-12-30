@@ -82,8 +82,7 @@ namespace EventStore.Core.Services.Commit {
 							Interlocked.Exchange(ref _previousCommittedPosition, commitPos);
 						}
 					}
-					_idle = 1;
-					SpinWait.SpinUntil(() => false, TimeSpan.FromMilliseconds(1));
+					_idle = 1;					
 					_commitChanged.Wait(100);
 					_idle = 0;
 				}

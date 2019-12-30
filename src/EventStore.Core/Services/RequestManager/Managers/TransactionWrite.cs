@@ -13,7 +13,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
 					Guid clientCorrId,
-					bool betterOrdering,
 					Event[] events,
 					long transactionId,
 					long currentLogPosition = 0)
@@ -23,19 +22,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
-					 streamId: null,
-					 betterOrdering,
 					 expectedVersion: -1,
-					 user: null,
 					 prepareCount: events.Length,
 					 transactionId,
-					 authenticate: false,
 					 completeOnLogCommitted: true,
 					 currentLogPosition: currentLogPosition) {
 			_events = events;
 		}
+		protected override Message AccessRequestMsg => null; //we don't have a user on the tx write message
 
-		public override Message WriteRequestMsg =>
+		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionData(
 					InternalCorrId,
 					WriteReplyEnvelope,

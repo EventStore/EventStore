@@ -14,33 +14,24 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 				IEnvelope clientResponseEnvelope,
 				Guid interalCorrId,
 				Guid clientCorrId,
-				string streamId,
-				bool betterOrdering,
 				long expectedVersion,
-				IPrincipal user,
 				int prepareCount = 0,
 				long transactionId = -1,
-				bool waitForCommit = false,
-				bool authenticate = true)
+				bool waitForCommit = false)
 			: base(
 				 publisher,
 				 timeout,
 				 clientResponseEnvelope,
 				 interalCorrId,
 				 clientCorrId,
-				 streamId,
-				 betterOrdering,
 				 expectedVersion,
-				 user,
 				 prepareCount,
 				 transactionId,
-				 waitForCommit,
-				 authenticate)
+				 waitForCommit)
 				{}
-		public override Message WriteRequestMsg => throw new NotImplementedException();
-
+		protected override Message AccessRequestMsg => throw new NotImplementedException();
+		protected override Message WriteRequestMsg => throw new NotImplementedException();
 		protected override Message ClientSuccessMsg => throw new NotImplementedException();
-
 		protected override Message ClientFailMsg => throw new NotImplementedException();
 	}
 }

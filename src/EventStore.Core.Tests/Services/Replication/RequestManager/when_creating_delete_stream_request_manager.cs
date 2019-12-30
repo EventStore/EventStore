@@ -11,7 +11,6 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 		protected static readonly IEnvelope Envelope = new NoopEnvelope();
 		protected static readonly Guid InternalCorrId = Guid.NewGuid();
 		protected static readonly Guid ClientCorrId = Guid.NewGuid();
-		protected static readonly string Stream = "test123";
 		protected static readonly long ExpectedVerion = 1;
 
 
@@ -24,10 +23,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					ClientCorrId,
-					Stream,
-					true,
-					ExpectedVerion,
-					null));
+					ExpectedVerion));
 		}
 		[Test]
 		public void null_envelope_throws_argument_null_exception() {
@@ -38,10 +34,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					null,
 					InternalCorrId,
 					ClientCorrId,
-					Stream,
-					true,
-					ExpectedVerion,
-					null));
+					ExpectedVerion));
 		}
 		[Test]
 		public void internal_corrId_empty_guid_throws_argument_exception() {
@@ -52,10 +45,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					Guid.Empty,
 					ClientCorrId,
-					Stream,
-					true,
-					ExpectedVerion,
-					null));
+					ExpectedVerion));
 		}
 		[Test]
 		public void client_corrId_empty_guid_throws_argument_exception() {
@@ -66,25 +56,9 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					Guid.Empty,
-					Stream,
-					true,
-					ExpectedVerion,
-					null));
+					ExpectedVerion));
 		}
-		//[Test]
-		//public void null_streamId_throws_argument_exception() {
-		//	Assert.Throws<ArgumentNullException>(() =>
-		//		new FakeRequestManager(
-		//			Publisher,
-		//			CommitTimeout,
-		//			Envelope,
-		//			InternalCorrId,
-		//			ClientCorrId,
-		//			null,
-		//			true,
-		//			ExpectedVerion,
-		//			null));
-		//}
+		
 		[Test]
 		public void empty_streamId_throws_argument_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
@@ -94,10 +68,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					ClientCorrId,
-					"",
-					true,
-					ExpectedVerion,
-					null));
+					ExpectedVerion));
 		}
 	}
 }

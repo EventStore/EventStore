@@ -693,8 +693,8 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
-				//_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
-				//_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
+				_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
+				_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
 				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
 			}
 

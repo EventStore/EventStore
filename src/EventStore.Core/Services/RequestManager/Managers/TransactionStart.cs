@@ -3,9 +3,14 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionStart : RequestManagerBase {
+		private readonly string _streamId;
+		private readonly bool _betterOrdering;
+		private readonly IPrincipal _user;
+
 		public TransactionStart(
 					IPublisher publisher,
 					TimeSpan timeout,
@@ -23,19 +28,30 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
-					 streamId,
-					 betterOrdering,
 					 expectedVersion,
-					 user,
 					 1,
 					 completeOnLogCommitted: true,
-					 currentLogPosition: currentLogPosition) { }
+					 currentLogPosition: currentLogPosition) {
+			_streamId = streamId;
+			_betterOrdering = betterOrdering;
+			_user = user;
+		}
 
-		public override Message WriteRequestMsg =>
+		protected override Message AccessRequestMsg =>				
+				new StorageMessage.CheckStreamAccess(
+						WriteReplyEnvelope, 
+						InternalCorrId, 
+						_streamId, 
+						null, 
+						StreamAccessType.Write, 
+						_user, 
+						_betterOrdering);
+
+		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionStart(
 					InternalCorrId,
 					WriteReplyEnvelope,
-					StreamId,
+					_streamId,
 					ExpectedVersion,
 					LiveUntil);
 
