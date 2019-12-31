@@ -40,9 +40,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStarted(ProjectionCoreService.SubComponentName,
 					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStarted(
-					ProjectionCoreServiceCommandReader.SubComponentName, instanceCorrelationId));
 
 			// Stop Components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));

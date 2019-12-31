@@ -6,6 +6,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
@@ -17,6 +18,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 		private TimeoutScheduler[] timeoutScheduler = { };
 		private FakeEnvelope envelope = new FakeEnvelope();
 		private Guid instanceCorrelationId = Guid.NewGuid();
+		private Guid queueId;
 
 		[SetUp]
 		public void Setup() {
@@ -35,6 +37,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components but don't handle component stopped
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));
 
+			var stopReader = queues[0].Messages.OfType<ReaderCoreServiceMessage.StopReader>().First();
+			queueId = stopReader.QueueId;
 			//clear queues for clearer testing
 			queues[0].Messages.Clear();
 		}
@@ -55,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Component stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Start component
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
@@ -70,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Start components but don't handle component started
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(newInstanceCorrelationId));
@@ -86,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Stop components without starting
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(Guid.NewGuid()));
