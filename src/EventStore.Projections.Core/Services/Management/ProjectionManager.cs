@@ -48,8 +48,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionStatusMessage.Prepared>,
 			IHandle<CoreProjectionStatusMessage.StateReport>,
 			IHandle<CoreProjectionStatusMessage.ResultReport>,
-			IHandle<CoreProjectionStatusMessage.StatisticsReport>,
-			IHandle<ProjectionManagementMessage.ReaderReady> {
+			IHandle<CoreProjectionStatusMessage.StatisticsReport> {
 		public const int ProjectionQueryId = -2;
 		public const int ProjectionCreationRetryCount = 1;
 		public const string ServiceName = "ProjectionManager";
@@ -188,7 +187,12 @@ namespace EventStore.Projections.Core.Services.Management {
 			_logger.Debug("PROJECTIONS: Starting Projections Manager. Correlation: {correlation}", _instanceCorrelationId);
 			
 			_started = true;
-			_publisher.Publish(new ProjectionManagementMessage.Starting(_instanceCorrelationId));
+			if (_runProjections >= ProjectionType.System)
+				StartExistingProjections(
+					() => {
+						_projectionsStarted = true;
+						ScheduleExpire();
+					});
 			_publisher.Publish(new ProjectionSubsystemMessage.ComponentStarted(ServiceName, _instanceCorrelationId));
 		}
 
@@ -207,16 +211,6 @@ namespace EventStore.Projections.Core.Services.Management {
 			_logger.Debug("PROJECTIONS: Stopping Projections Manager. Correlation {correlation}", _instanceCorrelationId);
 			Stop();
 		}
-	
-		public void Handle(ProjectionManagementMessage.ReaderReady message) {
-			if (_runProjections >= ProjectionType.System)
-				StartExistingProjections(
-					() => {
-						_projectionsStarted = true;
-						ScheduleExpire();
-					});
-		}
-
 
 		private void ScheduleExpire() {
 			if (!_projectionsStarted)

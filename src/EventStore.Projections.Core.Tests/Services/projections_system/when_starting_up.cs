@@ -4,7 +4,6 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Helpers;
 using System;
 using System.Net;
 
@@ -37,11 +36,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			public void core_readers_should_use_the_unique_id_provided_by_the_component_start_message() {
 				var startComponentMessages = _consumer.HandledMessages.OfType<ProjectionSubsystemMessage.StartComponents>().First();
 				var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
-				var startingMessage = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Starting>().First();
 
 				Assert.AreEqual(1, startCoreMessages.Select(x => x.InstanceCorrelationId).Distinct().Count());
 				Assert.AreEqual(startComponentMessages.InstanceCorrelationId, startCoreMessages.First().InstanceCorrelationId);
-				Assert.AreEqual(startComponentMessages.InstanceCorrelationId, startingMessage.InstanceCorrelationId);
 			}
 		}
 

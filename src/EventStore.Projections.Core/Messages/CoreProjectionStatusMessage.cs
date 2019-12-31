@@ -172,23 +172,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionWorkerStarted : Message {
-			private readonly Guid _workerId;
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public ProjectionWorkerStarted(Guid workerId) {
-				_workerId = workerId;
-			}
-
-			public Guid WorkerId {
-				get { return _workerId; }
-			}
-		}
-
 		public class Suspended : CoreProjectionStatusMessageBase {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

@@ -105,8 +105,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 				if (_runProjections >= ProjectionType.System) {
 					queue.Publish(new ProjectionCoreServiceMessage.StartCore(_instanceCorrelationId));
-					_pendingSubComponentsStarts += 1 /*ProjectionCoreService*/
-					                               + 1 /*ProjectionCoreServiceCommandReader*/;
+					_pendingSubComponentsStarts += 1; /*ProjectionCoreService*/
 				}
 			}
 		}

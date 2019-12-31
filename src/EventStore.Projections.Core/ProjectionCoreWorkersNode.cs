@@ -37,7 +37,8 @@ namespace EventStore.Projections.Core {
 					standardComponents.TimeProvider,
 					coreTimeoutSchedulers[coreQueues.Count],
 					projectionsStandardComponents.RunProjections,
-					projectionsStandardComponents.FaultOutOfOrderProjections);
+					projectionsStandardComponents.FaultOutOfOrderProjections,
+					projectionsStandardComponents.MasterOutputBus);
 				projectionNode.SetupMessaging(coreInputBus);
 
 				var forwarder = new RequestResponseQueueForwarder(
