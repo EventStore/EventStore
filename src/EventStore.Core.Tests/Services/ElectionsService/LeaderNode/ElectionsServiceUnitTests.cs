@@ -82,7 +82,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				_nodes.Add(endPoint, inputBus);
 
 				var gossip = new NodeGossipService(outputBus, seedSource, nodeInfo, writerCheckpoint, readerCheckpoint,
-					epochManager, lastCommitPosition, 0, TimeSpan.FromMilliseconds(500), TimeSpan.FromDays(1));
+					epochManager, lastCommitPosition, 0, TimeSpan.FromMilliseconds(500), TimeSpan.FromDays(1),
+					_fakeTimeProvider);
 				inputBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				inputBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
 				inputBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
