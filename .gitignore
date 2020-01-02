@@ -53,6 +53,7 @@ dependencies
 *.ncrunchsolution
 *.ncrunchproject
 **/.vs/
+**/launchSettings.json
 
 .idea
 
@@ -110,3 +111,4 @@ src/.vscode/
 
 #NCrunch
 _NCrunch_*/
+
