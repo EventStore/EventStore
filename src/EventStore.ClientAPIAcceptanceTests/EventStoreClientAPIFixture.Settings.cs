@@ -7,7 +7,7 @@ namespace EventStore.ClientAPI.Tests {
 				var builder = ConnectionSettings.Create()
 					.EnableVerboseLogging()
 					.LimitReconnectionsTo(10)
-					.LimitRetriesForOperationTo(100)
+					.LimitAttemptsForOperationTo(1)
 					.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
 					.SetReconnectionDelayTo(TimeSpan.Zero)
 					.FailOnNoServerResponse();
