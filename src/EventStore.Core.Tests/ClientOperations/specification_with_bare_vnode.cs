@@ -5,7 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Tests.Integration {
-	public abstract class SpecificationWithIntegrationVNode : IPublisher, ISubscriber, IDisposable {
+	public abstract class specification_with_bare_vnode : IPublisher, ISubscriber, IDisposable {
 		private ClusterVNode _node;
 		private List<IDisposable> _disposables = new List<IDisposable>();
 		public void CreateTestNode() {

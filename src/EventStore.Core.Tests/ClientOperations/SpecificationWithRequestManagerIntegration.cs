@@ -6,7 +6,7 @@ using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration.ClientRequests {
-	public abstract class SpecificationWithRequestManagerIntegration : SpecificationWithIntegrationVNode {
+	public abstract class SpecificationWithRequestManagerIntegration : specification_with_bare_vnode {
 		protected List<Message> Produced = new List<Message>();
 
 		protected Guid InternalCorrId = Guid.NewGuid();

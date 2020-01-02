@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Integration.ClientRequests {
 		}
 
 		[Test]
-		public void successful_request_message_is_publised() {
+		public void successful_request_message_is_published() {
 			WaitForNext<StorageMessage.RequestCompleted>().Wait();
 			Produced.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success);
