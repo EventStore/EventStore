@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			protected override WriteResult TransformResponse(ClientMessage.WriteEventsCompleted response) {
 				return new WriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -100,7 +100,7 @@ namespace EventStore.ClientAPI.Embedded {
 				}
 
 				return new ConditionalWriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 
 			protected override DeleteResult TransformResponse(ClientMessage.DeleteStreamCompleted response) {
-				return new DeleteResult(new Position(response.PreparePosition, response.CommitPosition));
+				return new DeleteResult(new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -423,7 +423,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			protected override WriteResult TransformResponse(ClientMessage.TransactionCommitCompleted response) {
 				return new WriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
