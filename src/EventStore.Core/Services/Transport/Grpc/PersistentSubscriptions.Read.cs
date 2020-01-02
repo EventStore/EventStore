@@ -218,7 +218,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				(ResolvedEvent, int, Exception) _;
 
 				while (!_sendQueue.TryDequeue(out _)) {
-					await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
+					try {
+						await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
+					} catch (ObjectDisposedException) {
+						return false;
+					}
 				}
 
 				var (resolvedEvent, retryCount, exception) = _;
