@@ -4,7 +4,7 @@ using NLog;
 using NLog.Targets;
 using Serilog;
 
-namespace EventStore.Grpc {
+namespace EventStore.Client {
 	public sealed class SerilogTarget : TargetWithLayout {
 		protected override void Write(LogEventInfo logEvent) {
 			var log = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, logEvent.LoggerName);

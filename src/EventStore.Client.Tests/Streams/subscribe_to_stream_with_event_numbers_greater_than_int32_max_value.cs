@@ -3,23 +3,27 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
 	public class subscribe_to_stream_with_event_numbers_greater_than_int32_max_value
-		: IClassFixture<subscribe_to_stream_with_event_numbers_greater_than_int32_max_value.Fixture> {
+		: IClassFixture<subscribe_to_stream_with_event_numbers_greater_than_int32_max_value.Fixture>, IDisposable {
 		private const string Stream = nameof(subscribe_to_stream_with_event_numbers_greater_than_int32_max_value);
 
 		private const string LinkedStream = "linked-" + Stream;
 		private readonly Fixture _fixture;
+		private readonly IDisposable _loggingContext;
 
-		public subscribe_to_stream_with_event_numbers_greater_than_int32_max_value(Fixture fixture) {
+		public subscribe_to_stream_with_event_numbers_greater_than_int32_max_value(Fixture fixture,
+			ITestOutputHelper outputHelper) {
 			_fixture = fixture;
+			_loggingContext = LoggingHelper.Capture(outputHelper);
 		}
 
 		[Fact]
 		public async Task should_subscribe() {
 			var source = new TaskCompletionSource<ResolvedEvent>();
-			using var _ = _fixture.Client.SubscribeToStream(
+			using var _ = await _fixture.Client.SubscribeToStreamAsync(
 				Stream, StreamRevision.Start, EventAppeared, false, SubscriptionDropped);
 
 			var result = await source.Task.WithTimeout();
@@ -60,5 +64,7 @@ namespace EventStore.Client.Streams {
 
 			protected override string StreamName => Stream;
 		}
+
+		public void Dispose() => _loggingContext.Dispose();
 	}
 }

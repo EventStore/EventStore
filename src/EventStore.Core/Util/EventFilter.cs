@@ -50,6 +50,8 @@ namespace EventStore.Core.Util {
 			public bool IsEventAllowed(EventRecord eventRecord) {
 				return true;
 			}
+
+			public override string ToString() => nameof(AlwaysAllowStrategy);
 		}
 
 		private class StreamIdPrefixStrategy : IEventFilter {
@@ -60,6 +62,9 @@ namespace EventStore.Core.Util {
 
 			public bool IsEventAllowed(EventRecord eventRecord) =>
 				_expectedPrefixes.Any(expectedPrefix => eventRecord.EventStreamId.StartsWith(expectedPrefix));
+
+			public override string ToString() =>
+				$"{nameof(StreamIdPrefixStrategy)}: ({string.Join(", ", _expectedPrefixes)})";
 		}
 
 		private class EventTypePrefixStrategy : IEventFilter {
@@ -70,6 +75,9 @@ namespace EventStore.Core.Util {
 
 			public bool IsEventAllowed(EventRecord eventRecord) =>
 				_expectedPrefixes.Any(expectedPrefix => eventRecord.EventType.StartsWith(expectedPrefix));
+
+			public override string ToString() =>
+				$"{nameof(EventTypePrefixStrategy)}: ({string.Join(", ", _expectedPrefixes)})";
 		}
 
 		private class EventTypeRegexStrategy : IEventFilter {
@@ -80,6 +88,9 @@ namespace EventStore.Core.Util {
 
 			public bool IsEventAllowed(EventRecord eventRecord) =>
 				_expectedRegex.Match(eventRecord.EventType).Success;
+
+			public override string ToString() =>
+				$"{nameof(EventTypeRegexStrategy)}: ({string.Join(", ", _expectedRegex)})";
 		}
 
 		private class StreamIdRegexStrategy : IEventFilter {
@@ -90,6 +101,9 @@ namespace EventStore.Core.Util {
 
 			public bool IsEventAllowed(EventRecord eventRecord) =>
 				_expectedRegex.Match(eventRecord.EventStreamId).Success;
+
+			public override string ToString() =>
+				$"{nameof(StreamIdRegexStrategy)}: ({string.Join(", ", _expectedRegex)})";
 		}
 
 		public static (bool Success, string Reason) TryParse(string context, string type, string data,

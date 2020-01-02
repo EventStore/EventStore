@@ -32,8 +32,10 @@ namespace EventStore.Client {
 			},
 			operationOptions,
 			userCredentials,
-			cancellationToken);
-		
+			cancellationToken)
+			.Where(x => x.Item1 == SubscriptionConfirmation.None)
+			.Select(x => x.Item2);
+
 		/// <summary>
 		/// Asynchronously reads all events.
 		/// </summary>
@@ -79,7 +81,7 @@ namespace EventStore.Client {
 
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
-			
+
 			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filter, userCredentials,
 				cancellationToken);
 		}
@@ -106,8 +108,10 @@ namespace EventStore.Client {
 			},
 			operationOptions,
 			userCredentials,
-			cancellationToken);
-			
+			cancellationToken)
+			.Where(x => x.Item1 == SubscriptionConfirmation.None)
+			.Select(x => x.Item2);
+
 		/// <summary>
 		/// Asynchronously reads all events from a stream.
 		/// </summary>
@@ -153,12 +157,12 @@ namespace EventStore.Client {
 
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
-			
+
 			return ReadStreamAsync(direction, streamName, revision, count, operationOptions, resolveLinkTos, userCredentials,
 				cancellationToken);
 		}
 
-		private async IAsyncEnumerable<ResolvedEvent> ReadInternal(
+		private async IAsyncEnumerable<(SubscriptionConfirmation, ResolvedEvent)> ReadInternal(
 			ReadReq request,
 			EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials,
@@ -181,19 +185,27 @@ namespace EventStore.Client {
 
 			await foreach (var e in call.ResponseStream
 				.ReadAllAsync(cancellationToken)
-				.Select(ConvertToResolvedEvent)
+				.Select(ConvertToItem)
 				.WithCancellation(cancellationToken)
 				.ConfigureAwait(false)) {
 				yield return e;
 			}
 
-			ResolvedEvent ConvertToResolvedEvent(ReadResp response) =>
+			(SubscriptionConfirmation, ResolvedEvent) ConvertToItem(ReadResp response) => response.ContentCase switch {
+				ReadResp.ContentOneofCase.Confirmation => (
+					new SubscriptionConfirmation(response.Confirmation.SubscriptionId), default),
+				ReadResp.ContentOneofCase.Event => (SubscriptionConfirmation.None,
+					ConvertToResolvedEvent(response.Event)),
+				_ => throw new InvalidOperationException()
+			};
+
+			ResolvedEvent ConvertToResolvedEvent(ReadResp.Types.ReadEvent readEvent) =>
 				new ResolvedEvent(
-					ConvertToEventRecord(response.Event.Event),
-					ConvertToEventRecord(response.Event.Link),
-					response.Event.PositionCase switch {
+					ConvertToEventRecord(readEvent.Event),
+					ConvertToEventRecord(readEvent.Link),
+					readEvent.PositionCase switch {
 						ReadResp.Types.ReadEvent.PositionOneofCase.CommitPosition => new Position(
-							response.Event.CommitPosition, 0).ToInt64().commitPosition,
+							readEvent.CommitPosition, 0).ToInt64().commitPosition,
 						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => null,
 						_ => throw new InvalidOperationException()
 					});

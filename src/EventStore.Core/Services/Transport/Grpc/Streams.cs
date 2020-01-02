@@ -8,7 +8,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private readonly IQueuedHandler _queue;
 		private readonly IReadIndex _readIndex;
 		private readonly IAuthenticationProvider _authenticationProvider;
-		private int _maxAppendSize;
+		private readonly int _maxAppendSize;
 
 		public Streams(IQueuedHandler queue, IAuthenticationProvider authenticationProvider, IReadIndex readIndex,
 			int maxAppendSize) {

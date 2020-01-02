@@ -11,8 +11,22 @@ namespace EventStore.Client {
 		private readonly CancellationTokenSource _disposed;
 		private int _subscriptionDroppedInvoked;
 
-		public StreamSubscription(
-			IAsyncEnumerable<ResolvedEvent> events,
+		internal static async Task<StreamSubscription> Confirm(
+			IAsyncEnumerable<(SubscriptionConfirmation, ResolvedEvent)> read,
+			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
+			CancellationToken cancellationToken = default) {
+			var enumerator = read.GetAsyncEnumerator(cancellationToken);
+			if (!await enumerator.MoveNextAsync(cancellationToken).ConfigureAwait(false) ||
+			    enumerator.Current.Item1 == SubscriptionConfirmation.None) {
+				throw new InvalidOperationException();
+			}
+
+			return new StreamSubscription(enumerator, eventAppeared, subscriptionDropped);
+		}
+
+		private StreamSubscription(
+			IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent)> events,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default) {
 			if (events == null) {
@@ -24,7 +38,7 @@ namespace EventStore.Client {
 			}
 
 			_disposed = new CancellationTokenSource();
-			_events = events;
+			_events = new Enumerable(events);
 			_eventAppeared = eventAppeared;
 			_subscriptionDropped = subscriptionDropped;
 			_subscriptionDroppedInvoked = 0;
@@ -33,7 +47,6 @@ namespace EventStore.Client {
 		}
 
 		private async Task Subscribe() {
-			subscribe:
 			try {
 				await foreach (var resolvedEvent in _events.ConfigureAwait(false)) {
 					try {
@@ -56,9 +69,6 @@ namespace EventStore.Client {
 						return;
 					}
 				}
-			} catch (StreamNotFoundException) {
-				await Task.Delay(100).ConfigureAwait(false);
-				goto subscribe;
 			} catch (Exception ex) {
 				try {
 					SubscriptionDropped(SubscriptionDroppedReason.ServerError, ex);
@@ -82,8 +92,35 @@ namespace EventStore.Client {
 			if (Interlocked.CompareExchange(ref _subscriptionDroppedInvoked, 1, 0) == 1) {
 				return;
 			}
-			
+
 			_subscriptionDropped?.Invoke(this, reason, ex);
+		}
+
+		private class Enumerable : IAsyncEnumerable<ResolvedEvent> {
+			private readonly IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> _inner;
+
+			public Enumerable(IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> inner) {
+				if (inner == null) throw new ArgumentNullException(nameof(inner));
+				_inner = inner;
+			}
+
+			public IAsyncEnumerator<ResolvedEvent> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+				=> new Enumerator(_inner);
+
+			private class Enumerator : IAsyncEnumerator<ResolvedEvent> {
+				private readonly IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> _inner;
+
+				public Enumerator(IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> inner) {
+					if (inner == null) throw new ArgumentNullException(nameof(inner));
+					_inner = inner;
+				}
+
+				public ValueTask DisposeAsync() => _inner.DisposeAsync();
+
+				public ValueTask<bool> MoveNextAsync() => _inner.MoveNextAsync();
+
+				public ResolvedEvent Current => _inner.Current.resolvedEvent;
+			}
 		}
 	}
 }

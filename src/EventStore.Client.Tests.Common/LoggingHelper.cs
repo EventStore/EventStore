@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Reactive.Linq;
 using System.Threading;
-using EventStore.Grpc.Logging;
+using EventStore.Client.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using Serilog;
@@ -11,7 +11,7 @@ using Serilog.Events;
 using Serilog.Formatting.Display;
 using Xunit.Abstractions;
 
-namespace EventStore.Grpc {
+namespace EventStore.Client {
 	public static class LoggingHelper {
 		private const string CaptureCorrelationId = nameof(CaptureCorrelationId);
 		private static readonly Subject<LogEvent> s_logEventSubject = new Subject<LogEvent>();

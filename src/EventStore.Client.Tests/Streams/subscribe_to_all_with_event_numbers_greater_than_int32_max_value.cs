@@ -20,7 +20,7 @@ namespace EventStore.Client.Streams {
 			var source = new TaskCompletionSource<bool>();
 			var @event = new EventData(Uuid.NewUuid(), "-", Array.Empty<byte>(), isJson: false);
 			var received = new List<Uuid>(3);
-			using var _ = _fixture.Client.SubscribeToAll(
+			using var _ = await _fixture.Client.SubscribeToAllAsync(
 				Position.Start, EventAppeared, false, SubscriptionDropped, userCredentials: TestCredentials.Root);
 
 			await _fixture.Client.AppendToStreamAsync(Stream, AnyStreamRevision.Any, new[] {@event});
