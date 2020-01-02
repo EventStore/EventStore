@@ -72,7 +72,7 @@ namespace EventStore.Grpc.Streams {
 			void SubscriptionDropped(StreamSubscription s, SubscriptionDroppedReason reason, Exception ex)
 				=> dropped.SetResult((reason, ex));
 		}
-		
+
 		[Fact]
 		public async Task allow_multiple_subscriptions_to_same_stream() {
 			var stream = _fixture.GetStreamName();
@@ -101,7 +101,8 @@ namespace EventStore.Grpc.Streams {
 			var stream = _fixture.GetStreamName();
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var subscription = _fixture.Client.SubscribeToStream(stream, EventAppeared, false, SubscriptionDropped);
+			using var subscription =
+				_fixture.Client.SubscribeToStream(stream, EventAppeared, false, SubscriptionDropped);
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -161,7 +162,7 @@ namespace EventStore.Grpc.Streams {
 
 			await appeared.Task.WithTimeout(TimeSpan.FromMinutes(10));
 
-			Assert.True(EventDataComparer.Equal(beforeEvents.Concat(afterEvents).ToArray(), appearedEvents.ToArray()));
+			AssertEx.EventsEqual(beforeEvents.Concat(afterEvents).ToArray(), appearedEvents.ToArray());
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -173,7 +174,7 @@ namespace EventStore.Grpc.Streams {
 			Assert.Null(ex);
 
 			Task EventAppeared(StreamSubscription s, ResolvedEvent e, CancellationToken ct) {
-				appearedEvents.Add(e.Event);
+				appearedEvents.Add(e.OriginalEvent);
 
 				if (appearedEvents.Count >= beforeEvents.Length + afterEvents.Length) {
 					appeared.TrySetResult(true);
@@ -186,7 +187,6 @@ namespace EventStore.Grpc.Streams {
 				dropped.SetResult((reason, ex));
 			}
 		}
-
 
 		public class Fixture : EventStoreGrpcFixture {
 			public EventData[] Events { get; }
