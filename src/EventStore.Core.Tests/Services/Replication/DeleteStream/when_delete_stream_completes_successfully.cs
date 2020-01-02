@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -23,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				false);
+				false,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {			
@@ -31,7 +33,8 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 		}
 
 		protected override Message When() {
-			return new CommitMessage.CommittedTo(100);
+			CommitPosition = 100;
+			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow);
 		}
 
 		[Test]

@@ -9,10 +9,21 @@ using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
+using System.Threading;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace EventStore.Core.Services.RequestManager {
-	
-	public class RequestManagementService : IHandle<SystemMessage.SystemInit>,
+	public interface ICommitSource {
+		long CommitPosition { get; }
+		long LogCommitPosition { get; }
+
+		void NotifyCommitFor(long postition, Action target);
+		void NotifyLogCommitFor(long postition, Action target);
+	}
+	public class RequestManagementService :
+		ICommitSource,
+		IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
 		IHandle<ClientMessage.TransactionStart>,
@@ -43,6 +54,10 @@ namespace EventStore.Core.Services.RequestManager {
 
 		private VNodeState _nodeState;
 
+		public long CommitPosition => Interlocked.Read(ref _committedPosition);
+
+		public long LogCommitPosition => Interlocked.Read(ref _logCommittedPosition);
+
 		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
@@ -59,6 +74,25 @@ namespace EventStore.Core.Services.RequestManager {
 			_betterOrdering = betterOrdering;
 		}
 
+		private ConcurrentDictionary<long, List<Action>> _notifyCommit = new ConcurrentDictionary<long, List<Action>>();
+		private ConcurrentDictionary<long, List<Action>> _notifyLogCommit = new ConcurrentDictionary<long, List<Action>>();
+		public void NotifyCommitFor(long postition, Action target) {
+			if (Interlocked.Read(ref _committedPosition) >= postition) { target(); }
+			if (!_notifyCommit.TryGetValue(postition, out var actionList)) {
+				actionList = new List<Action>();
+				_notifyCommit.TryAdd(postition, actionList);
+			}
+			actionList.Add(target);
+		}
+		public void NotifyLogCommitFor(long postition, Action target) {
+			if (Interlocked.Read(ref _logCommittedPosition) >= postition) { target(); }
+			if (!_notifyLogCommit.TryGetValue(postition, out var actionList)) {
+				actionList = new List<Action>();
+				_notifyLogCommit.TryAdd(postition, actionList);
+			}
+			actionList.Add(target);
+		}
+
 		public void Handle(SystemMessage.SystemInit message) {
 			_bus.Publish(_tickRequestMessage);
 		}
@@ -70,13 +104,13 @@ namespace EventStore.Core.Services.RequestManager {
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,
-								message.EventStreamId,								
+								message.EventStreamId,
 								_betterOrdering,
 								message.ExpectedVersion,
 								message.User,
 								message.Events,
-								_committedPosition);
-			_currentRequests.Add(message.InternalCorrId, manager);			
+								this);
+			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
 		}
@@ -93,7 +127,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								message.User,
 								message.HardDelete,
-								_committedPosition);
+								this);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -110,7 +144,7 @@ namespace EventStore.Core.Services.RequestManager {
 								_betterOrdering,
 								message.ExpectedVersion,
 								message.User,
-								_logCommittedPosition);
+								this);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -125,7 +159,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.CorrelationId,
 								message.Events,
 								message.TransactionId,
-								_logCommittedPosition);
+								this);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -142,7 +176,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_betterOrdering,
 								message.User,
-								_committedPosition);
+								this);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -155,7 +189,7 @@ namespace EventStore.Core.Services.RequestManager {
 					(long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
 				_currentTimedRequests.Remove(message.CorrelationId);
 			}
-			
+
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 		}
@@ -177,15 +211,25 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(CommitMessage.CommittedTo message) {
-			_committedPosition = message.LogPosition;
-			foreach (var currentRequest in _currentRequests) {
-				currentRequest.Value.Handle(message);
-			}
+			Interlocked.Exchange(ref _committedPosition, message.LogPosition);
+			Notify(_notifyCommit, message.LogPosition);
 		}
+
 		public void Handle(CommitMessage.LogCommittedTo message) {
-			_logCommittedPosition = message.LogPosition;
-			foreach (var currentRequest in _currentRequests) {
-				currentRequest.Value.Handle(message);
+			Interlocked.Exchange(ref _logCommittedPosition, message.LogPosition);
+			Notify(_notifyLogCommit, message.LogPosition);
+		}
+
+		private void Notify(ConcurrentDictionary<long, List<Action>> dictionary, long logPosition) {
+			if (dictionary.IsEmpty) { return; }
+			long[] positions;
+			lock (dictionary) {
+				positions = dictionary.Keys.ToArray();
+			}
+			Array.Sort(positions);
+			for (int i = 0; i < positions.Length && positions[i] <= logPosition; i++) {
+				dictionary[positions[i]].ForEach(a => { try { a?.Invoke(); } catch { } });
+				dictionary.TryRemove(positions[i], out _);
 			}
 		}
 		public void Handle(StorageMessage.WrongExpectedVersion message) {
@@ -213,7 +257,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
-			
+
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
 				var x = manager as IHandle<T>;
 				x?.Handle(message);
@@ -222,7 +266,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			_nodeState = message.State;			
+			_nodeState = message.State;
 		}
 	}
 }

@@ -19,8 +19,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
-		IHandle<CommitMessage.LogCommittedTo>,
-		IHandle<CommitMessage.CommittedTo>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IDisposable {
@@ -35,6 +33,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected readonly Guid InternalCorrId;
 		protected readonly Guid ClientCorrId;
 		protected readonly long ExpectedVersion;
+
 		protected OperationResult Result;
 		protected long FirstEventNumber = -1;
 		protected long LastEventNumber = -1;
@@ -43,7 +42,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected long TransactionId;
 
 		private bool _completeOnLogCommitted;
-		private long _committedPosition;
+		private readonly ICommitSource _commitSource;
 		private long _lastEventPosition;
 		protected long CommitPosition = -1;
 		protected long FirstPrepare {
@@ -85,18 +84,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				Guid internalCorrId,
 				Guid clientCorrId,
 				long expectedVersion,
+				ICommitSource commitSource,
 				int prepareCount = 0,
 				long transactionId = -1,
 				bool waitForCommit = false,
-				bool completeOnLogCommitted = false,
-				long currentLogPosition = 0) {
+				bool completeOnLogCommitted = false) {
 			Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
 			Ensure.NotEmptyGuid(clientCorrId, nameof(clientCorrId));
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(clientResponseEnvelope, nameof(clientResponseEnvelope));
-			if (prepareCount == 0 && waitForCommit == false) {
-				throw new InvalidOperationException($"{((dynamic)this).GetType().Name} implementing {nameof(RequestManagerBase)} cannot wait on no prepares and no commit!");
-			}
+			Ensure.NotNull(commitSource, nameof(commitSource));
+
 			Publisher = publisher;
 			Timeout = timeout;
 			_clientResponseEnvelope = clientResponseEnvelope;
@@ -104,12 +102,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			ClientCorrId = clientCorrId;
 			WriteReplyEnvelope = new PublishEnvelope(Publisher);
 			ExpectedVersion = expectedVersion;
+			_commitSource = commitSource;
 			_prepareCount = prepareCount;
 			TransactionId = transactionId;
 			_commitRecieved = !waitForCommit; //if not waiting for commit flag as true
 			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true
 			_completeOnLogCommitted = completeOnLogCommitted;
-			_committedPosition = currentLogPosition;
+			if (prepareCount == 0 && waitForCommit == false) {
+				//empty operation just return sucess
+				var position = Math.Max(transactionId, 0);
+				ReturnCommitAt(position, 0, 0);
+			}
 		}
 		protected DateTime LiveUntil => NextTimeoutTime - _timeoutOffset;
 		protected abstract Message AccessRequestMsg { get; }
@@ -161,26 +164,18 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allEventsWritten) { AllEventsWritten(); }
 		}
 		protected virtual void AllPreparesWritten() { }
+		private bool _registered;
 		protected virtual void AllEventsWritten() {
-			if (_committedPosition >= _lastEventPosition) {
+			var pos = _completeOnLogCommitted ? _commitSource.LogCommitPosition : _commitSource.CommitPosition;
+			if (pos >= _lastEventPosition) {
 				Committed();
-			}
-		}
-		public void Handle(CommitMessage.CommittedTo message) {
-			if (_completeOnLogCommitted) { return; }
-			CommitPositionUpdated(message.LogPosition);
-		}
-		public void Handle(CommitMessage.LogCommittedTo message) {
-			if (!_completeOnLogCommitted) { return; }
-			CommitPositionUpdated(message.LogPosition);
-		}
-		private void CommitPositionUpdated(long logPosition) {
-			if (_complete) { return; }
-			if (logPosition > _committedPosition) {
-				_committedPosition = logPosition;
-			}
-			if (_allEventsWritten && _committedPosition >= _lastEventPosition) {
-				Committed();
+			} else if (!_registered) {
+				if (_completeOnLogCommitted) {
+					_commitSource.NotifyLogCommitFor(_lastEventPosition, Committed);
+				} else {
+					_commitSource.NotifyCommitFor(_lastEventPosition, Committed);
+				}
+				_registered = true;
 			}
 		}
 		protected virtual void Committed() {
@@ -191,6 +186,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
+			if (_allEventsWritten) { AllEventsWritten(); }
 			if (_complete || message.UtcNow < NextTimeoutTime)
 				return;
 			var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
@@ -211,14 +207,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_complete || _allEventsWritten) { return; }
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
 				message);
-
+			ReturnCommitAt(message.LogPosition, message.FirstEventNumber, message.LastEventNumber);
+		}
+		private void ReturnCommitAt(long logPosition, long firstEvent, long lastEvent) {
 			lock (_prepareLogPositions) {
 				_prepareLogPositions.Clear();
-				_prepareLogPositions.Add(message.LogPosition);
+				_prepareLogPositions.Add(logPosition);
 
-				FirstEventNumber = message.FirstEventNumber;
-				LastEventNumber = message.LastEventNumber;
-				CommitPosition = message.LogPosition;
+				FirstEventNumber = firstEvent;
+				LastEventNumber = lastEvent;
+				CommitPosition = logPosition;
 				Committed();
 			}
 		}

@@ -6,6 +6,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
@@ -24,21 +25,23 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				false);
+				false,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1, true);
-			yield return new CommitMessage.CommittedTo(_commitPosition);
+			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1, true);			
 		}
 
 		protected override Message When() {
+			CommitPosition = _commitPosition;
 			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + CommitTimeout + CommitTimeout);
 		}
 
 		[Test]
 		public void no_additional_messages_are_published() {
-			Assert.That(Produced.Count == 0);
+			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+				x => x.CorrelationId == InternalCorrId && x.Success));
 		}
 		[Test]
 		public void the_envelope_has_single_successful_reply() {

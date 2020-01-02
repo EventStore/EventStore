@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -23,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				$"testStream-{nameof(when_transaction_commit_completes_successfully)}",
 				true,				
 				0,
-			    null);
+			    null,
+				this);
 			}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -31,7 +33,8 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		}
 
 		protected override Message When() {
-			return new CommitMessage.CommittedTo(_commitPosition);
+			LogCommitPosition = _commitPosition;
+			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow);
 		}
 
 		[Test]

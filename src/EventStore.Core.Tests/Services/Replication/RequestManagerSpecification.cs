@@ -10,7 +10,8 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication {
-	public abstract class RequestManagerSpecification<TManager> where TManager : RequestManagerBase {
+	public abstract class RequestManagerSpecification<TManager> : ICommitSource
+		where TManager : RequestManagerBase {
 		protected static readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
 		protected static readonly TimeSpan CommitTimeout = TimeSpan.FromMinutes(5);
 
@@ -22,6 +23,9 @@ namespace EventStore.Core.Tests.Services.Replication {
 		protected byte[] Metadata = new byte[255];
 		protected byte[] EventData = new byte[255];
 		protected FakeEnvelope Envelope;
+
+		public long CommitPosition { get; set; }
+		public long LogCommitPosition { get; set; }
 
 		protected abstract TManager OnManager(FakePublisher publisher);
 		protected abstract IEnumerable<Message> WithInitialMessages();
@@ -44,6 +48,14 @@ namespace EventStore.Core.Tests.Services.Replication {
 			Publisher.Messages.Clear();
 			Manager.AsDynamic().Handle(When());
 			Produced = new List<Message>(Publisher.Messages);
+		}
+
+		public void NotifyCommitFor(long postition, Action target) {
+			throw new NotImplementedException();
+		}
+
+		public void NotifyLogCommitFor(long postition, Action target) {
+			throw new NotImplementedException();
 		}
 	}
 }

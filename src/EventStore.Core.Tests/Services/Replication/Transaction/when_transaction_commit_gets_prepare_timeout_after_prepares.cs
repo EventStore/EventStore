@@ -22,7 +22,8 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				ClientCorrId,
 				transactionId,
 				true,
-				null);
+				null,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -35,21 +36,13 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		}
 
 		[Test]
-		public void fail_message_are_published() {
-			Assert.That(Produced.Count == 1);
-			var response = Produced[0] as StorageMessage.RequestCompleted;
-			Assert.NotNull(response);
-			Assert.AreEqual(false, response.Success);
-			Assert.AreEqual(InternalCorrId, response.CorrelationId);
+		public void no_messages_are_published() {
+			Assert.That(Produced.Count == 0);
 		}
 
 		[Test]
-		public void the_envelope_is_replied_fail() {
-			Assert.AreEqual(1, Envelope.Replies.Count);
-			var response = Envelope.Replies[0] as ClientMessage.TransactionCommitCompleted;
-			Assert.NotNull(response);
-			Assert.AreEqual(OperationResult.CommitTimeout, response.Result);
-			Assert.AreEqual(transactionId, response.TransactionId);
+		public void the_envelope_is_not_replied_to() {
+			Assert.AreEqual(0, Envelope.Replies.Count);
 		}
 	}
 }

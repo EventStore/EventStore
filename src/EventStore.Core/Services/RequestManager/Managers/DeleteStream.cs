@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					IPrincipal user,
 					bool hardDelete,
-					long currentCommittedPosition = 0)
+					ICommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -31,9 +31,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion,
+					 commitSource,
 					 prepareCount: 0,
-					 waitForCommit: true,
-					 currentLogPosition: currentCommittedPosition) {
+					 waitForCommit: true) {
 			_hardDelete = hardDelete;
 			_streamId = streamId;
 			_betterOrdering = betterOrdering;

@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					IPrincipal user,
 					Event[] events,
-					long currentCommitPosition = 0)
+					ICommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -32,9 +32,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion,
+					 commitSource,
 					 prepareCount: 0,
-					 waitForCommit: true,
-					 currentLogPosition: currentCommitPosition) {
+					 waitForCommit: true) {
 			_streamId = streamId;
 			//this seems like it should work, but really really doesn't
 			//_accessType = SystemStreams.IsMetastream(streamId) ? StreamAccessType.MetaWrite : StreamAccessType.Write;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -25,7 +26,8 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				new[] { DummyEvent() });
+				new[] { DummyEvent() },
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -34,7 +36,8 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		protected override Message When() {
-			return new CommitMessage.CommittedTo(_commitLogPosition);
+			CommitPosition = _commitLogPosition;
+			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow );
 		}
 
 		[Test]
