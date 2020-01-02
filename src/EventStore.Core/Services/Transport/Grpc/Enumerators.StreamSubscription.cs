@@ -19,11 +19,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly string _streamName;
 			private readonly bool _resolveLinks;
 			private readonly IPrincipal _user;
+			private readonly IReadIndex _readIndex;
 			private readonly CancellationToken _cancellationToken;
 			private IAsyncEnumerator<ResolvedEvent> _inner;
 			private readonly Guid _connectionId;
 
+			private bool _catchUpRestarted;
+
 			public ResolvedEvent Current => _inner.Current;
+
+			private StreamRevision CurrentRevision => StreamRevision.FromInt64(Current.OriginalEvent.EventNumber);
 
 			public StreamSubscription(
 				IPublisher bus,
@@ -48,6 +53,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus = bus;
 				_streamName = streamName;
 				_user = user;
+				_readIndex = readIndex;
 				_cancellationToken = cancellationToken;
 				_resolveLinks = resolveLinks;
 				_connectionId = Guid.NewGuid();
@@ -62,12 +68,27 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return true;
 				}
 
-				_inner = new LiveStreamSubscription(_bus, _connectionId, _streamName, Current.OriginalEvent.EventNumber,
-					_resolveLinks, _user, _cancellationToken);
+				if (!_catchUpRestarted) {
+					await _inner.DisposeAsync().ConfigureAwait(false);
+
+					_inner = new LiveStreamSubscription(_bus, _connectionId, _streamName,
+						CurrentRevision, _resolveLinks, _user,
+						OnLiveSubscriptionDropped, _cancellationToken);
+				} else {
+					_catchUpRestarted = true;
+				}
+
 				return await _inner.MoveNextAsync().ConfigureAwait(false);
 			}
 
 			public ValueTask DisposeAsync() => _inner.DisposeAsync();
+
+			private async ValueTask OnLiveSubscriptionDropped(StreamRevision caughtUpRevision) {
+				await _inner.DisposeAsync().ConfigureAwait(false);
+
+				_inner = new CatchupStreamSubscription(_bus, _streamName, caughtUpRevision, _resolveLinks, _user,
+					_readIndex, _cancellationToken);
+			}
 
 			private class CatchupStreamSubscription : IAsyncEnumerator<ResolvedEvent> {
 				private readonly IPublisher _bus;
@@ -205,7 +226,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_historicalEventBuffer;
 
 				private readonly ConcurrentQueue<(ResolvedEvent resolvedEvent, Exception exception)> _liveEventBuffer;
-				private readonly long _currentRevision;
+				private readonly StreamRevision _currentRevision;
+				private readonly Func<StreamRevision, ValueTask> _onDropped;
 				private readonly TaskCompletionSource<bool> _subscriptionStartedSource;
 				private readonly TaskCompletionSource<bool> _readHistoricalStartedSource;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -217,9 +239,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				public LiveStreamSubscription(IPublisher bus,
 					Guid connectionId,
 					string streamName,
-					long currentRevision,
+					StreamRevision currentRevision,
 					bool resolveLinks,
 					IPrincipal user,
+					Func<StreamRevision, ValueTask> onDropped,
 					CancellationToken cancellationToken) {
 					if (bus == null) {
 						throw new ArgumentNullException(nameof(bus));
@@ -229,10 +252,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						throw new ArgumentNullException(nameof(streamName));
 					}
 
+					if (onDropped == null) {
+						throw new ArgumentNullException(nameof(onDropped));
+					}
+
 					_liveEventBuffer = new ConcurrentQueueWrapper<(ResolvedEvent resolvedEvent, Exception exception)>();
 					_historicalEventBuffer =
 						new ConcurrentQueueWrapper<(ResolvedEvent resolvedEvent, Exception exception)>();
 					_currentRevision = currentRevision;
+					_onDropped = onDropped;
 					_subscriptionStartedSource = new TaskCompletionSource<bool>();
 					_readHistoricalStartedSource = new TaskCompletionSource<bool>();
 					_disposedTokenSource = new CancellationTokenSource();
@@ -302,8 +330,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									_historicalEventBuffer.Enqueue((@event, null));
 								}
 
-								_readHistoricalStartedSource.TrySetResult(completed.IsEndOfStream);
-								ReadHistoricalEvents(completed.Events[^1].OriginalEvent.EventNumber);
+								_readHistoricalStartedSource.TrySetResult(true);
+								ReadHistoricalEvents(
+									StreamRevision.FromInt64(completed.Events[^1].OriginalEvent.EventNumber));
 								return;
 							case ReadStreamResult.NoStream:
 								_readHistoricalStartedSource.TrySetException(RpcExceptions.StreamNotFound(streamName));
@@ -321,12 +350,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						}
 					}
 
-					void ReadHistoricalEvents(long fromStreamRevision) {
+					void ReadHistoricalEvents(StreamRevision fromStreamRevision) {
 						var correlationId = Guid.NewGuid();
 						bus.Publish(new ClientMessage.ReadStreamEventsForward(correlationId, correlationId,
-							new CallbackEnvelope(OnHistoricalEventsMessage), streamName, fromStreamRevision, 32,
-							resolveLinks, false, null,
-							user));
+							new CallbackEnvelope(OnHistoricalEventsMessage), streamName, fromStreamRevision.ToInt64(),
+							32, resolveLinks, false, null, user));
 					}
 				}
 
@@ -349,7 +377,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							throw historicalException;
 						}
 
-						if (historicalEvent.OriginalEvent.EventNumber < _currentRevision) {
+						var streamRevision = StreamRevision.FromInt64(historicalEvent.OriginalEvent.EventNumber);
+
+						if (_liveEventBuffer.Count > 512) {
+							_liveEventBuffer.Clear();
+							await _onDropped(streamRevision).ConfigureAwait(false);
+							return false;
+						}
+
+						if (streamRevision < _currentRevision) {
 							_current = historicalEvent;
 							return true;
 						}
