@@ -4,6 +4,7 @@ using System.Security.Principal;
 using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.Replication.RequestManager {
@@ -15,6 +16,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 				Guid interalCorrId,
 				Guid clientCorrId,
 				long expectedVersion,
+				ICommitSource commitSource,
 				int prepareCount = 0,
 				long transactionId = -1,
 				bool waitForCommit = false)
@@ -25,6 +27,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 				 interalCorrId,
 				 clientCorrId,
 				 expectedVersion,
+				 commitSource,
 				 prepareCount,
 				 transactionId,
 				 waitForCommit)

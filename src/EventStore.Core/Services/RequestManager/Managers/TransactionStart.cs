@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					bool betterOrdering,
 					long expectedVersion,
 					IPrincipal user,
-					long currentLogPosition = 0)
+					ICommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -29,9 +29,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion,
-					 1,
-					 completeOnLogCommitted: true,
-					 currentLogPosition: currentLogPosition) {
+					 commitSource,
+					 prepareCount: 1,
+					 completeOnLogCommitted: true) {
 			_streamId = streamId;
 			_betterOrdering = betterOrdering;
 			_user = user;

@@ -24,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				false);
+				false,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

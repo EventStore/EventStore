@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid clientCorrId,
 					Event[] events,
 					long transactionId,
-					long currentLogPosition = 0)
+					ICommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -23,10 +23,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion: -1,
+					 commitSource,
 					 prepareCount: events.Length,
 					 transactionId,
-					 completeOnLogCommitted: true,
-					 currentLogPosition: currentLogPosition) {
+					 completeOnLogCommitted: true) {
 			_events = events;
 		}
 		protected override Message AccessRequestMsg => null; //we don't have a user on the tx write message

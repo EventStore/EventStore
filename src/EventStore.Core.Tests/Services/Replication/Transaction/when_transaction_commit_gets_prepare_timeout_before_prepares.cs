@@ -22,7 +22,8 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				ClientCorrId,
 				transactionId,
 				true,				
-				null);
+				null,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

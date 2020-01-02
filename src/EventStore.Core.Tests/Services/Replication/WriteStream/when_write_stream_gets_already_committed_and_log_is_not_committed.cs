@@ -24,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				new[] {DummyEvent()});
+				new[] {DummyEvent()},
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -36,13 +37,15 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		[Test]
-		public void successful_request_message_is_not_published() {
-			Assert.That(Produced.IsEmpty());
+		public void successful_request_message_is_publised() {
+			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+				x => x.CorrelationId == InternalCorrId && x.Success));
 		}
 
 		[Test]
-		public void the_envelope_is_not_replied_to() {
-			Assert.That(Envelope.Replies.IsEmpty());
+		public void the_envelope_is_replied_to_with_success() {
+			Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(
+				x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
 		}
 	}
 }

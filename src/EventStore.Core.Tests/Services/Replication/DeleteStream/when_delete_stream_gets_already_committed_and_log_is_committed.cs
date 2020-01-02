@@ -23,14 +23,16 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				true,
 				ExpectedVersion.Any,
 				null,
-				false);
+				false,
+				this);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new CommitMessage.CommittedTo(1000);
+			yield break;
 		}
 
 		protected override Message When() {
+			CommitPosition = 1000;
 			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, 1000);
 		}
 

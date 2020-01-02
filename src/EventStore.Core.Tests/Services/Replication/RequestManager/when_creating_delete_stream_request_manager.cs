@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.RequestManager {
@@ -14,6 +15,7 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 		protected static readonly long ExpectedVerion = 1;
 
 
+
 		[Test]
 		public void null_publisher_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
@@ -23,7 +25,8 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					ClientCorrId,
-					ExpectedVerion));
+					ExpectedVerion,
+					new FakeCommitSource()));
 		}
 		[Test]
 		public void null_envelope_throws_argument_null_exception() {
@@ -34,7 +37,8 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					null,
 					InternalCorrId,
 					ClientCorrId,
-					ExpectedVerion));
+					ExpectedVerion,
+					new FakeCommitSource()));
 		}
 		[Test]
 		public void internal_corrId_empty_guid_throws_argument_exception() {
@@ -45,7 +49,8 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					Guid.Empty,
 					ClientCorrId,
-					ExpectedVerion));
+					ExpectedVerion,
+					new FakeCommitSource()));
 		}
 		[Test]
 		public void client_corrId_empty_guid_throws_argument_exception() {
@@ -56,7 +61,8 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					Guid.Empty,
-					ExpectedVerion));
+					ExpectedVerion,
+					new FakeCommitSource()));
 		}
 		
 		[Test]
@@ -68,7 +74,33 @@ namespace EventStore.Core.Tests.Services.Replication.RequestManager {
 					Envelope,
 					InternalCorrId,
 					ClientCorrId,
-					ExpectedVerion));
+					ExpectedVerion,
+					new FakeCommitSource()));
+		}
+		[Test]
+		public void empty_commit_source_throws_null_argument_exception() {
+			Assert.Throws<ArgumentNullException>(() =>
+				new FakeRequestManager(
+					Publisher,
+					CommitTimeout,
+					Envelope,
+					InternalCorrId,
+					ClientCorrId,
+					ExpectedVerion,
+					null));
+		}
+		public class FakeCommitSource : ICommitSource {
+			public long CommitPosition => throw new NotImplementedException();
+
+			public long LogCommitPosition => throw new NotImplementedException();
+
+			public void NotifyCommitFor(long postition, Action target) {
+				throw new NotImplementedException();
+			}
+
+			public void NotifyLogCommitFor(long postition, Action target) {
+				throw new NotImplementedException();
+			}
 		}
 	}
 }

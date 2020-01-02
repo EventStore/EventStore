@@ -11,7 +11,7 @@ using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.Integration {
-	public class when_starting_a_transaction_expecting_no_stream : RequestManagerIntegrationSpecification {
+	public class when_starting_a_transaction_expecting_no_stream : SpecificationWithRequestManagerIntegration {
 		string _streamId = $"new_test_stream_{Guid.NewGuid()}";
 
 		protected override IEnumerable<Message> WithInitialMessages() {
