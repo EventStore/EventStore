@@ -103,7 +103,7 @@ namespace EventStore.Grpc {
 			ReadReq request,
 			UserCredentials userCredentials,
 			[EnumeratorCancellation] CancellationToken cancellationToken) {
-			if (request.Options.CountOptionsCase == ReadReq.Types.Options.CountOptionsOneofCase.Count &&
+			if (request.Options.CountOptionCase == ReadReq.Types.Options.CountOptionOneofCase.Count &&
 			    request.Options.Count <= 0) {
 				throw new ArgumentOutOfRangeException("count");
 			}
