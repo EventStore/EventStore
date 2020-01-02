@@ -9,19 +9,19 @@ namespace EventStore.Grpc.Streams {
 			partial class Options {
 				partial class Types {
 					public partial class StreamOptions {
-						internal StreamRevision ToStreamRevision() => RevisionOptionsCase switch {
-							RevisionOptionsOneofCase.End => StreamRevision.End,
-							RevisionOptionsOneofCase.Start => StreamRevision.Start,
-							RevisionOptionsOneofCase.Revision => new StreamRevision(Revision),
+						internal StreamRevision ToStreamRevision() => RevisionOptionCase switch {
+							RevisionOptionOneofCase.End => StreamRevision.End,
+							RevisionOptionOneofCase.Start => StreamRevision.Start,
+							RevisionOptionOneofCase.Revision => new StreamRevision(Revision),
 							_ => throw new InvalidOperationException()
 						};
 					}
 
 					public partial class AllOptions {
-						internal Grpc.Position ToPosition() => AllOptionsCase switch {
-							AllOptionsOneofCase.End => Grpc.Position.End,
-							AllOptionsOneofCase.Start => Grpc.Position.Start,
-							AllOptionsOneofCase.Position => new Grpc.Position(Position.CommitPosition,
+						internal Grpc.Position ToPosition() => AllOptionCase switch {
+							AllOptionOneofCase.End => Grpc.Position.End,
+							AllOptionOneofCase.Start => Grpc.Position.Start,
+							AllOptionOneofCase.Position => new Grpc.Position(Position.CommitPosition,
 								Position.PreparePosition),
 							_ => throw new InvalidOperationException()
 						};

@@ -19,10 +19,10 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			const string handlerType = "JS";
 			var name = options.Name;
 			var query = options.Query;
-			bool? emitEnabled = (options.EmitOptionsCase, options.EmitEnabled) switch {
-				(EmitOptionsOneofCase.EmitEnabled, true) => true,
-				(EmitOptionsOneofCase.EmitEnabled, false) => false,
-				(EmitOptionsOneofCase.NoEmitOptions, _) => default,
+			bool? emitEnabled = (options.EmitOptionCase, options.EmitEnabled) switch {
+				(EmitOptionOneofCase.EmitEnabled, true) => true,
+				(EmitOptionOneofCase.EmitEnabled, false) => false,
+				(EmitOptionOneofCase.NoEmitOptions, _) => default,
 				_ => throw new InvalidOperationException()
 			};
 			var runAs = new ProjectionManagementMessage.RunAs(user);

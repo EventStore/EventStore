@@ -61,10 +61,10 @@ namespace EventStore.Grpc {
 			var response = await call.ResponseAsync.ConfigureAwait(false);
 
 			return new WriteResult(
-				response.CurrentRevisionOptionsCase == AppendResp.CurrentRevisionOptionsOneofCase.NoStream
+				response.CurrentRevisionOptionCase == AppendResp.CurrentRevisionOptionOneofCase.NoStream
 					? AnyStreamRevision.NoStream.ToInt64()
 					: new StreamRevision(response.CurrentRevision).ToInt64(),
-				response.PositionOptionsCase == AppendResp.PositionOptionsOneofCase.Position
+				response.PositionOptionCase == AppendResp.PositionOptionOneofCase.Position
 					? new Position(response.Position.CommitPosition, response.Position.PreparePosition)
 					: default);
 		}

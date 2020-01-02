@@ -13,17 +13,17 @@ message ReadReq {
 	Options options = 1;
 
 	message Options {
-		oneof stream_options {
+		oneof stream_option {
 			StreamOptions stream = 1;
 			AllOptions all = 2;
 		}
 		ReadDirection read_direction = 3;
 		bool resolve_links = 4;
-		oneof count_options {
+		oneof count_option {
 			int32 count = 5;
 			SubscriptionOptions subscription = 6;
 		}
-		oneof filter_options {
+		oneof filter_option {
 			FilterOptions filter = 7;
 			Empty no_filter = 8;
 		}
@@ -34,14 +34,14 @@ message ReadReq {
 		}
 		message StreamOptions {
 			string stream_name = 1;
-			oneof revision_options {
+			oneof revision_option {
 				uint64 revision = 2;
 				Empty start = 3;
 				Empty end = 4;
 			}
 		}
 		message AllOptions {
-			oneof all_options {
+			oneof all_option {
 				Position position = 1;
 				Empty start = 2;
 				Empty end = 3;
@@ -126,11 +126,11 @@ message AppendReq {
 }
 
 message AppendResp {
-	oneof current_revision_options {
+	oneof current_revision_option {
 		uint64 current_revision = 1;
 		Empty no_stream = 2;
 	}
-	oneof position_options {
+	oneof position_option {
 		Position position = 3;
 		Empty empty = 4;
 	}
@@ -160,7 +160,7 @@ message DeleteReq {
 }
 
 message DeleteResp {
-	oneof position_options {
+	oneof position_option {
 		Position position = 1;
 		Empty empty = 2;
 	}
@@ -190,7 +190,7 @@ message TombstoneReq {
 }
 
 message TombstoneResp {
-	oneof position_options {
+	oneof position_option {
 		Position position = 1;
 		Empty empty = 2;
 	}
