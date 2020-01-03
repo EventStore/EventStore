@@ -842,4 +842,51 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			Assert.AreEqual(memberInfo.NodePriority, _nodePriority);
 		}
 	}
+
+	public class when_updating_cluster {
+		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
+			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
+			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
+				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
+				0, 0, 0, -1, -1, Guid.Empty, 0, false);
+		}
+
+		[Test]
+		public void
+			should_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			var timeProvider = new FakeTimeProvider();
+			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
+
+			var nodeToBeRemoved =
+				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+			
+			var updatedCluster = GossipServiceBase.UpdateCluster(new ClusterInfo(
+					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
+					nodeToBeRemoved,
+					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
+				timeProvider, deadMemberRemovalTimeout);
+
+			Assert.That(updatedCluster.Members, Has.Length.EqualTo(2));
+			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.InternalHttpEndPoint)));
+		}
+		
+		[Test]
+		public void
+			should_not_remove_alive_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			var timeProvider = new FakeTimeProvider();
+			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
+
+			var nodeToNotBeRemoved =
+				TestNodeFor(2, isAlive: true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+			
+			var updatedCluster = GossipServiceBase.UpdateCluster(new ClusterInfo(
+					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
+					nodeToNotBeRemoved,
+					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
+				timeProvider, deadMemberRemovalTimeout);
+
+			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
+			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToNotBeRemoved.InternalHttpEndPoint)));
+		}
+	}
 }
