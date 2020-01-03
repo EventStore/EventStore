@@ -155,7 +155,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
 			_commitRecieved = true;
 			_allEventsWritten = _commitRecieved && _allPreparesWritten;
-			if (message.LogPosition > _lastEventPosition) {
+			if ( message.LogPosition > _lastEventPosition) {
 				_lastEventPosition = message.LogPosition;
 			}
 			FirstEventNumber = message.FirstEventNumber;
@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				message);
 			ReturnCommitAt(message.LogPosition, message.FirstEventNumber, message.LastEventNumber);
 		}
-		private void ReturnCommitAt(long logPosition, long firstEvent, long lastEvent) {
+		protected virtual void ReturnCommitAt(long logPosition, long firstEvent, long lastEvent) {
 			lock (_prepareLogPositions) {
 				_prepareLogPositions.Clear();
 				_prepareLogPositions.Add(logPosition);

@@ -36,6 +36,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<CommitMessage.CommittedTo>,
 		IHandle<CommitMessage.LogCommittedTo>,
+		IHandle<StorageMessage.CommitReplicated>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
@@ -79,18 +80,24 @@ namespace EventStore.Core.Services.RequestManager {
 		public void NotifyCommitFor(long postition, Action target) {
 			if (Interlocked.Read(ref _committedPosition) >= postition) { target(); }
 			if (!_notifyCommit.TryGetValue(postition, out var actionList)) {
-				actionList = new List<Action>();
+				actionList = new List<Action> { target };
 				_notifyCommit.TryAdd(postition, actionList);
+			} else {
+				lock (actionList) {
+					actionList.Add(target);
+				}
 			}
-			actionList.Add(target);
 		}
 		public void NotifyLogCommitFor(long postition, Action target) {
 			if (Interlocked.Read(ref _logCommittedPosition) >= postition) { target(); }
 			if (!_notifyLogCommit.TryGetValue(postition, out var actionList)) {
-				actionList = new List<Action>();
+				actionList = new List<Action> { target };
 				_notifyLogCommit.TryAdd(postition, actionList);
+			} else {
+				lock (actionList) {
+					actionList.Add(target);
+				}
 			}
-			actionList.Add(target);
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
@@ -227,10 +234,19 @@ namespace EventStore.Core.Services.RequestManager {
 				positions = dictionary.Keys.ToArray();
 			}
 			Array.Sort(positions);
+			var actions = new List<Action>();
 			for (int i = 0; i < positions.Length && positions[i] <= logPosition; i++) {
-				dictionary[positions[i]].ForEach(a => { try { a?.Invoke(); } catch { } });
-				dictionary.TryRemove(positions[i], out _);
+				if (dictionary.TryRemove(positions[i], out actions) && actions != null) {
+					lock (actions) {
+						actions.AddRange(actions);
+					}
+				}
 			}
+			actions.ForEach(a => { try { a?.Invoke(); } catch { } });
+		}
+
+		public void Handle(StorageMessage.CommitReplicated message) {
+			DispatchInternal(message.CorrelationId, message);
 		}
 		public void Handle(StorageMessage.WrongExpectedVersion message) {
 			DispatchInternal(message.CorrelationId, message);
