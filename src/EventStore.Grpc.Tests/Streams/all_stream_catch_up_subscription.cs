@@ -114,7 +114,7 @@ namespace EventStore.Grpc.Streams {
 
 			await appeared.Task.WithTimeout();
 
-			Assert.True(EventDataComparer.Equal(beforeEvents.Concat(afterEvents).ToArray(), appearedEvents.ToArray()));
+			AssertEx.EventsEqual(beforeEvents.Concat(afterEvents).ToArray(), appearedEvents.ToArray());
 
 			Assert.False(dropped.Task.IsCompleted);
 

@@ -379,7 +379,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						var streamRevision = StreamRevision.FromInt64(historicalEvent.OriginalEvent.EventNumber);
 
-						if (_liveEventBuffer.Count > 512) {
+						if (_liveEventBuffer.Count > MaxLiveEventBufferCount) {
 							_liveEventBuffer.Clear();
 							await _onDropped(streamRevision).ConfigureAwait(false);
 							return false;
