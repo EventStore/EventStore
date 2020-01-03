@@ -38,6 +38,8 @@ namespace EventStore.Grpc {
 		public static class Headers {
 			public const string Authorization = "authorization";
 			public const string BasicScheme = "Basic";
+
+			public const string ConnectionName = "connection-name";
 		}
 	}
 }
