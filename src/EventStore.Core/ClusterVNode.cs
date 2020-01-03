@@ -684,6 +684,9 @@ namespace EventStore.Core {
 			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _internalAuthenticationProvider, _readIndex,
 				_vNodeSettings, _externalHttpService, _internalHttpService);
 
+			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
