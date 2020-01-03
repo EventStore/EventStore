@@ -109,7 +109,8 @@ namespace EventStore.Core.Services.Gossip {
 				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x, x)).ToArray());
 
 			var oldCluster = _cluster;
-			_cluster = MergeClusters(_cluster, dnsCluster, null, x => x);
+			_cluster = MergeClusters(_cluster, dnsCluster, null, x => x, _timeProvider.UtcNow, NodeInfo, CurrentMaster,
+				AllowedTimeDifference, DeadMemberRemovalTimeout);
 			LogClusterChange(oldCluster, _cluster, null);
 
 			_state = GossipState.Working;
@@ -155,7 +156,8 @@ namespace EventStore.Core.Services.Gossip {
 			_cluster = MergeClusters(_cluster,
 				message.ClusterInfo,
 				message.Server,
-				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
+				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x,
+				_timeProvider.UtcNow, NodeInfo, CurrentMaster, AllowedTimeDifference, DeadMemberRemovalTimeout);
 
 			message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, NodeInfo.InternalHttp));
 
@@ -190,7 +192,8 @@ namespace EventStore.Core.Services.Gossip {
 
 			var oldCluster = _cluster;
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
-					? x.Updated(_timeProvider.UtcNow, isAlive: false) : x,
+					? x.Updated(_timeProvider.UtcNow, isAlive: false)
+					: x,
 				_timeProvider, DeadMemberRemovalTimeout);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, string.Format("gossip send failed to [{0}]", message.Recipient));
@@ -218,7 +221,8 @@ namespace EventStore.Core.Services.Gossip {
 			_cluster = MergeClusters(_cluster,
 				message.ClusterInfo,
 				message.Server,
-				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x);
+				x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x,
+				_timeProvider.UtcNow, NodeInfo, CurrentMaster, AllowedTimeDifference, DeadMemberRemovalTimeout);
 
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
@@ -269,19 +273,20 @@ namespace EventStore.Core.Services.Gossip {
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
-		private ClusterInfo MergeClusters(ClusterInfo myCluster, ClusterInfo othersCluster,
-			IPEndPoint peerEndPoint, Func<MemberInfo, MemberInfo> update) {
+		public static ClusterInfo MergeClusters(ClusterInfo myCluster, ClusterInfo othersCluster,
+			IPEndPoint peerEndPoint, Func<MemberInfo, MemberInfo> update, DateTime utcNow,
+			VNodeInfo me, VNodeInfo currentMaster, TimeSpan allowedTimeDifference, TimeSpan deadMemberRemovalTimeout) {
 			var members = myCluster.Members.ToDictionary(member => member.InternalHttpEndPoint);
 			foreach (var member in othersCluster.Members) {
-				if (member.InstanceId == NodeInfo.InstanceId || member.Is(NodeInfo.InternalHttp)
+				if (member.InstanceId == me.InstanceId || member.Is(me.InternalHttp)
 				) // we know about ourselves better
 					continue;
 				if (peerEndPoint != null && member.Is(peerEndPoint)) // peer knows about itself better
 				{
-					if ((_timeProvider.UtcNow - member.TimeStamp).Duration() > AllowedTimeDifference) {
+					if ((utcNow - member.TimeStamp).Duration() > allowedTimeDifference) {
 						Log.Error("Time difference between us and [{peerEndPoint}] is too great! "
 						          + "UTC now: {dateTime:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {peerTimestamp:yyyy-MM-dd HH:mm:ss.fff}.",
-							peerEndPoint, _timeProvider.UtcNow, member.TimeStamp);
+							peerEndPoint, utcNow, member.TimeStamp);
 					}
 
 					members[member.InternalHttpEndPoint] = member;
@@ -291,10 +296,10 @@ namespace EventStore.Core.Services.Gossip {
 					if (!members.TryGetValue(member.InternalHttpEndPoint, out existingMem) ||
 					    IsMoreUpToDate(member, existingMem)) {
 						// we do not trust master's alive status and state to come from outside
-						if (CurrentMaster != null && existingMem != null &&
-						    member.InstanceId == CurrentMaster.InstanceId)
+						if (currentMaster != null && existingMem != null &&
+						    member.InstanceId == currentMaster.InstanceId)
 							members[member.InternalHttpEndPoint] =
-								member.Updated(utcNow: _timeProvider.UtcNow, isAlive: existingMem.IsAlive,
+								member.Updated(utcNow: utcNow, isAlive: existingMem.IsAlive,
 									state: existingMem.State);
 						else
 							members[member.InternalHttpEndPoint] = member;
@@ -304,7 +309,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			// update members and remove dead timed-out members, if there are any
 			var newMembers = members.Values.Select(update)
-				.Where(x => x.IsAlive || _timeProvider.UtcNow - x.TimeStamp < DeadMemberRemovalTimeout);
+				.Where(x => x.IsAlive || utcNow - x.TimeStamp < deadMemberRemovalTimeout);
 			return new ClusterInfo(newMembers);
 		}
 
