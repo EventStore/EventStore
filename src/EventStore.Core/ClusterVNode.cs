@@ -548,6 +548,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<CommitMessage.LogCommittedTo>(requestManagement);
 			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.CommitReplicated>(requestManagement);
 			
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);

@@ -6,10 +6,12 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
-	public class TransactionCommit : RequestManagerBase {
+	public class TransactionCommit : RequestManagerBase,
+		IHandle<StorageMessage.CommitReplicated> {
 		private readonly TimeSpan _commitTimeout;
 		private readonly bool _betterOrdering;
 		private readonly IPrincipal _user;
+		private bool _transactionWritten;
 
 		public TransactionCommit(
 					IPublisher publisher,
@@ -33,19 +35,19 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 transactionId: transactionId,
 					 prepareCount: 1,
 					 waitForCommit: true) {
-			_commitTimeout = commitTimeout + TimeSpan.FromSeconds(2);
+			_commitTimeout = commitTimeout;
 			_betterOrdering = betterOrdering;
 			_user = user;
 		}
 
-		protected override Message AccessRequestMsg =>				
+		protected override Message AccessRequestMsg =>
 				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope, 
-						InternalCorrId, 
-						null, 
-						TransactionId, 
-						StreamAccessType.Write, 
-						_user, 
+						WriteReplyEnvelope,
+						InternalCorrId,
+						null,
+						TransactionId,
+						StreamAccessType.Write,
+						_user,
 						_betterOrdering);
 
 
@@ -81,6 +83,20 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TransactionId,
 					Result,
 					FailureMessage);
+		public void Handle(StorageMessage.CommitReplicated message) {
+			_transactionWritten = true;
+			Committed();
+		}
+		protected override void Committed() {
+			if (!_transactionWritten)
+				return;
+			base.Committed();
+		}
+		protected override void ReturnCommitAt(long logPosition, long firstEvent, long lastEvent) {
+			_transactionWritten = true;
+			base.ReturnCommitAt(logPosition, firstEvent, lastEvent);
+		}
+
 
 	}
 }

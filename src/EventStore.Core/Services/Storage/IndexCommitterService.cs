@@ -74,14 +74,16 @@ namespace EventStore.Core.Services.Storage {
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
 			_replicationCheckpoint = replicationCheckpoint;
+			_logPosition = replicationCheckpoint.Read();
 			_writerCheckpoint = writerCheckpoint;
 			_commitCount = commitCount;
 			_tableIndex = tableIndex;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
-		public void Init(long checkpointPosition) {
-			_indexCommitter.Init(checkpointPosition);
+		public void Init(long chaserCheckpoint) {
+			if (chaserCheckpoint > _logPosition) { _logPosition = chaserCheckpoint; }
+			_indexCommitter.Init(chaserCheckpoint);
 			_thread = new Thread(HandleReplicatedQueue);
 			_thread.IsBackground = true;
 			_thread.Name = Name;
@@ -153,7 +155,6 @@ namespace EventStore.Core.Services.Storage {
 			if (_state == VNodeState.Master) {
 				_publisher.Publish(new CommitMessage.IndexWrittenTo(message.LogPosition));
 			}
-			//todo: remove this
 			_publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 		}
@@ -209,13 +210,24 @@ namespace EventStore.Core.Services.Storage {
 			_stop = true;
 		}
 		public void Handle(StorageMessage.CommitAck message) {
-			_commitAcks.AddCommitAck(message);
+			if (message.LogPosition < _logPosition) {
+				_replicatedQueue.Enqueue(message);
+				_addMsgSignal.Set();
+			} else {
+				_commitAcks.AddCommitAck(message);
+			}
 		}
-
+		private long _logPosition;
 		public void Handle(CommitMessage.LogCommittedTo message) {
-			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
-			if (message.LogPosition <= checkpoint)
-				return;
+			var logPosition = Interlocked.Read(ref _logPosition);
+			while (message.LogPosition > logPosition) {
+				if (Interlocked.CompareExchange(ref _logPosition, message.LogPosition, logPosition) != logPosition) {
+					logPosition = Interlocked.Read(ref _logPosition);
+				}
+			}
+			//var checkpoint = _replicationCheckpoint.ReadNonFlushed();
+			//if (message.LogPosition <= checkpoint)
+			//	return;
 
 			var commits = _commitAcks.GetCommitAcksUpTo(message.LogPosition);
 			foreach (var commit in commits) {
