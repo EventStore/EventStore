@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				true,				
 				0,
 			    null,
-				this);
+				CommitSource);
 			}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -33,8 +33,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		}
 
 		protected override Message When() {
-			LogCommitPosition = _commitPosition;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow);
+			return new CommitMessage.LogCommittedTo(_commitPosition);
 		}
 
 		[Test]

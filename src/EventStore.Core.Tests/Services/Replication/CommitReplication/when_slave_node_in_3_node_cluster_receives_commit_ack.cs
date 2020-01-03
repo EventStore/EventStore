@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private CountdownEvent _eventsReplicated = new CountdownEvent(1);
 
 		public override void When() {
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
+			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			_expectedCommitReplicatedMessages = 1;
 			BecomeSlave();
 			AddPendingPrepare(_logPosition);

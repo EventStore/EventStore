@@ -3,11 +3,12 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionCommit : RequestManagerBase,
-		IHandle<StorageMessage.CommitReplicated> {
+		IHandle<StorageMessage.CommitIndexed> {
 		private readonly TimeSpan _commitTimeout;
 		private readonly bool _betterOrdering;
 		private readonly IPrincipal _user;
@@ -83,7 +84,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TransactionId,
 					Result,
 					FailureMessage);
-		public void Handle(StorageMessage.CommitReplicated message) {
+		public void Handle(StorageMessage.CommitIndexed message) {
 			_transactionWritten = true;
 			Committed();
 		}

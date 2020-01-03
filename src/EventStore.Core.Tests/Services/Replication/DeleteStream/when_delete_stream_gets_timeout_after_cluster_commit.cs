@@ -26,16 +26,15 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				ExpectedVersion.Any,
 				null,
 				false,
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1, true);			
 		}
 
-		protected override Message When() {
-			CommitPosition = _commitPosition;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + CommitTimeout + CommitTimeout);
+		protected override Message When() {			
+			return new CommitMessage.CommittedTo(_commitPosition);
 		}
 
 		[Test]

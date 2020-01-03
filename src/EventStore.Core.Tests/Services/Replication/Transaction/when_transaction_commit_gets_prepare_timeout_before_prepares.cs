@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				transactionId,
 				true,				
 				null,
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

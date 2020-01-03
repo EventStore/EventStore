@@ -12,6 +12,7 @@ using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.Del
 namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	[TestFixture]
 	public class when_delete_stream_gets_already_committed_and_log_is_committed : RequestManagerSpecification<DeleteStreamManager> {
+		private long _commitPosition = 1000;
 		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
 			return new DeleteStreamManager(
 				publisher, 
@@ -24,16 +25,15 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				ExpectedVersion.Any,
 				null,
 				false,
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield break;
+			yield return new CommitMessage.CommittedTo(_commitPosition);
 		}
 
-		protected override Message When() {
-			CommitPosition = 1000;
-			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, 1000);
+		protected override Message When() {			
+			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, _commitPosition);
 		}
 
 		[Test]

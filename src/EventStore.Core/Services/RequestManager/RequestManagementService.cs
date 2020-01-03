@@ -12,17 +12,10 @@ using EventStore.Core.Services.Histograms;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Linq;
+using EventStore.Core.Services.Commit;
 
 namespace EventStore.Core.Services.RequestManager {
-	public interface ICommitSource {
-		long CommitPosition { get; }
-		long LogCommitPosition { get; }
-
-		void NotifyCommitFor(long postition, Action target);
-		void NotifyLogCommitFor(long postition, Action target);
-	}
-	public class RequestManagementService :
-		ICommitSource,
+	public class RequestManagementService :		
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
@@ -36,7 +29,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<CommitMessage.CommittedTo>,
 		IHandle<CommitMessage.LogCommittedTo>,
-		IHandle<StorageMessage.CommitReplicated>,
+		IHandle<StorageMessage.CommitIndexed>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
@@ -50,14 +43,8 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly bool _betterOrdering;
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
-		private long _committedPosition;
-		private long _logCommittedPosition;
-
-		private VNodeState _nodeState;
-
-		public long CommitPosition => Interlocked.Read(ref _committedPosition);
-
-		public long LogCommitPosition => Interlocked.Read(ref _logCommittedPosition);
+		private readonly ICommitSource _commitSource;
+		private VNodeState _nodeState;		
 
 		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
@@ -73,36 +60,10 @@ namespace EventStore.Core.Services.RequestManager {
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
 			_betterOrdering = betterOrdering;
+			_commitSource = new CommitSource();
 		}
-
-		private ConcurrentDictionary<long, List<Action>> _notifyCommit = new ConcurrentDictionary<long, List<Action>>();
-		private ConcurrentDictionary<long, List<Action>> _notifyLogCommit = new ConcurrentDictionary<long, List<Action>>();
-		public void NotifyCommitFor(long postition, Action target) {
-			if (Interlocked.Read(ref _committedPosition) >= postition) { target(); }
-			if (!_notifyCommit.TryGetValue(postition, out var actionList)) {
-				actionList = new List<Action> { target };
-				_notifyCommit.TryAdd(postition, actionList);
-			} else {
-				lock (actionList) {
-					actionList.Add(target);
-				}
-			}
-		}
-		public void NotifyLogCommitFor(long postition, Action target) {
-			if (Interlocked.Read(ref _logCommittedPosition) >= postition) { target(); }
-			if (!_notifyLogCommit.TryGetValue(postition, out var actionList)) {
-				actionList = new List<Action> { target };
-				_notifyLogCommit.TryAdd(postition, actionList);
-			} else {
-				lock (actionList) {
-					actionList.Add(target);
-				}
-			}
-		}
-
-		public void Handle(SystemMessage.SystemInit message) {
-			_bus.Publish(_tickRequestMessage);
-		}
+		
+		
 
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
@@ -116,7 +77,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								message.User,
 								message.Events,
-								this);
+								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -134,7 +95,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								message.User,
 								message.HardDelete,
-								this);
+								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -151,7 +112,7 @@ namespace EventStore.Core.Services.RequestManager {
 								_betterOrdering,
 								message.ExpectedVersion,
 								message.User,
-								this);
+								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -166,7 +127,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.CorrelationId,
 								message.Events,
 								message.TransactionId,
-								this);
+								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -183,81 +144,20 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_betterOrdering,
 								message.User,
-								this);
+								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
 		}
-
-		public void Handle(StorageMessage.RequestCompleted message) {
-			Stopwatch watch = null;
-			if (_currentTimedRequests.TryGetValue(message.CorrelationId, out watch)) {
-				HistogramService.SetValue(_requestManagerHistogram,
-					(long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
-				_currentTimedRequests.Remove(message.CorrelationId);
-			}
-
-			if (!_currentRequests.Remove(message.CorrelationId))
-				throw new InvalidOperationException("Should never complete request twice.");
+		
+		
+		public void Handle(SystemMessage.StateChangeMessage message) {
+			//todo-clc: if we have become resigning master should all requests be actively disposed?
+			_nodeState = message.State;
 		}
 
-		public void Handle(StorageMessage.CheckStreamAccessCompleted message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(StorageMessage.AlreadyCommitted message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(StorageMessage.PrepareAck message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(StorageMessage.CommitAck message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(CommitMessage.CommittedTo message) {
-			Interlocked.Exchange(ref _committedPosition, message.LogPosition);
-			Notify(_notifyCommit, message.LogPosition);
-		}
-
-		public void Handle(CommitMessage.LogCommittedTo message) {
-			Interlocked.Exchange(ref _logCommittedPosition, message.LogPosition);
-			Notify(_notifyLogCommit, message.LogPosition);
-		}
-
-		private void Notify(ConcurrentDictionary<long, List<Action>> dictionary, long logPosition) {
-			if (dictionary.IsEmpty) { return; }
-			long[] positions;
-			lock (dictionary) {
-				positions = dictionary.Keys.ToArray();
-			}
-			Array.Sort(positions);
-			var actions = new List<Action>();
-			for (int i = 0; i < positions.Length && positions[i] <= logPosition; i++) {
-				if (dictionary.TryRemove(positions[i], out actions) && actions != null) {
-					lock (actions) {
-						actions.AddRange(actions);
-					}
-				}
-			}
-			actions.ForEach(a => { try { a?.Invoke(); } catch { } });
-		}
-
-		public void Handle(StorageMessage.CommitReplicated message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-		public void Handle(StorageMessage.WrongExpectedVersion message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(StorageMessage.InvalidTransaction message) {
-			DispatchInternal(message.CorrelationId, message);
-		}
-
-		public void Handle(StorageMessage.StreamDeleted message) {
-			DispatchInternal(message.CorrelationId, message);
+		public void Handle(SystemMessage.SystemInit message) {
+			_bus.Publish(_tickRequestMessage);
 		}
 
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
@@ -272,17 +172,35 @@ namespace EventStore.Core.Services.RequestManager {
 			_bus.Publish(_tickRequestMessage);
 		}
 
-		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
+		public void Handle(StorageMessage.RequestCompleted message) {
+			Stopwatch watch = null;
+			if (_currentTimedRequests.TryGetValue(message.CorrelationId, out watch)) {
+				HistogramService.SetValue(_requestManagerHistogram,
+					(long)((((double)watch.ElapsedTicks) / Stopwatch.Frequency) * 1000000000));
+				_currentTimedRequests.Remove(message.CorrelationId);
+			}
 
+			if (!_currentRequests.Remove(message.CorrelationId))
+				throw new InvalidOperationException("Should never complete request twice.");
+		}
+
+		public void Handle(CommitMessage.CommittedTo message) => _commitSource.Handle(message);		
+		public void Handle(CommitMessage.LogCommittedTo message) => _commitSource.Handle(message);
+
+		public void Handle(StorageMessage.CheckStreamAccessCompleted message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.CommitAck message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.CommitIndexed message) =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.StreamDeleted message)  =>	DispatchInternal(message.CorrelationId, message);
+		
+		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
 				var x = manager as IHandle<T>;
 				x?.Handle(message);
 			}
-			//else message received for a dead request? 
-		}
-
-		public void Handle(SystemMessage.StateChangeMessage message) {
-			_nodeState = message.State;
-		}
+		}		
 	}
 }

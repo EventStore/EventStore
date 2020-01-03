@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected ICheckpoint ReplicationCheckpoint;
 		protected ICheckpoint WriterCheckpoint;
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
-		protected List<StorageMessage.CommitReplicated> CommitReplicatedMgs = new List<StorageMessage.CommitReplicated>();
+		protected List<StorageMessage.CommitIndexed> CommitReplicatedMgs = new List<StorageMessage.CommitIndexed>();
 		protected List<CommitMessage.IndexWrittenTo> IndexWrittenMgs = new List<CommitMessage.IndexWrittenTo>();
 
 		protected IndexCommitterService Service;
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			IndexCommitter = new FakeIndexCommitter();
 			ReplicationCheckpoint = new InMemoryCheckpoint(ReplicationPosition);
 			WriterCheckpoint = new InMemoryCheckpoint(0);
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => CommitReplicatedMgs.Add(m)));
+			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => CommitReplicatedMgs.Add(m)));
 			Publisher.Subscribe(new AdHocHandler<CommitMessage.IndexWrittenTo>(m => IndexWrittenMgs.Add(m)));
 			TableIndex = new FakeTableIndex();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();

@@ -4,6 +4,7 @@ using System.Security.Principal;
 using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 

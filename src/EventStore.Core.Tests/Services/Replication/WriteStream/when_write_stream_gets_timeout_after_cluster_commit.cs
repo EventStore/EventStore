@@ -27,17 +27,17 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				ExpectedVersion.Any,
 				null,
 				new[] {DummyEvent()},
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 1, 0, 0);
+			yield return new CommitMessage.CommittedTo(_commitPosition);
 		}
 
 		protected override Message When() {
-			CommitPosition = _commitPosition;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + CommitTimeout + CommitTimeout);
+			return new StorageMessage.RequestManagerTimerTick (DateTime.UtcNow + TimeSpan.FromMinutes(1));
 		}
 
 		[Test]

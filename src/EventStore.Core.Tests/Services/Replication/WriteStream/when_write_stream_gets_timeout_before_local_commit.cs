@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				ExpectedVersion.Any,
 				null,
 				new[] {DummyEvent()},
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

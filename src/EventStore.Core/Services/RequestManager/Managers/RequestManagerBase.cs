@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -68,7 +70,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private bool _allEventsWritten;
 		private bool _allPreparesWritten;
-		private bool _complete;
+		private long _complete;
 
 		private bool _commitRecieved;
 		private int _prepareCount;
@@ -124,7 +126,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Publisher.Publish(AccessRequestMsg ?? WriteRequestMsg);
 		}
 		public void Handle(StorageMessage.CheckStreamAccessCompleted message) {
-			if (_complete) { return; }
+			if (Interlocked.Read(ref _complete) == 1) { return; }
 			if (message.AccessResult.Granted) {
 				Publisher.Publish(WriteRequestMsg);
 			} else {
@@ -133,7 +135,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
-			if (_complete || _allPreparesWritten) { return; }
+			if (Interlocked.Read(ref _complete) == 1 || _allPreparesWritten) { return; }
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
 			if (message.Flags.HasAnyOf(PrepareFlags.TransactionBegin)) {
 				TransactionId = message.LogPosition;
@@ -151,11 +153,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allEventsWritten) { AllEventsWritten(); }
 		}
 		public void Handle(StorageMessage.CommitAck message) {
-			if (_complete || _commitRecieved) { return; }
+			if (Interlocked.Read(ref _complete) == 1 || _commitRecieved) { return; }
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
 			_commitRecieved = true;
 			_allEventsWritten = _commitRecieved && _allPreparesWritten;
-			if ( message.LogPosition > _lastEventPosition) {
+			if (message.LogPosition > _lastEventPosition) {
 				_lastEventPosition = message.LogPosition;
 			}
 			FirstEventNumber = message.FirstEventNumber;
@@ -179,15 +181,15 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			}
 		}
 		protected virtual void Committed() {
-			if (_complete) { return; }
-			_complete = true;
+			if (Interlocked.Read(ref _complete) == 1) { return; }
+			Interlocked.Exchange(ref _complete, 1);
 			Result = OperationResult.Success;
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
 			if (_allEventsWritten) { AllEventsWritten(); }
-			if (_complete || message.UtcNow < NextTimeoutTime)
+			if (Interlocked.Read(ref _complete) == 1 || message.UtcNow < NextTimeoutTime)
 				return;
 			var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
 			var msg = !_allPreparesWritten ? "Prepare phase timeout." : "Commit phase timeout.";
@@ -204,7 +206,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			CompleteFailedRequest(OperationResult.StreamDeleted, "Stream is deleted.");
 		}
 		public void Handle(StorageMessage.AlreadyCommitted message) {
-			if (_complete || _allEventsWritten) { return; }
+			if (Interlocked.Read(ref _complete) == 1 || _allEventsWritten) { return; }
 			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
 				message);
 			ReturnCommitAt(message.LogPosition, message.FirstEventNumber, message.LastEventNumber);
@@ -222,9 +224,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 
 		private void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1) {
-			if (_complete) { return; }
+			if (Interlocked.Read(ref _complete) == 1) { return; }
 			Debug.Assert(result != OperationResult.Success);
-			_complete = true;
+			Interlocked.Exchange(ref _complete, 1);
 			Result = result;
 			FailureMessage = error;
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, false, currentVersion));
@@ -238,7 +240,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (!_disposed) {
 				if (disposing) {
 					try {
-						if (!_complete) {
+						if (Interlocked.Read(ref _complete) != 1) {
 							//todo-clc: need a better Result here, but need to see if this will impact the client API
 							var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
 							var msg = "Request canceled by server, likely deposed master";
