@@ -99,10 +99,10 @@ namespace EventStore.Grpc {
 				_node = node;
 			}
 
-			public IServiceProvider ConfigureServices(IServiceCollection services) => _node.ConfigureServices(services)
-				.BuildServiceProvider();
+			public IServiceProvider ConfigureServices(IServiceCollection services) =>
+				_node.Startup.ConfigureServices(services);
 
-			public void Configure(IApplicationBuilder app) => _node.Configure(app.Use(CompleteResponse));
+			public void Configure(IApplicationBuilder app) => _node.Startup.Configure(app.Use(CompleteResponse));
 
 			private static RequestDelegate CompleteResponse(RequestDelegate next) => context =>
 				next(context).ContinueWith(_ => context.Response.Body.FlushAsync());

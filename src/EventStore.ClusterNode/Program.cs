@@ -146,7 +146,7 @@ namespace EventStore.ClusterNode {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
 					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => listenOptions.UseHttps(_node.Certificate));
 				})
-				.UseStartup(new ClusterVNodeStartup(_node))
+				.UseStartup(_node.Startup)
 				.ConfigureLogging(logging => {
 					logging.ClearProviders();
 					logging.SetMinimumLevel(LogLevel.Warning);
