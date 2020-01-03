@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				ExpectedVersion.Any,
 				null,
 				false,
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {

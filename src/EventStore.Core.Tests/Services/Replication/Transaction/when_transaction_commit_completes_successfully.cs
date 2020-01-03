@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
@@ -14,6 +15,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		private long _commitPosition =3000;
 		private long _transactionPostion = 1000;
 		private int transactionId = 2341;
+	
 		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
 			return new TransactionCommitMgr(
 				publisher,
@@ -25,17 +27,17 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 				transactionId,
 				true,				
 				null,
-				this);
+				CommitSource);
 			}
 
-		protected override IEnumerable<Message> WithInitialMessages() {
+		protected override IEnumerable<Message> WithInitialMessages() {			
 			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPostion, PrepareFlags.TransactionEnd);
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, _transactionPostion, 1, 3);
+			yield return new CommitMessage.LogCommittedTo(_commitPosition);
 		}
 
 		protected override Message When() {
-			CommitPosition = _commitPosition;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow);
+			return new StorageMessage.CommitIndexed(InternalCorrId,_commitPosition,_transactionPostion,0,0);
 		}
 
 		[Test]

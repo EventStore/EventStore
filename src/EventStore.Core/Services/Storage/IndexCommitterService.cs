@@ -153,7 +153,7 @@ namespace EventStore.Core.Services.Storage {
 			if (_state == VNodeState.Master) {
 				_publisher.Publish(new CommitMessage.IndexWrittenTo(message.LogPosition));
 			}
-			_publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition,
+			_publisher.Publish(new StorageMessage.CommitIndexed(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 		}
 

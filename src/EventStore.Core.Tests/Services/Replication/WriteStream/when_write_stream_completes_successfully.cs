@@ -12,8 +12,9 @@ using WriteEventsMgr = EventStore.Core.Services.RequestManager.Managers.WriteEve
 namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 	[TestFixture]
 	public class when_write_stream_completes_successfully : RequestManagerSpecification<WriteEventsMgr> {
-		private long _prepareLogPosition = 100;
+		private long _prepareLogPosition = 80;
 		private long _commitLogPosition = 100;
+		private long _commitedPosition = 100;
 
 		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
 			return new WriteEventsMgr(
@@ -27,7 +28,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				ExpectedVersion.Any,
 				null,
 				new[] { DummyEvent() },
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
@@ -36,8 +37,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 		}
 
 		protected override Message When() {
-			CommitPosition = _commitLogPosition;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow );
+			return new CommitMessage.CommittedTo(_commitedPosition);
 		}
 
 		[Test]

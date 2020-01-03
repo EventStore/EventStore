@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private long _logPosition3 = 3000;
 
 		public override void When() {
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(m => _eventsReplicated.Signal()));
+			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
 			AddPendingPrepare(_logPosition1);
 			AddPendingPrepare(_logPosition2);

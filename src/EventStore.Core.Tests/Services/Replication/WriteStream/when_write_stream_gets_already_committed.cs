@@ -27,16 +27,15 @@ namespace EventStore.Core.Tests.Services.Replication.WriteStream {
 				ExpectedVersion.Any,
 				null,
 				new[] {DummyEvent()},
-				this);
+				CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);
-			yield return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, _commitLogPosition);
+			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);			
 		}
 
 		protected override Message When() {
-			return new CommitMessage.CommittedTo( _commitLogPosition);
+			return new StorageMessage.AlreadyCommitted(InternalCorrId, "test123", 0, 1, _commitLogPosition);		
 		}
 
 		[Test]

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager;
-using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -15,8 +14,8 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 	public class when_delete_stream_completes_successfully : RequestManagerSpecification<DeleteStreamManager> {
 		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
 			return new DeleteStreamManager(
-				publisher, 
-				CommitTimeout, 
+				publisher,
+				CommitTimeout,
 				Envelope,
 				InternalCorrId,
 				ClientCorrId,
@@ -25,16 +24,15 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 				ExpectedVersion.Any,
 				null,
 				false,
-				this);
+				CommitSource);
 		}
 
-		protected override IEnumerable<Message> WithInitialMessages() {			
+		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.CommitAck(InternalCorrId, 100, 2, 3, 3);
 		}
 
 		protected override Message When() {
-			CommitPosition = 100;
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow);
+			return new CommitMessage.CommittedTo(100);
 		}
 
 		[Test]

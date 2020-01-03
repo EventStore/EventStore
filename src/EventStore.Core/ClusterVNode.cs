@@ -526,7 +526,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<CommitMessage.LogCommittedTo>(requestManagement);
 			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.CommitReplicated>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
 			
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
@@ -673,8 +673,8 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
-				_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
-				_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
+				//_mainBus.Subscribe<StorageMessage.PrepareAck>(replicaService);
+				//_mainBus.Subscribe<StorageMessage.CommitAck>(replicaService);
 				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
 			}
 

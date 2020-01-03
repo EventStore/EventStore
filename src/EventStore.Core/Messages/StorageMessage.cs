@@ -233,7 +233,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CommitReplicated : Message {
+		public class CommitIndexed : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -246,7 +246,7 @@ namespace EventStore.Core.Messages {
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
 
-			public CommitReplicated(Guid correlationId, long logPosition, long transactionPosition,
+			public CommitIndexed(Guid correlationId, long logPosition, long transactionPosition,
 				long firstEventNumber, long lastEventNumber) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.Nonnegative(logPosition, "logPosition");
