@@ -74,15 +74,13 @@ namespace EventStore.Core.Services.Storage {
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
 			_replicationCheckpoint = replicationCheckpoint;
-			_logPosition = replicationCheckpoint.Read();
 			_writerCheckpoint = writerCheckpoint;
 			_commitCount = commitCount;
 			_tableIndex = tableIndex;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
-		public void Init(long chaserCheckpoint) {
-			if (chaserCheckpoint > _logPosition) { _logPosition = chaserCheckpoint; }
+		public void Init(long chaserCheckpoint) {			
 			_indexCommitter.Init(chaserCheckpoint);
 			_thread = new Thread(HandleReplicatedQueue);
 			_thread.IsBackground = true;
@@ -210,6 +208,7 @@ namespace EventStore.Core.Services.Storage {
 			_stop = true;
 		}
 		public void Handle(StorageMessage.CommitAck message) {
+			if (message.LogPosition < _replicationCheckpoint.ReadNonFlushed()) { return; }
 			if (message.LogPosition < _logPosition) {
 				_replicatedQueue.Enqueue(message);
 				_addMsgSignal.Set();
@@ -225,10 +224,6 @@ namespace EventStore.Core.Services.Storage {
 					logPosition = Interlocked.Read(ref _logPosition);
 				}
 			}
-			//var checkpoint = _replicationCheckpoint.ReadNonFlushed();
-			//if (message.LogPosition <= checkpoint)
-			//	return;
-
 			var commits = _commitAcks.GetCommitAcksUpTo(message.LogPosition);
 			foreach (var commit in commits) {
 #if DEBUG
