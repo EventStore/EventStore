@@ -7,7 +7,7 @@ namespace EventStore.Grpc {
 	internal static class RequestMetadata {
 		public static Metadata Create(UserCredentials userCredentials) =>
 			userCredentials == null
-				? null
+				? new Metadata()
 				: new Metadata {
 					new Metadata.Entry(Constants.Headers.Authorization, new AuthenticationHeaderValue(
 							Constants.Headers.BasicScheme,
