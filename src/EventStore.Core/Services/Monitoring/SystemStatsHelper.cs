@@ -18,17 +18,23 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly ILogger _log;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
+		private readonly long _collectIntervalMs;
 		private PerfCounterHelper _perfCounter;
 		private bool _giveup;
 
-		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath) {
+		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
 			_log = log;
 			_writerCheckpoint = writerCheckpoint;
-			_perfCounter = new PerfCounterHelper(_log);
+			_perfCounter = new PerfCounterHelper(_log, collectIntervalMs);
 			_dbPath = dbPath;
+			_collectIntervalMs = collectIntervalMs;
+		}
+
+		public void Start() {
+			_perfCounter.Start();
 		}
 
 		public IDictionary<string, object> GetSystemStats() {
@@ -135,7 +141,7 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 			} catch (InvalidOperationException) {
 				_log.Info("Received error reading counters. Attempting to rebuild.");
-				_perfCounter = new PerfCounterHelper(_log);
+				_perfCounter = new PerfCounterHelper(_log, _collectIntervalMs);
 				_giveup = count > 10;
 				if (_giveup)
 					_log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
