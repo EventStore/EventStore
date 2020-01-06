@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 				.WithTimeout()
 				.ConfigureAwait(false);
 
-			await _node.Shutdown()
+			await _node.Node.StopAsync()
 				.WithTimeout()
 				.ConfigureAwait(false);
 
