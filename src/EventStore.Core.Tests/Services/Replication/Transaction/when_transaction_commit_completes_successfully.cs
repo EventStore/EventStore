@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		protected override IEnumerable<Message> WithInitialMessages() {			
 			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPostion, PrepareFlags.TransactionEnd);
 			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, _transactionPostion, 1, 3);
-			yield return new CommitMessage.LogCommittedTo(_commitPosition);
+			yield return new CommitMessage.ReplicatedTo(_commitPosition);
 		}
 
 		protected override Message When() {

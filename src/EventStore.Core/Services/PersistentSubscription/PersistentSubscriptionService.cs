@@ -439,7 +439,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Log.Debug("New connection to persistent subscription {subscriptionKey} by {connectionId}", key,
 				message.ConnectionId);
 			var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
-			var lastCommitPos = _readIndex.LastCommitPosition;
+			var lastCommitPos = _readIndex.LastIndexedPosition;
 			var subscribedMessage =
 				new ClientMessage.PersistentSubscriptionConfirmation(key, message.CorrelationId, lastCommitPos,
 					lastEventNumber);

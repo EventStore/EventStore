@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));	
-			Publisher.Publish(new CommitMessage.LogWrittenTo(_logPosition));
+			Publisher.Publish(new CommitMessage.WrittenTo(_logPosition));
 		}
 
 		[Test]

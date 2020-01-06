@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 		}
 		public RequestManagerSpecification() {
 			Dispatcher.Subscribe<CommitMessage.CommittedTo>(CommitSource);
-			Dispatcher.Subscribe<CommitMessage.LogCommittedTo>(CommitSource);
+			Dispatcher.Subscribe<CommitMessage.ReplicatedTo>(CommitSource);
 		}
 		[SetUp]
 		public virtual void Setup() {

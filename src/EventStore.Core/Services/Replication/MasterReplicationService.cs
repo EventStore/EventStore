@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
 		IHandle<ReplicationMessage.ReplicaLogPositionAck>,
 		IHandle<ReplicationMessage.GetReplicationStats>,
-		IHandle<CommitMessage.LogCommittedTo> {
+		IHandle<CommitMessage.ReplicatedTo> {
 		public const int MaxQueueSize = 100;
 		public const int CloneThreshold = 1024;
 		public const int SlaveLagThreshold = 256 * 1024;
@@ -74,7 +74,8 @@ namespace EventStore.Core.Services.Replication {
 			get { return _tcs.Task; }
 		}
 
-		public MasterReplicationService(IPublisher publisher,
+		public MasterReplicationService(
+			IPublisher publisher,
 			Guid instanceId,
 			TFChunkDb db,
 			IPublisher tcpSendPublisher,
@@ -154,7 +155,7 @@ namespace EventStore.Core.Services.Replication {
 			if (_subscriptions.TryGetValue(message.SubscriptionId, out var subscription)) {
 				Interlocked.Exchange(ref subscription.AckedLogPosition, message.ReplicationLogPosition);
 				if (subscription.IsPromotable) {
-					_publisher.Publish(new CommitMessage.ReplicaLogWrittenTo(message.ReplicationLogPosition,
+					_publisher.Publish(new CommitMessage.ReplicaWrittenTo(message.ReplicationLogPosition,
 						message.SubscriptionId));
 				}
 			}
@@ -617,7 +618,7 @@ namespace EventStore.Core.Services.Replication {
 				cloneIndex++;
 			}
 		}
-		public void Handle(CommitMessage.LogCommittedTo message) {
+		public void Handle(CommitMessage.ReplicatedTo message) {
 			//todo: if the node is busy and misses an update it might be a long time till the next update do we need check if they get too stale?
 			foreach (var subscription in _subscriptions.Values) {
 				if (subscription.IsConnectionClosed ||subscription.SendQueueSize >= MaxQueueSize) { continue;}

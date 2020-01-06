@@ -5,9 +5,9 @@ using EventStore.Core.Messages;
 namespace EventStore.Core.Services.Commit {
 	public interface ICommitSource:
 		IHandle<CommitMessage.CommittedTo>,
-		IHandle<CommitMessage.LogCommittedTo> {
+		IHandle<CommitMessage.ReplicatedTo> {
 		long CommitPosition { get; }
-		long LogCommitPosition { get; }
+		long LogCommittedPosition { get; }
 
 		void NotifyCommitFor(long postition, Action target);
 		void NotifyLogCommitFor(long postition, Action target);

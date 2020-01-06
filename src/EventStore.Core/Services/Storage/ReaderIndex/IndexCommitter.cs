@@ -14,7 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
-		long LastCommitPosition { get; }
+		long LastIndexedPosition { get; }
 		void Init(long buildToPosition);
 		void Dispose();
 		long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
@@ -25,8 +25,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class IndexCommitter : IIndexCommitter {
 		public static readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitter>();
 
-		public long LastCommitPosition {
-			get { return Interlocked.Read(ref _lastCommitPosition); }
+		public long LastIndexedPosition {
+			get { return Interlocked.Read(ref _lastIndexedPosition); }
 		}
 
 		private readonly IPublisher _bus;
@@ -37,10 +37,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
 		private bool _indexRebuild = true;
-		private long _lastCommitPosition = -1;
+		private long _lastIndexedPosition = -1;
 
-		public IndexCommitter(IPublisher bus, IIndexBackend backend, IIndexReader indexReader,
-			ITableIndex tableIndex, bool additionalCommitChecks) {
+		public IndexCommitter(
+			IPublisher bus, 
+			IIndexBackend backend, 
+			IIndexReader indexReader,
+			ITableIndex tableIndex, 
+			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
 			_indexReader = indexReader;
@@ -54,10 +58,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_tableIndex.Initialize(buildToPosition);
 			_persistedPreparePos = _tableIndex.PrepareCheckpoint;
 			_persistedCommitPos = _tableIndex.CommitCheckpoint;
-			_lastCommitPosition = _tableIndex.CommitCheckpoint;
+			_lastIndexedPosition = _tableIndex.CommitCheckpoint;
 
-			if (_lastCommitPosition >= buildToPosition)
-				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _lastCommitPosition,
+			if (_lastIndexedPosition >= buildToPosition)
+				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _lastIndexedPosition,
 					buildToPosition));
 
 			var startTime = DateTime.UtcNow;
@@ -135,8 +139,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long GetCommitLastEventNumber(CommitLogRecord commit) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
-			if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber;
 
 			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition)) {
@@ -153,8 +157,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
-			if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber; // already committed
 
 			string streamId = null;
@@ -208,9 +212,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			var newLastCommitPosition = Math.Max(commit.LogPosition, lastCommitPosition);
-			if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) !=
-			    lastCommitPosition)
+			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
+			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
+			    lastIndexedPosition)
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 
@@ -232,7 +236,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (commitedPrepares.Count == 0)
 				return eventNumber;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
 			var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
 
 			string streamId = lastPrepare.EventStreamId;
@@ -270,8 +274,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					throw new Exception(sb.ToString());
 				}
 
-				if (prepare.LogPosition < lastCommitPosition ||
-				    (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
+				if (prepare.LogPosition < lastIndexedPosition ||
+				    (prepare.LogPosition == lastIndexedPosition && !_indexRebuild))
 					continue; // already committed
 
 				eventNumber =
@@ -308,9 +312,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			var newLastCommitPosition = Math.Max(lastPrepare.LogPosition, lastCommitPosition);
-			if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) !=
-			    lastCommitPosition)
+			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
+			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
+			    lastIndexedPosition)
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 

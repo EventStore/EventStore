@@ -9,13 +9,13 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 		
 		public override void When() {			
 			_logPosition = 4000;
-			Service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
+			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
 		}
 
 		[Test]
 		public void log_committed_to_should_be_sent_to_subscriptions() {
 			AssertEx.IsOrBecomesTrue(() => TcpSends.Count > 4, msg:"TcpSend msg not recieved");
-			var sends = TcpSends.Where(tcpSend => tcpSend.Message is CommitMessage.LogCommittedTo).ToList();
+			var sends = TcpSends.Where(tcpSend => tcpSend.Message is CommitMessage.ReplicatedTo).ToList();
 			Assert.AreEqual(3,sends.Count);
 			Assert.IsTrue(sends.Any( msg=> msg.ConnectionManager.ConnectionId == ReplicaSubscriptionId));
 			Assert.IsTrue(sends.Any( msg=> msg.ConnectionManager.ConnectionId == ReplicaSubscriptionId2));

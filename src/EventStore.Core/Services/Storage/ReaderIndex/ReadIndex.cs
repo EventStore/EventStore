@@ -13,14 +13,11 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public class ReadIndex : IDisposable, IReadIndex {
-		public long LastCommitPosition {
-			get { return _indexCommitter.LastCommitPosition; }
+	public sealed class ReadIndex : IDisposable, IReadIndex {
+		public long LastIndexedPosition {
+			get { return _indexCommitter.LastIndexedPosition; }
 		}
 
-		public long LastReplicatedPosition {
-			get { return _replicationCheckpoint.ReadNonFlushed(); }
-		}
 
 		public IIndexWriter IndexWriter {
 			get { return _indexWriter; }
@@ -35,7 +32,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly IIndexWriter _indexWriter;
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly IAllReader _allReader;
-		private readonly ICheckpoint _replicationCheckpoint;
 
 		public ReadIndex(IPublisher bus,
 			ObjectPool<ITransactionFileReader> readerPool,
@@ -60,10 +56,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				skipIndexScanOnReads);
 			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
 			_indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
-			_allReader = new AllReader(_indexBackend, _indexCommitter, replicationCheckpoint);
-			_replicationCheckpoint = replicationCheckpoint;
+			_allReader = new AllReader(_indexBackend, _indexCommitter);
 		}
-
+		//todo-clc remove this method, Init is called from Index Committer Service and we don't want to call twice
+		//looks like this is used mostly in tests and can be replaced by getting the Index Commiter in the test and calling init directly
 		void IReadIndex.Init(long buildToPosition) {
 			_indexCommitter.Init(buildToPosition);
 		}

@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 		protected List<StorageMessage.PrepareAck> PrepareAcks = new List<StorageMessage.PrepareAck>();
 		protected List<StorageMessage.CommitAck> CommitAcks = new List<StorageMessage.CommitAck>();
-		protected List<CommitMessage.LogWrittenTo> LogWrittenTos = new List<CommitMessage.LogWrittenTo>();
+		protected List<CommitMessage.WrittenTo> LogWrittenTos = new List<CommitMessage.WrittenTo>();
 
 		[OneTimeSetUp]
 		public async override Task TestFixtureSetUp() {
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitAck>(CommitAcks.Add));
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.PrepareAck>(PrepareAcks.Add));
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.LogWrittenTo>(LogWrittenTos.Add));
+			Publisher.Subscribe(new AdHocHandler<CommitMessage.WrittenTo>(LogWrittenTos.Add));
 
 
 			When();

@@ -3,6 +3,7 @@ using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Commit;
+using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
@@ -11,20 +12,20 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		private long _logPosition = 4000;
 		private long _overrunPosition = 5000;
 		public override void TestFixtureSetUp() {
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.LogCommittedTo>(msg => LogCommittedTos.Add(msg)));
+			Publisher.Subscribe(new AdHocHandler<CommitMessage.ReplicatedTo>(msg => LogCommittedTos.Add(msg)));
 			Publisher.Subscribe(new AdHocHandler<CommitMessage.CommittedTo>(CommittedTos.Add));
 
-			Service = new CommitTrackerService(Publisher, CommitLevel.ClusterWrite, ClusterSize);
+			Service = new CommitTrackerService(Publisher, CommitLevel.ClusterWrite, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
 			Service.Start();
 			When();
 		}
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();
-			Service.Handle(new CommitMessage.LogWrittenTo(_logPosition));
-			Service.Handle(new CommitMessage.ReplicaLogWrittenTo(_overrunPosition, replicaId));
+			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
+			Service.Handle(new CommitMessage.ReplicaWrittenTo(_overrunPosition, replicaId));
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
-			Service.Handle(new CommitMessage.LogWrittenTo(_overrunPosition));
+			Service.Handle(new CommitMessage.WrittenTo(_overrunPosition));
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 
@@ -34,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 			var commit = LogCommittedTos[0];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_logPosition, commit.LogPosition);
-		    commit = LogCommittedTos[1];
+			commit = LogCommittedTos[1];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_overrunPosition, commit.LogPosition);
 		}
@@ -45,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 			var commit = LogCommittedTos[0];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_logPosition, commit.LogPosition);
-		    commit = LogCommittedTos[1];
+			commit = LogCommittedTos[1];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_overrunPosition, commit.LogPosition);
 		}

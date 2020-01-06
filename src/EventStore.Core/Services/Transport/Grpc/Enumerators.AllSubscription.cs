@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var readNextSource = new TaskCompletionSource<bool>();
 
 				var (commitPosition, preparePosition) = _nextPosition == Position.End
-					? (_readIndex.LastCommitPosition, _readIndex.LastReplicatedPosition)
+					? (_readIndex.LastIndexedPosition, _readIndex.LastIndexedPosition)
 					: _nextPosition.ToInt64();
 
 				_bus.Publish(new ClientMessage.ReadAllEventsForward(

@@ -1153,8 +1153,8 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"PersistentSubscriptionConfirmation")]
   public partial class PersistentSubscriptionConfirmation
   {
-    [ProtoMember(1, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LastCommitPosition;
+    [ProtoMember(1, IsRequired = true, Name=@"last_indexed_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long LastIndexedPosition;
   
     [ProtoMember(2, IsRequired = true, Name=@"subscription_id", DataFormat = DataFormat.Default)]
     public readonly string SubscriptionId;
@@ -1164,9 +1164,9 @@ namespace EventStore.Core.Messages
   
     private PersistentSubscriptionConfirmation() {}
   
-    public PersistentSubscriptionConfirmation(long lastCommitPosition, string subscriptionId, long? lastEventNumber)
+    public PersistentSubscriptionConfirmation(long lastIndexedPosition, string subscriptionId, long? lastEventNumber)
     {
-        LastCommitPosition = lastCommitPosition;
+        LastIndexedPosition = lastIndexedPosition;
         SubscriptionId = subscriptionId;
         LastEventNumber = lastEventNumber;
     }
@@ -1255,17 +1255,17 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"SubscriptionConfirmation")]
   public partial class SubscriptionConfirmation
   {
-    [ProtoMember(1, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LastCommitPosition;
+    [ProtoMember(1, IsRequired = true, Name=@"last_indexed_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long LastIndexedPosition;
   
     [ProtoMember(2, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly long? LastEventNumber;
   
     private SubscriptionConfirmation() {}
   
-    public SubscriptionConfirmation(long lastCommitPosition, long? lastEventNumber)
+    public SubscriptionConfirmation(long lastIndexedPosition, long? lastEventNumber)
     {
-        LastCommitPosition = lastCommitPosition;
+        LastIndexedPosition = lastIndexedPosition;
         LastEventNumber = lastEventNumber;
     }
   }

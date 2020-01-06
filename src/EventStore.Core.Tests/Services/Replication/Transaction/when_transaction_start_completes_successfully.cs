@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Replication.Transaction {
 		}
 
 		protected override Message When() {
-			return new CommitMessage.LogCommittedTo(_commitPosition);
+			return new CommitMessage.ReplicatedTo(_commitPosition);
 		}
 
 		[Test]

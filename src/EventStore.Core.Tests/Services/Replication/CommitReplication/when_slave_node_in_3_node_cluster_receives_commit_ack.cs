@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeSlave();
 			AddPendingPrepare(_logPosition);
 			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0));
-			Service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
+			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");
