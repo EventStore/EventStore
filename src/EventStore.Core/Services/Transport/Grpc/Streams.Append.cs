@@ -50,10 +50,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
 				}
 
+				if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.Type, out var eventType)) {
+					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.Type);
+				}
+
+				if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.IsJson, out var isJson)) {
+					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.IsJson);
+				}
+
 				events.Add(new Event(
 					Uuid.FromDto(proposedMessage.Id).ToGuid(),
-					proposedMessage.Metadata[Constants.Metadata.Type],
-					bool.Parse(proposedMessage.Metadata[Constants.Metadata.IsJson]),
+					eventType,
+					bool.Parse(isJson),
 					data,
 					proposedMessage.CustomMetadata.ToByteArray()));
 			}
