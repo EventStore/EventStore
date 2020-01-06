@@ -29,8 +29,9 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IPublisher _publisher;
 		private readonly IReadIndex _readIndex;
 		private readonly ICheckpoint _writerCheckpoint;
+		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly int _queueId;
-		private static readonly char[] LinkToSeparator = {'@'};
+		private static readonly char[] LinkToSeparator = { '@' };
 		private const int MaxPageSize = 4096;
 		private const string _readerReadHistogram = "reader-readevent";
 		private const string _readerStreamRangeHistogram = "reader-streamrange";
@@ -39,15 +40,17 @@ namespace EventStore.Core.Services.Storage {
 		private long _expiredBatchCount = 0;
 		private bool _batchLoggingEnabled = false;
 
-		public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint,
+		public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint, ICheckpoint replicationCheckpoint,
 			int queueId) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(readIndex, "readIndex");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
+			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
 
 			_publisher = publisher;
 			_readIndex = readIndex;
 			_writerCheckpoint = writerCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_queueId = queueId;
 		}
 
@@ -134,7 +137,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case ReadAllResult.NotModified:
 						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-						    res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
 							_publisher.Publish(new SubscriptionMessage.PollStream(
 								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
 								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
@@ -186,7 +189,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case FilteredReadAllResult.NotModified:
 						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-						    res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
 							_publisher.Publish(new SubscriptionMessage.PollStream(
 								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
 								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
@@ -203,7 +206,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 		}
-		
+
 		void IHandle<ClientMessage.FilteredReadAllEventsBackward>.Handle(ClientMessage.FilteredReadAllEventsBackward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
 				Log.Debug(
@@ -226,7 +229,7 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					case FilteredReadAllResult.NotModified:
 						if (msg.LongPollTimeout.HasValue && res.IsEndOfStream &&
-						    res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
+							res.CurrentPos.CommitPosition > res.TfLastCommitPosition) {
 							_publisher.Publish(new SubscriptionMessage.PollStream(
 								SubscriptionsService.AllStreamsSubscriptionId, res.TfLastCommitPosition, null,
 								DateTime.UtcNow + msg.LongPollTimeout.Value, msg));
@@ -270,9 +273,9 @@ namespace EventStore.Core.Services.Storage {
 					if (record == null)
 						return NoData(msg, ReadEventResult.AccessDenied);
 					if ((result.Result == ReadEventResult.NoStream ||
-					     result.Result == ReadEventResult.NotFound) &&
-					    result.OriginalStreamExists &&
-					    SystemStreams.IsSystemStream(msg.EventStreamId)) {
+						 result.Result == ReadEventResult.NotFound) &&
+						result.OriginalStreamExists &&
+						SystemStreams.IsSystemStream(msg.EventStreamId)) {
 						return NoData(msg, ReadEventResult.Success);
 					}
 
@@ -288,7 +291,7 @@ namespace EventStore.Core.Services.Storage {
 		private ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward(
 			ClientMessage.ReadStreamEventsForward msg) {
 			using (HistogramService.Measure(_readerStreamRangeHistogram)) {
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -296,7 +299,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (msg.ValidationStreamVersion.HasValue &&
-					    _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+						_readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
 						return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition,
 							msg.ValidationStreamVersion.Value);
 
@@ -325,7 +328,7 @@ namespace EventStore.Core.Services.Storage {
 		private ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward(
 			ClientMessage.ReadStreamEventsBackward msg) {
 			using (HistogramService.Measure(_readerStreamRangeHistogram)) {
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -333,7 +336,7 @@ namespace EventStore.Core.Services.Storage {
 					}
 
 					if (msg.ValidationStreamVersion.HasValue &&
-					    _readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
+						_readIndex.GetStreamLastEventNumber(msg.EventStreamId) == msg.ValidationStreamVersion)
 						return NoData(msg, ReadStreamResult.NotModified, lastCommitPosition,
 							msg.ValidationStreamVersion.Value);
 
@@ -363,7 +366,7 @@ namespace EventStore.Core.Services.Storage {
 			ReadAllEventsForward(ClientMessage.ReadAllEventsForward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -403,7 +406,7 @@ namespace EventStore.Core.Services.Storage {
 			ClientMessage.ReadAllEventsBackward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -444,7 +447,7 @@ namespace EventStore.Core.Services.Storage {
 			ClientMessage.FilteredReadAllEventsForward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -486,12 +489,12 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 		}
-		
+
 		private ClientMessage.FilteredReadAllEventsBackwardCompleted FilteredReadAllEventsBackward(
 			ClientMessage.FilteredReadAllEventsBackward msg) {
 			using (HistogramService.Measure(_readerAllRangeHistogram)) {
 				var pos = new TFPos(msg.CommitPosition, msg.PreparePosition);
-				var lastCommitPosition = _readIndex.LastReplicatedPosition;
+				var lastCommitPosition = _replicationCheckpoint.ReadNonFlushed();
 				try {
 					if (msg.MaxCount > MaxPageSize) {
 						throw new ArgumentException(string.Format("Read size too big, should be less than {0} items",
@@ -538,7 +541,8 @@ namespace EventStore.Core.Services.Storage {
 			string streamId = msg.EventStreamId;
 			try {
 				if (msg.EventStreamId == null) {
-					if (msg.TransactionId == null) throw new Exception("No transaction ID specified.");
+					if (msg.TransactionId == null)
+						throw new Exception("No transaction ID specified.");
 					streamId = _readIndex.GetEventStreamIdByTransactionId(msg.TransactionId.Value);
 					if (streamId == null)
 						throw new Exception(string.Format("No transaction with ID {0} found.", msg.TransactionId));
@@ -590,7 +594,7 @@ namespace EventStore.Core.Services.Storage {
 				msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
 				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastCommitPosition, false);
 		}
-		
+
 		private ClientMessage.FilteredReadAllEventsBackwardCompleted NoDataForFilteredCommand(
 			ClientMessage.FilteredReadAllEventsBackward msg, FilteredReadAllResult result, TFPos pos,
 			long lastCommitPosition, string error = null) {
@@ -703,7 +707,8 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(StorageMessage.BatchLogExpiredMessages message) {
-			if (!_batchLoggingEnabled) return;
+			if (!_batchLoggingEnabled)
+				return;
 			if (_expiredBatchCount == 0) {
 				_batchLoggingEnabled = false;
 				Log.Warn("StorageReaderWorker #{0}: Batch logging disabled, read load is back to normal", _queueId);

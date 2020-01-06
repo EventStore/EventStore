@@ -13,8 +13,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 			BecomeMaster();
 			var replicaId1 = Guid.NewGuid();
 			var replicaId2 = Guid.NewGuid();
-			Service.Handle(new CommitMessage.ReplicaLogWrittenTo(_logPosition, replicaId1));
-			Service.Handle(new CommitMessage.ReplicaLogWrittenTo(_logPosition, replicaId2));
+			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, replicaId1));
+			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, replicaId2));
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 

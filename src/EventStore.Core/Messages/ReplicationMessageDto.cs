@@ -18,39 +18,16 @@ namespace EventStore.Core.Messages {
 				ReplicaId =replicaId;
 			}
 		}
+		
 		[ProtoContract]
-		public class PrepareAck {
+		public class ReplicatedTo {
 			[ProtoMember(1)] public long LogPosition { get; set; }
 
-			[ProtoMember(2)] public byte Flags { get; set; }
-
-			public PrepareAck() {
+			public ReplicatedTo() {
 			}
 
-			public PrepareAck(long logPosition, byte flags) {
-				LogPosition = logPosition;
-				Flags = flags;
-			}
-		}
-
-		[ProtoContract]
-		public class CommitAck {
-			[ProtoMember(1)] public long LogPosition { get; set; }
-
-			[ProtoMember(2)] public long TransactionPosition { get; set; }
-
-			[ProtoMember(3)] public long FirstEventNumber { get; set; }
-
-			[ProtoMember(4)] public long LastEventNumber { get; set; }
-
-			public CommitAck() {
-			}
-
-			public CommitAck(long logPosition, long transactionPosition, long firstEventNumber, long lastEventNumber) {
-				LogPosition = logPosition;
-				TransactionPosition = transactionPosition;
-				FirstEventNumber = firstEventNumber;
-				LastEventNumber = lastEventNumber;
+			public ReplicatedTo(long logPosition) {
+				LogPosition = logPosition;				
 			}
 		}
 

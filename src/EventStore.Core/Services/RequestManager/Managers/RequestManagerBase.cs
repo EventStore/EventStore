@@ -168,7 +168,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected virtual void AllPreparesWritten() { }
 		private bool _registered;
 		protected virtual void AllEventsWritten() {
-			var pos = _completeOnLogCommitted ? _commitSource.LogCommitPosition : _commitSource.CommitPosition;
+			var pos = _completeOnLogCommitted ? _commitSource.LogCommittedPosition : _commitSource.CommitPosition;
 			if (pos >= _lastEventPosition) {
 				Committed();
 			} else if (!_registered) {

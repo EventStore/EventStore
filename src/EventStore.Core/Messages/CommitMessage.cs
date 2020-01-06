@@ -7,7 +7,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Messages {
 	public static class CommitMessage {
 		
-		public class ReplicaLogWrittenTo : Message {
+		public class ReplicaWrittenTo : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -17,14 +17,14 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			public readonly Guid ReplicaId;
 			
-			public ReplicaLogWrittenTo(long logPosition, Guid replicaId) {
+			public ReplicaWrittenTo(long logPosition, Guid replicaId) {
 				Ensure.Nonnegative(logPosition, nameof(logPosition));
 				Ensure.NotEmptyGuid(replicaId, nameof(replicaId));
 				LogPosition = logPosition;
 				ReplicaId = replicaId;
 			}
 		}
-		public class IndexWrittenTo : Message {
+		public class IndexedTo : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -33,12 +33,12 @@ namespace EventStore.Core.Messages {
 			
 			public readonly long LogPosition;
 			
-			public IndexWrittenTo(long logPosition ) {
+			public IndexedTo(long logPosition ) {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
-		public class LogWrittenTo : Message {
+		public class WrittenTo : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -47,12 +47,12 @@ namespace EventStore.Core.Messages {
 			
 			public readonly long LogPosition;
 			
-			public LogWrittenTo(long logPosition ) {
+			public WrittenTo(long logPosition ) {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
-		public class LogCommittedTo : Message { 
+		public class ReplicatedTo : Message { 
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -61,7 +61,7 @@ namespace EventStore.Core.Messages {
 			
 			public readonly long LogPosition;
 			
-			public LogCommittedTo(long logPosition ) {
+			public ReplicatedTo(long logPosition ) {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				LogPosition = logPosition;
 			}

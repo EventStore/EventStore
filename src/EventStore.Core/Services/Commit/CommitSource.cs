@@ -13,14 +13,14 @@ namespace EventStore.Core.Services.Commit {
 
 		public long CommitPosition => Interlocked.Read(ref _committedPosition);
 
-		public long LogCommitPosition => Interlocked.Read(ref _logCommittedPosition);
+		public long LogCommittedPosition => Interlocked.Read(ref _logCommittedPosition);
 
 		public void Handle(CommitMessage.CommittedTo message) {
 			Interlocked.Exchange(ref _committedPosition, message.LogPosition);
 			Notify(_notifyCommit, message.LogPosition);
 		}
 
-		public void Handle(CommitMessage.LogCommittedTo message) {
+		public void Handle(CommitMessage.ReplicatedTo message) {
 			Interlocked.Exchange(ref _logCommittedPosition, message.LogPosition);
 			Notify(_notifyLogCommit, message.LogPosition);
 		}

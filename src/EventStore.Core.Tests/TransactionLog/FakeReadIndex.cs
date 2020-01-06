@@ -10,14 +10,10 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex : IReadIndex {
-		public long LastCommitPosition {
+		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }
 		}
-
-		public long LastReplicatedPosition {
-			get { throw new NotImplementedException(); }
-		}
-
+		
 		public IIndexWriter IndexWriter {
 			get { throw new NotImplementedException(); }
 		}

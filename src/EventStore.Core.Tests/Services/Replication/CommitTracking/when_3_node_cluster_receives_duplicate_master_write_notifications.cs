@@ -11,8 +11,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 
 		public override void When() {
 			BecomeMaster();
-			Service.Handle(new CommitMessage.LogWrittenTo(_logPosition));
-			Service.Handle(new CommitMessage.LogWrittenTo(_logPosition));			
+			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
+			Service.Handle(new CommitMessage.WrittenTo(_logPosition));			
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 

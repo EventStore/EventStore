@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<CommitMessage.CommittedTo>,
-		IHandle<CommitMessage.LogCommittedTo>,
+		IHandle<CommitMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitIndexed>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(CommitMessage.CommittedTo message) => _commitSource.Handle(message);		
-		public void Handle(CommitMessage.LogCommittedTo message) => _commitSource.Handle(message);
+		public void Handle(CommitMessage.ReplicatedTo message) => _commitSource.Handle(message);
 
 		public void Handle(StorageMessage.CheckStreamAccessCompleted message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);

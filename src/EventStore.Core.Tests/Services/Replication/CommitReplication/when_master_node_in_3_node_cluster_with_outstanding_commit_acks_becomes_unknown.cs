@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0, true));
 			BecomeUnknown();
 
-			Service.Handle(new CommitMessage.LogCommittedTo(_logPosition));
+			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
 			
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {

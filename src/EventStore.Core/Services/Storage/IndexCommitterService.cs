@@ -13,7 +13,6 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage {
 	public interface IIndexCommitterService {
@@ -28,19 +27,20 @@ namespace EventStore.Core.Services.Storage {
 		IMonitoredQueue,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<CommitMessage.LogCommittedTo>,
+		IHandle<CommitMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly IPublisher _publisher;
-		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly ICheckpoint _writerCheckpoint;
+		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly int _commitCount;
 		private readonly ITableIndex _tableIndex;
 		private Thread _thread;
 		private bool _stop;
 		private VNodeState _state;
+		private long _committedPosition;
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -63,24 +63,27 @@ namespace EventStore.Core.Services.Storage {
 			get { return _tcs.Task; }
 		}
 
-		public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher,
-			ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex, QueueStatsManager queueStatsManager) {
-			Ensure.NotNull(indexCommitter, "indexCommitter");
-			Ensure.NotNull(publisher, "publisher");
-			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.Positive(commitCount, "commitCount");
+		public IndexCommitterService(
+			IIndexCommitter indexCommitter,
+			IPublisher publisher,
+			ICheckpoint writerCheckpoint,
+			int commitCount,
+			ITableIndex tableIndex,
+			QueueStatsManager queueStatsManager) {
+			Ensure.NotNull(indexCommitter, nameof(indexCommitter));
+			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
+			Ensure.Positive(commitCount, nameof(commitCount));
 
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
-			_replicationCheckpoint = replicationCheckpoint;
 			_writerCheckpoint = writerCheckpoint;
 			_commitCount = commitCount;
 			_tableIndex = tableIndex;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
-		public void Init(long chaserCheckpoint) {			
+		public void Init(long chaserCheckpoint) {
 			_indexCommitter.Init(chaserCheckpoint);
 			_thread = new Thread(HandleReplicatedQueue);
 			_thread.IsBackground = true;
@@ -149,9 +152,8 @@ namespace EventStore.Core.Services.Storage {
 
 			lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
 
-			_replicationCheckpoint.Write(message.LogPosition);
 			if (_state == VNodeState.Master) {
-				_publisher.Publish(new CommitMessage.IndexWrittenTo(message.LogPosition));
+				_publisher.Publish(new CommitMessage.IndexedTo(message.LogPosition));
 			}
 			_publisher.Publish(new StorageMessage.CommitIndexed(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
@@ -208,20 +210,19 @@ namespace EventStore.Core.Services.Storage {
 			_stop = true;
 		}
 		public void Handle(StorageMessage.CommitAck message) {
-			if (message.LogPosition < _replicationCheckpoint.ReadNonFlushed()) { return; }
-			if (message.LogPosition < _logPosition) {
+			if (message.LogPosition < _committedPosition) {
 				_replicatedQueue.Enqueue(message);
 				_addMsgSignal.Set();
 			} else {
 				_commitAcks.AddCommitAck(message);
 			}
 		}
-		private long _logPosition;
-		public void Handle(CommitMessage.LogCommittedTo message) {
-			var logPosition = Interlocked.Read(ref _logPosition);
+
+		public void Handle(CommitMessage.ReplicatedTo message) {
+			var logPosition = Interlocked.Read(ref _committedPosition);
 			while (message.LogPosition > logPosition) {
-				if (Interlocked.CompareExchange(ref _logPosition, message.LogPosition, logPosition) != logPosition) {
-					logPosition = Interlocked.Read(ref _logPosition);
+				if (Interlocked.CompareExchange(ref _committedPosition, message.LogPosition, logPosition) != logPosition) {
+					logPosition = Interlocked.Read(ref _committedPosition);
 				}
 			}
 			var commits = _commitAcks.GetCommitAcksUpTo(message.LogPosition);

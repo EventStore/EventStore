@@ -561,7 +561,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private TcpPackage WrapSubscribedToStream(ClientMessage.SubscriptionConfirmation msg) {
-			var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastCommitPosition, msg.LastEventNumber);
+			var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastIndexedPosition, msg.LastEventNumber);
 			return new TcpPackage(TcpCommand.SubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
 		}
 
@@ -676,7 +676,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private TcpPackage
 			WrapPersistentSubscriptionConfirmation(ClientMessage.PersistentSubscriptionConfirmation msg) {
-			var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastCommitPosition,
+			var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastIndexedPosition,
 				msg.SubscriptionId, msg.LastEventNumber);
 			return new TcpPackage(TcpCommand.PersistentSubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
 		}
@@ -786,7 +786,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private TcpPackage WrapPersistentSubscriptionConfirmationV1(
 			ClientMessage.PersistentSubscriptionConfirmation msg) {
-			var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastCommitPosition,
+			var dto = new TcpClientMessageDto.PersistentSubscriptionConfirmation(msg.LastIndexedPosition,
 				msg.SubscriptionId,
 				msg.LastEventNumber == null
 					? msg.LastEventNumber
@@ -803,7 +803,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private TcpPackage WrapSubscribedToStreamV1(ClientMessage.SubscriptionConfirmation msg) {
-			var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastCommitPosition,
+			var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastIndexedPosition,
 				msg.LastEventNumber == null
 					? msg.LastEventNumber
 					: StreamVersionConverter.Downgrade(msg.LastEventNumber.Value));
