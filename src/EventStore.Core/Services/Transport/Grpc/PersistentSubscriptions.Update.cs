@@ -10,7 +10,7 @@ using Grpc.Core;
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class PersistentSubscriptions {
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
-			var updatePersistentSubscriptionSource = new TaskCompletionSource<UpdateResp>();
+			var updatePersistentSubscriptionSource = new TaskCompletionSource<UpdateResp>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var settings = request.Options.Settings;
 			var correlationId = Guid.NewGuid();
 

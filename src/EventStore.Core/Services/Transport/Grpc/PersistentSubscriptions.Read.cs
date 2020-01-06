@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				"<unknown>";
 			var correlationId = Guid.NewGuid();
 			var uuidOptionsCase = options.UuidOption.ContentCase;
-			var source = new TaskCompletionSource<bool>();
+			var source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			string subscriptionId = default;
 			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
 
@@ -167,7 +167,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_disposedTokenSource = new CancellationTokenSource();
 				_sendQueue = new ConcurrentQueue<(ResolvedEvent, int, Exception)>();
-				_subscriptionIdSource = new TaskCompletionSource<string>();
+				_subscriptionIdSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 
 				queue.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,

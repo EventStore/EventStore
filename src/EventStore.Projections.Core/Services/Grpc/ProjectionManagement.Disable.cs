@@ -9,7 +9,7 @@ using Grpc.Core;
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
-			var disableSource = new TaskCompletionSource<bool>();
+			var disableSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var options = request.Options;
 

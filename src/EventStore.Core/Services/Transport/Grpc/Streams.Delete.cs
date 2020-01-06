@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private async Task<Position?> DeleteInternal(string streamName, long expectedVersion,
 			IPrincipal user, bool hardDelete) {
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
-			var deleteResponseSource = new TaskCompletionSource<Position?>();
+			var deleteResponseSource = new TaskCompletionSource<Position?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(HandleStreamDeletedCompleted);
 

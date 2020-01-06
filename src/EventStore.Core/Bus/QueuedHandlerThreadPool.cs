@@ -44,7 +44,8 @@ namespace EventStore.Core.Bus {
 		private int _isRunning;
 		private int _queueStatsState; //0 - never started, 1 - started, 2 - stopped
 
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs =
+			new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 
 		public QueuedHandlerThreadPool(IHandle<Message> consumer,

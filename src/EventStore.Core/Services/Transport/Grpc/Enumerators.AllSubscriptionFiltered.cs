@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var correlationId = Guid.NewGuid();
 
-				var readNextSource = new TaskCompletionSource<bool>();
+				var readNextSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 				var (commitPosition, preparePosition) = _nextPosition == Position.End
 					? (_readIndex.LastCommitPosition, _readIndex.LastReplicatedPosition)

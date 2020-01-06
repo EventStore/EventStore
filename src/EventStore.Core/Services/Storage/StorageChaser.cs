@@ -50,7 +50,8 @@ namespace EventStore.Core.Services.Storage {
 		private const string ChaserWaitHistogram = "chaser-wait";
 		private const string ChaserFlushHistogram = "chaser-flush";
 
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+		private readonly TaskCompletionSource<object> _tcs =
+			new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public Task Task {
 			get { return _tcs.Task; }

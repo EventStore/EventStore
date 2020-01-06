@@ -11,7 +11,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var deleteSource = new TaskCompletionSource<bool>();
+			var deleteSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 

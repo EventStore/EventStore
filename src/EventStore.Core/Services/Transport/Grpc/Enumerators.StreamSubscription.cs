@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var correlationId = Guid.NewGuid();
 
-				var readNextSource = new TaskCompletionSource<bool>();
+				var readNextSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 				var nextRevision = _nextRevision == StreamRevision.End
 					? Math.Max(_readIndex.GetStreamLastEventNumber(_streamName), 0L)

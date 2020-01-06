@@ -40,7 +40,9 @@ namespace EventStore.Core.Bus {
 		// monitoring
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+
+		private readonly TaskCompletionSource<object> _tcs =
+			new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public QueuedHandlerAutoResetWithMpsc(IHandle<Message> consumer,
 			string name,

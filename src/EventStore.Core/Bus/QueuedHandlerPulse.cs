@@ -44,7 +44,9 @@ namespace EventStore.Core.Bus {
 		private readonly QueueStatsCollector _queueStats;
 
 		private readonly object _locker = new object();
-		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
+
+		private readonly TaskCompletionSource<object> _tcs =
+			new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 
 		public QueuedHandlerPulse(IHandle<Message> consumer,

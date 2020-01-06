@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return false;
 				}
 
-				var readNextSource = new TaskCompletionSource<bool>();
+				var readNextSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 				var correlationId = Guid.NewGuid();
 

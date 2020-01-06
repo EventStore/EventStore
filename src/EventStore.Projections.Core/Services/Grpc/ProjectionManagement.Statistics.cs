@@ -10,7 +10,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task Statistics(StatisticsReq request, IServerStreamWriter<StatisticsResp> responseStream,
 			ServerCallContext context) {
-			var statsSource = new TaskCompletionSource<ProjectionStatistics[]>();
+			var statsSource = new TaskCompletionSource<ProjectionStatistics[]>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var options = request.Options;
 			var name = string.IsNullOrEmpty(options.Name) ? null : options.Name;

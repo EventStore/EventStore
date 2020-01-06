@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
-			var changePasswordSource = new TaskCompletionSource<bool>();
+			var changePasswordSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 

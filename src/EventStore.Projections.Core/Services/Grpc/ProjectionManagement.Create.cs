@@ -11,7 +11,7 @@ using static EventStore.Grpc.Projections.CreateReq.Types.Options;
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
-			var createdSource = new TaskCompletionSource<bool>();
+			var createdSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var options = request.Options;
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);

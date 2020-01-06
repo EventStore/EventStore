@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					proposedMessage.CustomMetadata.ToByteArray()));
 			}
 
-			var appendResponseSource = new TaskCompletionSource<AppendResp>();
+			var appendResponseSource = new TaskCompletionSource<AppendResp>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
 
