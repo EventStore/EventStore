@@ -36,6 +36,11 @@ FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-${CONTAINER_RUNTIME} AS runt
 ARG UID=1000
 ARG GID=1000
 
+RUN apt update && \
+    apt install -y \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /opt/eventstore
 
 RUN addgroup --gid ${GID} "eventstore" && \
@@ -62,6 +67,8 @@ EXPOSE 1114/tcp
 EXPOSE 2112/tcp
 EXPOSE 2113/tcp
 EXPOSE 2114/tcp
+
+HEALTHCHECK CMD curl --fail --insecure https://localhost:2113/health/live || exit 1
 
 ENTRYPOINT ["/opt/eventstore/EventStore.ClusterNode"]
 CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]
