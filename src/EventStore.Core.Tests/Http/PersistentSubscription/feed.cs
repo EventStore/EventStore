@@ -153,6 +153,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			var nackAllLink = String.Format("subscriptions/{0}/{1}/nack", TestStreamName, SubscriptionGroupName);
 			Assert.AreEqual(MakeUrl(nackAllLink, ids), GetLink(_feed, "nackAll"));
 		}
+		
+		[Test]
+		public void all_entries_have_retry_count_element() {
+			var allEntriesHaveRetryCount = _feed["entries"].All(entry => entry["retryCount"] != null);
+			Assert.True(allEntriesHaveRetryCount);
+		}
 	}
 
 	[TestFixture, Category("LongRunning")]
