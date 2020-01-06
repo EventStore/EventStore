@@ -8,6 +8,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Stats;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace EventStore.Core.Services.Monitoring.Utils {
@@ -40,6 +41,10 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 				new EventPipeProvider("System.Runtime", EventLevel.Informational,
 					(long)ClrTraceEventParser.Keywords.All, new Dictionary<string, string> {
 						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
+					}),
+				new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational,
+					(long)ClrTraceEventParser.Keywords.All, new Dictionary<string, string> {
+						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
 					})
 			};
 
@@ -59,6 +64,21 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 				_client = new DiagnosticsClient(_pid);
 				_session = _client.StartEventPipeSession(_providers, false);
 				using var source = new EventPipeEventSource(_session.EventStream);
+				
+				source.NeedLoadedDotNetRuntimes();
+				source.AddCallbackOnProcessStart(proc =>
+				{
+					if (proc.ProcessID != _pid)
+						return;
+
+					proc.AddCallbackOnDotNetRuntimeLoad(runtime =>
+					{
+						runtime.GCEnd += (process, gc) =>
+						{
+							_collectedStats[$"gen-{gc.Generation}-gc-collection-count"] = gc.Number;
+						};
+					});
+				});
 
 				source.Dynamic.All += obj => {
 					if (obj.EventName.Equals("EventCounters")) {
@@ -204,11 +224,11 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		public GcStats GetGcStats() {
 			return new GcStats(
 				gcAllocationSpeed: (float)GetCounterValue("alloc-rate"),
-				gcGen0Items: (long)GetCounterValue("gen-0-gc-count"),
+				gcGen0Items: (long)GetCounterValue("gen-0-gc-collection-count"),
 				gcGen0Size: (long)GetCounterValue("gen-0-size"),
-				gcGen1Items: (long)GetCounterValue("gen-1-gc-count"),
+				gcGen1Items: (long)GetCounterValue("gen-1-gc-collection-count"),
 				gcGen1Size: (long)GetCounterValue("gen-1-size"),
-				gcGen2Items: (long)GetCounterValue("gen-2-gc-count"),
+				gcGen2Items: (long)GetCounterValue("gen-2-gc-collection-count"),
 				gcGen2Size: (long)GetCounterValue("gen-2-size"),
 				gcLargeHeapSize: (long)GetCounterValue("loh-size"),
 				gcTimeInGc: (long)GetCounterValue("time-in-gc"),
