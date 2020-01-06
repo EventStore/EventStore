@@ -401,8 +401,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(5).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 		[Test]
@@ -424,8 +424,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(2).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 		[Test]
@@ -451,8 +451,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(2).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 
@@ -1071,8 +1071,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			sub.GetNextNOrLessMessages(2);
 			sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
 			var retries = sub.GetNextNOrLessMessages(2).ToArray();
-			Assert.AreEqual(id1, retries[0].Event.EventId);
-			Assert.AreEqual(id2, retries[1].Event.EventId);
+			Assert.AreEqual(id1, retries[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, retries[1].ResolvedEvent.Event.EventId);
 			Assert.AreEqual(0, parker.ParkedEvents.Count);
 		}
 

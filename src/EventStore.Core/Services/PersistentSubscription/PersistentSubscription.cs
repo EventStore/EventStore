@@ -223,14 +223,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		public IEnumerable<ResolvedEvent> GetNextNOrLessMessages(int count) {
+		public IEnumerable<(ResolvedEvent ResolvedEvent, int RetryCount)> GetNextNOrLessMessages(int count) {
 			lock (_lock) {
 				foreach (var messagePointer in StreamBuffer.Scan().Take(count)) {
 					messagePointer.MarkSent();
 					MarkBeginProcessing(messagePointer.Message);
 					if (!messagePointer.Message.IsReplayedEvent)
 						_lastKnownMessage = Math.Max(_lastKnownMessage, messagePointer.Message.ResolvedEvent.OriginalEventNumber);
-					yield return messagePointer.Message.ResolvedEvent;
+					yield return (messagePointer.Message.ResolvedEvent, messagePointer.Message.RetryCount);
 				}
 			}
 		}

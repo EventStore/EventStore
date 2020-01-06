@@ -1262,10 +1262,10 @@ namespace EventStore.Core.Messages {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly ReadNextNPersistentMessagesResult Result;
-			public readonly ResolvedEvent[] Events;
+			public readonly (ResolvedEvent ResolvedEvent, int RetryCount)[] Events;
 
 			public ReadNextNPersistentMessagesCompleted(Guid correlationId, ReadNextNPersistentMessagesResult result,
-				string reason, ResolvedEvent[] events) {
+				string reason, (ResolvedEvent ResolvedEvent, int RetryCount)[] events) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				CorrelationId = correlationId;
 				Result = result;

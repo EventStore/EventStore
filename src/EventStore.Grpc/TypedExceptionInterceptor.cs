@@ -97,6 +97,10 @@ namespace EventStore.Grpc {
 							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
 					Constants.Exceptions.UserNotFound => new UserNotFoundException(
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.LoginName)?.Value),
+					Constants.Exceptions.MissingRequiredMetadataProperty => new
+						RequiredMetadataPropertyMissingException(
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.MissingRequiredMetadataProperty)
+								?.Value, ex),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => new InvalidOperationException(ex.Message, ex)

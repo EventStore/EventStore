@@ -9,6 +9,7 @@ namespace EventStore.Grpc {
 			public const string WrongExpectedVersion = "wrong-expected-version";
 			public const string StreamNotFound = "stream-not-found";
 			public const string MaximumAppendSizeExceeded = "maximum-append-size-exceeded";
+			public const string MissingRequiredMetadataProperty = "missing-required-metadata-property";
 
 			public const string PersistentSubscriptionFailed = "persistent-subscription-failed";
 			public const string PersistentSubscriptionDoesNotExist = "persistent-subscription-does-not-exist";
@@ -25,6 +26,7 @@ namespace EventStore.Grpc {
 			public const string GroupName = "group-name";
 			public const string Reason = "reason";
 			public const string MaximumAppendSize = "maximum-append-size";
+			public const string RequiredMetadataProperties = "required-metadata-properties";
 
 			public const string LoginName = "login-name";
 		}
@@ -33,6 +35,7 @@ namespace EventStore.Grpc {
 			public const string IsJson = "is-json";
 			public const string Type = "type";
 			public const string Created = "created";
+			public static readonly string[] RequiredMetadata = {Type, IsJson};
 		}
 
 		public static class Headers {
