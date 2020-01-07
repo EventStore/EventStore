@@ -38,13 +38,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 	public class AllReader : IAllReader {
 		private readonly IIndexBackend _backend;
-		private readonly IIndexCommitter _indexCommitter;		
+		private readonly IIndexCommitter _indexCommitter;
+		private readonly ICheckpoint _replicationCheckpoint;
 
-		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter) {
+		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, ICheckpoint replicationCheckpoint) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(indexCommitter, "indexCommitter");
+			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			_backend = backend;
 			_indexCommitter = indexCommitter;
+			_replicationCheckpoint = replicationCheckpoint;
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
@@ -71,7 +74,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			using (var reader = _backend.BorrowReader()) {
 				long nextCommitPos = pos.CommitPosition;
 				while (records.Count < maxCount && consideredEventsCount < maxSearchWindow) {
-					if (nextCommitPos > _indexCommitter.LastIndexedPosition) {
+					if (nextCommitPos > _indexCommitter.LastIndexedPosition || !IsReplicated(nextCommitPos)) {
 						reachedEndOfStream = true;
 						break;
 					}
@@ -168,6 +171,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
+		private bool IsReplicated(long position) {
+			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
+			if (checkpoint == -1) return true;
+			return checkpoint >= position;
+		}
+
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
 			return ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
 		}
@@ -206,7 +215,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					nextCommitPostPos = result.RecordPrePosition;
 
-					if (nextCommitPostPos > _indexCommitter.LastIndexedPosition) {
+					if (!IsReplicated(nextCommitPostPos)) {
 						continue;
 					}
 

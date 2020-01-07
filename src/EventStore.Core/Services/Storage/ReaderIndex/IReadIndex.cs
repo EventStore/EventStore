@@ -7,9 +7,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IReadIndex {
 		long LastIndexedPosition { get; }
 		
-		IIndexWriter IndexWriter { get; }
-
-		void Init(long buildToPosition);
+		IIndexWriter IndexWriter { get; }		
+				
 		ReadIndexStats GetStatistics();
 
 		IndexReadEventResult ReadEvent(string streamId, long eventNumber);
