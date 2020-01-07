@@ -332,16 +332,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//Meanwhile, during this 100ms time window, a new live event #3 comes in and subscription is notified
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3));
 
+			await eventsFoundSource.Task;
+
 			//the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
 
 			//a subscriber coming in a while later, should receive all 3 events
-			await Task.Delay(500).ContinueWith((action) => {
-				//add a subscriber
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 
-				//all 3 events should be received by the subscriber
-				Assert.AreEqual(3, envelope.Replies.Count);
-			});
+			//all 3 events should be received by the subscriber
+			Assert.AreEqual(3, envelope.Replies.Count);
 		}
 	}
 
