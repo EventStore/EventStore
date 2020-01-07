@@ -211,6 +211,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 		public void Handle(StorageMessage.CommitAck message) {
 			if (message.LogPosition < _committedPosition) {
+#if DEBUG
+				_queueStats.Enqueued();
+#endif
 				_replicatedQueue.Enqueue(message);
 				_addMsgSignal.Set();
 			} else {
