@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Gossip {
 			}
 
 			var interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
-			var gossipRound = Math.Min(int.MaxValue, node == null ? message.GossipRound : message.GossipRound + 1);
+			var gossipRound = Math.Min(int.MaxValue - 1, node == null ? message.GossipRound : message.GossipRound + 1);
 			_bus.Publish(
 				TimerMessage.Schedule.Create(interval, _publishEnvelope, new GossipMessage.Gossip(gossipRound)));
 		}
