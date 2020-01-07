@@ -225,14 +225,8 @@ namespace EventStore.Projections.Core.Services.Management {
 		private void Stop() {
 			_started = false;
 			_projectionsStarted = false;
-
-			_writeDispatcher.CancelAll();
-			_readDispatcher.CancelAll();
-			_readForwardDispatcher.CancelAll();
-			_streamDispatcher.CancelAll();
-			
-			_getStateDispatcher.CancelAll();
-			_getResultDispatcher.CancelAll();
+			_ioDispatcher.StartDraining(() => 
+				_publisher.Publish(new ProjectionSubsystemMessage.IODispatcherDrained(ServiceName)));
 
 			_projections.Clear();
 			_projectionsMap.Clear();

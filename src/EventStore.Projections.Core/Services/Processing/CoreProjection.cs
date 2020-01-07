@@ -3,7 +3,6 @@ using System.Security.Principal;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
@@ -354,6 +353,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				case State.Stopped:
 				case State.Faulted:
 				case State.PhaseCompleted:
+				case State.Suspended:
 					if (wasStarted && !wasStopped)
 						_checkpointManager.Stopped();
 					break;

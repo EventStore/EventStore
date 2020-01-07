@@ -8,6 +8,7 @@ using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -16,7 +17,6 @@ using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 namespace EventStore.Projections.Core {
@@ -26,7 +26,8 @@ namespace EventStore.Projections.Core {
 		IHandle<CoreProjectionStatusMessage.Stopped>,
 		IHandle<ProjectionSubsystemMessage.RestartSubsystem>,
 		IHandle<ProjectionSubsystemMessage.ComponentStarted>,
-		IHandle<ProjectionSubsystemMessage.ComponentStopped> {
+		IHandle<ProjectionSubsystemMessage.ComponentStopped>,
+		IHandle<ProjectionSubsystemMessage.IODispatcherDrained> {
 		private static readonly MediaTypeHeaderValue Grpc = new MediaTypeHeaderValue("application/grpc");
 		private static readonly PathString ProjectionsSegment = "/event_store.grpc.projections.Projections";
 
@@ -54,9 +55,11 @@ namespace EventStore.Projections.Core {
 		private readonly bool _faultOutOfOrderProjections;
 		
 		private readonly int _componentCount;
+		private readonly int _dispatcherCount;
 		private bool _restarting;
 		private int _pendingComponentStarts;
 		private int _runningComponentCount;
+		private int _runningDispatchers;
 		
 		private VNodeState _nodeState;
 		private SubsystemState _subsystemState = SubsystemState.NotReady;
@@ -84,6 +87,9 @@ namespace EventStore.Projections.Core {
 			// Projection manager & Projection Core Coordinator
 			// The manager only starts when projections are running
 			_componentCount = _runProjections == ProjectionType.None ? 1 : 2;
+			
+			// Projection manager & each projection core worker
+			_dispatcherCount = 1 + _projectionWorkerThreadCount;
 
 			_startStandardProjections = startStandardProjections;
 			_projectionsQueryExpiry = projectionQueryExpiry;
@@ -99,6 +105,7 @@ namespace EventStore.Projections.Core {
 			_masterMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
 			_masterMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
 			_masterMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
+			_masterMainBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
 			_masterMainBus.Subscribe<SystemMessage.SystemCoreReady>(this);
 			_masterMainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 			
@@ -223,10 +230,19 @@ namespace EventStore.Projections.Core {
 			}
 		}
 
+		public void Handle(ProjectionSubsystemMessage.IODispatcherDrained message) {
+			_runningDispatchers--;
+			_logger.Info(
+				"PROJECTIONS SUBSYSTEM: IO Dispatcher from {componentName} has been drained. {runningCount} of {totalCount} queues empty.",
+				message.ComponentName, _runningDispatchers, _dispatcherCount);
+			FinishStopping();
+		}
+
 		private void AllComponentsStarted() {
 			_logger.Info("PROJECTIONS SUBSYSTEM: All components started for Instance: {instanceCorrelationId}",
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Started;
+			_runningDispatchers = _dispatcherCount;
 			_masterOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
 
 			if (_nodeState != VNodeState.Master) {
@@ -256,13 +272,15 @@ namespace EventStore.Projections.Core {
 				_runningComponentCount = 0;
 			}
 
-			if (_runningComponentCount == 0) {
-				AllComponentsStopped();
-			}
+			FinishStopping();
 		}
 
-		private void AllComponentsStopped() {
-			_logger.Info("PROJECTIONS SUBSYSTEM: All components stopped for Instance: {instanceCorrelationId}",
+		private void FinishStopping() {
+			if (_runningDispatchers > 0) return;
+			if (_runningComponentCount > 0) return;
+
+			_logger.Info(
+				"PROJECTIONS SUBSYSTEM: All components stopped and dispatchers drained for Instance: {correlationId}",
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Stopped;
 			

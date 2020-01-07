@@ -8,9 +8,12 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
+using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Helpers {
+	
 	public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage> {
 		public const int ReadTimeoutMs = 10000;
 
@@ -20,6 +23,11 @@ namespace EventStore.Core.Helpers {
 		private readonly WriterQueueSet _writerQueueSet = new WriterQueueSet();
 		private readonly PendingRequests _pendingRequests = new PendingRequests();
 		private readonly PendingReads _pendingReads = new PendingReads();
+		
+		private bool _draining;
+		private Action _onRequestsDrained;
+
+		private readonly HashSet<Guid> _allPendingRequests = new HashSet<Guid>();
 
 		public readonly
 			RequestResponseDispatcher
@@ -125,6 +133,28 @@ namespace EventStore.Core.Helpers {
 						envelope);
 		}
 
+		public void StartDraining(Action onRequestsDrained) {
+			if (_allPendingRequests.IsEmpty()) {
+				onRequestsDrained?.Invoke();
+				return;
+			}
+			_draining = true;
+			_onRequestsDrained = onRequestsDrained;
+		}
+
+		private void AddPendingRequest(Guid correlationId) {
+			_allPendingRequests.Add(correlationId);
+		}
+		
+		private void RemovePendingRequest(Guid correlationId) {
+			_allPendingRequests.Remove(correlationId);
+			if (_draining && _allPendingRequests.IsEmpty()) {
+				_onRequestsDrained?.Invoke();
+				_onRequestsDrained = null;
+				_draining = false;
+			}
+		}
+
 		public Guid ReadBackward(
 			string streamId,
 			long fromEventNumber,
@@ -135,6 +165,7 @@ namespace EventStore.Core.Helpers {
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
+			AddPendingRequest(corrId.Value);
 			return
 				BackwardReader.Publish(
 					new ClientMessage.ReadStreamEventsBackward(
@@ -148,7 +179,10 @@ namespace EventStore.Core.Helpers {
 						false,
 						null,
 						principal),
-					action);
+					res => {
+						RemovePendingRequest(res.CorrelationId);
+						action(res);
+					});
 		}
 
 		public Guid ReadBackward(
@@ -160,6 +194,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			BackwardReader.Publish(
@@ -175,12 +210,14 @@ namespace EventStore.Core.Helpers {
 					null,
 					principal),
 				res => {
+					RemovePendingRequest(res.CorrelationId);
 					if (!_pendingReads.IsRegistered(res.CorrelationId)) return;
 					_pendingReads.Remove(res.CorrelationId);
 					action(res);
 				}
 			);
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
@@ -198,6 +235,7 @@ namespace EventStore.Core.Helpers {
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
+			AddPendingRequest(corrId.Value);
 			return
 				ForwardReader.Publish(
 					new ClientMessage.ReadStreamEventsForward(
@@ -211,7 +249,10 @@ namespace EventStore.Core.Helpers {
 						false,
 						null,
 						principal),
-					action);
+					res => {
+						RemovePendingRequest(res.CorrelationId);
+						action(res);
+					});
 		}
 
 		public Guid ReadForward(
@@ -223,6 +264,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.ReadStreamEventsForwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			ForwardReader.Publish(
@@ -238,11 +280,13 @@ namespace EventStore.Core.Helpers {
 					null,
 					principal),
 				res => {
+					RemovePendingRequest(corrId);
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
 					action(res);
 				});
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
@@ -262,6 +306,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.ReadAllEventsForwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			AllForwardReader.Publish(
@@ -279,11 +324,13 @@ namespace EventStore.Core.Helpers {
 					longPollTimeout
 					),
 				res => {
+					RemovePendingRequest(corrId);
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
 					action(res);
 				});
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
@@ -303,6 +350,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.ReadAllEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			AllBackwardReader.Publish(
@@ -319,11 +367,13 @@ namespace EventStore.Core.Helpers {
 					user
 				),
 				res => {
+					RemovePendingRequest(corrId);
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
 					action(res);
 				});
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
@@ -345,6 +395,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.FilteredReadAllEventsForwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			AllForwardFilteredReader.Publish(
@@ -364,17 +415,20 @@ namespace EventStore.Core.Helpers {
 					longPollTimeout
 				),
 				res => {
+					RemovePendingRequest(corrId);
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
 					action(res);
 				});
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
 			}, corrId);
 			return corrId;
 		}
+		
 		public Guid ReadAllBackwardFiltered(
 			long commitPosition,
 			long preparePosition,
@@ -388,6 +442,7 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.FilteredReadAllEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
+			AddPendingRequest(corrId);
 			_pendingReads.Register(corrId);
 
 			AllBackwardFilteredReader.Publish(
@@ -406,11 +461,13 @@ namespace EventStore.Core.Helpers {
 					user
 				),
 				res => {
+					RemovePendingRequest(corrId);
 					if (!_pendingReads.IsRegistered(corrId)) return;
 					_pendingReads.Remove(corrId);
 					action(res);
 				});
 			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				RemovePendingRequest(corrId);
 				if (!_pendingReads.IsRegistered(corrId)) return;
 				_pendingReads.Remove(corrId);
 				timeoutAction();
@@ -476,6 +533,7 @@ namespace EventStore.Core.Helpers {
 			IPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
+			AddPendingRequest(corrId);
 			return
 				Writer.Publish(
 					new ClientMessage.WriteEvents(
@@ -487,7 +545,10 @@ namespace EventStore.Core.Helpers {
 						expectedVersion,
 						events,
 						principal),
-					action);
+					res => {
+						RemovePendingRequest(res.CorrelationId);
+						action(res);
+					});
 		}
 
 		private class PendingRequests {
@@ -605,6 +666,7 @@ namespace EventStore.Core.Helpers {
 			IPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
+			AddPendingRequest(corrId);
 			var message = new ClientMessage.WriteEvents(
 				corrId,
 				corrId,
@@ -636,6 +698,7 @@ namespace EventStore.Core.Helpers {
 			_writerQueueSet.Finish(key);
 
 			_pendingRequests.CompleteRequest(message);
+			RemovePendingRequest(message.CorrelationId);
 
 			WorkQueue(key);
 		}
@@ -647,6 +710,7 @@ namespace EventStore.Core.Helpers {
 			IPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
+			AddPendingRequest(corrId);
 			return
 				Writer.Publish(
 					new ClientMessage.WriteEvents(
@@ -658,7 +722,10 @@ namespace EventStore.Core.Helpers {
 						expectedVersion,
 						new[] {@event},
 						principal),
-					action);
+					res => {
+						RemovePendingRequest(res.CorrelationId);
+						action(res);
+					});
 		}
 
 		public Guid DeleteStream(
@@ -668,6 +735,7 @@ namespace EventStore.Core.Helpers {
 			IPrincipal principal,
 			Action<ClientMessage.DeleteStreamCompleted> action) {
 			var corrId = Guid.NewGuid();
+			AddPendingRequest(corrId);
 			return StreamDeleter.Publish(
 				new ClientMessage.DeleteStream(
 					corrId,
@@ -678,7 +746,10 @@ namespace EventStore.Core.Helpers {
 					expectedVersion,
 					hardDelete,
 					principal),
-				action);
+				res => {
+					RemovePendingRequest(res.CorrelationId);
+					action(res);
+				});
 		}
 
 		public void SubscribeAwake(
@@ -687,6 +758,7 @@ namespace EventStore.Core.Helpers {
 			Action<IODispatcherDelayedMessage> action,
 			Guid? correlationId = null) {
 			var corrId = correlationId ?? Guid.NewGuid();
+			AddPendingRequest(corrId);
 			Awaker.Publish(
 				new AwakeServiceMessage.SubscribeAwake(
 					Awaker.Envelope,
@@ -694,7 +766,10 @@ namespace EventStore.Core.Helpers {
 					streamId,
 					from,
 					new IODispatcherDelayedMessage(corrId, null)),
-				action);
+				res => {
+					RemovePendingRequest(res.CorrelationId);
+					action(res);
+				});
 		}
 
 		public void UnsubscribeAwake(Guid correlationId) {

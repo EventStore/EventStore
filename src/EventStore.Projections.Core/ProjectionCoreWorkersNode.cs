@@ -60,6 +60,9 @@ namespace EventStore.Projections.Core {
 						Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
+					coreOutput.Subscribe(
+						Forwarder.Create<ProjectionSubsystemMessage.IODispatcherDrained>(projectionsStandardComponents
+							.MasterOutputBus));
 				}
 
 				coreOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
