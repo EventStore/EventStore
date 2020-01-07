@@ -9,9 +9,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private Guid _correlationId = Guid.NewGuid();
 		public override void When() {
 			BecomeMaster();
-			AddPendingPrepare(_logPosition);
+			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));	
-			Publisher.Publish(new CommitMessage.WrittenTo(_logPosition));
+			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition));
 		}
 
 		[Test]

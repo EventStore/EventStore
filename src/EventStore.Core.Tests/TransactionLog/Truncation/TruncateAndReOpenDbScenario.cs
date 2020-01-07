@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
-			ReadIndex.Init(ChaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 	}
 }

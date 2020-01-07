@@ -21,7 +21,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0, true));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0, true));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
+
+			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");

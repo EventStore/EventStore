@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint);
 
-			ReadIndex.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 		}
 
 		public override Task TestFixtureTearDown() {

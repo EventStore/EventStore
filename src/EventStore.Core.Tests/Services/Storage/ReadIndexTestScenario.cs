@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
 
-			ReadIndex.Init(ChaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 
 			// scavenge must run after readIndex is built
 			if (_scavenge) {

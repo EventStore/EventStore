@@ -20,15 +20,16 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public override void When() {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
-			AddPendingPrepare(_logPosition1);
-			AddPendingPrepare(_logPosition2);
-			AddPendingPrepare(_logPosition3);
+			AddPendingPrepare(_logPosition1, publishChaserMsgs: false);
+			AddPendingPrepare(_logPosition2, publishChaserMsgs: false);
+			AddPendingPrepare(_logPosition3, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0, true));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0, true));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId3, _logPosition3, _logPosition3, 0, 0, true));
 
 			// Reach quorum for middle commit
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition2));
+			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition2));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition2, Guid.NewGuid()));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");

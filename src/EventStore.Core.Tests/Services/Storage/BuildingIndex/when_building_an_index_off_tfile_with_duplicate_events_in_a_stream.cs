@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint);
 
 
-			ReadIndex.Init(chaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
 
 			_tableIndex.Close(false);
 
@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint);
 
-			ReadIndex.Init(chaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
 		}
 
 		public override Task TestFixtureTearDown() {
