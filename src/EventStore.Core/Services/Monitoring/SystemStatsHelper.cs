@@ -18,8 +18,8 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly ILogger _log;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
-		private readonly long _collectIntervalMs;
 		private PerfCounterHelper _perfCounter;
+		private readonly EventCountersHelper _eventCountersHelper;
 		private bool _giveup;
 
 		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
@@ -28,13 +28,13 @@ namespace EventStore.Core.Services.Monitoring {
 
 			_log = log;
 			_writerCheckpoint = writerCheckpoint;
-			_perfCounter = new PerfCounterHelper(_log, collectIntervalMs);
+			_perfCounter = new PerfCounterHelper(_log);
+			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
 			_dbPath = dbPath;
-			_collectIntervalMs = collectIntervalMs;
 		}
 
 		public void Start() {
-			_perfCounter.Start();
+			_eventCountersHelper.Start();
 		}
 
 		public IDictionary<string, object> GetSystemStats() {
@@ -111,22 +111,18 @@ namespace EventStore.Core.Services.Monitoring {
 				return;
 			var process = Process.GetCurrentProcess();
 			try {
-				var procCpuUsage = _perfCounter.GetProcCpuUsage();
-
 				stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
 				stats["proc-id"] = process.Id;
 				stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
-				stats["proc-cpu"] = new StatMetadata(procCpuUsage, "Process", "Process Cpu Usage");
-				stats["proc-cpuScaled"] = new StatMetadata(procCpuUsage / Environment.ProcessorCount, "Process",
-					"Process Cpu Usage Scaled by Logical Processor Count");
-				stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
-				stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
-				stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
+				stats["proc-cpu"] = new StatMetadata(_eventCountersHelper.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+				stats["proc-threadsCount"] = _eventCountersHelper.GetProcThreadsCount();
+				stats["proc-contentionsRate"] = _eventCountersHelper.GetContentionsRateCount();
+				stats["proc-thrownExceptionsRate"] = _eventCountersHelper.GetThrownExceptionsRate();
 
-				stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+				stats["sys-cpu"] = GetTotalCpuUsage();
 				stats["sys-freeMem"] = GetFreeMem();
 
-				var gcStats = _perfCounter.GetGcStats();
+				var gcStats = _eventCountersHelper.GetGcStats();
 				stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
 				stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
 				stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
@@ -139,12 +135,31 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 			} catch (InvalidOperationException) {
 				_log.Info("Received error reading counters. Attempting to rebuild.");
-				_perfCounter = new PerfCounterHelper(_log, _collectIntervalMs);
+				_perfCounter = new PerfCounterHelper(_log);
 				_giveup = count > 10;
 				if (_giveup)
 					_log.Error("Maximum rebuild attempts reached. Giving up on rebuilds.");
 				else
 					GetPerfCounterInformation(stats, count + 1);
+			}
+		}
+
+		///<summary>
+		/// Get Cpu Usage
+		///</summary>
+		private float GetTotalCpuUsage() {
+			switch (OS.OsFlavor) {
+				case OsFlavor.Windows:
+					return _perfCounter.GetTotalCpuUsage();
+				//TODO: (pgermishuys) Find a decent way to measure System CPU Usage for the operating systems below.
+				case OsFlavor.Linux:
+					return -1;
+				case OsFlavor.MacOS:
+					return -1;
+				case OsFlavor.BSD:
+					return -1;
+				default:
+					return -1;
 			}
 		}
 
@@ -224,6 +239,7 @@ namespace EventStore.Core.Services.Monitoring {
 		}
 
 		public void Dispose() {
+			_eventCountersHelper.Dispose();
 			_perfCounter.Dispose();
 		}
 	}
