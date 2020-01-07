@@ -18,7 +18,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			get { return _indexCommitter.LastIndexedPosition; }
 		}
 
-
 		public IIndexWriter IndexWriter {
 			get { return _indexWriter; }
 		}
@@ -56,12 +55,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				skipIndexScanOnReads);
 			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
 			_indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
-			_allReader = new AllReader(_indexBackend, _indexCommitter);
-		}
-		//todo-clc remove this method, Init is called from Index Committer Service and we don't want to call twice
-		//looks like this is used mostly in tests and can be replaced by getting the Index Commiter in the test and calling init directly
-		void IReadIndex.Init(long buildToPosition) {
-			_indexCommitter.Init(buildToPosition);
+			_allReader = new AllReader(_indexBackend, _indexCommitter, replicationCheckpoint);
 		}
 
 		IndexReadEventResult IReadIndex.ReadEvent(string streamId, long eventNumber) {
@@ -104,7 +98,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IEventFilter eventFilter) {
 			return _allReader.FilteredReadAllEventsForward(pos, maxCount, maxSearchWindow, eventFilter);
 		}
-		
+
 		IndexReadAllResult IReadIndex.ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			return _allReader.FilteredReadAllEventsBackward(pos, maxCount, maxSearchWindow, eventFilter);
