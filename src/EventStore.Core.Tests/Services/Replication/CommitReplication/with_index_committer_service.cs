@@ -13,6 +13,8 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Services.Commit;
+using System.Linq;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	public abstract class with_index_committer_service {
@@ -21,6 +23,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected int CommitCount = 2;
 		protected long ReplicationPosition = 0;
 		protected ITableIndex TableIndex;
+		protected readonly Guid ReplicaId = Guid.NewGuid();
 
 		protected ICheckpoint ReplicationCheckpoint;
 		protected ICheckpoint WriterCheckpoint;
@@ -31,6 +34,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected IndexCommitterService Service;
 		protected FakeIndexCommitter IndexCommitter;
 		protected ITFChunkScavengerLogManager TfChunkScavengerLogManager;
+		protected CommitTrackerService CommitTracker;
 
 		protected int _expectedCommitReplicatedMessages;
 
@@ -43,8 +47,15 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Publisher.Subscribe(new AdHocHandler<CommitMessage.IndexedTo>(m => IndexWrittenMgs.Add(m)));
 			TableIndex = new FakeTableIndex();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
+			CommitTracker = new CommitTrackerService(Publisher, CommitLevel.MasterIndexed, 3, ReplicationCheckpoint, WriterCheckpoint);
+			CommitTracker.Start();
 			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
+			Publisher.Subscribe<CommitMessage.ReplicatedTo>(Service);
+			Publisher.Subscribe<CommitMessage.ReplicatedTo>(CommitTracker);
+			
+			BecomeMaster();
+
 			When();
 		}
 
@@ -55,19 +66,27 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		public abstract void When();
 
-		protected void AddPendingPrepare(long transactionPosition, long postPosition = -1) {
+		protected void AddPendingPrepare(long transactionPosition, long postPosition = -1, bool publishChaserMsgs = true) {
 			postPosition = postPosition == -1 ? transactionPosition : postPosition;
 			var prepare = CreatePrepare(transactionPosition, transactionPosition);
 			Service.AddPendingPrepare(new PrepareLogRecord[] { prepare }, postPosition);
+			if (publishChaserMsgs) {
+				CommitTracker.Handle(new CommitMessage.WrittenTo(postPosition));
+				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(postPosition, ReplicaId));
+			}
 		}
 
-		protected void AddPendingPrepares(long transactionPosition, long[] logPositions) {
+		protected void AddPendingPrepares(long transactionPosition, long[] logPositions, bool publishChaserMsgs = true) {
 			var prepares = new List<PrepareLogRecord>();
 			foreach (var pos in logPositions) {
 				prepares.Add(CreatePrepare(transactionPosition, pos));
 			}
 
 			Service.AddPendingPrepare(prepares.ToArray(), logPositions[logPositions.Length - 1]);
+			if (publishChaserMsgs) {
+				CommitTracker.Handle(new CommitMessage.WrittenTo(logPositions.Max()));
+				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(logPositions.Max(), ReplicaId));
+			}
 		}
 
 		private PrepareLogRecord CreatePrepare(long transactionPosition, long logPosition) {
@@ -77,25 +96,33 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		}
 
 
-		protected void AddPendingCommit(long transactionPosition, long logPosition, long postPosition = -1) {
+		protected void AddPendingCommit(long transactionPosition, long logPosition, long postPosition = -1, bool publishChaserMsgs = true) {
 			postPosition = postPosition == -1 ? logPosition : postPosition;
 			var commit = LogRecord.Commit(logPosition, Guid.NewGuid(), transactionPosition, 0);
 			Service.AddPendingCommit(commit, postPosition);
+			if (publishChaserMsgs) {
+				CommitTracker.Handle(new CommitMessage.WrittenTo(postPosition));
+				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(postPosition, ReplicaId));
+			}
 		}
 
 		protected void BecomeMaster() {
 			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			CommitTracker.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {
 			Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+			CommitTracker.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
 		protected void BecomeSlave() {
 			var masterIPEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
-			Service.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
+			var msg = new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
-				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false)));
+				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false));
+			Service.Handle(msg);
+			CommitTracker.Handle(msg);
 		}
 	}
 

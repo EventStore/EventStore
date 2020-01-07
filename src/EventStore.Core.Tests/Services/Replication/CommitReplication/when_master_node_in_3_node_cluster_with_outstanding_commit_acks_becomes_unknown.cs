@@ -14,11 +14,12 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public override void When() {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
-			AddPendingPrepare(_logPosition);
+			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0, true));
 			BecomeUnknown();
 
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
+			Publisher.Publish(new CommitMessage.ReplicatedTo(_logPosition));
+			
 			
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {

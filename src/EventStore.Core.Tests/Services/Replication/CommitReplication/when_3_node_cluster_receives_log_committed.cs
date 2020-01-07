@@ -18,8 +18,6 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			AddPendingPrepare(_logPosition);
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));
 			
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
-
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");
 			}
@@ -27,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		[Test]
 		public void replication_checkpoint_should_have_been_updated() {
-			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());
+			AssertEx.IsOrBecomesTrue(()=> _logPosition == ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]

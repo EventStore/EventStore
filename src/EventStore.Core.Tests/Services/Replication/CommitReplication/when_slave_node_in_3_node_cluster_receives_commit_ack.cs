@@ -14,9 +14,10 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			_expectedCommitReplicatedMessages = 1;
 			BecomeSlave();
-			AddPendingPrepare(_logPosition);
+			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0));
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition));
+
+			Publisher.Publish(new CommitMessage.ReplicatedTo(_logPosition));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");

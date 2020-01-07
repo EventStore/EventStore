@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
@@ -9,11 +10,12 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private Guid _correlationId = Guid.NewGuid();
 		public override void When() {
 			BecomeMaster();
-			AddPendingPrepare(_logPosition);
+			AddPendingPrepare(_logPosition, publishChaserMsgs:false);
+			
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0, true));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
-			Publisher.Publish(new CommitMessage.ReplicatedTo(_logPosition));
-			Publisher.Publish(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
 		}
 
 		[Test]
