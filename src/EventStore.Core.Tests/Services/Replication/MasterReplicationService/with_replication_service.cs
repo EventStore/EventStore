@@ -57,7 +57,6 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 				tcpSendPublisher: TcpSendPublisher,
 				epochManager: new FakeEpochManager(),
 				clusterSize: ClusterSize,
-				false,
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
