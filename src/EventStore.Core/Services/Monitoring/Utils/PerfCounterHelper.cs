@@ -14,8 +14,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 namespace EventStore.Core.Services.Monitoring.Utils {
 	internal class PerfCounterHelper : IDisposable {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<PerfCounterHelper>();
-		private const string ProcessIdCounterName = "ID Process";
-		private const string ProcessCategory = "Process";
 		private const int InvalidCounterResult = -1;
 
 		private readonly List<EventPipeProvider> _providers;
@@ -27,8 +25,6 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 
 		private readonly PerformanceCounter _totalCpuCounter;
 		private readonly PerformanceCounter _totalMemCounter; //doesn't work on mono
-		private readonly PerformanceCounter _procCpuCounter;
-		private readonly PerformanceCounter _procThreadsCounter;
 		private readonly int _pid;
 
 		public PerfCounterHelper(ILogger log, long collectIntervalInMs) {
@@ -43,20 +39,11 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
 					}),
 				new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational,
-					(long)ClrTraceEventParser.Keywords.All, new Dictionary<string, string> {
-						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
-					})
+					(long)ClrTraceEventParser.Keywords.All, new Dictionary<string, string>())
 			};
 
 			_totalCpuCounter = CreatePerfCounter("Processor", "% Processor Time", "_Total");
 			_totalMemCounter = CreatePerfCounter("Memory", "Available Bytes");
-
-			var processInstanceName = GetProcessInstanceName(ProcessCategory, ProcessIdCounterName);
-
-			if (processInstanceName != null) {
-				_procCpuCounter = CreatePerfCounter(ProcessCategory, "% Processor Time", processInstanceName);
-				_procThreadsCounter = CreatePerfCounter(ProcessCategory, "Thread Count", processInstanceName);
-			}
 		}
 
 		public void Start() {
@@ -149,31 +136,6 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 			return null;
 		}
 
-
-		/// <summary>
-		/// Re-examines the performance counter instances for the correct instance name for this process.
-		/// </summary>
-		/// <remarks>
-		/// The performance counter instance on .NET Framework can change at any time
-		/// due to creation or destruction of processes with the same image name. This method should be called before using the Get methods.
-		///
-		/// The correct instance name must be found by dereferencing via a look up counter, e.g. .Net CLR Memory/Process Id
-		/// </remarks>
-		public void RefreshInstanceName() {
-			if (!Runtime.IsWindows) {
-				return;
-			}
-
-			if (_procCpuCounter != null) {
-				var processInstanceName = GetProcessInstanceName(ProcessCategory, ProcessIdCounterName);
-
-				if (processInstanceName != null) {
-					if (_procCpuCounter != null) _procCpuCounter.InstanceName = processInstanceName;
-					if (_procThreadsCounter != null) _procThreadsCounter.InstanceName = processInstanceName;
-				}
-			}
-		}
-
 		///<summary>
 		///Total CPU usage in percentage
 		///</summary>
@@ -192,7 +154,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		///Total process CPU usage
 		///</summary>
 		public float GetProcCpuUsage() {
-			return _procCpuCounter?.NextValue() ?? InvalidCounterResult;
+			return (float)GetCounterValue("cpu-usage");
 		}
 
 		///<summary>
@@ -239,8 +201,6 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 			_session?.Dispose();
 			_totalCpuCounter?.Dispose();
 			_totalMemCounter?.Dispose();
-			_procCpuCounter?.Dispose();
-			_procThreadsCounter?.Dispose();
 		}
 	}
 }
