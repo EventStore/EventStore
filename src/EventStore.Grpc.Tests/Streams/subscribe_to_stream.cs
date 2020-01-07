@@ -7,10 +7,10 @@ using Xunit;
 
 namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
-	public class stream_catch_up_subscription : IClassFixture<stream_catch_up_subscription.Fixture> {
+	public class subscribe_to_stream : IClassFixture<subscribe_to_stream.Fixture> {
 		private readonly Fixture _fixture;
 
-		public stream_catch_up_subscription(Fixture fixture) {
+		public subscribe_to_stream(Fixture fixture) {
 			_fixture = fixture;
 		}
 

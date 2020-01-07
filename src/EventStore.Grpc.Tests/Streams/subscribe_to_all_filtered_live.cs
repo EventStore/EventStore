@@ -8,10 +8,10 @@ using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.Grpc.Streams {
-	public class subscribe_to_all_from_filtered : IClassFixture<subscribe_to_all_from_filtered.Fixture> {
+	public class subscribe_to_all_filtered_live : IClassFixture<subscribe_to_all_filtered_live.Fixture> {
 		private readonly Fixture _fixture;
 
-		public subscribe_to_all_from_filtered(Fixture fixture) {
+		public subscribe_to_all_filtered_live(Fixture fixture) {
 			_fixture = fixture;
 		}
 

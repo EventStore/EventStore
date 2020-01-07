@@ -8,13 +8,13 @@ using Xunit;
 
 namespace EventStore.Grpc.Streams {
 	[Trait("Category", "LongRunning")]
-	public class all_stream_catch_up_subscription : IAsyncLifetime {
+	public class subscribe_to_all_live : IAsyncLifetime {
 		private readonly Fixture _fixture;
 
 		/// <summary>
 		/// This class does not implement IClassFixture because it checks $all, and we want a fresh Node for each test.
 		/// </summary>
-		public all_stream_catch_up_subscription() {
+		public subscribe_to_all_live() {
 			_fixture = new Fixture();
 		}
 
@@ -22,7 +22,8 @@ namespace EventStore.Grpc.Streams {
 		public async Task calls_subscription_dropped_when_disposed() {
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared, false, SubscriptionDropped);
+			using var subscription =
+				_fixture.Client.SubscribeToAll(Position.End, EventAppeared, false, SubscriptionDropped);
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -45,7 +46,8 @@ namespace EventStore.Grpc.Streams {
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 			var expectedException = new Exception("Error");
 
-			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared, false, SubscriptionDropped);
+			using var subscription =
+				_fixture.Client.SubscribeToAll(Position.End, EventAppeared, false, SubscriptionDropped);
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, _fixture.CreateTestEvents());
 
@@ -66,7 +68,8 @@ namespace EventStore.Grpc.Streams {
 			var appeared = new TaskCompletionSource<bool>();
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
-			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared, false, SubscriptionDropped);
+			using var subscription =
+				_fixture.Client.SubscribeToAll(Position.End, EventAppeared, false, SubscriptionDropped);
 
 			await Task.Delay(200);
 
@@ -93,7 +96,7 @@ namespace EventStore.Grpc.Streams {
 		}
 
 		[Fact]
-		public async Task reads_all_existing_events_and_keep_listening_to_new_ones() {
+		public async Task does_not_read_existing_events_but_keep_listening_to_new_ones() {
 			var appeared = new TaskCompletionSource<bool>();
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 			var appearedEvents = new List<EventRecord>();
@@ -105,7 +108,7 @@ namespace EventStore.Grpc.Streams {
 					new[] {@event});
 			}
 
-			using var subscription = _fixture.Client.SubscribeToAll(EventAppeared, false, SubscriptionDropped);
+			using var subscription = _fixture.Client.SubscribeToAll(Position.End, EventAppeared, false, SubscriptionDropped);
 
 			foreach (var @event in afterEvents) {
 				await _fixture.Client.AppendToStreamAsync($"stream-{@event.EventId:n}", AnyStreamRevision.NoStream,
@@ -114,7 +117,7 @@ namespace EventStore.Grpc.Streams {
 
 			await appeared.Task.WithTimeout();
 
-			Assert.True(EventDataComparer.Equal(beforeEvents.Concat(afterEvents).ToArray(), appearedEvents.ToArray()));
+			Assert.True(EventDataComparer.Equal(afterEvents, appearedEvents.ToArray()));
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -129,7 +132,7 @@ namespace EventStore.Grpc.Streams {
 				if (!SystemStreams.IsSystemStream(e.OriginalStreamId)) {
 					appearedEvents.Add(e.Event);
 
-					if (appearedEvents.Count >= beforeEvents.Length + afterEvents.Length) {
+					if (appearedEvents.Count >= afterEvents.Length) {
 						appeared.TrySetResult(true);
 					}
 				}
