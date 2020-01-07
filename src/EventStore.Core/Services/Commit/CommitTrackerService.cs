@@ -115,6 +115,7 @@ namespace EventStore.Core.Services.Commit {
 		public void Handle(CommitMessage.ReplicatedTo message) {
 			if (_state != VNodeState.Master) {
 				//Publish Log Commit Position
+				Interlocked.Exchange(ref _replicationPosition, message.LogPosition);
 				var newPos = Interlocked.Read(ref _replicationPosition);
 				var previousPos = Interlocked.Read(ref _previousReplicationPosition);
 				while (newPos > previousPos) {
