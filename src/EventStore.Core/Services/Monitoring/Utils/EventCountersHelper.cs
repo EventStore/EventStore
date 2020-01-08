@@ -28,7 +28,9 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 
 			_providers = new List<EventPipeProvider> {
 				new EventPipeProvider("System.Runtime", EventLevel.Informational,
-					(long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Threading | ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention), new Dictionary<string, string> {
+					(long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Threading |
+					       ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention),
+					new Dictionary<string, string> {
 						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
 					}),
 				new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational,
@@ -38,45 +40,43 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 
 		public void Start() {
 			Task.Run(() => {
-				_client = new DiagnosticsClient(_pid);
-				_session = _client.StartEventPipeSession(_providers, false);
-				var source = new EventPipeEventSource(_session.EventStream);
-				
-				source.NeedLoadedDotNetRuntimes();
-				source.AddCallbackOnProcessStart(proc =>
-				{
-					if (proc.ProcessID != _pid)
-						return;
-
-					proc.AddCallbackOnDotNetRuntimeLoad(runtime =>
-					{
-						runtime.GCEnd += (process, gc) => {
-							var key = $"gen-{gc.Generation}-gc-collection-count";
-							_collectedStats.TryGetValue(key, out var collected);
-							_collectedStats[key] = ++collected;
-						};
-					});
-				});
-
-				source.Dynamic.All += obj => {
-					if (obj.EventName.Equals("EventCounters")) {
-						var payload = (IDictionary<string, object>)obj.PayloadValue(0);
-						var pairs = (IDictionary<string, object>)(payload["Payload"]);
-
-						var name = string.Intern(pairs["Name"].ToString());
-
-						var counterType = pairs["CounterType"];
-						if (counterType.Equals("Sum")) {
-							_collectedStats[name] = double.Parse(pairs["Increment"].ToString());
-						}
-
-						if (counterType.Equals("Mean")) {
-							_collectedStats[name] = double.Parse(pairs["Mean"].ToString());
-						}
-					}
-				};
-			
 				try {
+					_client = new DiagnosticsClient(_pid);
+					_session = _client.StartEventPipeSession(_providers, false);
+					var source = new EventPipeEventSource(_session.EventStream);
+
+					source.NeedLoadedDotNetRuntimes();
+					source.AddCallbackOnProcessStart(proc => {
+						if (proc.ProcessID != _pid)
+							return;
+
+						proc.AddCallbackOnDotNetRuntimeLoad(runtime => {
+							runtime.GCEnd += (process, gc) => {
+								var key = $"gen-{gc.Generation}-gc-collection-count";
+								_collectedStats.TryGetValue(key, out var collected);
+								_collectedStats[key] = ++collected;
+							};
+						});
+					});
+
+					source.Dynamic.All += obj => {
+						if (obj.EventName.Equals("EventCounters")) {
+							var payload = (IDictionary<string, object>)obj.PayloadValue(0);
+							var pairs = (IDictionary<string, object>)(payload["Payload"]);
+
+							var name = string.Intern(pairs["Name"].ToString());
+
+							var counterType = pairs["CounterType"];
+							if (counterType.Equals("Sum")) {
+								_collectedStats[name] = double.Parse(pairs["Increment"].ToString());
+							}
+
+							if (counterType.Equals("Mean")) {
+								_collectedStats[name] = double.Parse(pairs["Mean"].ToString());
+							}
+						}
+					};
+					
 					source.Process();
 				} catch (Exception exception) {
 					Log.WarnException(exception, "Error encountered while processing events");
