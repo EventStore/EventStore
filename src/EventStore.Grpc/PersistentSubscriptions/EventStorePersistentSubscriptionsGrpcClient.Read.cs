@@ -35,8 +35,10 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 			var options = new ReadReq.Types.Options {
 				BufferSize = bufferSize,
 				GroupName = groupName,
-				StreamName = streamName
+				StreamName = streamName,
+				UuidOption = new ReadReq.Types.Options.Types.UUIDOption {Structured = new ReadReq.Types.Empty()}
 			};
+
 
 			return new PersistentSubscription(_client, options, autoAck, eventAppeared,
 				subscriptionDropped ?? delegate { }, userCredentials);
