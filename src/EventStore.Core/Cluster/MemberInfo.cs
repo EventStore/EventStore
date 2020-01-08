@@ -31,7 +31,7 @@ namespace EventStore.Core.Cluster {
 
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint) {
-			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, true,
+			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				internalHttpEndPoint, null, externalHttpEndPoint, null,
 				internalHttpEndPoint, externalHttpEndPoint,
 				-1, -1, -1, -1, -1, Guid.Empty, 0);
@@ -135,14 +135,15 @@ namespace EventStore.Core.Cluster {
 			           || (ExternalSecureTcpEndPoint != null && ExternalSecureTcpEndPoint.Equals(endPoint)));
 		}
 
-		public MemberInfo Updated(VNodeState? state = null,
+		public MemberInfo Updated(DateTime utcNow,
+			VNodeState? state = null,
 			bool? isAlive = null,
 			long? lastCommitPosition = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
 			EpochRecord epoch = null) {
 			return new MemberInfo(InstanceId,
-				DateTime.UtcNow,
+				utcNow,
 				state ?? State,
 				isAlive ?? IsAlive,
 				InternalTcpEndPoint,
