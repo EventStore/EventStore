@@ -35,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
 				"<unknown>";
 			var correlationId = Guid.NewGuid();
+			var uuidOptionsCase = options.UuidOption.ContentCase;
 			var source = new TaskCompletionSource<bool>();
 			string subscriptionId = default;
 			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
@@ -86,8 +87,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = new UUID {
-						String = e.EventId.ToString()
+					Id = uuidOptionsCase switch {
+						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
+							String = e.EventId.ToString()
+						},
+						_ => Uuid.FromGuid(e.EventId).ToPersistentSubscriptionsDto()
 					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),

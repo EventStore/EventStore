@@ -112,6 +112,9 @@ namespace EventStore.Grpc {
 				request.Options.NoFilter = new ReadReq.Types.Empty();
 			}
 
+			request.Options.UuidOption = new ReadReq.Types.Options.Types.UUIDOption
+				{Structured = new ReadReq.Types.Empty()};
+
 			using var call = _client.Read(
 				request, RequestMetadata.Create(userCredentials),
 				cancellationToken: cancellationToken);
