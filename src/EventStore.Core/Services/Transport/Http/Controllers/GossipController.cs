@@ -17,7 +17,8 @@ using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class GossipController : CommunicationController,
 		IHttpSender,
-		ISender<GossipMessage.SendGossip> {
+		ISender<GossipMessage.SendGossip>,
+		ISender<GossipMessage.GetGossip>{
 		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipController>();
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
@@ -45,6 +46,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public void SubscribeSenders(HttpMessagePipe pipe) {
 // ReSharper disable RedundantTypeArgumentsOfMethod
 			pipe.RegisterSender<GossipMessage.SendGossip>(this);
+			pipe.RegisterSender<GossipMessage.GetGossip>(this);
 // ReSharper restore RedundantTypeArgumentsOfMethod
 		}
 
@@ -81,6 +83,39 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(clusterInfo), endPoint));
 				},
 				error => Publish(new GossipMessage.GossipSendFailed(error.Message, endPoint)));
+		}
+		
+		public void Send(GossipMessage.GetGossip message, IPEndPoint endPoint) {
+			Ensure.NotNull(message, "message");
+			Ensure.NotNull(message, "endPoint");
+
+			var url = endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/gossip");
+			_client.Get(
+				url,
+				response => {
+					if (response.HttpStatusCode != HttpStatusCode.OK) {
+						Publish(new GossipMessage.GetGossipFailed(
+							string.Format("Received HTTP status code {0}.", response.HttpStatusCode), endPoint));
+						return;
+					}
+
+					var clusterInfo = Codec.Json.From<ClusterInfoDto>(response.Body);
+					if (clusterInfo == null) {
+						var msg = string.Format(
+							"Received as RESPONSE invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
+							url, response.ContentType, response.Body);
+						Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Content-Type: {contentType}.",
+							url, response.ContentType);
+						Log.Error("Received as RESPONSE invalid ClusterInfo from [{url}]. Body: {body}.",
+							url, response.Body);
+						Publish(new GossipMessage.GetGossipFailed(msg, endPoint));
+						return;
+					}
+
+					Publish(
+						new GossipMessage.GetGossipReceived(new ClusterInfo(clusterInfo), endPoint));
+				},
+				error => Publish(new GossipMessage.GetGossipFailed(error.Message, endPoint)));
 		}
 
 		private void OnPostGossip(HttpEntityManager entity, UriTemplateMatch match) {

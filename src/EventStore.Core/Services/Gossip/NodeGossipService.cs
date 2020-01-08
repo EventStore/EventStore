@@ -1,6 +1,4 @@
 using System;
-using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -8,7 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.Checkpoint;
-using System.Net;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.Gossip {
 	public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.UpdateNodePriority> {
@@ -17,8 +15,7 @@ namespace EventStore.Core.Services.Gossip {
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
-
-		private static readonly ILogger Log = LogManager.GetLoggerFor<BufferManager>();
+		private readonly ITimeProvider _timeProvider;
 
 		public NodeGossipService(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
@@ -29,27 +26,28 @@ namespace EventStore.Core.Services.Gossip {
 			Func<long> getLastCommitPosition,
 			int nodePriority,
 			TimeSpan interval,
-			TimeSpan allowedTimeDifference)
-			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference)
-			{
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
-			Ensure.NotNull(epochManager, "epochManager");
-			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
+			TimeSpan allowedTimeDifference,
+			ITimeProvider timeProvider,
+			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
+			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference, timeProvider, getNodeToGossipTo) {
+			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
+			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
+			Ensure.NotNull(epochManager, nameof(epochManager));
+			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
+			_timeProvider = timeProvider;
 		}
 
 		protected override MemberInfo GetInitialMe() {
 			var lastEpoch = _epochManager.GetLastEpoch();
-			var initialState = NodeInfo.IsReadOnlyReplica ?
-				VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
+			var initialState = NodeInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 			return MemberInfo.ForVNode(NodeInfo.InstanceId,
-				DateTime.UtcNow,
+				_timeProvider.UtcNow,
 				initialState,
 				true,
 				NodeInfo.InternalTcp,
@@ -75,7 +73,8 @@ namespace EventStore.Core.Services.Gossip {
 				writerCheckpoint: _writerCheckpoint.ReadNonFlushed(),
 				chaserCheckpoint: _chaserCheckpoint.ReadNonFlushed(),
 				epoch: _epochManager.GetLastEpoch(),
-				nodePriority: _nodePriority);
+				nodePriority: _nodePriority,
+				utcNow: _timeProvider.UtcNow);
 		}
 
 		public void Handle(GossipMessage.UpdateNodePriority message) {

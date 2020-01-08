@@ -75,7 +75,7 @@ namespace EventStore.Core.Messages {
 				ServerEndPoint = serverEndPoint;
 			}
 		}
-
+		
 		public class GossipUpdated : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -107,6 +107,52 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
+			}
+		}
+		
+		public class GetGossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public GetGossip() { }
+		}
+		
+		public class GetGossipFailed : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly string Reason;
+			public readonly IPEndPoint Recipient;
+
+			public GetGossipFailed(string reason, IPEndPoint recipient) {
+				Reason = reason;
+				Recipient = recipient;
+			}
+
+			public override string ToString() {
+				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
+			}
+		}
+		
+		public class GetGossipReceived : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly ClusterInfo ClusterInfo;
+			public readonly IPEndPoint Server;
+
+			public GetGossipReceived(ClusterInfo clusterInfo, IPEndPoint server) {
+				ClusterInfo = clusterInfo;
+				Server = server;
 			}
 		}
 
