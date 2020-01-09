@@ -84,6 +84,7 @@ namespace EventStore.Transport.Tcp {
 		private readonly object _sendLock = new object();
 		private bool _isSending;
 		private volatile int _closed;
+		private int _dispatchingData; //states: 0 - not dispatching data, 1 - dispatching data, 2 - final state, data should not be dispatched after reaching this state
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -287,7 +288,16 @@ namespace EventStore.Transport.Tcp {
 				data[i] = new ArraySegment<byte>(d.Buf.Array, d.Buf.Offset, d.DataLen);
 			}
 
+			var oldState = Interlocked.CompareExchange(ref _dispatchingData, 1, 0);
+			if (oldState == 0 || oldState == 1) { //oldState can be 1 if there's a recursive ReceiveAsync call in the callback
+				try {
 			callback(this, data);
+				} finally {
+					if (oldState == 0) {
+						Interlocked.Exchange(ref _dispatchingData, 0);
+					}
+				}
+			}
 
 			for (int i = 0, n = res.Count; i < n; ++i) {
 				BufferManager.CheckIn(res[i].Buf); // dispose buffers
@@ -305,6 +315,10 @@ namespace EventStore.Transport.Tcp {
 			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
 				return;
 #pragma warning restore 420
+
+			SpinWait spinWait = new SpinWait();
+			while(Interlocked.CompareExchange(ref _dispatchingData, 2, 0) != 0)
+				spinWait.SpinOnce();
 
 			NotifyClosed();
 
