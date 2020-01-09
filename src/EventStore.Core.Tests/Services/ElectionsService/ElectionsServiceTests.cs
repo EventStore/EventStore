@@ -8,7 +8,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Infrastructure;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
@@ -74,22 +73,22 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.StartElections());
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.SendViewChangeProof()),
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.ElectionsTimedOut(0)),
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.ElectionsTimedOut(0)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.SendViewChangeProofInterval,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.SendViewChangeProof()),
 			};
-			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -107,22 +106,22 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.StartElections());
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.SendViewChangeProof()),
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.ElectionsTimedOut(0)),
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.ElectionsTimedOut(0)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.SendViewChangeProofInterval,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.SendViewChangeProof()),
 			};
-			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -220,18 +219,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ElectionsTimedOut(view));
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.ElectionsTimedOut(1)),
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, newView),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, newView),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.ElectionsTimedOut(1)),
 			};
-			Assert.That(_publisher.Messages, Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 	
@@ -274,8 +273,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.SendViewChangeProof()),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -304,19 +302,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.SendViewChangeProof());
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.SendViewChangeProof()),
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.InternalHttp, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
+					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.SendViewChangeProofInterval,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.SendViewChangeProof()),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -396,20 +393,19 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 10));
 
 			var expected = new Message[] {
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.ElectionsTimedOut(10)),
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 10),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 10),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				TimerMessage.Schedule.Create(
+					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					new PublishEnvelope(_publisher),
+					new ElectionMessage.ElectionsTimedOut(10)),
 			};
 
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -469,7 +465,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 
-			var expected = new[] {
+			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.Prepare(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
@@ -477,8 +473,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.Prepare(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -598,8 +593,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_node.InstanceId, _node.InternalHttp, -1, -1, Guid.Empty, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 	
@@ -728,7 +722,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 
-			var expected = new[] {
+			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
 						proposalMessage.MasterId,
@@ -740,8 +734,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						proposalMessage.MasterInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -898,16 +891,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				_nodeThree.InternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
-					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
-						_nodeThree.InstanceId,
-						_nodeThree.InternalHttp, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
-					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
-						_nodeThree.InstanceId,
-						_nodeThree.InternalHttp, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new ElectionMessage.ElectionsDone(0,
 					MemberInfo.ForVNode(
 						_nodeThree.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
@@ -916,9 +899,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.InternalHttp,
 						_nodeThree.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
+				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
+						_nodeThree.InstanceId,
+						_nodeThree.InternalHttp, 0),
+					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
+						_nodeThree.InstanceId,
+						_nodeThree.InternalHttp, 0),
+					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -1037,7 +1029,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
 
-			var expected = new[] {
+			var expected = new Message[] {
 				new ElectionMessage.ElectionsDone(0,
 					MemberInfo.ForVNode(
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
@@ -1047,8 +1039,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -1093,11 +1084,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var nodePriority = 5;
 			_sut.Handle(new ClientMessage.SetNodePriority(nodePriority));
 
-			var expected = new[] {
+			var expected = new Message[] {
 				new GossipMessage.UpdateNodePriority(nodePriority)
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -1157,8 +1147,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.MasterIsResigning(_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 	
@@ -1199,8 +1188,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -1233,8 +1221,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new SystemMessage.InitiateMasterResignation(),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
@@ -1276,7 +1263,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 3));
 
-			var expected = new[] {
+			var expected = new Message[] {
 				new ElectionMessage.ElectionsDone(3,
 					MemberInfo.ForVNode(
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
@@ -1286,8 +1273,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
-			Assert.That(_publisher.Messages,
-				Is.EquivalentTo(expected).Using(ReflectionBasedEqualityComparer.Instance));
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 }
