@@ -52,10 +52,11 @@ namespace EventStore.Grpc {
 			}), response.ResponseHeadersAsync, response.GetStatus, response.GetTrailers, response.Dispose);
 		}
 
-		public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(ClientInterceptorContext<TRequest, TResponse> context,
+		public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(
+			ClientInterceptorContext<TRequest, TResponse> context,
 			AsyncDuplexStreamingCallContinuation<TRequest, TResponse> continuation) {
 			var response = continuation(context);
-			
+
 			return new AsyncDuplexStreamingCall<TRequest, TResponse>(
 				response.RequestStream,
 				new AsyncStreamReader<TResponse>(response.ResponseStream),
@@ -96,6 +97,10 @@ namespace EventStore.Grpc {
 							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.GroupName)?.Value, ex),
 					Constants.Exceptions.UserNotFound => new UserNotFoundException(
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.LoginName)?.Value),
+					Constants.Exceptions.MissingRequiredMetadataProperty => new
+						RequiredMetadataPropertyMissingException(
+							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.MissingRequiredMetadataProperty)
+								?.Value, ex),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => new InvalidOperationException(ex.Message, ex)

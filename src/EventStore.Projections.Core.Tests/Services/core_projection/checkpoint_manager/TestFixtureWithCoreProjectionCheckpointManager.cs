@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_namingBuilder = ProjectionNamesBuilder.CreateForTest("projection");
 			_config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
 				_pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
-				_checkpointsEnabled, _createTempStreams, _stopOnEof, false, _trackEmittedStreams, _checkpointAfterMs,
+				_checkpointsEnabled, _createTempStreams, _stopOnEof, _trackEmittedStreams, _checkpointAfterMs,
 				_maximumAllowedWritesInFlight);
 			When();
 		}
@@ -78,8 +78,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
-			_bus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());

@@ -45,7 +45,7 @@ namespace EventStore.Grpc {
 						}
 					});
 				})
-				.UseStartup(new ClusterVNodeStartup(_node))
+				.UseStartup(_node.Startup)
 				.Build();
 
 			Client = new EventStoreGrpcClient(new UriBuilder {
@@ -62,12 +62,12 @@ namespace EventStore.Grpc {
 		}
 
 		public virtual async Task InitializeAsync() {
-			await _node.StartAndWaitUntilReady();
+			await _node.StartAsync(true);
 			await _host.StartAsync();
 		}
 
 		public virtual async Task DisposeAsync() {
-			await _node.Stop();
+			await _node.StopAsync();
 			_db.Dispose();
 			await _host.StopAsync();
 			_host.Dispose();

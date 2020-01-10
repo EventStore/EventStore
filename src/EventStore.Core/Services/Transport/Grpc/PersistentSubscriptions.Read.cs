@@ -31,7 +31,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var connectionName =
+				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
+				"<unknown>";
 			var correlationId = Guid.NewGuid();
+			var uuidOptionsCase = options.UuidOption.ContentCase;
 			var source = new TaskCompletionSource<bool>();
 			string subscriptionId = default;
 			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
@@ -40,8 +44,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			Task.Run(() => requestStream.ForEachAsync(HandleAckNack));
 #pragma warning restore 4014
 
-			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, _queue,
-				options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
+			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
+				_queue, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
 			subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
@@ -83,8 +87,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = new UUID {
-						String = e.EventId.ToString()
+					Id = uuidOptionsCase switch {
+						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
+							String = e.EventId.ToString()
+						},
+						_ => Uuid.FromGuid(e.EventId).ToPersistentSubscriptionsDto()
 					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
@@ -133,14 +140,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public (ResolvedEvent, int) Current => _current;
 
-			public PersistentStreamSubscriptionEnumerator(
-				Guid correlationId,
+			public PersistentStreamSubscriptionEnumerator(Guid correlationId,
+				string connectionName,
 				IPublisher queue,
 				string streamName,
 				string groupName,
 				int bufferSize,
 				IPrincipal user,
 				CancellationToken cancellationToken) {
+				if (connectionName == null) throw new ArgumentNullException(nameof(connectionName));
 				if (queue == null) {
 					throw new ArgumentNullException(nameof(queue));
 				}
@@ -163,7 +171,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 
 				queue.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
-					new CallbackEnvelope(OnMessage), correlationId, correlationId.ToString(), groupName, streamName, bufferSize,
+					new CallbackEnvelope(OnMessage), correlationId, connectionName, groupName, streamName,
+					bufferSize,
 					string.Empty, user));
 
 				void OnMessage(Message message) {
@@ -178,7 +187,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									Fail(RpcExceptions.PersistentSubscriptionDoesNotExist(streamName, groupName));
 									return;
 								case SubscriptionDropReason.SubscriberMaxCountReached:
-									Fail(RpcExceptions.PersistentSubscriptionMaximumSubscribersReached(streamName, groupName));
+									Fail(RpcExceptions.PersistentSubscriptionMaximumSubscribersReached(streamName,
+										groupName));
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									Fail(RpcExceptions.PersistentSubscriptionDropped(streamName, groupName));
@@ -194,7 +204,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							EnqueueEvent(appeared.Event, appeared.RetryCount);
 							return;
 						default:
-							Fail(RpcExceptions.UnknownMessage<ClientMessage.PersistentSubscriptionConfirmation>(message));
+							Fail(RpcExceptions
+								.UnknownMessage<ClientMessage.PersistentSubscriptionConfirmation>(message));
 							return;
 					}
 				}
@@ -218,7 +229,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				(ResolvedEvent, int, Exception) _;
 
 				while (!_sendQueue.TryDequeue(out _)) {
-					await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
+					try {
+						await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
+					} catch (ObjectDisposedException) {
+						return false;
+					}
 				}
 
 				var (resolvedEvent, retryCount, exception) = _;

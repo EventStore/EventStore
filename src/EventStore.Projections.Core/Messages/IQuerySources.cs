@@ -6,8 +6,6 @@ namespace EventStore.Projections.Core.Messages {
 
 		string[] Streams { get; }
 
-		string CatalogStream { get; }
-
 		bool AllEvents { get; }
 
 		string[] Events { get; }
@@ -18,8 +16,6 @@ namespace EventStore.Projections.Core.Messages {
 
 		bool DefinesStateTransform { get; }
 
-		bool DefinesCatalogTransform { get; }
-
 		bool DefinesFold { get; }
 
 		bool HandlesDeletedNotifications { get; }
@@ -29,8 +25,6 @@ namespace EventStore.Projections.Core.Messages {
 		bool IsBiState { get; }
 
 		bool IncludeLinksOption { get; }
-
-		bool DisableParallelismOption { get; }
 
 		string ResultStreamNameOption { get; }
 

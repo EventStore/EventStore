@@ -332,16 +332,15 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//Meanwhile, during this 100ms time window, a new live event #3 comes in and subscription is notified
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName", 3));
 
+			await eventsFoundSource.Task;
+
 			//the read handled by the subscription after 100ms should trigger a second read to obtain the event #3 (which will be handled after 100ms more)
 
 			//a subscriber coming in a while later, should receive all 3 events
-			await Task.Delay(500).ContinueWith((action) => {
-				//add a subscriber
-				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
 
-				//all 3 events should be received by the subscriber
-				Assert.AreEqual(3, envelope.Replies.Count);
-			});
+			//all 3 events should be received by the subscriber
+			Assert.AreEqual(3, envelope.Replies.Count);
 		}
 	}
 
@@ -401,8 +400,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(5).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 		[Test]
@@ -424,8 +423,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(2).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 		[Test]
@@ -451,8 +450,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			}, 1, false);
 			var result = sub.GetNextNOrLessMessages(2).ToArray();
 			Assert.AreEqual(2, result.Length);
-			Assert.AreEqual(id1, result[0].Event.EventId);
-			Assert.AreEqual(id2, result[1].Event.EventId);
+			Assert.AreEqual(id1, result[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, result[1].ResolvedEvent.Event.EventId);
 		}
 
 
@@ -1071,8 +1070,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			sub.GetNextNOrLessMessages(2);
 			sub.NotifyClockTick(DateTime.Now.AddSeconds(3));
 			var retries = sub.GetNextNOrLessMessages(2).ToArray();
-			Assert.AreEqual(id1, retries[0].Event.EventId);
-			Assert.AreEqual(id2, retries[1].Event.EventId);
+			Assert.AreEqual(id1, retries[0].ResolvedEvent.Event.EventId);
+			Assert.AreEqual(id2, retries[1].ResolvedEvent.Event.EventId);
 			Assert.AreEqual(0, parker.ParkedEvents.Count);
 		}
 

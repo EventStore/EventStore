@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 
 		[OneTimeTearDown]
 		public virtual async Task TestFixtureTearDown() {
-			await _node.Stop();
+			await _node.StopAsync();
 		}
 
 		public abstract void Given();
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 
 		[OneTimeTearDown]
 		public virtual async Task TestFixtureTearDown() {
-			await _node.Stop();
+			await _node.StopAsync();
 		}
 
 		public abstract void Given();

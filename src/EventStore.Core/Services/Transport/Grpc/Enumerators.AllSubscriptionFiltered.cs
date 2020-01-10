@@ -66,6 +66,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
+				if (_disposedTokenSource.IsCancellationRequested) {
+					return false;
+				}
+
 				if (_buffer.TryDequeue(out var current)) {
 					_current = current;
 					return true;
@@ -90,7 +94,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return true;
 				}
 
-				await Task.Delay(100, _disposedTokenSource.Token).ConfigureAwait(false);
+				if (_disposedTokenSource.IsCancellationRequested) {
+					return false;
+				}
+
+				try {
+					await Task.Delay(100, _disposedTokenSource.Token).ConfigureAwait(false);
+				} catch (ObjectDisposedException) {
+					return false;
+				}
 
 				goto ReadLoop;
 

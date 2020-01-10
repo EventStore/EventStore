@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_readCount >= _maxCount) {
+				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
 					return false;
 				}
 

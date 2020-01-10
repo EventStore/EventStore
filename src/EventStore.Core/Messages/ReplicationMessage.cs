@@ -453,6 +453,32 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class DropSubscription : Message, IReplicationMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			Guid IReplicationMessage.MasterId {
+				get { return MasterId; }
+			}
+
+			Guid IReplicationMessage.SubscriptionId {
+				get { return SubscriptionId; }
+			}
+
+			public readonly Guid MasterId;
+			public readonly Guid SubscriptionId;
+
+			public DropSubscription(Guid masterId, Guid subscriptionId) {
+				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
+				MasterId = masterId;
+				SubscriptionId = subscriptionId;
+			}
+		}
+
 		public class GetReplicationStats : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 

@@ -32,6 +32,5 @@
     <EmbeddedResource Include="Prelude\ModulesExecuted.js" />
     <EmbeddedResource Include="Prelude\Projections.js" />
     <!-- TODO(jen20): What is this and why do we need it? -->
-    <Content Include="Services\Management\TODO.txt" />
   </ItemGroup>
 </Project>

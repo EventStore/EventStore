@@ -103,7 +103,7 @@ namespace EventStore.Grpc {
 			ReadReq request,
 			UserCredentials userCredentials,
 			[EnumeratorCancellation] CancellationToken cancellationToken) {
-			if (request.Options.CountOptionsCase == ReadReq.Types.Options.CountOptionsOneofCase.Count &&
+			if (request.Options.CountOptionCase == ReadReq.Types.Options.CountOptionOneofCase.Count &&
 			    request.Options.Count <= 0) {
 				throw new ArgumentOutOfRangeException("count");
 			}
@@ -111,6 +111,9 @@ namespace EventStore.Grpc {
 			if (request.Options.Filter == null) {
 				request.Options.NoFilter = new ReadReq.Types.Empty();
 			}
+
+			request.Options.UuidOption = new ReadReq.Types.Options.Types.UUIDOption
+				{Structured = new ReadReq.Types.Empty()};
 
 			using var call = _client.Read(
 				request, RequestMetadata.Create(userCredentials),

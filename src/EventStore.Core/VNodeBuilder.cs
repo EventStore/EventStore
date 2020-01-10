@@ -139,6 +139,7 @@ namespace EventStore.Core {
 		private bool _gossipOnSingleNode;
 
 		private bool _readOnlyReplica;
+		private bool _unsafeAllowSurplusNodes;
 		private Func<HttpMessageHandler> _createHttpMessageHandler;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
@@ -234,6 +235,7 @@ namespace EventStore.Core {
 			_initializationThreads = Opts.InitializationThreadsDefault;
 
 			_readOnlyReplica = Opts.ReadOnlyReplicaDefault;
+			_unsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
 			_maxAppendSize = Opts.MaxAppendSizeDefault;
 		}
 
@@ -1386,7 +1388,8 @@ namespace EventStore.Core {
 				_logFailedAuthenticationAttempts,
 				_readOnlyReplica,
 				_maxAppendSize,
-				_createHttpMessageHandler);
+				_createHttpMessageHandler,
+				_unsafeAllowSurplusNodes);
 
 			var infoController = new InfoController(options, _projectionType);
 
@@ -1522,6 +1525,10 @@ namespace EventStore.Core {
 				reduceFileCachePressure);
 
 			return nodeConfig;
+		}
+
+		public void WithUnsafeAllowSurplusNodes() {
+			_unsafeAllowSurplusNodes = true;
 		}
 	}
 }

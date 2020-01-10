@@ -10,8 +10,6 @@ namespace EventStore.Projections.Core.Messages {
 
 		[DataMember(Name = "streams")] public string[] Streams { get; set; }
 
-		[DataMember(Name = "catalogStream")] public string CatalogStream { get; set; }
-
 		[DataMember(Name = "allEvents")] public bool AllEvents { get; set; }
 
 		[DataMember(Name = "events")] public string[] Events { get; set; }
@@ -28,10 +26,6 @@ namespace EventStore.Projections.Core.Messages {
 			get { return Options != null && Options.DefinesStateTransform; }
 		}
 
-		bool IQuerySources.DefinesCatalogTransform {
-			get { return Options != null && Options.DefinesCatalogTransform; }
-		}
-
 		bool IQuerySources.ProducesResults {
 			get { return Options != null && Options.ProducesResults; }
 		}
@@ -46,10 +40,6 @@ namespace EventStore.Projections.Core.Messages {
 
 		bool IQuerySources.IncludeLinksOption {
 			get { return Options != null && Options.IncludeLinks; }
-		}
-
-		bool IQuerySources.DisableParallelismOption {
-			get { return Options != null && Options.DisableParallelism; }
 		}
 
 		string IQuerySources.ResultStreamNameOption {
@@ -83,17 +73,14 @@ namespace EventStore.Projections.Core.Messages {
 				Categories = (sources.Categories ?? new string[0]).ToArray(),
 				Events = (sources.Events ?? new string[0]).ToArray(),
 				Streams = (sources.Streams ?? new string[0]).ToArray(),
-				CatalogStream = sources.CatalogStream,
 				LimitingCommitPosition = sources.LimitingCommitPosition,
 				Options =
 					new QuerySourcesDefinitionOptions {
 						DefinesStateTransform = sources.DefinesStateTransform,
-						DefinesCatalogTransform = sources.DefinesCatalogTransform,
 						ProducesResults = sources.ProducesResults,
 						DefinesFold = sources.DefinesFold,
 						HandlesDeletedNotifications = sources.HandlesDeletedNotifications,
 						IncludeLinks = sources.IncludeLinksOption,
-						DisableParallelism = sources.DisableParallelismOption,
 						PartitionResultStreamNamePattern = sources.PartitionResultStreamNamePatternOption,
 						ProcessingLag = sources.ProcessingLagOption.GetValueOrDefault(),
 						IsBiState = sources.IsBiState,

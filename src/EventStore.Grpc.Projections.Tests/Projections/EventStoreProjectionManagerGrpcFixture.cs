@@ -15,7 +15,7 @@ namespace EventStore.Grpc.Projections {
 
 		public override async Task InitializeAsync() {
 			var projectionsStarted = StandardProjections.Created(Projections.MasterMainBus);
-			await Node.StartAndWaitUntilReady();
+			await Node.StartAsync(true);
 
 			await projectionsStarted.WithTimeout(TimeSpan.FromMinutes(5));
 

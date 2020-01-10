@@ -9,7 +9,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -27,9 +26,7 @@ namespace EventStore.Projections.Core {
 		private readonly FeedReaderService _feedReaderService;
 		private readonly IODispatcher _ioDispatcher;
 
-		private readonly SpooledStreamReadingDispatcher _spoolProcessingResponseDispatcher;
 		private readonly ProjectionCoreResponseWriter _coreResponseWriter;
-		private readonly SlaveProjectionResponseWriter _slaveProjectionResponseWriter;
 
 		public ProjectionWorkerNode(
 			Guid workerId,
@@ -46,7 +43,6 @@ namespace EventStore.Projections.Core {
 
 			IPublisher publisher = CoreOutput;
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
-			_spoolProcessingResponseDispatcher = new SpooledStreamReadingDispatcher(publisher);
 
 			_ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
 			_eventReaderCoreService = new EventReaderCoreService(
@@ -65,7 +61,6 @@ namespace EventStore.Projections.Core {
 					workerId.ToString("N"));
 
 				var multiStreamWriter = new MultiStreamMessageWriter(_ioDispatcher);
-				_slaveProjectionResponseWriter = new SlaveProjectionResponseWriter(multiStreamWriter);
 
 				_projectionCoreService = new ProjectionCoreService(
 					workerId,
@@ -74,7 +69,6 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					_spoolProcessingResponseDispatcher,
 					timeoutScheduler);
 
 				var responseWriter = new ResponseWriter(_ioDispatcher);
@@ -84,10 +78,6 @@ namespace EventStore.Projections.Core {
 
 		public InMemoryBus CoreOutput {
 			get { return _coreOutput; }
-		}
-
-		public SlaveProjectionResponseWriter SlaveProjectionResponseWriter {
-			get { return _slaveProjectionResponseWriter; }
 		}
 
 		public void SetupMessaging(IBus coreInputBus) {
@@ -100,8 +90,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
-			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
@@ -112,9 +100,6 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe(_subscriptionDispatcher
 				.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 			coreInputBus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.Failed>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingResult>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionMeasured>());
-			coreInputBus.Subscribe(_spoolProcessingResponseDispatcher.CreateSubscriber<PartitionProcessingProgress>());
 
 			coreInputBus.Subscribe(_feedReaderService);
 
@@ -127,7 +112,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.CoreTick>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_projectionCoreService);
-				coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);
@@ -135,7 +119,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.Kill>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionCoreService);
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionCoreService);
-				coreInputBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(_projectionCoreService);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_ioDispatcher.ForwardReader);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
 				coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_ioDispatcher.Writer);
@@ -153,8 +136,6 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionCoreServiceMessage.StartCore>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Faulted>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Prepared>(_coreResponseWriter);
-				coreInputBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(
-					_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Started>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(_coreResponseWriter);
 				coreInputBus.Subscribe<CoreProjectionStatusMessage.Stopped>(_coreResponseWriter);
@@ -172,26 +153,21 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.Reset>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(_coreResponseWriter);
-				coreInputBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(_coreResponseWriter);
 				coreInputBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(_coreResponseWriter);
 			}
 
-			coreInputBus.Subscribe<ReaderCoreServiceMessage.ReaderTick>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Resume>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.SpoolStreamReadingCore>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionManagement.CompleteSpooledStreamReading>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderIdle>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderStarting>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionMeasured>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.Faulted>(_eventReaderCoreService);
 			//NOTE: message forwarding is set up outside (for Read/Write events)

@@ -30,7 +30,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\checkpoint_strategy\" />
-    <Folder Include="Services\projections_manager\parallel_query\" />
   </ItemGroup>
   <!-- TODO(jen20): Decide what is correct here -->
   <PropertyGroup>

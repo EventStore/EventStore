@@ -36,20 +36,14 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service_res
 			Assert.AreEqual(_definition.AllStreams, command.SourceDefinition.AllStreams);
 			Assert.AreEqual(_definition.ByCustomPartitions, command.SourceDefinition.ByCustomPartitions);
 			Assert.AreEqual(_definition.ByStream, command.SourceDefinition.ByStream);
-			Assert.AreEqual(_definition.CatalogStream, command.SourceDefinition.CatalogStream);
 			Assert.AreEqual(_definition.Categories, command.SourceDefinition.Categories);
 			Assert.AreEqual(_definition.Events, command.SourceDefinition.Events);
 			Assert.AreEqual(_definition.LimitingCommitPosition, command.SourceDefinition.LimitingCommitPosition);
 			Assert.AreEqual(_definition.Streams, command.SourceDefinition.Streams);
-			Assert.AreEqual(
-				_definition.Options.DefinesCatalogTransform,
-				command.SourceDefinition.Options.DefinesCatalogTransform);
 			Assert.AreEqual(_definition.Options.DefinesFold, command.SourceDefinition.Options.DefinesFold);
 			Assert.AreEqual(
 				_definition.Options.DefinesStateTransform,
 				command.SourceDefinition.Options.DefinesStateTransform);
-			Assert.AreEqual(_definition.Options.DisableParallelism,
-				command.SourceDefinition.Options.DisableParallelism);
 			Assert.AreEqual(
 				_definition.Options.HandlesDeletedNotifications,
 				command.SourceDefinition.Options.HandlesDeletedNotifications);

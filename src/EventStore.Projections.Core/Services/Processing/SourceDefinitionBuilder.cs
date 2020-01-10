@@ -4,13 +4,12 @@ using System.Runtime.Serialization;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
-	public sealed class SourceDefinitionBuilder : IQuerySources // name it!!
+	public sealed class SourceDefinitionBuilder : IQuerySources
 	{
 		private readonly QuerySourceOptions _options = new QuerySourceOptions();
 		private bool _allStreams;
 		private List<string> _categories;
 		private List<string> _streams;
-		private string _catalogStream;
 		private bool _allEvents;
 		private List<string> _events;
 		private bool _byStream;
@@ -37,20 +36,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_streams.Add(streamName);
 		}
 
-		public void FromCatalogStream(string catalogStream) {
-			_catalogStream = catalogStream;
-		}
-
 		public void AllEvents() {
 			_allEvents = true;
 		}
 
 		public void SetIncludeLinks(bool includeLinks = true) {
 			_options.IncludeLinks = includeLinks;
-		}
-
-		public void SetDisableParallelism(bool disableParallelism = true) {
-			_options.DisableParallelism = disableParallelism;
 		}
 
 		public void IncludeEvent(string eventName) {
@@ -118,10 +109,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			get { return _streams != null ? _streams.ToArray() : null; }
 		}
 
-		public string CatalogStream {
-			get { return _catalogStream; }
-		}
-
 		bool IQuerySources.AllEvents {
 			get { return _allEvents; }
 		}
@@ -146,10 +133,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			get { return _options.DefinesStateTransform; }
 		}
 
-		public bool DefinesCatalogTransform {
-			get { return _options.DefinesCatalogTransform; }
-		}
-
 		public bool ProducesResults {
 			get { return _options.ProducesResults; }
 		}
@@ -164,10 +147,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public bool IncludeLinksOption {
 			get { return _options.IncludeLinks; }
-		}
-
-		public bool DisableParallelismOption {
-			get { return _options.DisableParallelism; }
 		}
 
 		public string ResultStreamNameOption {
@@ -219,8 +198,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		[DataMember] public bool DefinesStateTransform { get; set; }
 
-		[DataMember] public bool DefinesCatalogTransform { get; set; }
-
 		[DataMember] public bool ProducesResults { get; set; }
 
 		[DataMember] public bool DefinesFold { get; set; }
@@ -229,14 +206,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		[DataMember] public bool IncludeLinks { get; set; }
 
-		[DataMember] public bool DisableParallelism { get; set; }
-
 		protected bool Equals(QuerySourceOptions other) {
 			return string.Equals(ResultStreamName, other.ResultStreamName)
 			       && string.Equals(PartitionResultStreamNamePattern, other.PartitionResultStreamNamePattern)
 			       && ReorderEvents.Equals(other.ReorderEvents) && ProcessingLag == other.ProcessingLag
 			       && IsBiState.Equals(other.IsBiState) && DefinesStateTransform.Equals(other.DefinesStateTransform)
-			       && DefinesCatalogTransform.Equals(other.DefinesCatalogTransform)
 			       && ProducesResults.Equals(other.ProducesResults) && DefinesFold.Equals(other.DefinesFold)
 			       && HandlesDeletedNotifications.Equals(other.HandlesDeletedNotifications)
 			       && IncludeLinks.Equals(other.IncludeLinks);
@@ -259,7 +233,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				hashCode = (hashCode * 397) ^ ProcessingLag;
 				hashCode = (hashCode * 397) ^ IsBiState.GetHashCode();
 				hashCode = (hashCode * 397) ^ DefinesStateTransform.GetHashCode();
-				hashCode = (hashCode * 397) ^ DefinesCatalogTransform.GetHashCode();
 				hashCode = (hashCode * 397) ^ ProducesResults.GetHashCode();
 				hashCode = (hashCode * 397) ^ DefinesFold.GetHashCode();
 				hashCode = (hashCode * 397) ^ HandlesDeletedNotifications.GetHashCode();

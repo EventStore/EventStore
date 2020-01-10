@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -25,8 +26,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
-using EventStore.Core.Settings;
-using EventStore.Core.Tests.TransactionLog;
+using Microsoft.AspNetCore.TestHost;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -54,12 +54,18 @@ namespace EventStore.Core.Tests.Helpers {
 		private readonly string _dbPath;
 		private readonly bool _isReadOnlyReplica;
 		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<bool> _adminUserCreated = new TaskCompletionSource<bool>();
 
 		public Task Started => _started.Task;
+		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
-
+		
+		private HttpClient _httpClient;
+		private HttpMessageHandler _httpMessageHandler;
+		private TestServer _kestrelTestServer;
+		
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
@@ -137,8 +143,12 @@ namespace EventStore.Core.Tests.Helpers {
 					o.Listen(InternalHttpEndPoint);
 					o.Listen(ExternalHttpEndPoint);
 				})
-				.UseStartup(new MiniNode.ClusterVNodeStartup(Node))
+				.UseStartup(Node.Startup)
 				.Build();
+
+			_kestrelTestServer = new TestServer(new WebHostBuilder()
+				.UseKestrel()
+				.UseStartup(Node.Startup));
 		}
 
 		public void Start() {
@@ -167,13 +177,22 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 						_started.TrySetResult(true);
 					}));
 			}
+			Node.MainBus.Subscribe(
+				new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => {
+					_adminUserCreated.TrySetResult(true);
+				}));
 			_host.Start();
 			Node.Start();
+		}
+		
+		public HttpClient CreateHttpClient() {
+			return new HttpClient(_kestrelTestServer.CreateHandler());
 		}
 
 		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20));
+			_kestrelTestServer?.Dispose();
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
 			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);

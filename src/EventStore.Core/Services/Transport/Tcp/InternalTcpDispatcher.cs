@@ -34,6 +34,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddWrapper<ReplicationMessage.SlaveAssignment>(WrapSlaveAssignment, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.CloneAssignment, UnwrapCloneAssignment, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.CloneAssignment>(WrapCloneAssignment, ClientVersion.V2);
+			AddUnwrapper(TcpCommand.DropSubscription, UnwrapDropSubscription, ClientVersion.V2);
+			AddWrapper<ReplicationMessage.DropSubscription>(WrapDropSubscription, ClientVersion.V2);
 		}
 		
 
@@ -205,6 +207,17 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = new ReplicationMessageDto.CloneAssignment(msg.MasterId.ToByteArray(),
 				msg.SubscriptionId.ToByteArray());
 			return new TcpPackage(TcpCommand.CloneAssignment, Guid.NewGuid(), dto.Serialize());
+		}
+
+		private ReplicationMessage.DropSubscription UnwrapDropSubscription(TcpPackage package, IEnvelope envelope) {
+			var dto = package.Data.Deserialize<ReplicationMessageDto.CloneAssignment>();
+			return new ReplicationMessage.DropSubscription(new Guid(dto.MasterId), new Guid(dto.SubscriptionId));
+		}
+
+		private TcpPackage WrapDropSubscription(ReplicationMessage.DropSubscription msg) {
+			var dto = new ReplicationMessageDto.DropSubscription(msg.MasterId.ToByteArray(),
+				msg.SubscriptionId.ToByteArray());
+			return new TcpPackage(TcpCommand.DropSubscription, Guid.NewGuid(), dto.Serialize());
 		}
 	}
 }

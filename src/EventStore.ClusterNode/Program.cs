@@ -146,7 +146,7 @@ namespace EventStore.ClusterNode {
 					o.Listen(opts.IntIp, opts.IntHttpPort);
 					o.Listen(opts.ExtIp, opts.ExtHttpPort, listenOptions => listenOptions.UseHttps(_node.Certificate));
 				})
-				.UseStartup(new ClusterVNodeStartup(_node))
+				.UseStartup(_node.Startup)
 				.ConfigureLogging(logging => {
 					logging.ClearProviders();
 					logging.SetMinimumLevel(LogLevel.Warning);
@@ -346,6 +346,8 @@ namespace EventStore.ClusterNode {
 				builder.WithStructuredLogging(options.StructuredLog);
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
+			if(options.UnsafeAllowSurplusNodes)
+				builder.WithUnsafeAllowSurplusNodes();
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
@@ -475,11 +477,11 @@ namespace EventStore.ClusterNode {
 		}
 
 		protected override Task Start() {
-			return Task.WhenAll(_node.StartAndWaitUntilReady(), _host.StartAsync());
+			return Task.WhenAll(_node.StartAsync(false), _host.StartAsync());
 		}
 
 		public override Task Stop() {
-			return Task.WhenAll(_node.Stop(), _host.StopAsync());
+			return Task.WhenAll(_node.StopAsync(), _host.StopAsync());
 		}
 
 		protected override void OnProgramExit() {

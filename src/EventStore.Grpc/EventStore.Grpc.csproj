@@ -29,6 +29,7 @@
 		</PackageReference>
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
 		<PackageReference Include="System.Text.Json" Version="4.6.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/*.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />

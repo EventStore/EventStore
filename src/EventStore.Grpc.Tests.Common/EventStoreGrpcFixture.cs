@@ -62,13 +62,13 @@ namespace EventStore.Grpc {
 			=> new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
 
 		public virtual async Task InitializeAsync() {
-			await Node.StartAndWaitUntilReady();
+			await Node.StartAsync(true);
 			await Given().WithTimeout(TimeSpan.FromMinutes(5));
 			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}
 
 		public virtual async Task DisposeAsync() {
-			await Node.Stop();
+			await Node.StopAsync();
 			_db.Dispose();
 			_testServer.Dispose();
 			Client?.Dispose();
@@ -99,10 +99,10 @@ namespace EventStore.Grpc {
 				_node = node;
 			}
 
-			public IServiceProvider ConfigureServices(IServiceCollection services) => _node.ConfigureServices(services)
-				.BuildServiceProvider();
+			public IServiceProvider ConfigureServices(IServiceCollection services) =>
+				_node.Startup.ConfigureServices(services);
 
-			public void Configure(IApplicationBuilder app) => _node.Configure(app.Use(CompleteResponse));
+			public void Configure(IApplicationBuilder app) => _node.Startup.Configure(app.Use(CompleteResponse));
 
 			private static RequestDelegate CompleteResponse(RequestDelegate next) => context =>
 				next(context).ContinueWith(_ => context.Response.Body.FlushAsync());

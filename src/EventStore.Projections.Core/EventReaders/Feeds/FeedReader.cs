@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 
 		public void Handle(EventReaderSubscriptionMessage.CommittedEventReceived message) {
 			_lastReaderPosition = message.CheckpointTag;
-			_batch.Add(new TaggedResolvedEvent(message.Data, message.EventCategory, message.CheckpointTag));
+			_batch.Add(new TaggedResolvedEvent(message.Data, message.CheckpointTag));
 		}
 
 		public void Handle(EventReaderSubscriptionMessage.EofReached message) {

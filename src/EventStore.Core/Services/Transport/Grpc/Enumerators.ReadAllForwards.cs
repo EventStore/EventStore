@@ -55,6 +55,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
+				if (_disposedTokenSource.IsCancellationRequested) {
+					return false;
+				}
+
 				if (_buffer.TryDequeue(out var current)) {
 					_current = current;
 					return true;
@@ -74,6 +78,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
 					commitPosition, preparePosition, Math.Min(_maxCount, 32),
 					_resolveLinks, false, default, _user));
+
+				if (_disposedTokenSource.IsCancellationRequested) {
+					return false;
+				}
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;

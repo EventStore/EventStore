@@ -40,6 +40,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Transport.Grpc;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using MidFunc = System.Func<
@@ -89,6 +90,8 @@ namespace EventStore.Core {
 
 		public QueueStatsManager QueueStatsManager => _queueStatsManager;
 
+		public IStartup Startup => _startup;
+
 		public IAuthenticationProvider InternalAuthenticationProvider {
 			get { return _internalAuthenticationProvider; }
 		}
@@ -121,38 +124,13 @@ namespace EventStore.Core {
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly X509Certificate2 _certificate;
 		private readonly ClusterVNodeSettings _vNodeSettings;
+		private readonly ClusterVNodeStartup _startup;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
 
 		public X509Certificate2 Certificate => _certificate;
-
-		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder =>
-			_subsystems.Aggregate(builder
-						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),  // TODO JPB figure out how to delete this sadness
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<PersistentSubscriptions>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),  // TODO JPB figure out how to delete this sadness
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Users>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint => endpoint.MapGrpcService<Streams>())),
-					(b, subsystem) => subsystem.Configure(b))
-				.Use(ExternalHttp)
-				.Use(InternalHttp);
-
-		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
-			_subsystems.Aggregate(services
-					.AddRouting()
-					.AddSingleton(InternalAuthenticationProvider)
-					.AddSingleton(_readIndex)
-					.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex,
-						_vNodeSettings.MaxAppendSize))
-					.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
-					.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
-					.AddGrpc().Services,
-				(s, subsystem) => subsystem.ConfigureServices(s));
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -677,6 +655,7 @@ namespace EventStore.Core {
 				var masterReplicationService = new MasterReplicationService(_mainQueue, gossipInfo.InstanceId, db,
 					_workersHandler,
 					epochManager, vNodeSettings.ClusterNodeCount,
+					vNodeSettings.UnsafeAllowSurplusNodes,
 					_queueStatsManager);
 				AddTask(masterReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
@@ -710,7 +689,8 @@ namespace EventStore.Core {
 				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
 					db.Config.ChaserCheckpoint, epochManager, () => commitTracker.ReplicatedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
-					vNodeSettings.GossipAllowedTimeDifference);
+					vNodeSettings.GossipAllowedTimeDifference,
+					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
@@ -721,8 +701,16 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
+
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _internalAuthenticationProvider, _readIndex,
+				_vNodeSettings, _externalHttpService, _internalHttpService);
+
+			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 
 			// kestrel
 			AddTasks(_workersHandler.Start());
@@ -752,7 +740,7 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task Stop() {
+		public async Task StopAsync() {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			if (_subsystems != null) {
@@ -809,11 +797,15 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public async Task<ClusterVNode> StartAndWaitUntilReady() {
+		public async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-			_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
-				_ => tcs.TrySetResult(this)));
+			if (waitUntilReady) {
+				_mainBus.Subscribe(new AdHocHandler<SystemMessage.SystemReady>(
+					_ => tcs.TrySetResult(this)));
+			} else {
+				tcs.TrySetResult(this);
+			}
 
 			Start();
 

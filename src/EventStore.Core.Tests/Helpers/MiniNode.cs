@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -156,9 +155,13 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel()
-				.UseStartup(new ClusterVNodeStartup(Node)));
+				.UseStartup(Node.Startup));
 			HttpMessageHandler = _kestrelTestServer.CreateHandler();
-			HttpClient = new HttpClient(HttpMessageHandler);
+			HttpClient = new HttpClient(HttpMessageHandler) {
+				BaseAddress = new UriBuilder {
+					Scheme = Uri.UriSchemeHttps
+				}.Uri
+			};
 
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 		}
@@ -166,7 +169,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public async Task Start() {
 			StartingTime.Start();
 
-			await Node.StartAndWaitUntilReady().WithTimeout(TimeSpan.FromSeconds(60))
+			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
 				.ConfigureAwait(false); //starts the node
 
 			StartingTime.Stop();
@@ -176,7 +179,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private async Task StartMiniNode(Task monitorFailuresTask) {
 			StartingTime.Start();
 
-			var startNodeTask = Node.StartAndWaitUntilReady(); //starts the node
+			var startNodeTask = Node.StartAsync(true); //starts the node
 
 			await Task.WhenAny(
 				monitorFailuresTask,
@@ -222,7 +225,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer.Dispose();
 			HttpMessageHandler.Dispose();
 			HttpClient.Dispose();
-			await Node.Stop().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
 			if (!keepDb)
 				TryDeleteDirectory(DbPath);
@@ -251,29 +254,5 @@ namespace EventStore.Core.Tests.Helpers {
 			var host = Dns.GetHostEntry(Dns.GetHostName());
 			return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
 		}
-
-		public class ClusterVNodeStartup : IStartup {
-			private readonly ClusterVNode _node;
-
-			public ClusterVNodeStartup(ClusterVNode node) {
-				_node = node ?? throw new ArgumentNullException(nameof(node));
-			}
-
-			public IServiceProvider ConfigureServices(IServiceCollection services) => services
-				.AddRouting()
-				.AddSingleton(_node)
-				.BuildServiceProvider();
-
-			public void Configure(IApplicationBuilder app) =>
-				app.UseRouting()
-					.Use(_node.InternalHttp)
-					.Use(_node.ExternalHttp);
-		}
-	}
-
-	internal static class WebHostBuilderExtensions {
-		public static IWebHostBuilder UseStartup(this IWebHostBuilder builder, IStartup startup)
-			=> builder
-				.ConfigureServices(services => services.AddSingleton(startup));
 	}
 }

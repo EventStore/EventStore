@@ -48,7 +48,7 @@ message UpdateReq {
 	message Options {
 		string name = 1;
 		string query = 2;
-		oneof emit_options {
+		oneof emit_option {
 			bool emit_enabled = 3;
 			Empty no_emit_options = 4;
 		}

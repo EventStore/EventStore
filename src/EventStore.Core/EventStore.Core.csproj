@@ -24,6 +24,8 @@
 		<PackageReference Include="SimpleSyndicate.UriTemplate" Version="1.0.3" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.5.0" />
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
+		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.48" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
