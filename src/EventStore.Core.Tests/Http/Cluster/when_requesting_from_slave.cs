@@ -30,6 +30,11 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			_client = slave.CreateHttpClient();
 		}
 
+		public override Task TestFixtureTearDown() {
+			_client?.Dispose();
+			return base.TestFixtureTearDown();
+		}
+
 		[Test]
 		public async Task post_events_should_succeed_when_master_not_required() {
 			var path = $"streams/{TestStream}";

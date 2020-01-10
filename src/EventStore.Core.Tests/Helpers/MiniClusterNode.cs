@@ -143,8 +143,12 @@ namespace EventStore.Core.Tests.Helpers {
 					o.Listen(InternalHttpEndPoint);
 					o.Listen(ExternalHttpEndPoint);
 				})
-				.UseStartup(new MiniNode.ClusterVNodeStartup(Node))
+				.UseStartup(Node.Startup)
 				.Build();
+
+			_kestrelTestServer = new TestServer(new WebHostBuilder()
+				.UseKestrel()
+				.UseStartup(Node.Startup));
 		}
 
 		public void Start() {
@@ -182,19 +186,12 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 		}
 		
 		public HttpClient CreateHttpClient() {
-			_kestrelTestServer = new TestServer(new WebHostBuilder()
-				.UseKestrel()
-				.UseStartup(new MiniNode.ClusterVNodeStartup(Node)));
-			_httpMessageHandler = _kestrelTestServer.CreateHandler();
-			_httpClient = new HttpClient(_httpMessageHandler);
-			return _httpClient;
+			return new HttpClient(_kestrelTestServer.CreateHandler());
 		}
 
 		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
 			_kestrelTestServer?.Dispose();
-			_httpMessageHandler?.Dispose();
-			_httpClient?.Dispose();
 			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
 			_host?.Dispose();
 			if (!keepDb)
