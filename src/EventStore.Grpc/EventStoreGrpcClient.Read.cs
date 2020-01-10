@@ -134,7 +134,7 @@ namespace EventStore.Grpc {
 					response.Event.PositionCase switch {
 						ReadResp.Types.ReadEvent.PositionOneofCase.CommitPosition => new Position(
 							response.Event.CommitPosition, 0).ToInt64().commitPosition,
-						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => null,
+						ReadResp.Types.ReadEvent.PositionOneofCase.NoPosition => (long?) null,
 						_ => throw new InvalidOperationException()
 					});
 
