@@ -20,6 +20,14 @@ message ReadReq {
 		string stream_name = 1;
 		string group_name = 2;
 		int32 buffer_size = 3;
+		UUIDOption uuid_option = 4;
+
+		message UUIDOption {
+			oneof content {
+				Empty structured = 1;
+				Empty string = 2;
+			}
+		}
 	}
 
 	message Ack {
@@ -40,6 +48,10 @@ message ReadReq {
 			Skip = 3;
 			Stop = 4;
 		}
+	}
+
+	message Empty {
+
 	}
 }
 

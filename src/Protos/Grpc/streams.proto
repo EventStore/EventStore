@@ -27,6 +27,7 @@ message ReadReq {
 			FilterOptions filter = 7;
 			Empty no_filter = 8;
 		}
+		UUIDOption uuid_option = 9;
 
 		enum ReadDirection {
 			Forwards = 0;
@@ -66,6 +67,12 @@ message ReadReq {
 			message Expression {
 				string regex = 1;
 				repeated string prefix = 2;
+			}
+		}
+		message UUIDOption {
+			oneof content {
+				Empty structured = 1;
+				Empty string = 2;
 			}
 		}
 	}

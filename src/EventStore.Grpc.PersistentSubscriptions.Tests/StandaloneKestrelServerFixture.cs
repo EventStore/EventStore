@@ -45,7 +45,7 @@ namespace EventStore.Grpc {
 						}
 					});
 				})
-				.UseStartup(new ClusterVNodeStartup(_node))
+				.UseStartup(_node.Startup)
 				.Build();
 
 			Client = new EventStoreGrpcClient(new UriBuilder {

@@ -24,6 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var streamOptionsCase = options.StreamOptionCase;
 			var readDirection = options.ReadDirection;
 			var filterOptionsCase = options.FilterOptionCase;
+			var uuidOptionsCase = options.UuidOption.ContentCase;
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 
@@ -149,7 +150,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
-					Id = Uuid.FromGuid(e.EventId).ToStreamsDto(),
+					Id = uuidOptionsCase switch {
+						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
+							String = e.EventId.ToString()
+						},
+						_ => Uuid.FromGuid(e.EventId).ToStreamsDto()
+					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,

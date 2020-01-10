@@ -61,6 +61,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private DateTime _lastTcpConnectionsRequestTime;
 		private IPEndPoint _tcpEndpoint;
 		private IPEndPoint _tcpSecureEndpoint;
+		private bool _started = false;
 
 		public MonitoringService(IQueuedHandler monitoringQueue,
 			IPublisher statsCollectionBus,
@@ -93,7 +94,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
 			_timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
-			_systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath);
+			_systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath, _statsCollectionPeriodMs);
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
@@ -101,6 +102,11 @@ namespace EventStore.Core.Services.Monitoring {
 		}
 
 		public void OnTimerTick(object state) {
+			if (!_started) {
+				_started = true;
+				_systemStats.Start();
+			}
+
 			CollectRegularStats();
 			_timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
 		}
