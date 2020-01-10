@@ -472,7 +472,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void EnterRunning() {
 			try {
 				_publisher.Publish(
-					new CoreProjectionStatusMessage.Started(_projectionCorrelationId));
+					new CoreProjectionStatusMessage.Started(_projectionCorrelationId, _name));
 				_projectionProcessingPhase.ProcessEvent();
 			} catch (Exception ex) {
 				SetFaulted(ex);

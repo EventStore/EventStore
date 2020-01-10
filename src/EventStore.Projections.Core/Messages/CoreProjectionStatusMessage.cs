@@ -25,8 +25,10 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Started(Guid projectionId)
+			public string Name { get; }
+			public Started(Guid projectionId, string name)
 				: base(projectionId) {
+				Name = name;
 			}
 		}
 

@@ -8,7 +8,6 @@ using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -24,6 +23,7 @@ namespace EventStore.Projections.Core {
 		IHandle<SystemMessage.SystemCoreReady>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<CoreProjectionStatusMessage.Stopped>,
+		IHandle<CoreProjectionStatusMessage.Started>,
 		IHandle<ProjectionSubsystemMessage.RestartSubsystem>,
 		IHandle<ProjectionSubsystemMessage.ComponentStarted>,
 		IHandle<ProjectionSubsystemMessage.ComponentStopped>,
@@ -124,6 +124,7 @@ namespace EventStore.Projections.Core {
 			ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
 				_projectionsQueryExpiry);
 			projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
+			projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 		}
 		
 		private static void CreateAwakerService(StandardComponents standardComponents) {
@@ -336,6 +337,10 @@ namespace EventStore.Projections.Core {
 						ProjectionManagementMessage.RunAs.System));
 				}
 			}
+		}
+		
+		public void Handle(CoreProjectionStatusMessage.Started message) {
+			_standardProjections.Remove(message.Name);
 		}
 
 		private enum SubsystemState {
