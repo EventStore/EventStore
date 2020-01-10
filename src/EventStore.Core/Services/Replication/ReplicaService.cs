@@ -23,8 +23,6 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationMessage.ReconnectToMaster>,
 		IHandle<ReplicationMessage.SubscribeToMaster>,
 		IHandle<ReplicationMessage.AckLogPosition>,
-		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.TcpForwardMessage> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ReplicaService>();
 
@@ -203,20 +201,6 @@ namespace EventStore.Core.Services.Replication {
 			if (!_state.IsReplica()) throw new Exception("!_state.IsReplica()");
 			if (_connection == null) throw new Exception("_connection == null");
 			SendTcpMessage(_connection, message);
-		}
-
-		public void Handle(StorageMessage.PrepareAck message) {
-			if (_state == VNodeState.Slave) {
-				Debug.Assert(_connection != null, "_connection == null");
-				SendTcpMessage(_connection, message);
-			}
-		}
-
-		public void Handle(StorageMessage.CommitAck message) {
-			if (_state == VNodeState.Slave) {
-				Debug.Assert(_connection != null, "_connection == null");
-				SendTcpMessage(_connection, message);
-			}
 		}
 
 		public void Handle(ClientMessage.TcpForwardMessage message) {

@@ -26,8 +26,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeMaster();
 			AddPendingPrepares(_transactionPosition, new long[] { _logPosition1, _logPosition2, _logPosition3 });
 			AddPendingCommit(_transactionPosition, _commitPosition);
-			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _commitPosition, _transactionPosition, 0, 0,
-			true));
+			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _commitPosition, _transactionPosition, 0, 0));
 			CommitTracker.Handle(new CommitMessage.WrittenTo(_commitPosition));
 			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_commitPosition, Guid.NewGuid()));
 

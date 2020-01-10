@@ -18,8 +18,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();
 			AddPendingPrepare(_logPosition);
-			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0, true));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0, true));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
 
 			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition));

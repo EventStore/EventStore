@@ -354,8 +354,7 @@ namespace EventStore.Core.Services.Storage {
 			internal class CommitAckNode {
 				public readonly Guid CorrelationId;
 				public readonly long LogPosition;
-				public readonly List<StorageMessage.CommitAck> CommitAcks = new List<StorageMessage.CommitAck>();
-				private bool _hadSelf;
+				public readonly List<StorageMessage.CommitAck> CommitAcks = new List<StorageMessage.CommitAck>();				
 
 				public CommitAckNode(Guid correlationId, StorageMessage.CommitAck commitAck) {
 					CorrelationId = correlationId;
@@ -367,12 +366,10 @@ namespace EventStore.Core.Services.Storage {
 					Ensure.Equal(true, CorrelationId == commitAck.CorrelationId, "correlationId should be equal");
 
 					CommitAcks.Add(commitAck);
-					if (commitAck.IsSelf)
-						_hadSelf = true;
 				}
 
 				public bool IsReplicated(int commitCount) {
-					return CommitAcks.Count >= commitCount && _hadSelf;
+					return CommitAcks.Count >= commitCount;
 				}
 			}
 		}

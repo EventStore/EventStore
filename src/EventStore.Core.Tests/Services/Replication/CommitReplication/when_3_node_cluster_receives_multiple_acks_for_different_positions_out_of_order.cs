@@ -21,8 +21,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition1, publishChaserMsgs: false);
 			AddPendingPrepare(_logPosition2, publishChaserMsgs: false);
-			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0, true));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0, true));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0));
 			
 			// Reach quorum for logPosition2			
 			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition2));

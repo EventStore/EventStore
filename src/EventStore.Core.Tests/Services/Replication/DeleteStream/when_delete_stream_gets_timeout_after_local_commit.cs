@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream {
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1, true);
+			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1);
 		}
 
 		protected override Message When() {
