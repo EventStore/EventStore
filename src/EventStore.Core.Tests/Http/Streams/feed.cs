@@ -384,8 +384,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		[Explicit("Failing test for Greg demonstrating NullReferenceException in Convert.cs")]
+		[TestFixture, Category("LongRunning"), Ignore("Failing test for Greg demonstrating NullReferenceException in Convert.cs")]
 		public class
 			when_reading_a_stream_forward_with_maxcount_deleted_linktos_with_rich_entry :
 				SpecificationWithLinkToToMaxCountDeletedEvents {
