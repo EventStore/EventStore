@@ -247,6 +247,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	internal class DummyTcpConnection : ITcpConnection {
 		public Guid ConnectionId {
 			get { return _connectionId; }
+			set { _connectionId = value; }
 		}
 		private Guid _connectionId = Guid.NewGuid();
 		public string ClientConnectionName {
