@@ -5,7 +5,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 	[TestFixture]
 	public class
 		when_running_and_then_other_events_tombstone_ant_other_events :
-			specification_with_standard_projections_runnning {
+			specification_with_standard_projections_running {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}

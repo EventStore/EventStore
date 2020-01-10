@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_all_foreach_projection.recovery {
 	[TestFixture]
 	public class
-		when_running_and_events_get_indexed_before_recovery : specification_with_standard_projections_runnning {
+		when_running_and_events_get_indexed_before_recovery : specification_with_standard_projections_running {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}

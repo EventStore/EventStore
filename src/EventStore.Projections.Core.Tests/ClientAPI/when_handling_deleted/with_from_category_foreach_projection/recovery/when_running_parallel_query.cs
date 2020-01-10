@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection.
 	recovery {
 	[TestFixture]
-	public class when_running_parallel_query : specification_with_standard_projections_runnning {
+	public class when_running_parallel_query : specification_with_standard_projections_running {
 		protected override int GivenWorkerThreadCount() {
 			return 2;
 		}

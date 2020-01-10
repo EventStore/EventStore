@@ -5,7 +5,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with
 	recovery {
 	[TestFixture]
 	public class
-		when_running_and_a_stream_gets_deleted_before_recovery : specification_with_standard_projections_runnning {
+		when_running_and_a_stream_gets_deleted_before_recovery : specification_with_standard_projections_running {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}

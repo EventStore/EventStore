@@ -11,7 +11,7 @@ using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
-	public class Authorization : specification_with_standard_projections_runnning {
+	public class Authorization : specification_with_standard_projections_running {
 		private Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 		private int _masterId;

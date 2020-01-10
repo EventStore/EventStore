@@ -5,7 +5,7 @@ using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
-	public class list_projections : specification_with_standard_projections_runnning {
+	public class list_projections : specification_with_standard_projections_running {
 		const string TestProjection =
 			"fromAll().when({$init: function (state, ev) {return {};},ConversationStarted: function (state, ev) {state.lastBatchSent = ev;return state;}});";
 

@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_all_foreach_projection {
 	[TestFixture]
-	public class when_running_and_no_indexing_and_other_events : specification_with_standard_projections_runnning {
+	public class when_running_and_no_indexing_and_other_events : specification_with_standard_projections_running {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}
