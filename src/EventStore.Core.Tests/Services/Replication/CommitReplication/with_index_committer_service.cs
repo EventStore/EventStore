@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
 			CommitTracker = new CommitTrackerService(Publisher, CommitLevel.MasterIndexed, 3, ReplicationCheckpoint, WriterCheckpoint);
 			CommitTracker.Start();
-			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
+			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
 			Publisher.Subscribe<CommitMessage.ReplicatedTo>(Service);
 			Publisher.Subscribe<CommitMessage.ReplicatedTo>(CommitTracker);

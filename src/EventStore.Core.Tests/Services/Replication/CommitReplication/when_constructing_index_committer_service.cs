@@ -25,31 +25,35 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		[Test]
 		public void null_index_committer_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(null, _publisher,
-				 _writerCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
+				 _writerCheckpoint, _replicationCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void null_publisher_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, null,
-				 _writerCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
+				 _writerCheckpoint, _replicationCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void null_writer_checkpoint_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				 null, _commitCount, _tableIndex, _queueStatsManager));
+				 null, _replicationCheckpoint, _commitCount, _tableIndex, _queueStatsManager));
 		}
-
+		[Test]
+		public void null_replication_checkpoint_throws_argument_null_exception() {
+			Assert.Throws<ArgumentNullException>(() => new IndexCommitterService(_indexCommitter, _publisher,
+				 _writerCheckpoint, null, _commitCount, _tableIndex, _queueStatsManager));
+		}
 		[Test]
 		public void commit_count_of_zero_throws_argument_out_of_range_exception() {
 			Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				 _writerCheckpoint, 0, _tableIndex, _queueStatsManager));
+				 _writerCheckpoint, _replicationCheckpoint, 0, _tableIndex, _queueStatsManager));
 		}
 
 		[Test]
 		public void negative_commit_count_throws_argument_out_of_range_exception() {
 			Assert.Throws<ArgumentOutOfRangeException>(() => new IndexCommitterService(_indexCommitter, _publisher,
-				 _writerCheckpoint, -1, _tableIndex, _queueStatsManager));
+				 _writerCheckpoint, _replicationCheckpoint, -1, _tableIndex, _queueStatsManager));
 		}
 	}
 }
