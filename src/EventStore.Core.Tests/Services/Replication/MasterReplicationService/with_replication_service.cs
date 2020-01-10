@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 		}
 
 		private Guid AddSubscription(Guid replicaId, bool isPromotable) {
-			var tcpConn = new DummyTcpConnection();
+			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
 			var mgr = new TcpConnectionManager(
 				"Test Subscription Connection mager", TcpServiceType.External, new ClientTcpDispatcher(),
