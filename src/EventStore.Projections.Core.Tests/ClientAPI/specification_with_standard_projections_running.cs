@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
+using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
@@ -15,126 +17,75 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
-using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Log;
-using EventStore.Core.Data;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
-namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
+namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
-	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
-		protected MiniClusterNode[] _nodes = new MiniClusterNode[3];
-		protected Endpoints[] _nodeEndpoints = new Endpoints[3];
+	public class specification_with_standard_projections_running : SpecificationWithDirectoryPerTestFixture {
 		protected IEventStoreConnection _conn;
-		private readonly ProjectionsSubsystem[] _projections = new ProjectionsSubsystem[3];
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
-
-		protected class Endpoints {
-			public readonly IPEndPoint InternalTcp;
-			public readonly IPEndPoint InternalTcpSec;
-			public readonly IPEndPoint InternalHttp;
-			public readonly IPEndPoint ExternalTcp;
-			public readonly IPEndPoint ExternalTcpSec;
-			public readonly IPEndPoint ExternalHttp;
-			private readonly int[] _ports;
-
-			public Endpoints(
-				int internalTcp, int internalTcpSec, int internalHttp, int externalTcp,
-				int externalTcpSec, int externalHttp) {
-				var testIp = Environment.GetEnvironmentVariable("ES-TESTIP");
-
-				var address = string.IsNullOrEmpty(testIp) ? IPAddress.Loopback : IPAddress.Parse(testIp);
-				InternalTcp = new IPEndPoint(address, internalTcp);
-				InternalTcpSec = new IPEndPoint(address, internalTcpSec);
-				InternalHttp = new IPEndPoint(address, internalHttp);
-				ExternalTcp = new IPEndPoint(address, externalTcp);
-				ExternalTcpSec = new IPEndPoint(address, externalTcpSec);
-				ExternalHttp = new IPEndPoint(address, externalHttp);
-
-				_ports = new[]
-					{internalHttp, internalTcp, internalTcpSec, externalHttp, externalTcp, externalTcpSec};
-			}
-
-			public IEnumerable<int> Ports => _ports;
-		}
-
+		protected QueryManager _queryManager;
+#if DEBUG
+		private Task _projectionsCreated;
+		private ProjectionsSubsystem _projections;
+		private MiniNode _node;
+#endif
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 #if (!DEBUG)
             Assert.Ignore("These tests require DEBUG conditional");
 #else
-			_nodeEndpoints[0] = new Endpoints(
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
-			_nodeEndpoints[1] = new Endpoints(
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
-			_nodeEndpoints[2] = new Endpoints(
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+			var projectionWorkerThreadCount = GivenWorkerThreadCount();
+			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
+				startStandardProjections: false,
+				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			_node = new MiniNode(
+				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
+				subsystems: new ISubsystem[] {_projections});
+			_projectionsCreated = SystemProjections.Created(_projections.MasterMainBus);
 
-			_nodes[0] = CreateNode(0,
-				_nodeEndpoints[0], new[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp });
-			_nodes[1] = CreateNode(1,
-				_nodeEndpoints[1], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
-			_nodes[2] = CreateNode(2,
-				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
-			WaitIdle();
-
-			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.MasterMainBus)).ToArray();
-
-			foreach (var node in _nodes) {
-				node.Start();
-				node.WaitIdle();
-			}
-
-			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
-
-			_conn = EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
-			await _conn.ConnectAsync().WithTimeout();
+			await _node.Start();
+			_conn = EventStoreConnection.Create(_node.TcpEndPoint);
+			await _conn.ConnectAsync();
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
-				_nodes.Single(x => x.NodeState == VNodeState.Master).ExternalHttpEndPoint,
-				TimeSpan.FromMilliseconds(10000));
+				_node.ExtHttpEndPoint,
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
 
-			if (GivenStandardProjectionsRunning()) {
-				await Task.WhenAny(projectionsStarted).WithTimeout(TimeSpan.FromSeconds(10));
-				await EnableStandardProjections().WithTimeout(TimeSpan.FromMinutes(2));
-			}
+			_queryManager = new QueryManager(
+				new ConsoleLogger(),
+				_node.ExtHttpEndPoint,
+				TimeSpan.FromMilliseconds(20000),
+				TimeSpan.FromMilliseconds(20000),
+				_node.HttpMessageHandler);
 
 			WaitIdle();
 
+			if (GivenStandardProjectionsRunning())
+				await EnableStandardProjections();
+
+			WaitIdle();
 			try {
-				await Given().WithTimeout();
+				await Given().WithTimeout(TimeSpan.FromSeconds(10));
 			} catch (Exception ex) {
 				throw new Exception("Given Failed", ex);
 			}
 
 			try {
-				await When().WithTimeout();
+				await When().WithTimeout(TimeSpan.FromSeconds(10));
 			} catch (Exception ex) {
 				throw new Exception("When Failed", ex);
 			}
+
 #endif
 		}
 
-		private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds) {
-			_projections[index] = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
-				startStandardProjections: false,
-				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
-			var node = new MiniClusterNode(
-				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
-				endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
-			return node;
+		protected virtual int GivenWorkerThreadCount() {
+			return 1;
 		}
 
 		[TearDown]
@@ -145,6 +96,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		protected async Task EnableStandardProjections() {
+#if DEBUG
+			await _projectionsCreated;
+#endif
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection);
 			await EnableProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection);
@@ -162,18 +116,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			return true;
 		}
 
-		protected async Task EnableProjection(string name) {
-			for (int i = 1; i <= 10; i++) {
-				try {
-					await _manager.EnableAsync(name, _admin);
-				} catch (Exception) {
-					if (i == 10)
-						throw;
-					await Task.Delay(5000);
-				}
-			}
-
-			await Task.Delay(1000); /* workaround for race condition when multiple projections are being enabled simultaneously */
+		protected Task EnableProjection(string name) {
+			return _manager.EnableAsync(name, _admin);
 		}
 
 		protected Task DisableProjection(string name) {
@@ -182,11 +126,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_conn.Close();
-			await Task.WhenAll(
-				_nodes[0].Shutdown(),
-				_nodes[1].Shutdown(),
-				_nodes[2].Shutdown());
+			if (_conn != null)
+				_conn.Close();
+#if DEBUG
+			if (_node != null)
+				await _node.Shutdown();
+#endif
 			await base.TestFixtureTearDown();
 		}
 
@@ -195,7 +140,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		protected virtual Task Given() => Task.CompletedTask;
 
 		protected Task PostEvent(string stream, string eventType, string data) {
-			return _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { CreateEvent(eventType, data) });
+			return _conn.AppendToStreamAsync(stream, ExpectedVersion.Any, CreateEvent(eventType, data));
 		}
 
 		protected Task HardDeleteStream(string stream) {
@@ -210,18 +155,17 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			return new EventData(Guid.NewGuid(), type, true, Encoding.UTF8.GetBytes(data), new byte[0]);
 		}
 
-		protected void WaitIdle() {
+		protected void WaitIdle(int multiplier = 1) {
 #if DEBUG
-			_nodes[0].WaitIdle();
-			_nodes[1].WaitIdle();
-			_nodes[2].WaitIdle();
+			_node.WaitIdle();
 #endif
 		}
 
 #pragma warning disable 1998
-		protected async Task AssertStreamTailAsync(string streamId, params string[] events) {
+		protected async Task AssertStreamTail(string streamId, params string[] events) {
 #pragma warning restore 1998
 #if DEBUG
+			await Task.Delay(TimeSpan.FromMilliseconds(500));
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, events.Length, true, _admin);
 			switch (result.Status) {
 				case SliceReadStatus.StreamDeleted:
@@ -236,7 +180,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 						DumpFailed("Stream does not contain enough events", streamId, events, result.Events);
 					else {
 						for (var index = 0; index < events.Length; index++) {
-							var parts = events[index].Split(new char[] { ':' }, 2);
+							var parts = events[index].Split(new char[] {':'}, 2);
 							var eventType = parts[0];
 							var eventData = parts[1];
 
@@ -253,7 +197,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 #pragma warning disable 1998
-		protected async Task DumpStreamAsync(string streamId) {
+		protected async Task DumpStream(string streamId) {
 #pragma warning restore 1998
 #if DEBUG
 			var result = await _conn.ReadStreamEventsBackwardAsync(streamId, -1, 100, true, _admin);
@@ -287,12 +231,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				message, actual, expected, actualMeta);
 		}
 
-		private void Dump(string message, string streamId, ResolvedEvent[] resultEvents) {
+		protected void Dump(string message, string streamId, ResolvedEvent[] resultEvents) {
 			var actual = resultEvents.Aggregate(
 				"", (a, v) => a + ", " + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugDataView);
 
 			var actualMeta = resultEvents.Aggregate(
 				"", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView);
+
 
 			Debug.WriteLine(
 				"Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n \r\nActual metas:{3}", streamId,
@@ -304,14 +249,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			await _manager.CreateContinuousAsync("test-projection", query, _admin);
 			WaitIdle();
 		}
-	}
 
-	[TestFixture, Explicit]
-	public class vnode_cluster_specification : specification_with_standard_projections_runnning {
-		[Test, Explicit]
-		public async Task vnode_cluster_starts() {
-			await PostProjection(@"fromStream('$user-admin').outputState()");
-			await AssertStreamTailAsync("$projections-test-projection-result", "Result:{}");
+		protected async Task PostQuery(string query) {
+			await _manager.CreateTransientAsync("query", query, _admin);
+			WaitIdle();
 		}
 	}
 }

@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	namespace event_by_type_index {
-		public class with_existing_events : specification_with_standard_projections_runnning {
+		public class with_existing_events : specification_with_standard_projections_running {
 			protected override async Task Given() {
 				await base.Given();
 				await PostEvent("stream1", "type1", "{}");

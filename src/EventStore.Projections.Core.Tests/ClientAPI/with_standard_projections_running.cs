@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	namespace with_standard_projections_running {
-		public abstract class when_deleting_stream_base : specification_with_standard_projections_runnning {
+		public abstract class when_deleting_stream_base : specification_with_standard_projections_running {
 			[Test, Category("Network")]
 			public async Task streams_stream_exists() {
 				Assert.AreEqual(

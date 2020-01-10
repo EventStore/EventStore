@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_from_all_query {
 	[TestFixture]
-	public class when_getting_result : specification_with_standard_projections_runnning {
+	public class when_getting_result : specification_with_standard_projections_running {
 		protected override async Task Given() {
 			await base.Given();
 
