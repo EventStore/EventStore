@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus = new InMemoryBus("temp");
 			_bus.Subscribe(_consumer);
 			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
-			var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+			var ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
 			_readerService = new EventReaderCoreService(_bus, ioDispatcher, 10, writerCheckpoint,
 				runHeadingReader: true, faultOutOfOrderProjections: true);
 			_subscriptionDispatcher =

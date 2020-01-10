@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
-			var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue));
+			var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue), true);
 //            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(
 //                output,
 //                ioDispatcher,

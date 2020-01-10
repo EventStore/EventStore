@@ -8,7 +8,6 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 
@@ -23,11 +22,11 @@ namespace EventStore.Core.Helpers {
 		private readonly WriterQueueSet _writerQueueSet = new WriterQueueSet();
 		private readonly PendingRequests _pendingRequests = new PendingRequests();
 		private readonly PendingReads _pendingReads = new PendingReads();
+		private readonly bool _trackPendingRequests;
+		private readonly HashSet<Guid> _allPendingRequests = new HashSet<Guid>();
 		
 		private bool _draining;
 		private Action _onRequestsDrained;
-
-		private readonly HashSet<Guid> _allPendingRequests = new HashSet<Guid>();
 
 		public readonly
 			RequestResponseDispatcher
@@ -61,9 +60,10 @@ namespace EventStore.Core.Helpers {
 			RequestResponseDispatcher
 			<ClientMessage.FilteredReadAllEventsBackward, ClientMessage.FilteredReadAllEventsBackwardCompleted> AllBackwardFilteredReader;
 
-		public IODispatcher(IPublisher publisher, IEnvelope envelope) {
+		public IODispatcher(IPublisher publisher, IEnvelope envelope, bool trackPendingRequests=false) {
 			_publisher = publisher;
 			_inputQueueEnvelope = envelope;
+			_trackPendingRequests = trackPendingRequests;
 			ForwardReader =
 				new RequestResponseDispatcher
 					<ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
@@ -143,10 +143,13 @@ namespace EventStore.Core.Helpers {
 		}
 
 		private void AddPendingRequest(Guid correlationId) {
-			_allPendingRequests.Add(correlationId);
+			if (_trackPendingRequests)
+				_allPendingRequests.Add(correlationId);
 		}
 		
 		private void RemovePendingRequest(Guid correlationId) {
+			if (!_trackPendingRequests) return;
+
 			_allPendingRequests.Remove(correlationId);
 			if (_draining && _allPendingRequests.IsEmpty()) {
 				_onRequestsDrained?.Invoke();

@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core {
 			TimeSpan projectionQueryExpiry) {
 			IQueuedHandler inputQueue = projectionsStandardComponents.MasterInputQueue;
 			InMemoryBus outputBus = projectionsStandardComponents.MasterOutputBus;
-			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue));
+			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
 
 			var projectionsController = new ProjectionsController(
 				standardComponents.HttpForwarder,
