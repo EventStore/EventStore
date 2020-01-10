@@ -227,8 +227,7 @@ namespace EventStore.Core.Services.Storage {
 						record.LogPosition,
 						record.TransactionPosition,
 						firstEventNumber,
-						lastEventNumber,
-						true));
+						lastEventNumber));
 				}
 			} else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.Data)) {
 				_masterBus.Publish(
@@ -245,7 +244,7 @@ namespace EventStore.Core.Services.Storage {
 			if (lastEventNumber == EventNumber.Invalid)
 				lastEventNumber = record.FirstEventNumber - 1;
 			_masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition,
-				record.TransactionPosition, firstEventNumber, lastEventNumber, true));
+				record.TransactionPosition, firstEventNumber, lastEventNumber));
 		}
 
 		private void ProcessSystemRecord(SystemLogRecord record) {
