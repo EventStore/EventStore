@@ -52,9 +52,10 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
 			Publisher.Subscribe<CommitMessage.ReplicatedTo>(Service);
-			Publisher.Subscribe<CommitMessage.ReplicatedTo>(CommitTracker);
+			Publisher.Subscribe<CommitMessage.MasterReplicatedTo>(CommitTracker);
 			
 			BecomeMaster();
+			Given();
 
 			When();
 		}
@@ -63,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public virtual void TestFixtureTearDown() {
 			Service.Stop();
 		}
-
+		public abstract void Given();
 		public abstract void When();
 
 		protected void AddPendingPrepare(long transactionPosition, long postPosition = -1, bool publishChaserMsgs = true) {
@@ -107,12 +108,10 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		}
 
 		protected void BecomeMaster() {
-			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
 			CommitTracker.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {
-			Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 			CommitTracker.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
@@ -121,7 +120,6 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			var msg = new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
 				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false));
-			Service.Handle(msg);
 			CommitTracker.Handle(msg);
 		}
 	}

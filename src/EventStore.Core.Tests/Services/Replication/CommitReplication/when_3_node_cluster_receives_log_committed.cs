@@ -12,6 +12,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private Guid _correlationId = Guid.NewGuid();
 		private long _logPosition = 4000;
 
+		public override void Given() { }
 		public override void When() {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();

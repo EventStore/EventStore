@@ -12,7 +12,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.Services.Transport.Tcp {
 	public class InternalTcpDispatcher : ClientTcpDispatcher {
 		public InternalTcpDispatcher() {		
-			AddUnwrapper(TcpCommand.ReplicatedTo, UnwrapReplicatedTo, ClientVersion.V2);
+			AddUnwrapper(TcpCommand.MasterReplicatedTo, UnwrapReplicatedTo, ClientVersion.V2);
 			AddWrapper<CommitMessage.ReplicatedTo>(WrapReplicatedTo, ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.SubscribeReplica, UnwrapReplicaSubscriptionRequest, ClientVersion.V2);
@@ -41,12 +41,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private TcpPackage WrapReplicatedTo(CommitMessage.ReplicatedTo msg) {
 			var dto = new ReplicationMessageDto.ReplicatedTo(msg.LogPosition);
-			return new TcpPackage(TcpCommand.ReplicatedTo, Guid.NewGuid(), dto.Serialize());
+			return new TcpPackage(TcpCommand.MasterReplicatedTo, Guid.NewGuid(), dto.Serialize());
 		}
 
-		private static CommitMessage.ReplicatedTo UnwrapReplicatedTo(TcpPackage package, IEnvelope envelope) {
+		private static CommitMessage.MasterReplicatedTo UnwrapReplicatedTo(TcpPackage package, IEnvelope envelope) {
 			var dto = package.Data.Deserialize<ReplicationMessageDto.ReplicatedTo>();
-			return new CommitMessage.ReplicatedTo(dto.LogPosition);
+			return new CommitMessage.MasterReplicatedTo(dto.LogPosition);
 		}
 
 		private ReplicationMessage.ReplicaSubscriptionRequest UnwrapReplicaSubscriptionRequest(TcpPackage package,

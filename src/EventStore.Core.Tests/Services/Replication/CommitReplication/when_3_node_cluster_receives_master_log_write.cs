@@ -7,6 +7,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	public class when_3_node_cluster_receives_master_log_write : with_index_committer_service {
 		private long _logPosition = 4000;
 		private Guid _correlationId = Guid.NewGuid();
+
+		public override void Given() { }
+
 		public override void When() {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition, publishChaserMsgs: false);

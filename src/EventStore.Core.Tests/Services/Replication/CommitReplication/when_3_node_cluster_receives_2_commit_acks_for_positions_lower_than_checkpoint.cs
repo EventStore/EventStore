@@ -11,19 +11,21 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
-			ReplicationPosition = 4000;
+			ReplicationPosition = 100;
 			base.TestFixtureSetUp();
 		}
-
+		public override void Given() { }
 		public override void When() {
 			BecomeMaster();
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
+			ReplicationCheckpoint.Write(_logPosition -1);
+			
 			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition - 1));
 		}
 
 		[Test]
-		public void replication_checkpoint_should_not_have_been_updated() {
-			Assert.AreEqual(ReplicationPosition, ReplicationCheckpoint.ReadNonFlushed());
+		public void replication_checkpoint_should_not_have_changed() {
+			Assert.AreEqual(_logPosition -1, ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]

@@ -307,13 +307,12 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<CommitMessage.WrittenTo>(commitTracker);
 			_mainBus.Subscribe<CommitMessage.IndexedTo>(commitTracker);
 			_mainBus.Subscribe<CommitMessage.ReplicaWrittenTo>(commitTracker);
-			_mainBus.Subscribe<CommitMessage.ReplicatedTo>(commitTracker);
+			_mainBus.Subscribe<CommitMessage.MasterReplicatedTo>(commitTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
 				db.Config.WriterCheckpoint, db.Config.ReplicationCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
 			AddTask(indexCommitterService.Task);
 
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(indexCommitterService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
 			_mainBus.Subscribe<CommitMessage.ReplicatedTo>(indexCommitterService);
 			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
