@@ -6,50 +6,48 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	[TestFixture]
-	public class when_3_node_cluster_receives_multiple_acks_for_same_positions : with_index_committer_service {
-		private CountdownEvent _eventsReplicated = new CountdownEvent(2);
+	public class when_3_node_cluster_receives_multiple_acks_for_same_position : with_index_committer_service {
 
 		private Guid _correlationId1 = Guid.NewGuid();
-		private Guid _correlationId2 = Guid.NewGuid();
 
-		private long _logPosition = 1000;
+		private long _transactionId = 1000;
+		private long _commitLogPosition = 2000;
+
+		public override void Given() {
+			BecomeMaster();
+			AddPendingPrepare(_transactionId);
+			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _commitLogPosition, _transactionId, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _commitLogPosition, _transactionId, 0, 0));
+
+			Assert.AreEqual(0, CommitReplicatedMgs.Count, $"Recieved {CommitReplicatedMgs.Count} CommitReplicated messages during setup");
+		}
+
+		public int ReplicatedMsgCount => CommitReplicatedMgs.Count;
 
 		public override void When() {
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
-			BecomeMaster();
-			AddPendingPrepare(_logPosition);
-			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition, _logPosition, 0, 0));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition, _logPosition, 0, 0));
-
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
-
-			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
-				Assert.Fail("Timed out waiting for commit replicated messages to be published");
-			}
+			CommitTracker.Handle(new CommitMessage.WrittenTo(_commitLogPosition));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_commitLogPosition, ReplicaId));
 		}
 
 		[Test]
 		public void replication_checkpoint_should_have_been_updated() {
-			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());
+			AssertEx.IsOrBecomesTrue(() => _commitLogPosition == ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]
 		public void commit_replicated_message_should_have_been_published_for_the_event() {
-			Assert.AreEqual(2, CommitReplicatedMgs.Count);
+			AssertEx.IsOrBecomesTrue(() => 1 == CommitReplicatedMgs.Count, msg: $"Expected 1, but recieved {ReplicatedMsgCount} CommitReplicated messages");
 		}
 		[Test]
 		public void index_written_message_should_have_been_published_for_the_event() {
-			Assert.AreEqual(2, IndexWrittenMgs.Count);
-			Assert.AreEqual(_logPosition, IndexWrittenMgs[0].LogPosition);
-			Assert.AreEqual(_logPosition, IndexWrittenMgs[1].LogPosition);
+			Assert.AreEqual(1, IndexWrittenMgs.Count);
+			Assert.AreEqual(_commitLogPosition, IndexWrittenMgs[0].LogPosition);
 		}
 
 		[Test]
 		public void index_should_have_been_updated() {
 			Assert.AreEqual(1, IndexCommitter.CommittedPrepares.Count);
-			Assert.AreEqual(_logPosition, IndexCommitter.CommittedPrepares[0].LogPosition);
+			Assert.AreEqual(_transactionId, IndexCommitter.CommittedPrepares[0].LogPosition);
 		}
 	}
 }

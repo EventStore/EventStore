@@ -65,6 +65,19 @@ namespace EventStore.Core.Messages {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				LogPosition = logPosition;
 			}
+		}public class MasterReplicatedTo : Message { 
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+			
+			public readonly long LogPosition;
+			
+			public MasterReplicatedTo(long logPosition ) {
+				Ensure.Nonnegative(logPosition, "logPosition");
+				LogPosition = logPosition;
+			}
 		}
 		public class CommittedTo : Message { 
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

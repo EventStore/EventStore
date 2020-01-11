@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 
+
 namespace EventStore.Core.Services.Storage {
 	public interface IIndexCommitterService {
 		void Init(long checkpointPosition);
@@ -25,7 +26,6 @@ namespace EventStore.Core.Services.Storage {
 
 	public class IndexCommitterService : IIndexCommitterService,
 		IMonitoredQueue,
-		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<CommitMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
@@ -39,7 +39,6 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ITableIndex _tableIndex;
 		private Thread _thread;
 		private bool _stop;
-		private VNodeState _state;
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -53,7 +52,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions =
 			new ConcurrentDictionary<long, PendingTransaction>();
 
-		private readonly ConcurrentQueue<StorageMessage.CommitAck> _commitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
+		private readonly SortedList<long, StorageMessage.CommitAck> _commitAcks = new SortedList<long, StorageMessage.CommitAck>();
 		private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim(false, 1);
 		private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
@@ -112,7 +111,6 @@ namespace EventStore.Core.Services.Storage {
 						_queueStats.Dequeued(replicatedMessage);
 #endif
 						_queueStats.ProcessingStarted(msgType, _replicatedQueue.Count);
-						//Thread.Sleep(5);
 						ProcessCommitReplicated(replicatedMessage);
 						_queueStats.ProcessingEnded(1);
 					} else {
@@ -156,9 +154,8 @@ namespace EventStore.Core.Services.Storage {
 
 			lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
 
-			if (_state == VNodeState.Master) {
-				_publisher.Publish(new CommitMessage.IndexedTo(message.LogPosition));
-			}
+			_publisher.Publish(new CommitMessage.IndexedTo(message.LogPosition));
+
 			_publisher.Publish(new StorageMessage.CommitIndexed(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 		}
@@ -205,17 +202,13 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage msg) {
-			//TODO-clc: if we are a deposed master do we need to clear the pending uncommitted writes?
-			_state = msg.State;
-		}
-
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
 			_stop = true;
 		}
 		public void Handle(StorageMessage.CommitAck message) {
-			//CommitAcks will arrive in log order from storage chaser
-			_commitAcks.Enqueue(message);
+			lock (_commitAcks) {
+				_commitAcks.TryAdd(message.LogPosition, message);
+			}
 			EnqueReplicatedCommits();
 		}
 
@@ -224,14 +217,23 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private void EnqueReplicatedCommits() {
-			while (_commitAcks.TryPeek(out var msg) && msg.LogPosition <= _replicationCheckpoint.ReadNonFlushed()) {
-
+			var replicated = new List<StorageMessage.CommitAck>();
+			lock (_commitAcks) {
+				if (_commitAcks.Count > 0) {
+					do {
+						var ack = _commitAcks.Values[0];
+						if (ack.LogPosition > _replicationCheckpoint.ReadNonFlushed()) { break; }
+						replicated.Add(ack);
+						_commitAcks.RemoveAt(0);
+					} while (_commitAcks.Count > 0);
+				}
+			}
+			foreach (var ack in replicated) {
 #if DEBUG
 				_queueStats.Enqueued();
 #endif
-				_replicatedQueue.Enqueue(msg);
+				_replicatedQueue.Enqueue(ack);
 				_addMsgSignal.Set();
-				_commitAcks.TryDequeue(out msg);
 			}
 		}
 

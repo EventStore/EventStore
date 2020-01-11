@@ -8,23 +8,18 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	[TestFixture]
 	public class
 		when_master_node_in_3_node_cluster_with_outstanding_commit_acks_becomes_unknown : with_index_committer_service {
-		private CountdownEvent _eventsReplicated = new CountdownEvent(1);
+
 		private long _logPosition = 1000;
 
-		public override void When() {
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
+		public override void Given() {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPosition, _logPosition, 0, 0));
 			BecomeUnknown();
+		}
 
-			Publisher.Publish(new CommitMessage.ReplicatedTo(_logPosition));
-			
-			
-
-			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
-				Assert.Fail("Timed out waiting for commit replicated messages to be published");
-			}
+		public override void When() {
+			Publisher.Publish(new CommitMessage.MasterReplicatedTo(_logPosition));
 		}
 
 		[Test]
@@ -38,8 +33,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Assert.AreEqual(_logPosition, CommitReplicatedMgs[0].TransactionPosition);
 		}
 		[Test]
-		public void index_written_message_should_not_have_been_published() {
-			Assert.AreEqual(0, IndexWrittenMgs.Count);
+		public void index_written_message_should_be_published() {
+			Assert.AreEqual(1, IndexWrittenMgs.Count);
 		}
 
 		[Test]

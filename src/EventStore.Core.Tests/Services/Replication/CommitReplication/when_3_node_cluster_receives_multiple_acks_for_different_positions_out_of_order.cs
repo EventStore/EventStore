@@ -16,6 +16,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		private long _logPosition1 = 1000;
 		private long _logPosition2 = 2000;
 
+		public override void Given() { }
+
 		public override void When() {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 			BecomeMaster();

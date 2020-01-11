@@ -7,58 +7,53 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 	[TestFixture]
 	public class when_3_node_cluster_receives_multiple_acks_for_different_positions : with_index_committer_service {
-		private CountdownEvent _eventsReplicated = new CountdownEvent(2);
 
-		private Guid _correlationId1 = Guid.NewGuid();
-		private Guid _correlationId2 = Guid.NewGuid();
-		private Guid _correlationId3 = Guid.NewGuid();
+		private long _logPositionP1 = 1000;
+		private long _logPositionP2 = 2000;
+		private long _logPositionP3 = 3000;
+		private long _logPositionCommit1 = 3100;
+		private long _logPositionCommit2 = 3200;
+		private long _logPositionCommit3 = 3300;
 
-		private long _logPosition1 = 1000;
-		private long _logPosition2 = 2000;
-		private long _logPosition3 = 3000;
+		public override void Given() {
+			BecomeMaster();
+			AddPendingPrepare(_logPositionP1, publishChaserMsgs: false);
+			AddPendingPrepare(_logPositionP2, publishChaserMsgs: false);
+			AddPendingPrepare(_logPositionP3, publishChaserMsgs: false);
+			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPositionCommit1, _logPositionP1, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPositionCommit2, _logPositionP2, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(Guid.NewGuid(), _logPositionCommit3, _logPositionP3, 0, 0));
+		}
 
 		public override void When() {
-			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
-			BecomeMaster();
-			AddPendingPrepare(_logPosition1, publishChaserMsgs: false);
-			AddPendingPrepare(_logPosition2, publishChaserMsgs: false);
-			AddPendingPrepare(_logPosition3, publishChaserMsgs: false);
-			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId2, _logPosition2, _logPosition2, 0, 0));
-			Service.Handle(new StorageMessage.CommitAck(_correlationId3, _logPosition3, _logPosition3, 0, 0));
-
 			// Reach quorum for middle commit
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition2));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition2, Guid.NewGuid()));
-
-			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
-				Assert.Fail("Timed out waiting for commit replicated messages to be published");
-			}
+			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPositionCommit2));
+			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPositionCommit2, ReplicaId));
 		}
 
 		[Test]
 		public void replication_checkpoint_should_have_been_updated() {
-			Assert.AreEqual(_logPosition2, ReplicationCheckpoint.ReadNonFlushed());
+			AssertEx.IsOrBecomesTrue(() => _logPositionCommit2 == ReplicationCheckpoint.ReadNonFlushed());
 		}
 
 		[Test]
 		public void commit_replicated_message_should_have_been_published_for_first_two_events() {
-			Assert.AreEqual(2, CommitReplicatedMgs.Count);
-			Assert.AreEqual(_logPosition1, CommitReplicatedMgs[0].TransactionPosition);
-			Assert.AreEqual(_logPosition2, CommitReplicatedMgs[1].TransactionPosition);
+			AssertEx.IsOrBecomesTrue(() => 2 == CommitReplicatedMgs.Count);
+			Assert.AreEqual(_logPositionP1, CommitReplicatedMgs[0].TransactionPosition);
+			Assert.AreEqual(_logPositionP2, CommitReplicatedMgs[1].TransactionPosition);
 		}
 		[Test]
 		public void index_written_message_should_have_been_published_for_first_two_events() {
-			Assert.AreEqual(2, IndexWrittenMgs.Count);
-			Assert.AreEqual(_logPosition1, IndexWrittenMgs[0].LogPosition);
-			Assert.AreEqual(_logPosition2, IndexWrittenMgs[1].LogPosition);
+			AssertEx.IsOrBecomesTrue(() => 2 == IndexWrittenMgs.Count);
+			Assert.AreEqual(_logPositionCommit1, IndexWrittenMgs[0].LogPosition);
+			Assert.AreEqual(_logPositionCommit2, IndexWrittenMgs[1].LogPosition);
 		}
 
 		[Test]
 		public void index_should_have_been_updated() {
-			Assert.AreEqual(2, IndexCommitter.CommittedPrepares.Count);
-			Assert.AreEqual(_logPosition1, IndexCommitter.CommittedPrepares[0].LogPosition);
-			Assert.AreEqual(_logPosition2, IndexCommitter.CommittedPrepares[1].LogPosition);
+			AssertEx.IsOrBecomesTrue(() => 2 == IndexCommitter.CommittedPrepares.Count);
+			Assert.AreEqual(_logPositionP1, IndexCommitter.CommittedPrepares[0].LogPosition);
+			Assert.AreEqual(_logPositionP2, IndexCommitter.CommittedPrepares[1].LogPosition);
 		}
 	}
 }

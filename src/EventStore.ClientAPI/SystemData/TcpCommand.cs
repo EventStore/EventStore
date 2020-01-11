@@ -17,7 +17,7 @@ namespace EventStore.ClientAPI.SystemData {
 		DataChunkBulk = 0x14,
 		ReplicaSubscriptionRetry = 0x15,
 		ReplicaSubscribed = 0x16,
-		ReplicatedTo = 0x17,
+		MasterReplicatedTo = 0x17,
 
 		// CLIENT COMMANDS
 //        CreateStream = 0x80,

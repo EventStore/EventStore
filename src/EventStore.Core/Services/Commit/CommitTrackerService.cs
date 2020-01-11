@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Commit {
 		IHandle<CommitMessage.ReplicaWrittenTo>,
 		IHandle<CommitMessage.WrittenTo>,
 		IHandle<CommitMessage.IndexedTo>,
-		IHandle<CommitMessage.ReplicatedTo> {
+		IHandle<CommitMessage.MasterReplicatedTo> {
 		private readonly ILogger _log = LogManager.GetLoggerFor<CommitTrackerService>();
 		private readonly IPublisher _publisher;
 		private readonly CommitLevel _level;
@@ -112,7 +112,7 @@ namespace EventStore.Core.Services.Commit {
 			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(CommitTrackerService)));
 		}
 		public long ReplicatedPosition => _replicationCheckpoint.ReadNonFlushed();
-		public void Handle(CommitMessage.ReplicatedTo message) {
+		public void Handle(CommitMessage.MasterReplicatedTo message) {
 			if (_state != VNodeState.Master) {
 				//Publish Log Commit Position
 				Interlocked.Exchange(ref _replicationPosition, message.LogPosition);
@@ -127,6 +127,7 @@ namespace EventStore.Core.Services.Commit {
 						_replicationCheckpoint.Flush();
 					}
 				}
+				_publisher.Publish(new CommitMessage.ReplicatedTo(newPos));
 			}
 		}
 		private void UpdateCommitPosition() {
@@ -216,11 +217,7 @@ namespace EventStore.Core.Services.Commit {
 
 		public void Handle(SystemMessage.StateChangeMessage msg) {
 			//switching to master from non-Master
-			if (_state != msg.State && msg.State == VNodeState.Master) {
-				_committedPosition = 0;
-				_replicationPosition = 0;
-				_writePosition = 0;
-				_indexedPosition = 0;
+			if (_state != msg.State ) {				
 				_replicaLogPositions.Clear();
 			}
 			_state = msg.State;

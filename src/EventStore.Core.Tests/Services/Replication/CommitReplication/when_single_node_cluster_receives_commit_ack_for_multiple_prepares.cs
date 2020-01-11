@@ -20,6 +20,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			base.TestFixtureSetUp();
 		}
 
+		public override void Given() { }
+
 		public override void When() {
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => _eventsReplicated.Signal()));
 
