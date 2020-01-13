@@ -90,6 +90,23 @@ namespace EventStore.Grpc.Streams {
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
 		}
 
+		[Fact]
+		public async Task max_count_is_respected() {
+			var streamName = _fixture.GetStreamName();
+			const int count = 20;
+			const ulong maxCount = (ulong)count / 2;
+
+			await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.NoStream,
+				_fixture.CreateTestEvents(count));
+
+			var events = await _fixture.Client.ReadAllForwardsAsync(Position.Start, maxCount,
+					filter: new StreamFilter(RegularFilterExpression.ExcludeSystemEvents))
+				.Take(count)
+				.ToArrayAsync();
+
+			Assert.Equal(maxCount, (ulong)events.Length);
+		}
+
 		public class Fixture : EventStoreGrpcFixture {
 			public const string FilteredOutStream = nameof(FilteredOutStream);
 

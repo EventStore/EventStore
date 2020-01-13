@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Enumerators {
 		public class ReadAllForwardsFiltered : IAsyncEnumerator<ResolvedEvent> {
 			private readonly IPublisher _bus;
-			private readonly int _maxCount;
+			private readonly ulong _maxCount;
 			private readonly Util.IEventFilter _eventFilter;
 			private readonly int _maxSearchWindow;
 			private readonly bool _resolveLinks;
@@ -22,16 +22,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
+
 			private Position _nextPosition;
 			private bool _isEnd;
 			private ResolvedEvent _current;
+			private ulong _readCount;
 
 			public ResolvedEvent Current => _current;
 
 			public ReadAllForwardsFiltered(
 				IPublisher bus,
 				Position position,
-				int maxCount,
+				ulong maxCount,
 				bool resolveLinks,
 				Util.IEventFilter eventFilter,
 				int? maxSearchWindow,
@@ -49,14 +51,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentOutOfRangeException(nameof(maxCount));
 				}
 
-				if (maxSearchWindow.HasValue && maxSearchWindow.Value <= maxCount) {
+				if (maxSearchWindow.HasValue && (ulong)maxSearchWindow.Value <= maxCount) {
 					throw new ArgumentOutOfRangeException(nameof(maxSearchWindow));
 				}
 
 				_bus = bus;
 				_nextPosition = position;
 				_maxCount = maxCount;
-				_maxSearchWindow = maxSearchWindow ?? maxCount;
+				_maxSearchWindow = maxSearchWindow ?? (int)maxCount;
 				_eventFilter = eventFilter;
 				_resolveLinks = resolveLinks;
 				_user = user;
@@ -72,12 +74,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_disposedTokenSource.IsCancellationRequested) {
+				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
 					return false;
 				}
 
 				if (_buffer.TryDequeue(out var current)) {
 					_current = current;
+					_readCount++;
 					return true;
 				}
 
@@ -93,7 +96,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.FilteredReadAllEventsForward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
-					commitPosition, preparePosition, Math.Min(_maxCount, 32),
+					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
 					_resolveLinks, false, _maxSearchWindow, default, _eventFilter, _user));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
@@ -106,6 +109,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				if (_buffer.TryDequeue(out current)) {
 					_current = current;
+					_readCount++;
 					return true;
 				}
 

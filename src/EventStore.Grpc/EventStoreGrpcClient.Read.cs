@@ -22,7 +22,7 @@ namespace EventStore.Grpc {
 		/// <returns></returns>
 		public IAsyncEnumerable<ResolvedEvent> ReadAllForwardsAsync(
 			Position position,
-			int maxCount,
+			ulong maxCount,
 			bool resolveLinkTos = false,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
@@ -50,7 +50,7 @@ namespace EventStore.Grpc {
 		/// <returns></returns>
 		public IAsyncEnumerable<ResolvedEvent> ReadAllBackwardsAsync(
 			Position position,
-			int maxCount,
+			ulong maxCount,
 			bool resolveLinkTos = false,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
@@ -69,7 +69,7 @@ namespace EventStore.Grpc {
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamForwardsAsync(
 			string streamName,
 			StreamRevision revision,
-			int count,
+			ulong count,
 			bool resolveLinkTos = false,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
@@ -86,7 +86,7 @@ namespace EventStore.Grpc {
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamBackwardsAsync(
 			string streamName,
 			StreamRevision revision,
-			int count,
+			ulong count,
 			bool resolveLinkTos = false,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {

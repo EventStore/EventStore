@@ -15,16 +15,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public class ReadStreamBackwards : IAsyncEnumerator<ResolvedEvent> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
-			private readonly int _maxCount;
+			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
 			private readonly IPrincipal _user;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
+
 			private StreamRevision _nextRevision;
 			private bool _isEnd;
 			private ResolvedEvent _current;
-			private int _readCount;
+			private ulong _readCount;
 
 			public ResolvedEvent Current => _current;
 
@@ -32,7 +33,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				IPublisher bus,
 				string streamName,
 				StreamRevision startRevision,
-				int maxCount,
+				ulong maxCount,
 				bool resolveLinks,
 				IPrincipal user,
 				CancellationToken cancellationToken) {
@@ -83,7 +84,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsBackward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName,
-					_nextRevision.ToInt64(), Math.Min(_maxCount, 32),
+					_nextRevision.ToInt64(), Math.Min(32, (int)_maxCount),
 					_resolveLinks, false, default, _user));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {

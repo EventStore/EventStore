@@ -14,22 +14,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
 		public class ReadAllBackwards : IAsyncEnumerator<ResolvedEvent> {
 			private readonly IPublisher _bus;
-			private readonly int _maxCount;
+			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
 			private readonly IPrincipal _user;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
+
 			private Position _nextPosition;
 			private bool _isEnd;
 			private ResolvedEvent _current;
+			private ulong _readCount;
 
 			public ResolvedEvent Current => _current;
 
 			public ReadAllBackwards(
 				IPublisher bus,
 				Position position,
-				int maxCount,
+				ulong maxCount,
 				bool resolveLinks,
 				IPrincipal user,
 				CancellationToken cancellationToken) {
@@ -55,12 +57,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_disposedTokenSource.IsCancellationRequested) {
+				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
 					return false;
 				}
 
 				if (_buffer.TryDequeue(out var current)) {
 					_current = current;
+					_readCount++;
 					return true;
 				}
 
@@ -76,7 +79,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadAllEventsBackward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
-					commitPosition, preparePosition, Math.Min(_maxCount, 32),
+					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
 					_resolveLinks, false, default, _user));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
@@ -89,6 +92,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				if (_buffer.TryDequeue(out current)) {
 					_current = current;
+					_readCount++;
 					return true;
 				}
 
