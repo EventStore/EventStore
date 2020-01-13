@@ -1,28 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.Services.Replication;
-using NUnit.Framework;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.Tests.Services.Storage;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using System.Linq;
+using EventStore.Core.TransactionLog.LogRecords;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
+namespace EventStore.Core.Tests.Services.IndexCommitter {
 	public abstract class with_index_committer_service {
 		protected const int TimeoutSeconds = 5;
 		protected string EventStreamId = "test_stream";
 		protected int CommitCount = 2;
-		protected long ReplicationPosition = 0;
 		protected ITableIndex TableIndex;
-		protected readonly Guid ReplicaId = Guid.NewGuid();
 
 		protected ICheckpoint ReplicationCheckpoint;
 		protected ICheckpoint WriterCheckpoint;
@@ -33,27 +28,19 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected IndexCommitterService Service;
 		protected FakeIndexCommitter IndexCommitter;
 		protected ITFChunkScavengerLogManager TfChunkScavengerLogManager;
-		protected ReplicationTrackingService CommitTracker;
-
-		protected int _expectedCommitReplicatedMessages;
-
+		
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			IndexCommitter = new FakeIndexCommitter();
-			ReplicationCheckpoint = new InMemoryCheckpoint(ReplicationPosition);
+			ReplicationCheckpoint = new InMemoryCheckpoint();
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => CommitReplicatedMgs.Add(m)));
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.IndexedTo>(m => IndexWrittenMgs.Add(m)));
 			TableIndex = new FakeTableIndex();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
-			CommitTracker = new ReplicationTrackingService(Publisher, 3, ReplicationCheckpoint, WriterCheckpoint);
-			CommitTracker.Start();
 			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
 			Publisher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(Service);
-			Publisher.Subscribe<ReplicationTrackingMessage.MasterReplicatedTo>(CommitTracker);
-			
-			BecomeMaster();
 			Given();
 
 			When();
@@ -66,29 +53,19 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public abstract void Given();
 		public abstract void When();
 
-		protected void AddPendingPrepare(long transactionPosition, long postPosition = -1, bool publishChaserMsgs = true) {
+		protected void AddPendingPrepare(long transactionPosition, long postPosition = -1) {
 			postPosition = postPosition == -1 ? transactionPosition : postPosition;
 			var prepare = CreatePrepare(transactionPosition, transactionPosition);
-			Service.AddPendingPrepare(new PrepareLogRecord[] { prepare }, postPosition);
-			if (publishChaserMsgs) {
-				Assert.Fail("Fix Test");
-				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(postPosition));
-				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(postPosition, ReplicaId));
-			}
+			Service.AddPendingPrepare(new[] { prepare }, postPosition);
 		}
 
-		protected void AddPendingPrepares(long transactionPosition, long[] logPositions, bool publishChaserMsgs = true) {
+		protected void AddPendingPrepares(long transactionPosition, long[] logPositions) {
 			var prepares = new List<PrepareLogRecord>();
 			foreach (var pos in logPositions) {
 				prepares.Add(CreatePrepare(transactionPosition, pos));
 			}
 
-			Service.AddPendingPrepare(prepares.ToArray(), logPositions[logPositions.Length - 1]);
-			if (publishChaserMsgs) {
-				Assert.Fail("Fix Test");
-				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(logPositions.Max()));
-				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(logPositions.Max(), ReplicaId));
-			}
+			Service.AddPendingPrepare(prepares.ToArray(), logPositions[^1]);
 		}
 
 		private PrepareLogRecord CreatePrepare(long transactionPosition, long logPosition) {
@@ -98,31 +75,10 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		}
 
 
-		protected void AddPendingCommit(long transactionPosition, long logPosition, long postPosition = -1, bool publishChaserMsgs = true) {
+		protected void AddPendingCommit(long transactionPosition, long logPosition, long postPosition = -1) {
 			postPosition = postPosition == -1 ? logPosition : postPosition;
 			var commit = LogRecord.Commit(logPosition, Guid.NewGuid(), transactionPosition, 0);
 			Service.AddPendingCommit(commit, postPosition);
-			if (publishChaserMsgs) {
-				Assert.Fail("Fix Test");
-				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(postPosition));
-				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(postPosition, ReplicaId));
-			}
-		}
-
-		protected void BecomeMaster() {
-			CommitTracker.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-		}
-
-		protected void BecomeUnknown() {
-			CommitTracker.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
-		}
-
-		protected void BecomeSlave() {
-			var masterIPEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
-			var msg = new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
-				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint,
-				masterIPEndPoint, masterIPEndPoint, masterIPEndPoint, false));
-			CommitTracker.Handle(msg);
 		}
 	}
 
