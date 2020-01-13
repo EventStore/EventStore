@@ -7,15 +7,15 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
-using WriteEventsMgr =EventStore.Core.Services.RequestManager.Managers.WriteEvents;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 	[TestFixture]
-	public class when_write_stream_gets_timeout_after_cluster_commit : RequestManagerSpecification<WriteEventsMgr> {
+	public class when_write_stream_gets_timeout_after_cluster_commit : RequestManagerSpecification<WriteEvents> {
 		private long _prepareLogPosition = 100;
 		private long _commitPosition = 100;
-		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
-			return new WriteEventsMgr(
+		protected override WriteEvents OnManager(FakePublisher publisher) {
+			return new WriteEvents(
 				publisher, 
 				CommitTimeout, 
 				Envelope,
@@ -44,9 +44,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 			Assert.That(Produced.Count == 0);
 		}
 		[Test]
-		public void the_envelope_has_single_successful_reply() {
-			Assert.AreEqual(1, Envelope.Replies.Count);
-			Assert.AreEqual(OperationResult.Success, ((ClientMessage.WriteEventsCompleted)Envelope.Replies[0]).Result);
+		public void the_envelope_has_no_additional_replies() {
+			Assert.AreEqual(0, Envelope.Replies.Count);
 		}
 	}
 }
