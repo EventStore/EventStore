@@ -63,10 +63,8 @@ VOLUME /var/lib/eventstore
 
 EXPOSE 1112/tcp
 EXPOSE 1113/tcp
-EXPOSE 1114/tcp
 EXPOSE 2112/tcp
 EXPOSE 2113/tcp
-EXPOSE 2114/tcp
 
 HEALTHCHECK CMD curl --fail --insecure https://localhost:2113/health/live || exit 1
 
