@@ -58,9 +58,7 @@ namespace EventStore.Grpc.PersistentSubscriptions {
 				_started.SetResult(true);
 			}
 
-#pragma warning disable 4014
-			Task.Run(Subscribe);
-#pragma warning restore 4014
+			_ = Subscribe();
 		}
 
 		public Task Ack(params Uuid[] eventIds) {

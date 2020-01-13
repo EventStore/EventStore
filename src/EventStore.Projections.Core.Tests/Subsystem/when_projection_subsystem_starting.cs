@@ -4,6 +4,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Subsystem {
@@ -120,6 +121,8 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				ProjectionManager.ServiceName, _instanceCorrelation));
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
+			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
 		}
 
 		[Test]
@@ -187,6 +190,8 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				ProjectionManager.ServiceName, _instanceCorrelation));
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
 				ProjectionCoreCoordinator.ComponentName, _instanceCorrelation));
+			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionManager.ServiceName));
+			Subsystem.Handle(new ProjectionSubsystemMessage.IODispatcherDrained(ProjectionCoreService.SubComponentName));
 		}
 
 		[Test]

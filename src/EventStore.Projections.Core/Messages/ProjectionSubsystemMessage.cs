@@ -2,7 +2,7 @@
 using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
-	public class ProjectionSubsystemMessage {
+	public static class ProjectionSubsystemMessage {
 	
 		public class RestartSubsystem : Message  {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 		
-		public class ComponentStopped : Message  {
+		public class ComponentStopped : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -97,6 +97,20 @@ namespace EventStore.Projections.Core.Messages {
 			public ComponentStopped(string componentName, Guid instanceCorrelationId) {
 				ComponentName = componentName;
 				InstanceCorrelationId = instanceCorrelationId;
+			}
+		}
+
+		public class IODispatcherDrained : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+			
+			public string ComponentName { get; }
+
+			public IODispatcherDrained(string componentName) {
+				ComponentName = componentName;
 			}
 		}
 	}

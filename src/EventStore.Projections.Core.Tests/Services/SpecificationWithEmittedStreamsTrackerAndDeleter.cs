@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 		protected string _projectionName = "test_projection";
 
 		protected override Task Given() {
-			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, new PublishEnvelope(_node.Node.MainQueue));
+			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, new PublishEnvelope(_node.Node.MainQueue), true);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.BackwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.ForwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.Writer);

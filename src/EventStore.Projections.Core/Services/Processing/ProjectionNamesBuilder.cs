@@ -24,11 +24,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly string _emittedStreamsName;
 		private readonly string _emittedStreamsCheckpointName;
 
-		public static TimeSpan MasterStreamMaxAge = TimeSpan.FromHours(2);
-		public static TimeSpan ControlStreamMaxAge = TimeSpan.FromMinutes(5);
-		public static TimeSpan SlaveProjectionControlStreamMaxAge = TimeSpan.FromHours(2);
-		public static TimeSpan CoreControlStreamMaxAge = TimeSpan.FromHours(2);
-
 		private ProjectionNamesBuilder(string name)
 			: this(name, new QuerySourcesDefinition()) {
 		}
@@ -68,27 +63,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public const string ProjectionsStreamPrefix = "$projections-";
-		private const string ProjectionsControlStreamPrefix = "$projections-$";
 		private const string ProjectionsStateStreamSuffix = "-result";
 		private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
 		private const string ProjectionEmittedStreamSuffix = "-emittedstreams";
 		private const string ProjectionOrderStreamSuffix = "-order";
 		private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
-		private const string CategoryCatalogStreamNamePrefix = "$category-";
-		public const string _projectionsControlStream = "$projections-$control";
-		public const string _projectionsMasterStream = "$projections-$master";
 		public const string ProjectionsRegistrationStream = "$projections-$all";
-
-		public static string BuildControlStreamName(Guid uniqueId) {
-			return $"{_projectionsControlStream}-{uniqueId}";
-		}
 
 		public string GetPartitionCatalogStreamName() {
 			return _partitionCatalogStreamName;
-		}
-
-		public string GetPartitionResultCatalogStreamName() {
-			return ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
 		}
 
 		public string MakePartitionResultStreamName(string statePartition) {
@@ -120,18 +103,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public string GetOrderStreamName() {
 			return _orderStreamName;
-		}
-
-		public string GetCategoryCatalogStreamName(string category) {
-			return CategoryCatalogStreamNamePrefix + category;
-		}
-
-		public static string MakeControlStreamName(Guid guid) {
-			return MakeControlStreamName(guid.ToString("N"));
-		}
-
-		public static string MakeControlStreamName(string guid) {
-			return ProjectionsControlStreamPrefix + guid;
 		}
 	}
 }

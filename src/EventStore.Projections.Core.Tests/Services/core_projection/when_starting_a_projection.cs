@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus = new InMemoryBus("bus");
 			_listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
 			_bus.Subscribe(_listEventsHandler);
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher
 					(_bus);

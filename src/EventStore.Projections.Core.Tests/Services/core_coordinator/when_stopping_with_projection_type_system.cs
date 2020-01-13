@@ -40,18 +40,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStarted(ProjectionCoreService.SubComponentName,
 					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStarted(
-					ProjectionCoreServiceCommandReader.SubComponentName, instanceCorrelationId));
 
 			// Stop components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));
 
 			// Publish SubComponent stopped messages for the projection core service
-			stopCoreMessages = queues[0].Messages
-				.FindAll(x => x.GetType() == typeof(ProjectionCoreServiceMessage.StopCore))
-				.Select(x => x as ProjectionCoreServiceMessage.StopCore)
-				.ToList();
+			stopCoreMessages = queues[0].Messages.OfType<ProjectionCoreServiceMessage.StopCore>().ToList();
 			foreach (var msg in stopCoreMessages)
 				_coordinator.Handle(
 					new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,

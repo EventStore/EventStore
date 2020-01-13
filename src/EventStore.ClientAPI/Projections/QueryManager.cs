@@ -45,12 +45,14 @@ namespace EventStore.ClientAPI.Projections {
 		/// <returns>String of JSON containing query result.</returns>
 		public async Task<string> ExecuteAsync(string name, string query, TimeSpan initialPollingDelay,
 			TimeSpan maximumPollingDelay, UserCredentials userCredentials = null) {
-			return await Task.Run(async () => {
+			return await ExecuteAsyncInternal().WithTimeout(_queryTimeout).ConfigureAwait(false);
+
+			async Task<string> ExecuteAsyncInternal() {
 				await _projectionsManager.CreateTransientAsync(name, query, userCredentials).ConfigureAwait(false);
 				await WaitForCompletedAsync(name, initialPollingDelay, maximumPollingDelay, userCredentials)
 					.ConfigureAwait(false);
 				return await _projectionsManager.GetStateAsync(name, userCredentials).ConfigureAwait(false);
-			}).WithTimeout(_queryTimeout).ConfigureAwait(false);
+			}
 		}
 
 		private async Task WaitForCompletedAsync(string name, TimeSpan initialPollingDelay,

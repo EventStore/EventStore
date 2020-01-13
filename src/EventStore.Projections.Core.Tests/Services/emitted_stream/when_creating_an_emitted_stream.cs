@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 		[SetUp]
 		public void setup() {
 			_fakePublisher = new FakePublisher();
-			_ioDispatcher = new IODispatcher(_fakePublisher, new PublishEnvelope(_fakePublisher));
+			_ioDispatcher = new IODispatcher(_fakePublisher, new PublishEnvelope(_fakePublisher), true);
 		}
 
 		[Test]

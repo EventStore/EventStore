@@ -89,9 +89,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void StopProjections() {
 			_stopping = true;
-			_ioDispatcher.BackwardReader.CancelAll();
-			_ioDispatcher.ForwardReader.CancelAll();
-			_ioDispatcher.Writer.CancelAll();
+
+			_ioDispatcher.StartDraining(
+				() => _publisher.Publish(new ProjectionSubsystemMessage.IODispatcherDrained(SubComponentName)));
 
 			var allProjections = _projections.Values.ToArray();
 			foreach (var projection in allProjections)

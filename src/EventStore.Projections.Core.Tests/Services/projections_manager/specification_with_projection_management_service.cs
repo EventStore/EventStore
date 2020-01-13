@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 			IPublisher inputQueue = GetInputQueue();
 			IPublisher publisher = GetInputQueue();
-			var ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue));
+			var ioDispatcher = new IODispatcher(publisher, new PublishEnvelope(inputQueue), true);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
 			_bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
 			_bus.Subscribe<CoreProjectionStatusMessage.Started>(_manager);
@@ -87,10 +87,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 			_bus.Subscribe<ProjectionSubsystemMessage.StartComponents>(_manager);
 			_bus.Subscribe<ProjectionSubsystemMessage.StopComponents>(_manager);
-			_bus.Subscribe<ProjectionManagementMessage.ReaderReady>(_manager);
-			_bus.Subscribe(
-				CallbackSubscriber.Create<ProjectionManagementMessage.Starting>(
-					starting => _queue.Publish(new ProjectionManagementMessage.ReaderReady())));
 			_bus.Subscribe<CoreProjectionManagementControlMessage>(_managerMessageDispatcher);
 
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
