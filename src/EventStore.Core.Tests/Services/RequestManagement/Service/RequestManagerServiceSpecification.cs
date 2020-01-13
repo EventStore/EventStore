@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(Service);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(Service);
 		}
-		[SetUp]
+		[OneTimeSetUp]
 		public virtual void Setup() {
 			Envelope.Replies.Clear();
 			Publisher.Messages.Clear();

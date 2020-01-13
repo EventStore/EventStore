@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 	[TestFixture]
 	public class when_handling_write_stream : RequestManagerServiceSpecification {
 		protected override void Given() {
-			Dispatcher.Publish(new ClientMessage.WriteEvents(InternalCorrId,ClientCorrId,Envelope,true,StreamId,ExpectedVersion.Any,new []{ DummyEvent()}, null));
+			Dispatcher.Publish(new ClientMessage.WriteEvents(InternalCorrId, ClientCorrId, Envelope, true, StreamId, ExpectedVersion.Any, new[] { DummyEvent() }, null));
 			Dispatcher.Publish(new ReplicationTrackingMessage.ReplicatedTo(LogPosition));
 		}
 
