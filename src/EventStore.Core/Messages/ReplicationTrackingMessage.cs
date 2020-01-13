@@ -21,7 +21,7 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			
 			public IndexedTo(long logPosition ) {
-				Ensure.Nonnegative(logPosition, "logPosition");
+				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
@@ -35,7 +35,7 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			
 			public ReplicatedTo(long logPosition ) {
-				Ensure.Nonnegative(logPosition, "logPosition");
+				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
@@ -49,7 +49,7 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			
 			public MasterReplicatedTo(long logPosition ) {
-				Ensure.Nonnegative(logPosition, "logPosition");
+				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
