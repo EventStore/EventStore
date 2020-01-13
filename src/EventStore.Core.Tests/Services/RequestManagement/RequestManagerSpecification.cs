@@ -7,9 +7,10 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication {
+namespace EventStore.Core.Tests.Services.RequestManagement {
 	public abstract class RequestManagerSpecification<TManager>
 		where TManager : RequestManagerBase {
 		protected readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
@@ -38,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Replication {
 		protected RequestManagerSpecification() {
 			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);
 		}
-		[SetUp]
+		[OneTimeSetUp]
 		public virtual void Setup() {
 			Envelope.Replies.Clear();
 			Publisher.Messages.Clear();
@@ -65,8 +66,10 @@ namespace EventStore.Core.Tests.Services.Replication {
 			}
 
 			Publisher.Messages.Clear();
+			Envelope.Replies.Clear();
 			Dispatcher.Publish(When());
 			Produced = new List<Message>(Publisher.Messages);
 		}
+		
 	}
 }

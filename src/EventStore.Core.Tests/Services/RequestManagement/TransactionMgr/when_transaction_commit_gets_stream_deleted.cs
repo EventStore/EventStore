@@ -5,15 +5,15 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
-using TransactionCommitMgr = EventStore.Core.Services.RequestManager.Managers.TransactionCommit;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 	[TestFixture]
-	public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification<TransactionCommitMgr> {
+	public class when_transaction_commit_gets_stream_deleted : RequestManagerSpecification<TransactionCommit> {
 		
 		private int transactionId = 2341;
-		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
-			return new TransactionCommitMgr(
+		protected override TransactionCommit OnManager(FakePublisher publisher) {
+			return new TransactionCommit(
 				publisher,
 				PrepareTimeout,
 				CommitTimeout,
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		}
 
 		[Test]
-		public void failed_request_message_is_publised() {
+		public void failed_request_message_is_published() {
 			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success == false));
 		}
