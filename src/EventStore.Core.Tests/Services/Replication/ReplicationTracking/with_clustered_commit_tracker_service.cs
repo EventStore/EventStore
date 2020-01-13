@@ -8,7 +8,7 @@ using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
+namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	public abstract class with_clustered_commit_tracker_service {
 		protected const int TimeoutSeconds = 5;
 		protected string EventStreamId = "test_stream";
@@ -16,12 +16,15 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected ReplicationTrackingService Service;
 		protected List<ReplicationTrackingMessage.ReplicatedTo> ReplicatedTos = new List<ReplicationTrackingMessage.ReplicatedTo>();
+		protected ICheckpoint ReplicationCheckpoint = new InMemoryCheckpoint();
+		protected ICheckpoint WriterCheckpoint = new InMemoryCheckpoint();
+
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicatedTo>(msg =>  ReplicatedTos.Add(msg)));
 			
-			Service = new ReplicationTrackingService(Publisher, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
+			Service = new ReplicationTrackingService(Publisher, ClusterSize,ReplicationCheckpoint, WriterCheckpoint);
 			Service.Start();
 			When();
 		}
