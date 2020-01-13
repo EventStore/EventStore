@@ -6,16 +6,16 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
-using TransactionCommitMgr = EventStore.Core.Services.RequestManager.Managers.TransactionCommit;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 	[TestFixture]
-	public class when_transaction_commit_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification<TransactionCommitMgr> {
+	public class when_transaction_commit_gets_already_committed_before_committed : RequestManagerSpecification<TransactionCommit> {
 		private long commitPosition = 1000;
 		private int transactionId = 500;
 		
-		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
-			return new TransactionCommitMgr(
+		protected override TransactionCommit OnManager(FakePublisher publisher) {
+			return new TransactionCommit(
 				publisher,
 				PrepareTimeout,
 				CommitTimeout,
@@ -32,7 +32,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override IEnumerable<Message> WithInitialMessages() {
 
 			yield return new StorageMessage.PrepareAck(InternalCorrId, transactionId, PrepareFlags.TransactionEnd);
-			yield return new StorageMessage.CommitAck(InternalCorrId, commitPosition, transactionId, 3, 3);
 		}
 
 		protected override Message When() {
@@ -40,7 +39,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		}
 
 		[Test]
-		public void successful_request_message_is_publised() {
+		public void successful_request_message_is_published() {
 			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success));
 		}

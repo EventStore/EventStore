@@ -7,14 +7,14 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
-using TransactionCommitMgr = EventStore.Core.Services.RequestManager.Managers.TransactionCommit;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
-	public class when_transaction_commit_gets_timeout_before_cluster_commit : RequestManagerSpecification<TransactionCommitMgr> {
+	public class when_transaction_commit_gets_timeout_before_cluster_commit : RequestManagerSpecification<TransactionCommit> {
 		
 		private int transactionId = 2341;
-		protected override TransactionCommitMgr OnManager(FakePublisher publisher) {
-			return new TransactionCommitMgr(
+		protected override TransactionCommit OnManager(FakePublisher publisher) {
+			return new TransactionCommit(
 				publisher,
 				PrepareTimeout,
 				CommitTimeout,
