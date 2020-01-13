@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Services.Replication.ReplicationService;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

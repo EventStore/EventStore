@@ -18,7 +18,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
+namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 	public abstract class with_replication_service : SpecificationWithDirectoryPerTestFixture {
 		protected const int TimeoutSeconds = 5;
 		protected string EventStreamId = "test_stream";
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 		}
 
 		[OneTimeTearDown]
-		public async override Task TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			await base.TestFixtureTearDown();
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
