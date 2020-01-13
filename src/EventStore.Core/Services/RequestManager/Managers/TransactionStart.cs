@@ -3,7 +3,6 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
@@ -22,7 +21,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					bool betterOrdering,
 					long expectedVersion,
 					IPrincipal user,
-					ICommitSource commitSource)
+					CommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -31,21 +30,20 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 clientCorrId,
 					 expectedVersion,
 					 commitSource,
-					 prepareCount: 1,
-					 completeOnLogCommitted: true) {
+					 prepareCount: 1) {
 			_streamId = streamId;
 			_betterOrdering = betterOrdering;
 			_user = user;
 		}
 
-		protected override Message AccessRequestMsg =>				
+		protected override Message AccessRequestMsg =>
 				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope, 
-						InternalCorrId, 
-						_streamId, 
-						null, 
-						StreamAccessType.Write, 
-						_user, 
+						WriteReplyEnvelope,
+						InternalCorrId,
+						_streamId,
+						null,
+						StreamAccessType.Write,
+						_user,
 						_betterOrdering);
 
 		protected override Message WriteRequestMsg =>
@@ -56,6 +54,14 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					ExpectedVersion,
 					LiveUntil);
 
+		protected override void AllEventsWritten() {
+			if (CommitSource.ReplicationPosition >= LastEventPosition) {
+				Committed();
+			} else if (!Registered) {
+				CommitSource.NotifyFor(LastEventPosition, Committed, CommitLevel.Replicated);
+				Registered = true;
+			}
+		}
 
 		protected override Message ClientSuccessMsg =>
 			 new ClientMessage.TransactionStartCompleted(

@@ -12,7 +12,6 @@ using EventStore.Core.Services.Histograms;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Linq;
-using EventStore.Core.Services.Commit;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :		
@@ -27,8 +26,8 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
-		IHandle<CommitMessage.CommittedTo>,
-		IHandle<CommitMessage.ReplicatedTo>,
+		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
+		IHandle<ReplicationTrackingMessage.IndexedTo>,
 		IHandle<StorageMessage.CommitIndexed>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
@@ -43,10 +42,11 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly bool _betterOrdering;
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
-		private readonly ICommitSource _commitSource;
+		private readonly CommitSource _commitSource;
 		private VNodeState _nodeState;		
 
-		public RequestManagementService(IPublisher bus,
+		public RequestManagementService(
+			IPublisher bus,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
 			bool betterOrdering) {
@@ -183,9 +183,9 @@ namespace EventStore.Core.Services.RequestManager {
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 		}
-
-		public void Handle(CommitMessage.CommittedTo message) => _commitSource.Handle(message);		
-		public void Handle(CommitMessage.ReplicatedTo message) => _commitSource.Handle(message);
+		
+		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
+		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
 		public void Handle(StorageMessage.CheckStreamAccessCompleted message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);

@@ -45,9 +45,10 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		}
 		[Test]
 		public void log_written_should_be_published() {
-			AssertEx.IsOrBecomesTrue(() => LogWrittenTos.Count == 2, msg: "LogWrittenTo msg not recieved");
-			var writtenTo = LogWrittenTos[1];
-			Assert.AreEqual(_logPosition, writtenTo.LogPosition);
+			Assert.Fail("Fix Test");
+			//AssertEx.IsOrBecomesTrue(() => LogWrittenTos.Count == 2, msg: "LogWrittenTo msg not recieved");
+			//var writtenTo = LogWrittenTos[1];
+			//Assert.AreEqual(_logPosition, writtenTo.LogPosition);
 		}			
 		[Test]
 		public void commit_ack_should_be_published() {

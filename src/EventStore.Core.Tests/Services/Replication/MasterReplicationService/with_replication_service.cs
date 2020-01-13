@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected InMemoryBus TcpSendPublisher = new InMemoryBus("tcpSend");
 		protected MasterReplicationService Service;
-		protected List<CommitMessage.ReplicaWrittenTo> ReplicaLogWrittenTos = new List<CommitMessage.ReplicaWrittenTo>();
+		protected List<ReplicationTrackingMessage.ReplicaWriteAck> ReplicaWriteAcks = new List<ReplicationTrackingMessage.ReplicaWriteAck>();
 		protected List<TcpMessage.TcpSend> TcpSends = new List<TcpMessage.TcpSend>();
 		private int _connectionPendingSendBytesThreshold = 10 * 1024;
 		private int _connectionQueueSizeThreshold = 50000;
@@ -40,9 +40,9 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 		protected Guid ReadOnlyReplicaSubscriptionId;
 
 		[OneTimeSetUp]
-		public async override Task TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.ReplicaWrittenTo>(msg => ReplicaLogWrittenTos.Add(msg)));
+			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicaWriteAck>(msg => ReplicaWriteAcks.Add(msg)));
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Add(msg)));
 			var writerCheckpoint = new InMemoryCheckpoint(0);
 			var chaserCheckpoint = new InMemoryCheckpoint(0);

@@ -13,11 +13,12 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 
 		[Test]
 		public void replica_Log_written_to_should_be_published() {
-			AssertEx.IsOrBecomesTrue(() => ReplicaLogWrittenTos.Count == 1, msg:"ReplicaLogWrittenTo msg not recieved");
-			var commit = ReplicaLogWrittenTos[0];
+			AssertEx.IsOrBecomesTrue(() => ReplicaWriteAcks.Count == 1, msg:"ReplicaLogWrittenTo msg not recieved");
+			var commit = ReplicaWriteAcks[0];
 			Assert.NotNull(commit);
-			Assert.AreEqual(ReplicaId, commit.ReplicaId);
-			Assert.AreEqual(_logPosition, commit.LogPosition);
+			Assert.Fail("Fix Test");
+			//Assert.AreEqual(ReplicaId, commit.ReplicaId);
+			//Assert.AreEqual(_logPosition, commit.LogPosition);
 		}
 	}
 }

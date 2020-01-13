@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationService {
 
 		[Test]
 		public void replica_Log_written_to_should_not_be_published() {
-			Assert.AreEqual(0, ReplicaLogWrittenTos.Count);			
+			Assert.AreEqual(0, ReplicaWriteAcks.Count);			
 		}
 	}
 }

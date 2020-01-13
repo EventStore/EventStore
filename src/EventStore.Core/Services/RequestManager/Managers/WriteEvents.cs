@@ -4,7 +4,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
@@ -25,7 +24,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					IPrincipal user,
 					Event[] events,
-					ICommitSource commitSource)
+					CommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,
@@ -38,7 +37,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 waitForCommit: true) {
 			_streamId = streamId;
 			//this seems like it should work, but really really doesn't
-			//_accessType = SystemStreams.IsMetastream(streamId) ? StreamAccessType.MetaWrite : StreamAccessType.Write;
+			//todo confirm MetaWrite is implemented
+			//_accessType = SystemStreams.IsMetaStream(streamId) ? StreamAccessType.MetaWrite : StreamAccessType.Write;
 			_accessType =StreamAccessType.Write;
 			_betterOrdering = betterOrdering;
 			_user = user;

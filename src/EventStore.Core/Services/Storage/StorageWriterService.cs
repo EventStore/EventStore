@@ -635,7 +635,7 @@ namespace EventStore.Core.Services.Storage {
 				_statIndex = (_statIndex + 1) & (LastStatsCount - 1);
 
 				PurgeNotProcessedInfo();
-
+				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 				return true;
 			}
 

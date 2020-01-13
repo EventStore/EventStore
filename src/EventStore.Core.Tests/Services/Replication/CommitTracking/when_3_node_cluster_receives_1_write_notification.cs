@@ -10,18 +10,14 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 
 		public override void When() {
 			BecomeMaster();
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
+			Assert.Fail("Fix Test");
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
 			AssertEx.IsOrBecomesTrue(()=> Service.IsIdle());
 		}
 
 		[Test]
-		public void log_committed_to_should_not_be_sent() {
-			Assert.AreEqual(0, LogCommittedTos.Count);
-		}
-
-		[Test]
-		public void committed_to_should_not_be_sent() {
-			Assert.AreEqual(0, CommittedTos.Count);
+		public void replicated_to_should_not_be_sent() {
+			Assert.AreEqual(0, ReplicatedTos.Count);
 		}
 	}
 }

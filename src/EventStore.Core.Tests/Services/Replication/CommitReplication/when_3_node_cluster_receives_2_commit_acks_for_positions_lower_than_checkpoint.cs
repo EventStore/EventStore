@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
 			ReplicationCheckpoint.Write(_logPosition -1);
 			
-			Service.Handle(new CommitMessage.ReplicatedTo(_logPosition - 1));
+			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPosition - 1));
 		}
 
 		[Test]

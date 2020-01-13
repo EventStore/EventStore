@@ -3,7 +3,6 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
@@ -19,17 +18,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TimeSpan prepareTimeout,
 					TimeSpan commitTimeout,
 					IEnvelope clientResponseEnvelope,
-					Guid interalCorrId,
+					Guid internalCorrId,
 					Guid clientCorrId,
 					long transactionId,
 					bool betterOrdering,
 					IPrincipal user,
-					ICommitSource commitSource)
+					CommitSource commitSource)
 			: base(
 					 publisher,
 					 prepareTimeout,
 					 clientResponseEnvelope,
-					 interalCorrId,
+					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion: -1,
 					 commitSource,

@@ -4,7 +4,7 @@ using System.Net;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Commit;
+using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
@@ -14,16 +14,14 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		protected string EventStreamId = "test_stream";
 		protected int ClusterSize = 3;
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
-		protected CommitTrackerService Service;
-		protected List<CommitMessage.ReplicatedTo> LogCommittedTos = new List<CommitMessage.ReplicatedTo>();
-		protected List<CommitMessage.CommittedTo> CommittedTos = new List<CommitMessage.CommittedTo>();
+		protected ReplicationTrackingService Service;
+		protected List<ReplicationTrackingMessage.ReplicatedTo> ReplicatedTos = new List<ReplicationTrackingMessage.ReplicatedTo>();
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.ReplicatedTo>(msg =>  LogCommittedTos.Add(msg)));
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.CommittedTo>(CommittedTos.Add));
+			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicatedTo>(msg =>  ReplicatedTos.Add(msg)));
 			
-			Service = new CommitTrackerService(Publisher, CommitLevel.MasterIndexed, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
+			Service = new ReplicationTrackingService(Publisher, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
 			Service.Start();
 			When();
 		}
