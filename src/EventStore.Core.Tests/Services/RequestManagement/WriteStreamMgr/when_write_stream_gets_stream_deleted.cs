@@ -6,13 +6,13 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
-using WriteEventsMgr =EventStore.Core.Services.RequestManager.Managers.WriteEvents;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 	[TestFixture]
-	public class when_write_stream_gets_stream_deleted : RequestManagerSpecification<WriteEventsMgr> {
-		protected override WriteEventsMgr OnManager(FakePublisher publisher) {
-				return new WriteEventsMgr(
+	public class when_write_stream_gets_stream_deleted : RequestManagerSpecification<WriteEvents> {
+		protected override WriteEvents OnManager(FakePublisher publisher) {
+				return new WriteEvents(
 				publisher, 
 				CommitTimeout, 
 				Envelope,
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		}
 
 		[Test]
-		public void failed_request_message_is_publised() {
+		public void failed_request_message_is_published() {
 			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success == false));
 		}
