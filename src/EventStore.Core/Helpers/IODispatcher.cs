@@ -20,7 +20,7 @@ namespace EventStore.Core.Helpers {
 		private readonly IPublisher _publisher;
 		private readonly IEnvelope _inputQueueEnvelope;
 		private readonly WriterQueueSet _writerQueueSet = new WriterQueueSet();
-		private readonly PendingRequests _pendingRequests = new PendingRequests();
+		private readonly PendingWrites _pendingWrites = new PendingWrites();
 		private readonly PendingReads _pendingReads = new PendingReads();
 		private readonly bool _trackPendingRequests;
 		private readonly HashSet<Guid> _allPendingRequests = new HashSet<Guid>();
@@ -143,8 +143,9 @@ namespace EventStore.Core.Helpers {
 		}
 
 		private void AddPendingRequest(Guid correlationId) {
-			if (_trackPendingRequests)
-				_allPendingRequests.Add(correlationId);
+			if (!_trackPendingRequests) return;
+			
+			_allPendingRequests.Add(correlationId);
 		}
 		
 		private void RemovePendingRequest(Guid correlationId) {
@@ -554,10 +555,10 @@ namespace EventStore.Core.Helpers {
 					});
 		}
 
-		private class PendingRequests {
+		private class PendingWrites {
 			private readonly Dictionary<Guid, Action<ClientMessage.WriteEventsCompleted>> _map;
 
-			public PendingRequests() {
+			public PendingWrites() {
 				_map = new Dictionary<Guid, Action<ClientMessage.WriteEventsCompleted>>();
 			}
 
@@ -680,7 +681,7 @@ namespace EventStore.Core.Helpers {
 				events,
 				principal);
 
-			_pendingRequests.CaptureCallback(corrId, action);
+			_pendingWrites.CaptureCallback(corrId, action);
 
 			_writerQueueSet.AddToQueue(key, message);
 
@@ -700,7 +701,7 @@ namespace EventStore.Core.Helpers {
 		private void Handle(Guid key, ClientMessage.WriteEventsCompleted message) {
 			_writerQueueSet.Finish(key);
 
-			_pendingRequests.CompleteRequest(message);
+			_pendingWrites.CompleteRequest(message);
 			RemovePendingRequest(message.CorrelationId);
 
 			WorkQueue(key);
