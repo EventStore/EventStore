@@ -6,13 +6,13 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
-using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]
-	public class when_delete_stream_gets_stream_deleted : RequestManagerSpecification<DeleteStreamManager> {
-		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamManager(
+	public class when_delete_stream_gets_stream_deleted : RequestManagerSpecification<DeleteStream> {
+		protected override DeleteStream OnManager(FakePublisher publisher) {
+			return new DeleteStream(
 				publisher, 
 				CommitTimeout, 
 				Envelope,
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		[Test]
-		public void failed_request_message_is_publised() {
+		public void failed_request_message_is_published() {
 			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success == false));
 		}

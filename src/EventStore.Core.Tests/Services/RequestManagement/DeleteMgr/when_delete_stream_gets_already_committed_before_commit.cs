@@ -7,15 +7,15 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
-using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]
-	public class when_delete_stream_gets_already_committed_and_log_is_not_committed : RequestManagerSpecification<DeleteStreamManager> {
+	public class when_delete_stream_gets_already_committed_before_commit: RequestManagerSpecification<DeleteStream> {
 		private long _commitPosition = 3000;
-		private string _streamId = $"delete_test-{Guid.NewGuid()}";
-		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamManager(
+		private readonly string _streamId = $"delete_test-{Guid.NewGuid()}";
+		protected override DeleteStream OnManager(FakePublisher publisher) {
+			return new DeleteStream(
 				publisher,
 				CommitTimeout,
 				Envelope,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1);
+			yield break;
 		}
 
 		protected override Message When() {
