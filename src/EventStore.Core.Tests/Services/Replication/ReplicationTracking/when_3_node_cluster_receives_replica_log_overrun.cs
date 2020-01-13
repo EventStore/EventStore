@@ -1,20 +1,20 @@
 using System;
-using System.Threading;
-using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
+namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	[TestFixture]
 	public class when_3_node_cluster_receives_replica_log_overrun : with_clustered_commit_tracker_service {
 		private long _logPosition = 4000;
+		private long _overrunPosition = 5000;
 
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();
-			Assert.Fail("Fix Test");
-			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
-			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition + 100, replicaId));
+			WriterCheckpoint.Write(_logPosition);
+			WriterCheckpoint.Flush();
+			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck( replicaId, _overrunPosition));
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 
@@ -24,6 +24,11 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 			var commit = ReplicatedTos[0];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_logPosition, commit.LogPosition);
-		}		
+		}	
+		[Test]
+		public void replication_checkpoint_should_advance() {
+			Assert.AreEqual(_logPosition, ReplicationCheckpoint.Read());		
+			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());		
+		}	
 	}
 }
