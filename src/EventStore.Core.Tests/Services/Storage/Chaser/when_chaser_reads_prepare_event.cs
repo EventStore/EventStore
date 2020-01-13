@@ -1,13 +1,10 @@
 using System;
-using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser {
 	[TestFixture]
 	public class when_chaser_reads_prepare_event : with_storage_chaser_service {
-		private long _logPosition;
 		private Guid _eventId;
 		private Guid _transactionId;
 
@@ -29,22 +26,14 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 
 
-			Assert.True(Writer.Write(record, out _logPosition));
+			Assert.True(Writer.Write(record, out _));
 			Writer.Flush();
-		}
-
-		[Test]
-		public void log_written_should_be_published() {
-			Assert.Fail("Fix Test");
-			//AssertEx.IsOrBecomesTrue(() => LogWrittenTos.Count == 1, msg: "LogWrittenTo msg not recieved");
-			//var writtenTo = LogWrittenTos[0];
-			//Assert.AreEqual(_logPosition, writtenTo.LogPosition);
 		}
 		[Test]
 		public void prepare_ack_should_be_published() {
 			AssertEx.IsOrBecomesTrue(() => PrepareAcks.Count == 1, msg: "PrepareAck msg not recieved");
-			var PrepareAck = PrepareAcks[0];
-			Assert.AreEqual(_transactionId, PrepareAck.CorrelationId);
+			var prepareAck = PrepareAcks[0];
+			Assert.AreEqual(_transactionId, prepareAck.CorrelationId);
 
 		}
 

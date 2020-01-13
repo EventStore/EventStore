@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -31,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			Assert.True(Writer.Write(record, out _logPosition));
 			Writer.Flush();
 
-			IndexCommiter.AddPendingPrepare(new[]{ record},_logPosition);
+			IndexCommitter.AddPendingPrepare(new[]{ record},_logPosition);
 			var record2 = new CommitLogRecord(
 				logPosition: _logPosition,
 				correlationId: _transactionId,
@@ -43,18 +41,10 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			Writer.Flush();
 		}
 		[Test]
-		public void log_written_should_be_published() {
-			Assert.Fail("Fix Test");
-			//AssertEx.IsOrBecomesTrue(() => LogWrittenTos.Count == 2, msg: "LogWrittenTo msg not recieved");
-			//var writtenTo = LogWrittenTos[1];
-			//Assert.AreEqual(_logPosition, writtenTo.LogPosition);
-		}			
-		[Test]
 		public void commit_ack_should_be_published() {
-			AssertEx.IsOrBecomesTrue(() => CommitAcks.Count == 1, msg: "CommitAck msg not recieved");
-			var CommitAck = CommitAcks[0];
-			Assert.AreEqual(_transactionId, CommitAck.CorrelationId);
-
+			AssertEx.IsOrBecomesTrue(() => CommitAcks.Count == 1, msg: "CommitAck msg not received");
+			var commitAck = CommitAcks[0];
+			Assert.AreEqual(_transactionId, commitAck.CorrelationId);
 		}
 
 	}
