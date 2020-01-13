@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]
 	public class when_delete_stream_completes_successfully : RequestManagerSpecification<DeleteStream> {
 		private long commitPosition = 1000;
-		private readonly string streamId = $"DeleteTest-{Guid.NewGuid()}";
+		private readonly string _streamId = $"DeleteTest-{Guid.NewGuid()}";
 		protected override DeleteStream OnManager(FakePublisher publisher) {
 			return new DeleteStream(
 				publisher,
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 				Envelope,
 				InternalCorrId,
 				ClientCorrId,
-			   	streamId: streamId,
+			   	streamId: _streamId,
 				betterOrdering: true,
 				expectedVersion: ExpectedVersion.Any,
 				user: null,
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CheckStreamAccessCompleted(InternalCorrId, streamId, null, StreamAccessType.Delete, new StreamAccess(true));
+			yield return new StorageMessage.CheckStreamAccessCompleted(InternalCorrId, _streamId, null, StreamAccessType.Delete, new StreamAccess(true));
 			yield return new StorageMessage.CommitAck(InternalCorrId, commitPosition, 2, 3, 3);
 			}
 

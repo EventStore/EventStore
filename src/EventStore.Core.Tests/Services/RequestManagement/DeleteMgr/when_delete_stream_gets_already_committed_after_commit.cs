@@ -1,19 +1,19 @@
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
-using DeleteStreamManager = EventStore.Core.Services.RequestManager.Managers.DeleteStream;
+using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]
-	public class when_delete_stream_gets_already_committed_and_log_is_replicated : RequestManagerSpecification<DeleteStreamManager> {
+	public class when_delete_stream_gets_already_committed_after_commit : RequestManagerSpecification<DeleteStream> {
 		private long commitPosition = 1000;
-		protected override DeleteStreamManager OnManager(FakePublisher publisher) {
-			return new DeleteStreamManager(
+		protected override DeleteStream OnManager(FakePublisher publisher) {
+			return new DeleteStream(
 				publisher, 
 				CommitTimeout, 
 				Envelope,
@@ -37,15 +37,13 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		[Test]
-		public void successful_request_message_is_publised() {
-			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
-				x => x.CorrelationId == InternalCorrId && x.Success));
+		public void successful_request_message_is_not_published() {
+			Assert.That(!Produced.Any());
 		}
 
 		[Test]
-		public void the_envelope_is_replied_to_with_success() {
-			Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.DeleteStreamCompleted>(
-				x => x.CorrelationId == ClientCorrId && x.Result == OperationResult.Success));
+		public void the_envelope_is_not_replied_to_with_success() {
+			Assert.That(!Envelope.Replies.Any());
 		}
 	}
 }
