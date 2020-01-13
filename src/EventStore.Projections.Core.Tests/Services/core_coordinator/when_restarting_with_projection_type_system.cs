@@ -6,6 +6,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
@@ -17,6 +18,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 		private TimeoutScheduler[] timeoutScheduler = { };
 		private FakeEnvelope envelope = new FakeEnvelope();
 		private Guid instanceCorrelationId = Guid.NewGuid();
+		private Guid queueId;
 
 		[SetUp]
 		public void Setup() {
@@ -34,14 +36,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStarted(ProjectionCoreService.SubComponentName,
 					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStarted(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					instanceCorrelationId));
 
 			// Stop components but don't handle stopped
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));
 
+			var stopCore = queues[0].Messages.OfType<ProjectionCoreServiceMessage.StopCore>().First();
+			queueId = stopCore.QueueId;
 			//clear queues for clearer testing
 			queues[0].Messages.Clear();
 		}
@@ -62,10 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Not all components stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Start Components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
@@ -79,14 +76,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// All components stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,
-					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStopped(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Start components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
@@ -102,24 +95,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// All components stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,
-					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStopped(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
+			queues[0].Messages.Clear();
+			
 			// Start components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(newInstanceCorrelationId));
 
 			// Not all subcomponents started
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStarted(EventReaderCoreService.SubComponentName,
-					newInstanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStarted(ProjectionCoreService.SubComponentName,
 					newInstanceCorrelationId));
 
 			// Stop components
@@ -134,15 +122,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// All components stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,
-					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStopped(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
+			queues[0].Messages.Clear();
+			
 			// Stop components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(Guid.NewGuid()));
 
@@ -157,14 +143,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// All components stopped
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(EventReaderCoreService.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStopped(ProjectionCoreService.SubComponentName,
-					instanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStopped(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					instanceCorrelationId));
+					queueId));
 
 			// Start components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(newInstanceCorrelationId));
@@ -176,11 +158,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			_coordinator.Handle(
 				new ProjectionCoreServiceMessage.SubComponentStarted(ProjectionCoreService.SubComponentName,
 					newInstanceCorrelationId));
-			_coordinator.Handle(
-				new ProjectionCoreServiceMessage.SubComponentStarted(
-					ProjectionCoreServiceCommandReader.SubComponentName,
-					newInstanceCorrelationId));
 
+			queues[0].Messages.Clear();
 			// Stop components with a different correlation id
 			var incorrectCorrelationId = Guid.NewGuid();
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(incorrectCorrelationId));

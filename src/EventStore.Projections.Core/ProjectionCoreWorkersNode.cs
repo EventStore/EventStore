@@ -37,7 +37,8 @@ namespace EventStore.Projections.Core {
 					standardComponents.TimeProvider,
 					coreTimeoutSchedulers[coreQueues.Count],
 					projectionsStandardComponents.RunProjections,
-					projectionsStandardComponents.FaultOutOfOrderProjections);
+					projectionsStandardComponents.FaultOutOfOrderProjections,
+					projectionsStandardComponents.MasterOutputBus);
 				projectionNode.SetupMessaging(coreInputBus);
 
 				var forwarder = new RequestResponseQueueForwarder(
@@ -59,6 +60,9 @@ namespace EventStore.Projections.Core {
 						Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
+					coreOutput.Subscribe(
+						Forwarder.Create<ProjectionSubsystemMessage.IODispatcherDrained>(projectionsStandardComponents
+							.MasterOutputBus));
 				}
 
 				coreOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);

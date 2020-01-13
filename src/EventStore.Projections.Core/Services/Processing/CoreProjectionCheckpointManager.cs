@@ -226,7 +226,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Progress(float progress) {
 			if (_stopping || _stopped)
 				return;
-			_lastProcessedEventProgress = progress;
+			_lastProcessedEventProgress = progress < -1 ? -1 : progress;
 		}
 
 		public CheckpointTag LastProcessedEventPosition {

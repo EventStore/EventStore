@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
 		[OneTimeSetUp]
 		public void TestFixtureSetUp() {
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
 			_projectionVersion = new ProjectionVersion(3, 1, 2);
 			_projectionConfig = new ProjectionConfig(SystemAccount.Principal, 10, 1000, 1000, 10, true, true, true,
 				false,

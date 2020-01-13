@@ -48,7 +48,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
 			_manager.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
-			_manager.Handle(new ProjectionManagementMessage.ReaderReady());
 		}
 
 		[TearDown]
