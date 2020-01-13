@@ -353,7 +353,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				case State.Stopped:
 				case State.Faulted:
 				case State.PhaseCompleted:
-				case State.Suspended:
 					if (wasStarted && !wasStopped)
 						_checkpointManager.Stopped();
 					break;
