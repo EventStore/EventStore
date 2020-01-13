@@ -14,7 +14,8 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			BecomeMaster();
 			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));	
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition));
+			Assert.Fail("Fix Test");
+			//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
 		}
 
 		[Test]

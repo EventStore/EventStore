@@ -25,8 +25,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public int ReplicatedMsgCount => CommitReplicatedMgs.Count;
 
 		public override void When() {
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_commitLogPosition));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_commitLogPosition, ReplicaId));
+			Assert.Fail("Fix Test");
+			//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(_commitLogPosition));
+			//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_commitLogPosition, ReplicaId));
 		}
 
 		[Test]

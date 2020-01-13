@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Storage {
 	public class IndexCommitterService : IIndexCommitterService,
 		IMonitoredQueue,
 		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<CommitMessage.ReplicatedTo>,
+		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
 		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Storage {
 
 			lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
 
-			_publisher.Publish(new CommitMessage.IndexedTo(message.LogPosition));
+			_publisher.Publish(new ReplicationTrackingMessage.IndexedTo(message.LogPosition));
 
 			_publisher.Publish(new StorageMessage.CommitIndexed(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
@@ -212,7 +212,7 @@ namespace EventStore.Core.Services.Storage {
 			EnqueReplicatedCommits();
 		}
 
-		public void Handle(CommitMessage.ReplicatedTo message) {
+		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
 			EnqueReplicatedCommits();
 		}
 

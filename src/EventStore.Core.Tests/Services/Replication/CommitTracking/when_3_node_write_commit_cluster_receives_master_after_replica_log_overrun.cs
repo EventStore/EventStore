@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Commit;
+using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
@@ -12,41 +12,30 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		private long _logPosition = 4000;
 		private long _overrunPosition = 5000;
 		public override void TestFixtureSetUp() {
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.ReplicatedTo>(msg => LogCommittedTos.Add(msg)));
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.CommittedTo>(CommittedTos.Add));
+			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicatedTo>(msg => ReplicatedTos.Add(msg)));
 
-			Service = new CommitTrackerService(Publisher, CommitLevel.ClusterWrite, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
+			Service = new ReplicationTrackingService(Publisher, ClusterSize, new InMemoryCheckpoint(0), new InMemoryCheckpoint(0));
 			Service.Start();
 			When();
 		}
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
-			Service.Handle(new CommitMessage.ReplicaWrittenTo(_overrunPosition, replicaId));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
-			Service.Handle(new CommitMessage.WrittenTo(_overrunPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			Assert.Fail("Fix Test");
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
+			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_overrunPosition, replicaId));
+			//AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_overrunPosition));
+			//AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 
 		[Test]
-		public void log_committed_to_should_be_sent() {
-			Assert.AreEqual(2, LogCommittedTos.Count);
-			var commit = LogCommittedTos[0];
+		public void replicated_to_should_be_sent() {
+			Assert.AreEqual(2, ReplicatedTos.Count);
+			var commit = ReplicatedTos[0];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_logPosition, commit.LogPosition);
-			commit = LogCommittedTos[1];
-			Assert.NotNull(commit);
-			Assert.AreEqual(_overrunPosition, commit.LogPosition);
-		}
-
-		[Test]
-		public void committed_to_should_be_sent() {
-			Assert.AreEqual(2, CommittedTos.Count);
-			var commit = LogCommittedTos[0];
-			Assert.NotNull(commit);
-			Assert.AreEqual(_logPosition, commit.LogPosition);
-			commit = LogCommittedTos[1];
+			commit = ReplicatedTos[1];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_overrunPosition, commit.LogPosition);
 		}

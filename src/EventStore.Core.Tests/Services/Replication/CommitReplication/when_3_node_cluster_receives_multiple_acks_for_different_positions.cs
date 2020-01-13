@@ -27,8 +27,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 		public override void When() {
 			// Reach quorum for middle commit
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPositionCommit2));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPositionCommit2, ReplicaId));
+			Assert.Fail("Fix Test");
+			//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(_logPositionCommit2));
+			//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPositionCommit2, ReplicaId));
 		}
 
 		[Test]

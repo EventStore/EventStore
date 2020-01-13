@@ -27,8 +27,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition1, _logPosition1, 0, 0));
 			
 			// Reach quorum for logPosition2			
-			CommitTracker.Handle(new CommitMessage.WrittenTo(_logPosition2));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition2, Guid.NewGuid()));
+			Assert.Fail("Fix Test");
+			//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition2));
+			//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition2, Guid.NewGuid()));
 
 			if (!_eventsReplicated.Wait(TimeSpan.FromSeconds(TimeoutSeconds))) {
 				Assert.Fail("Timed out waiting for commit replicated messages to be published");

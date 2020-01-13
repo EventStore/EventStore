@@ -14,28 +14,24 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
-			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, replicaId));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
-			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition2, replicaId));
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition2));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition3));
-			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition3, replicaId));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			Assert.Fail("Fix Test");
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
+			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition, replicaId));
+			//AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition2, replicaId));
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition2));
+			//AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition3));
+			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition3, replicaId));
+			//AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 
 		[Test]
-		public void log_committed_to_should_be_sent() {
-			Assert.AreEqual(3, LogCommittedTos.Count);
-			Assert.AreEqual(_logPosition, LogCommittedTos[0].LogPosition);
-			Assert.AreEqual(_logPosition2, LogCommittedTos[1].LogPosition);
-			Assert.AreEqual(_logPosition3, LogCommittedTos[2].LogPosition);
-		}
-
-		[Test]
-		public void committed_to_should_not_be_sent() {
-			Assert.AreEqual(0, CommittedTos.Count);
+		public void replicated_to_should_be_sent() {
+			Assert.AreEqual(3, ReplicatedTos.Count);
+			Assert.AreEqual(_logPosition, ReplicatedTos[0].LogPosition);
+			Assert.AreEqual(_logPosition2, ReplicatedTos[1].LogPosition);
+			Assert.AreEqual(_logPosition3, ReplicatedTos[2].LogPosition);
 		}
 	}
 }

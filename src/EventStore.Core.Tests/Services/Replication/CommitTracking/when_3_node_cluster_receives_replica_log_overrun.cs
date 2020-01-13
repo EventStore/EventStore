@@ -12,22 +12,18 @@ namespace EventStore.Core.Tests.Services.Replication.CommitTracking {
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();
-			Service.Handle(new CommitMessage.WrittenTo(_logPosition));
-			Service.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition + 100, replicaId));
+			Assert.Fail("Fix Test");
+			//Service.Handle(new ReplicationTrackingMessage.WrittenTo(_logPosition));
+			//Service.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(_logPosition + 100, replicaId));
 			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
 		}
 
 		[Test]
-		public void log_committed_to_should_be_sent() {
-			Assert.AreEqual(1, LogCommittedTos.Count);
-			var commit = LogCommittedTos[0];
+		public void replicated_to_should_be_sent() {
+			Assert.AreEqual(1, ReplicatedTos.Count);
+			var commit = ReplicatedTos[0];
 			Assert.NotNull(commit);
 			Assert.AreEqual(_logPosition, commit.LogPosition);
-		}
-
-		[Test]
-		public void committed_to_should_not_be_sent() {
-			Assert.AreEqual(0, CommittedTos.Count);
-		}
+		}		
 	}
 }

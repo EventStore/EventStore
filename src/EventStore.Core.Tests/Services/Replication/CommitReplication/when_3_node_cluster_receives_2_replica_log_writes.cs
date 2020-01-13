@@ -11,12 +11,12 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		public override void Given() { }
 		public override void When() {
 			BecomeMaster();
-			AddPendingPrepare(_logPosition, publishChaserMsgs:false);
-			
+			AddPendingPrepare(_logPosition, publishChaserMsgs: false);
+
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
 			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
-			CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(_logPosition, Guid.NewGuid()));
+			CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
+			CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
 		}
 
 		[Test]

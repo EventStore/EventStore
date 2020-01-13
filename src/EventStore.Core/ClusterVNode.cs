@@ -37,7 +37,6 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Transport.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -297,24 +296,23 @@ namespace EventStore.Core {
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
 
-			//COMMIT TRACKING
-			var commitTracker =
-				new CommitTrackerService(_mainQueue, CommitLevel.MasterIndexed, vNodeSettings.ClusterNodeCount, db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint);
-			AddTask(commitTracker.Task);
-			_mainBus.Subscribe<SystemMessage.SystemInit>(commitTracker);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(commitTracker);
-			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(commitTracker);
-			_mainBus.Subscribe<CommitMessage.WrittenTo>(commitTracker);
-			_mainBus.Subscribe<CommitMessage.IndexedTo>(commitTracker);
-			_mainBus.Subscribe<CommitMessage.ReplicaWrittenTo>(commitTracker);
-			_mainBus.Subscribe<CommitMessage.MasterReplicatedTo>(commitTracker);
+			//REPLICATION TRACKING
+			var replicationTracker =
+				new ReplicationTrackingService(_mainQueue, vNodeSettings.ClusterNodeCount, db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint);
+			AddTask(replicationTracker.Task);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicaWriteAck>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.MasterReplicatedTo>(replicationTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
 				db.Config.WriterCheckpoint, db.Config.ReplicationCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
 			AddTask(indexCommitterService.Task);
 
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
-			_mainBus.Subscribe<CommitMessage.ReplicatedTo>(indexCommitterService);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(indexCommitterService);
 			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
@@ -509,6 +507,7 @@ namespace EventStore.Core {
 				vNodeSettings.PrepareTimeout,
 				vNodeSettings.CommitTimeout,
 				vNodeSettings.BetterOrdering);
+
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 
@@ -523,8 +522,8 @@ namespace EventStore.Core {
 
 			_mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
-			_mainBus.Subscribe<CommitMessage.ReplicatedTo>(requestManagement);
-			_mainBus.Subscribe<CommitMessage.CommittedTo>(requestManagement);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
+			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
 
@@ -661,7 +660,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
-				_mainBus.Subscribe<CommitMessage.ReplicatedTo>(masterReplicationService);
+				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(masterReplicationService);
 				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(masterReplicationService);
 
 				// REPLICA REPLICATION
@@ -680,13 +679,13 @@ namespace EventStore.Core {
 
 			var electionsService = new ElectionsService(_mainQueue, gossipInfo, vNodeSettings.ClusterNodeCount,
 				db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-				epochManager, () => commitTracker.ReplicatedPosition, vNodeSettings.NodePriority, _timeProvider);
+				epochManager, () => readIndex.LastIndexedPosition, vNodeSettings.NodePriority, _timeProvider);
 			electionsService.SubscribeMessages(_mainBus);
 			if (!isSingleNode || vNodeSettings.GossipOnSingleNode) {
 				// GOSSIP
 
 				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
-					db.Config.ChaserCheckpoint, epochManager, () => commitTracker.ReplicatedPosition,
+					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
 					vNodeSettings.GossipAllowedTimeDifference,
 					_timeProvider);

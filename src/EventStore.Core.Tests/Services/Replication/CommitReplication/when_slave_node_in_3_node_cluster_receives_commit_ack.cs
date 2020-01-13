@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		}
 
 		public override void When() {
-			Publisher.Publish(new CommitMessage.MasterReplicatedTo(_logPosition));
+			Publisher.Publish(new ReplicationTrackingMessage.MasterReplicatedTo(_logPosition));
 		}
 
 		[Test]

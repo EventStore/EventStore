@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Commit;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
@@ -43,9 +40,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected long FailureCurrentVersion = -1;
 		protected long TransactionId;
 
-		private bool _completeOnLogCommitted;
-		private readonly ICommitSource _commitSource;
-		private long _lastEventPosition;
+		protected readonly CommitSource CommitSource;
+		protected long LastEventPosition;
+		protected bool Registered;
 		protected long CommitPosition = -1;
 		protected long FirstPrepare {
 			get {
@@ -86,11 +83,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				Guid internalCorrId,
 				Guid clientCorrId,
 				long expectedVersion,
-				ICommitSource commitSource,
+				CommitSource commitSource,
 				int prepareCount = 0,
 				long transactionId = -1,
-				bool waitForCommit = false,
-				bool completeOnLogCommitted = false) {
+				bool waitForCommit = false) {
 			Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
 			Ensure.NotEmptyGuid(clientCorrId, nameof(clientCorrId));
 			Ensure.NotNull(publisher, nameof(publisher));
@@ -104,14 +100,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			ClientCorrId = clientCorrId;
 			WriteReplyEnvelope = new PublishEnvelope(Publisher);
 			ExpectedVersion = expectedVersion;
-			_commitSource = commitSource;
+			CommitSource = commitSource;
 			_prepareCount = prepareCount;
 			TransactionId = transactionId;
 			_commitRecieved = !waitForCommit; //if not waiting for commit flag as true
 			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true
-			_completeOnLogCommitted = completeOnLogCommitted;
 			if (prepareCount == 0 && waitForCommit == false) {
-				//empty operation just return sucess
+				//empty operation just return success
 				var position = Math.Max(transactionId, 0);
 				ReturnCommitAt(position, 0, 0);
 			}
@@ -140,8 +135,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (message.Flags.HasAnyOf(PrepareFlags.TransactionBegin)) {
 				TransactionId = message.LogPosition;
 			}
-			if (message.LogPosition > _lastEventPosition) {
-				_lastEventPosition = message.LogPosition;
+			if (message.LogPosition > LastEventPosition) {
+				LastEventPosition = message.LogPosition;
 			}
 
 			lock (_prepareLogPositions) {
@@ -157,8 +152,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
 			_commitRecieved = true;
 			_allEventsWritten = _commitRecieved && _allPreparesWritten;
-			if (message.LogPosition > _lastEventPosition) {
-				_lastEventPosition = message.LogPosition;
+			if (message.LogPosition > LastEventPosition) {
+				LastEventPosition = message.LogPosition;
 			}
 			FirstEventNumber = message.FirstEventNumber;
 			LastEventNumber = message.LastEventNumber;
@@ -166,18 +161,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allEventsWritten) { AllEventsWritten(); }
 		}
 		protected virtual void AllPreparesWritten() { }
-		private bool _registered;
+		
 		protected virtual void AllEventsWritten() {
-			var pos = _completeOnLogCommitted ? _commitSource.LogCommittedPosition : _commitSource.CommitPosition;
-			if (pos >= _lastEventPosition) {
+			if (CommitSource.IndexedPosition >= LastEventPosition) {
 				Committed();
-			} else if (!_registered) {
-				if (_completeOnLogCommitted) {
-					_commitSource.NotifyLogCommitFor(_lastEventPosition, Committed);
-				} else {
-					_commitSource.NotifyCommitFor(_lastEventPosition, Committed);
-				}
-				_registered = true;
+			} else if (!Registered) {
+				CommitSource.NotifyFor(LastEventPosition, Committed);
+				Registered = true;
 			}
 		}
 		protected virtual void Committed() {

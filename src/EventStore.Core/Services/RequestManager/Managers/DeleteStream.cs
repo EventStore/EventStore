@@ -3,7 +3,6 @@ using System.Security.Principal;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Commit;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
@@ -24,7 +23,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					IPrincipal user,
 					bool hardDelete,
-					ICommitSource commitSource)
+					CommitSource commitSource)
 			: base(
 					 publisher,
 					 timeout,

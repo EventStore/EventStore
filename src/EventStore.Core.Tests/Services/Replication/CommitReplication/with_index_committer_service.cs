@@ -13,7 +13,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Services.Commit;
 using System.Linq;
 
 namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
@@ -29,12 +28,12 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 		protected ICheckpoint WriterCheckpoint;
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected List<StorageMessage.CommitIndexed> CommitReplicatedMgs = new List<StorageMessage.CommitIndexed>();
-		protected List<CommitMessage.IndexedTo> IndexWrittenMgs = new List<CommitMessage.IndexedTo>();
+		protected List<ReplicationTrackingMessage.IndexedTo> IndexWrittenMgs = new List<ReplicationTrackingMessage.IndexedTo>();
 
 		protected IndexCommitterService Service;
 		protected FakeIndexCommitter IndexCommitter;
 		protected ITFChunkScavengerLogManager TfChunkScavengerLogManager;
-		protected CommitTrackerService CommitTracker;
+		protected ReplicationTrackingService CommitTracker;
 
 		protected int _expectedCommitReplicatedMessages;
 
@@ -44,15 +43,15 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			ReplicationCheckpoint = new InMemoryCheckpoint(ReplicationPosition);
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => CommitReplicatedMgs.Add(m)));
-			Publisher.Subscribe(new AdHocHandler<CommitMessage.IndexedTo>(m => IndexWrittenMgs.Add(m)));
+			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.IndexedTo>(m => IndexWrittenMgs.Add(m)));
 			TableIndex = new FakeTableIndex();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
-			CommitTracker = new CommitTrackerService(Publisher, CommitLevel.MasterIndexed, 3, ReplicationCheckpoint, WriterCheckpoint);
+			CommitTracker = new ReplicationTrackingService(Publisher, 3, ReplicationCheckpoint, WriterCheckpoint);
 			CommitTracker.Start();
 			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
-			Publisher.Subscribe<CommitMessage.ReplicatedTo>(Service);
-			Publisher.Subscribe<CommitMessage.MasterReplicatedTo>(CommitTracker);
+			Publisher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(Service);
+			Publisher.Subscribe<ReplicationTrackingMessage.MasterReplicatedTo>(CommitTracker);
 			
 			BecomeMaster();
 			Given();
@@ -72,8 +71,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			var prepare = CreatePrepare(transactionPosition, transactionPosition);
 			Service.AddPendingPrepare(new PrepareLogRecord[] { prepare }, postPosition);
 			if (publishChaserMsgs) {
-				CommitTracker.Handle(new CommitMessage.WrittenTo(postPosition));
-				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(postPosition, ReplicaId));
+				Assert.Fail("Fix Test");
+				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(postPosition));
+				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(postPosition, ReplicaId));
 			}
 		}
 
@@ -85,8 +85,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 
 			Service.AddPendingPrepare(prepares.ToArray(), logPositions[logPositions.Length - 1]);
 			if (publishChaserMsgs) {
-				CommitTracker.Handle(new CommitMessage.WrittenTo(logPositions.Max()));
-				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(logPositions.Max(), ReplicaId));
+				Assert.Fail("Fix Test");
+				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(logPositions.Max()));
+				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(logPositions.Max(), ReplicaId));
 			}
 		}
 
@@ -102,8 +103,9 @@ namespace EventStore.Core.Tests.Services.Replication.CommitReplication {
 			var commit = LogRecord.Commit(logPosition, Guid.NewGuid(), transactionPosition, 0);
 			Service.AddPendingCommit(commit, postPosition);
 			if (publishChaserMsgs) {
-				CommitTracker.Handle(new CommitMessage.WrittenTo(postPosition));
-				CommitTracker.Handle(new CommitMessage.ReplicaWrittenTo(postPosition, ReplicaId));
+				Assert.Fail("Fix Test");
+				//CommitTracker.Handle(new ReplicationTrackingMessage.WrittenTo(postPosition));
+				//CommitTracker.Handle(new ReplicationTrackingMessage.ReplicaWrittenTo(postPosition, ReplicaId));
 			}
 		}
 
