@@ -29,8 +29,10 @@ namespace EventStore.Projections.Core.Services.Grpc {
 					resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
 					return;
 				}
+				//todo: identify the correct return for a non-running projection, but let's not blow up the test host in the interim
+				var resultTxt = string.IsNullOrWhiteSpace(result.Result) ? "{}" : result.Result;
 
-				var document = JsonDocument.Parse(result.Result);
+				var document = JsonDocument.Parse(resultTxt);
 
 				resetSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
@@ -57,8 +59,9 @@ namespace EventStore.Projections.Core.Services.Grpc {
 					resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
 					return;
 				}
-
-				var document = JsonDocument.Parse(result.State);
+				//todo: identify the correct return for a non-running projection, but let's not blow up the test host in the interim
+				var state = string.IsNullOrWhiteSpace(result.State) ? "{}" : result.State;
+				var document = JsonDocument.Parse(state);
 
 				resetSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
