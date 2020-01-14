@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 			// Subscribe to the writes to ensure the parked message has been written
 			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
-			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(Handle));
+			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(Handle));
 
 			var json = await GetJson2<JObject>(
 				SubscriptionPath + "/1", "embed=rich",
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			}
 		}
 
-		private void Handle(StorageMessage.CommitReplicated msg) {
+		private void Handle(StorageMessage.CommitIndexed msg) {
 			if (msg.CorrelationId == _writeCorrelationId) {
 				_eventParked.TrySetResult(true);
 			}

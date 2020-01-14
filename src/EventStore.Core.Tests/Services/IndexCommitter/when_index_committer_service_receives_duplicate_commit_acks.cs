@@ -1,0 +1,32 @@
+using System;
+using EventStore.Core.Messages;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.Services.IndexCommitter {
+	[TestFixture]
+	public class  when_index_committer_service_receives_duplicate_commit_acks : with_index_committer_service {
+		private readonly long _logPosition = 4000;
+		private readonly Guid _correlationId = Guid.NewGuid();
+		public override void Given() { }
+		public override void When() {
+			AddPendingPrepare(_logPosition);
+
+			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
+			Service.Handle(new StorageMessage.CommitAck(_correlationId, _logPosition, _logPosition, 0, 0));
+			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo( _logPosition));
+		}
+
+		[Test]
+		public void commit_replicated_message_should_not_be_sent() {
+			Assert.AreEqual(0, CommitReplicatedMgs.Count);
+		}
+		[Test]
+		public void index_written_message_should_not_have_been_published() {
+			Assert.AreEqual(0, IndexWrittenMgs.Count);
+		}
+		[Test]
+		public void index_should_not_have_been_updated() {
+			Assert.AreEqual(0, IndexCommitter.CommittedPrepares.Count);
+		}
+	}
+}

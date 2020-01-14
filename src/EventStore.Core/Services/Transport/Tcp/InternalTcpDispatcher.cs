@@ -11,11 +11,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public class InternalTcpDispatcher : ClientTcpDispatcher {
-		public InternalTcpDispatcher() {
-			AddUnwrapper(TcpCommand.PrepareAck, UnwrapPrepareAck, ClientVersion.V2);
-			AddWrapper<StorageMessage.PrepareAck>(WrapPrepareAck, ClientVersion.V2);
-			AddUnwrapper(TcpCommand.CommitAck, UnwrapCommitAck, ClientVersion.V2);
-			AddWrapper<StorageMessage.CommitAck>(WrapCommitAck, ClientVersion.V2);
+		public InternalTcpDispatcher() {		
+			AddUnwrapper(TcpCommand.MasterReplicatedTo, UnwrapReplicatedTo, ClientVersion.V2);
+			AddWrapper<ReplicationTrackingMessage.ReplicatedTo>(WrapReplicatedTo, ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.SubscribeReplica, UnwrapReplicaSubscriptionRequest, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.SubscribeReplica>(WrapSubscribeReplica, ClientVersion.V2);
@@ -39,30 +37,16 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.DropSubscription, UnwrapDropSubscription, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.DropSubscription>(WrapDropSubscription, ClientVersion.V2);
 		}
+		
 
-		private TcpPackage WrapPrepareAck(StorageMessage.PrepareAck msg) {
-			var dto = new ReplicationMessageDto.PrepareAck(msg.LogPosition, (byte)msg.Flags);
-			return new TcpPackage(TcpCommand.PrepareAck, msg.CorrelationId, dto.Serialize());
+		private TcpPackage WrapReplicatedTo(ReplicationTrackingMessage.ReplicatedTo msg) {
+			var dto = new ReplicationMessageDto.ReplicatedTo(msg.LogPosition);
+			return new TcpPackage(TcpCommand.MasterReplicatedTo, Guid.NewGuid(), dto.Serialize());
 		}
 
-		private static StorageMessage.PrepareAck UnwrapPrepareAck(TcpPackage package, IEnvelope envelope) {
-			var dto = package.Data.Deserialize<ReplicationMessageDto.PrepareAck>();
-			return new StorageMessage.PrepareAck(package.CorrelationId, dto.LogPosition, (PrepareFlags)dto.Flags);
-		}
-
-		private TcpPackage WrapCommitAck(StorageMessage.CommitAck msg) {
-			var dto = new ReplicationMessageDto.CommitAck(msg.LogPosition, msg.TransactionPosition,
-				msg.FirstEventNumber, msg.LastEventNumber);
-			return new TcpPackage(TcpCommand.CommitAck, msg.CorrelationId, dto.Serialize());
-		}
-
-		private static StorageMessage.CommitAck UnwrapCommitAck(TcpPackage package, IEnvelope envelope) {
-			var dto = package.Data.Deserialize<ReplicationMessageDto.CommitAck>();
-			return new StorageMessage.CommitAck(package.CorrelationId,
-				dto.LogPosition,
-				dto.TransactionPosition,
-				dto.FirstEventNumber,
-				dto.LastEventNumber);
+		private static ReplicationTrackingMessage.MasterReplicatedTo UnwrapReplicatedTo(TcpPackage package, IEnvelope envelope) {
+			var dto = package.Data.Deserialize<ReplicationMessageDto.ReplicatedTo>();
+			return new ReplicationTrackingMessage.MasterReplicatedTo(dto.LogPosition);
 		}
 
 		private ReplicationMessage.ReplicaSubscriptionRequest UnwrapReplicaSubscriptionRequest(TcpPackage package,

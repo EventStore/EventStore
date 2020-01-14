@@ -1,41 +1,33 @@
+using System;
 using EventStore.Common.Utils;
 using ProtoBuf;
 
 namespace EventStore.Core.Messages {
 	public static class ReplicationMessageDto {
 		[ProtoContract]
-		public class PrepareAck {
+		public class ReplicaLogWrite {
 			[ProtoMember(1)] public long LogPosition { get; set; }
 
-			[ProtoMember(2)] public byte Flags { get; set; }
+			[ProtoMember(2)] public byte[] ReplicaId { get; set; }
 
-			public PrepareAck() {
+			public ReplicaLogWrite() {
 			}
 
-			public PrepareAck(long logPosition, byte flags) {
+			public ReplicaLogWrite(long logPosition, byte[] replicaId) {
 				LogPosition = logPosition;
-				Flags = flags;
+				ReplicaId =replicaId;
 			}
 		}
-
+		
 		[ProtoContract]
-		public class CommitAck {
+		public class ReplicatedTo {
 			[ProtoMember(1)] public long LogPosition { get; set; }
 
-			[ProtoMember(2)] public long TransactionPosition { get; set; }
-
-			[ProtoMember(3)] public long FirstEventNumber { get; set; }
-
-			[ProtoMember(4)] public long LastEventNumber { get; set; }
-
-			public CommitAck() {
+			public ReplicatedTo() {
 			}
 
-			public CommitAck(long logPosition, long transactionPosition, long firstEventNumber, long lastEventNumber) {
-				LogPosition = logPosition;
-				TransactionPosition = transactionPosition;
-				FirstEventNumber = firstEventNumber;
-				LastEventNumber = lastEventNumber;
+			public ReplicatedTo(long logPosition) {
+				LogPosition = logPosition;				
 			}
 		}
 

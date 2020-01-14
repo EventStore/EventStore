@@ -13,5 +13,11 @@ namespace EventStore.Core.Tests.Helpers {
 			Log.Info($"Available port found: {port}");
 			return port;
 		}
+
+		public static IPEndPoint GetLoopback() {
+			var ip = IPAddress.Loopback;
+			int port = PortsHelper.GetAvailablePort(ip);
+			return new IPEndPoint(ip, port);
+		}
 	}
 }

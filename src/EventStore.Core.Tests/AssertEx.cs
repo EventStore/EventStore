@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,8 @@ namespace EventStore.Core.Tests {
 		}
 
 		private static string FormatString(object o) {
-			if (o == null) return string.Empty;
+			if (o == null)
+				return string.Empty;
 			if (o is DateTime time) {
 				return time.ToString("MM/dd/yyyy HH:mm:ss.fff",
 					CultureInfo.InvariantCulture);
@@ -27,7 +29,7 @@ namespace EventStore.Core.Tests {
 
 			return o.ToString();
 		}
-		
+
 		public static async Task<TException> ThrowsAsync<TException>(Func<Task> code)
 			where TException : Exception {
 			var expected = default(TException);
@@ -50,6 +52,45 @@ namespace EventStore.Core.Tests {
 			} catch (TException) {
 				Assert.Fail(message);
 			}
+		}
+
+		/// <summary>
+		/// Asserts the given function will return true before the timeout expires.
+		/// Repeatedly evaluates the function until true is returned or the timeout expires.
+		/// Will return immediately when the condition is true.
+		/// Evaluates the timeout until expired.
+		/// Will not yield the thread by default, if yielding is required to resolve deadlocks set yieldThread to true.
+		/// </summary>
+		/// <param name="func">The function to evaluate.</param>
+		/// <param name="timeout">A timeout in milliseconds. If not specified, defaults to 1000.</param>
+		/// <param name="msg">A message to display if the condition is not satisfied.</param>
+		/// <param name="yieldThread">If true, the thread relinquishes the remainder of its time
+		/// slice to any thread of equal priority that is ready to run.</param>
+		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout = null, string msg = null, bool yieldThread = false) {
+			if (func()) {
+				return; 
+			}
+
+			var expire = DateTime.UtcNow + (timeout ?? TimeSpan.FromMilliseconds(1000));
+			var spin = new SpinWait();
+
+			while (DateTime.UtcNow <= expire) {
+				if (yieldThread) {
+					Thread.Sleep(0);
+				}
+
+				while (!spin.NextSpinWillYield) {
+					spin.SpinOnce(); 
+				}
+
+				if (func()) {
+					return; 
+				}
+
+				spin = new SpinWait();
+			}
+
+			Assert.Fail(msg ?? "");
 		}
 	}
 }

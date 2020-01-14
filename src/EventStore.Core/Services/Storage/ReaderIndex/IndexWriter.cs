@@ -173,10 +173,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1, IsSoftDeleted(streamId));
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= endEventNumber;
+					//TODO(clc): the new index should hold the log positions removing this read
+					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
+					//in that case the position will need to come from the pre-index
+					var idempotentEvent = _indexReader.ReadEvent(streamId, endEventNumber);
+					var logPos = idempotentEvent.Result == ReadEventResult.Success
+						? idempotentEvent.Record.LogPosition : -1; 					
 					if(isReplicated)
-						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false);
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 					else
-						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false);
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, startEventNumber, endEventNumber, false, logPos);
 				}
 			}
 
@@ -211,10 +217,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1, false);
 				else{
 					var isReplicated = _indexReader.GetStreamLastEventNumber(streamId) >= eventNumber;
+					//TODO(clc): the new index should hold the log positions removing this read
+					//n.b. the index will never have the event in the case of NotReady as it only committed records are indexed
+					//in that case the position will need to come from the pre-index
+					var idempotentEvent = _indexReader.ReadEvent(streamId, eventNumber);
+					var logPos = idempotentEvent.Result == ReadEventResult.Success
+						? idempotentEvent.Record.LogPosition : -1; 
 					if(isReplicated)
-						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+						return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber, false,logPos);
 					else
-						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, expectedVersion + 1, eventNumber, false);
+						return new CommitCheckResult(CommitDecision.IdempotentNotReady, streamId, curVersion, expectedVersion + 1, eventNumber, false, logPos);
 				}
 			}
 

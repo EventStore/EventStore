@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_indexBackend = new IndexBackend(_readerPool, 100000, 100000);
 			_indexReader = new IndexReader(_indexBackend, _tableIndex, new StreamMetadata(maxCount: 100000), 100, false);
 			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
-			_indexCommitter = new IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, false);
+			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, false);
 
 			WriteEvents();
 		}

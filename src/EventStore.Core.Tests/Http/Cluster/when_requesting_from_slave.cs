@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.Integration;
@@ -24,7 +25,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			
 			// Wait for the admin user to be created before starting our tests
 			await master.AdminUserCreated;
-			
+			Thread.Sleep(100); //allow time for replica node propagation
 			var slave = GetSlaves().First();
 			_slaveEndPoint = slave.ExternalHttpEndPoint;
 			_client = slave.CreateHttpClient();

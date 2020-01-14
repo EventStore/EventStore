@@ -23,7 +23,7 @@ namespace EventStore.Core.Services {
 		IHandle<ReplicationMessage.DataChunkBulk> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterStorageWriterService>();
 
-		private readonly Func<long> _getLastCommitPosition;
+		private readonly Func<long> _getLastIndexedPosition;
 		private readonly LengthPrefixSuffixFramer _framer;
 
 		private Guid _subscriptionId;
@@ -39,11 +39,11 @@ namespace EventStore.Core.Services {
 			IIndexWriter indexWriter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			Func<long> getLastCommitPosition)
+			Func<long> getLastIndexedPosition)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager, queueStatsManager) {
-			Ensure.NotNull(getLastCommitPosition, "getLastCommitPosition");
+			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
-			_getLastCommitPosition = getLastCommitPosition;
+			_getLastIndexedPosition = getLastIndexedPosition;
 			_framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
 
 			SubscribeToMessage<ReplicationMessage.ReplicaSubscribed>();
@@ -98,23 +98,23 @@ namespace EventStore.Core.Services {
 					message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,
 					message.SubscriptionPosition, writerCheck, writerCheck);
 
-				var lastCommitPosition = _getLastCommitPosition();
-				if (message.SubscriptionPosition > lastCommitPosition)
+				var lastIndexedPosition = _getLastIndexedPosition();
+				if (message.SubscriptionPosition > lastIndexedPosition)
 					Log.Info(
 						"ONLINE TRUNCATION IS NEEDED. NOT IMPLEMENTED. OFFLINE TRUNCATION WILL BE PERFORMED. SHUTTING DOWN NODE.");
 				else
 					Log.Info(
 						"OFFLINE TRUNCATION IS NEEDED (SubscribedAt {subscriptionPosition} (0x{subscriptionPosition:X}) <= LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X})). SHUTTING DOWN NODE.",
-						message.SubscriptionPosition, message.SubscriptionPosition, lastCommitPosition,
-						lastCommitPosition);
+						message.SubscriptionPosition, message.SubscriptionPosition, lastIndexedPosition,
+						lastIndexedPosition);
 
 				EpochRecord lastEpoch = EpochManager.GetLastEpoch();
 				if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch,
-					lastCommitPosition)) {
+					lastIndexedPosition)) {
 					Log.Error(
 						"Master [{masterEndPoint},{masterId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our last epoch and LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X}) >= lastEpoch.EpochPosition {lastEpochPosition} (0x{lastEpochPosition:X}). That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.",
 						message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,
-						message.SubscriptionPosition, lastCommitPosition, lastCommitPosition, lastEpoch.EpochPosition,
+						message.SubscriptionPosition, lastIndexedPosition, lastIndexedPosition, lastEpoch.EpochPosition,
 						lastEpoch.EpochPosition);
 					Log.Error(
 						"ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF JUST-ELECTED MASTER FAILS IMMEDIATELY AFTER ITS ELECTION.");
@@ -210,8 +210,7 @@ namespace EventStore.Core.Services {
 				_activeChunk = null;
 			}
 
-			if (message.CompleteChunk ||
-			    _subscriptionPos - _ackedSubscriptionPos >= MasterReplicationService.ReplicaAckWindow) {
+			if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
 				_ackedSubscriptionPos = _subscriptionPos;
 				Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
 			}
@@ -266,8 +265,7 @@ namespace EventStore.Core.Services {
 				Flush();
 			}
 
-			if (message.CompleteChunk ||
-			    _subscriptionPos - _ackedSubscriptionPos >= MasterReplicationService.ReplicaAckWindow) {
+			if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
 				_ackedSubscriptionPos = _subscriptionPos;
 				Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
 			}
