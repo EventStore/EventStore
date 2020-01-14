@@ -22,14 +22,14 @@
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Google.Protobuf" Version="3.10.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.24.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.24.0">
+		<PackageReference Include="Google.Protobuf" Version="3.11.2" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.26.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.26.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
-		<PackageReference Include="System.Text.Json" Version="4.6.0" />
+		<PackageReference Include="System.Text.Json" Version="4.7.0" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
 	<ItemGroup>

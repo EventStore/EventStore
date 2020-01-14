@@ -18,9 +18,9 @@
 				<RootNamespace>EventStore.Client.Operations</RootNamespace>
 		</PropertyGroup>
 		<ItemGroup>
-				<PackageReference Include="Google.Protobuf" Version="3.10.0" />
-				<PackageReference Include="Grpc.Net.Client" Version="2.24.0" />
-				<PackageReference Include="Grpc.Tools" Version="2.24.0">
+				<PackageReference Include="Google.Protobuf" Version="3.11.2" />
+				<PackageReference Include="Grpc.Net.Client" Version="2.26.0" />
+				<PackageReference Include="Grpc.Tools" Version="2.26.0">
 						<PrivateAssets>all</PrivateAssets>
 						<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 				</PackageReference>
