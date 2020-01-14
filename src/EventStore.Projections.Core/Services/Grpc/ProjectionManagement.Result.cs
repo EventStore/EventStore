@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 		}
 
 		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
-			var resetSource = new TaskCompletionSource<Value>();
+			var resultSource = new TaskCompletionSource<Value>();
 
 			var options = request.Options;
 
@@ -49,18 +49,24 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetState(envelope, name, partition));
 
 			return new StateResp {
-				State = await resetSource.Task.ConfigureAwait(false)
+				State = await resultSource.Task.ConfigureAwait(false)
 			};
 
 			void OnMessage(Message message) {
 				if (!(message is ProjectionManagementMessage.ProjectionState result)) {
-					resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
+					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionState>(message));
 					return;
 				}
 
+				if (string.IsNullOrEmpty(result.State)) {
+					resultSource.TrySetResult(new Value {
+						StructValue = new Struct()
+					});
+					return;
+				}
 				var document = JsonDocument.Parse(result.State);
 
-				resetSource.TrySetResult(GetProtoValue(document.RootElement));
+				resultSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
 		}
 	}
