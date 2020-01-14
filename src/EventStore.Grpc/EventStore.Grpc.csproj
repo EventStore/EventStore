@@ -32,7 +32,12 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/*.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />
+		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/operations.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />
 		<Compile Include="../EventStore.Grpc.Common/*.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>EventStore.Grpc.Operations</_Parameter1>
+		</AssemblyAttribute>
 	</ItemGroup>
 </Project>

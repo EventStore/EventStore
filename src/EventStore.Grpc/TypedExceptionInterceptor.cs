@@ -101,6 +101,8 @@ namespace EventStore.Grpc {
 						RequiredMetadataPropertyMissingException(
 							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.MissingRequiredMetadataProperty)
 								?.Value, ex),
+					Constants.Exceptions.ScavengeNotFound => new ScavengeNotFoundException(ex.Trailers
+						.FirstOrDefault(x => x.Key == Constants.Exceptions.ScavengeId)?.Value),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => new InvalidOperationException(ex.Message, ex)

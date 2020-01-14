@@ -3,7 +3,7 @@ using System.Linq;
 using Microsoft.VisualBasic;
 
 namespace EventStore.Grpc {
-	internal struct HashCode {
+	public struct HashCode {
 		private readonly int _value;
 
 		private HashCode(int value) {

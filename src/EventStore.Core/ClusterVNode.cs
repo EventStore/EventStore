@@ -37,11 +37,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
-using EventStore.Core.Services.Transport.Grpc;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -54,9 +50,6 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
-		private static readonly PathString PersistentSegment = "/event_store.grpc.persistent_subscriptions.PersistentSubscriptions";
-		private static readonly PathString StreamsSegment = "/event_store.grpc.streams.Streams";
-		private static readonly PathString UsersSegment = "/event_store.grpc.users.Users";
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }

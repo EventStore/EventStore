@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Grpc.Operations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -19,11 +20,10 @@ namespace EventStore.Grpc {
 	public abstract class EventStoreGrpcFixture : IAsyncLifetime {
 		public const string TestEventType = "-";
 		private readonly TFChunkDb _db;
-		private readonly TestServer _testServer;
 
+		protected TestServer TestServer { get; }
 		public ClusterVNode Node { get; }
-
-		public readonly EventStoreGrpcClient Client;
+		public EventStoreGrpcClient Client { get; }
 
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
@@ -38,12 +38,12 @@ namespace EventStore.Grpc {
 			Node = vNodeBuilder.Build();
 			_db = vNodeBuilder.GetDb();
 
-			_testServer = new TestServer(
+			TestServer = new TestServer(
 				webHostBuilder
 					.UseStartup(new TestClusterVNodeStartup(Node)));
 
 			Client = new EventStoreGrpcClient(new UriBuilder().Uri, () => new HttpClient(new ResponseVersionHandler {
-				InnerHandler = _testServer.CreateHandler()
+				InnerHandler = TestServer.CreateHandler()
 			}) {
 				Timeout = Timeout.InfiniteTimeSpan
 			});
@@ -70,7 +70,7 @@ namespace EventStore.Grpc {
 		public virtual async Task DisposeAsync() {
 			await Node.StopAsync();
 			_db.Dispose();
-			_testServer.Dispose();
+			TestServer.Dispose();
 			Client?.Dispose();
 		}
 
@@ -81,7 +81,7 @@ namespace EventStore.Grpc {
 		}
 
 
-		private class ResponseVersionHandler : DelegatingHandler {
+		protected class ResponseVersionHandler : DelegatingHandler {
 			protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
 				CancellationToken cancellationToken) {
 				var response = await base.SendAsync(request, cancellationToken);
