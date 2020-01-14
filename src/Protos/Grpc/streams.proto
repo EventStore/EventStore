@@ -20,7 +20,7 @@ message ReadReq {
 		ReadDirection read_direction = 3;
 		bool resolve_links = 4;
 		oneof count_option {
-			int32 count = 5;
+			uint64 count = 5;
 			SubscriptionOptions subscription = 6;
 		}
 		oneof filter_option {

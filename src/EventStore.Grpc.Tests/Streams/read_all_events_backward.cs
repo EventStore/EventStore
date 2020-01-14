@@ -15,13 +15,13 @@ namespace EventStore.Grpc.Streams {
 
 		[Fact]
 		public async Task return_empty_if_reading_from_start() {
-			var count = await _fixture.Client.ReadAllBackwardsAsync(Position.Start, 1, false).CountAsync();
+			var count = await _fixture.Client.ReadAllBackwardsAsync(Position.Start, 1).CountAsync();
 			Assert.Equal(0, count);
 		}
 
 		[Fact]
 		public async Task return_partial_slice_if_not_enough_events() {
-			var events = await _fixture.Client.ReadAllBackwardsAsync(Position.End, _fixture.Events.Length * 2, false)
+			var events = await _fixture.Client.ReadAllBackwardsAsync(Position.End, (ulong)(_fixture.Events.Length * 2))
 				.ToArrayAsync();
 
 			Assert.True(events.Length < _fixture.Events.Length * 2);
@@ -29,7 +29,7 @@ namespace EventStore.Grpc.Streams {
 
 		[Fact]
 		public async Task return_events_in_reversed_order_compared_to_written() {
-			var events = await _fixture.Client.ReadAllBackwardsAsync(Position.End, _fixture.Events.Length, false)
+			var events = await _fixture.Client.ReadAllBackwardsAsync(Position.End, (ulong)_fixture.Events.Length)
 				.ToArrayAsync();
 
 			Assert.True(EventDataComparer.Equal(
@@ -50,6 +50,16 @@ namespace EventStore.Grpc.Streams {
 		[Fact(Skip = "Not Implemented")]
 		public Task when_got_int_max_value_as_maxcount_should_throw() {
 			throw new NotImplementedException();
+		}
+
+		[Fact]
+		public async Task max_count_is_respected() {
+			var maxCount = (ulong)_fixture.Events.Length / 2;
+			var events = await _fixture.Client.ReadAllBackwardsAsync(Position.End, maxCount)
+				.Take(_fixture.Events.Length)
+				.ToArrayAsync();
+
+			Assert.Equal(maxCount, (ulong)events.Length);
 		}
 
 		public class Fixture : EventStoreGrpcFixture {

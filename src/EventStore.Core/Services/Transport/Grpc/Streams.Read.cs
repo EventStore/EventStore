@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => default(int?),
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
 							_ => throw new InvalidOperationException()
 						},
@@ -99,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => default(int?),
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
 							_ => throw new InvalidOperationException()
 						},
