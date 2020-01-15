@@ -1,5 +1,5 @@
 syntax = "proto3";
-package event_store.grpc.projections;
+package event_store.client.projections;
 option java_package = "com.eventstore.client.projections";
 
 import "google/protobuf/struct.proto";

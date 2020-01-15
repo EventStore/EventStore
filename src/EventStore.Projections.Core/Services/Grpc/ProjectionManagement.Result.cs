@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
-using EventStore.Grpc.Projections;
+using EventStore.Client.Projections;
 using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

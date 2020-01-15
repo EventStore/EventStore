@@ -1,7 +1,7 @@
 using System;
 
 // ReSharper disable CheckNamespace
-namespace EventStore.Grpc.Streams {
+namespace EventStore.Client.Streams {
 // ReSharper restore CheckNamespace
 
 	partial class ReadReq {
@@ -18,10 +18,10 @@ namespace EventStore.Grpc.Streams {
 					}
 
 					public partial class AllOptions {
-						internal Grpc.Position ToPosition() => AllOptionCase switch {
-							AllOptionOneofCase.End => Grpc.Position.End,
-							AllOptionOneofCase.Start => Grpc.Position.Start,
-							AllOptionOneofCase.Position => new Grpc.Position(Position.CommitPosition,
+						internal Client.Position ToPosition() => AllOptionCase switch {
+							AllOptionOneofCase.End => Client.Position.End,
+							AllOptionOneofCase.Start => Client.Position.Start,
+							AllOptionOneofCase.Position => new Client.Position(Position.CommitPosition,
 								Position.PreparePosition),
 							_ => throw new InvalidOperationException()
 						};

@@ -16,7 +16,6 @@ using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Net.Http.Headers;
 
 namespace EventStore.Projections.Core {
 	public sealed class ProjectionsSubsystem :ISubsystem,
@@ -28,8 +27,7 @@ namespace EventStore.Projections.Core {
 		IHandle<ProjectionSubsystemMessage.ComponentStarted>,
 		IHandle<ProjectionSubsystemMessage.ComponentStopped>,
 		IHandle<ProjectionSubsystemMessage.IODispatcherDrained> {
-		private static readonly MediaTypeHeaderValue Grpc = new MediaTypeHeaderValue("application/grpc");
-		private static readonly PathString ProjectionsSegment = "/event_store.grpc.projections.Projections";
+		private static readonly PathString ProjectionsSegment = "/event_store.client.projections.Projections";
 
 		public InMemoryBus MasterMainBus {
 			get { return _masterMainBus; }

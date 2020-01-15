@@ -8,7 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc;
+using EventStore.Client;
 using IEventFilter = EventStore.Core.Util.IEventFilter;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 

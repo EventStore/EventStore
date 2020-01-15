@@ -4,7 +4,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Streams : EventStore.Grpc.Streams.Streams.StreamsBase {
+	public partial class Streams : EventStore.Client.Streams.Streams.StreamsBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IReadIndex _readIndex;
 		private readonly IAuthenticationProvider _authenticationProvider;

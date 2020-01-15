@@ -9,7 +9,7 @@ using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
-namespace EventStore.Grpc.Projections {
+namespace EventStore.Client.Projections {
 	partial class Projections {
 		partial class ProjectionsBase : ServiceBase {
 		}
@@ -17,7 +17,7 @@ namespace EventStore.Grpc.Projections {
 }
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement : EventStore.Grpc.Projections.Projections.ProjectionsBase {
+	public partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IAuthenticationProvider _authenticationProvider;
 

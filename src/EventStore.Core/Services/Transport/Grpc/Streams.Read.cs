@@ -4,14 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
-using EventStore.Grpc;
-using EventStore.Grpc.Streams;
+using EventStore.Client;
+using EventStore.Client.Streams;
 using Google.Protobuf;
 using Grpc.Core;
-using CountOptionOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.CountOptionOneofCase;
-using FilterOptionOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.FilterOptionOneofCase;
-using ReadDirection = EventStore.Grpc.Streams.ReadReq.Types.Options.Types.ReadDirection;
-using StreamOptionOneofCase = EventStore.Grpc.Streams.ReadReq.Types.Options.StreamOptionOneofCase;
+using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
+using FilterOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.FilterOptionOneofCase;
+using ReadDirection = EventStore.Client.Streams.ReadReq.Types.Options.Types.ReadDirection;
+using StreamOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.StreamOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {

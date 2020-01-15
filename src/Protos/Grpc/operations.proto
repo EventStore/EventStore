@@ -1,5 +1,5 @@
 syntax = "proto3";
-package event_store.grpc.operations;
+package event_store.client.operations;
 option java_package = "com.eventstore.client.operations";
 
 service Operations {

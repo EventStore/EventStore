@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc;
-using EventStore.Grpc.Streams;
+using EventStore.Client;
+using EventStore.Client.Streams;
 using Grpc.Core;
-using UUID = EventStore.Grpc.Streams.UUID;
+using UUID = EventStore.Client.Streams.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
