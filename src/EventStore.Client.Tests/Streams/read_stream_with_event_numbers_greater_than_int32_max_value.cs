@@ -15,14 +15,14 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task read_forward_from_zero() {
-			var result = await _fixture.Client.ReadStreamForwardsAsync(Stream, StreamRevision.Start, 100)
+			var result = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, Stream, StreamRevision.Start, 100)
 				.ToArrayAsync();
 			Assert.Empty(result);
 		}
 
 		[Fact]
 		public async Task should_be_able_to_read_stream_forward() {
-			var result = await _fixture.Client.ReadStreamForwardsAsync(Stream, new StreamRevision(int.MaxValue), 100)
+			var result = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, Stream, new StreamRevision(int.MaxValue), 100)
 				.ToArrayAsync();
 			Assert.Equal(5, result.Length);
 			Assert.Equal(Fixture.Events.Select(x => x.EventId), result.Select(x => x.Event.EventId));
@@ -31,7 +31,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task should_be_able_to_read_stream_backward() {
 			var result =
-				await _fixture.Client.ReadStreamBackwardsAsync(Stream, new StreamRevision(int.MaxValue + 6L), 100)
+				await _fixture.Client.ReadStreamAsync(ReadDirection.Backwards, Stream, new StreamRevision(int.MaxValue + 6L), 100)
 					.Reverse()
 					.ToArrayAsync();
 			Assert.Equal(5, result.Length);
@@ -41,7 +41,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task should_be_able_to_read_all_forward() {
-			var result = await _fixture.Client.ReadAllForwardsAsync(Position.Start, 100, false, userCredentials: TestCredentials.Root)
+			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Forwards, Position.Start, 100, false, userCredentials: TestCredentials.Root)
 				.Where(x => x.OriginalStreamId == Stream)
 				.ToArrayAsync();
 			Assert.Equal(5, result.Length);
@@ -50,7 +50,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task should_be_able_to_read_all_backward() {
-			var result = await _fixture.Client.ReadAllBackwardsAsync(Position.End, 100, false, userCredentials: TestCredentials.Root)
+			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 100, false, userCredentials: TestCredentials.Root)
 				.Where(x => x.OriginalStreamId == Stream)
 				.Reverse()
 				.ToArrayAsync();

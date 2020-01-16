@@ -36,7 +36,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.SoftDeleteAsync(stream, StreamRevision.FromInt64(writeResult.NextExpectedVersion));
 
 			await Assert.ThrowsAsync<StreamNotFoundException>(
-				() => _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+				() => _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 					.ToArrayAsync().AsTask());
 		}
 
@@ -67,7 +67,7 @@ namespace EventStore.Client.Streams {
 
 			await Task.Delay(50); //TODO: This is a workaround until github issue #1744 is fixed
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(
+			var actual = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards,
 					stream, StreamRevision.Start, int.MaxValue)
 				.Select(x => x.Event)
 				.ToArrayAsync();
@@ -105,7 +105,7 @@ namespace EventStore.Client.Streams {
 
 			await Task.Delay(50); //TODO: This is a workaround until github issue #1744 is fixed
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(
+			var actual = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards,
 					stream, StreamRevision.Start, int.MaxValue)
 				.Select(x => x.Event)
 				.ToArrayAsync();
@@ -148,7 +148,7 @@ namespace EventStore.Client.Streams {
 
 			await Task.Delay(500); //TODO: This is a workaround until github issue #1744 is fixed
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+			var actual = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -180,7 +180,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.Any);
 
 			var ex = await Assert.ThrowsAsync<StreamDeletedException>(
-				() => _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+				() => _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 					.ToArrayAsync().AsTask());
 
 			Assert.Equal(stream, ex.Stream);
@@ -239,7 +239,7 @@ namespace EventStore.Client.Streams {
 
 			Assert.Equal(6, writeResult.NextExpectedVersion);
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+			var actual = await _fixture.Client.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -274,7 +274,7 @@ namespace EventStore.Client.Streams {
 			Assert.Equal(1, writeResult.NextExpectedVersion);
 
 			await Assert.ThrowsAsync<StreamNotFoundException>(() => _fixture.Client
-				.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+				.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 				.ToArrayAsync().AsTask());
 
 			var expected = new StreamMetadata(streamMetadata.MaxCount, streamMetadata.MaxAge, StreamRevision.Start,
@@ -310,7 +310,7 @@ namespace EventStore.Client.Streams {
 			Assert.Equal(1, writeResult.NextExpectedVersion);
 
 			var actual = await _fixture.Client
-				.ReadStreamForwardsAsync(stream, StreamRevision.Start, int.MaxValue)
+				.ReadStreamAsync(ReadDirection.Forwards, stream, StreamRevision.Start, int.MaxValue)
 				.ToArrayAsync();
 
 			Assert.Empty(actual);
