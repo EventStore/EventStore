@@ -99,6 +99,7 @@
     <Compile Include="ClientAPI\with_standard_projections_running.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_without_stream_metadata.cs" />
     <Compile Include="Integration\from_streams_matching\when_running_with_stream_metadata.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_to_from_json.cs" />
     <Compile Include="Services\command_reader_response_reader_integration\when_a_node_becomes_master.cs" />
     <Compile Include="Integration\scenarios\when_deleting_already_categorized_stream.cs" />
     <Compile Include="Integration\system_projections\when_changing_categorization_projection_configurations.cs" />
