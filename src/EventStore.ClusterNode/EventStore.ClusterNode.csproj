@@ -8,8 +8,8 @@
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
   </PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="System.ComponentModel.Composition" Version="4.5.0" />
-		<PackageReference Include="NLog.Web.AspNetCore" Version="4.7.1" />
+		<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0" />
+		<PackageReference Include="NLog.Web.AspNetCore" Version="4.9.0" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
