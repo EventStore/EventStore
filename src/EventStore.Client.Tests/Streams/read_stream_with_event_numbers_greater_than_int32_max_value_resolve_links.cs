@@ -18,7 +18,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task should_be_able_to_read_linked_stream_forward() {
 			var result = await _fixture.Client
-				.ReadStreamAsync(ReadDirection.Forwards, LinkedStream, StreamRevision.Start, 100, true)
+				.ReadStreamAsync(Direction.Forwards, LinkedStream, StreamRevision.Start, 100, true)
 				.ToArrayAsync();
 
 			Assert.Equal(2, result.Length);
@@ -31,7 +31,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task should_be_able_to_read_stream_backward() {
 			var result = await _fixture.Client
-				.ReadStreamAsync(ReadDirection.Backwards, LinkedStream, new StreamRevision(10), 100, true)
+				.ReadStreamAsync(Direction.Backwards, LinkedStream, new StreamRevision(10), 100, true)
 				.Reverse()
 				.ToArrayAsync();
 
@@ -45,7 +45,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task should_be_able_to_read_all_forward() {
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Forwards, Position.Start, 100, true, userCredentials: TestCredentials.Root)
+			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100, true, userCredentials: TestCredentials.Root)
 				.Where(x => x.OriginalStreamId == LinkedStream)
 				.ToArrayAsync();
 
@@ -58,7 +58,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task should_be_able_to_read_all_backward() {
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 100, true, userCredentials: TestCredentials.Root)
+			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 100, true, userCredentials: TestCredentials.Root)
 				.Where(x => x.OriginalStreamId == LinkedStream)
 				.Reverse()
 				.ToArrayAsync();

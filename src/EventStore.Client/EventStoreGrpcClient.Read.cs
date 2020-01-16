@@ -13,6 +13,7 @@ namespace EventStore.Client {
 		/// <summary>
 		/// Asynchronously reads all events in the node forward (e.g. beginning to end).
 		/// </summary>
+		/// <param name="direction">The direction in which to read. <see cref="Direction"/></param>
 		/// <param name="position">The position to start reading from.</param>
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
@@ -21,7 +22,7 @@ namespace EventStore.Client {
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
 		public IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
-			ReadDirection readDirection,
+			Direction direction,
 			Position position,
 			ulong maxCount,
 			bool resolveLinkTos = false,
@@ -29,9 +30,9 @@ namespace EventStore.Client {
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
-					ReadDirection = readDirection switch {
-						ReadDirection.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
-						ReadDirection.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
+					ReadDirection = direction switch {
+						Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						_ => throw new InvalidOperationException()
 					},
 					ResolveLinks = resolveLinkTos,
@@ -44,7 +45,7 @@ namespace EventStore.Client {
 			cancellationToken);
 
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(
-			ReadDirection readDirection,
+			Direction direction,
 			string streamName,
 			StreamRevision revision,
 			ulong count,
@@ -52,9 +53,9 @@ namespace EventStore.Client {
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
-					ReadDirection = readDirection switch {
-						ReadDirection.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
-						ReadDirection.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
+					ReadDirection = direction switch {
+						Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						_ => throw new InvalidOperationException()
 					},
 					ResolveLinks = resolveLinkTos,

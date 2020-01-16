@@ -24,7 +24,7 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 20,
+			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
 					filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))))
 				.ToArrayAsync();
 
@@ -41,7 +41,7 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 20,
+			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
 					filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)))
 				.ToArrayAsync();
 
@@ -62,7 +62,7 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 20,
+			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
 					filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))))
 				.ToArrayAsync();
 
@@ -83,7 +83,7 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			var result = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 20,
+			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
 					filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)))
 				.ToArrayAsync();
 
@@ -99,7 +99,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.NoStream,
 				_fixture.CreateTestEvents(count));
 
-			var events = await _fixture.Client.ReadAllAsync(ReadDirection.Backwards, Position.End, maxCount,
+			var events = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, maxCount,
 					filter: new StreamFilter(RegularFilterExpression.ExcludeSystemEvents))
 				.Take(count)
 				.ToArrayAsync();

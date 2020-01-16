@@ -1,5 +1,5 @@
 ﻿namespace EventStore.Client {
-	public enum ReadDirection {
+	public enum Direction {
 		Backwards,
 		Forwards
 	}

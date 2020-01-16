@@ -17,13 +17,13 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task reading_hard_deleted_stream_throws_stream_deleted() {
 			var ex = await Assert.ThrowsAsync<StreamDeletedException>(() =>
-				_fixture.Client.ReadStreamAsync(ReadDirection.Forwards, Stream, StreamRevision.Start, 1).CountAsync().AsTask());
+				_fixture.Client.ReadStreamAsync(Direction.Forwards, Stream, StreamRevision.Start, 1).CountAsync().AsTask());
 			Assert.Equal(Stream, ex.Stream);
 		}
 
 		[Fact]
 		public async Task returns_all_events_including_tombstone() {
-			var events = await _fixture.Client.ReadAllAsync(ReadDirection.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
+			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
 				.ToArrayAsync();
 
 			var tombstone = events.Last();

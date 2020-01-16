@@ -124,17 +124,17 @@ namespace EventStore.Client.Streams {
 		}
 
 		public Task ReadEvent(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(ReadDirection.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadStreamForward(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(ReadDirection.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadStreamBackward(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(ReadDirection.Backwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Backwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
@@ -142,12 +142,12 @@ namespace EventStore.Client.Streams {
 			Client.AppendToStreamAsync(streamId, AnyStreamRevision.Any, CreateTestEvents(3), userCredentials);
 
 		public Task ReadAllForward(UserCredentials userCredentials = default) =>
-			Client.ReadAllAsync(ReadDirection.Forwards, Position.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadAllAsync(Direction.Forwards, Position.Start, 1, false, userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadAllBackward(UserCredentials userCredentials = default) =>
-			Client.ReadAllAsync(ReadDirection.Backwards, Position.End, 1, false, userCredentials: userCredentials)
+			Client.ReadAllAsync(Direction.Backwards, Position.End, 1, false, userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
