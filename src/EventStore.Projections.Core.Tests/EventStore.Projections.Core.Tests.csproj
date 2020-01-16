@@ -589,6 +589,7 @@
     <Compile Include="Services\emitted_streams_deleter\when_deleting\when_delete_stream_succeeds.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\when_checkpoint_read_times_out.cs" />
     <Compile Include="Services\emitted_streams_deleter\when_deleting\when_emitted_streams_read_times_out.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_to_from_json.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
