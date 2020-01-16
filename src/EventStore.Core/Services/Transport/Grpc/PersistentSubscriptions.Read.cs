@@ -9,13 +9,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc;
-using EventStore.Grpc.PersistentSubscriptions;
+using EventStore.Client;
+using EventStore.Client.PersistentSubscriptions;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
-using UUID = EventStore.Grpc.PersistentSubscriptions.UUID;
+using UUID = EventStore.Client.PersistentSubscriptions.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {

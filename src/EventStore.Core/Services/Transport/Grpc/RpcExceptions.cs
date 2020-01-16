@@ -1,7 +1,7 @@
 using System;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc;
+using EventStore.Client;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {

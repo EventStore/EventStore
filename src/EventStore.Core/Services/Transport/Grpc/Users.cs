@@ -6,7 +6,7 @@ using EventStore.Core.Messaging;
 using static EventStore.Core.Messages.UserManagementMessage;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Users : EventStore.Grpc.Users.Users.UsersBase {
+	public partial class Users : EventStore.Client.Users.Users.UsersBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IAuthenticationProvider _authenticationProvider;
 

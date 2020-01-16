@@ -4,12 +4,12 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc.Operations;
+using EventStore.Client.Operations;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Operations
-		: EventStore.Grpc.Operations.Operations.OperationsBase {
+		: EventStore.Client.Operations.Operations.OperationsBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IAuthenticationProvider _authenticationProvider;
 

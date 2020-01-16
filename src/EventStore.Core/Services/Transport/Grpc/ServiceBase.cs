@@ -8,31 +8,31 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Grpc;
-using EventStore.Grpc;
+using EventStore.Client;
 using Grpc.Core;
 
-namespace EventStore.Grpc.PersistentSubscriptions {
+namespace EventStore.Client.PersistentSubscriptions {
 	partial class PersistentSubscriptions {
 		partial class PersistentSubscriptionsBase : ServiceBase {
 		}
 	}
 }
 
-namespace EventStore.Grpc.Streams {
+namespace EventStore.Client.Streams {
 	partial class Streams {
 		partial class StreamsBase : ServiceBase {
 		}
 	}
 }
 
-namespace EventStore.Grpc.Users {
+namespace EventStore.Client.Users {
 	partial class Users {
 		partial class UsersBase : ServiceBase {
 		}
 	}
 }
 
-namespace EventStore.Grpc.Operations {
+namespace EventStore.Client.Operations {
 	partial class Operations {
 		partial class OperationsBase : ServiceBase {
 		}

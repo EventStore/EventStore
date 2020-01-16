@@ -3,8 +3,8 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc;
-using EventStore.Grpc.PersistentSubscriptions;
+using EventStore.Client;
+using EventStore.Client.PersistentSubscriptions;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {

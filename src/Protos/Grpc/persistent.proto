@@ -1,5 +1,5 @@
 syntax = "proto3";
-package event_store.grpc.persistent_subscriptions;
+package event_store.client.persistent_subscriptions;
 option java_package = "com.eventstore.client.persistentsubscriptions";
 
 service PersistentSubscriptions {

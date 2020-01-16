@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc.Operations;
+using EventStore.Client.Operations;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {

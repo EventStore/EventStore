@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
-using EventStore.Grpc.Projections;
+using EventStore.Client.Projections;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
-using static EventStore.Grpc.Projections.StatisticsReq.Types.Options;
+using static EventStore.Client.Projections.StatisticsReq.Types.Options;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {

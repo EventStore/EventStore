@@ -9,7 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Grpc;
+using EventStore.Client;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Enumerators {

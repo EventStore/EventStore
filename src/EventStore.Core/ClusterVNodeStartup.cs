@@ -23,11 +23,11 @@ namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
 		private static readonly PathString PersistentSegment =
-			"/event_store.grpc.persistent_subscriptions.PersistentSubscriptions";
+			"/event_store.client.persistent_subscriptions.PersistentSubscriptions";
 
-		private static readonly PathString StreamsSegment = "/event_store.grpc.streams.Streams";
-		private static readonly PathString UsersSegment = "/event_store.grpc.users.Users";
-		private static readonly PathString OperationsSegment = "/event_store.grpc.operations.Operations";
+		private static readonly PathString StreamsSegment = "/event_store.client.streams.Streams";
+		private static readonly PathString UsersSegment = "/event_store.client.users.Users";
+		private static readonly PathString OperationsSegment = "/event_store.client.operations.Operations";
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IQueuedHandler _mainQueue;

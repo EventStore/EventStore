@@ -4,7 +4,7 @@ using EventStore.Core.Bus;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions
-		: EventStore.Grpc.PersistentSubscriptions.PersistentSubscriptions.PersistentSubscriptionsBase {
+		: EventStore.Client.PersistentSubscriptions.PersistentSubscriptions.PersistentSubscriptionsBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IAuthenticationProvider _authenticationProvider;
 

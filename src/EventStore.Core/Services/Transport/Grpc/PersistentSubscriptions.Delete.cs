@@ -3,7 +3,7 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Grpc.PersistentSubscriptions;
+using EventStore.Client.PersistentSubscriptions;
 using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.DeletePersistentSubscriptionCompleted;
 
