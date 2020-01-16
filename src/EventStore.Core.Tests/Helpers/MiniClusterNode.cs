@@ -62,8 +62,6 @@ namespace EventStore.Core.Tests.Helpers {
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
 		
-		private HttpClient _httpClient;
-		private HttpMessageHandler _httpMessageHandler;
 		private TestServer _kestrelTestServer;
 		
 		public MiniClusterNode(
