@@ -628,16 +628,16 @@ namespace EventStore.Projections.Core.Services.Processing {
 			long? preparePosition = null;
 			string catalogStream = null;
 			string dataStream = null;
-			int? catalogPosition = null;
-			int? dataPosition = null;
+			long? catalogPosition = null;
+			long? dataPosition = null;
 			bool byStreamMode = false;
 			Dictionary<string, long> streams = null;
 			Dictionary<string, JToken> extra = null;
 			var projectionId = current.ProjectionId;
 			var projectionEpoch = 0;
-			var projectionVersion = 0;
+			int projectionVersion = 0;
 			var projectionSystemVersion = 0;
-			var projectionPhase = 0;
+			int projectionPhase = 0;
 			while (true) {
 				Check(reader.Read(), reader);
 				if (reader.TokenType == JsonToken.EndObject)
@@ -697,7 +697,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 							Check(JsonToken.PropertyName, reader);
 							catalogStream = (string)reader.Value;
 							Check(reader.Read(), reader);
-							catalogPosition = (int)(long)reader.Value;
+							catalogPosition = (long)reader.Value;
 							Check(reader.Read(), reader);
 							Check(JsonToken.EndObject, reader);
 
@@ -707,7 +707,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 								Check(JsonToken.PropertyName, reader);
 								dataStream = (string)reader.Value;
 								Check(reader.Read(), reader);
-								dataPosition = (int)(long)reader.Value;
+								dataPosition = (long)reader.Value;
 								Check(reader.Read(), reader);
 								Check(JsonToken.EndObject, reader);
 								Check(reader.Read(), reader);
@@ -724,7 +724,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 								Check(JsonToken.PropertyName, reader);
 								var streamName = (string)reader.Value;
 								Check(reader.Read(), reader);
-								var position = (int)(long)reader.Value;
+								long position = (long)reader.Value;
 								streams.Add(streamName, position);
 							}
 						}
