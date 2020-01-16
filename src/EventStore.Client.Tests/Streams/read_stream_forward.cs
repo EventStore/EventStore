@@ -17,7 +17,7 @@ namespace EventStore.Client.Streams {
 			var stream = _fixture.GetStreamName();
 
 			var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-				_fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, count)
+				_fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, count)
 					.ToArrayAsync().AsTask());
 
 			Assert.Equal(nameof(count), ex.ParamName);
@@ -28,7 +28,7 @@ namespace EventStore.Client.Streams {
 			var stream = _fixture.GetStreamName();
 
 			var ex = await Assert.ThrowsAsync<StreamNotFoundException>(() => _fixture.Client
-				.ReadStreamForwardsAsync(stream, StreamRevision.Start, 1)
+				.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1)
 				.ToArrayAsync().AsTask());
 
 			Assert.Equal(stream, ex.Stream);
@@ -41,7 +41,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.TombstoneAsync(stream, AnyStreamRevision.NoStream);
 
 			var ex = await Assert.ThrowsAsync<StreamDeletedException>(() => _fixture.Client
-				.ReadStreamForwardsAsync(stream, StreamRevision.Start, 1)
+				.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1)
 				.ToArrayAsync().AsTask());
 
 			Assert.Equal(stream, ex.Stream);
@@ -56,7 +56,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, expected);
 
 			var actual = await _fixture.Client
-				.ReadStreamForwardsAsync(stream, StreamRevision.Start, (ulong)expected.Length)
+				.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, (ulong)expected.Length)
 				.Select(x => x.Event).ToArrayAsync();
 
 			Assert.True(EventDataComparer.Equal(expected, actual));
@@ -72,7 +72,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, new StreamRevision(7), 1)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, new StreamRevision(7), 1)
 				.Select(x => x.Event)
 				.SingleAsync();
 
@@ -87,7 +87,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, new StreamRevision(3), 2)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, new StreamRevision(3), 2)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -102,7 +102,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, testEvents);
 
-			var events = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, 1)
+			var events = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -119,7 +119,7 @@ namespace EventStore.Client.Streams {
 			await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.NoStream,
 				_fixture.CreateTestEvents(count));
 
-			var events = await _fixture.Client.ReadStreamForwardsAsync(streamName, StreamRevision.Start, maxCount)
+			var events = await _fixture.Client.ReadStreamAsync(Direction.Forwards, streamName, StreamRevision.Start, maxCount)
 				.Take(count)
 				.ToArrayAsync();
 

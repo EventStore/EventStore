@@ -13,7 +13,7 @@ namespace EventStore.Client {
 			ResolvedEvent metadata = default;
 
 			try {
-				metadata = await ReadStreamBackwardsAsync(SystemStreams.MetastreamOf(streamName), StreamRevision.End, 1,
+				metadata = await ReadStreamAsync(Direction.Backwards, SystemStreams.MetastreamOf(streamName), StreamRevision.End, 1,
 					false,
 					userCredentials: userCredentials,
 					cancellationToken: cancellationToken).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);

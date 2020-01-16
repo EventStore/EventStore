@@ -21,7 +21,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, expected);
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -39,7 +39,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, expected);
 
-			var actual = await _fixture.Client.ReadStreamBackwardsAsync(stream, StreamRevision.End, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Backwards, stream, StreamRevision.End, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -59,7 +59,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.SetStreamMetadataAsync(stream, StreamRevision.Start, new StreamMetadata(4));
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -79,7 +79,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.SetStreamMetadataAsync(stream, StreamRevision.Start, new StreamMetadata(2));
 
-			var actual = await _fixture.Client.ReadStreamForwardsAsync(stream, StreamRevision.Start, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -99,7 +99,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.SetStreamMetadataAsync(stream, StreamRevision.Start, new StreamMetadata(4));
 
-			var actual = await _fixture.Client.ReadStreamBackwardsAsync(stream, StreamRevision.End, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Backwards, stream, StreamRevision.End, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
@@ -119,7 +119,7 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.SetStreamMetadataAsync(stream, StreamRevision.Start, new StreamMetadata(2));
 
-			var actual = await _fixture.Client.ReadStreamBackwardsAsync(stream, StreamRevision.End, 100)
+			var actual = await _fixture.Client.ReadStreamAsync(Direction.Backwards, stream, StreamRevision.End, 100)
 				.Select(x => x.Event)
 				.ToArrayAsync();
 
