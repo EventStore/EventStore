@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WriteDelete>,
 		IHandle<StorageMessage.WriteTransactionStart>,
 		IHandle<StorageMessage.WriteTransactionData>,
-		IHandle<StorageMessage.WriteTransactionPrepare>,
+		IHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
@@ -118,7 +118,7 @@ namespace EventStore.Core.Services.Storage {
 			SubscribeToMessage<StorageMessage.WriteDelete>();
 			SubscribeToMessage<StorageMessage.WriteTransactionStart>();
 			SubscribeToMessage<StorageMessage.WriteTransactionData>();
-			SubscribeToMessage<StorageMessage.WriteTransactionPrepare>();
+			SubscribeToMessage<StorageMessage.WriteTransactionEnd>();
 			SubscribeToMessage<StorageMessage.WriteCommit>();
 		}
 
@@ -134,7 +134,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageWriterQueue.Publish(message);
 
 			if (message is SystemMessage.BecomeShuttingDown)
-				// we need to handle this message on main thread to stop StorageWriterQueue
+			// we need to handle this message on main thread to stop StorageWriterQueue
 			{
 				StorageWriterQueue.Stop();
 				BlockWriter = true;
@@ -177,14 +177,14 @@ namespace EventStore.Core.Services.Storage {
 
 			switch (message.State) {
 				case VNodeState.Master: {
-					_indexWriter.Reset();
-					EpochManager.WriteNewEpoch(); // forces flush
-					break;
-				}
+						_indexWriter.Reset();
+						EpochManager.WriteNewEpoch(); // forces flush
+						break;
+					}
 				case VNodeState.ShuttingDown: {
-					Writer.Close();
-					break;
-				}
+						Writer.Close();
+						break;
+					}
 			}
 		}
 
@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.Storage {
 
 			var sw = Stopwatch.StartNew();
 			while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() &&
-			       sw.Elapsed < WaitForChaserSingleIterationTimeout) {
+				   sw.Elapsed < WaitForChaserSingleIterationTimeout) {
 				Thread.Sleep(1);
 			}
 
@@ -274,7 +274,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				bool softUndeleteMetastream = SystemStreams.IsMetastream(streamId)
-				                              && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(streamId));
+											  && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(streamId));
 
 				_indexWriter.PreCommit(prepares);
 
@@ -315,7 +315,7 @@ namespace EventStore.Core.Services.Storage {
 					PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
 					SystemEventTypes.StreamMetadata, modifiedMeta, Empty.ByteArray));
 
-			_indexWriter.PreCommit(new[] {res.Prepare});
+			_indexWriter.PreCommit(new[] { res.Prepare });
 		}
 
 		public bool SoftUndeleteRawMeta(byte[] rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
@@ -345,7 +345,7 @@ namespace EventStore.Core.Services.Storage {
 				var eventId = Guid.NewGuid();
 
 				var commitCheck = _indexWriter.CheckCommit(message.EventStreamId, message.ExpectedVersion,
-					new[] {eventId});
+					new[] { eventId });
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;
@@ -357,20 +357,20 @@ namespace EventStore.Core.Services.Storage {
 					var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
 						eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
-					_indexWriter.PreCommit(new[] {res.Prepare});
+					_indexWriter.PreCommit(new[] { res.Prepare });
 				} else {
 					// SOFT DELETE
 					var metastreamId = SystemStreams.MetastreamOf(message.EventStreamId);
 					var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
 					var logPosition = Writer.Checkpoint.ReadNonFlushed();
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
-					                           PrepareFlags.IsJson;
+											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(logPosition, message.CorrelationId, eventId, logPosition, 0,
 							metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
 							data, null));
-					_indexWriter.PreCommit(new[] {res.Prepare});
+					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
 			} catch (Exception exc) {
 				Log.ErrorException(exc, "Exception in writer.");
@@ -442,7 +442,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		void IHandle<StorageMessage.WriteTransactionPrepare>.Handle(StorageMessage.WriteTransactionPrepare message) {
+		void IHandle<StorageMessage.WriteTransactionEnd>.Handle(StorageMessage.WriteTransactionEnd message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
 				if (message.LiveUntil < DateTime.UtcNow)
@@ -497,9 +497,9 @@ namespace EventStore.Core.Services.Storage {
 					commitCheck.CurrentVersion + 1));
 
 				bool softUndeleteMetastream = SystemStreams.IsMetastream(commitCheck.EventStreamId)
-				                              &&
-				                              _indexWriter.IsSoftDeleted(
-					                              SystemStreams.OriginalStreamOf(commitCheck.EventStreamId));
+											  &&
+											  _indexWriter.IsSoftDeleted(
+												  SystemStreams.OriginalStreamOf(commitCheck.EventStreamId));
 
 				_indexWriter.PreCommit(commit);
 
@@ -527,7 +527,8 @@ namespace EventStore.Core.Services.Storage {
 					envelope.ReplyWith(new StorageMessage.AlreadyCommitted(correlationId,
 						result.EventStreamId,
 						result.StartEventNumber,
-						result.EndEventNumber));
+						result.EndEventNumber,
+						result.IdempotentLogPosition));
 					break;
 				case CommitDecision.CorruptedIdempotency:
 					// in case of corrupted idempotency (part of transaction is ok, other is different)
@@ -538,6 +539,7 @@ namespace EventStore.Core.Services.Storage {
 					envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));
 					break;
 				case CommitDecision.IdempotentNotReady:
+					//TODO(clc): when we have the pre-index we should be able to get the logPosition from the pre-index and allow the transaction to wait for the cluster commit
 					//just drop the write and wait for the client to retry
 					Log.Debug("Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.", result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
 					break;
@@ -633,7 +635,7 @@ namespace EventStore.Core.Services.Storage {
 				_statIndex = (_statIndex + 1) & (LastStatsCount - 1);
 
 				PurgeNotProcessedInfo();
-
+				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 				return true;
 			}
 

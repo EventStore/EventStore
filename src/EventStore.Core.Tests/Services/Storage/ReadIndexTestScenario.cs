@@ -33,7 +33,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected TFChunkWriter Writer;
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
-		protected ICheckpoint ReplicationCheckpoint;
 
 		private TFChunkScavenger _scavenger;
 		private bool _scavenge;
@@ -54,10 +53,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
-			ReplicationCheckpoint = new InMemoryCheckpoint(-1);
 
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint,
-				replicationCheckpoint: ReplicationCheckpoint));
+				replicationCheckpoint: new InMemoryCheckpoint(-1)));
 
 			Db.Open();
 			// create db
@@ -93,7 +91,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
 
-			ReadIndex.Init(ChaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 
 			// scavenge must run after readIndex is built
 			if (_scavenge) {

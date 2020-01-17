@@ -43,7 +43,7 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public void Handle(ClientMessage.SubscriptionConfirmation message) {
-			ConfirmSubscription(message.CorrelationId, message.LastCommitPosition, message.LastEventNumber);
+			ConfirmSubscription(message.CorrelationId, message.LastIndexedPosition, message.LastEventNumber);
 		}
 
 		public void Handle(ClientMessage.SubscriptionDropped message) {
@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public void Handle(ClientMessage.PersistentSubscriptionConfirmation message) {
-			ConfirmSubscription(message.SubscriptionId, message.CorrelationId, message.LastCommitPosition,
+			ConfirmSubscription(message.SubscriptionId, message.CorrelationId, message.LastIndexedPosition,
 				message.LastEventNumber);
 		}
 

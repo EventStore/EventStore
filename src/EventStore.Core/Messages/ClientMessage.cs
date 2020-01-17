@@ -1412,14 +1412,14 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid CorrelationId;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
 			public string SubscriptionId;
 
 			public PersistentSubscriptionConfirmation(string subscriptionId, Guid correlationId,
-				long lastCommitPosition, long? lastEventNumber) {
+				long lastIndexedPosition, long? lastEventNumber) {
 				CorrelationId = correlationId;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 				SubscriptionId = subscriptionId;
 			}
@@ -1574,12 +1574,12 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid CorrelationId;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
 
-			public SubscriptionConfirmation(Guid correlationId, long lastCommitPosition, long? lastEventNumber) {
+			public SubscriptionConfirmation(Guid correlationId, long lastIndexedPosition, long? lastEventNumber) {
 				CorrelationId = correlationId;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 			}
 		}

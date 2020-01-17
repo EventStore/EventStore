@@ -104,18 +104,19 @@ namespace EventStore.Core.Services {
 
 		public void Handle(ClientMessage.SubscribeToStream msg) {
 			var streamAccess = _readIndex.CheckStreamAccess(
-				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read,
+				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, 
+				StreamAccessType.Read,
 				msg.User);
 
 			if (streamAccess.Granted) {
 				var lastEventNumber = msg.EventStreamId.IsEmptyString()
 					? (long?)null
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
-				var lastCommitPos = _readIndex.LastCommitPosition;
+				var lastIndexedPos = _readIndex.LastIndexedPosition;
 				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, EventFilter.None);
+					msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, EventFilter.None);
 				var subscribedMessage =
-					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 				msg.Envelope.ReplyWith(subscribedMessage);
 			} else {
 				msg.Envelope.ReplyWith(
@@ -132,7 +133,7 @@ namespace EventStore.Core.Services {
 				var lastEventNumber = msg.EventStreamId.IsEmptyString()
 					? (long?)null
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
-				var lastCommitPos = _readIndex.LastCommitPosition;
+				var lastCommitPos = _readIndex.LastIndexedPosition;
 				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
 					msg.CheckpointInterval);
@@ -150,7 +151,7 @@ namespace EventStore.Core.Services {
 		}
 
 		private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
-			string eventStreamId, bool resolveLinkTos, long lastCommitPosition, long? lastEventNumber,
+			string eventStreamId, bool resolveLinkTos, long lastIndexedPosition, long? lastEventNumber,
 			IEventFilter eventFilter, int? checkpointInterval = null) {
 			List<Subscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
@@ -164,7 +165,7 @@ namespace EventStore.Core.Services {
 				connectionId,
 				eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
 				resolveLinkTos,
-				lastCommitPosition,
+				lastIndexedPosition,
 				lastEventNumber ?? -1,
 				eventFilter,
 				checkpointInterval);
@@ -196,20 +197,20 @@ namespace EventStore.Core.Services {
 
 		/* LONG POLL SECTION */
 		public void Handle(SubscriptionMessage.PollStream message) {
-			if (MissedEvents(message.StreamId, message.LastCommitPosition, message.LastEventNumber)) {
+			if (MissedEvents(message.StreamId, message.LastIndexedPosition, message.LastEventNumber)) {
 				_bus.Publish(CloneReadRequestWithNoPollFlag(message.OriginalRequest));
 				return;
 			}
 
-			SubscribePoller(message.StreamId, message.ExpireAt, message.LastCommitPosition, message.LastEventNumber,
+			SubscribePoller(message.StreamId, message.ExpireAt, message.LastIndexedPosition, message.LastEventNumber,
 				message.OriginalRequest);
 		}
 
-		private bool MissedEvents(string streamId, long lastCommitPosition, long? lastEventNumber) {
-			return _lastSeenCommitPosition > lastCommitPosition;
+		private bool MissedEvents(string streamId, long lastIndexedPosition, long? lastEventNumber) {
+			return _lastSeenCommitPosition > lastIndexedPosition;
 		}
 
-		private void SubscribePoller(string streamId, DateTime expireAt, long lastCommitPosition, long? lastEventNumber,
+		private void SubscribePoller(string streamId, DateTime expireAt, long lastIndexedPosition, long? lastEventNumber,
 			Message originalRequest) {
 			List<PollSubscription> pollTopic;
 			if (!_pollTopics.TryGetValue(streamId, out pollTopic)) {
@@ -217,7 +218,7 @@ namespace EventStore.Core.Services {
 				_pollTopics.Add(streamId, pollTopic);
 			}
 
-			pollTopic.Add(new PollSubscription(expireAt, lastCommitPosition, lastEventNumber ?? -1, originalRequest));
+			pollTopic.Add(new PollSubscription(expireAt, lastIndexedPosition, lastEventNumber ?? -1, originalRequest));
 		}
 
 		public void Handle(SubscriptionMessage.CheckPollTimeout message) {
@@ -287,7 +288,7 @@ namespace EventStore.Core.Services {
 				return resolvedEvent;
 			for (int i = 0, n = subscriptions.Count; i < n; i++) {
 				var subscr = subscriptions[i];
-				if (commitPosition <= subscr.LastCommitPosition || evnt.EventNumber <= subscr.LastEventNumber)
+				if (commitPosition <= subscr.LastIndexedPosition || evnt.EventNumber <= subscr.LastEventNumber)
 					continue;
 
 				var pair = ResolvedEvent.ForUnresolvedEvent(evnt, commitPosition);
@@ -345,7 +346,7 @@ namespace EventStore.Core.Services {
 			if (_pollTopics.TryGetValue(streamId, out pollTopic)) {
 				List<PollSubscription> survivors = null;
 				foreach (var poller in pollTopic) {
-					if (commitPosition <= poller.LastCommitPosition || eventNumber <= poller.LastEventNumber) {
+					if (commitPosition <= poller.LastIndexedPosition || eventNumber <= poller.LastEventNumber) {
 						if (survivors == null)
 							survivors = new List<PollSubscription>();
 						survivors.Add(poller);
@@ -367,7 +368,7 @@ namespace EventStore.Core.Services {
 
 			public readonly string EventStreamId;
 			public readonly bool ResolveLinkTos;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long LastEventNumber;
 			public readonly IEventFilter EventFilter;
 			public readonly int? CheckpointInterval;
@@ -379,7 +380,7 @@ namespace EventStore.Core.Services {
 				Guid connectionId,
 				string eventStreamId,
 				bool resolveLinkTos,
-				long lastCommitPosition,
+				long lastIndexedPosition,
 				long lastEventNumber,
 				IEventFilter eventFilter,
 				int? checkpointInterval) {
@@ -389,7 +390,7 @@ namespace EventStore.Core.Services {
 
 				EventStreamId = eventStreamId;
 				ResolveLinkTos = resolveLinkTos;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 
 				EventFilter = eventFilter;
@@ -399,15 +400,15 @@ namespace EventStore.Core.Services {
 
 		private class PollSubscription {
 			public readonly DateTime ExpireAt;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long LastEventNumber;
 
 			public readonly Message OriginalRequest;
 
-			public PollSubscription(DateTime expireAt, long lastCommitPosition, long lastEventNumber,
+			public PollSubscription(DateTime expireAt, long lastIndexedPosition, long lastEventNumber,
 				Message originalRequest) {
 				ExpireAt = expireAt;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 				OriginalRequest = originalRequest;
 			}

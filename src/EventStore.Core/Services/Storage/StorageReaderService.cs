@@ -18,11 +18,15 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IPublisher _bus;
 		private readonly IReadIndex _readIndex;
 		private readonly int _threadCount;
-
 		private readonly MultiQueuedHandler _workersMultiHandler;
 
-		public StorageReaderService(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount,
-			ICheckpoint writerCheckpoint, QueueStatsManager queueStatsManager) {
+		public StorageReaderService(
+			IPublisher bus, 
+			ISubscriber subscriber, 
+			IReadIndex readIndex, 
+			int threadCount,
+			ICheckpoint writerCheckpoint, 
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -32,11 +36,10 @@ namespace EventStore.Core.Services.Storage {
 			_bus = bus;
 			_readIndex = readIndex;
 			_threadCount = threadCount;
-
 			StorageReaderWorker[] readerWorkers = new StorageReaderWorker[threadCount];
 			InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 			for (var i = 0; i < threadCount; i++) {
-				readerWorkers[i] = new StorageReaderWorker(bus, readIndex, writerCheckpoint, i);
+				readerWorkers[i] = new StorageReaderWorker(bus, readIndex, writerCheckpoint,i);
 				storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);

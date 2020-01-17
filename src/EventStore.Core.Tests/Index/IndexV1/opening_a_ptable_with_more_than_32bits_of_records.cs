@@ -8,7 +8,7 @@ using EventStore.Common.Utils;
 using EventStore.Common.Options;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTable.IndexEntryV1Size), Explicit]
+	[TestFixture(PTable.IndexEntryV1Size), Explicit, Ignore("Long running, unsafe")]
 	public class opening_a_ptable_with_more_than_32bits_of_records : SpecificationWithFilePerTestFixture {
 		public const int MD5Size = 16;
 		public const byte Version = 1;
@@ -20,7 +20,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		protected int _indexEntrySize = PTable.IndexEntryV1Size;
 
-		public opening_a_ptable_with_more_than_32bits_of_records(int indexEntrySize) {
+		public opening_a_ptable_with_more_than_32bits_of_records(int indexEntrySize) {	
+			Assert.Inconclusive("Explicit test, Test setup never returns");
 			_indexEntrySize = indexEntrySize;
 		}
 
@@ -34,6 +35,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		public static void CreatePTableFile(string filename, long ptableSize, int indexEntrySize, int cacheDepth = 16) {
+
+			//TODO: fix this unsafe test it will fill the target disk if the test is aborted or an error occurs
+
 			Ensure.NotNullOrEmpty(filename, "filename");
 			Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
@@ -75,12 +79,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			base.TestFixtureTearDown();
 		}
 
-		[Test, Explicit]
-		public void count_should_be_right() {
+		[Test, Explicit,Ignore("Long running, unsafe")]
+		public void count_should_be_right() {			
 			Assert.AreEqual(_ptableCount, _ptable.Count);
 		}
 
-		[Test, Explicit]
+		[Test, Explicit,Ignore("Long running, unsafe")]
 		public void filename_is_correct() {
 			Assert.AreEqual(Filename, _ptable.Filename);
 		}

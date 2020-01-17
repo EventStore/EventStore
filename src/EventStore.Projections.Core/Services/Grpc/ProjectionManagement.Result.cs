@@ -9,7 +9,7 @@ using Grpc.Core;
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
 		public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {
-			var resetSource = new TaskCompletionSource<Value>();
+			var resultSource = new TaskCompletionSource<Value>();
 
 			var options = request.Options;
 
@@ -21,18 +21,24 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			_queue.Publish(new ProjectionManagementMessage.Command.GetResult(envelope, name, partition));
 
 			return new ResultResp {
-				Result = await resetSource.Task.ConfigureAwait(false)
+				Result = await resultSource.Task.ConfigureAwait(false)
 			};
 
 			void OnMessage(Message message) {
 				if (!(message is ProjectionManagementMessage.ProjectionResult result)) {
-					resetSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
+					resultSource.TrySetException(UnknownMessage<ProjectionManagementMessage.ProjectionResult>(message));
 					return;
 				}
 
+				if (string.IsNullOrEmpty(result.Result)) {
+					resultSource.TrySetResult(new Value {
+						StructValue = new Struct()
+					});
+					return;
+				}
 				var document = JsonDocument.Parse(result.Result);
 
-				resetSource.TrySetResult(GetProtoValue(document.RootElement));
+				resultSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
 		}
 
@@ -65,7 +71,6 @@ namespace EventStore.Projections.Core.Services.Grpc {
 					return;
 				}
 				var document = JsonDocument.Parse(result.State);
-
 				resultSource.TrySetResult(GetProtoValue(document.RootElement));
 			}
 		}

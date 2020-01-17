@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -13,13 +12,9 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public class ReadIndex : IDisposable, IReadIndex {
-		public long LastCommitPosition {
-			get { return _indexCommitter.LastCommitPosition; }
-		}
-
-		public long LastReplicatedPosition {
-			get { return _replicationCheckpoint.ReadNonFlushed(); }
+	public sealed class ReadIndex : IDisposable, IReadIndex {
+		public long LastIndexedPosition {
+			get { return _indexCommitter.LastIndexedPosition; }
 		}
 
 		public IIndexWriter IndexWriter {
@@ -30,12 +25,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			get { return _indexCommitter; }
 		}
 
-		private readonly IIndexBackend _indexBackend;
 		private readonly IIndexReader _indexReader;
 		private readonly IIndexWriter _indexWriter;
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly IAllReader _allReader;
-		private readonly ICheckpoint _replicationCheckpoint;
 
 		public ReadIndex(IPublisher bus,
 			ObjectPool<ITransactionFileReader> readerPool,
@@ -55,17 +48,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
-			_indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
-			_indexReader = new IndexReader(_indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit,
+			IIndexBackend indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
+			_indexReader = new IndexReader(indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit,
 				skipIndexScanOnReads);
-			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
-			_indexCommitter = new IndexCommitter(bus, _indexBackend, _indexReader, tableIndex, additionalCommitChecks);
-			_allReader = new AllReader(_indexBackend, _indexCommitter, replicationCheckpoint);
-			_replicationCheckpoint = replicationCheckpoint;
-		}
-
-		void IReadIndex.Init(long buildToPosition) {
-			_indexCommitter.Init(buildToPosition);
+			_indexWriter = new IndexWriter(indexBackend, _indexReader);
+			_indexCommitter = new IndexCommitter(bus, indexBackend, _indexReader, tableIndex, additionalCommitChecks);
+			_allReader = new AllReader(indexBackend, _indexCommitter);
 		}
 
 		IndexReadEventResult IReadIndex.ReadEvent(string streamId, long eventNumber) {
@@ -108,7 +96,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IEventFilter eventFilter) {
 			return _allReader.FilteredReadAllEventsForward(pos, maxCount, maxSearchWindow, eventFilter);
 		}
-		
+
 		IndexReadAllResult IReadIndex.ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter) {
 			return _allReader.FilteredReadAllEventsBackward(pos, maxCount, maxSearchWindow, eventFilter);

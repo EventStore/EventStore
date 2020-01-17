@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
-			ReadIndex.Init(ChaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 
 		protected override void WriteTestScenario() {

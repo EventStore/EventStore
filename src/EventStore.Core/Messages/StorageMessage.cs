@@ -154,7 +154,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionPrepare : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionEnd : Message, IFlushableMessage, IMasterWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -167,7 +167,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly DateTime LiveUntil;
 
-			public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId,
+			public WriteTransactionEnd(Guid correlationId, IEnvelope envelope, long transactionId,
 				DateTime liveUntil) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
@@ -210,10 +210,9 @@ namespace EventStore.Core.Messages {
 			public readonly long TransactionPosition;
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
-			public readonly bool IsSelf;
 
 			public CommitAck(Guid correlationId, long logPosition, long transactionPosition, long firstEventNumber,
-				long lastEventNumber, bool isSelf = false) {
+				long lastEventNumber) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.Nonnegative(transactionPosition, "transactionPosition");
@@ -229,11 +228,10 @@ namespace EventStore.Core.Messages {
 				TransactionPosition = transactionPosition;
 				FirstEventNumber = firstEventNumber;
 				LastEventNumber = lastEventNumber;
-				IsSelf = isSelf;
 			}
 		}
 
-		public class CommitReplicated : Message {
+		public class CommitIndexed : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -246,7 +244,7 @@ namespace EventStore.Core.Messages {
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
 
-			public CommitReplicated(Guid correlationId, long logPosition, long transactionPosition,
+			public CommitIndexed(Guid correlationId, long logPosition, long transactionPosition,
 				long firstEventNumber, long lastEventNumber) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.Nonnegative(logPosition, "logPosition");
@@ -306,18 +304,20 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
+			public readonly long LogPosition;
 
 			public AlreadyCommitted(Guid correlationId, string eventStreamId, long firstEventNumber,
-				long lastEventNumber) {
+				long lastEventNumber, long logPosition) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
-
+				Ensure.Positive(logPosition, nameof(logPosition));
 
 				CorrelationId = correlationId;
 				EventStreamId = eventStreamId;
 				FirstEventNumber = firstEventNumber;
 				LastEventNumber = lastEventNumber;
+				LogPosition = logPosition;
 			}
 
 			public override string ToString() {

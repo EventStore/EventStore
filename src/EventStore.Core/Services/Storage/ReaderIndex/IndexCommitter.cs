@@ -14,7 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
-		long LastCommitPosition { get; }
+		long LastIndexedPosition { get; }
 		void Init(long buildToPosition);
 		void Dispose();
 		long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber);
@@ -25,8 +25,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class IndexCommitter : IIndexCommitter {
 		public static readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitter>();
 
-		public long LastCommitPosition {
-			get { return Interlocked.Read(ref _lastCommitPosition); }
+		public long LastIndexedPosition {
+			get { return Interlocked.Read(ref _lastIndexedPosition); }
 		}
 
 		private readonly IPublisher _bus;
@@ -37,10 +37,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
 		private bool _indexRebuild = true;
-		private long _lastCommitPosition = -1;
+		private long _lastIndexedPosition = -1;
 
-		public IndexCommitter(IPublisher bus, IIndexBackend backend, IIndexReader indexReader,
-			ITableIndex tableIndex, bool additionalCommitChecks) {
+		public IndexCommitter(
+			IPublisher bus,
+			IIndexBackend backend,
+			IIndexReader indexReader,
+			ITableIndex tableIndex,
+			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
 			_indexReader = indexReader;
@@ -54,10 +58,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_tableIndex.Initialize(buildToPosition);
 			_persistedPreparePos = _tableIndex.PrepareCheckpoint;
 			_persistedCommitPos = _tableIndex.CommitCheckpoint;
-			_lastCommitPosition = _tableIndex.CommitCheckpoint;
+			_lastIndexedPosition = _tableIndex.CommitCheckpoint;
 
-			if (_lastCommitPosition >= buildToPosition)
-				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _lastCommitPosition,
+			if (_lastIndexedPosition >= buildToPosition)
+				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _lastIndexedPosition,
 					buildToPosition));
 
 			var startTime = DateTime.UtcNow;
@@ -78,24 +82,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare: {
-							var prepare = (PrepareLogRecord)result.LogRecord;
-							if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
-								if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
-									Commit(commitedPrepares, false, false);
-									commitedPrepares.Clear();
-									Commit(new[] {prepare}, result.Eof, false);
-								} else {
-									if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-										commitedPrepares.Add(prepare);
-									if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd)) {
-										Commit(commitedPrepares, result.Eof, false);
+								var prepare = (PrepareLogRecord)result.LogRecord;
+								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
+									if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
+										Commit(commitedPrepares, false, false);
 										commitedPrepares.Clear();
+										Commit(new[] { prepare }, result.Eof, false);
+									} else {
+										if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
+											commitedPrepares.Add(prepare);
+										if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd)) {
+											Commit(commitedPrepares, result.Eof, false);
+											commitedPrepares.Clear();
+										}
 									}
 								}
-							}
 
-							break;
-						}
+								break;
+							}
 						case LogRecordType.Commit:
 							Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
 							break;
@@ -119,7 +123,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 				_backend.SetSystemSettings(GetSystemSettings());
 			}
-
 			_indexRebuild = false;
 		}
 
@@ -135,8 +138,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long GetCommitLastEventNumber(CommitLogRecord commit) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
-			if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber;
 
 			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition)) {
@@ -153,8 +156,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
-			if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber; // already committed
 
 			string streamId = null;
@@ -178,7 +181,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					: commit.FirstEventNumber + prepare.TransactionOffset;
 
 				if (new TFPos(commit.LogPosition, prepare.LogPosition) >
-				    new TFPos(_persistedCommitPos, _persistedPreparePos)) {
+					new TFPos(_persistedCommitPos, _persistedPreparePos)) {
 					indexEntries.Add(new IndexKey(streamId, eventNumber, prepare.LogPosition));
 					prepares.Add(prepare);
 				}
@@ -194,7 +197,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 
 			if (eventNumber != EventNumber.Invalid) {
-				if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
+				if (eventNumber < 0)
+					throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
 				if (cacheLastEventNumber) {
 					_backend.SetStreamLastEventNumber(streamId, eventNumber);
@@ -208,12 +212,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			var newLastCommitPosition = Math.Max(commit.LogPosition, lastCommitPosition);
-			if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) !=
-			    lastCommitPosition)
+			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
+			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
+				lastIndexedPosition)
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
-
 			if (!_indexRebuild)
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
 					_bus.Publish(
@@ -232,7 +235,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (commitedPrepares.Count == 0)
 				return eventNumber;
 
-			var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
+			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
 			var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
 
 			string streamId = lastPrepare.EventStreamId;
@@ -270,15 +273,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					throw new Exception(sb.ToString());
 				}
 
-				if (prepare.LogPosition < lastCommitPosition ||
-				    (prepare.LogPosition == lastCommitPosition && !_indexRebuild))
+				if (prepare.LogPosition < lastIndexedPosition ||
+					(prepare.LogPosition == lastIndexedPosition && !_indexRebuild))
 					continue; // already committed
 
 				eventNumber =
 					prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
 
 				if (new TFPos(prepare.LogPosition, prepare.LogPosition) >
-				    new TFPos(_persistedCommitPos, _persistedPreparePos)) {
+					new TFPos(_persistedCommitPos, _persistedPreparePos)) {
 					indexEntries.Add(new IndexKey(streamId, eventNumber, prepare.LogPosition));
 					prepares.Add(prepare);
 				}
@@ -294,7 +297,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 
 			if (eventNumber != EventNumber.Invalid) {
-				if (eventNumber < 0) throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
+				if (eventNumber < 0)
+					throw new Exception(string.Format("EventNumber {0} is incorrect.", eventNumber));
 
 				if (cacheLastEventNumber) {
 					_backend.SetStreamLastEventNumber(streamId, eventNumber);
@@ -308,12 +312,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			var newLastCommitPosition = Math.Max(lastPrepare.LogPosition, lastCommitPosition);
-			if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) !=
-			    lastCommitPosition)
+			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
+			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
+				lastIndexedPosition)
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
-
+			
 			if (!_indexRebuild)
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
 					_bus.Publish(
@@ -377,7 +381,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						else
 							throw new Exception(
 								string.Format("Trying to add duplicate event #{0} to stream {1} \nCommit: {2}\n"
-								              + "Prepare: {3}\nIndexed prepare: {4}.",
+											  + "Prepare: {3}\nIndexed prepare: {4}.",
 									indexEntry.Version, prepare.EventStreamId, commit, prepare, indexedPrepare));
 					}
 				}

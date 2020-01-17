@@ -1,31 +1,53 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
 	internal class FakeEpochManager : IEpochManager {
+
 		public int LastEpochNumber {
-			get { return -1; }
+			get {
+				lock (_epochs) {
+					return _epochs.Any() ? _epochs.Last().EpochNumber : -1;
+				}
+			}
 		}
 
+		private readonly List<EpochRecord> _epochs = new List<EpochRecord>();
 		public void Init() {
 		}
 
 		public EpochRecord GetLastEpoch() {
-			return null;
+			lock (_epochs) {
+				return _epochs.LastOrDefault();
+			}
 		}
 
 		public EpochRecord[] GetLastEpochs(int maxCount) {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				if (maxCount >= _epochs.Count) {
+					return _epochs.ToArray();
+				} else {
+					return _epochs.Skip(_epochs.Count - maxCount).ToArray();
+				}
+			}
 		}
 
 		public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound) {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				var epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
+				if (throwIfNotFound && epoch == null)
+					throw new ArgumentOutOfRangeException(nameof(epochNumber), "Epoch not Found");
+				return epoch;
+			}
 		}
 
 		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				return GetEpoch(epochNumber, throwIfNotFound);
+			}
 		}
 
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
@@ -37,11 +59,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		public void SetLastEpoch(EpochRecord epoch) {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				_epochs.Add(epoch);
+			}
 		}
 
 		public IEnumerable<EpochRecord> GetCachedEpochs() {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				return _epochs.AsReadOnly();
+			}
 		}
 	}
 }
