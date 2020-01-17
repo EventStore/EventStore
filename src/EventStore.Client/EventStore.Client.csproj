@@ -5,7 +5,7 @@
 		<Platform>x64</Platform>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
-		<PackageId>EventStore.Client</PackageId>
+		<PackageId>EventStore.Client.Grpc</PackageId>
 		<Authors>Event Store Ltd</Authors>
 		<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
 		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>

@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 		<PropertyGroup>
 				<TargetFramework>netcoreapp3.1</TargetFramework>
 				<Platform>x64</Platform>
 				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 				<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
-				<PackageId>EventStore.Client.Operations</PackageId>
+				<PackageId>EventStore.Client.Operations.Grpc</PackageId>
 				<Authors>Event Store Ltd</Authors>
 				<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
 				<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
