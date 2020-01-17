@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				maxTablesPerLevel: 2);
 			ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
-				_dbResult.Db.Config.ReplicationCheckpoint);
+				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
 			((ReadIndex)ReadIndex).IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
 			var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,

@@ -47,7 +47,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				metastreamMaxCount: 1,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
-				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
+				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
+				indexCheckpoint: Db.Config.IndexCheckpoint);
 			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 

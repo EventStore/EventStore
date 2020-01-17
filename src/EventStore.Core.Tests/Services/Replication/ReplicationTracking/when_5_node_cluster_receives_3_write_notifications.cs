@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 			var replicaId2 = Guid.NewGuid();
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(replicaId, _logPosition));
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(replicaId2, _logPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 
 		[Test]

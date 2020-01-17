@@ -13,19 +13,19 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 
 		[Test]
 		public void replicated_to_should_be_sent() {
-			Assert.AreEqual(1, ReplicatedTos.Count);
+			AssertEx.IsOrBecomesTrue(() => 1 == ReplicatedTos.Count);
 			Assert.True(ReplicatedTos.TryDequeue(out var msg));
 			Assert.AreEqual(_logPosition, msg.LogPosition);
 		}
 		[Test]
 		public void replication_checkpoint_should_advance() {
-			Assert.AreEqual(_logPosition, ReplicationCheckpoint.Read());		
-			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());		
-		}	
+			Assert.AreEqual(_logPosition, ReplicationCheckpoint.Read());
+			Assert.AreEqual(_logPosition, ReplicationCheckpoint.ReadNonFlushed());
+		}
 	}
 }

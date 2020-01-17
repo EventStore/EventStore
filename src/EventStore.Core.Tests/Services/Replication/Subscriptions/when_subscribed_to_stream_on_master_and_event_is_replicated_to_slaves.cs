@@ -69,6 +69,15 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 
 			await base.Given();
+			var replicas = GetSlaves();
+			AssertEx.IsOrBecomesTrue(
+				() => {
+					var masterIndex = master.Db.Config.IndexCheckpoint.Read();
+					return replicas[0].Db.Config.IndexCheckpoint.Read() == masterIndex &&
+					       replicas[1].Db.Config.IndexCheckpoint.Read() == masterIndex;
+
+				},
+				timeout:TimeSpan.FromSeconds(2));
 		}
 
 		[Test]

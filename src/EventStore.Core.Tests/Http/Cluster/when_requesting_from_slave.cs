@@ -25,10 +25,15 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			
 			// Wait for the admin user to be created before starting our tests
 			await master.AdminUserCreated;
-			Thread.Sleep(100); //allow time for replica node propagation
-			var slave = GetSlaves().First();
-			_slaveEndPoint = slave.ExternalHttpEndPoint;
-			_client = slave.CreateHttpClient();
+			var replica = GetSlaves().First();
+			_slaveEndPoint = replica.ExternalHttpEndPoint;
+			_client = replica.CreateHttpClient();
+
+			var path = $"streams/{TestStream}";
+			var response = await PostEvent(_slaveEndPoint, path, requireMaster: false);
+			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+			var masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == masterIndex);
 		}
 
 		public override Task TestFixtureTearDown() {

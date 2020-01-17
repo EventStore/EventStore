@@ -96,6 +96,7 @@ namespace EventStore.Client {
 				new InMemoryCheckpoint(epochCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1),
+				indexCheckpoint: new InMemoryCheckpoint(-1),
 				TestConstants.TFChunkInitialReaderCountDefault,
 				TestConstants.TFChunkMaxReaderCountDefault
 				);
@@ -113,6 +114,7 @@ namespace EventStore.Client {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint,
+				new InMemoryCheckpoint(-1),
 				TestConstants.TFChunkInitialReaderCountDefault,
 				TestConstants.TFChunkMaxReaderCountDefault
 			);

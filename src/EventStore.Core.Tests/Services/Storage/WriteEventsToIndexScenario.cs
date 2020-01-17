@@ -6,6 +6,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -120,7 +121,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_indexBackend = new IndexBackend(_readerPool, 100000, 100000);
 			_indexReader = new IndexReader(_indexBackend, _tableIndex, new StreamMetadata(maxCount: 100000), 100, false);
 			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
-			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, false);
+			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}

@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		public override void When() {
 			BecomeMaster();
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 
 		[Test]

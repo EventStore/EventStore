@@ -10,6 +10,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
@@ -25,9 +26,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class IndexCommitter : IIndexCommitter {
 		public static readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitter>();
 
-		public long LastIndexedPosition {
-			get { return Interlocked.Read(ref _lastIndexedPosition); }
-		}
+		public long LastIndexedPosition => _indexChk.Read();
 
 		private readonly IPublisher _bus;
 		private readonly IIndexBackend _backend;
@@ -37,18 +36,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
 		private bool _indexRebuild = true;
-		private long _lastIndexedPosition = -1;
+		private readonly ICheckpoint _indexChk;
 
 		public IndexCommitter(
 			IPublisher bus,
 			IIndexBackend backend,
 			IIndexReader indexReader,
 			ITableIndex tableIndex,
+			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
 			_indexReader = indexReader;
 			_tableIndex = tableIndex;
+			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
 
@@ -58,10 +59,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_tableIndex.Initialize(buildToPosition);
 			_persistedPreparePos = _tableIndex.PrepareCheckpoint;
 			_persistedCommitPos = _tableIndex.CommitCheckpoint;
-			_lastIndexedPosition = _tableIndex.CommitCheckpoint;
+			//todo(clc) determin if this needs to move into the TableIndex re:project-io
+			_indexChk.Write(_tableIndex.CommitCheckpoint);
+			_indexChk.Flush();
 
-			if (_lastIndexedPosition >= buildToPosition)
-				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _lastIndexedPosition,
+			if (_indexChk.Read() >= buildToPosition)
+				throw new Exception(string.Format("_lastCommitPosition {0} >= buildToPosition {1}", _indexChk.Read(),
 					buildToPosition));
 
 			var startTime = DateTime.UtcNow;
@@ -138,7 +141,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long GetCommitLastEventNumber(CommitLogRecord commit) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			var lastIndexedPosition = _indexChk.Read();
 			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber;
 
@@ -156,7 +159,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber) {
 			long eventNumber = EventNumber.Invalid;
 
-			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			var lastIndexedPosition = _indexChk.Read();
 			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber; // already committed
 
@@ -213,10 +216,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 
 			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
-			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
-				lastIndexedPosition)
+			if (_indexChk.Read() != lastIndexedPosition) {
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
+			}
+			_indexChk.Write(newLastIndexedPosition);
+			_indexChk.Flush();
+
 			if (!_indexRebuild)
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
 					_bus.Publish(
@@ -235,7 +241,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (commitedPrepares.Count == 0)
 				return eventNumber;
 
-			var lastIndexedPosition = Interlocked.Read(ref _lastIndexedPosition);
+			var lastIndexedPosition = _indexChk.Read();
 			var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
 
 			string streamId = lastPrepare.EventStreamId;
@@ -313,11 +319,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 
 			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
-			if (Interlocked.CompareExchange(ref _lastIndexedPosition, newLastIndexedPosition, lastIndexedPosition) !=
-				lastIndexedPosition)
+			if (_indexChk.Read() != lastIndexedPosition) {
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
-			
+			}
+			_indexChk.Write(newLastIndexedPosition);
+			_indexChk.Flush();
+
 			if (!_indexRebuild)
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
 					_bus.Publish(

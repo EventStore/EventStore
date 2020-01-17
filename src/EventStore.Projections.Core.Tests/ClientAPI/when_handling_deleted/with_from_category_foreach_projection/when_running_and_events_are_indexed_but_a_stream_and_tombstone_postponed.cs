@@ -3,6 +3,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection {
 	[TestFixture]
+	// ReSharper disable once InconsistentNaming
 	public class when_running_and_events_are_indexed_but_a_stream_and_tombstone_postponed :
 		specification_with_standard_projections_runnning {
 		protected override bool GivenStandardProjectionsRunning() {
@@ -37,8 +38,14 @@ fromCategory('stream').foreachStream().when({
 			await base.When();
 			await PostEvent("stream-1", "type1", "{}");
 			await PostEvent("stream-1", "type2", "{}");
+			await PostEvent("stream-3", "type1", "{}");
+			await PostEvent("stream-3", "type2", "{}");
+			WaitIdle();
 			WaitIdle();
 			await HardDeleteStream("stream-1");
+			WaitIdle();
+			await PostEvent("stream-3", "type1", "{}");
+			await PostEvent("stream-3", "type2", "{}");
 			WaitIdle();
 		}
 
