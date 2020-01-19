@@ -1,7 +1,25 @@
 resources:
 - repo: self
-
 jobs:
+- job: vulnerability_scan
+  displayName: Vulnerability Scan
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - checkout: self 
+    fetchDepth: 1
+  - task: UseDotNet@2
+    displayName: 'Install .NET Core 2.x SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '2.x'
+  - task: UseDotNet@2
+    displayName: 'Install .NET Core 3.x SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '3.1.100'
+  - bash: cd src/ && dotnet restore EventStore.sln && dotnet tool install --tool-path . dotnet-retire && ./dotnet-retire -p EventStore.sln
+    displayName: 'Run dotnet-retire'
 - job: windows_x64
   strategy:
     matrix:
