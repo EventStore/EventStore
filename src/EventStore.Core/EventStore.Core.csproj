@@ -10,22 +10,22 @@
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Google.Protobuf" Version="3.11.2" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.26.0" />
-		<PackageReference Include="Grpc.Core" Version="2.26.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.26.0">
+		<PackageReference Include="Google.Protobuf" Version="3.10.0" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.24.0" />
+		<PackageReference Include="Grpc.Core" Version="2.24.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.24.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+		<PackageReference Include="protobuf-net" Version="2.4.0" />
 		<PackageReference Include="SimpleSyndicate.UriTemplate" Version="1.0.3" />
-		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.5.0" />
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
-		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
-		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.49" />
-		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.48" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
