@@ -1,11 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Reactive.Linq;
 using System.Threading;
-using EventStore.Client.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using NLog;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Display;
@@ -34,20 +30,6 @@ namespace EventStore.Client {
 				.Enrich.FromLogContext()
 				.MinimumLevel.Is(logLevel)
 				.CreateLogger();
-
-			ForwardNLogToSerilog();
-
-			LogProvider.Configure = services => services.AddLogging(l => l.AddSerilog());
-		}
-
-		private static void ForwardNLogToSerilog() {
-			// sic: blindly overwrite the forwarding rules every time
-			var target = new SerilogTarget();
-			var cfg = new NLog.Config.LoggingConfiguration();
-			cfg.AddTarget(nameof(SerilogTarget), target);
-			cfg.LoggingRules.Add(new NLog.Config.LoggingRule("*", LogLevel.Trace, target));
-			// NB assignment must happen last; rules get ingested upon assignment
-			LogManager.Configuration = cfg;
 		}
 
 		public static IDisposable Capture(ITestOutputHelper testOutputHelper) {

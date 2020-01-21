@@ -2,15 +2,16 @@
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
+using EventStore.Client.Interceptors;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 
 namespace EventStore.Client.Operations {
-	public partial class EventStoreGrpcOperationsClient : IDisposable {
+	public partial class EventStoreOperationsClient : IDisposable {
 		private readonly GrpcChannel _channel;
 		private readonly Operations.OperationsClient _client;
 
-		public EventStoreGrpcOperationsClient(EventStoreClientSettings settings = null) {
+		public EventStoreOperationsClient(EventStoreClientSettings settings = null) {
 			settings ??= new EventStoreClientSettings();
 			var httpHandler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
 
@@ -34,7 +35,7 @@ namespace EventStore.Client.Operations {
 			_client = new Operations.OperationsClient(callInvoker);
 		}
 
-		public EventStoreGrpcOperationsClient(Uri address, Func<HttpMessageHandler> createHttpMessageHandler = default)
+		public EventStoreOperationsClient(Uri address, Func<HttpMessageHandler> createHttpMessageHandler = default)
 			: this(
 				new EventStoreClientSettings {
 					ConnectivitySettings = {
@@ -44,8 +45,6 @@ namespace EventStore.Client.Operations {
 				}) {
 		}
 
-		public void Dispose() {
-			_channel?.Dispose();
-		}
+		public void Dispose() => _channel?.Dispose();
 	}
 }

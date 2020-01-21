@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection {
 				options.LoggerFactory ??= provider.GetService<ILoggerFactory>();
 				options.Interceptors ??= provider.GetServices<Interceptor>();
 
-				return new EventStoreGrpcOperationsClient(options);
+				return new EventStoreOperationsClient(options);
 			});
 
 			return services;

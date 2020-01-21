@@ -1,17 +1,15 @@
 using System;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
-using EventStore.Client.Logging;
+using EventStore.Client.Interceptors;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
 using EventStore.Client.Shared;
 using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
@@ -22,8 +20,6 @@ namespace EventStore.Client {
 				StreamMetadataJsonConverter.Instance
 			},
 		};
-
-		private static readonly ILogger Log = LogProvider.CreateLogger<EventStoreClient>();
 
 		private readonly EventStoreClientSettings _settings;
 		private readonly GrpcChannel _channel;
@@ -49,7 +45,7 @@ namespace EventStore.Client {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
-				LoggerFactory = LogProvider.LoggerFactory
+				LoggerFactory = settings.LoggerFactory
 			});
 			var callInvoker = (_settings.Interceptors ?? Array.Empty<Interceptor>()).Aggregate(
 				_channel.CreateCallInvoker()
