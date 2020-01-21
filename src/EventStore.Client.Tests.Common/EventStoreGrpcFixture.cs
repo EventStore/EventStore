@@ -42,7 +42,7 @@ namespace EventStore.Client {
 				webHostBuilder
 					.UseStartup(new TestClusterVNodeStartup(Node)));
 
-			var settings = clientSettings ?? new EventStoreClientSettings() {
+			var settings = clientSettings ?? new EventStoreClientSettings {
 				CreateHttpMessageHandler = () => new ResponseVersionHandler {
 					InnerHandler = TestServer.CreateHandler()
 				}
@@ -91,7 +91,6 @@ namespace EventStore.Client {
 				return response;
 			}
 		}
-		
 
 		protected class DelayedHandler : HttpClientHandler {
 			private readonly int _delay;

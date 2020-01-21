@@ -34,25 +34,24 @@ namespace EventStore.Client {
 
 		public EventStoreClient(IOptions<EventStoreClientSettings> options) : this(options.Value) {
 		}
-		
+
 		public EventStoreClient(EventStoreClientSettings settings = null) {
-			_settings = settings ??= new EventStoreClientSettings();
+			_settings = settings ?? new EventStoreClientSettings();
+			var connectionName = _settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
 			Action<Exception> exceptionNotificationHook = null;
-			var httpHandler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
-			if (settings.ConnectivitySettings.GossipSeeds.Length > 0) {
+			var httpHandler = _settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+			if (_settings.ConnectivitySettings.GossipSeeds.Length > 0) {
 				ConfigureClusterAwareHandler();
 			}
-			
-			_channel = GrpcChannel.ForAddress(settings.ConnectivitySettings.Address, new GrpcChannelOptions {
+
+			_channel = GrpcChannel.ForAddress(_settings.ConnectivitySettings.Address, new GrpcChannelOptions {
 				HttpClient = new HttpClient(httpHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
 				LoggerFactory = LogProvider.LoggerFactory
 			});
-			var connectionName = settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
-
-			var callInvoker = settings.Interceptors.Aggregate(
+			var callInvoker = (_settings.Interceptors ?? Array.Empty<Interceptor>()).Aggregate(
 				_channel.CreateCallInvoker()
 					.Intercept(new TypedExceptionInterceptor(exceptionNotificationHook))
 					.Intercept(new ConnectionNameInterceptor(connectionName)),
@@ -62,16 +61,15 @@ namespace EventStore.Client {
 			ProjectionsManager = new EventStoreProjectionManagerClient(callInvoker);
 			UsersManager = new EventStoreUserManagerClient(callInvoker);
 
-			void ConfigureClusterAwareHandler()
-			{
+			void ConfigureClusterAwareHandler() {
 				var clusterAwareHttpHandler = new ClusterAwareHttpHandler(
-					settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
+					_settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
 					new ClusterEndpointDiscoverer(
-						settings.ConnectivitySettings.MaxDiscoverAttempts,
-						settings.ConnectivitySettings.GossipSeeds,
-						settings.ConnectivitySettings.GossipTimeout,
-						settings.ConnectivitySettings.DiscoveryInterval,
-						settings.ConnectivitySettings.NodePreference)) {
+						_settings.ConnectivitySettings.MaxDiscoverAttempts,
+						_settings.ConnectivitySettings.GossipSeeds,
+						_settings.ConnectivitySettings.GossipTimeout,
+						_settings.ConnectivitySettings.DiscoveryInterval,
+						_settings.ConnectivitySettings.NodePreference)) {
 					InnerHandler = httpHandler
 				};
 				exceptionNotificationHook = clusterAwareHttpHandler.ExceptionOccurred;

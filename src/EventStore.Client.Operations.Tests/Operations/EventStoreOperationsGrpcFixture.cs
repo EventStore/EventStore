@@ -7,12 +7,9 @@ namespace EventStore.Client.Operations {
 		public EventStoreGrpcOperationsClient OperationsClient { get; }
 
 		protected EventStoreOperationsGrpcFixture() {
-			OperationsClient = new EventStoreGrpcOperationsClient(new UriBuilder().Uri, () =>
-				new HttpClient(new ResponseVersionHandler {
-					InnerHandler = TestServer.CreateHandler()
-				}) {
-					Timeout = Timeout.InfiniteTimeSpan
-				});
+			OperationsClient = new EventStoreGrpcOperationsClient(new UriBuilder().Uri, () => new ResponseVersionHandler {
+				InnerHandler = TestServer.CreateHandler()
+			});
 		}
 	}
 }
