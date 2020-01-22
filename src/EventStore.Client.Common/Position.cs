@@ -21,7 +21,7 @@ namespace EventStore.Client {
 		/// </summary>
 		public static readonly Position End = new Position(ulong.MaxValue, ulong.MaxValue);
 
-		public static Position FromInt64(long commitPosition, long preparePosition)
+		internal static Position FromInt64(long commitPosition, long preparePosition)
 			=> new Position(
 				commitPosition == -1 ? ulong.MaxValue : (ulong)commitPosition,
 				preparePosition == -1 ? ulong.MaxValue : (ulong)preparePosition);
@@ -132,7 +132,7 @@ namespace EventStore.Client {
 		/// </summary>
 		/// <param name="other">A <see cref="Position" /></param>
 		/// <returns>True if this instance is equal to the other instance.</returns>
-		public bool Equals(Position other) =>
+		public readonly bool Equals(Position other) =>
 			CommitPosition == other.CommitPosition && PreparePosition == other.PreparePosition;
 
 		/// <summary>
@@ -153,7 +153,7 @@ namespace EventStore.Client {
 		/// <filterpriority>2</filterpriority>
 		public override string ToString() => $"{CommitPosition}/{PreparePosition}";
 
-		public (long commitPosition, long preparePosition) ToInt64() => Equals(End)
+		internal readonly (long commitPosition, long preparePosition) ToInt64() => Equals(End)
 			? (-1, -1)
 			: ((long)CommitPosition, (long)PreparePosition);
 	}

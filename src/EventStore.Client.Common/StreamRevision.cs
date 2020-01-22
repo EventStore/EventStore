@@ -12,6 +12,9 @@ namespace EventStore.Client {
 		public static readonly StreamRevision Start = new StreamRevision(0);
 		public static readonly StreamRevision End = new StreamRevision(ulong.MaxValue);
 
+		internal static StreamRevision FromInt64(long value) =>
+			value == -1 ? End : new StreamRevision(Convert.ToUInt64(value));
+
 		public StreamRevision(ulong value) {
 			if (value > long.MaxValue && value != ulong.MaxValue) {
 				throw new ArgumentOutOfRangeException(nameof(value));
@@ -37,11 +40,7 @@ namespace EventStore.Client {
 		public static bool operator <(StreamRevision left, StreamRevision right) => left._value < right._value;
 		public static bool operator >=(StreamRevision left, StreamRevision right) => left._value >= right._value;
 		public static bool operator <=(StreamRevision left, StreamRevision right) => left._value <= right._value;
-		public readonly long ToInt64() => Equals(End) ? -1 : Convert.ToInt64(_value);
-
-		public static StreamRevision FromInt64(long value) =>
-			value == -1 ? End : new StreamRevision(Convert.ToUInt64(value));
-
+		internal readonly long ToInt64() => Equals(End) ? -1 : Convert.ToInt64(_value);
 		public static implicit operator ulong(StreamRevision streamRevision) => streamRevision._value;
 		public override readonly string ToString() => _value.ToString();
 	}

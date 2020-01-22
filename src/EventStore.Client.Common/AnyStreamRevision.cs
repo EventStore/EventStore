@@ -12,13 +12,15 @@ namespace EventStore.Client {
 		public static readonly AnyStreamRevision StreamExists = new AnyStreamRevision(Constants.StreamExists);
 		private readonly int _value;
 
-		static class Constants {
+		private static class Constants {
 			public const int NoStream = 1;
 			public const int Any = 2;
 			public const int StreamExists = 4;
 		}
 
-		public AnyStreamRevision(int value) {
+		internal static AnyStreamRevision FromInt64(long value) => new AnyStreamRevision(-Convert.ToInt32(value));
+
+		internal AnyStreamRevision(int value) {
 			switch (value) {
 				case Constants.NoStream:
 				case Constants.Any:
@@ -35,8 +37,7 @@ namespace EventStore.Client {
 		public override readonly int GetHashCode() => HashCode.Hash.Combine(_value);
 		public static bool operator ==(AnyStreamRevision left, AnyStreamRevision right) => left.Equals(right);
 		public static bool operator !=(AnyStreamRevision left, AnyStreamRevision right) => !left.Equals(right);
-		public readonly long ToInt64() => -Convert.ToInt64(_value);
-		public static AnyStreamRevision FromInt64(long value) => new AnyStreamRevision(-Convert.ToInt32(value));
+		internal readonly long ToInt64() => -Convert.ToInt64(_value);
 		public static implicit operator int(AnyStreamRevision streamRevision) => streamRevision._value;
 
 		public override string ToString() => _value switch {
