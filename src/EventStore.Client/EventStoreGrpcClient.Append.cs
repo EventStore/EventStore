@@ -44,9 +44,7 @@ namespace EventStore.Client {
 			foreach (var e in eventData)
 				await call.RequestStream.WriteAsync(new AppendReq {
 					ProposedMessage = new AppendReq.Types.ProposedMessage {
-						Id = new Streams.UUID {
-							String = e.EventId.ToString("n")
-						},
+						Id = e.EventId.ToStreamsDto(),
 						Data = ByteString.CopyFrom(e.Data),
 						CustomMetadata = ByteString.CopyFrom(e.Metadata),
 						Metadata = {
