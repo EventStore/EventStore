@@ -261,7 +261,8 @@ namespace EventStore.Core {
 				Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
 				vNodeSettings.HashCollisionReadLimit,
 				vNodeSettings.SkipIndexScanOnReads,
-				db.Config.ReplicationCheckpoint);
+				db.Config.ReplicationCheckpoint,
+				db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(db);
 			var epochManager = new EpochManager(_mainQueue,

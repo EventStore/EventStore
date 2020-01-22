@@ -18,6 +18,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
 		readonly ICheckpoint _truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 		readonly ICheckpoint _replicationCheckpoint = new InMemoryCheckpoint(-1);
+		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
 
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected StorageChaser Service;
@@ -29,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
 		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
-		
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
@@ -56,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitAck>(CommitAcks.Enqueue));
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.PrepareAck>(PrepareAcks.Enqueue));
-			
+
 			When();
 		}
 
@@ -73,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 1000, 10000, _writerChk,
-				_chaserChk, _epochChk, _truncateChk, _replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
+				_chaserChk, _epochChk, _truncateChk, _replicationCheckpoint, _indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
 			return nodeConfig;
 		}
 	}

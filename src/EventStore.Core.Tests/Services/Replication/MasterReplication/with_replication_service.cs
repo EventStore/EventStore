@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			await base.TestFixtureSetUp();
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicaWriteAck>(msg => ReplicaWriteAcks.Enqueue(msg)));
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
-		
+
 			var db = new TFChunkDb(CreateDbConfig());
 			db.Open();
 			Service = new MasterReplicationService(
@@ -121,9 +121,10 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			ICheckpoint epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
 			ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
+			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 1000, 10000, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
 			return nodeConfig;
 		}
 	}

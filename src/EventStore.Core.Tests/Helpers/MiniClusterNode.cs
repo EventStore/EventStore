@@ -61,9 +61,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
-		
+
 		private TestServer _kestrelTestServer;
-		
+
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
@@ -182,7 +182,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 			_host.Start();
 			Node.Start();
 		}
-		
+
 		public HttpClient CreateHttpClient() {
 			return new HttpClient(_kestrelTestServer.CreateHandler());
 		}
@@ -220,6 +220,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
+			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			if (inMemDb) {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
@@ -240,7 +241,7 @@ VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

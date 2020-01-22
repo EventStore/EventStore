@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ namespace EventStore.Core.Services.Replication {
 		private bool _stop;
 		private VNodeState _state;
 		private long _idle = 1;
+		private long _publishedPosition;
 		private readonly ConcurrentDictionary<Guid, long> _replicaLogPositions = new ConcurrentDictionary<Guid, long>();
 
 		private readonly ManualResetEventSlim _replicationChange = new ManualResetEventSlim(false, 1);
@@ -61,18 +63,23 @@ namespace EventStore.Core.Services.Replication {
 			_stop = true;
 		}
 		public bool IsIdle() { return Interlocked.Read(ref _idle) == 1; }
+
+		public bool IsCurrent() {
+			Debug.Assert(_state == VNodeState.Master);
+			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
+		}
+
 		private void TrackReplication() {
-			long publishedPosition = 0;
+
 			try {
 				while (!_stop) {
-					//TODO(clc): consider if this will be too spammy, should we have a throttle here?
 					_replicationChange.Reset();
 					if (_state == VNodeState.Master) {
 						//Publish Log Commit Position
 						var newPos = _replicationCheckpoint.Read();
-						if (newPos > publishedPosition) {
+						if (newPos > Interlocked.Read(ref _publishedPosition)) {
 							_publisher.Publish(new ReplicationTrackingMessage.ReplicatedTo(newPos));
-							publishedPosition = newPos;
+							Interlocked.Exchange(ref _publishedPosition, newPos);
 						}
 					}
 					_idle = 1;
@@ -91,7 +98,7 @@ namespace EventStore.Core.Services.Replication {
 			}
 			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(ReplicationTrackingService)));
 		}
-		
+
 		public void Handle(ReplicationTrackingMessage.MasterReplicatedTo message) {
 			if (_state != VNodeState.Master && message.LogPosition > _replicationCheckpoint.Read()) {
 				_replicationCheckpoint.Write(message.LogPosition);
@@ -114,7 +121,6 @@ namespace EventStore.Core.Services.Replication {
 				_replicationChange.Set();
 				return;
 			}
-			//TODO(clc): add check to ensure replica ids are in the currently elected quorum 
 			long[] positions;
 			lock (_replicaLogPositions) {
 				positions = _replicaLogPositions.Values.ToArray();

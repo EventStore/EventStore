@@ -38,13 +38,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			long metastreamMaxCount,
 			int hashCollisionReadLimit,
 			bool skipIndexScanOnReads,
-			ICheckpoint replicationCheckpoint) {
+			ICheckpoint replicationCheckpoint,
+			ICheckpoint indexCheckpoint) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
+			Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
 
 			var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
@@ -52,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexReader = new IndexReader(indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit,
 				skipIndexScanOnReads);
 			_indexWriter = new IndexWriter(indexBackend, _indexReader);
-			_indexCommitter = new IndexCommitter(bus, indexBackend, _indexReader, tableIndex, additionalCommitChecks);
+			_indexCommitter = new IndexCommitter(bus, indexBackend, _indexReader, tableIndex, indexCheckpoint,additionalCommitChecks);
 			_allReader = new AllReader(indexBackend, _indexCommitter);
 		}
 

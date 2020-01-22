@@ -1466,7 +1466,9 @@ namespace EventStore.Core {
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
+			//todo(clc) : promote these to file backed checkpoints re:project-io
 			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+			ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
 			if (inMemDb) {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
@@ -1516,6 +1518,7 @@ namespace EventStore.Core {
 				epochChk,
 				truncateChk,
 				replicationChk,
+				indexChk,
 				chunkInitialReaderCount,
 				chunkMaxReaderCount,
 				inMemDb,

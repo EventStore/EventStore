@@ -4,6 +4,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection.
 	recovery {
 	[TestFixture]
+	// ReSharper disable once InconsistentNaming
 	public class when_running_and_events_are_indexed : specification_with_standard_projections_runnning {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
@@ -28,6 +29,10 @@ fromCategory('stream').foreachStream().when({
 ");
 			WaitIdle();
 			await HardDeleteStream("stream-1");
+			WaitIdle();
+			//todo replace with a deterministic fix rather than just covering the potential race condition #2236
+			await PostEvent("stream-3", "type1", "{}");
+			await PostEvent("stream-3", "type2", "{}");
 			WaitIdle();
 		}
 

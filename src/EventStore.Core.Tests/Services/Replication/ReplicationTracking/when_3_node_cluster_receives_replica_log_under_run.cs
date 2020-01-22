@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck( replicaId, _underRunPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 
 		[Test]

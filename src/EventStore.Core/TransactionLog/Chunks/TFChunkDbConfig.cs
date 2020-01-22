@@ -12,6 +12,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly ICheckpoint EpochCheckpoint;
 		public readonly ICheckpoint TruncateCheckpoint;
 		public readonly ICheckpoint ReplicationCheckpoint;
+		public readonly ICheckpoint IndexCheckpoint;
 		public readonly IFileNamingStrategy FileNamingStrategy;
 		public readonly bool InMemDb;
 		public readonly bool Unbuffered;
@@ -30,6 +31,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			ICheckpoint epochCheckpoint,
 			ICheckpoint truncateCheckpoint,
 			ICheckpoint replicationCheckpoint,
+			ICheckpoint indexCheckpoint,
 			int initialReaderCount,
 			int maxReaderCount,
 			bool inMemDb = false,
@@ -46,6 +48,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
 			Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
+			Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
 			Ensure.Positive(initialReaderCount, "initialReaderCount");
 			Ensure.Positive(maxReaderCount, "maxReaderCount");
 
@@ -57,6 +60,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			EpochCheckpoint = epochCheckpoint;
 			TruncateCheckpoint = truncateCheckpoint;
 			ReplicationCheckpoint = replicationCheckpoint;
+			IndexCheckpoint = indexCheckpoint;
 			FileNamingStrategy = fileNamingStrategy;
 			InMemDb = inMemDb;
 			Unbuffered = unbuffered;

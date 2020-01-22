@@ -5,6 +5,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+// ReSharper disable InconsistentNaming
 
 namespace EventStore.Projections.Core.Tests.Subsystem {
 
@@ -60,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		}
 	}
 	
-	[TestFixture]
+	[TestFixture,Explicit]
 	public class when_projection_subsystem_restarted_twice
 		: TestFixtureWithProjectionSubsystem {
 		private Guid _instanceCorrelation;
