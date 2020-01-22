@@ -46,7 +46,7 @@
 			<_Parameter1>EventStore.Client.Tests</_Parameter1>
 		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>EventStore.Client.Operations</_Parameter1>
+			<_Parameter1>EventStore.Client.Operations.Tests</_Parameter1>
 		</AssemblyAttribute>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
 			<_Parameter1>EventStore.Client.Projections.Tests</_Parameter1>
