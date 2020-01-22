@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Replication {
 			if (positions.Length < minReplicas) { return; }
 
 			Array.Sort(positions);
-			var furthestReplicatedPosition = positions[minReplicas - 1];
+			var furthestReplicatedPosition = positions[^minReplicas];
 			if (furthestReplicatedPosition <= replicationCp) { return; }
 
 			var newReplicationPoint = Math.Min(writerCp, furthestReplicatedPosition);
