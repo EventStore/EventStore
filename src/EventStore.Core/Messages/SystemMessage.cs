@@ -318,13 +318,15 @@ namespace EventStore.Core.Messages {
 
 			public readonly IPEndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
+			public readonly Guid? SubscriptionId;
 
-			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId) {
+			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId, Guid? subscriptionId=null) {
 				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 
 				VNodeEndPoint = vNodeEndPoint;
 				ConnectionId = connectionId;
+				SubscriptionId = subscriptionId;
 			}
 		}
 
