@@ -28,9 +28,7 @@ namespace EventStore.Client {
 			Data = data;
 			Metadata = customMetadata;
 			EventType = metadata[Constants.Metadata.Type];
-			Created = new DateTime(
-				DateTime.UnixEpoch.Ticks + Convert.ToInt64(metadata[Constants.Metadata.Created]),
-				DateTimeKind.Utc);
+			Created = Convert.ToInt64(metadata[Constants.Metadata.Created]).FromTicksSinceEpoch();
 			IsJson = bool.Parse(metadata[Constants.Metadata.IsJson]);
 		}
 	}

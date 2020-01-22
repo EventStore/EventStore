@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					Metadata = {
 						[Constants.Metadata.Type] = e.EventType,
 						[Constants.Metadata.IsJson] = e.IsJson.ToString(),
-						[Constants.Metadata.Created] = e.TimeStamp.ToTicksSinceEpoch().ToString()
+						[Constants.Metadata.Created] = EpochExtensions.ToTicksSinceEpoch(e.TimeStamp).ToString()
 					},
 					Data = ByteString.CopyFrom(e.Data),
 					CustomMetadata = ByteString.CopyFrom(e.Metadata)
