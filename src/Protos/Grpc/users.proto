@@ -86,8 +86,14 @@ message DetailsResp {
 		string login_name = 1;
 		string full_name = 2;
 		repeated string groups = 3;
-		string last_updated = 4;
+		DateTime last_updated = 4;
 		bool disabled = 5;
+
+		message DateTime {
+			int64 ticks_since_epoch = 1;
+		}
+	}
+	message Empty {
 	}
 }
 

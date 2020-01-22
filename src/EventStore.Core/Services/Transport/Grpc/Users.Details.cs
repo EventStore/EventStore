@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
@@ -26,10 +27,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				await responseStream.WriteAsync(new DetailsResp {
 					UserDetails = new DetailsResp.Types.UserDetails {
 						Disabled = detail.Disabled,
-						Groups = { detail.Groups },
+						Groups = {detail.Groups},
 						FullName = detail.FullName,
 						LoginName = detail.LoginName,
-						LastUpdated = detail.DateLastUpdated?.ToString()
+						LastUpdated = detail.DateLastUpdated.HasValue
+							? new DetailsResp.Types.UserDetails.Types.DateTime
+								{TicksSinceEpoch = detail.DateLastUpdated.Value.UtcDateTime.ToTicksSinceEpoch()}
+							: null
 					}
 				}).ConfigureAwait(false);
 			}

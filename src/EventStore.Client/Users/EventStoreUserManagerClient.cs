@@ -57,9 +57,7 @@ namespace EventStore.Client.Users {
 
 		private static UserDetails ConvertUserDetails(DetailsResp.Types.UserDetails userDetails) =>
 			new UserDetails(userDetails.LoginName, userDetails.FullName, userDetails.Groups.ToArray(),
-				userDetails.Disabled, DateTimeOffset.TryParse(userDetails.LastUpdated, out var lastUpdated)
-					? lastUpdated
-					: new DateTimeOffset?());
+				userDetails.Disabled, userDetails.LastUpdated?.TicksSinceEpoch.FromTicksSinceEpoch());
 
 		public async Task DeleteUserAsync(string loginName, UserCredentials userCredentials = null,
 			CancellationToken cancellationToken = default) {
