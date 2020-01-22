@@ -421,7 +421,7 @@ namespace EventStore.Core.Services.Replication {
 			foreach (var subscription in _subscriptions.Values) {
 				if (subscription.IsConnectionClosed) {
 					_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
-						subscription.ConnectionId));
+						subscription.ConnectionId, subscription.SubscriptionId));
 
 					subscription.ShouldDispose = true;
 				}

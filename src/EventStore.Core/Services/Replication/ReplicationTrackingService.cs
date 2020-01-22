@@ -18,7 +18,8 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ReplicationTrackingMessage.ReplicaWriteAck>,
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
-		IHandle<ReplicationTrackingMessage.MasterReplicatedTo> {
+		IHandle<ReplicationTrackingMessage.MasterReplicatedTo>,
+		IHandle<SystemMessage.VNodeConnectionLost> {
 		private readonly ILogger _log = LogManager.GetLoggerFor<ReplicationTrackingService>();
 		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
@@ -152,6 +153,14 @@ namespace EventStore.Core.Services.Replication {
 				_replicaLogPositions.Clear();
 			}
 			_state = msg.State;
+		}
+
+		public void Handle(SystemMessage.VNodeConnectionLost msg) {
+			if (!msg.SubscriptionId.HasValue) return;
+			
+			lock (_replicaLogPositions) {
+				_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
+			}
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
