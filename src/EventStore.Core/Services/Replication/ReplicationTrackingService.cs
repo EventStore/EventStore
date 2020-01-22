@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,7 +63,12 @@ namespace EventStore.Core.Services.Replication {
 			_stop = true;
 		}
 		public bool IsIdle() { return Interlocked.Read(ref _idle) == 1; }
-		public bool IsCurrent() { return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read(); }
+
+		public bool IsCurrent() {
+			Debug.Assert(_state == VNodeState.Master);
+			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
+		}
+
 		private void TrackReplication() {
 
 			try {
