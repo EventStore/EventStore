@@ -69,7 +69,7 @@ namespace EventStore.Client {
 			_lsb = lsb;
 		}
 
-		internal PersistentSubscriptions.UUID ToPersistentSubscriptionsDto() =>
+		internal readonly PersistentSubscriptions.UUID ToPersistentSubscriptionsDto() =>
 			new PersistentSubscriptions.UUID {
 				Structured = new PersistentSubscriptions.UUID.Types.Structured {
 					LeastSignificantBits = _lsb,
@@ -77,7 +77,7 @@ namespace EventStore.Client {
 				}
 			};
 
-		internal Streams.UUID ToStreamsDto() =>
+		internal readonly Streams.UUID ToStreamsDto() =>
 			new Streams.UUID {
 				Structured = new Streams.UUID.Types.Structured {
 					LeastSignificantBits = _lsb,
