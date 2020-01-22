@@ -149,8 +149,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		private string _subscriptionParkedStream;
 		private ConcurrentDictionary<Guid, bool> _writeCorrelationId = new ConcurrentDictionary<Guid, bool>();
 		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-		private long _stopAt = 2;
-
+		
 		protected override async Task Given() {
 			_connection.Close();
 			_connection.Dispose();
@@ -162,7 +161,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 			// Subscribe to the writes to ensure the parked message has been written
 			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
-			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(Handle));
+			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(Handle));
 
 			// park 3 events
 			for (int i = 0; i < NumberOfEventsToCreate; i++) {
@@ -196,7 +195,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			}
 		}
 
-		private void Handle(StorageMessage.CommitReplicated msg) {
+		private void Handle(StorageMessage.CommitIndexed msg) {
 			if (_writeCorrelationId.TryUpdate(msg.CorrelationId, false, true) && _writeCorrelationId.Count(kvp => !kvp.Value) == NumberOfEventsToCreate) {
 				_eventParked.TrySetResult(true);
 			}
@@ -258,7 +257,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 			// Subscribe to the writes to ensure the parked message has been written
 			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
-			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitReplicated>(Handle));
+			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(Handle));
 
 			// park 3 events
 			for (int i = 0; i < NumberOfEventsToCreate; i++) {
@@ -292,7 +291,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			}
 		}
 
-		private void Handle(StorageMessage.CommitReplicated msg) {
+		private void Handle(StorageMessage.CommitIndexed msg) {
 			if (_writeCorrelationId.TryUpdate(msg.CorrelationId, false, true) && _writeCorrelationId.Count(kvp => !kvp.Value) == NumberOfEventsToCreate) {
 				_eventParked.TrySetResult(true);
 			}
