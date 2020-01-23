@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
+using Microsoft.Extensions.Logging;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
@@ -33,7 +34,7 @@ namespace EventStore.Client {
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
+
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 			
@@ -67,7 +68,7 @@ namespace EventStore.Client {
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
+
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 			
@@ -77,6 +78,8 @@ namespace EventStore.Client {
 		private async Task<DeleteResult> TombstoneInternal(TombstoneReq request,
 			EventStoreClientOperationOptions operationOptions, UserCredentials userCredentials,
 			CancellationToken cancellationToken) {
+			_log.LogDebug("Tombstoning stream {streamName}.", request.Options.StreamName);
+
 			var result = await _client.TombstoneAsync(request, RequestMetadata.Create(userCredentials),
 				deadline: DeadLine.After(operationOptions.TimeoutAfter), cancellationToken);
 

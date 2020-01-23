@@ -10,6 +10,8 @@ using EventStore.Client.Shared;
 using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
@@ -24,6 +26,8 @@ namespace EventStore.Client {
 		private readonly EventStoreClientSettings _settings;
 		private readonly GrpcChannel _channel;
 		private readonly Streams.Streams.StreamsClient _client;
+		private readonly ILogger<EventStoreClient> _log;
+
 		public EventStorePersistentSubscriptionsClient PersistentSubscriptions { get; }
 		public EventStoreProjectionManagerClient ProjectionsManager { get; }
 		public EventStoreUserManagerClient UsersManager { get; }
@@ -53,9 +57,10 @@ namespace EventStore.Client {
 					.Intercept(new ConnectionNameInterceptor(connectionName)),
 				(invoker, interceptor) => invoker.Intercept(interceptor));
 			_client = new Streams.Streams.StreamsClient(callInvoker);
-			PersistentSubscriptions = new EventStorePersistentSubscriptionsClient(callInvoker);
+			PersistentSubscriptions = new EventStorePersistentSubscriptionsClient(callInvoker, _settings);
 			ProjectionsManager = new EventStoreProjectionManagerClient(callInvoker);
 			UsersManager = new EventStoreUserManagerClient(callInvoker);
+			_log = _settings.LoggerFactory?.CreateLogger<EventStoreClient>() ?? new NullLogger<EventStoreClient>();
 
 			void ConfigureClusterAwareHandler() {
 				var clusterAwareHttpHandler = new ClusterAwareHttpHandler(
