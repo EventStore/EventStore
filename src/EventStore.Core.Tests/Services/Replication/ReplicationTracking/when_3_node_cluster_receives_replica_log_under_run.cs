@@ -8,6 +8,8 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		private long _logPosition = 4000;
 		private long _underRunPosition = 3000;
 
+		protected override int ClusterSize => 3;
+
 		public override void When() {
 			BecomeMaster();
 			var replicaId = Guid.NewGuid();

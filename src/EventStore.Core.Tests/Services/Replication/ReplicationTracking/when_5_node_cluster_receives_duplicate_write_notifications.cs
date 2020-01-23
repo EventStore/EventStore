@@ -6,10 +6,9 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	[TestFixture]
 	public class when_5_node_cluster_receives_duplicate_write_notifications : with_clustered_replication_tracking_service {
 		private long _logPosition = 4000;
-		public override void TestFixtureSetUp() {
-			ClusterSize = 5;
-			base.TestFixtureSetUp();
-		}
+		
+		protected override int ClusterSize => 5;
+
 		public override void When() {
 			BecomeMaster();
 			WriterCheckpoint.Write(_logPosition);

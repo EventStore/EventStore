@@ -419,16 +419,19 @@ namespace EventStore.Core.Services.Replication {
 		private bool ManageSubscriptions() {
 			var dataFound = false;
 			foreach (var subscription in _subscriptions.Values) {
+				bool lost = false;
 				if (subscription.IsConnectionClosed) {
-					_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
-						subscription.ConnectionId, subscription.SubscriptionId));
-
 					subscription.ShouldDispose = true;
+					lost = true;
 				}
 
 				if (subscription.ShouldDispose) {
-					ReplicaSubscription tmp;
-					_subscriptions.TryRemove(subscription.SubscriptionId, out tmp);
+					_subscriptions.TryRemove(subscription.SubscriptionId, out _);
+					if (lost) {
+						_publisher.Publish(new SystemMessage.VNodeConnectionLost(subscription.ReplicaEndPoint,
+							subscription.ConnectionId, subscription.SubscriptionId));
+					}
+
 					subscription.Dispose();
 					continue;
 				}

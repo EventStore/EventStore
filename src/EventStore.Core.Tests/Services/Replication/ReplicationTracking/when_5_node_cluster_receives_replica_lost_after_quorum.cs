@@ -1,19 +1,31 @@
 using System;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	[TestFixture]
-	public class when_3_node_cluster_receives_2_write_notifications : with_clustered_replication_tracking_service {
-		private long _logPosition = 4000;
-		protected override int ClusterSize => 3;
+	public class when_5_node_cluster_receives_replica_lost_after_quorum : with_clustered_replication_tracking_service {
+		private readonly long _logPosition = 4000;
+		private readonly Guid _replica1 = Guid.NewGuid();
+		private readonly Guid _replica2 = Guid.NewGuid();
+
+		
+		protected override int ClusterSize => 5;
 
 		public override void When() {
 			BecomeMaster();
 			WriterCheckpoint.Write(_logPosition);
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_replica1, _logPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_replica2, _logPosition));
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
+
+			Service.Handle(new SystemMessage.VNodeConnectionLost(
+					PortsHelper.GetLoopback(),
+					Guid.NewGuid(),
+								_replica1));
 			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 

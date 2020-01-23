@@ -29,7 +29,6 @@ namespace EventStore.Core.Services.Replication {
 		private Thread _thread;
 		private bool _stop;
 		private VNodeState _state;
-		private long _idle = 1;
 		private long _publishedPosition;
 		private readonly ConcurrentDictionary<Guid, long> _replicaLogPositions = new ConcurrentDictionary<Guid, long>();
 
@@ -63,8 +62,7 @@ namespace EventStore.Core.Services.Replication {
 		public void Stop() {
 			_stop = true;
 		}
-		public bool IsIdle() { return Interlocked.Read(ref _idle) == 1; }
-
+		
 		public bool IsCurrent() {
 			Debug.Assert(_state == VNodeState.Master);
 			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
@@ -83,9 +81,7 @@ namespace EventStore.Core.Services.Replication {
 							Interlocked.Exchange(ref _publishedPosition, newPos);
 						}
 					}
-					_idle = 1;
 					_replicationChange.Wait(100);
-					_idle = 0;
 				}
 			} catch (Exception exc) {
 				_log.FatalException(exc, $"Error in {nameof(ReplicationTrackingService)}. Terminating...");
@@ -162,11 +158,8 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(SystemMessage.VNodeConnectionLost msg) {
-			if (!msg.SubscriptionId.HasValue) return;
-			
-			lock (_replicaLogPositions) {
-				_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
-			}
+			if (_state != VNodeState.Master || !msg.SubscriptionId.HasValue) return;
+			_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {

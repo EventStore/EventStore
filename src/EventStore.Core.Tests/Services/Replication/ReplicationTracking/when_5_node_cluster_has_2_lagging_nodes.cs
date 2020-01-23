@@ -10,6 +10,8 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		private readonly long _secondLogPosition = 4000;
 		private Guid[] _slaves;
 
+		protected override int ClusterSize => 5;
+		
 		public override void When() {
 			_slaves = new [] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()};
 			BecomeMaster();
@@ -20,9 +22,9 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 			foreach (var slave in _slaves) {
 				Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(slave, _firstLogPosition));
 			}
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 
-			// ReplicatedTos.Clear();
+			ReplicatedTos.Clear();
 			
 			// Slaves 3 and 4 are lagging behind, they ack the previous positions
 			WriterCheckpoint.Write(_secondLogPosition);
@@ -32,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[1], _secondLogPosition));
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[2], _firstLogPosition));
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[3], _firstLogPosition));
-			AssertEx.IsOrBecomesTrue(() => Service.IsIdle());
+			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 
 		[Test]
