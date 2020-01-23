@@ -50,7 +50,7 @@ namespace EventStore.Client.Operations {
 			var scavengeId = Guid.NewGuid().ToString();
 			var ex = await Assert.ThrowsAsync<ScavengeNotFoundException>(() =>
 				_fixture.OperationsClient.StopScavengeAsync(scavengeId, TestCredentials.Root));
-			Assert.Null(ex.ScavengeId);
+			Assert.True( string.IsNullOrEmpty(ex.ScavengeId),$"Expected null ScavengeId got '{ex.ScavengeId}' when stopping non running scavenge `{scavengeId}`" );
 		}
 
 		[Fact]
