@@ -560,7 +560,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessages message) {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey}", 
+			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}", 
 				key,
 				message.StopAt.HasValue ? $" (To: '{message.StopAt.ToString()}')" : " (All)");
 
