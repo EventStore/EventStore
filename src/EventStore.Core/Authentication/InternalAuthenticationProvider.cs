@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -10,11 +9,12 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Authentication {
 	public class InternalAuthenticationProvider : IAuthenticationProvider,
 		IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<InternalAuthenticationProvider>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<InternalAuthenticationProvider>();
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _logFailedAuthenticationAttempts;
@@ -46,14 +46,14 @@ namespace EventStore.Core.Authentication {
 				    completed.Result == ReadStreamResult.NoStream ||
 				    completed.Result == ReadStreamResult.AccessDenied) {
 					if (_logFailedAuthenticationAttempts)
-						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id, "Invalid user.");
+						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id, "Invalid user.");
 					authenticationRequest.Unauthorized();
 					return;
 				}
 
 				if (completed.Result == ReadStreamResult.Error) {
 					if (_logFailedAuthenticationAttempts)
-						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
 							"The system is not ready.");
 					authenticationRequest.NotReady();
 					return;
@@ -67,7 +67,7 @@ namespace EventStore.Core.Authentication {
 
 				if (userData.Disabled) {
 					if (_logFailedAuthenticationAttempts)
-						Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
 							"The account is disabled.");
 					authenticationRequest.Unauthorized();
 				} else {
@@ -81,7 +81,7 @@ namespace EventStore.Core.Authentication {
 		private void AuthenticateWithPasswordHash(AuthenticationRequest authenticationRequest, UserData userData) {
 			if (!_passwordHashAlgorithm.Verify(authenticationRequest.SuppliedPassword, userData.Hash, userData.Salt)) {
 				if (_logFailedAuthenticationAttempts)
-					Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+					Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
 						"Invalid credentials supplied.");
 				authenticationRequest.Unauthorized();
 				return;
@@ -112,7 +112,7 @@ namespace EventStore.Core.Authentication {
 			ClaimsPrincipal principal) {
 			if (authenticationRequest.SuppliedPassword != correctPassword) {
 				if (_logFailedAuthenticationAttempts)
-					Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+					Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
 						"Invalid credentials supplied.");
 				authenticationRequest.Unauthorized();
 				return;

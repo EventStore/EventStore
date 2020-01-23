@@ -5,9 +5,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using System.Collections.Concurrent;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpConnection : TcpConnectionBase, ITcpConnection {
@@ -16,7 +16,7 @@ namespace EventStore.Transport.Tcp {
 		internal static readonly BufferManager BufferManager =
 			new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnection>();
 
 		private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool",
 			TcpConfiguration.SendReceivePoolSize,
@@ -332,19 +332,19 @@ namespace EventStore.Transport.Tcp {
 			NotifyClosed();
 
 			if (_verbose) {
-				Log.Info(
+				Log.Information(
 					"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Received bytes: {totalBytesReceived}, Sent bytes: {totalBytesSent}",
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					TotalBytesReceived, TotalBytesSent);
-				Log.Info(
+				Log.Information(
 					"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Send calls: {sendCalls}, callbacks: {sendCallbacks}",
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					SendCalls, SendCallbacks);
-				Log.Info(
+				Log.Information(
 					"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Receive calls: {receiveCalls}, callbacks: {receiveCallbacks}",
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					ReceiveCalls, ReceiveCallbacks);
-				Log.Info(
+				Log.Information(
 					"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Close reason: [{socketError}] {reason}",
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					socketError, reason);

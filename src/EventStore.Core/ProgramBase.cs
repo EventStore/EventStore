@@ -11,18 +11,18 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
 	public abstract class ProgramBase<TOptions> where TOptions : class, IOptions, new() {
 		// ReSharper disable StaticFieldInGenericType
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+		protected static readonly ILogger Log = Serilog.Log.ForContext<ProgramBase<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
 
 		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
 		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
 
 		protected abstract string GetLogsDirectory(TOptions options);
-		protected abstract bool GetIsStructuredLog(TOptions options);
 		protected abstract string GetComponentName(TOptions options);
 
 		protected abstract void Create(TOptions options);
@@ -63,23 +63,14 @@ namespace EventStore.Core {
 				_startupSource.SetException(exc);
 			} catch (ApplicationInitializationException ex) {
 				var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
-				if (LogManager.Initialized) {
-					Log.FatalException(ex, msg);
-				} else {
-					Console.Error.WriteLine(msg);
-				}
+				Log.Fatal(ex, msg);
+
 				_startupSource.SetException(ex);
 			} catch (Exception ex) {
 				var msg = "Unhandled exception while starting application:";
-				if (LogManager.Initialized) {
-					Log.FatalException(ex, msg);
-				} else {
-					Console.Error.WriteLine(msg);
-					Console.Error.WriteLine(FormatExceptionMessage(ex));
-				}
+				Log.Fatal(ex, msg);
+				Log.Fatal(ex, "{e}", FormatExceptionMessage(ex));
 				_startupSource.SetException(ex);
-			} finally {
-				Log.Flush();
 			}
 		}
 
@@ -94,21 +85,18 @@ namespace EventStore.Core {
 
 				return exitCode;
 			} catch (Exception ex) {
-				if (!LogManager.Initialized) {
-					Console.Error.WriteLine(FormatExceptionMessage(ex));
-				}
+				Log.Fatal(ex, "{e}", FormatExceptionMessage(ex));
+
 				return 1;
+			} finally {
+				Serilog.Log.CloseAndFlush();
 			}
 		}
 
 		protected virtual void PreInit(TOptions options) {
 		}
 
-		private void Exit(int exitCode) {
-			LogManager.Finish();
-
-			_exitSource.TrySetResult(exitCode);
-		}
+		private void Exit(int exitCode) => _exitSource.TrySetResult(exitCode);
 
 		protected virtual void OnProgramExit() {
 		}
@@ -119,32 +107,26 @@ namespace EventStore.Core {
 			var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
 			var componentName = GetComponentName(options);
 
-			Console.Title = string.Format("{0}, {1}", projName, componentName);
+			Console.Title = $"{projName}, {componentName}";
 
 			string logsDirectory =
 				Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
-			bool structuredLog = GetIsStructuredLog(options);
+			EventStoreLoggerConfiguration.Initialize(logsDirectory, componentName);
 
-			LogManager.Init(componentName, logsDirectory, structuredLog, Locations.DefaultConfigurationDirectory);
-
-			Log.Info("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
+			Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
 				VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
-			Log.Info("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor, Environment.OSVersion);
-			Log.Info("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:", OS.GetRuntimeVersion(),
+			Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor, Environment.OSVersion);
+			Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:",
+				OS.GetRuntimeVersion(),
 				Marshal.SizeOf(typeof(IntPtr)) * 8);
-			Log.Info("{description,-25} {maxGeneration}", "GC:",
+			Log.Information("{description,-25} {maxGeneration}", "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
-			Log.Info("{description,-25} {logsDirectory}", "LOGS:", LogManager.LogsDirectory);
+			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 
 
-			if (!structuredLog)
-				Log.Info("{esOptions}", EventStoreOptions.DumpOptions());
-			else {
-				Console.WriteLine(EventStoreOptions.DumpOptions());
-				Log.Info("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
-			}
+			Log.Information("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
 
 			if (options.WhatIf)
 				Application.Exit(ExitCode.Success, "WhatIf option specified");

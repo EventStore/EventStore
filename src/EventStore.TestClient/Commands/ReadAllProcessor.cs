@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
+					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
 						conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
 					var readDto =
@@ -76,7 +76,7 @@ namespace EventStore.TestClient.Commands {
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
 					if (dto.Events.IsEmpty()) {
 						sw.Stop();
-						context.Log.Info("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}",
+						context.Log.Information("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}",
 							forward ? "FORWARD" : "BACKWARD", sw.Elapsed, total);
 						context.Success();
 						conn.Close();
@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands {
 						total += 1;
 					}
 
-					context.Log.Info("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
+					context.Log.Information("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
 
 					var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
 						10, resolveLinkTos, requireLeader);

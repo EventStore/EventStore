@@ -12,10 +12,10 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using Microsoft.AspNetCore.Http;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<HttpMessage.PurgeTimedOutRequests> {
 		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-		private static readonly ILogger Log = LogManager.GetLoggerFor<KestrelHttpService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelHttpService>();
 
 		public ServiceAccessibility Accessibility => _accessibility;
 		public bool IsListening => _isListening;

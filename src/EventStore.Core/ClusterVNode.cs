@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
@@ -38,6 +37,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -49,7 +49,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
@@ -222,7 +222,7 @@ namespace EventStore.Core {
 			var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
 			var epochCheckpoint = db.Config.EpochCheckpoint.Read();
 			if (truncPos != -1) {
-				Log.Info(
+				Log.Information(
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);

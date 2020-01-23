@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -21,6 +20,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
 	public class LeaderReplicationService : IMonitoredQueue,
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Replication {
 		public static readonly TimeSpan RoleAssignmentsInterval = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan NoQuorumTimeout = TimeSpan.FromMilliseconds(3000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<LeaderReplicationService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<LeaderReplicationService>();
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -187,7 +187,7 @@ namespace EventStore.Core.Services.Replication {
 			long logPosition, Guid chunkId) {
 			try {
 				var epochs = lastEpochs ?? new Epoch[0];
-				Log.Info(
+				Log.Information(
 					"SUBSCRIBE REQUEST from [{replicaEndPoint},C:{connectionId:B},S:{subscriptionId:B},{logPosition}(0x{logPosition:X}),{epochs}]...",
 					replica.ReplicaEndPoint, replica.ConnectionId, replica.SubscriptionId, logPosition, logPosition,
 					string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch)x))));
@@ -199,7 +199,7 @@ namespace EventStore.Core.Services.Replication {
 				Interlocked.Exchange(ref replica.AckedLogPosition, subscriptionPos);
 				return true;
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception while subscribing replica. Connection will be dropped.");
+				Log.Error(exc, "Exception while subscribing replica. Connection will be dropped.");
 				replica.SendBadRequestAndClose(correlationId,
 					string.Format("Exception while subscribing replica. Connection will be dropped. Error: {0}",
 						exc.Message));
@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.Replication {
 						"Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
 						replicaEndPoint, subscriptionId,
 						string.Join(", ", epochs.Select(x => x.AsString())), logPosition);
-					Log.Info(
+					Log.Information(
 						"Replica [{replicaEndPoint},S:{subscriptionId},{epochs}] has positive LogPosition {logPosition} (0x{logPosition:X}), but does not have epochs.",
 						replicaEndPoint, subscriptionId,
 						string.Join(", ", epochs.Select(x => x.AsString())), logPosition, logPosition);
@@ -313,12 +313,12 @@ namespace EventStore.Core.Services.Replication {
 				if (chunk.ChunkHeader.IsScavenged && (chunkId == Guid.Empty || chunkId != chunk.ChunkHeader.ChunkId)) {
 					var chunkStartPos = chunk.ChunkHeader.ChunkStartPosition;
 					if (verbose) {
-						Log.Info(
+						Log.Information(
 							"Subscribed replica [{replicaEndPoint}, S:{subscriptionId}] for raw send at {chunkStartPosition} (0x{chunkStartPosition:X}) (requested {logPosition} (0x{logPosition:X})).",
 							sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos, logPosition,
 							logPosition);
 						if (chunkStartPos != logPosition) {
-							Log.Info(
+							Log.Information(
 								"Forcing replica [{replicaEndPoint}, S:{subscriptionId}] to recreate chunk from position {chunkStartPosition} (0x{chunkStartPosition:X})...",
 								sub.ReplicaEndPoint, sub.SubscriptionId, chunkStartPos, chunkStartPos);
 						}
@@ -337,7 +337,7 @@ namespace EventStore.Core.Services.Replication {
 						isCompletedChunk: true));
 				} else {
 					if (verbose)
-						Log.Info(
+						Log.Information(
 							"Subscribed replica [{replicaEndPoint},S:{subscriptionId}] for data send at {logPosition} (0x{logPosition:X}).",
 							sub.ReplicaEndPoint, sub.SubscriptionId, logPosition, logPosition);
 
@@ -389,7 +389,7 @@ namespace EventStore.Core.Services.Replication {
 							_flushSignal.Wait(TimeSpan.FromMilliseconds(500));
 						}
 					} catch (Exception exc) {
-						Log.InfoException(exc, "Error during leader replication iteration.");
+						Log.Information(exc, "Error during leader replication iteration.");
 #if DEBUG
 						throw;
 #endif
@@ -456,7 +456,7 @@ namespace EventStore.Core.Services.Replication {
 							new ReplicationMessage.CloneAssignment(_instanceId, subscription.SubscriptionId));
 					}
 				} catch (Exception exc) {
-					Log.InfoException(exc, "Error during replication send to replica: {subscription}.", subscription);
+					Log.Information(exc, "Error during replication send to replica: {subscription}.", subscription);
 				}
 			}
 

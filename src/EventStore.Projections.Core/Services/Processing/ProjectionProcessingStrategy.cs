@@ -1,10 +1,10 @@
 using System;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class ProjectionProcessingStrategy {

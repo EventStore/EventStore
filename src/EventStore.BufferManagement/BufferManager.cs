@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.BufferManagement {
 	/// <summary>
@@ -34,7 +34,7 @@ namespace EventStore.BufferManagement {
 
 		private readonly List<byte[]> _segments;
 		private readonly object _creatingNewSegmentLock = new object();
-		private static readonly ILogger Log = LogManager.GetLoggerFor<BufferManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<BufferManager>();
 
 		/// <summary>
 		/// Gets the default buffer manager

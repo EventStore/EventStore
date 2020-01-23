@@ -6,8 +6,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Common.Log;
 using EventStore.Projections.Core.Services.Processing;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionCoreCoordinator
@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<ProjectionCoreServiceMessage.SubComponentStopped> {
 		public const string ComponentName = "ProjectionCoreCoordinator";
 		
-		private readonly ILogger Log = LogManager.GetLoggerFor<ProjectionCoreCoordinator>();
+		private readonly ILogger Log = Serilog.Log.ForContext<ProjectionCoreCoordinator>();
 		private readonly ProjectionType _runProjections;
 		private readonly TimeoutScheduler[] _timeoutSchedulers;
 
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void Start() {
 			if (_currentState != CoreCoordinatorState.Stopped) {
-				Log.Warn("PROJECTIONS: Projection Core Coordinated tried to start when not stopped.");
+				Log.Warning("PROJECTIONS: Projection Core Coordinated tried to start when not stopped.");
 				return;
 			}
 			Log.Debug("PROJECTIONS: Starting Projections Core Coordinator");

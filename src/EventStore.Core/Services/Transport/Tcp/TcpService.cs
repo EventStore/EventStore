@@ -2,12 +2,12 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public enum TcpServiceType {
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	public class TcpService : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpService>();
 
 		private readonly IPublisher _publisher;
 		private readonly IPEndPoint _serverEndPoint;
@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var conn = _securityType == TcpSecurityType.Secure
 				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
 				: TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
-			Log.Info(
+			Log.Information(
 				"{serviceType} TCP connection accepted: [{securityType}, {remoteEndPoint}, L{localEndPoint}, {connectionId:B}].",
 				_serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 

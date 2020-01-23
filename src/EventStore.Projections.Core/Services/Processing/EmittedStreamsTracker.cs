@@ -1,4 +1,3 @@
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -7,6 +6,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 using System;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public interface IEmittedStreamsTracker {
@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 	}
 
 	public class EmittedStreamsTracker : IEmittedStreamsTracker {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<EmittedStreamsTracker>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<EmittedStreamsTracker>();
 		private readonly IODispatcher _ioDispatcher;
 		private readonly ProjectionConfig _projectionConfig;
 		private readonly ProjectionNamesBuilder _projectionNamesBuilder;

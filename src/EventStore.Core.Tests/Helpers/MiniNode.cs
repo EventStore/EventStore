@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
@@ -17,6 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<MiniNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 
 		public IPEndPoint TcpEndPoint { get; private set; }
 		public IPEndPoint TcpSecEndPoint { get; private set; }
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Helpers {
 				}
 			}
 
-			Log.Info("\n{0,-25} {1} ({2}/{3}, {4})\n"
+			Log.Information("\n{0,-25} {1} ({2}/{3}, {4})\n"
 					 + "{5,-25} {6} ({7})\n"
 					 + "{8,-25} {9} ({10}-bit)\n"
 					 + "{11,-25} {12}\n"
@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.ConfigureAwait(false); //starts the node
 
 			StartingTime.Stop();
-			Log.Info("MiniNode successfully started!");
+			Log.Information("MiniNode successfully started!");
 		}
 
 		private async Task StartMiniNode(Task monitorFailuresTask) {
@@ -186,7 +186,7 @@ namespace EventStore.Core.Tests.Helpers {
 				startNodeTask
 			).WithTimeout(TimeSpan.FromSeconds(60)); //startup timeout of 60s
 			StartingTime.Stop();
-			Log.Info("MiniNode successfully started!");
+			Log.Information("MiniNode successfully started!");
 		}
 
 		public void MonitorFailures(TaskCompletionSource<object> tcs) {

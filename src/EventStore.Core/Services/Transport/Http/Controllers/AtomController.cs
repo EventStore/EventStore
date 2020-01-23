@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -16,6 +15,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Primitives;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public enum EmbedLevel {
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public const char ETagSeparator = ';';
 		public static readonly char[] ETagSeparatorArray = { ';' };
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<AtomController>();
 
 		private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
 
@@ -233,7 +233,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 							responseStatusCode, responseMessage,
 							manager.ResponseCodec.ContentType,
 							null,
-							e => Log.ErrorException(e, "Error while writing HTTP response"));
+							e => Log.Error(e, "Error while writing HTTP response"));
 						return String.Empty;
 					},
 					(args, message) => new ResponseConfiguration(HttpStatusCode.OK, manager.ResponseCodec.ContentType,

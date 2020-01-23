@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Transport.Tcp.Framing;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Helpers {
 	public class LengthPrefixSuffixFramer {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<LengthPrefixSuffixFramer>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixSuffixFramer>();
 
 		private const int PrefixLength = sizeof(int);
 

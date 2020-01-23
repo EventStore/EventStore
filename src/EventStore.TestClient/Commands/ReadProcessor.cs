@@ -37,7 +37,7 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading...", conn.RemoteEndPoint,
+					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
 					var readDto =
 						new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireLeader);
@@ -48,7 +48,7 @@ namespace EventStore.TestClient.Commands {
 				},
 				handlePackage: (conn, pkg) => {
 					sw.Stop();
-					context.Log.Info("Read request took: {elapsed}.", sw.Elapsed);
+					context.Log.Information("Read request took: {elapsed}.", sw.Elapsed);
 
 					if (pkg.Command != TcpCommand.ReadEventCompleted) {
 						context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
@@ -56,7 +56,7 @@ namespace EventStore.TestClient.Commands {
 					}
 
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-					context.Log.Info("READ events from <{stream}>:\n\n"
+					context.Log.Information("READ events from <{stream}>:\n\n"
 					                 + "\tEventStreamId: {stream}\n"
 					                 + "\tEventNumber:   {eventNumber}\n"
 					                 + "\tReadResult:    {readResult}\n"

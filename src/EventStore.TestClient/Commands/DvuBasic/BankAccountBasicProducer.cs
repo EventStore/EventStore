@@ -1,14 +1,14 @@
 using System;
 using System.Globalization;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Transport.Http.Codecs;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
 	public class BankAccountBasicProducer : IBasicProducer {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<BankAccountBasicProducer>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<BankAccountBasicProducer>();
 
 		public string Name {
 			get { return "account"; }
@@ -78,7 +78,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 		}
 
 		private static void LogExpected(object generated, object actual, string reason) {
-			Log.Info("Expected: {expected}\n" +
+			Log.Information("Expected: {expected}\n" +
 			         "  Actual: {actual}\n" +
 			         " Details: {reason}",
 				generated.ToString(),

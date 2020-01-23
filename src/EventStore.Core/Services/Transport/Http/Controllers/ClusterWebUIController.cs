@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Util;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class ClusterWebUiController : CommunicationController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterWebUiController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterWebUiController>();
 
 		private readonly NodeSubsystems[] _enabledNodeSubsystems;
 
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				"OK",
 				"application/json",
 				null,
-				ex => Log.InfoException(ex, "Failed to prepare main menu")
+				ex => Log.Information(ex, "Failed to prepare main menu")
 			);
 		}
 

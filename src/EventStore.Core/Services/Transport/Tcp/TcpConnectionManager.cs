@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -14,6 +13,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Framing;
 using EventStore.Core.Settings;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	/// <summary>
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	public class TcpConnectionManager : IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout> {
 		public static readonly TimeSpan ConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionManager>();
 
 		public readonly Guid ConnectionId;
 		public readonly string ConnectionName;
@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void OnConnectionEstablished(ITcpConnection connection) {
-			Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.",
+			Log.Information("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.",
 				ConnectionName, ConnectionId, connection.RemoteEndPoint);
 
 			ScheduleHeartbeat(0);
@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionFailed(ITcpConnection connection, SocketError socketError) {
 			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-			Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] failed: {e}.",
+			Log.Information("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] failed: {e}.",
 				ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
 			if (_connectionClosed != null)
 				_connectionClosed(this, socketError);
@@ -193,7 +193,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionClosed(ITcpConnection connection, SocketError socketError) {
 			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-			Log.Info(
+			Log.Information(
 				"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] closed: {e}.",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				connection.RemoteEndPoint, ConnectionId, socketError);
@@ -257,7 +257,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					try {
 						var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope,
 							null, null, null, this, _version);
-						Log.Info(
+						Log.Information(
 							"Connection '{connectionName}' ({connectionId:B}) identified by client. Client connection name: '{clientConnectionName}', Client version: {clientVersion}.",
 							ConnectionName, ConnectionId, message.ConnectionName, (ClientVersion)message.Version);
 						_version = (byte)message.Version;
@@ -367,7 +367,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		public void Stop(string reason = null) {
-			Log.Trace(
+			Log.Verbose(
 				"Closing connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}] cleanly.{reason}",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				RemoteEndPoint, LocalEndPoint, ConnectionId,

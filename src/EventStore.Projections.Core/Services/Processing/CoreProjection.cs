@@ -1,11 +1,11 @@
 using System;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	//TODO: replace Console.WriteLine with logging
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly IPublisher _inputQueue;
 		private readonly ClaimsPrincipal _runAs;
 
-		private readonly ILogger _logger;
+		private readonly Serilog.ILogger _logger;
 
 		private State _state;
 
@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_name = effectiveProjectionName;
 			_version = version;
 			_stopOnEof = projectionProcessingStrategy.GetStopOnEof();
-			_logger = logger ?? LogManager.GetLoggerFor<CoreProjection>();
+			_logger = logger ?? Serilog.Log.ForContext<CoreProjection>();
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
 			_partitionStateCache = partitionStateCache;
@@ -306,7 +306,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(CoreProjectionProcessingMessage.RestartRequested message) {
-			_logger.Info(
+			_logger.Information(
 				"Projection '{projection}'({projectionCorrelationId}) restart has been requested due to: '{reason}'",
 				_name, _projectionCorrelationId,
 				message.Reason);

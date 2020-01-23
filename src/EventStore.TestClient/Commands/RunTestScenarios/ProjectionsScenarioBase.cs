@@ -80,11 +80,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			try {
 				rawState = GetProjectionsManager().GetStatisticsAsync(projectionName, AdminCredentials).Result;
 			} catch (Exception ex) {
-				Log.InfoException(ex, "Failed to read projection statistics. Will continue.");
+				Log.Information(ex, "Failed to read projection statistics. Will continue.");
 				rawState = null;
 			}
 
-			Log.Info("Raw {projection} stats: {rawState}", projectionName, rawState);
+			Log.Information("Raw {projection} stats: {rawState}", projectionName, rawState);
 
 			if (string.IsNullOrEmpty(rawState))
 				return null;
@@ -107,7 +107,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 		private Dictionary<string, string> GetProjectionState(string projectionName) {
 			var rawState = GetProjectionStateSafe(projectionName);
 
-			Log.Info("Raw {projection} state: {rawState}", projectionName, rawState);
+			Log.Information("Raw {projection} state: {rawState}", projectionName, rawState);
 
 			if (string.IsNullOrEmpty(rawState))
 				return null;
@@ -125,7 +125,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 				rawState = GetProjectionsManager().GetStateAsync(projectionName, AdminCredentials).Result;
 			} catch (Exception ex) {
 				rawState = null;
-				Log.InfoException(ex, "Failed to get projection state");
+				Log.Information(ex, "Failed to get projection state");
 			}
 
 			return rawState;
@@ -152,7 +152,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					break;
 				} catch (Exception ex) {
 					exception = new ApplicationException("Failed to enable by_category.", ex);
-					Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{retryCount}.",
+					Log.Error(ex, "Failed to enable *$by_category* projection, retry #{retryCount}.",
 						retryCount);
 				}
 

@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public abstract class RequestManagerBase :
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IDisposable {
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<RequestManagerBase>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<RequestManagerBase>();
 
 		protected readonly IPublisher Publisher;
 		protected TimeSpan Timeout;
@@ -178,7 +178,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 		public void Handle(StorageMessage.AlreadyCommitted message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allEventsWritten) { return; }
-			Log.Trace("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
+			Log.Verbose("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
 				message);
 			ReturnCommitAt(message.LogPosition, message.FirstEventNumber, message.LastEventNumber);
 		}

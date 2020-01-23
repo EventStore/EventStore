@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
+using Serilog;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {
 	abstract class specification_with_multi_phase_core_projection : TestFixtureWithCoreProjection {
@@ -381,7 +382,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 			_phase2 = new FakeProjectionProcessingPhase(1, this, Phase2CheckpointManager, _phase2readerStrategy,
 				_emittedStreamsTracker);
 			return new FakeProjectionProcessingStrategy(
-				_projectionName, _version, new ConsoleLogger(), Phase1, Phase2);
+				_projectionName, _version, Log.Logger, Phase1, Phase2);
 		}
 
 		protected virtual FakeReaderStrategy GivenPhase2ReaderStrategy() {

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
@@ -11,13 +10,13 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.ClientAPI;
 using NUnit.Framework;
-using ILogger = EventStore.Common.Log.ILogger;
+using ILogger = Serilog.ILogger;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture]
 	public class when_running_scavenge_from_storage_scavenger : SpecificationWithDirectoryPerTestFixture {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<when_running_scavenge_from_storage_scavenger>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 		private MiniNode _node;
 		private List<ResolvedEvent> _result;
@@ -56,8 +55,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 						countdown.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Processing events started."),
-					(x, y, z) => { Log.Info("Subscription dropped: {0}, {1}.", y, z); }
+					_ => Log.Information("Processing events started."),
+					(x, y, z) => { Log.Information("Subscription dropped: {0}, {1}.", y, z); }
 				);
 
 				if (!countdown.Wait(Timeout)) {

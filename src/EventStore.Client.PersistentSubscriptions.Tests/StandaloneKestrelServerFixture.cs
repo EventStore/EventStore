@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using Xunit;
 
 namespace EventStore.Client {
@@ -45,6 +46,7 @@ namespace EventStore.Client {
 						}
 					});
 				})
+				.UseSerilog()
 				.UseStartup(_node.Startup)
 				.Build();
 

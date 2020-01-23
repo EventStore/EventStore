@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -18,6 +17,7 @@ using System.Threading;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Common;
 using FastSerialization;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Management {
 	/// <summary>
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			_getResultDispatcher;
 
 
-		private readonly ILogger _logger;
+		private readonly Serilog.ILogger _logger;
 		private readonly ITimeProvider _timeProvider;
 		private readonly Guid _workerId;
 		private readonly Guid _id;
@@ -151,7 +151,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			_projectionId = projectionId;
 			_name = name;
 			_enabledToRun = enabledToRun;
-			_logger = logger ?? LogManager.GetLoggerFor<ManagedProjection>();
+			_logger = logger ?? Serilog.Log.ForContext<ManagedProjection>();
 			_streamDispatcher = streamDispatcher;
 			_writeDispatcher = writeDispatcher;
 			_readDispatcher = readDispatcher;
@@ -530,7 +530,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					return;
 				}
 
-				_logger.Warn(
+				_logger.Warning(
 					"Transient projection {projection} has expired and will be deleted. Last accessed at {lastAccessed}",
 					_name, _lastAccessed);
 				Handle(
@@ -638,7 +638,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 			SetState(ManagedProjectionState.Creating);
 
-			_logger.Trace(
+			_logger.Verbose(
 				"Projection manager did not find any projection configuration records in the {stream} stream.  Projection stays in CREATING state",
 				completed.EventStreamId);
 		}
@@ -731,7 +731,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 
 			if (message.Result == OperationResult.Success) {
-				_logger.Info("'{projection}' projection source has been written", _name);
+				_logger.Information("'{projection}' projection source has been written", _name);
 				_pendingWritePersistedState = false;
 				var writtenEventNumber = message.FirstEventNumber;
 				if (writtenEventNumber != (PersistedProjectionState.Version ?? writtenEventNumber))
@@ -741,7 +741,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				return;
 			}
 
-			_logger.Info(
+			_logger.Information(
 				"Projection '{projection}' source has not been written to {stream}. Error: {e}",
 				_name,
 				eventStreamId,
@@ -750,7 +750,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			                                                    || message.Result == OperationResult.PrepareTimeout
 			                                                    || message.Result ==
 			                                                    OperationResult.WrongExpectedVersion) {
-				_logger.Info("Retrying write projection source for {projection}", _name);
+				_logger.Information("Retrying write projection source for {projection}", _name);
 				WritePersistedState(eventToRetry);
 			} else
 				throw new NotSupportedException("Unsupported error code received");
@@ -773,12 +773,12 @@ namespace EventStore.Projections.Core.Services.Management {
 		private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted message, string streamId,
 			Action completed) {
 			if (message.Result == OperationResult.Success || message.Result == OperationResult.StreamDeleted) {
-				_logger.Info("PROJECTIONS: Projection Stream '{stream}' deleted", streamId);
+				_logger.Information("PROJECTIONS: Projection Stream '{stream}' deleted", streamId);
 				completed();
 				return;
 			}
 
-			_logger.Info(
+			_logger.Information(
 				"PROJECTIONS: Projection stream '{stream}' could not be deleted. Error: {e}",
 				streamId,
 				Enum.GetName(typeof(OperationResult), message.Result));
@@ -1065,7 +1065,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (runAs.Name == "$system") //TODO: make sure nobody else uses it
 				return SystemAccounts.System;
 			var claims = runAs.Roles.Select(x => x.Split("$$$")).Select(x => {
-				return x.Length switch 
+				return x.Length switch
 				{
 					1 =>  new Claim(ClaimTypes.Role, x[0]),
 					2 => new Claim(x[0], x[1]),
@@ -1076,7 +1076,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (!claims.Exists(x => x.Type == ClaimTypes.Name)) {
 				claims.Add(new Claim(ClaimTypes.Name, runAs.Name));
 			}
-			
+
 			return new ClaimsPrincipal(new ClaimsIdentity(claims, "ES-Projections"));
 		}
 	}

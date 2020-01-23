@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -12,6 +11,7 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Messaging;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageReaderWorker : IHandle<ClientMessage.ReadEvent>,
@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.FilteredReadAllEventsForward>,
 		IHandle<StorageMessage.CheckStreamAccess>,
 		IHandle<StorageMessage.BatchLogExpiredMessages>, IHandle<ClientMessage.FilteredReadAllEventsBackward> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderWorker>();
 		private static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
 
 		private readonly IPublisher _publisher;
@@ -278,7 +278,7 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.ReadEventCompleted(msg.CorrelationId, msg.EventStreamId, result.Result,
 						record.Value, result.Metadata, access.Public, null);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadEvent request.");
+					Log.Error(exc, "Error during processing ReadEvent request.");
 					return NoData(msg, ReadEventResult.Error, exc.Message);
 				}
 			}
@@ -314,7 +314,7 @@ namespace EventStore.Core.Services.Storage {
 						(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, access.Public, string.Empty,
 						result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
+					Log.Error(exc, "Error during processing ReadStreamEventsForward request.");
 					return NoData(msg, ReadStreamResult.Error, lastIndexPosition, error: exc.Message);
 				}
 			}
@@ -350,7 +350,7 @@ namespace EventStore.Core.Services.Storage {
 						(ReadStreamResult)result.Result, resolvedPairs, result.Metadata, access.Public, string.Empty,
 						result.NextEventNumber, result.LastEventNumber, result.IsEndOfStream, lastIndexedPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadStreamEventsBackward request.");
+					Log.Error(exc, "Error during processing ReadStreamEventsBackward request.");
 					return NoData(msg, ReadStreamResult.Error, lastIndexedPosition, error: exc.Message);
 				}
 			}
@@ -389,7 +389,7 @@ namespace EventStore.Core.Services.Storage {
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsForward request.");
+					Log.Error(exc, "Error during processing ReadAllEventsForward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 				}
 			}
@@ -429,7 +429,7 @@ namespace EventStore.Core.Services.Storage {
 						msg.CorrelationId, ReadAllResult.Success, null, resolved, metadata, access.Public, msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsBackward request.");
+					Log.Error(exc, "Error during processing ReadAllEventsBackward request.");
 					return NoData(msg, ReadAllResult.Error, pos, lastIndexedPosition, exc.Message);
 				}
 			}
@@ -474,7 +474,7 @@ namespace EventStore.Core.Services.Storage {
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
 						exc.Message);
 				}
@@ -520,7 +520,7 @@ namespace EventStore.Core.Services.Storage {
 						msg.MaxCount,
 						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error during processing ReadAllEventsForwardFiltered request.");
+					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
 						exc.Message);
 				}
@@ -542,7 +542,7 @@ namespace EventStore.Core.Services.Storage {
 				return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, streamId, msg.TransactionId,
 					msg.AccessType, result);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error during processing CheckStreamAccess({stream}, {transactionId}) request.",
+				Log.Error(exc, "Error during processing CheckStreamAccess({stream}, {transactionId}) request.",
 					msg.EventStreamId, msg.TransactionId);
 				return new StorageMessage.CheckStreamAccessCompleted(msg.CorrelationId, streamId, msg.TransactionId,
 					msg.AccessType, new StreamAccess(false));
@@ -654,7 +654,7 @@ namespace EventStore.Core.Services.Storage {
 
 					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}",
+					Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
 						eventRecord.ToString());
 				}
 
@@ -690,11 +690,11 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			if (_expiredBatchCount == 0) {
 				_batchLoggingEnabled = false;
-				Log.Warn("StorageReaderWorker #{0}: Batch logging disabled, read load is back to normal", _queueId);
+				Log.Warning("StorageReaderWorker #{0}: Batch logging disabled, read load is back to normal", _queueId);
 				return;
 			}
 
-			Log.Warn("StorageReaderWorker #{0}: {1} read operations have expired", _queueId, _expiredBatchCount);
+			Log.Warning("StorageReaderWorker #{0}: {1} read operations have expired", _queueId, _expiredBatchCount);
 			_expiredBatchCount = 0;
 			_publisher.Publish(
 				TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2),
@@ -716,7 +716,7 @@ namespace EventStore.Core.Services.Storage {
 					if (expire - _lastExpireTime.Value <= TimeSpan.FromSeconds(1)) {
 						//heuristic to match approximately >= 50 expired messages / second
 						_batchLoggingEnabled = true;
-						Log.Warn(
+						Log.Warning(
 							"StorageReaderWorker #{0}: Batch logging enabled, high rate of expired read messages detected",
 							_queueId);
 						_publisher.Publish(

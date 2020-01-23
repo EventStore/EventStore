@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using System.Linq;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands {
 	public class TcpSanitazationCheckProcessor : ICmdProcessor {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpSanitazationCheckProcessor>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpSanitazationCheckProcessor>();
 
 		public string Keyword {
 			get { return "CHKTCP"; }
@@ -79,14 +79,14 @@ namespace EventStore.TestClient.Commands {
 				step++;
 			}
 
-			Log.Info(
+			Log.Information(
 				"Sent {packages} packages. {commandsToCheck} invalid dtos, {barFormattedPackages} bar formatted packages. Got {badRequests} BadRequests. Success",
 				packages.Count(),
 				commandsToCheck.Length,
 				packages.Count() - commandsToCheck.Length,
 				packages.Count());
 
-			Log.Info("Now sending raw bytes...");
+			Log.Information("Now sending raw bytes...");
 			try {
 				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MaxValue));
 				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MinValue));

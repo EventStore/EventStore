@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Collections.Concurrent;
-using EventStore.Common.Log;
 using ProtoBuf;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public static class ProtobufExtensions {
@@ -16,7 +16,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		private static readonly ILogger Log = LogManager.GetLogger("ProtobufExtensions");
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "ProtobufExtensions");
 
 		static MemoryStream AcquireStream() {
 			for (var i = 0; i < 1000; i++) {
@@ -50,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					return res;
 				}
 			} catch (Exception e) {
-				Log.InfoException(e, "Deserialization to {type} failed", typeof(T).FullName);
+				Log.Information(e, "Deserialization to {type} failed", typeof(T).FullName);
 				return default(T);
 			}
 		}

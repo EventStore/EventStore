@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace EventStore.Core.Tests.TransactionLog.Validation {
 	[TestFixture]
@@ -397,7 +403,12 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		[Test]
 		public void when_prelast_chunk_corrupted_throw_hash_validation_exception() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 15000);
-			using (var db = new TFChunkDb(config)) {
+			var sink = new TestLogEventSink();
+			using (var log = new LoggerConfiguration()
+				.WriteTo.Sink(sink)
+				.MinimumLevel.Verbose()
+				.CreateLogger())
+			using (var db = new TFChunkDb(config, log)) {
 				byte[] contents = new byte[config.ChunkSize];
 				for (var i = 0; i < config.ChunkSize; i++) {
 					contents[i] = 0;
@@ -425,21 +436,37 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 				/**
 				Exception being thrown in another thread, using the output to check for the exception
 				 */
-				var output = "";
-				using (StringWriter sw = new StringWriter()) {
-					Console.SetOut(sw);
-					db.Open(verifyHash: true);
-					//arbitrary wait
-					Thread.Sleep(2000);
-					output = sw.ToString();
-				}
+				db.Open(verifyHash: true);
+				//arbitrary wait
+				Thread.Sleep(2000);
+			}
 
-				var standardOutput = new StreamWriter(Console.OpenStandardOutput());
-				standardOutput.AutoFlush = true;
-				Console.SetOut(standardOutput);
-				Console.WriteLine(output);
-				Assert.IsTrue(output.Contains("EXCEPTION OCCURRED"));
-				Assert.IsTrue(output.Contains("EventStore.Core.Exceptions.HashValidationException"));
+			var thrownException = sink.LogEventReceived.WithTimeout().Result;
+
+			Assert.IsInstanceOf<HashValidationException>(thrownException);
+
+			var output = sink.Output;
+
+			Assert.AreEqual(@"Verification of chunk ""#0-0 (chunk-000000.000000)"" failed, terminating server...",
+				output);
+		}
+
+		private class TestLogEventSink : ILogEventSink {
+			private readonly StringBuilder _output;
+
+			private readonly TaskCompletionSource<Exception> _logEventReceived;
+			public Task<Exception> LogEventReceived => _logEventReceived.Task;
+
+			public string Output => _output.ToString();
+
+			public TestLogEventSink() {
+				_output = new StringBuilder();
+				_logEventReceived = new TaskCompletionSource<Exception>();
+			}
+
+			public void Emit(LogEvent logEvent) {
+				_output.Append(logEvent.RenderMessage());
+				_logEventReceived.TrySetResult(logEvent.Exception);
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -15,6 +14,7 @@ using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Common;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionManager
@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public const int ProjectionCreationRetryCount = 1;
 		public const string ServiceName = "ProjectionManager";
 
-		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
+		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionManager>();
 
 		private readonly IPublisher _inputQueue;
 		private readonly IPublisher _publisher;
@@ -292,7 +292,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						message,
 						replace: projection.EnableRunAs)) {
 					
-					_logger.Info("PROJECTIONS: Projections batch rejected due to invalid RunAs");
+					_logger.Information("PROJECTIONS: Projections batch rejected due to invalid RunAs");
 					message.Envelope.ReplyWith(
 						new ProjectionManagementMessage.OperationFailed("Invalid RunAs"));
 					return false;
@@ -367,7 +367,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.UpdateQuery message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info(
+			_logger.Information(
 				"Updating '{projection}' projection source to '{source}' (Requested type is: '{type}')",
 				message.Name,
 				message.Query,
@@ -385,7 +385,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.Disable message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info("Disabling '{projection}' projection", message.Name);
+			_logger.Information("Disabling '{projection}' projection", message.Name);
 
 			var projection = GetProjection(message.Name);
 			if (projection == null)
@@ -400,7 +400,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.Enable message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info("Enabling '{projection}' projection", message.Name);
+			_logger.Information("Enabling '{projection}' projection", message.Name);
 
 			var projection = GetProjection(message.Name);
 			if (projection == null) {
@@ -416,7 +416,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.Abort message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info("Aborting '{projection}' projection", message.Name);
+			_logger.Information("Aborting '{projection}' projection", message.Name);
 
 			var projection = GetProjection(message.Name);
 			if (projection == null)
@@ -431,7 +431,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.SetRunAs message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info("Setting RunAs1 account for '{projection}' projection", message.Name);
+			_logger.Information("Setting RunAs1 account for '{projection}' projection", message.Name);
 
 			var projection = GetProjection(message.Name);
 			if (projection == null) {
@@ -450,7 +450,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void Handle(ProjectionManagementMessage.Command.Reset message) {
 			if (!_projectionsStarted)
 				return;
-			_logger.Info("Resetting '{projection}' projection", message.Name);
+			_logger.Information("Resetting '{projection}' projection", message.Name);
 
 			var projection = GetProjection(message.Name);
 			if (projection == null) {
@@ -704,7 +704,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						var projectionName = Helper.UTF8NoBom.GetString(evnt.Event.Data);
 						if (string.IsNullOrEmpty(projectionName)
 						    || _projections.ContainsKey(projectionName)) {
-							_logger.Warn(
+							_logger.Warning(
 								"PROJECTIONS: The following projection: {projection} has a duplicate registration event.",
 								projectionName);
 							continue;
@@ -713,7 +713,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						if (evnt.Event.EventType == ProjectionEventTypes.ProjectionCreated) {
 							if (registeredProjections.ContainsKey(projectionName)) {
 								registeredProjections[projectionName] = projectionId;
-								_logger.Warn(
+								_logger.Warning(
 									"PROJECTIONS: The following projection: {projection} has a duplicate created event. Using projection Id {projectionId}",
 									projectionName, projectionId);
 								continue;
@@ -762,10 +762,9 @@ namespace EventStore.Projections.Core.Services.Management {
 				.Select(x => x.Key).ToList();
 
 			_logger.Debug(
-				"PROJECTIONS: Found the following projections in {stream}: " +
-				(LogManager.StructuredLog ? "{@projections}" : "{projections}"),
+				"PROJECTIONS: Found the following projections in {stream}: {projections}",
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
-				LogManager.StructuredLog ? (object)projections : (object)String.Join(", ", projections));
+				projections);
 
 			foreach(var projection in projections)
 				_projectionsRegistrationState.Add(projection);
@@ -914,7 +913,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						Helper.UTF8NoBom.GetBytes(projection.Name),
 						Empty.ByteArray));
 				} else {
-					_logger.Warn("PROJECTIONS: Should not be processing transient projections here.");
+					_logger.Warning("PROJECTIONS: Should not be processing transient projections here.");
 				}
 			}
 
@@ -951,21 +950,18 @@ namespace EventStore.Projections.Core.Services.Management {
 				return;
 			}
 
-			_logger.Info(
-				"PROJECTIONS: Created event for projections has not been written to {stream}: " +
-				(LogManager.StructuredLog ? "{@projections}" : "{projections}") +
-				". Error: {error}",
+			_logger.Information(
+				"PROJECTIONS: Created event for projections has not been written to {stream}: {projections}. Error: {error}",
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
-				LogManager.StructuredLog ? (object)newProjections.Keys : (object)string.Join(", ", newProjections.Keys),
+				newProjections.Keys,
 				Enum.GetName(typeof(OperationResult), completed.Result));
 			
 			if (completed.Result == OperationResult.ForwardTimeout ||
 				completed.Result == OperationResult.PrepareTimeout ||
 				completed.Result == OperationResult.CommitTimeout) {
 				if (retryCount > 0) {
-					_logger.Info("PROJECTIONS: Retrying write projection creations for " +
-								 (LogManager.StructuredLog ? "{@projections}" : "{projections}"),
-								 LogManager.StructuredLog ? (object)newProjections.Keys : (object)string.Join(", ", newProjections.Keys));
+					_logger.Information("PROJECTIONS: Retrying write projection creations for {projections}",
+						newProjections.Keys);
 					_writeDispatcher.Publish(
 						write,
 						m => WriteNewProjectionsCompleted
@@ -991,10 +987,9 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 
 			_logger.Debug(
-				"PROJECTIONS: Found the following new projections in {stream}: " +
-				(LogManager.StructuredLog ? "{@projections}" : "{projections}"),
+				"PROJECTIONS: Found the following new projections in {stream}: {projections}",
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
-				LogManager.StructuredLog ? (object)newProjections.Keys : (object)String.Join(", ", newProjections.Keys));
+				newProjections.Keys);
 
 			try {
 				foreach (var projection in newProjections.Values) {
@@ -1073,7 +1068,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				return;
 			}
 
-			_logger.Info(
+			_logger.Information(
 				"PROJECTIONS: Projection '{projection}' deletion has not been written to {stream}. Error: {e}",
 				message.Name,
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
@@ -1082,7 +1077,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (writeCompleted.Result == OperationResult.CommitTimeout || writeCompleted.Result == OperationResult.ForwardTimeout
 																	   || writeCompleted.Result == OperationResult.PrepareTimeout) {
 				if (retryCount > 0) {
-					_logger.Info("PROJECTIONS: Retrying write projection deletion for {projection}", message.Name);
+					_logger.Information("PROJECTIONS: Retrying write projection deletion for {projection}", message.Name);
 					BeginWriteProjectionDeleted(writeDelete, message, onCompleted, retryCount - 1);
 					return;
 				}
@@ -1091,7 +1086,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (writeCompleted.Result == OperationResult.WrongExpectedVersion
 				&& (writeCompleted.CurrentVersion < 0
 				|| writeCompleted.CurrentVersion > _projectionsRegistrationExpectedVersion)) {
-				_logger.Info("PROJECTIONS: Got wrong expected version writing projection deletion for {projection}." +
+				_logger.Information("PROJECTIONS: Got wrong expected version writing projection deletion for {projection}." +
 					"Reading {registrationStream} before retrying", message.Name, ProjectionNamesBuilder.ProjectionsRegistrationStream);
 				ReadProjectionsList(
 					new Dictionary<string, long>(),

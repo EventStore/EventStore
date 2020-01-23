@@ -1,9 +1,9 @@
-using EventStore.Common.Log;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ProcessingStrategySelector {
-		private readonly ILogger _logger = LogManager.GetLoggerFor<ProcessingStrategySelector>();
+		private readonly ILogger _logger = Serilog.Log.ForContext<ProcessingStrategySelector>();
 		private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 
 		public ProcessingStrategySelector(

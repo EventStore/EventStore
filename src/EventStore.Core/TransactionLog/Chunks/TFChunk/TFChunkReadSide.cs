@@ -153,7 +153,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 
 				if (bf == null) {
-					Log.Warn("Could not create bloom filter for chunk: {chunk}, map count: {mapCount}", Chunk.FileName,
+					Log.Warning("Could not create bloom filter for chunk: {chunk}, map count: {mapCount}", Chunk.FileName,
 						mapCount);
 					return null;
 				}

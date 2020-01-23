@@ -3,8 +3,8 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpClientConnector {
@@ -14,7 +14,7 @@ namespace EventStore.Transport.Tcp {
 		private readonly ConcurrentDictionary<Guid, PendingConnection> _pendingConections;
 		private readonly Timer _timer;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpClientConnector>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpClientConnector>();
 
 		public TcpClientConnector() {
 			_connectSocketArgsPool = new SocketArgsPool("TcpClientConnector._connectSocketArgsPool",
@@ -150,7 +150,7 @@ namespace EventStore.Transport.Tcp {
 		private bool RemoveFromConnecting(PendingConnection pendingConnection) {
 			PendingConnection conn;
 			if (pendingConnection.Connection == null) {
-				Log.Warn("Network Card disconnected");
+				Log.Warning("Network Card disconnected");
 				return false;
 			}
 

@@ -4,16 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Index {
 	public class IndexMap {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<IndexMap>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<IndexMap>();
 
 		public const int IndexMapVersion = 2;
 

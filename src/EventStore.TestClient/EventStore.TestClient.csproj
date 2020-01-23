@@ -1,24 +1,27 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
-		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<OutputType>Exe</OutputType>
-		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-		<Platforms>x64</Platforms>
-	</PropertyGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
-		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
-		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
-		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<None Include="..\EventStore.Common\Log\log.config">
-			<Link>log.config</Link>
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>
+		<PropertyGroup>
+				<TargetFramework>netcoreapp3.1</TargetFramework>
+				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+				<OutputType>Exe</OutputType>
+				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+				<Platforms>x64</Platforms>
+		</PropertyGroup>
+		<ItemGroup>
+				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+		</ItemGroup>
+		<ItemGroup>
+				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj"/>
+				<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj"/>
+				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
+				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
+				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj"/>
+				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj"/>
+		</ItemGroup>
+		<ItemGroup>
+				<None Include="..\EventStore.Common\Log\logconfig.json">
+						<Link>logconfig.json</Link>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+		</ItemGroup>
 </Project>

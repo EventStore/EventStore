@@ -15,6 +15,7 @@ using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Settings;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EmittedStream : IDisposable,
@@ -228,7 +229,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			if (_logger != null) {
-				_logger.Info("Failed to write events to stream {stream}. Error: {e}",
+				_logger.Information("Failed to write events to stream {stream}. Error: {e}",
 					_streamId,
 					Enum.GetName(typeof(OperationResult), message.Result));
 			}
@@ -448,7 +449,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int attempt = MaxRetryCount - retryCount + 1;
 			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
 			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
-				_logger.Warn("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+				_logger.Warning("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
 					attempt,
 					_metadataStreamId,
 					delayInSeconds);
@@ -479,7 +480,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			if (_logger != null) {
-				_logger.Info("Failed to write events to stream {stream}. Error: {e}",
+				_logger.Information("Failed to write events to stream {stream}. Error: {e}",
 					_metadataStreamId,
 					Enum.GetName(typeof(OperationResult), message.Result));
 			}
@@ -588,10 +589,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			//TODO: if the following statement is about event order stream - let write null event into this stream
 			//NOTE: the following condition is only meant to detect concurrency violations when
-			// another instance of the projection (running in the another node etc) has been writing to 
+			// another instance of the projection (running in the another node etc) has been writing to
 			// the same stream.  However, the expected tag sometimes can be greater than last actually written tag
-			// This happens when a projection is restarted from a checkpoint and the checkpoint has been made at 
-			// position not updating the projection state 
+			// This happens when a projection is restarted from a checkpoint and the checkpoint has been made at
+			// position not updating the projection state
 			return expectedTag != _lastCommittedOrSubmittedEventPosition;
 		}
 
@@ -605,7 +606,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int attempt = MaxRetryCount - retryCount + 1;
 			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
 			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
-				_logger.Warn("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+				_logger.Warning("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
 					attempt,
 					_streamId,
 					delayInSeconds);

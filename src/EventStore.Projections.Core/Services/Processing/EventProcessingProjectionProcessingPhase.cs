@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventProcessingProjectionProcessingPhase : EventSubscriptionBasedProjectionProcessingPhase,

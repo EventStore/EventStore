@@ -1,10 +1,10 @@
 using System;
 using System.IO;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Http {
 	public class IOStreams {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<IOStreams>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<IOStreams>();
 
 		public static void SafelyDispose(params Stream[] streams) {
 			if (streams == null || streams.Length == 0)
@@ -17,7 +17,7 @@ namespace EventStore.Transport.Http {
 				} catch (Exception e) {
 					//Exceptions may be thrown when client shutdowned and we were unable to write all the data,
 					//Nothing we can do, ignore (another option - globally ignore write errors)
-					Log.Info("Error while closing stream : {e}", e.Message);
+					Log.Information("Error while closing stream : {e}", e.Message);
 				}
 			}
 		}

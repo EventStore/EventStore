@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -11,6 +10,7 @@ using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using HttpMethod = EventStore.Transport.Http.HttpMethod;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class ElectController : CommunicationController,
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		ISender<ElectionMessage.LeaderIsResigning>,
 		ISender<ElectionMessage.LeaderIsResigningOk>
 		{
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ElectController>();
 		private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 		private TimeSpan _operationTimeout;
 		private readonly HttpAsyncClient _client;

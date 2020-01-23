@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -8,10 +7,11 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
 	public class EpochManager : IEpochManager {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<EpochManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager>();
 		private readonly IPublisher _bus;
 
 		public readonly int CachedEpochCount;

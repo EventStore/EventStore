@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
@@ -9,13 +8,11 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
-	public class subscribe_to_all_filtered_live : IAsyncLifetime, IDisposable {
+	public class subscribe_to_all_filtered_live : IAsyncLifetime {
 		private readonly Fixture _fixture;
-		private readonly IDisposable _loggingContext;
-
 		public subscribe_to_all_filtered_live(ITestOutputHelper outputHelper) {
 			_fixture = new Fixture();
-			_loggingContext = LoggingHelper.Capture(outputHelper);
+			_fixture.CaptureLogs(outputHelper);
 		}
 
 		public static IEnumerable<object[]> FilterCases() => Filters.All.Select(filter => new object[] {filter});
@@ -89,8 +86,6 @@ namespace EventStore.Client.Streams {
 		public Task InitializeAsync() => _fixture.InitializeAsync();
 
 		public Task DisposeAsync() => _fixture.DisposeAsync();
-
-		public void Dispose() => _loggingContext.Dispose();
 
 		public class Fixture : EventStoreGrpcFixture {
 			public const string FilteredOutStream = nameof(FilteredOutStream);

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -13,16 +15,37 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Display;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EventStore.Client {
 	public abstract class EventStoreGrpcFixture : IAsyncLifetime {
 		public const string TestEventType = "-";
+
+		private static readonly Subject<LogEvent> s_logEventSubject = new Subject<LogEvent>();
+
 		private readonly TFChunkDb _db;
+		private readonly IList<IDisposable> _disposables;
 
 		protected TestServer TestServer { get; }
 		public ClusterVNode Node { get; }
 		public EventStoreClient Client { get; }
+
+		static EventStoreGrpcFixture() {
+			if (!Enum.TryParse<LogEventLevel>(Environment.GetEnvironmentVariable("LOGLEVEL"), out var logLevel)) {
+				logLevel = LogEventLevel.Fatal;
+			}
+
+			Log.Logger = new LoggerConfiguration()
+				.WriteTo
+				.Observers(observable => observable.Subscribe(s_logEventSubject.OnNext))
+				.Enrich.FromLogContext()
+				.MinimumLevel.Is(logLevel)
+				.CreateLogger();
+		}
 
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
@@ -37,10 +60,8 @@ namespace EventStore.Client {
 
 			Node = vNodeBuilder.Build();
 			_db = vNodeBuilder.GetDb();
-
-			TestServer = new TestServer(
-				webHostBuilder
-					.UseStartup(new TestClusterVNodeStartup(Node)));
+			_disposables = new List<IDisposable>();
+			TestServer = new TestServer(webHostBuilder.UseSerilog().UseStartup(new TestClusterVNodeStartup(Node)));
 
 			var settings = clientSettings ?? new EventStoreClientSettings {
 				CreateHttpMessageHandler = () => new ResponseVersionHandler {
@@ -50,7 +71,6 @@ namespace EventStore.Client {
 
 			Client = new EventStoreClient(settings);
 		}
-
 
 		protected abstract Task Given();
 		protected abstract Task When();
@@ -74,12 +94,49 @@ namespace EventStore.Client {
 			_db.Dispose();
 			TestServer.Dispose();
 			Client?.Dispose();
+			foreach (var disposable in _disposables) {
+				disposable.Dispose();
+			}
 		}
 
 		public string GetStreamName([CallerMemberName] string testMethod = default) {
 			var type = GetType();
 
 			return $"{type.DeclaringType.Name}_{testMethod ?? "unknown"}";
+		}
+
+		public void CaptureLogs(ITestOutputHelper testOutputHelper) {
+			const string captureCorrelationId = nameof(captureCorrelationId);
+
+			MessageTemplateTextFormatter formatter = new MessageTemplateTextFormatter(
+				"{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message}");
+
+			MessageTemplateTextFormatter formatterWithException =
+				new MessageTemplateTextFormatter(
+					"{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}");
+
+			var captureId = Guid.NewGuid();
+
+			var callContextData = new AsyncLocal<Tuple<string, Guid>> {
+				Value = Tuple.Create(captureCorrelationId, captureId)
+			};
+
+			bool Filter(LogEvent logEvent) {
+				return callContextData.Value.Item2.Equals(captureId);
+			}
+
+			var subscription = s_logEventSubject.Subscribe(logEvent => {
+				using var writer = new StringWriter();
+				if (logEvent.Exception != null) {
+					formatterWithException.Format(logEvent, writer);
+				} else {
+					formatter.Format(logEvent, writer);
+				}
+
+				testOutputHelper.WriteLine(writer.ToString());
+			});
+
+			_disposables.Add(subscription);
 		}
 
 

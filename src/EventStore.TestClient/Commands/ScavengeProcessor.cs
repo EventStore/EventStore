@@ -14,7 +14,7 @@ namespace EventStore.TestClient.Commands {
 
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null);
-			context.Log.Info("Sending SCAVENGE request...");
+			context.Log.Information("Sending SCAVENGE request...");
 
 			var connection = context.Client.CreateTcpConnection(
 				context,

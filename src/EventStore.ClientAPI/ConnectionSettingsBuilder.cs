@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Configures the connection to output log messages to the given <see cref="ILogger" />. You should implement this interface using another library such as NLog or log4net.
+		/// Configures the connection to output log messages to the given <see cref="ILogger" />. You should implement this interface using another library such as Serilog.
 		/// </summary>
 		/// <param name="logger">The <see cref="ILogger"/> to use.</param>
 		/// <returns></returns>

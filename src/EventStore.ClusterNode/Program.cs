@@ -5,7 +5,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -20,8 +19,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Rags;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Logging;
-using NLog.Web;
+using Serilog;
 
 namespace EventStore.ClusterNode {
 	public class Program : ProgramBase<ClusterNodeOptions> {
@@ -70,13 +68,10 @@ namespace EventStore.ClusterNode {
 			});
 		}
 
-		protected override string GetLogsDirectory(ClusterNodeOptions options) {
-			return options.Log;
-		}
+		protected override string GetLogsDirectory(ClusterNodeOptions options) => options.Log;
 
-		protected override string GetComponentName(ClusterNodeOptions options) {
-			return string.Format("{0}-{1}-cluster-node", options.ExtIp, options.ExtHttpPort);
-		}
+		protected override string GetComponentName(ClusterNodeOptions options) =>
+			$"{options.ExtIp}-{options.ExtHttpPort}-cluster-node";
 
 		protected override void PreInit(ClusterNodeOptions options) {
 			base.PreInit(options);
@@ -101,7 +96,7 @@ namespace EventStore.ClusterNode {
 			var dbPath = opts.Db;
 
 			if (opts.Dev) {
-				Log.Warn(
+				Log.Warning(
 					"\n========================================================================================================\n" +
 					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
 					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
@@ -127,9 +122,10 @@ namespace EventStore.ClusterNode {
 
 			if (!opts.DiscoverViaDns && opts.GossipSeed.Length == 0) {
 				if (opts.ClusterSize == 1) {
-					Log.Info("DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
-					         + "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
-					         + "using the `GossipSeed` option.");
+					Log.Information(
+						"DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
+						+ "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
+						+ "using the `GossipSeed` option.");
 				}
 			}
 
@@ -148,10 +144,8 @@ namespace EventStore.ClusterNode {
 				})
 				.UseStartup(_node.Startup)
 				.ConfigureLogging(logging => {
-					logging.ClearProviders();
-					logging.SetMinimumLevel(LogLevel.Warning);
+					logging.AddSerilog();
 				})
-				.UseNLog()
 				.Build();
 		}
 
@@ -189,7 +183,7 @@ namespace EventStore.ClusterNode {
 
 			var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
 			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
-			Log.Info("Quorum size set to {quorum}", prepareCount);
+			Log.Information("Quorum size set to {quorum}", prepareCount);
 			if (options.DisableInsecureTCP) {
 				if (!options.UseInternalSsl) {
 					throw new Exception(
@@ -346,7 +340,7 @@ namespace EventStore.ClusterNode {
 				builder.WithStructuredLogging(options.StructuredLog);
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
-			if(options.UnsafeAllowSurplusNodes)
+			if (options.UnsafeAllowSurplusNodes)
 				builder.WithUnsafeAllowSurplusNodes();
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
@@ -373,7 +367,7 @@ namespace EventStore.ClusterNode {
 			builder.WithAuthenticationProvider(authenticationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 
-			foreach(var subsystemFactory in subsystemFactories){
+			foreach (var subsystemFactory in subsystemFactories) {
 				var subsystem = subsystemFactory.Create(options.Config);
 				builder.AddCustomSubsystem(subsystem);
 			}
@@ -390,11 +384,11 @@ namespace EventStore.ClusterNode {
 			foreach (var potentialPlugin in allPlugins) {
 				try {
 					var plugin = potentialPlugin.Value;
-					Log.Info("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name,
+					Log.Information("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name,
 						plugin.Version);
 					strategyFactories.Add(plugin.GetConsumerStrategyFactory());
 				} catch (CompositionException ex) {
-					Log.ErrorException(ex, "Error loading consumer strategy plugin.");
+					Log.Error(ex, "Error loading consumer strategy plugin.");
 				}
 			}
 
@@ -413,12 +407,13 @@ namespace EventStore.ClusterNode {
 				try {
 					var plugin = potentialPlugin.Value;
 					var commandLine = plugin.CommandLineName.ToLowerInvariant();
-					Log.Info("Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
+					Log.Information(
+						"Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
 						plugin.Name, plugin.Version, commandLine);
 					authenticationTypeToPlugin.Add(commandLine,
 						() => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
 				} catch (CompositionException ex) {
-					Log.ErrorException(ex, "Error loading authentication plugin.");
+					Log.Error(ex, "Error loading authentication plugin.");
 				}
 			}
 
@@ -443,10 +438,10 @@ namespace EventStore.ClusterNode {
 			foreach (var potentialPlugin in allPlugins) {
 				try {
 					var plugin = potentialPlugin.Value;
-					Log.Info("Loaded subsystem plugin: {plugin} version {version}", plugin.Name, plugin.Version);
+					Log.Information("Loaded subsystem plugin: {plugin} version {version}", plugin.Name, plugin.Version);
 					strategyFactories.Add(plugin.GetSubsystemFactory());
 				} catch (CompositionException ex) {
-					Log.ErrorException(ex, "Error loading subsystem plugin.");
+					Log.Error(ex, "Error loading subsystem plugin.");
 				}
 			}
 
@@ -459,18 +454,18 @@ namespace EventStore.ClusterNode {
 			catalog.Catalogs.Add(new AssemblyCatalog(typeof(Program).Assembly));
 
 			if (Directory.Exists(Locations.PluginsDirectory)) {
-				Log.Info("Plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+				Log.Information("Plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
 
-				Log.Info("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
+				Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
 				catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
 
-				foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*", SearchOption.TopDirectoryOnly))
-				{
-					Log.Info("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
+				foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*",
+					SearchOption.TopDirectoryOnly)) {
+					Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
 					catalog.Catalogs.Add(new DirectoryCatalog(dirPath));
 				}
 			} else {
-				Log.Info("Cannot find plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+				Log.Information("Cannot find plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
 			}
 
 			return new CompositionContainer(catalog);
@@ -489,10 +484,6 @@ namespace EventStore.ClusterNode {
 
 			if (_dbLock != null && _dbLock.IsAcquired)
 				_dbLock.Release();
-		}
-
-		protected override bool GetIsStructuredLog(ClusterNodeOptions options) {
-			return options.StructuredLog;
 		}
 	}
 }

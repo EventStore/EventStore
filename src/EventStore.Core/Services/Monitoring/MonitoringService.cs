@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,6 +13,7 @@ using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring {
 	[Flags]
@@ -31,8 +31,9 @@ namespace EventStore.Core.Services.Monitoring {
 		IHandle<ClientMessage.WriteEventsCompleted>,
 		IHandle<MonitoringMessage.GetFreshStats>,
 		IHandle<MonitoringMessage.GetFreshTcpConnectionStats> {
-		private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
-		private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
+		private static readonly ILogger RegularLog =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "REGULAR-STATS-LOGGER");
+		private static readonly ILogger Log = Serilog.Log.ForContext<MonitoringService>();
 
 		private static readonly string StreamMetadata =
 			string.Format("{{\"$maxAge\":{0}}}", (int)TimeSpan.FromDays(10).TotalSeconds);
@@ -49,8 +50,6 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly long _statsCollectionPeriodMs;
 		private SystemStatsHelper _systemStats;
 
-		private string _lastWrittenCsvHeader;
-		private DateTime _lastCsvTimestamp = DateTime.UtcNow;
 		private DateTime _lastStatsRequestTime = DateTime.UtcNow;
 		private StatsContainer _memoizedStats;
 		private readonly Timer _timer;
@@ -118,7 +117,7 @@ namespace EventStore.Core.Services.Monitoring {
 					var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
 
 					if ((_statsStorage & StatsStorage.File) != 0)
-						SaveStatsToFile(LogManager.StructuredLog ? StatsContainer.Group(rawStats) : rawStats);
+						SaveStatsToFile(StatsContainer.Group(rawStats));
 
 					if ((_statsStorage & StatsStorage.Stream) != 0) {
 						if (_statsStreamCreated)
@@ -126,7 +125,7 @@ namespace EventStore.Core.Services.Monitoring {
 					}
 				}
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error on regular stats collection.");
+				Log.Error(ex, "Error on regular stats collection.");
 			}
 		}
 
@@ -137,7 +136,7 @@ namespace EventStore.Core.Services.Monitoring {
 				_statsCollectionBus.Publish(
 					new MonitoringMessage.InternalStatsRequest(new StatsCollectorEnvelope(statsContainer)));
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error while collecting stats");
+				Log.Error(ex, "Error while collecting stats");
 				statsContainer = null;
 			}
 
@@ -145,33 +144,8 @@ namespace EventStore.Core.Services.Monitoring {
 		}
 
 		private void SaveStatsToFile(Dictionary<string, object> rawStats) {
-			if (LogManager.StructuredLog) {
-				rawStats.Add("timestamp", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
-				RegularLog.Info("{@stats}", rawStats);
-			} else {
-				var writeHeader = false;
-
-				var header = StatsCsvEncoder.GetHeader(rawStats);
-				if (header != _lastWrittenCsvHeader) {
-					_lastWrittenCsvHeader = header;
-					writeHeader = true;
-				}
-
-				var line = StatsCsvEncoder.GetLine(rawStats);
-				var timestamp = GetTimestamp(line);
-				if(timestamp.HasValue){
-					if(timestamp.Value.Day != _lastCsvTimestamp.Day){
-						writeHeader = true;
-					}
-					_lastCsvTimestamp = timestamp.Value;
-				}
-
-				if(writeHeader){
-					RegularLog.Info(Environment.NewLine);
-					RegularLog.Info(header);
-				}
-				RegularLog.Info(line);
-			}
+			rawStats.Add("timestamp", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+			RegularLog.Information("{@stats}", rawStats);
 		}
 
         private DateTime? GetTimestamp(string line) {
@@ -246,7 +220,7 @@ namespace EventStore.Core.Services.Monitoring {
 				case OperationResult.Success:
 				case OperationResult.WrongExpectedVersion: // already created
 				{
-					Log.Trace("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
+					Log.Verbose("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
 					_statsStreamCreated = true;
 					break;
 				}
@@ -296,7 +270,7 @@ namespace EventStore.Core.Services.Monitoring {
 				message.Envelope.ReplyWith(
 					new MonitoringMessage.GetFreshStatsCompleted(success: selectedStats != null, stats: selectedStats));
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error on getting fresh stats");
+				Log.Error(ex, "Error on getting fresh stats");
 			}
 		}
 
@@ -353,7 +327,7 @@ namespace EventStore.Core.Services.Monitoring {
 					new MonitoringMessage.GetFreshTcpConnectionStatsCompleted(connStats)
 				);
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error on getting fresh tcp connection stats");
+				Log.Error(ex, "Error on getting fresh tcp connection stats");
 			}
 		}
 

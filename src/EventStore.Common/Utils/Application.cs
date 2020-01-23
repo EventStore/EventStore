@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Common.Utils {
 	public enum ExitCode {
@@ -17,7 +17,7 @@ namespace EventStore.Common.Utils {
 		public const string AlwaysKeepScavenged = "ALWAYS_KEEP_SCAVENGED";
 		public const string DisableMergeChunks = "DISABLE_MERGE_CHUNKS";
 
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
+		protected static readonly ILogger Log = Serilog.Log.ForContext<Application>();
 
 		private static Action<int> _exit = exitCode => {
 		};
@@ -55,7 +55,7 @@ namespace EventStore.Common.Utils {
 				if (exitCode != 0)
 					Log.Error("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
 				else
-					Log.Info("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
+					Log.Information("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
 			}
 			_exit?.Invoke(exitCode);
 		}

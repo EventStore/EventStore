@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,13 +7,12 @@ using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
 	[Trait("Category", "LongRunning")]
-	public class subscribe_to_stream : IClassFixture<subscribe_to_stream.Fixture>, IDisposable {
+	public class subscribe_to_stream : IClassFixture<subscribe_to_stream.Fixture> {
 		private readonly Fixture _fixture;
-		private readonly IDisposable _loggingContext;
 
 		public subscribe_to_stream(Fixture fixture, ITestOutputHelper outputHelper) {
 			_fixture = fixture;
-			_loggingContext = LoggingHelper.Capture(outputHelper);
+			_fixture.CaptureLogs(outputHelper);
 		}
 
 		[Fact]
@@ -241,7 +239,5 @@ namespace EventStore.Client.Streams {
 
 			protected override Task When() => Task.CompletedTask;
 		}
-
-		public void Dispose() => _loggingContext.Dispose();
 	}
 }

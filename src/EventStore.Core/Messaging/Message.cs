@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Messaging {
 	public abstract class Message {
@@ -17,7 +17,7 @@ namespace EventStore.Core.Messaging {
 	}
 
 	public static class MessageHierarchy {
-		private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(MessageHierarchy));
+		private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MessageHierarchy));
 
 		public static readonly Dictionary<Type, List<Type>> Descendants;
 		public static readonly int[][] ParentsByTypeId;
@@ -119,7 +119,7 @@ namespace EventStore.Core.Messaging {
 				DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
 			}
 
-			Log.Trace("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
+			Log.Verbose("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
 		}
 
 		static Type[] LoadAvailableTypes(Assembly assembly) {
@@ -127,10 +127,10 @@ namespace EventStore.Core.Messaging {
 				return assembly.GetTypes();
 			} catch (ReflectionTypeLoadException ex) {
 				if (ex.LoaderExceptions.Length > 0)
-					Log.Info("The exception(s) occured when scanning for message types: {e}",
+					Log.Information("The exception(s) occured when scanning for message types: {e}",
 						string.Join(",", ex.LoaderExceptions.Select(x => x.Message)));
 				else {
-					Log.InfoException(ex, "Exception while scanning for message types");
+					Log.Information(ex, "Exception while scanning for message types");
 				}
 
 				return ex.Types;

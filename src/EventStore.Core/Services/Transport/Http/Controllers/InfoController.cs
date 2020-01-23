@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Rags;
@@ -11,11 +10,12 @@ using EventStore.Transport.Http.EntityManagement;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,
 		IHandle<SystemMessage.StateChangeMessage> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<InfoController>();
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
 
 		private readonly IOptions _options;
@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				"OK",
 				entity.ResponseCodec.ContentType,
 				null,
-				e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
+				e => Log.Error(e, "Error while writing HTTP response (info)"));
 		}
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					"OK",
 					entity.ResponseCodec.ContentType,
 					null,
-					e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+					e => Log.Error(e, "error while writing HTTP response (options)"));
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}

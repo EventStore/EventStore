@@ -27,14 +27,14 @@ namespace EventStore.TestClient.Commands {
 					switch (pkg.Command) {
 						case TcpCommand.SubscriptionConfirmation: {
 							var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
-							context.Log.Info(
+							context.Log.Information(
 								"Subscription to <{stream}> WAS CONFIRMED! Subscribed at {lastIndexedPosition} ({lastEventNumber})",
 								streamByCorrId[pkg.CorrelationId], dto.LastIndexedPosition, dto.LastEventNumber);
 							break;
 						}
 						case TcpCommand.StreamEventAppeared: {
 							var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
-							context.Log.Info("NEW EVENT:\n\n"
+							context.Log.Information("NEW EVENT:\n\n"
 							                 + "\tEventStreamId: {stream}\n"
 							                 + "\tEventNumber:   {eventNumber}\n"
 							                 + "\tEventType:     {eventType}\n"
@@ -66,7 +66,7 @@ namespace EventStore.TestClient.Commands {
 				});
 
 			if (args.Length == 0) {
-				context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
+				context.Log.Information("SUBSCRIBING TO ALL STREAMS...");
 				var cmd = new TcpClientMessageDto.SubscribeToStream(string.Empty, resolveLinkTos: false);
 				Guid correlationId = Guid.NewGuid();
 				streamByCorrId[correlationId] = "$all";
@@ -74,7 +74,7 @@ namespace EventStore.TestClient.Commands {
 					.AsByteArray());
 			} else {
 				foreach (var stream in args) {
-					context.Log.Info("SUBSCRIBING TO STREAM <{stream}>...", stream);
+					context.Log.Information("SUBSCRIBING TO STREAM <{stream}>...", stream);
 					var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
 					var correlationId = Guid.NewGuid();
 					streamByCorrId[correlationId] = stream;

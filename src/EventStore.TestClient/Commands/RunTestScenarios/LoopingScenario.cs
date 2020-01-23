@@ -47,13 +47,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					(int)stopWatch.Elapsed.TotalMinutes,
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
-				Log.Info(
+				Log.Information(
 					"=================== Start run #{runIndex}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
 					runIndex,
 					(int)stopWatch.Elapsed.TotalMinutes,
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
-				Log.Info("##teamcity[message '{message}']", msg);
+				Log.Information("##teamcity[message '{message}']", msg);
 
 				SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
 				InnerRun(runIndex);
@@ -106,7 +106,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			var rd3 = Read(exceptDeleted, @from: EventsPerStream / 2,
 				count: Math.Min(readCnt, EventsPerStream - EventsPerStream / 2));
 
-			Log.Info("== READ from picked ALL ==");
+			Log.Information("== READ from picked ALL ==");
 
 			var allExistingStreamsSlice = (from run in Enumerable.Range(0, runIndex + 1)
 				from streamNum in Enumerable.Range(0, Streams)

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -9,6 +8,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventReaderCoreService :
@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		
 		private readonly IPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
-		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
+		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionCoreService>();
 		private bool _stopped = true;
 
 		private readonly Dictionary<Guid, IReaderSubscription> _subscriptions =
@@ -234,7 +234,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			if (!_faultOutOfOrderProjections && message.Reason.Contains("was expected in the stream")) {
 				// Log without fault the projection
-				_logger.Trace(message.Reason);
+				_logger.Verbose(message.Reason);
 				return;
 			}
 
@@ -271,22 +271,22 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_defaultEventReaderId = Guid.Empty;
 			
 			if (_subscriptions.Count > 0) {
-				_logger.Info("_subscriptions is not empty after all the projections have been killed");
+				_logger.Information("_subscriptions is not empty after all the projections have been killed");
 				_subscriptions.Clear();
 			}
 
 			if (_eventReaders.Count > 0) {
-				_logger.Info("_eventReaders is not empty after all the projections have been killed");
+				_logger.Information("_eventReaders is not empty after all the projections have been killed");
 				_eventReaders.Clear();
 			}
 
 			if (_subscriptionEventReaders.Count > 0) {
-				_logger.Info("_subscriptionEventReaders is not empty after all the projections have been killed");
+				_logger.Information("_subscriptionEventReaders is not empty after all the projections have been killed");
 				_subscriptionEventReaders.Clear();
 			}
 
 			if (_eventReaderSubscriptions.Count > 0) {
-				_logger.Info("_eventReaderSubscriptions is not empty after all the projections have been killed");
+				_logger.Information("_eventReaderSubscriptions is not empty after all the projections have been killed");
 				_eventReaderSubscriptions.Clear();
 			}
 

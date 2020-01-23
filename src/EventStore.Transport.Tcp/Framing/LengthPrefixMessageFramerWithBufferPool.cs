@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp.Framing {
 	public class LengthPrefixMessageFramerWithBufferPool {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<LengthPrefixMessageFramerWithBufferPool>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixMessageFramerWithBufferPool>();
 
 		private const int PrefixLength = sizeof(int);
 

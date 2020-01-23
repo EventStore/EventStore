@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexWriter {
@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	}
 
 	public class IndexWriter : IIndexWriter {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<IndexWriter>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<IndexWriter>();
 
 		public long CachedTransInfo {
 			get { return Interlocked.Read(ref _cachedTransInfo); }

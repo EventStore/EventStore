@@ -1,13 +1,13 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.UserManagement {
@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.UserManagement {
 		public UserManagementService(
 			IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
 			bool skipInitializeStandardUsersCheck) {
-			_log = LogManager.GetLoggerFor<UserManagementService>();
+			_log = Serilog.Log.ForContext<UserManagementService>();
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
@@ -488,10 +488,10 @@ namespace EventStore.Core.Services.UserManagement {
 								userData, "$UserCreated", ExpectedVersion.NoStream, completed => {
 									switch (completed.Result) {
 										case OperationResult.Success:
-											_log.Info("'admin' user account has been created.");
+											_log.Information("'admin' user account has been created.");
 											WriteUsersStreamEvent("admin", x => {
 												if (x.Result == OperationResult.Success) {
-													_log.Info("'admin' user added to $users.");
+													_log.Information("'admin' user added to $users.");
 												} else {
 													_log.Error("unable to add 'admin' to $users. {e}", x.Result);
 												}
@@ -535,10 +535,10 @@ namespace EventStore.Core.Services.UserManagement {
 								userData, "$UserCreated", ExpectedVersion.NoStream, completed => {
 									switch (completed.Result) {
 										case OperationResult.Success:
-											_log.Info("'ops' user account has been created.");
+											_log.Information("'ops' user account has been created.");
 											WriteUsersStreamEvent("ops", x => {
 												if (x.Result == OperationResult.Success) {
-													_log.Info("'ops' user added to $users.");
+													_log.Information("'ops' user added to $users.");
 												} else {
 													_log.Error("unable to add 'ops' to $users. {e}", x.Result);
 												}

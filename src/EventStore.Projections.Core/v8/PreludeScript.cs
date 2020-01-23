@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.v8 {
 	public class PreludeScript : IDisposable {
 		private const int CompileTimeoutMs = 5000;
 		private const int RetryLimit = 3;
 
-		private readonly ILogger Log = LogManager.GetLoggerFor<PreludeScript>();
+		private readonly ILogger Log = Serilog.Log.ForContext<PreludeScript>();
 		private readonly Func<string, Tuple<string, string>> _getModuleSourceAndFileName;
 		private readonly Action<string, object[]> _logger;
 		private readonly CompiledScript _script;
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.v8 {
 
 				return new CompiledScript(prelude);
 			} catch (DllNotFoundException ex) {
-				Log.Info("{ex}\n{e}\n{stackTrace}", ex.ToString(), ex.Message, ex.StackTrace);
+				Log.Information("{ex}\n{e}\n{stackTrace}", ex.ToString(), ex.Message, ex.StackTrace);
 				throw new ApplicationException(
 					"The projection subsystem failed to load a libjs1.so/js1.dll/... or one of its dependencies.  The original error message is: "
 					+ ex.Message, ex);
@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core.v8 {
 				_modules.Add(compiledModule);
 				return compiledModuleHandle;
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Cannot load module '{module}'", moduleName);
+				Log.Error(ex, "Cannot load module '{module}'", moduleName);
 				//TODO: this is not a good way to report missing module and other exceptions back to caller
 				return IntPtr.Zero;
 			}

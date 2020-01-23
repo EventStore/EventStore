@@ -43,7 +43,7 @@ namespace EventStore.TestClient.Commands {
 						var c = Interlocked.Increment(ref appearedCnt);
 						if (c % 1000 == 0) Console.Write('\'');
 						if (c % 100000 == 0) {
-							context.Log.Trace("Received total {events} events ({rate} per sec)...", c,
+							context.Log.Verbose("Received total {events} events ({rate} per sec)...", c,
 								100000.0 / sw.Elapsed.TotalSeconds);
 							sw.Restart();
 						}
@@ -52,7 +52,7 @@ namespace EventStore.TestClient.Commands {
 					}).Wait();
 			}
 
-			context.Log.Info("Subscribed to {subscriptionCount} streams...", subscriptionCount);
+			context.Log.Information("Subscribed to {subscriptionCount} streams...", subscriptionCount);
 			return true;
 		}
 	}

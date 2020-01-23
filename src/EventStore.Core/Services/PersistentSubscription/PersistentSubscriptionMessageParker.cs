@@ -1,17 +1,17 @@
 using System;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionMessageParker : IPersistentSubscriptionMessageParker {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly string _parkedStreamId;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionMessageParker>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionMessageParker>();
 
 		public PersistentSubscriptionMessageParker(string subscriptionId, IODispatcher ioDispatcher) {
 			_parkedStreamId = "$persistentsubscription-" + subscriptionId + "-parked";

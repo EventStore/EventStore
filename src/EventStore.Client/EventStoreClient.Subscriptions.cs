@@ -26,8 +26,8 @@ namespace EventStore.Client {
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 						Filter = GetFilterOptions(filterOptions)
 					}
-				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				filterOptions?.CheckpointReached, subscriptionDropped, cancellationToken);
+				}, operationOptions, userCredentials, cancellationToken), eventAppeared, subscriptionDropped, _log,
+				filterOptions?.CheckpointReached, cancellationToken);
 		}
 
 		/// <summary>
@@ -74,8 +74,8 @@ namespace EventStore.Client {
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 						Filter = GetFilterOptions(filterOptions)
 					}
-				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				filterOptions?.CheckpointReached, subscriptionDropped, cancellationToken);
+				}, operationOptions, userCredentials, cancellationToken), eventAppeared, subscriptionDropped, _log,
+				filterOptions?.CheckpointReached, cancellationToken);
 		}
 
 		/// <summary>
@@ -125,8 +125,8 @@ namespace EventStore.Client {
 						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 					}
-				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped: subscriptionDropped, cancellationToken: cancellationToken);
+				}, operationOptions, userCredentials, cancellationToken), eventAppeared, subscriptionDropped, _log,
+				cancellationToken: cancellationToken);
 		}
 
 		/// <summary>
@@ -181,8 +181,8 @@ namespace EventStore.Client {
 							Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 						}
 					},
-					operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped: subscriptionDropped, cancellationToken: cancellationToken);
+					operationOptions, userCredentials, cancellationToken), eventAppeared, subscriptionDropped, _log,
+				 cancellationToken: cancellationToken);
 		}
 
 		/// <summary>

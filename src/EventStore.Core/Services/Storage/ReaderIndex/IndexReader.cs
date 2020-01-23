@@ -3,11 +3,11 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexReader {
@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	}
 
 	public class IndexReader : IIndexReader {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<IndexReader>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<IndexReader>();
 
 		public long CachedStreamInfo {
 			get { return Interlocked.Read(ref _cachedStreamInfo); }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -15,13 +14,14 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageChaser : IMonitoredQueue,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageChaser>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageChaser>();
 
 		private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly int MinFlushDelay = 2 * TicksPerMs;
@@ -113,7 +113,7 @@ namespace EventStore.Core.Services.Storage {
 						Thread.Sleep(1);
 				}
 			} catch (Exception exc) {
-				Log.FatalException(exc, "Error in StorageChaser. Terminating...");
+				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedChaserState>(0);
 				_tcs.TrySetException(exc);

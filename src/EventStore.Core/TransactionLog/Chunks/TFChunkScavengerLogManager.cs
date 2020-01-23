@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -9,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkScavengerLogManager : ITFChunkScavengerLogManager {
@@ -16,7 +16,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TimeSpan _scavengeHistoryMaxAge;
 		private readonly IODispatcher _ioDispatcher;
 		private const int MaxRetryCount = 5;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageScavenger>();
 		private int _isInitialised;
 
 		public TFChunkScavengerLogManager(string nodeEndpoint, TimeSpan scavengeHistoryMaxAge,
@@ -114,7 +114,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 							object scavengeIdEntry;
 							if (!dictionary.TryGetValue("scavengeId", out scavengeIdEntry)) {
-								Log.Warn("An entry in the scavenge log has no scavengeId");
+								Log.Warning("An entry in the scavenge log has no scavengeId");
 								continue;
 							}
 
@@ -185,7 +185,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (incompletedScavenges.Count == 0) {
 				Log.Debug("No incomplete scavenges found on node {nodeEndPoint}.", _nodeEndpoint);
 			} else {
-				Log.Info(
+				Log.Information(
 					"Found {incomplete} incomplete scavenge{s} on node {nodeEndPoint}. Marking as failed:{newLine}{incompleteScavenges}",
 					incompletedScavenges.Count, incompletedScavenges.Count == 1 ? "" : "s", _nodeEndpoint,
 					Environment.NewLine, string.Join(Environment.NewLine, incompletedScavenges));

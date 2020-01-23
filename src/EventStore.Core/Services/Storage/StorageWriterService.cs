@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -20,6 +19,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 
 		protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
@@ -144,8 +144,8 @@ namespace EventStore.Core.Services.Storage {
 
 		private void CommonHandle(Message message) {
 			if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
-				Log.Trace("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
-				Log.Trace("{message}", message);
+				Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
+				Log.Verbose("{message}", message);
 				return;
 			}
 
@@ -162,7 +162,7 @@ namespace EventStore.Core.Services.Storage {
 				_writerBus.Handle(message);
 			} catch (Exception exc) {
 				BlockWriter = true;
-				Log.FatalException(exc, "Unexpected error in StorageWriterService. Terminating the process...");
+				Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
 				Application.Exit(ExitCode.Error,
 					string.Format("Unexpected error in StorageWriterService: {0}", exc.Message));
 			}
@@ -283,7 +283,7 @@ namespace EventStore.Core.Services.Storage {
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(streamId);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -373,7 +373,7 @@ namespace EventStore.Core.Services.Storage {
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -396,7 +396,7 @@ namespace EventStore.Core.Services.Storage {
 				_indexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos,
 					new TransactionInfo(-1, message.EventStreamId));
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -435,7 +435,7 @@ namespace EventStore.Core.Services.Storage {
 					_indexWriter.UpdateTransactionInfo(message.TransactionId, lastLogPosition, info);
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -459,7 +459,7 @@ namespace EventStore.Core.Services.Storage {
 					transactionInfo.EventStreamId);
 				WritePrepareWithRetry(record);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -508,7 +508,7 @@ namespace EventStore.Core.Services.Storage {
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(commitCheck.EventStreamId);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();

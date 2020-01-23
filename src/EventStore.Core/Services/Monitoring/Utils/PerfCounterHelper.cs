@@ -1,12 +1,12 @@
 using System;
 using System.Diagnostics;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring.Utils {
 	internal class PerfCounterHelper : IDisposable {
 		private const int InvalidCounterResult = -1;
 
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 
 		private readonly PerformanceCounter _totalCpuCounter;
 		private readonly PerformanceCounter _totalMemCounter; //doesn't work on mono
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 					? new PerformanceCounter(category, counter)
 					: new PerformanceCounter(category, counter, instance);
 			} catch (Exception ex) {
-				_log.Trace(
+				_log.Verbose(
 					"Could not create performance counter: category='{category}', counter='{counter}', instance='{instance}'. Error: {e}",
 					category, counter, instance ?? string.Empty, ex.Message);
 				return null;
