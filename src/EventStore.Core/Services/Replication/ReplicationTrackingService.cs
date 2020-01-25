@@ -19,7 +19,8 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ReplicationTrackingMessage.ReplicaWriteAck>,
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
-		IHandle<ReplicationTrackingMessage.MasterReplicatedTo> {
+		IHandle<ReplicationTrackingMessage.MasterReplicatedTo>,
+		IHandle<SystemMessage.VNodeConnectionLost> {
 		private readonly ILogger _log = LogManager.GetLoggerFor<ReplicationTrackingService>();
 		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
@@ -28,7 +29,6 @@ namespace EventStore.Core.Services.Replication {
 		private Thread _thread;
 		private bool _stop;
 		private VNodeState _state;
-		private long _idle = 1;
 		private long _publishedPosition;
 		private readonly ConcurrentDictionary<Guid, long> _replicaLogPositions = new ConcurrentDictionary<Guid, long>();
 
@@ -62,8 +62,7 @@ namespace EventStore.Core.Services.Replication {
 		public void Stop() {
 			_stop = true;
 		}
-		public bool IsIdle() { return Interlocked.Read(ref _idle) == 1; }
-
+		
 		public bool IsCurrent() {
 			Debug.Assert(_state == VNodeState.Master);
 			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
@@ -82,9 +81,7 @@ namespace EventStore.Core.Services.Replication {
 							Interlocked.Exchange(ref _publishedPosition, newPos);
 						}
 					}
-					_idle = 1;
 					_replicationChange.Wait(100);
-					_idle = 0;
 				}
 			} catch (Exception exc) {
 				_log.FatalException(exc, $"Error in {nameof(ReplicationTrackingService)}. Terminating...");
@@ -129,7 +126,7 @@ namespace EventStore.Core.Services.Replication {
 			if (positions.Length < minReplicas) { return; }
 
 			Array.Sort(positions);
-			var furthestReplicatedPosition = positions[minReplicas - 1];
+			var furthestReplicatedPosition = positions[^minReplicas];
 			if (furthestReplicatedPosition <= replicationCp) { return; }
 
 			var newReplicationPoint = Math.Min(writerCp, furthestReplicatedPosition);
@@ -158,6 +155,11 @@ namespace EventStore.Core.Services.Replication {
 				_replicaLogPositions.Clear();
 			}
 			_state = msg.State;
+		}
+
+		public void Handle(SystemMessage.VNodeConnectionLost msg) {
+			if (_state != VNodeState.Master || !msg.SubscriptionId.HasValue) return;
+			_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {

@@ -6,6 +6,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	public class when_3_node_cluster_receives_duplicate_master_write_notifications : with_clustered_replication_tracking_service {
 		private long _logPosition = 4000;
 
+		protected override int ClusterSize => 3;
 		public override void When() {
 			BecomeMaster();
 			WriterCheckpoint.Write(_logPosition);

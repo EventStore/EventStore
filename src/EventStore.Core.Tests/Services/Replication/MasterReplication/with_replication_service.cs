@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 		protected InMemoryBus TcpSendPublisher = new InMemoryBus("tcpSend");
 		protected MasterReplicationService Service;
 		protected ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck> ReplicaWriteAcks = new ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck>();
+		protected ConcurrentQueue<SystemMessage.VNodeConnectionLost> ReplicaLostMessages = new ConcurrentQueue<SystemMessage.VNodeConnectionLost>();
 		protected ConcurrentQueue<TcpMessage.TcpSend> TcpSends = new ConcurrentQueue<TcpMessage.TcpSend>();
 		private int _connectionPendingSendBytesThreshold = 10 * 1024;
 		private int _connectionQueueSizeThreshold = 50000;
@@ -38,13 +39,21 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 		protected Guid ReplicaSubscriptionId2;
 		protected Guid ReadOnlyReplicaSubscriptionId;
 
+		protected TcpConnectionManager ReplicaManager1;
+		protected TcpConnectionManager ReplicaManager2;
+		protected TcpConnectionManager ReadOnlyReplicaManager;
+
+		protected TFChunkDbConfig DbConfig;
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicaWriteAck>(msg => ReplicaWriteAcks.Enqueue(msg)));
+			Publisher.Subscribe(new AdHocHandler<SystemMessage.VNodeConnectionLost>(msg => ReplicaLostMessages.Enqueue(msg)));
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
-
-			var db = new TFChunkDb(CreateDbConfig());
+			
+			DbConfig = CreateDbConfig();
+			var db = new TFChunkDb(DbConfig);
 			db.Open();
 			Service = new MasterReplicationService(
 				publisher: Publisher,
@@ -59,9 +68,9 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
 
-			ReplicaSubscriptionId = AddSubscription(ReplicaId, true);
-			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true);
-			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, false);
+			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
+			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
+			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, false, out ReadOnlyReplicaManager);
 
 
 			When();
@@ -73,10 +82,10 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
 
-		private Guid AddSubscription(Guid replicaId, bool isPromotable) {
+		private Guid AddSubscription(Guid replicaId, bool isPromotable, out TcpConnectionManager manager) {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
-			var mgr = new TcpConnectionManager(
+			manager = new TcpConnectionManager(
 				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
@@ -87,7 +96,7 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(
 				Guid.NewGuid(),
 				new NoopEnvelope(),
-				mgr,
+				manager,
 				0,
 				Guid.NewGuid(),
 				new Epoch[0],
