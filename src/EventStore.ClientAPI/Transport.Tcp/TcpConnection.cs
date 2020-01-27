@@ -28,8 +28,11 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			var connection = new TcpConnection(log, connectionId, remoteEndPoint, onConnectionClosed);
 // ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
-				(_, socket) => {
+				(socket) => {
 					connection.InitSocket(socket);
+				},
+				(_, socket) => {
+					connection.InitSendReceive();
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},
@@ -83,12 +86,15 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void InitSocket(Socket socket) {
-			InitConnectionBase(socket);
+			_socket = socket;
+		}
+
+		private void InitSendReceive() {
+			InitConnectionBase(_socket);
 			//_log.Info("TcpConnection::InitSocket[{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
 			lock (_sendLock) {
-				_socket = socket;
 				try {
-					socket.NoDelay = true;
+					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
 					_socket = null;
@@ -97,12 +103,12 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 				var receiveSocketArgs = SocketArgsPool.Get();
 				_receiveSocketArgs = receiveSocketArgs;
-				_receiveSocketArgs.AcceptSocket = socket;
+				_receiveSocketArgs.AcceptSocket = _socket;
 				_receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
 				var sendSocketArgs = SocketArgsPool.Get();
 				_sendSocketArgs = sendSocketArgs;
-				_sendSocketArgs.AcceptSocket = socket;
+				_sendSocketArgs.AcceptSocket = _socket;
 				_sendSocketArgs.Completed += OnSendAsyncCompleted;
 			}
 
@@ -126,7 +132,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
+				if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
 				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 				_isSending = true;
 			}
