@@ -28,8 +28,11 @@ namespace EventStore.Transport.Tcp {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
 			// ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
+				(socket) => {
+					connection.InitClientSocket(socket);
+				},
 				(_, socket) => {
-					connection.InitClientSocket(socket, targetHost, validateServer, verbose);
+					connection.InitSslStream(targetHost, validateServer, verbose);
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},
@@ -48,7 +51,8 @@ namespace EventStore.Transport.Tcp {
 			bool validateServer,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitClientSocket(socket, targetHost, validateServer, verbose);
+			connection.InitClientSocket(socket);
+			connection.InitSslStream(targetHost, validateServer, verbose);
 			return connection;
 		}
 
@@ -80,6 +84,8 @@ namespace EventStore.Transport.Tcp {
 		private readonly Guid _connectionId;
 		private readonly bool _verbose;
 		public string _clientConnectionName;
+
+		private Socket _socket;
 
 		private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue =
 			new ConcurrentQueueWrapper<ArraySegment<byte>>();
@@ -171,24 +177,27 @@ namespace EventStore.Transport.Tcp {
 			}
 		}
 
-		private void InitClientSocket(Socket socket, string targetHost, bool validateServer, bool verbose) {
-			Ensure.NotNull(targetHost, "targetHost");
+		private void InitClientSocket(Socket socket) {
+			_socket = socket;
+		}
 
-			InitConnectionBase(socket);
+		private void InitSslStream(string targetHost, bool validateServer, bool verbose) {
+			Ensure.NotNull(targetHost, "targetHost");
+			InitConnectionBase(_socket);
 			if (verbose)
-				Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
+				Console.WriteLine("TcpConnectionSsl::InitClientSslStream({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
 			_validateServer = validateServer;
 
 			lock (_streamLock) {
 				try {
-					socket.NoDelay = true;
+					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
 					return;
 				}
 
-				_sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateServerCertificate, null);
+				_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate, null);
 				try {
 					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
@@ -509,6 +518,9 @@ namespace EventStore.Transport.Tcp {
 
 			if (_sslStream != null)
 				Helper.EatException(() => _sslStream.Close());
+
+			if (_socket != null)
+				Helper.EatException(() => _socket.Dispose());
 
 			var handler = ConnectionClosed;
 			if (handler != null)
