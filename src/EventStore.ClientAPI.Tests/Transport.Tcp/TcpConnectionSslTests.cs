@@ -33,6 +33,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 				bool dataReceivedAfterClose = false;
 				var listeningSocket = CreateListeningSocket();
 
+				var mre = new ManualResetEventSlim(false);
 				var clientTcpConnection = ClientAPI.Transport.Tcp.TcpConnectionSsl.CreateConnectingConnection(
 					new NoopLogger(),
 					Guid.NewGuid(),
@@ -41,8 +42,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					false,
 					new ClientAPI.Transport.Tcp.TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => {
-					},
+					(conn) => mre.Set(),
 					(conn, error) => {
 						Assert.True(false, $"Connection failed: {error}");
 					},
@@ -54,6 +54,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
 					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
 
+				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
 					clientTcpConnection.ReceiveAsync((connection, data) => {
 						if (Volatile.Read(ref closed)) {
