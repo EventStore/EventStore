@@ -30,12 +30,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				bool dataReceivedAfterClose = false;
 				var listeningSocket = CreateListeningSocket();
 
+				var mre = new ManualResetEventSlim(false);
 				var clientTcpConnection = TcpConnection.CreateConnectingTcpConnection(
 					Guid.NewGuid(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => {},
+					(conn) => mre.Set(),
 					(conn, error) => {
 						Assert.Fail($"Connection failed: {error}");
 					},
@@ -45,6 +46,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var serverTcpConnection = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(),
 					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, false);
 
+				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
 					clientTcpConnection.ConnectionClosed += (connection, error) => {
 						Volatile.Write(ref closed, true);
