@@ -97,7 +97,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
-					_socket = null;
 					return;
 				}
 
@@ -304,7 +303,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			if (_socket != null) {
 				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
 				Helper.EatException(() => _socket.Close());
-				_socket = null;
 			}
 
 			lock (_sendLock) {
