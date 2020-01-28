@@ -130,7 +130,14 @@ namespace EventStore.Transport.Tcp {
 					return;
 				}
 
-				_sslStream = new SslStream(new NetworkStream(socket, true), false);
+				try {
+					_sslStream = new SslStream(new NetworkStream(socket, true), false);
+				} catch (IOException exc) {
+					Log.DebugException(exc, "[S{remoteEndPoint}, L{localEndPoint}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
+						LocalEndPoint);
+					return;
+				}
+
 				try {
 					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls13;
 					_sslStream.BeginAuthenticateAsServer(certificate, false, enabledSslProtocols, true,
@@ -197,7 +204,14 @@ namespace EventStore.Transport.Tcp {
 					return;
 				}
 
-				_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate, null);
+				try {
+					_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate, null);
+				} catch (IOException exc) {
+					Log.DebugException(exc, "[S{remoteEndPoint}, L{localEndPoint}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
+						LocalEndPoint);
+					return;
+				}
+
 				try {
 					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {

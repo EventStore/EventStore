@@ -107,7 +107,15 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					return;
 				}
 
-				_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate, null);
+				try {
+					_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate,
+						null);
+				} catch (IOException exc) {
+					_log.Debug(exc, "[S{0}, L{1}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
+						LocalEndPoint);
+					return;
+				}
+
 				try {
 					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
