@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				bool dataReceivedAfterClose = false;
 				var listeningSocket = CreateListeningSocket();
 
+				var mre = new ManualResetEventSlim(false);
 				var clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
@@ -40,8 +41,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					false,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => {
-					},
+					(conn) => mre.Set(),
 					(conn, error) => {
 						Assert.Fail($"Connection failed: {error}");
 					},
@@ -51,6 +51,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
 					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
 
+				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
 					clientTcpConnection.ConnectionClosed += (connection, error) => {
 						Volatile.Write(ref closed, true);
