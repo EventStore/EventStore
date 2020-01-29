@@ -86,6 +86,56 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			}
 		}
 
+		[Test, Timeout(120000)]
+		public void when_connection_closed_quickly_socket_should_be_properly_disposed() {
+			for (int i = 0; i < 1000; i++) {
+				var listeningSocket = CreateListeningSocket();
+				ITcpConnection clientTcpConnection = null;
+				ITcpConnection serverTcpConnection = null;
+				Socket serverSocket = null;
+				try {
+					ManualResetEventSlim mre = new ManualResetEventSlim(false);
+
+					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
+						Guid.NewGuid(),
+						(IPEndPoint)listeningSocket.LocalEndPoint,
+						"localhost",
+						false,
+						new TcpClientConnector(),
+						TimeSpan.FromSeconds(5),
+						(conn) => {},
+						(conn, error) => {},
+						false);
+
+					clientTcpConnection.ConnectionClosed += (conn, error) => {
+						mre.Set();
+					};
+
+					serverSocket = listeningSocket.Accept();
+					clientTcpConnection.Close("Intentional close");
+					serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
+						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
+
+					mre.Wait(TimeSpan.FromSeconds(10));
+					SpinWait.SpinUntil(() => serverTcpConnection.IsClosed, TimeSpan.FromSeconds(10));
+
+					var disposed = false;
+					try {
+						int x = serverSocket.Available;
+					} catch (ObjectDisposedException) {
+						disposed = true;
+					}
+
+					Assert.AreEqual(true, disposed);
+				} finally {
+					clientTcpConnection?.Close("Shut down");
+					serverTcpConnection?.Close("Shut down");
+					listeningSocket.Dispose();
+					serverSocket?.Dispose();
+				}
+			}
+		}
+
 		private X509Certificate GetCertificate() {
 			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("EventStore.Core.Tests.server.p12");
 			using var mem = new MemoryStream();
