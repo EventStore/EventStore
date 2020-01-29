@@ -98,6 +98,9 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
 					return;
+				} catch (SocketException) {
+					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
+					return;
 				}
 
 				var receiveSocketArgs = SocketArgsPool.Get();
