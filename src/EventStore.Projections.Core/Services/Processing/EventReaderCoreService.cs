@@ -99,20 +99,27 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			var fromCheckpointTag = message.FromPosition;
 			var subscriptionId = message.SubscriptionId;
+			var distributionPointCorrelationId = Guid.NewGuid();
 			var projectionSubscription = message.ReaderStrategy.CreateReaderSubscription(
 				_publisher, fromCheckpointTag, message.SubscriptionId, message.Options);
 			_subscriptions.Add(subscriptionId, projectionSubscription);
+		
+			var zeroTag = message.ReaderStrategy.PositionTagger.MakeZeroCheckpointTag();
+			if (message.Options.SubscribeFromEnd && fromCheckpointTag == zeroTag) {
+				_headingEventReader.TrySubscribeFromEnd(subscriptionId, projectionSubscription);
+				_subscriptionEventReaders[subscriptionId] = Guid.Empty;
+				_publisher.Publish(
+					new EventReaderSubscriptionMessage.ReaderAssignedReader(
+						subscriptionId, distributionPointCorrelationId));
+				return;
+			}
 
-			var distributionPointCorrelationId = Guid.NewGuid();
 			var eventReader = projectionSubscription.CreatePausedEventReader(
 				_publisher, _ioDispatcher, distributionPointCorrelationId);
-//            _logger.Trace(
-//                "The '{subscriptionId}' projection subscribed to the '{distributionPointCorrelationId}' distribution point", subscriptionId,
-//                distributionPointCorrelationId);
 			_eventReaders.Add(distributionPointCorrelationId, eventReader);
 			_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
 			_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
-			_publisher.Publish(
+						_publisher.Publish(
 				new EventReaderSubscriptionMessage.ReaderAssignedReader(
 					subscriptionId, distributionPointCorrelationId));
 			eventReader.Resume();

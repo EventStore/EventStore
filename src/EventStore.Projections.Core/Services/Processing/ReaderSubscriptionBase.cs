@@ -26,6 +26,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private DateTime _lastProgressPublished;
 		private TimeSpan _checkpointAfter;
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
+		// TODO: Get this from settings
+		private readonly bool _checkpointFirstEvent = true;
 
 		protected ReaderSubscriptionBase(
 			IPublisher publisher,
@@ -104,6 +106,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 			}
 
+			var forceCheckpoint = _checkpointFirstEvent
+			                      && _positionTracker.LastTag == _positionTagger.MakeZeroCheckpointTag();
+			
 			var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
 			_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
 			var now = _timeProvider.UtcNow;
@@ -118,18 +123,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 						_subscriptionId, _subscriptionMessageSequenceNumber++);
 				_publisher.Publish(convertedMessage);
 				_eventsSinceLastCheckpointSuggestedOrStart++;
-				if (_checkpointProcessedEventsThreshold > 0
-				    && timeDifference > _checkpointAfter
-				    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
+				if (ShouldCheckpoint(timeDifference, forceCheckpoint))
 					SuggestCheckpoint(message);
 				if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
 					NEventsReached();
 			} else {
-				if (_checkpointUnhandledBytesThreshold > 0
-				    && timeDifference > _checkpointAfter
-				    && (_lastPassedOrCheckpointedEventPosition != null
-				        && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
-				        > _checkpointUnhandledBytesThreshold))
+				if (ShouldCheckpoint(timeDifference, message.Data.Position.PreparePosition, forceCheckpoint))
 					SuggestCheckpoint(message);
 				else if (progressChanged)
 					PublishProgress(roundedProgress);
@@ -138,6 +137,33 @@ namespace EventStore.Projections.Core.Services.Processing {
 			// initialize checkpointing based on first message 
 			if (_lastPassedOrCheckpointedEventPosition == null)
 				_lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
+		}
+
+		private bool ShouldCheckpoint(TimeSpan timeDifference, bool forceCheckpoint) {
+			if (forceCheckpoint)
+				return true;
+			
+			if (_checkpointProcessedEventsThreshold > 0
+			    && timeDifference > _checkpointAfter
+			    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold) {
+				return true;
+			}
+
+			return false;
+		}
+		private bool ShouldCheckpoint(TimeSpan timeDifference, long preparePosition, bool forceCheckpoint) {
+			if (forceCheckpoint)
+				return true;
+			
+			if (_checkpointUnhandledBytesThreshold > 0
+			    && timeDifference > _checkpointAfter
+			    && _lastPassedOrCheckpointedEventPosition != null
+			        && preparePosition - _lastPassedOrCheckpointedEventPosition.Value
+			        > _checkpointUnhandledBytesThreshold) {
+				return true;
+			}
+
+			return false;
 		}
 
 		private void NEventsReached() {

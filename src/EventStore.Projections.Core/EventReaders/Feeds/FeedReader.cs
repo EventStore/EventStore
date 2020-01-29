@@ -85,7 +85,8 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				checkpointAfterMs: 10000,
 				checkpointProcessedEventsThreshold: null,
 				stopOnEof: true,
-				stopAfterNEvents: _maxEvents);
+				stopAfterNEvents: _maxEvents,
+				subscribeFromEnd: false);
 
 			_subscriptionId =
 				_subscriptionDispatcher.PublishSubscribe(

@@ -163,6 +163,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return false;
 		}
 
+		public void TrySubscribeFromEnd(Guid projectionId, IReaderSubscription readerSubscription) {
+			EnsureStarted();
+			if (_headSubscribers.ContainsKey(projectionId))
+				throw new InvalidOperationException(
+					string.Format("Projection '{0}' has been already subscribed", projectionId));
+			AddSubscriber(projectionId, readerSubscription);
+		}
+
 		public void Unsubscribe(Guid projectionId) {
 			EnsureStarted();
 			if (!_headSubscribers.ContainsKey(projectionId))
