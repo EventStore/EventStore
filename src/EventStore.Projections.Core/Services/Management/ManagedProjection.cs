@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			public int PendingEventsThreshold { get; set; }
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
+			public bool SubscribeFromEnd { get; set; }
 
 			public PersistedState() {
 				CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold;
@@ -58,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				PendingEventsThreshold = ProjectionConsts.PendingEventsThreshold;
 				MaxWriteBatchLength = ProjectionConsts.MaxWriteBatchLength;
 				MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight;
+				SubscribeFromEnd = false;
 			}
 		}
 
@@ -448,7 +450,8 @@ namespace EventStore.Projections.Core.Services.Management {
 					PersistedProjectionState.CheckpointHandledThreshold,
 					PersistedProjectionState.CheckpointUnhandledBytesThreshold,
 					PersistedProjectionState.PendingEventsThreshold, PersistedProjectionState.MaxWriteBatchLength,
-					PersistedProjectionState.MaxAllowedWritesInFlight));
+					PersistedProjectionState.MaxAllowedWritesInFlight,
+					PersistedProjectionState.SubscribeFromEnd));
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateConfig message) {
@@ -466,6 +469,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			PersistedProjectionState.PendingEventsThreshold = message.PendingEventsThreshold;
 			PersistedProjectionState.MaxWriteBatchLength = message.MaxWriteBatchLength;
 			PersistedProjectionState.MaxAllowedWritesInFlight = message.MaxAllowedWritesInFlight;
+			PersistedProjectionState.SubscribeFromEnd = message.SubscribeFromEnd;
 
 			UpdateProjectionVersion();
 			_pendingWritePersistedState = true;
@@ -937,6 +941,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			var emitEventEnabled = PersistedProjectionState.EmitEnabled == true;
 			var createTempStreams = PersistedProjectionState.CreateTempStreams == true;
 			var stopOnEof = PersistedProjectionState.Mode <= ProjectionMode.OneTime;
+			var subscribeFromEnd = PersistedProjectionState.SubscribeFromEnd;
 
 			var projectionConfig = new ProjectionConfig(
 				_runAs,
@@ -950,7 +955,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				stopOnEof,
 				trackEmittedStreams,
 				checkpointAfterMs,
-				maximumAllowedWritesInFlight);
+				maximumAllowedWritesInFlight,
+				subscribeFromEnd);
 			return projectionConfig;
 		}
 

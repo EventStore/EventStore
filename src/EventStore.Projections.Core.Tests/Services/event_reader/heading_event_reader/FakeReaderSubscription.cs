@@ -137,7 +137,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 	public class FakeReaderStrategy : IReaderStrategy {
 		public EventFilter EventFilter { get; set; }
 		public bool IsReadingOrderRepeatable { get; set; }
-		public PositionTagger PositionTagger { get; set; }
+
+		public PositionTagger PositionTagger {
+			get { return new TransactionFilePositionTagger(0); }
+		}
+
 		private FakeReaderSubscription _subscription;
 
 		public Guid EventReaderId {

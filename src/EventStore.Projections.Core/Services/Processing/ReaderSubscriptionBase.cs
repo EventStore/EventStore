@@ -26,8 +26,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private DateTime _lastProgressPublished;
 		private TimeSpan _checkpointAfter;
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
-		// TODO: Get this from settings
-		private readonly bool _checkpointFirstEvent = true;
+		private readonly bool _checkpointFirstEvent;
 
 		protected ReaderSubscriptionBase(
 			IPublisher publisher,
@@ -38,6 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			long? checkpointUnhandledBytesThreshold,
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
+			bool checkpointFirstEvent,
 			bool stopOnEof,
 			int? stopAfterNEvents) {
 			if (publisher == null) throw new ArgumentNullException("publisher");
@@ -56,6 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_stopAfterNEvents = stopAfterNEvents;
 			_subscriptionId = subscriptionId;
 			_lastPassedOrCheckpointedEventPosition = null;
+			_checkpointFirstEvent = checkpointFirstEvent;
 
 			_eventFilter = readerStrategy.EventFilter;
 

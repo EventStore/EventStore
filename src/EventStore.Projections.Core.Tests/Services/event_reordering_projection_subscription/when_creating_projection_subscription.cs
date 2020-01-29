@@ -19,7 +19,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 				1000,
 				2000,
 				10000,
-				500);
+				500,
+				false);
 		}
 
 		[Test]
@@ -34,7 +35,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 					1000,
 					2000,
 					10000,
-					500);
+					500,
+					false);
 			});
 		}
 
@@ -50,7 +52,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 					1000,
 					2000,
 					10000,
-					500);
+					500,
+					false);
 			});
 		}
 
@@ -66,7 +69,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 					1000,
 					2000,
 					10000,
-					500);
+					500,
+					false);
 			});
 		}
 

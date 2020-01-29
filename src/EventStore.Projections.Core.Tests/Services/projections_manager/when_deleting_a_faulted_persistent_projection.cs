@@ -27,7 +27,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"faulted_projection",
-					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
+					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true,
+					subscribeFromEnd: false);
 			yield return
 				new ProjectionManagementMessage.Command.Delete(
 					new PublishEnvelope(_bus), _projectionName,

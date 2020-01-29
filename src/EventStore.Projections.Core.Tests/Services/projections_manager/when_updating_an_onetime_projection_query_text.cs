@@ -70,7 +70,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				(new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Transient, _projectionName,
 					ProjectionManagementMessage.RunAs.Anonymous, "JS", @"fromAll(); on_any(function(){});log(1);",
-					enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: true));
+					enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: true,
+					subscribeFromEnd: false));
 			// when
 			_newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
 			yield return

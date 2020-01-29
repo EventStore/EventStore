@@ -22,6 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
 			int processingLagMs,
+			bool checkpointFirstEvent,
 			bool stopOnEof = false,
 			int? stopAfterNEvents = null)
 			: base(
@@ -33,6 +34,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				checkpointUnhandledBytesThreshold,
 				checkpointProcessedEventsThreshold,
 				checkpointAfterMs,
+				checkpointFirstEvent,
 				stopOnEof,
 				stopAfterNEvents) {
 			_processingLagMs = processingLagMs;

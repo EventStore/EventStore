@@ -10,6 +10,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 	public abstract class TestFixtureWithEventReorderingProjectionSubscription : TestFixtureWithProjectionSubscription {
 		protected int _timeBetweenEvents;
 		protected int _processingLagMs;
+		protected bool _subscribeFromEnd;
 
 		protected override void Given() {
 			_timeBetweenEvents = 1100;
@@ -32,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 				_readerStrategy,
 				_timeProvider,
 				_checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _checkpointAfterMs,
-				_processingLagMs);
+				_processingLagMs, _subscribeFromEnd);
 		}
 	}
 }

@@ -272,12 +272,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public ReaderSubscriptionOptions GetSubscriptionOptions() {
-			// TODO: Get subscribeFromEnd from projection options
 			return new ReaderSubscriptionOptions(
 				_projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
 				_projectionConfig.CheckpointAfterMs,
 				_stopOnEof, stopAfterNEvents: null,
-				subscribeFromEnd: true);
+				subscribeFromEnd: _projectionConfig.SubscribeFromEnd);
 		}
 
 		protected void SubscribeReaders(CheckpointTag checkpointTag) {

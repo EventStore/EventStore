@@ -34,7 +34,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			CheckpointUnhandledBytesThreshold = 3,
 			PendingEventsThreshold = 4,
 			MaxWriteBatchLength = 5,
-			MaxAllowedWritesInFlight = 6
+			MaxAllowedWritesInFlight = 6,
+			SubscribeFromEnd = true,
 		};
 
 		public when_getting_config() {
@@ -70,6 +71,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			Assert.AreEqual(_persistedState.MaxWriteBatchLength, _config.MaxWriteBatchLength, "MaxWriteBatchLength");
 			Assert.AreEqual(_persistedState.MaxAllowedWritesInFlight, _config.MaxAllowedWritesInFlight,
 				"MaxAllowedWritesInFlight");
+			Assert.AreEqual(_persistedState.SubscribeFromEnd, _config.SubscribeFromEnd,
+				"SubscribeFromEnd");
 		}
 	}
 
@@ -143,6 +146,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			Assert.AreEqual(_updateConfig.PendingEventsThreshold, getConfigResult.PendingEventsThreshold);
 			Assert.AreEqual(_updateConfig.MaxWriteBatchLength, getConfigResult.MaxWriteBatchLength);
 			Assert.AreEqual(_updateConfig.MaxAllowedWritesInFlight, getConfigResult.MaxAllowedWritesInFlight);
+			Assert.AreEqual(_updateConfig.SubscribeFromEnd, getConfigResult.SubscribeFromEnd);
 		}
 	}
 
@@ -219,6 +223,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 				"MaxWriteBatchLength");
 			Assert.AreEqual(_persistedState.MaxAllowedWritesInFlight, getConfigResult.MaxAllowedWritesInFlight,
 				"MaxAllowedWritesInFlight");
+			Assert.AreEqual(_persistedState.SubscribeFromEnd, getConfigResult.SubscribeFromEnd,
+				"SubscribeFromEnd");
 		}
 	}
 
@@ -252,7 +258,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
 		protected ProjectionManagementMessage.Command.UpdateConfig CreateConfig() {
 			return new ProjectionManagementMessage.Command.UpdateConfig(
-				new NoopEnvelope(), "name", true, false, 100, 200, 300, 400, 500, 600,
+				new NoopEnvelope(), "name", true, false, 100, 200, 300, 400, 500, 600, true,
 				ProjectionManagementMessage.RunAs.Anonymous);
 		}
 

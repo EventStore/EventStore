@@ -26,6 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 		protected int _checkpointUnhandledBytesThreshold;
 		protected int _checkpointProcessedEventsThreshold;
 		protected int _checkpointAfterMs;
+		protected bool _checkpointFirstEvent;
 		protected IReaderStrategy _readerStrategy;
 
 		[SetUp]
@@ -33,6 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 			_checkpointUnhandledBytesThreshold = 1000;
 			_checkpointProcessedEventsThreshold = 2000;
 			_checkpointAfterMs = 10000;
+			_checkpointFirstEvent = false;
 			_timeProvider = new RealTimeProvider();
 			Given();
 			_bus = new InMemoryBus("bus");
@@ -68,7 +70,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 				_timeProvider,
 				_checkpointUnhandledBytesThreshold,
 				_checkpointProcessedEventsThreshold,
-				_checkpointAfterMs);
+				_checkpointAfterMs,
+				_checkpointFirstEvent);
 		}
 
 		protected virtual void Given() {

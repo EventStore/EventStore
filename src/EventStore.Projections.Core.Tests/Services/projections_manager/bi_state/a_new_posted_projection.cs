@@ -21,6 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 			protected bool _checkpointsEnabled;
 			protected bool _trackEmittedStreams;
 			protected bool _emitEnabled;
+			protected bool _subscribeFromEnd;
 
 			protected override void Given() {
 				base.Given();
@@ -34,6 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 				_checkpointsEnabled = true;
 				_trackEmittedStreams = true;
 				_emitEnabled = false;
+				_subscribeFromEnd = false;
 			}
 
 			protected override IEnumerable<WhenStep> When() {
@@ -44,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 						ProjectionManagementMessage.RunAs.System, "native:" + _fakeProjectionType.AssemblyQualifiedName,
 						_projectionSource, enabled: true, checkpointsEnabled: _checkpointsEnabled,
 						trackEmittedStreams: _trackEmittedStreams,
-						emitEnabled: _emitEnabled));
+						emitEnabled: _emitEnabled, subscribeFromEnd: _subscribeFromEnd));
 			}
 		}
 

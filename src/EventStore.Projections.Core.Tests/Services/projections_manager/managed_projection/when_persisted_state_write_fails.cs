@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		protected override IEnumerable<WhenStep> When() {
 			ProjectionManagementMessage.Command.Post message = new ProjectionManagementMessage.Command.Post(
 				Envelope, ProjectionMode.OneTime, _projectionName, ProjectionManagementMessage.RunAs.System,
-				typeof(FakeForeachStreamProjection), "", true, false, false, false);
+				typeof(FakeForeachStreamProjection), "", true, false, false, false, false);
 			_managedProjection.InitializeNew(
 				new ManagedProjection.PersistedState {
 					Enabled = message.Enabled,

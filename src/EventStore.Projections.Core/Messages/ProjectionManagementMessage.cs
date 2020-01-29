@@ -58,11 +58,12 @@ namespace EventStore.Projections.Core.Messages {
 					public bool EmitEnabled { get; }
 					public bool EnableRunAs { get; }
 					public bool TrackEmittedStreams { get; }
+					public bool SubscribeFromEnd { get; }
 
 					public ProjectionPost(
 						ProjectionMode mode, RunAs runAs, string name, string handlerType, string query,
 						bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs,
-						bool trackEmittedStreams)
+						bool trackEmittedStreams, bool subscribeFromEnd)
 					{
 						Mode = mode;
 						RunAs = runAs;
@@ -74,6 +75,7 @@ namespace EventStore.Projections.Core.Messages {
 						EmitEnabled = emitEnabled;
 						EnableRunAs = enableRunAs;
 						TrackEmittedStreams = trackEmittedStreams;
+						SubscribeFromEnd = subscribeFromEnd;
 					}
 				}
 			}
@@ -94,11 +96,12 @@ namespace EventStore.Projections.Core.Messages {
 				private readonly bool _emitEnabled;
 				private readonly bool _enableRunAs;
 				private readonly bool _trackEmittedStreams;
+				private readonly bool _subscribeFromEnd;
 
 				public Post(
 					IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, string handlerType, string query,
 					bool enabled, bool checkpointsEnabled, bool emitEnabled, bool trackEmittedStreams,
-					bool enableRunAs = false)
+					bool subscribeFromEnd, bool enableRunAs=false)
 					: base(envelope, runAs) {
 					_name = name;
 					_handlerType = handlerType;
@@ -109,12 +112,13 @@ namespace EventStore.Projections.Core.Messages {
 					_emitEnabled = emitEnabled;
 					_trackEmittedStreams = trackEmittedStreams;
 					_enableRunAs = enableRunAs;
+					_subscribeFromEnd = subscribeFromEnd;
 				}
 
 				public Post(
 					IEnvelope envelope, ProjectionMode mode, string name, RunAs runAs, Type handlerType, string query,
 					bool enabled, bool checkpointsEnabled, bool emitEnabled, bool trackEmittedStreams,
-					bool enableRunAs = false)
+					bool subscribeFromEnd, bool enableRunAs=false)
 					: base(envelope, runAs) {
 					_name = name;
 					_handlerType = "native:" + handlerType.Namespace + "." + handlerType.Name;
@@ -125,6 +129,7 @@ namespace EventStore.Projections.Core.Messages {
 					_emitEnabled = emitEnabled;
 					_trackEmittedStreams = trackEmittedStreams;
 					_enableRunAs = enableRunAs;
+					_subscribeFromEnd = subscribeFromEnd;
 				}
 
 				// shortcut for posting ad-hoc JS queries
@@ -174,6 +179,10 @@ namespace EventStore.Projections.Core.Messages {
 
 				public bool TrackEmittedStreams {
 					get { return _trackEmittedStreams; }
+				}
+
+				public bool SubscribeFromEnd {
+					get { return _subscribeFromEnd; }
 				}
 			}
 
@@ -414,11 +423,12 @@ namespace EventStore.Projections.Core.Messages {
 				private readonly int _pendingEventsThreshold;
 				private readonly int _maxWriteBatchLength;
 				private readonly int _maxAllowedWritesInFlight;
+				private readonly bool _subscribeFromEnd;
 
 				public UpdateConfig(IEnvelope envelope, string name, bool emitEnabled, bool trackEmittedStreams,
 					int checkpointAfterMs,
 					int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold, int pendingEventsThreshold,
-					int maxWriteBatchLength, int maxAllowedWritesInFlight, RunAs runAs) :
+					int maxWriteBatchLength, int maxAllowedWritesInFlight, bool subscribeFromEnd, RunAs runAs) :
 					base(envelope, runAs) {
 					_name = name;
 					_emitEnabled = emitEnabled;
@@ -429,6 +439,7 @@ namespace EventStore.Projections.Core.Messages {
 					_pendingEventsThreshold = pendingEventsThreshold;
 					_maxWriteBatchLength = maxWriteBatchLength;
 					_maxAllowedWritesInFlight = maxAllowedWritesInFlight;
+					_subscribeFromEnd = subscribeFromEnd;
 				}
 
 				public string Name {
@@ -465,6 +476,10 @@ namespace EventStore.Projections.Core.Messages {
 
 				public int MaxAllowedWritesInFlight {
 					get { return _maxAllowedWritesInFlight; }
+				}
+
+				public bool SubscribeFromEnd {
+					get { return _subscribeFromEnd; }
 				}
 			}
 
@@ -955,11 +970,12 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly int _pendingEventsThreshold;
 			private readonly int _maxWriteBatchLength;
 			private readonly int _maxAllowedWritesInFlight;
+			private readonly bool _subscribeFromEnd;
 
 			public ProjectionConfig(bool emitEnabled, bool trackEmittedStreams, int checkpointAfterMs,
 				int checkpointHandledThreshold,
 				int checkpointUnhandledBytesThreshold, int pendingEventsThreshold, int maxWriteBatchLength,
-				int maxAllowedWritesInFlight) {
+				int maxAllowedWritesInFlight, bool subscribeFromEnd) {
 				_emitEnabled = emitEnabled;
 				_trackEmittedStreams = trackEmittedStreams;
 				_checkpointAfterMs = checkpointAfterMs;
@@ -968,6 +984,7 @@ namespace EventStore.Projections.Core.Messages {
 				_pendingEventsThreshold = pendingEventsThreshold;
 				_maxWriteBatchLength = maxWriteBatchLength;
 				_maxAllowedWritesInFlight = maxAllowedWritesInFlight;
+				_subscribeFromEnd = subscribeFromEnd;
 			}
 
 			public bool EmitEnabled {
@@ -1000,6 +1017,10 @@ namespace EventStore.Projections.Core.Messages {
 
 			public int MaxAllowedWritesInFlight {
 				get { return _maxAllowedWritesInFlight; }
+			}
+
+			public bool SubscribeFromEnd {
+				get { return _subscribeFromEnd; }
 			}
 		}
 	}

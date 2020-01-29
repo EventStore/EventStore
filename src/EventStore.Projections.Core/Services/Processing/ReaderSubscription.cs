@@ -15,6 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			long? checkpointUnhandledBytesThreshold,
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
+			bool checkpointFirstEvent,
 			bool stopOnEof = false,
 			int? stopAfterNEvents = null)
 			: base(
@@ -26,6 +27,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				checkpointUnhandledBytesThreshold,
 				checkpointProcessedEventsThreshold,
 				checkpointAfterMs,
+				checkpointFirstEvent,
 				stopOnEof,
 				stopAfterNEvents) {
 			_tag = tag;

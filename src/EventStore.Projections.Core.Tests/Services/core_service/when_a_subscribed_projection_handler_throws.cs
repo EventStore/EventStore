@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_service {
 			_readerService.Handle(
 				new ReaderSubscriptionManagement.Subscribe(
 					projectionCorrelationId, CheckpointTag.FromPosition(0, 0, 0), readerStrategy,
-					new ReaderSubscriptionOptions(1000, 2000, 10000, false, stopAfterNEvents: null)));
+					new ReaderSubscriptionOptions(1000, 2000, 10000, false,  null, false)));
 			_readerService.Handle(
 				ReaderSubscriptionMessage.CommittedEventDistributed.Sample(
 					readerStrategy.EventReaderId, new TFPos(20, 10), "throws", 10, false, Guid.NewGuid(),

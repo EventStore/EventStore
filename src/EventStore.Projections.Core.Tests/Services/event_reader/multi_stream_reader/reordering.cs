@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 				_readerSubscriptionOptions = new ReaderSubscriptionOptions(
 					checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100,
 					checkpointAfterMs: 10000, stopOnEof: false,
-					stopAfterNEvents: null);
+					stopAfterNEvents: null, subscribeFromEnd: false);
 			}
 
 			protected abstract void GivenOtherEvents();

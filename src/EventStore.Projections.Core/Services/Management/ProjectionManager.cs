@@ -889,7 +889,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				checkpointsEnabled: true,
 				emitEnabled: true,
 				trackEmittedStreams: false,
-				enableRunAs: true);
+				enableRunAs: true,
+				subscribeFromEnd: false);
 		}
 
 		private void PostNewTransientProjection(PendingProjection projection, IEnvelope replyEnvelope) {
@@ -1114,6 +1115,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			private readonly bool _emitEnabled;
 			private readonly bool _checkpointsEnabled;
 			private readonly bool _trackEmittedStreams;
+			private readonly bool _subscribeFromEnd;
 			private readonly bool _enableRunAs;
 			private readonly ProjectionManagementMessage.RunAs _runAs;
 			private readonly IEnvelope _replyEnvelope;
@@ -1130,6 +1132,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				bool checkpointsEnabled,
 				bool enableRunAs,
 				bool trackEmittedStreams,
+				bool subscribeFromEnd,
 				ProjectionManagementMessage.RunAs runAs,
 				IEnvelope replyEnvelope) {
 				if (projectionMode >= ProjectionMode.Continuous && !checkpointsEnabled)
@@ -1146,6 +1149,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				_emitEnabled = emitEnabled;
 				_checkpointsEnabled = checkpointsEnabled;
 				_trackEmittedStreams = trackEmittedStreams;
+				_subscribeFromEnd = subscribeFromEnd;
 				_enableRunAs = enableRunAs;
 				_runAs = runAs;
 				_replyEnvelope = replyEnvelope;
@@ -1171,6 +1175,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						EmitEnabled = _emitEnabled,
 						CheckpointsDisabled = !_checkpointsEnabled,
 						TrackEmittedStreams = _trackEmittedStreams,
+						SubscribeFromEnd = _subscribeFromEnd,
 						CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold,
 						CheckpointAfterMs = (int)ProjectionConsts.CheckpointAfterMs.TotalMilliseconds,
 						MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight,
@@ -1233,11 +1238,12 @@ namespace EventStore.Projections.Core.Services.Management {
 			public bool EnableRunAs { get; }
 			public bool TrackEmittedStreams { get; }
 			public long ProjectionId { get; }
+			public bool SubscribeFromEnd { get; }
 
 			public PendingProjection(
 				long projectionId, ProjectionMode mode, SerializedRunAs runAs, string name, string handlerType, string query,
 				bool enabled, bool checkpointsEnabled, bool emitEnabled, bool enableRunAs,
-				bool trackEmittedStreams) {
+				bool trackEmittedStreams, bool subscribeFromEnd) {
 				ProjectionId = projectionId;
 				Mode = mode;
 				RunAs = runAs;
@@ -1249,17 +1255,18 @@ namespace EventStore.Projections.Core.Services.Management {
 				EmitEnabled = emitEnabled;
 				EnableRunAs = enableRunAs;
 				TrackEmittedStreams = trackEmittedStreams;
+				SubscribeFromEnd = subscribeFromEnd;
 			}
 
 			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.PostBatch.ProjectionPost projection)
 				: this(projectionId, projection.Mode, projection.RunAs, projection.Name, projection.HandlerType,
 					projection.Query, projection.Enabled, projection.CheckpointsEnabled,
-					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams) { }
+					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams, projection.SubscribeFromEnd) { }
 
 			public PendingProjection(long projectionId, ProjectionManagementMessage.Command.Post projection)
 				: this(projectionId, projection.Mode, projection.RunAs, projection.Name, projection.HandlerType,
 					projection.Query, projection.Enabled, projection.CheckpointsEnabled,
-					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams) { }
+					projection.EmitEnabled, projection.EnableRunAs, projection.TrackEmittedStreams, projection.SubscribeFromEnd) { }
 
 			public NewProjectionInitializer CreateInitializer(IEnvelope replyEnvelope) {
 				return new NewProjectionInitializer(
@@ -1273,6 +1280,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					CheckpointsEnabled,
 					EnableRunAs,
 					TrackEmittedStreams,
+					SubscribeFromEnd,
 					RunAs,
 					replyEnvelope);
 			}

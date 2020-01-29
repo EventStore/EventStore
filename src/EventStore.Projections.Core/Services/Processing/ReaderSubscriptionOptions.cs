@@ -9,7 +9,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public ReaderSubscriptionOptions(
 			long checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, int checkpointAfterMs,
-			bool stopOnEof, int? stopAfterNEvents, bool subscribeFromEnd = false) {
+			bool stopOnEof, int? stopAfterNEvents, bool subscribeFromEnd) {
 			_checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
 			_checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
 			_checkpointAfterMs = checkpointAfterMs;

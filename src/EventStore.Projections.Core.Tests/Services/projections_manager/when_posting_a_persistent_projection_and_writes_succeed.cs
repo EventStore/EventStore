@@ -29,7 +29,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().when({$any:function(s,e){return s;}});",
-					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true);
+					enabled: true, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true,
+					subscribeFromEnd: false);
 		}
 
 		[Test, Category("v8")]

@@ -19,7 +19,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 				new FakeTimeProvider(),
 				1000,
 				2000,
-				10000);
+				10000,
+				false);
 		}
 
 		[Test]
@@ -34,7 +35,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 					new FakeTimeProvider(),
 					1000,
 					2000,
-					10000);
+					10000,
+					false);
 			});
 		}
 
@@ -50,7 +52,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 					new FakeTimeProvider(),
 					1000,
 					2000,
-					10000);
+					10000,
+					false);
 			});
 		}
 
@@ -66,7 +69,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 					null,
 					1000,
 					2000,
-					10000);
+					10000,
+					false);
 			});
 		}
 

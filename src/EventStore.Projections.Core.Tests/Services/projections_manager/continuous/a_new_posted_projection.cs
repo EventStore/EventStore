@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 						"native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource,
 						enabled: _projectionEnabled,
 						checkpointsEnabled: _checkpointsEnabled, trackEmittedStreams: _trackEmittedStreams,
-						emitEnabled: _emitEnabled));
+						emitEnabled: _emitEnabled, subscribeFromEnd: false));
 			}
 		}
 

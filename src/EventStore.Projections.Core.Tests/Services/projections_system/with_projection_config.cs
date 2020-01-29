@@ -7,6 +7,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 		protected bool _checkpointsEnabled;
 		protected bool _trackEmittedStreams;
 		protected bool _emitEnabled;
+		protected bool _subscribeFromEnd;
 
 		protected override void Given() {
 			base.Given();
@@ -16,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			_checkpointsEnabled = true;
 			_trackEmittedStreams = true;
 			_emitEnabled = true;
+			_subscribeFromEnd = false;
 
 			NoStream(ProjectionNamesBuilder.ProjectionsStreamPrefix + _projectionName + "-checkpoint");
 			NoStream(ProjectionNamesBuilder.ProjectionsStreamPrefix + _projectionName + "-order");

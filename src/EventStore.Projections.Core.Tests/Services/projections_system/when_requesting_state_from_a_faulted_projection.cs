@@ -24,7 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 					Envelope, ProjectionMode.Continuous, _projectionName, ProjectionManagementMessage.RunAs.System,
 					"js",
 					_projectionSource, enabled: true, checkpointsEnabled: true, emitEnabled: true,
-					trackEmittedStreams: true);
+					trackEmittedStreams: true, subscribeFromEnd: false);
 			yield return Yield;
 			yield return new ProjectionManagementMessage.Command.GetState(Envelope, _projectionName, "");
 		}

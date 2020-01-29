@@ -29,6 +29,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 		protected CoreProjectionCheckpointReader _checkpointReader;
 		protected string _projectionName;
 		protected ProjectionVersion _projectionVersion;
+		protected bool _subscribeFromEnd;
 
 		[SetUp]
 		public void setup() {
@@ -37,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_config = new ProjectionConfig(null, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
 				_pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
 				_checkpointsEnabled, _createTempStreams, _stopOnEof, _trackEmittedStreams, _checkpointAfterMs,
-				_maximumAllowedWritesInFlight);
+				_maximumAllowedWritesInFlight, _subscribeFromEnd);
 			When();
 		}
 

@@ -65,10 +65,10 @@ namespace EventStore.Projections.Core.Services.Http {
 			Register(service, "/projections/transient?name={name}&type={type}&enabled={enabled}",
 				HttpMethod.Post, OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, AuthorizationLevel.User);
 			Register(service,
-				"/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}",
+				"/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}&subscribeFromEnd={subscribefromend}",
 				HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, AuthorizationLevel.Ops);
 			Register(service,
-				"/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}",
+				"/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}&subscribefromend={subscribefromend}",
 				HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, AuthorizationLevel.Ops);
 			Register(service, "/projection/{name}/query?config={config}",
 				HttpMethod.Get, OnProjectionQueryGet, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.User);
@@ -226,7 +226,8 @@ namespace EventStore.Projections.Core.Services.Http {
 						envelope, match.BoundVariables["name"], config.EmitEnabled, config.TrackEmittedStreams,
 						config.CheckpointAfterMs, config.CheckpointHandledThreshold,
 						config.CheckpointUnhandledBytesThreshold, config.PendingEventsThreshold,
-						config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, GetRunAs(http, match));
+						config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, config.SubscribeFromEnd,
+						GetRunAs(http, match));
 					Publish(message);
 				}, ex => Log.Debug("Failed to update projection configuration. Error: {e}", ex));
 		}
@@ -400,6 +401,7 @@ namespace EventStore.Projections.Core.Services.Http {
 					bool checkpointsEnabled = mode >= ProjectionMode.Continuous || IsOn(match, "checkpoints", false);
 					bool enabled = IsOn(match, "enabled", def: true);
 					bool trackEmittedStreams = IsOn(match, "trackemittedstreams", def: false);
+					bool subscribeFromEnd = IsOn(match, "subscribefromend", false);
 					if (!emitEnabled) {
 						trackEmittedStreams = false;
 					}
@@ -409,12 +411,12 @@ namespace EventStore.Projections.Core.Services.Http {
 						postMessage = new ProjectionManagementMessage.Command.Post(
 							envelope, mode, Guid.NewGuid().ToString("D"), runAs, handlerType, s, enabled: enabled,
 							checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled,
-							trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
+							trackEmittedStreams: trackEmittedStreams, subscribeFromEnd, enableRunAs: true);
 					else
 						postMessage = new ProjectionManagementMessage.Command.Post(
 							envelope, mode, name, runAs, handlerType, s, enabled: enabled,
 							checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled,
-							trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
+							trackEmittedStreams: trackEmittedStreams, subscribeFromEnd, enableRunAs: true);
 					Publish(postMessage);
 				}, x => Log.DebugException(x, "Reply Text Body Failed."));
 		}
@@ -634,6 +636,7 @@ namespace EventStore.Projections.Core.Services.Http {
 			public int PendingEventsThreshold { get; set; }
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
+			public bool SubscribeFromEnd { get; set; }
 		}
 	}
 }

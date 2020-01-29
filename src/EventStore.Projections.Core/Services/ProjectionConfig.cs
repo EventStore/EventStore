@@ -16,11 +16,12 @@ namespace EventStore.Projections.Core.Services {
 		private readonly bool _trackEmittedStreams;
 		private readonly int _checkpointAfterMs;
 		private readonly int _maximumAllowedWritesInFlight;
+		private readonly bool _subscribeFromEnd;
 
 		public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
 			int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
 			bool createTempStreams, bool stopOnEof, bool trackEmittedStreams,
-			int checkpointAfterMs, int maximumAllowedWritesInFlight) {
+			int checkpointAfterMs, int maximumAllowedWritesInFlight, bool subscribeFromEnd) {
 			if (checkpointsEnabled) {
 				if (checkpointHandledThreshold <= 0)
 					throw new ArgumentOutOfRangeException("checkpointHandledThreshold");
@@ -51,6 +52,7 @@ namespace EventStore.Projections.Core.Services {
 			_trackEmittedStreams = trackEmittedStreams;
 			_checkpointAfterMs = checkpointAfterMs;
 			_maximumAllowedWritesInFlight = maximumAllowedWritesInFlight;
+			_subscribeFromEnd = subscribeFromEnd;
 		}
 
 		public int CheckpointHandledThreshold {
@@ -101,9 +103,13 @@ namespace EventStore.Projections.Core.Services {
 			get { return _maximumAllowedWritesInFlight; }
 		}
 
+		public bool SubscribeFromEnd {
+			get { return _subscribeFromEnd; }
+		}
+
 		public static ProjectionConfig GetTest() {
 			return new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false, true, 10000,
-				1);
+				1, false);
 		}
 	}
 }
