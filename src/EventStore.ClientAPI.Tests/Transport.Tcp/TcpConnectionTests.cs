@@ -79,5 +79,52 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 				}
 			}
 		}
+
+		[Fact]
+		public void when_connection_closed_quickly_socket_should_be_properly_disposed() {
+			for (int i = 0; i < 1000; i++) {
+				var listeningSocket = CreateListeningSocket();
+				ITcpConnection clientTcpConnection = null;
+				ITcpConnection serverTcpConnection = null;
+				Socket serverSocket = null;
+				try {
+					ManualResetEventSlim mre = new ManualResetEventSlim(false);
+
+					clientTcpConnection = TcpConnection.CreateConnectingTcpConnection(
+						Guid.NewGuid(),
+						(IPEndPoint)listeningSocket.LocalEndPoint,
+						new TcpClientConnector(),
+						TimeSpan.FromSeconds(5),
+						(conn) => {},
+						(conn, error) => {},
+						false);
+
+					clientTcpConnection.ConnectionClosed += (conn, error) => {
+						mre.Set();
+					};
+
+					serverSocket = listeningSocket.Accept();
+					clientTcpConnection.Close("Intentional close");
+					serverTcpConnection = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(),
+						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, false);
+
+					mre.Wait(TimeSpan.FromSeconds(10));
+
+					var disposed = false;
+					try {
+						int x = serverSocket.Available;
+					} catch (ObjectDisposedException) {
+						disposed = true;
+					}
+
+					Assert.True(disposed);
+				} finally {
+					clientTcpConnection?.Close("Shut down");
+					serverTcpConnection?.Close("Shut down");
+					listeningSocket.Dispose();
+					serverSocket?.Dispose();
+				}
+			}
+		}
 	}
 }
