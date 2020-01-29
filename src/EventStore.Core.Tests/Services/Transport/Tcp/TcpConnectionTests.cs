@@ -113,7 +113,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 					var disposed = false;
 					try {
-						int x = serverSocket.Available;
+						for (int j = 0; j < 10; j++) {
+							int x = serverSocket.Available;
+							Console.Error.WriteLine("Check Socket Attempt " + j + " unsuccessful.");
+							Task.Delay(500).Wait();
+						}
 					} catch (ObjectDisposedException) {
 						disposed = true;
 					}
