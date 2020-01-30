@@ -20,6 +20,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly string _dbPath;
 		private PerfCounterHelper _perfCounter;
 		private readonly EventCountersHelper _eventCountersHelper;
+		private readonly HostStat.HostStat _hostStat;
 		private bool _giveup;
 
 		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
@@ -30,6 +31,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_writerCheckpoint = writerCheckpoint;
 			_perfCounter = new PerfCounterHelper(_log);
 			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
+			_hostStat = new HostStat.HostStat();
 			_dbPath = dbPath;
 		}
 
@@ -119,7 +121,22 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-contentionsRate"] = _eventCountersHelper.GetContentionsRateCount();
 				stats["proc-thrownExceptionsRate"] = _eventCountersHelper.GetThrownExceptionsRate();
 
-				stats["sys-cpu"] = GetTotalCpuUsage();
+				switch (OS.OsFlavor) {
+					case OsFlavor.Windows:
+						stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+						break;
+					case OsFlavor.Linux:
+					case OsFlavor.MacOS:
+						var loadAverages = _hostStat.GetLoadAverages();
+						stats["sys-loadavg-1m"] = loadAverages.Average1m;
+						stats["sys-loadavg-5m"] = loadAverages.Average5m;
+						stats["sys-loadavg-15m"] = loadAverages.Average15m;
+						break;
+					default:
+						stats["sys-cpu"] = -1;
+						break;
+				}
+				
 				stats["sys-freeMem"] = GetFreeMem();
 
 				var gcStats = _eventCountersHelper.GetGcStats();
@@ -145,96 +162,17 @@ namespace EventStore.Core.Services.Monitoring {
 		}
 
 		///<summary>
-		/// Get Cpu Usage
-		///</summary>
-		private float GetTotalCpuUsage() {
-			switch (OS.OsFlavor) {
-				case OsFlavor.Windows:
-					return _perfCounter.GetTotalCpuUsage();
-				//TODO: (pgermishuys) Find a decent way to measure System CPU Usage for the operating systems below.
-				case OsFlavor.Linux:
-					return -1;
-				case OsFlavor.MacOS:
-					return -1;
-				case OsFlavor.BSD:
-					return -1;
-				default:
-					return -1;
-			}
-		}
-
-		///<summary>
 		///Free system memory in bytes
 		///</summary>
-		private long GetFreeMem() {
+		private ulong GetFreeMem() {
 			switch (OS.OsFlavor) {
 				case OsFlavor.Windows:
-					return _perfCounter.GetFreeMemory();
+					return (ulong)_perfCounter.GetFreeMemory();
 				case OsFlavor.Linux:
-					return GetFreeMemOnLinux();
 				case OsFlavor.MacOS:
-					return GetFreeMemOnOSX();
-				case OsFlavor.BSD:
-					return GetFreeMemOnBSD();
+					return _hostStat.GetFreeMemory();
 				default:
-					return -1;
-			}
-		}
-
-		private long GetFreeMemOnLinux() {
-			string meminfo = null;
-			try {
-				meminfo = ShellExecutor.GetOutput("free", "-b");
-				var meminfolines = meminfo.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				var ourline = meminfolines[1];
-				var trimmedLine = SpacesRegex.Replace(ourline, " ");
-				var freeRamStr = trimmedLine.Split(' ')[3];
-				return long.Parse(freeRamStr);
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free mem on linux, received memory info raw string: [{meminfo}]",
-					meminfo);
-				return -1;
-			}
-		}
-
-		// http://www.cyberciti.biz/files/scripts/freebsd-memory.pl.txt
-		private long GetFreeMemOnBSD() {
-			try {
-				var sysctl = ShellExecutor.GetOutput("sysctl",
-					"-n hw.physmem hw.pagesize vm.stats.vm.v_free_count vm.stats.vm.v_cache_count vm.stats.vm.v_inactive_count");
-				var sysctlStats = sysctl.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				long pageSize = long.Parse(sysctlStats[1]);
-				long freePages = long.Parse(sysctlStats[2]);
-				long cachePages = long.Parse(sysctlStats[3]);
-				long inactivePages = long.Parse(sysctlStats[4]);
-				return pageSize * (freePages + cachePages + inactivePages);
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free memory on BSD.");
-				return -1;
-			}
-		}
-
-
-		private long GetFreeMemOnOSX() {
-			int freePages = 0;
-			try {
-				var vmstat = ShellExecutor.GetOutput("vm_stat");
-				var sysctlStats = vmstat.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				foreach (var line in sysctlStats) {
-					var l = line.Substring(0, line.Length - 1);
-					var pieces = l.Split(':');
-					if (pieces.Length == 2) {
-						if (pieces[0].Trim().ToLower() == "pages free") {
-							freePages = int.Parse(pieces[1]);
-							break;
-						}
-					}
-				}
-
-				return 4096 * freePages;
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free memory on OSX.");
-				return -1;
+					return 0;
 			}
 		}
 
