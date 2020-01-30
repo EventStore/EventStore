@@ -32,8 +32,11 @@ namespace EventStore.Transport.Tcp {
 			var connection = new TcpConnection(connectionId, remoteEndPoint, verbose);
 // ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
-				(_, socket) => {
+				(socket) => {
 					connection.InitSocket(socket);
+				},
+				(_, socket) => {
+					connection.InitSendReceive();
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},
@@ -49,6 +52,7 @@ namespace EventStore.Transport.Tcp {
 			Socket socket, bool verbose) {
 			var connection = new TcpConnection(connectionId, remoteEndPoint, verbose);
 			connection.InitSocket(socket);
+			connection.InitSendReceive();
 			return connection;
 		}
 
@@ -96,25 +100,30 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void InitSocket(Socket socket) {
-			InitConnectionBase(socket);
+			_socket = socket;
+		}
+
+		private void InitSendReceive() {
+			InitConnectionBase(_socket);
 			lock (_sendLock) {
-				_socket = socket;
 				try {
-					socket.NoDelay = true;
+					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
-					_socket = null;
+					return;
+				} catch (SocketException) {
+					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
 					return;
 				}
 
 				var receiveSocketArgs = SocketArgsPool.Get();
 				_receiveSocketArgs = receiveSocketArgs;
-				_receiveSocketArgs.AcceptSocket = socket;
+				_receiveSocketArgs.AcceptSocket = _socket;
 				_receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
 				var sendSocketArgs = SocketArgsPool.Get();
 				_sendSocketArgs = sendSocketArgs;
-				_sendSocketArgs.AcceptSocket = socket;
+				_sendSocketArgs.AcceptSocket = _socket;
 				_sendSocketArgs.Completed += OnSendAsyncCompleted;
 			}
 
@@ -138,7 +147,7 @@ namespace EventStore.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
+				if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
 				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 				_isSending = true;
 			}
@@ -344,7 +353,6 @@ namespace EventStore.Transport.Tcp {
 			if (_socket != null) {
 				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
 				Helper.EatException(() => _socket.Close());
-				_socket = null;
 			}
 
 			lock (_sendLock) {

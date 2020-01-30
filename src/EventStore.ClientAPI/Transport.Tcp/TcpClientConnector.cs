@@ -53,12 +53,15 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		internal void InitConnect(IPEndPoint serverEndPoint,
+			Action<Socket> onSocketAssigned,
 			Action<IPEndPoint, Socket> onConnectionEstablished,
 			Action<IPEndPoint, SocketError> onConnectionFailed,
 			ITcpConnection connection,
 			TimeSpan connectionTimeout) {
 			if (serverEndPoint == null)
 				throw new ArgumentNullException("serverEndPoint");
+			if (onSocketAssigned == null)
+				throw new ArgumentNullException("onSocketAssigned");
 			if (onConnectionEstablished == null)
 				throw new ArgumentNullException("onConnectionEstablished");
 			if (onConnectionFailed == null)
@@ -66,6 +69,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 			var socketArgs = _connectSocketArgsPool.Get();
 			var connectingSocket = new Socket(serverEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+			onSocketAssigned(connectingSocket);
 			socketArgs.RemoteEndPoint = serverEndPoint;
 			socketArgs.AcceptSocket = connectingSocket;
 			var callbacks = (CallbacksStateToken)socketArgs.UserToken;
