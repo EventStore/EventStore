@@ -128,9 +128,9 @@ namespace EventStore.Core.Services.Monitoring {
 					case OsFlavor.Linux:
 					case OsFlavor.MacOS:
 						var loadAverages = _hostStat.GetLoadAverages();
-						stats["sys-cpu-1m-loadaverage"] = loadAverages.Average1m;
-						stats["sys-cpu-5m-loadaverage"] = loadAverages.Average5m;
-						stats["sys-cpu-15m-loadaverage"] = loadAverages.Average15m;
+						stats["sys-loadavg-1m"] = loadAverages.Average1m;
+						stats["sys-loadavg-5m"] = loadAverages.Average5m;
+						stats["sys-loadavg-15m"] = loadAverages.Average15m;
 						break;
 					default:
 						stats["sys-cpu"] = -1;
