@@ -148,6 +148,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 			get { return _subscription.EventReader.EventReaderId; }
 		}
 
+		public FakeReaderStrategy() {
+		}
+
+		public FakeReaderStrategy(FakeReaderSubscription subscription) {
+			_subscription = subscription;
+		}
+
 		public IEventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher,
 			CheckpointTag checkpointTag, bool stopOnEof, int? stopAfterNEvents) {
 			throw new NotImplementedException();
@@ -155,7 +162,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 
 		public IReaderSubscription CreateReaderSubscription(IPublisher publisher, CheckpointTag fromCheckpointTag,
 			Guid subscriptionId, ReaderSubscriptionOptions readerSubscriptionOptions) {
-			_subscription = new FakeReaderSubscription();
+			if (_subscription is null) {
+				_subscription = new FakeReaderSubscription();
+			}
 			return _subscription;
 		}
 	}

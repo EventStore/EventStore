@@ -34,7 +34,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher(GetInputQueue());
 
-
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.CheckpointSuggested>());
 			_bus.Subscribe(
@@ -48,7 +47,6 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-
 
 			_bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
 			_bus.Subscribe<ReaderCoreServiceMessage.StopReader>(_readerService);
@@ -79,10 +77,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 		}
 
 		protected Guid GetReaderId() {
-			var readerAssignedMessage =
-				_consumer.HandledMessages.OfType<EventReaderSubscriptionMessage.ReaderAssignedReader>().LastOrDefault();
-			Assert.IsNotNull(readerAssignedMessage);
-			var reader = readerAssignedMessage.ReaderId;
+			var readerStartingMessage =
+				_consumer.HandledMessages.OfType<ReaderSubscriptionMessage.EventReaderIdle>().LastOrDefault();
+			Assert.IsNotNull(readerStartingMessage);
+			var reader = readerStartingMessage.CorrelationId;
 			return reader;
 		}
 	}

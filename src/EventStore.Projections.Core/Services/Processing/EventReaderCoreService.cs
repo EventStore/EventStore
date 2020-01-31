@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -110,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_subscriptionEventReaders[subscriptionId] = Guid.Empty;
 				_publisher.Publish(
 					new EventReaderSubscriptionMessage.ReaderAssignedReader(
-						subscriptionId, distributionPointCorrelationId));
+						subscriptionId, Guid.Empty));
 				return;
 			}
 
@@ -119,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_eventReaders.Add(distributionPointCorrelationId, eventReader);
 			_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
 			_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
-						_publisher.Publish(
+			_publisher.Publish(
 				new EventReaderSubscriptionMessage.ReaderAssignedReader(
 					subscriptionId, distributionPointCorrelationId));
 			eventReader.Resume();
