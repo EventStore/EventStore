@@ -52,16 +52,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				GetNextNMessages, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
 			Register(service, "/subscriptions/{stream}/{subscription}/info", HttpMethod.Get, GetSubscriptionInfo,
 				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, AuthorizationLevel.User,
-				AckMessage);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked?stopAt={stopAt}", HttpMethod.Post,
+				AuthorizationLevel.User, ReplayParkedMessages);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, 
+				AuthorizationLevel.User, AckMessage);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action}",
 				HttpMethod.Post, AuthorizationLevel.User, NackMessage);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, AuthorizationLevel.User,
-				AckMessages);
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, 
+				AuthorizationLevel.User, AckMessages);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action}",
 				HttpMethod.Post, AuthorizationLevel.User, NackMessages);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked", HttpMethod.Post,
-				AuthorizationLevel.User, ReplayParkedMessages);
 		}
 
 		private static ClientMessages.NakAction GetNackAction(HttpEntityManager manager, UriTemplateMatch match,
@@ -195,7 +195,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Publish(cmd);
 			http.ReplyStatus(HttpStatusCode.Accepted, "", exception => { });
 		}
-
+		
 		private void ReplayParkedMessages(HttpEntityManager http, UriTemplateMatch match) {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
@@ -226,8 +226,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				});
 			var groupname = match.BoundVariables["subscription"];
 			var stream = match.BoundVariables["stream"];
-			var cmd = new ClientMessage.ReplayAllParkedMessages(Guid.NewGuid(), Guid.NewGuid(), envelope, stream,
-				groupname, http.User);
+			var stopAtStr = match.BoundVariables["stopAt"];
+			
+			long? stopAt;
+			// if stopAt is declared...
+			if (stopAtStr != null) {
+				// check it is valid
+				if (!long.TryParse(stopAtStr, out var stopAtLong) || stopAtLong < 0) {
+					http.ReplyStatus(HttpStatusCode.BadRequest, "stopAt should be a properly formed positive long",
+						exception => { });
+					return;
+				}
+
+				stopAt = stopAtLong;
+			} else {
+				// else it's null
+				stopAt = null;
+			}
+
+			var cmd = new ClientMessage.ReplayParkedMessages(Guid.NewGuid(), Guid.NewGuid(), envelope, stream,
+				groupname, stopAt, http.User);
 			Publish(cmd);
 		}
 

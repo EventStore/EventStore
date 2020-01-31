@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<SystemMessage.BecomeMaster>,
 		IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
-		IHandle<ClientMessage.ReplayAllParkedMessages>,
+		IHandle<ClientMessage.ReplayParkedMessages>,
 		IHandle<ClientMessage.ReplayParkedMessage>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<ClientMessage.ConnectToPersistentSubscription>,
@@ -557,11 +557,20 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					messages));
 		}
 
-		public void Handle(ClientMessage.ReplayAllParkedMessages message) {
+		public void Handle(ClientMessage.ReplayParkedMessages message) {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey}", key);
+			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}", 
+				key,
+				message.StopAt.HasValue ? $" (To: '{message.StopAt.ToString()}')" : " (All)");
 
+			if (message.StopAt.HasValue && message.StopAt.Value < 0) {
+				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
+					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Fail,
+					"Cannot stop replaying parked message at a negative version."));
+				return;
+			}
+				
 			if (!IsUserOpsOrAdmin(message.User)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
@@ -576,7 +585,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			subscription.RetryAllParkedMessages();
+			subscription.RetryParkedMessages(message.StopAt);
 			message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 				ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
 		}
