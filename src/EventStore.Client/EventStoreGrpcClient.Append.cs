@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,33 +12,36 @@ namespace EventStore.Client {
 			StreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials = default,
+			TimeSpan? timeoutAfter = default,
 			CancellationToken cancellationToken = default) =>
 			AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
 					StreamName = streamName,
 					Revision = expectedRevision
 				}
-			}, eventData, userCredentials, cancellationToken);
+			}, eventData, userCredentials, timeoutAfter, cancellationToken);
 
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
 			AnyStreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials = default,
+			TimeSpan? timeoutAfter = default,
 			CancellationToken cancellationToken = default) =>
 			AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
 					StreamName = streamName
 				}
-			}.WithAnyStreamRevision(expectedRevision), eventData, userCredentials, cancellationToken);
+			}.WithAnyStreamRevision(expectedRevision), eventData, userCredentials, timeoutAfter, cancellationToken);
 
 		private async Task<WriteResult> AppendToStreamInternal(
 			AppendReq header,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials,
+			TimeSpan? timeoutAfter,
 			CancellationToken cancellationToken) {
 			using var call = _client.Append(RequestMetadata.Create(userCredentials),
-				cancellationToken: cancellationToken);
+				deadline: DeadLine.After(timeoutAfter), cancellationToken: cancellationToken);
 
 			await call.RequestStream.WriteAsync(header).ConfigureAwait(false);
 

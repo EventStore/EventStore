@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
-using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace EventStore.Client {
@@ -19,6 +18,7 @@ namespace EventStore.Client {
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
+		/// <param name="timeoutAfter">A <see cref="TimeSpan"/> after which to timeout the request.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
 		public IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
@@ -27,6 +27,7 @@ namespace EventStore.Client {
 			ulong maxCount,
 			bool resolveLinkTos = false,
 			IEventFilter filter = null,
+			TimeSpan? timeoutAfter = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
@@ -42,6 +43,7 @@ namespace EventStore.Client {
 				}
 			},
 			userCredentials,
+			timeoutAfter,
 			cancellationToken);
 
 		public IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(
@@ -50,6 +52,7 @@ namespace EventStore.Client {
 			StreamRevision revision,
 			ulong count,
 			bool resolveLinkTos = false,
+			TimeSpan? timeoutAfter = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
@@ -64,11 +67,13 @@ namespace EventStore.Client {
 				}
 			},
 			userCredentials,
+			timeoutAfter,
 			cancellationToken);
 
 		private async IAsyncEnumerable<ResolvedEvent> ReadInternal(
 			ReadReq request,
 			UserCredentials userCredentials,
+			TimeSpan? timeoutAfter,
 			[EnumeratorCancellation] CancellationToken cancellationToken) {
 			if (request.Options.CountOptionCase == ReadReq.Types.Options.CountOptionOneofCase.Count &&
 			    request.Options.Count <= 0) {
@@ -84,7 +89,7 @@ namespace EventStore.Client {
 
 			using var call = _client.Read(
 				request, RequestMetadata.Create(userCredentials),
-				cancellationToken: cancellationToken);
+				DeadLine.After(timeoutAfter), cancellationToken);
 
 			await foreach (var e in call.ResponseStream
 				.ReadAllAsync(cancellationToken)

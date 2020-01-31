@@ -23,6 +23,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				AnyStreamRevision.StreamExists.ToInt64(),
 				_ => throw new InvalidOperationException()
 			};
+			
+			if (context.Deadline < _timeProvider.UtcNow.Add(_commitTimeout)) {
+				throw new TimeoutException("Request could exceed the expected timeout.");
+			}
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 

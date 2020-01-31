@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
@@ -31,6 +30,7 @@ namespace EventStore.Client {
 					Filter = GetFilterOptions(filter)
 				}
 			}, userCredentials,
+			DeadLine.None,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
 		/// <summary>
@@ -59,6 +59,7 @@ namespace EventStore.Client {
 					Filter = GetFilterOptions(filter)
 				}
 			}, userCredentials,
+			DeadLine.None,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
 		public StreamSubscription SubscribeToStream(string streamName,
@@ -77,6 +78,7 @@ namespace EventStore.Client {
 				}
 			},
 			userCredentials,
+			TimeSpan.Zero,
 			cancellationToken), eventAppeared, subscriptionDropped);
 
 		public StreamSubscription SubscribeToStream(string streamName,
@@ -94,6 +96,7 @@ namespace EventStore.Client {
 				}
 			},
 			userCredentials,
+			DeadLine.None,
 			cancellationToken), eventAppeared, subscriptionDropped);
 	}
 }

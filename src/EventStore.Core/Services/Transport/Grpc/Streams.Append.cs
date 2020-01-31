@@ -6,8 +6,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.Streams;
+using EventStore.Core.Settings;
 using Grpc.Core;
-using UUID = EventStore.Client.Streams.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
@@ -17,6 +17,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (!await requestStream.MoveNext().ConfigureAwait(false))
 				throw new InvalidOperationException();
 
+			if (context.Deadline < _timeProvider.UtcNow.Add(_commitTimeout)) {
+				throw new TimeoutException("Request could exceed the expected timeout.");
+			}
+			
 			if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.Options)
 				throw new InvalidOperationException();
 

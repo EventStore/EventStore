@@ -15,13 +15,15 @@ namespace EventStore.Client {
 		public static Task SetSystemSettingsAsync(
 			this EventStoreClient client,
 			SystemSettings settings,
-			UserCredentials userCredentials = default, CancellationToken cancellationToken = default) {
+			UserCredentials userCredentials = default,
+			TimeSpan? timeoutAfter = default,
+			CancellationToken cancellationToken = default) {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			return client.AppendToStreamAsync(SystemStreams.SettingsStream, AnyStreamRevision.Any,
 				new[] {
 					new EventData(Uuid.NewUuid(), SystemEventTypes.Settings,
 						JsonSerializer.SerializeToUtf8Bytes(settings, SystemSettingsJsonSerializerOptions))
-				}, userCredentials, cancellationToken);
+				}, userCredentials, timeoutAfter, cancellationToken);
 		}
 
 		public static async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(
@@ -30,11 +32,12 @@ namespace EventStore.Client {
 			StreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials = default,
+			TimeSpan? timeoutAfter = default,
 			CancellationToken cancellationToken = default) {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
 				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken).ConfigureAwait(false);
+					timeoutAfter, cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;
@@ -49,11 +52,12 @@ namespace EventStore.Client {
 			AnyStreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
 			UserCredentials userCredentials = default,
+			TimeSpan? timeoutAfter = default,
 			CancellationToken cancellationToken = default) {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
 				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken).ConfigureAwait(false);
+					timeoutAfter, cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;

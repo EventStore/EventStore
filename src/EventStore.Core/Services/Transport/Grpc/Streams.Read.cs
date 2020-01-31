@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Util;
 using EventStore.Client;
 using EventStore.Client.Streams;
+using EventStore.Core.Settings;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
@@ -25,6 +26,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var readDirection = options.ReadDirection;
 			var filterOptionsCase = options.FilterOptionCase;
 			var uuidOptionsCase = options.UuidOption.ContentCase;
+			
+			if (context.Deadline < _timeProvider.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout)) {
+				throw new TimeoutException("Request could exceed the expected timeout.");
+			}
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
 

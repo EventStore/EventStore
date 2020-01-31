@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Http;
 using Microsoft.AspNetCore.Builder;
@@ -113,8 +114,8 @@ namespace EventStore.Core {
 						.AddRouting()
 						.AddSingleton(_internalAuthenticationProvider)
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex,
-							_vNodeSettings.MaxAppendSize))
+						.AddSingleton(new Streams(new RealTimeProvider(), _mainQueue, _internalAuthenticationProvider, _readIndex,
+							_vNodeSettings.MaxAppendSize, _vNodeSettings.CommitTimeout))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
 						.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
 						.AddSingleton(new Operations(_mainQueue, _internalAuthenticationProvider))
