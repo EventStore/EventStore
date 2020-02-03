@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			InMemoryBus output_,
 			ISingletonTimeoutScheduler timeoutScheduler) {
 			var output = (output_ ?? inputQueue);
-			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(1000);
+			ICheckpoint writerCheckpoint = new InMemoryCheckpoint(0);
 			var readerService = new EventReaderCoreService(
 				output,
 				_ioDispatcher,

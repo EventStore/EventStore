@@ -618,16 +618,37 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public void AssertStreamContains(string streamId, params string[] data) {
 			var message = string.Format("Invalid events in the '{0}' stream. ", streamId);
-			List<EventRecord> events;
-			Assert.That(_streams.TryGetValue(streamId, out events), message + "The stream does not exist.");
-			if (data.Length > 0)
-				Assert.IsNotEmpty(events, message + "The stream is empty.");
+			var eventsData = GetStreamEventData(streamId);
+			if (eventsData.Count > 0)
+				Assert.IsNotEmpty(eventsData, message + "The stream is empty.");
 
-			var eventsData = new HashSet<string>(events.Select(v => Encoding.UTF8.GetString(v.Data)));
 			var missing = data.Where(v => !eventsData.Contains(v)).ToArray();
 
 			Assert.That(missing.Length == 0,
 				string.Format("{0} does not contain: {1}", streamId, missing.Aggregate("", (a, v) => a + " " + v)));
+		}
+
+		public HashSet<string> GetStreamEventData(string streamId) {
+			Assert.That(_streams.TryGetValue(streamId, out var events), $"The stream '{streamId}' does not exist.");
+			return new HashSet<string>(events.Select(v => Encoding.UTF8.GetString(v.Data)));		
+		}
+		
+		public void AssertStreamDoesNotContain(string streamId, params string[] data) {
+			var eventsData = GetStreamEventData(streamId);
+			var existing = eventsData.Where(v => data.Contains(v)).ToArray();
+
+			Assert.That(existing.Length == 0,
+				string.Format("{0} contains: {1}", streamId, existing.Aggregate("", (a, v) => a + " " + v)));
+		}
+
+		public void AssertStreamMetadata(string streamId, string expected) {
+			var metaStreamName = $"$${streamId}";
+			var metaStream = _streams[metaStreamName];
+			Assert.IsNotEmpty(metaStream);
+			
+			var metadata = Encoding.UTF8.GetString(metaStream.Last().Data);
+			Assert.True(metadata.Contains(expected),
+				$"Expected meta stream '{metaStreamName}' to have metadata '{expected}', but was '{metadata}'");
 		}
 
 		public void AssertEvent(string streamId, long eventNumber, string data) {
