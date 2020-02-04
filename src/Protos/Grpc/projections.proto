@@ -33,6 +33,7 @@ message CreateReq {
 		message Continuous {
 			string name = 1;
 			bool track_emitted_streams = 2;
+			bool subscribe_from_end = 3;
 		}
 	}
 	message Empty {

@@ -54,10 +54,11 @@ namespace EventStore.ClientAPI.Projections {
 		}
 
 		public Task CreateContinuous(EndPoint endPoint, string name, string query, bool trackEmitted,
-			UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			bool subscribeFromEnd, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			return SendPost(
 				endPoint.ToHttpUrl(httpSchema,
-					"/projections/continuous?name={0}&type=JS&emit=1&trackemittedstreams={1}", name, trackEmitted),
+					"/projections/continuous?name={0}&type=JS&emit=1&trackemittedstreams={1}&subscribefromend={2}",
+					name, trackEmitted, subscribeFromEnd),
 				query, userCredentials, HttpStatusCode.Created);
 		}
 

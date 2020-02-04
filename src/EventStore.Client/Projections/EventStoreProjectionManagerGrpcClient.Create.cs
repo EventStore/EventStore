@@ -16,12 +16,14 @@ namespace EventStore.Client.Projections {
 		}
 
 		public async Task CreateContinuousAsync(string name, string query, bool trackEmittedStreams = false,
-			UserCredentials userCredentials = default, CancellationToken cancellationToken = default) {
+			bool subscribeFromEnd = false, UserCredentials userCredentials = default,
+			CancellationToken cancellationToken = default) {
 			using var call = _client.CreateAsync(new CreateReq {
 				Options = new CreateReq.Types.Options {
 					Continuous = new CreateReq.Types.Options.Types.Continuous {
 						Name = name,
-						TrackEmittedStreams = trackEmittedStreams
+						TrackEmittedStreams = trackEmittedStreams,
+						SubscribeFromEnd = subscribeFromEnd,
 					},
 					Query = query
 				}

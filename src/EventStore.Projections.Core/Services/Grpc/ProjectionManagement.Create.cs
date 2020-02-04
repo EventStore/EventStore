@@ -27,12 +27,12 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				ModeOneofCase.OneTime => ProjectionMode.OneTime,
 				_ => throw new InvalidOperationException()
 			};
-			// TODO: Verify that this is doing what we want
+			// TODO: We should have a separate option for emitEnabled
 			var emitEnabled = options.ModeCase switch {
 				ModeOneofCase.Continuous => options.Continuous.TrackEmittedStreams,
 				_ => false
 			};
-			var checkpointsEnables = options.ModeCase switch {
+			var checkpointsEnabled = options.ModeCase switch {
 				ModeOneofCase.Continuous => true,
 				ModeOneofCase.OneTime => false,
 				ModeOneofCase.Transient => false,
@@ -43,14 +43,16 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				(ModeOneofCase.Continuous, false) => true,
 				_ => false
 			};
-			// TODO: Implement subscribeFromEnd for grpc
-			var subscribeFromEnd = false;
+			var subscribeFromEnd = options.ModeCase switch {
+				ModeOneofCase.Continuous => options.Continuous.SubscribeFromEnd,
+				_ => false
+			};
 			var runAs = new ProjectionManagementMessage.RunAs(user);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
 			_queue.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
-				handlerType, options.Query, enabled, checkpointsEnables, emitEnabled, trackEmittedStreams,
+				handlerType, options.Query, enabled, checkpointsEnabled, emitEnabled, trackEmittedStreams,
 				subscribeFromEnd, true));
 
 			await createdSource.Task.ConfigureAwait(false);

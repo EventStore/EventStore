@@ -37,6 +37,10 @@ namespace EventStore.ClientAPI.Projections {
 		/// Maximum number of concurrent writes to allow for a projection.
 		/// </summary>
 		public readonly int MaxAllowedWritesInFlight = 0;
+		/// <summary>
+		/// Whether to start the projection from the end of the transaction log.
+		/// </summary>
+		public readonly bool SubscribeFromEnd = false;
 
 		/// <summary>
 		/// create a new <see cref="ProjectionConfig"/> class.
@@ -49,6 +53,7 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="pendingEventsThreshold">Number of events that can be pending before the projection is temporarily paused. Default: 5000</param>
 		/// <param name="maxWriteBatchLength">Maximum number of events the projection can write in a batch at a time. Default: 500</param>
 		/// <param name="maxAllowedWritesInFlight">Maximum number of concurrent writes to allow for a projection. Default: 0 (Unbounded)</param>
+		/// <param name="subscribeFromEnd">Whether to subscribe the projection from the end of the transaction log. Default: false</param>
 		public ProjectionConfig(
 			bool emitEnabled,
 			bool trackEmittedStreams,
@@ -57,7 +62,8 @@ namespace EventStore.ClientAPI.Projections {
 			int checkpointUnhandledBytesThreshold,
 			int pendingEventsThreshold,
 			int maxWriteBatchLength,
-			int maxAllowedWritesInFlight
+			int maxAllowedWritesInFlight,
+			bool subscribeFromEnd
 			) {
 			EmitEnabled = emitEnabled;
 			TrackEmittedStreams = trackEmittedStreams;
@@ -67,6 +73,7 @@ namespace EventStore.ClientAPI.Projections {
 			PendingEventsThreshold = pendingEventsThreshold;
 			MaxWriteBatchLength = maxWriteBatchLength;
 			MaxAllowedWritesInFlight = maxAllowedWritesInFlight;
+			SubscribeFromEnd = subscribeFromEnd;
 		}
 	}
 }

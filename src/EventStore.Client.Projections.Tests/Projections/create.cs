@@ -15,11 +15,11 @@ namespace EventStore.Client.Projections {
 				"fromAll().when({$init: function (state, ev) {return {};}});", TestCredentials.Root);
 		}
 
-		[Theory, InlineData(true), InlineData(false)]
-		public async Task continuous(bool trackEmittedStreams) {
+		[Theory, InlineData(true, true), InlineData(false, false)]
+		public async Task continuous(bool trackEmittedStreams, bool subscribeFromEnd) {
 			await _fixture.Client.ProjectionsManager.CreateContinuousAsync(
 				$"{nameof(continuous)}_{trackEmittedStreams}",
-				"fromAll().when({$init: function (state, ev) {return {};}});", trackEmittedStreams,
+				"fromAll().when({$init: function (state, ev) {return {};}});", trackEmittedStreams, subscribeFromEnd,
 				TestCredentials.Root);
 		}
 
