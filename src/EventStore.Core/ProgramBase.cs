@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -73,7 +73,6 @@ namespace EventStore.Core {
 				var msg = "Unhandled exception while starting application:";
 				if (LogManager.Initialized) {
 					Log.FatalException(ex, msg);
-					Log.FatalException(ex, "{e}", FormatExceptionMessage(ex));
 				} else {
 					Console.Error.WriteLine(msg);
 					Console.Error.WriteLine(FormatExceptionMessage(ex));
@@ -95,13 +94,9 @@ namespace EventStore.Core {
 
 				return exitCode;
 			} catch (Exception ex) {
-				if (LogManager.Initialized) {
-					Log.FatalException(ex, "{e}", FormatExceptionMessage(ex));
-				} else {
-					Console.Error.WriteLine(ex.Message);
+				if (!LogManager.Initialized) {
 					Console.Error.WriteLine(FormatExceptionMessage(ex));
 				}
-				
 				return 1;
 			}
 		}
