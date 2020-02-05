@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalSecureTcpOn(_externalSecTcp)
 				.EnableSsl()
 				.WithSslTargetHost("Host")
-				.ValidateSslServer()
+				.WithSslValidateMasterNode(true)
 				.WithServerCertificateFromFile(certPath, "1111");
 		}
 
@@ -52,8 +52,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		}
 
 		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
+		public void should_enable_validating_ssl_master_node() {
+			Assert.IsTrue(_settings.SslValidateMasterNode);
 		}
 
 		private string GetCertificatePath() {
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalSecureTcpOn(_externalSecTcp)
 				.EnableSsl()
 				.WithSslTargetHost("Host")
-				.ValidateSslServer()
+				.WithSslValidateMasterNode(true)
 				.WithServerCertificate(_certificate);
 		}
 
@@ -113,8 +113,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		}
 
 		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
+		public void should_enable_validating_ssl_master_node() {
+			Assert.IsTrue(_settings.SslValidateMasterNode);
 		}
 	}
 

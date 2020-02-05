@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert,
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert, false,
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)
@@ -68,6 +68,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				serverEndPoint,
 				"ES",
 				false,
+				null,
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
 				conn => {
