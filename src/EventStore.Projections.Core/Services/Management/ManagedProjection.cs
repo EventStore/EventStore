@@ -348,6 +348,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					PersistedProjectionState.Mode.ToString(),
 					PersistedProjectionState.TrackEmittedStreams,
 					!PersistedProjectionState.CheckpointsDisabled,
+					PersistedProjectionState.SubscribeFromEnd,
 					PersistedProjectionState.SourceDefinition,
 					projectionOutputConfig));
 		}

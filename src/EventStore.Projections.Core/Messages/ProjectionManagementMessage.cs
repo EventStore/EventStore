@@ -826,6 +826,7 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly string _projectionType;
 			private readonly bool? _trackEmittedStreams;
 			private readonly bool? _checkpointsEnabled;
+			private readonly bool? _subscribeFromEnd;
 
 			public ProjectionQuery(
 				string name,
@@ -834,6 +835,7 @@ namespace EventStore.Projections.Core.Messages {
 				string projectionType,
 				bool? trackEmittedStreams,
 				bool? checkpointsEnabled,
+				bool? subscribeFromEnd,
 				ProjectionSourceDefinition definition,
 				ProjectionOutputConfig outputConfig) {
 				_name = name;
@@ -842,6 +844,7 @@ namespace EventStore.Projections.Core.Messages {
 				_projectionType = projectionType;
 				_trackEmittedStreams = trackEmittedStreams;
 				_checkpointsEnabled = checkpointsEnabled;
+				_subscribeFromEnd = subscribeFromEnd;
 				_definition = definition;
 				_outputConfig = outputConfig;
 			}
@@ -864,6 +867,10 @@ namespace EventStore.Projections.Core.Messages {
 			
 			public bool? CheckpointsEnabled {
 				get { return _checkpointsEnabled; }
+			}
+
+			public bool? SubscribeFromEnd {
+				get { return _subscribeFromEnd; }
 			}
 
 			public string Type {
