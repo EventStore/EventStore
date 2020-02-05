@@ -39,6 +39,8 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '3.1.100'
+  - powershell: Import-Certificate -FilePath "src\EventStore.Core.Tests\Services\Transport\Tcp\test_certificates\ca\ca.crt" -CertStoreLocation Cert:\LocalMachine\Root
+    displayName: Install test CA root certificate
   - powershell: |
       dotnet build -c $(Configuration) src\EventStore.sln
       if (-Not $?) { throw "Exit code is $?" }
@@ -84,6 +86,10 @@ jobs:
     inputs:
       packageType: 'sdk'
       version: '3.1.100'
+  - bash: |
+      sudo cp src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt  /usr/local/share/ca-certificates/ca_eventstore_test.crt
+      sudo update-ca-certificates
+    displayName: Install test CA root certificate
   - bash: dotnet build -c $(Configuration) src/EventStore.sln
     displayName: Compile
   - bash: find ./src -maxdepth 1 -type d -name "*.Tests" -print0| xargs -0 -n1 dotnet test -v normal -c $(Configuration) --logger trx --blame --settings ./ci/ci.runsettings
