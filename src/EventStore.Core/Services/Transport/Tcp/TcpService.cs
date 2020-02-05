@@ -36,6 +36,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly IAuthenticationProvider _authProvider;
 		private readonly X509Certificate _certificate;
+		private readonly bool _sslValidateClient;
 		private readonly int _connectionPendingSendBytesThreshold;
 		private readonly int _connectionQueueSizeThreshold;
 
@@ -49,10 +50,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			X509Certificate certificate,
+			bool sslValidateClient,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold)
 			: this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher,
-				heartbeatInterval, heartbeatTimeout, authProvider, certificate, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
+				heartbeatInterval, heartbeatTimeout, authProvider, certificate, sslValidateClient, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
 		}
 
 		public TcpService(IPublisher publisher,
@@ -65,6 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			X509Certificate certificate,
+			bool sslValidateClient,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold) {
 			Ensure.NotNull(publisher, "publisher");
@@ -88,6 +91,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
 			_authProvider = authProvider;
 			_certificate = certificate;
+			_sslValidateClient = sslValidateClient;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
@@ -107,7 +111,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket) {
 			var conn = _securityType == TcpSecurityType.Secure
-				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
+				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, _sslValidateClient, verbose: true)
 				: TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
 			Log.Information(
 				"{serviceType} TCP connection accepted: [{securityType}, {remoteEndPoint}, L{localEndPoint}, {connectionId:B}].",

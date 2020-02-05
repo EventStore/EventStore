@@ -185,6 +185,7 @@ namespace EventStore.TestClient {
 					TcpConnectionManager.ConnectionTimeout,
 					TargetHost,
 					ValidateServer,
+					null,
 					onConnectionEstablished,
 					onConnectionFailed,
 					verbose: !InteractiveMode);

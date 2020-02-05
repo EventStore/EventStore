@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
@@ -47,12 +48,13 @@ namespace EventStore.Transport.Tcp {
 			TimeSpan connectionTimeout,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
 			bool verbose = true) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotNullOrEmpty(targetHost, "targetHost");
-			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint, targetHost, validateServer,
+			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint, targetHost, validateServer, clientCertificates,
 				this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
 		}
 
