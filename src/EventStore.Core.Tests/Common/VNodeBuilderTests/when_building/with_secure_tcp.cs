@@ -22,7 +22,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalSecureTcpOn(_externalSecTcp)
 				.EnableSsl()
 				.WithSslTargetHost("Host")
-				.ValidateSslServer()
 				.WithServerCertificateFromFile(certPath, string.Empty, "1111");
 		}
 
@@ -49,11 +48,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_ssl_target_host() {
 			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
 		}
 
 		private string GetCertificatePath() {
@@ -83,7 +77,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalSecureTcpOn(_externalSecTcp)
 				.EnableSsl()
 				.WithSslTargetHost("Host")
-				.ValidateSslServer()
 				.WithServerCertificate(_certificate);
 		}
 
@@ -110,11 +103,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_ssl_target_host() {
 			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
 		}
 	}
 

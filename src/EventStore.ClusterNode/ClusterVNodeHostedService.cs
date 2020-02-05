@@ -311,8 +311,6 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeDisableFlushToDisk();
 			if (options.BetterOrdering)
 				builder.WithBetterOrdering();
-			if (options.SslValidateServer)
-				builder.ValidateSslServer();
 			if (options.UseInternalSsl)
 				builder.EnableSsl();
 			if (options.EnableExternalTCP)

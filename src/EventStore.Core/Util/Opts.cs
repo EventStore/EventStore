@@ -350,11 +350,8 @@ namespace EventStore.Core.Util {
 		public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
 		public const bool DisableInsecureTCPDefault = false;
 
-		public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
+		public const string SslTargetHostDescr = "Target host of this node's SSL certificate.";
 		public static readonly string SslTargetHostDefault = "n/a";
-
-		public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
-		public const bool SslValidateServerDefault = true;
 
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;

@@ -235,9 +235,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.SslTargetHostDescr, Opts.InterfacesGroup)]
 		public string SslTargetHost { get; set; }
 
-		[ArgDescription(Opts.SslValidateServerDescr, Opts.InterfacesGroup)]
-		public bool SslValidateServer { get; set; }
-
 		[ArgDescription(Opts.AuthenticationTypeDescr, Opts.AuthGroup)]
 		public string AuthenticationType { get; set; }
 
@@ -408,7 +405,6 @@ namespace EventStore.ClusterNode {
 			UseInternalSsl = Opts.UseInternalSslDefault;
 			DisableInsecureTCP = Opts.DisableInsecureTCPDefault;
 			SslTargetHost = Opts.SslTargetHostDefault;
-			SslValidateServer = Opts.SslValidateServerDefault;
 
 			AuthenticationType = Opts.AuthenticationTypeDefault;
 			AuthenticationConfig = Opts.AuthenticationConfigFileDefault;

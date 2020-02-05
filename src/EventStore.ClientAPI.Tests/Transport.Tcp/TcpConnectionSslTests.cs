@@ -52,7 +52,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
+					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
 
 				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
@@ -100,6 +100,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 						(IPEndPoint)listeningSocket.LocalEndPoint,
 						"localhost",
 						false,
+						null,
 						new TcpClientConnector(),
 						TimeSpan.FromSeconds(5),
 						(conn) => {},
@@ -113,7 +114,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					serverSocket = listeningSocket.Accept();
 					clientTcpConnection.Close("Intentional close");
 					serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false);
+						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
 
 					mre.Wait(TimeSpan.FromSeconds(10));
 					SpinWait.SpinUntil(() => serverTcpConnection.IsClosed, TimeSpan.FromSeconds(10));

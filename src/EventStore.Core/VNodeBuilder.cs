@@ -71,7 +71,6 @@ namespace EventStore.Core {
 		protected bool _enableExternalTCP;
 		protected bool _disableInsecureTCP;
 		protected string _sslTargetHost;
-		protected bool _sslValidateServer;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -190,7 +189,6 @@ namespace EventStore.Core {
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
 			_sslTargetHost = Opts.SslTargetHostDefault;
-			_sslValidateServer = Opts.SslValidateServerDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
 
@@ -555,15 +553,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithSslTargetHost(string targetHost) {
 			_sslTargetHost = targetHost;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets whether to validate that the server's certificate is trusted.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder ValidateSslServer() {
-			_sslValidateServer = true;
 			return this;
 		}
 
@@ -1388,7 +1377,6 @@ namespace EventStore.Core {
 				_useSsl,
 				_disableInsecureTCP,
 				_sslTargetHost,
-				_sslValidateServer,
 				_statsPeriod,
 				_statsStorage,
 				_nodePriority,
