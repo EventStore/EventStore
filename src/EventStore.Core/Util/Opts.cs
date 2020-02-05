@@ -221,7 +221,7 @@ namespace EventStore.Core.Util {
 		public static readonly string CertificateThumbprintDefault = string.Empty;
 		
 		public const string EnableHTTPInterfaceDescr =
-			"Client requests using the HTTP API.";
+			"Enable the HTTP Interface.";
 
 		public static readonly bool EnableHTTPInterfaceDefault = true;
 

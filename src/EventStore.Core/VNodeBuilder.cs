@@ -256,7 +256,7 @@ namespace EventStore.Core {
 		/// <summary>
 		/// Enable HTTP API Interface
 		/// </summary>
-		/// <param name="EnableHTTPInterface">Enable structured logging</param>
+		/// <param name="EnableHTTPInterface">Enable HTTP Interface</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithEnableHTTPInterface(bool enableHTTPInterface) {
 			_enableHTTPInterface = enableHTTPInterface;
