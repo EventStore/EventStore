@@ -40,6 +40,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					"localhost",
 					false,
+					null,
 					new ClientAPI.Transport.Tcp.TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
 					(conn) => mre.Set(),

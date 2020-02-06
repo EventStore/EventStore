@@ -20,6 +20,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
 			Action<ITcpConnection> onConnectionEstablished,
@@ -32,7 +33,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(targetHost, validateServer);
+					connection.InitSslStream(targetHost, validateServer, clientCertificates);
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},
@@ -92,7 +93,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			_socket = socket;
 		}
 
-		private void InitSslStream(string targetHost, bool validateServer) {
+		private void InitSslStream(string targetHost, bool validateServer, X509CertificateCollection clientCertificates) {
 			Ensure.NotNull(targetHost, "targetHost");
 			InitConnectionBase(_socket);
 			//_log.Info("TcpConnectionSsl::InitSslStream({0}, L{1})", RemoteEndPoint, LocalEndPoint);
@@ -126,7 +127,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					var enabledSslProtocols = SslProtocols.Tls12;
 					#endif
 
-					_sslStream.BeginAuthenticateAsClient(targetHost, null, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
+					_sslStream.BeginAuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					_log.Info(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.",
 						RemoteEndPoint, LocalEndPoint);

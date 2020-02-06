@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -30,6 +32,7 @@ namespace EventStore.ClientAPI {
 		private bool _useSslConnection;
 		private string _targetHost;
 		private bool _validateServer;
+		private X509Certificate2 _clientCertificate;
 
 		private bool _failOnNoServerResponse;
 		private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
@@ -265,6 +268,42 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
+		/// Uses a SSL connection over TCP and authenticate with a client certificate.
+		/// </summary>
+		/// <param name="targetHost">HostName of server certificate.</param>
+		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
+		/// <param name="clientCertificatePath">Use a client certificate to authenticate with the server.</param>
+		/// <param name="clientCertificatePassword">The password of the client certificate.</param>
+		/// <returns></returns>
+		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer, string clientCertificatePath, string clientCertificatePassword) {
+			Ensure.NotNullOrEmpty(targetHost, "targetHost");
+			Ensure.NotNull(clientCertificatePath, "clientCertificatePath");
+			Ensure.NotNull(clientCertificatePassword, "clientCertificatePassword");
+			_useSslConnection = true;
+			_targetHost = targetHost;
+			_validateServer = validateServer;
+			_clientCertificate = new X509Certificate2(File.ReadAllBytes(clientCertificatePath), clientCertificatePassword);
+			return this;
+		}
+
+		/// <summary>
+		/// Uses a SSL connection over TCP and authenticate with a client certificate.
+		/// </summary>
+		/// <param name="targetHost">HostName of server certificate.</param>
+		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
+		/// <param name="clientCertificate">Use a client certificate to authenticate with the server.</param>
+		/// <returns></returns>
+		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer, X509Certificate clientCertificate) {
+			Ensure.NotNullOrEmpty(targetHost, "targetHost");
+			Ensure.NotNull(clientCertificate, "clientCertificate");
+			_useSslConnection = true;
+			_targetHost = targetHost;
+			_validateServer = validateServer;
+			_clientCertificate = new X509Certificate2(clientCertificate);
+			return this;
+		}
+
+		/// <summary>
 		/// Marks that no response from server should cause an error on the request.
 		/// </summary>
 		/// <returns></returns>
@@ -474,6 +513,7 @@ namespace EventStore.ClientAPI {
 				_useSslConnection,
 				_targetHost,
 				_validateServer,
+				_clientCertificate,
 				_failOnNoServerResponse,
 				_heartbeatInterval,
 				_heartbeatTimeout,

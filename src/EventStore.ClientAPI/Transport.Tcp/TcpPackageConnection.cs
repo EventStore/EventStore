@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -41,6 +42,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			bool ssl,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			TimeSpan timeout,
 			Action<TcpPackageConnection, TcpPackage> handlePackage,
 			Action<TcpPackageConnection, Exception> onError,
@@ -71,6 +73,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				ssl,
 				targetHost,
 				validateServer,
+				clientCertificates,
 				timeout,
 				tcpConnection => {
 					connectionCreated.Wait();

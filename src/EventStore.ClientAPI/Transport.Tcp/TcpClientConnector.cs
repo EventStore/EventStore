@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
 
@@ -35,6 +36,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			bool ssl,
 			string targetHost,
 			bool validateServer,
+			X509CertificateCollection clientCertificates,
 			TimeSpan timeout,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
@@ -43,7 +45,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			if (ssl) {
 				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 				return TcpConnectionSsl.CreateConnectingConnection(
-					log, connectionId, remoteEndPoint, targetHost, validateServer,
+					log, connectionId, remoteEndPoint, targetHost, validateServer, clientCertificates,
 					this, timeout, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 			}
 

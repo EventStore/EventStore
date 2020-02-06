@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
@@ -165,6 +166,7 @@ namespace EventStore.ClientAPI.Internal {
 				_settings.UseSslConnection,
 				_settings.TargetHost,
 				_settings.ValidateServer,
+				_settings.ClientCertificate != null ? new X509Certificate2Collection(_settings.ClientCertificate) : null,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
 				(connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
@@ -263,7 +265,18 @@ namespace EventStore.ClientAPI.Internal {
 				connection.LocalEndPoint, connection.ConnectionId);
 			_heartbeatInfo = new HeartbeatInfo(_packageNumber, true, _stopwatch.Elapsed);
 
-			if (_settings.DefaultUserCredentials != null) {
+			var clientCertificateCN = _settings.ClientCertificate?.GetNameInfo(X509NameType.SimpleName, false);
+			if (!string.IsNullOrEmpty(clientCertificateCN)) {
+				_connectingPhase = ConnectingPhase.Authentication;
+				_authInfo = new AuthInfo(Guid.NewGuid(), _stopwatch.Elapsed);
+				_connection.EnqueueSend(new TcpPackage(TcpCommand.Authenticate,
+					TcpFlags.Authenticated,
+					_authInfo.CorrelationId,
+					clientCertificateCN, /*this username is not used by the server but it needs to be non-empty*/
+					"-", /*this password is not used by the server but it needs to be non-empty*/
+					null));
+			}
+			else if (_settings.DefaultUserCredentials != null) {
 				_connectingPhase = ConnectingPhase.Authentication;
 
 				_authInfo = new AuthInfo(Guid.NewGuid(), _stopwatch.Elapsed);

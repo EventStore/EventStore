@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
@@ -110,6 +111,11 @@ namespace EventStore.ClientAPI {
 		public readonly bool ValidateServer;
 
 		/// <summary>
+		/// A client certificate to authenticate the client with the server.
+		/// </summary>
+		public readonly X509Certificate2 ClientCertificate;
+
+		/// <summary>
 		/// Whether to raise an error if no response is received from the server for an operation.
 		/// </summary>
 		public readonly bool FailOnNoServerResponse;
@@ -174,6 +180,7 @@ namespace EventStore.ClientAPI {
 			bool useSslConnection,
 			string targetHost,
 			bool validateServer,
+			X509Certificate2 clientCertificate,
 			bool failOnNoServerResponse,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
@@ -221,6 +228,7 @@ namespace EventStore.ClientAPI {
 			UseSslConnection = useSslConnection;
 			TargetHost = targetHost;
 			ValidateServer = validateServer;
+			ClientCertificate = clientCertificate;
 
 			FailOnNoServerResponse = failOnNoServerResponse;
 			HeartbeatInterval = heartbeatInterval;
