@@ -13,8 +13,8 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task writes_to_the_correct_stream(bool useSsl) {
-			var connection = _fixture.Connections[useSsl];
+		public async Task writes_to_the_correct_stream(SslType sslType) {
+			var connection = _fixture.Connections[sslType];
 			var expected = new SystemSettings(
 				new StreamAcl(
 					Guid.NewGuid().ToString(),
@@ -40,8 +40,8 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task without_permission_throws(bool useSsl) {
-			var connection = _fixture.Connections[useSsl];
+		public async Task without_permission_throws(SslType sslType) {
+			var connection = _fixture.Connections[sslType];
 			await Assert.ThrowsAsync<AccessDeniedException>(() => connection.SetSystemSettingsAsync(new SystemSettings(
 				new StreamAcl(
 					Guid.NewGuid().ToString(),
@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI.Tests {
 		public Task InitializeAsync() => Task.CompletedTask;
 
 		public async Task DisposeAsync() {
-			var connection = _fixture.Connections[false];;
+			var connection = _fixture.Connections[SslType.None];;
 
 			await connection.SetSystemSettingsAsync(new SystemSettings(null, null), DefaultUserCredentials.Admin)
 				.WithTimeout();

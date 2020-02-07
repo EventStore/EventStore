@@ -11,9 +11,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task for_non_existing_stream_returns_default(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task for_non_existing_stream_returns_default(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 			var meta = await connection.GetStreamMetadataAsRawBytesAsync(streamName).WithTimeout();
 			Assert.Equal(streamName, meta.Stream);
 			Assert.False(meta.IsStreamDeleted);

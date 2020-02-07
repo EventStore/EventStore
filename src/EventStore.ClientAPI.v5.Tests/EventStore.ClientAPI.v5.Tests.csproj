@@ -5,6 +5,7 @@
 		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 		<UseLinkBase>true</UseLinkBase>
 		<Platforms>x64</Platforms>
+		<DefineConstants>$(DefineConstants);CLIENT_API_V5</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="5.0.5" />
@@ -21,6 +22,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\**\*filtered*.cs;..\EventStore.ClientAPIAcceptanceTests\**\*FilterCases.cs" />
-		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\**\*.p12"/>
 	</ItemGroup>
 </Project>

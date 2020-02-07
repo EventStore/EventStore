@@ -11,9 +11,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(ExpectedVersionTestCases))]
-		public async Task expected_version(long expectedVersion, string displayName, bool useSsl) {
-			var streamName = $"{GetStreamName()}_{displayName}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task expected_version(long expectedVersion, string displayName, SslType sslType) {
+			var streamName = $"{GetStreamName()}_{displayName}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			using var transaction = await connection.StartTransactionAsync(streamName, expectedVersion).WithTimeout();
 
@@ -23,9 +23,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task wrong_expected_version(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task wrong_expected_version(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			using var transaction = await connection.StartTransactionAsync(streamName, 1).WithTimeout();
 			await transaction.WriteAsync(_fixture.CreateTestEvents()).WithTimeout();

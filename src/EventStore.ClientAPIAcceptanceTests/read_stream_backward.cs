@@ -11,9 +11,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task when_the_stream_exists(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task when_the_stream_exists(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			var testEvents = _fixture.CreateTestEvents(3).ToArray();
 
@@ -30,9 +30,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task when_the_stream_does_not_exist(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task when_the_stream_does_not_exist(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			var result = await connection.ReadStreamEventsBackwardAsync(streamName, -1, 5, false).WithTimeout();
 
@@ -42,9 +42,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task when_the_stream_is_deleted(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task when_the_stream_is_deleted(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			await connection.AppendToStreamAsync(streamName, ExpectedVersion.NoStream, _fixture.CreateTestEvents(3));
 			await connection.DeleteStreamAsync(streamName, ExpectedVersion.Any).WithTimeout();

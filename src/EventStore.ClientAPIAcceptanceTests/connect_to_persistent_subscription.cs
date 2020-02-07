@@ -13,9 +13,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory(Skip = "busted on 5.x"), MemberData(nameof(UseSslTestCases))]
-		public async Task that_does_not_exist_throws(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task that_does_not_exist_throws(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			await Assert.ThrowsAsync<ArgumentException>(() => connection.ConnectToPersistentSubscriptionAsync(
 				streamName, Group,
@@ -23,9 +23,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task that_does_exist_succeeds(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task that_does_exist_succeeds(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			await connection.CreatePersistentSubscriptionAsync(streamName, Group,
 				PersistentSubscriptionSettings.Create(), DefaultUserCredentials.Admin).WithTimeout();

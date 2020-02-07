@@ -13,9 +13,9 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task returns_expected_result(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+		public async Task returns_expected_result(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
+			var connection = _fixture.Connections[sslType];
 
 			var testEvents = _fixture.CreateTestEvents(3).ToArray();
 
@@ -33,14 +33,14 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		public async Task InitializeAsync() {
-			var connection = _fixture.Connections[false];;
+			var connection = _fixture.Connections[SslType.None];;
 
 			await connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All), DefaultUserCredentials.Admin).WithTimeout();
 		}
 
 		public async Task DisposeAsync() {
-			var connection = _fixture.Connections[false];;
+			var connection = _fixture.Connections[SslType.None];;
 
 			await connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any,
 				StreamMetadata.Build().SetReadRole(null), DefaultUserCredentials.Admin).WithTimeout();

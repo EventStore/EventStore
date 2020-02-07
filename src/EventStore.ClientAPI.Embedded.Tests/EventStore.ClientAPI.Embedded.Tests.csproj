@@ -5,6 +5,7 @@
 		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 		<UseLinkBase>true</UseLinkBase>
 		<Platforms>x64</Platforms>
+		<DefineConstants>$(DefineConstants);CLIENT_API_EMBEDDED</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
@@ -22,6 +23,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\connect.cs" />
-		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\**\*.p12"/>
 	</ItemGroup>
 </Project>

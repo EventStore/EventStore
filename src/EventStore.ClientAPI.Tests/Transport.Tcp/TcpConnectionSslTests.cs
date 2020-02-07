@@ -138,10 +138,10 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 		}
 
 		private X509Certificate GetCertificate() {
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(EventStoreClientAPIFixture), "server.p12");
+			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(EventStoreClientAPIFixture), "test_certificates.server.server.p12");
 			using var mem = new MemoryStream();
 			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
+			return new X509Certificate2(mem.ToArray(), "password");
 		}
 	}
 }

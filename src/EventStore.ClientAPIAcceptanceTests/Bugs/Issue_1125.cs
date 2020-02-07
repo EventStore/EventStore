@@ -19,11 +19,11 @@ namespace EventStore.ClientAPI.Tests.Bugs {
 		}
 
 		public static IEnumerable<object[]> TestCases() => from i in Enumerable.Range(0, 50)
-			from useSsl in UseSsl
-			select new object[] {i, useSsl};
+			from sslType in SslTypes
+			select new object[] {i, sslType};
 
 		[Theory(Skip = "Fixed in EventStoreClient"), MemberData(nameof(TestCases))]
-		public async Task persistent_subscription_delivers_all_events(int iteration, bool useSsl) {
+		public async Task persistent_subscription_delivers_all_events(int iteration, SslType sslType) {
 			const int eventCount = 250;
 			const int totalEvents = eventCount * 2;
 			EventStorePersistentSubscriptionBase subscription = null;
@@ -33,12 +33,12 @@ namespace EventStore.ClientAPI.Tests.Bugs {
 
 				int hitCount = 0;
 
-				var streamName = $"stream_{iteration}_{useSsl}";
-				var subscriptionName = $"subscription_{iteration}_{useSsl}";
+				var streamName = $"stream_{iteration}_{sslType}";
+				var subscriptionName = $"subscription_{iteration}_{sslType}";
 
 				var completed = new AutoResetEvent(false);
 
-				var connection = _fixture.Connections[useSsl];
+				var connection = _fixture.Connections[sslType];
 
 				for (var i = 0; i < eventCount; i++) {
 					await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents())

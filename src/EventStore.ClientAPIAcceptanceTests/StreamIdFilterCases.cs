@@ -6,11 +6,11 @@ using System.Text.RegularExpressions;
 namespace EventStore.ClientAPI.Tests {
 	public class StreamIdFilterCases : IEnumerable<object[]> {
 		public IEnumerator<object[]> GetEnumerator() {
-			var useSslCases = new[] {true, false};
+			var sslTypesCases = EventStoreClientAPITest.SslTypes;
 
-			foreach (var useSsl in useSslCases) {
-				yield return new object[] {useSsl, StreamIdPrefix, nameof(StreamIdPrefix)};
-				yield return new object[] {useSsl, StreamIdRegex, nameof(StreamIdRegex)};
+			foreach (var sslType in sslTypesCases) {
+				yield return new object[] {sslType, StreamIdPrefix, nameof(StreamIdPrefix)};
+				yield return new object[] {sslType, StreamIdRegex, nameof(StreamIdRegex)};
 			}
 		}
 

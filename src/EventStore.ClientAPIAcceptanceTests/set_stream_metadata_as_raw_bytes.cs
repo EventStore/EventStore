@@ -11,18 +11,18 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(ExpectedVersionTestCases))]
-		public async Task for_non_existing_stream(long expectedVersion, string displayName, bool useSsl) {
-			var streamName = $"{GetStreamName()}_{displayName}_{useSsl}";
+		public async Task for_non_existing_stream(long expectedVersion, string displayName, SslType sslType) {
+			var streamName = $"{GetStreamName()}_{displayName}_{sslType}";
 
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 			await connection.SetStreamMetadataAsync(streamName, expectedVersion, Array.Empty<byte>()).WithTimeout();
 		}
 
 		[Theory, MemberData(nameof(ExpectedVersionTestCases))]
-		public async Task for_existing_stream(long expectedVersion, string displayName, bool useSsl) {
-			var streamName = $"{GetStreamName()}_{displayName}_{useSsl}";
+		public async Task for_existing_stream(long expectedVersion, string displayName, SslType sslType) {
+			var streamName = $"{GetStreamName()}_{displayName}_{sslType}";
 
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 			await connection.AppendToStreamAsync(streamName, expectedVersion, _fixture.CreateTestEvents())
 				.WithTimeout();
 

@@ -15,12 +15,12 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, ClassData(typeof(StreamIdFilterCases))]
-		public async Task stream_id_filter_returns_expected_result(bool useSsl, Func<string, Filter> getFilter,
+		public async Task stream_id_filter_returns_expected_result(SslType sslType, Func<string, Filter> getFilter,
 			string name) {
-			var streamPrefix = $"{GetStreamName()}_{useSsl}_{name}";
+			var streamPrefix = $"{GetStreamName()}_{sslType}_{name}";
 			var testEvents = _fixture.CreateTestEvents(10).ToArray();
 
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			foreach (var e in testEvents) {
 				await connection.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}", ExpectedVersion.NoStream, e);
@@ -36,16 +36,16 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, ClassData(typeof(EventTypeFilterCases))]
-		public async Task event_type_filter_returns_expected_result(bool useSsl, Func<string, Filter> getFilter,
+		public async Task event_type_filter_returns_expected_result(SslType sslType, Func<string, Filter> getFilter,
 			string name) {
-			var eventTypePrefix = $"{GetStreamName()}_{useSsl}_{name}";
+			var eventTypePrefix = $"{GetStreamName()}_{sslType}_{name}";
 
 			var testEvents = _fixture.CreateTestEvents(10)
 				.Select(e =>
 					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.IsJson, e.Data, e.Metadata))
 				.ToArray();
 
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			foreach (var e in testEvents) {
 				await connection.AppendToStreamAsync(Guid.NewGuid().ToString("n"), ExpectedVersion.NoStream, e);
@@ -61,14 +61,14 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		public async Task InitializeAsync() {
-			var connection = _fixture.Connections[false];;
+			var connection = _fixture.Connections[SslType.None];;
 
 			await connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All), DefaultUserCredentials.Admin).WithTimeout();
 		}
 
 		public async Task DisposeAsync() {
-			var connection = _fixture.Connections[false];;
+			var connection = _fixture.Connections[SslType.None];;
 
 			await connection.SetStreamMetadataAsync("$all", ExpectedVersion.Any,
 				StreamMetadata.Build().SetReadRole(null), DefaultUserCredentials.Admin).WithTimeout();

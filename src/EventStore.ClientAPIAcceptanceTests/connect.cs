@@ -14,17 +14,17 @@ namespace EventStore.ClientAPI.Tests {
 
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task does_not_throw_when_server_is_down(bool useSsl) {
-			using var connection = _fixture.CreateConnection(builder => builder.UseSsl(useSsl),
+		public async Task does_not_throw_when_server_is_down(SslType sslType) {
+			using var connection = _fixture.CreateConnection(builder => builder.UseSsl(sslType),
 				EventStoreClientAPIFixture.ExternalPort + 1);
 			await connection.ConnectAsync().WithTimeout();
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task reopening_a_closed_connection_throws(bool useSsl) {
+		public async Task reopening_a_closed_connection_throws(SslType sslType) {
 			var closedSource = new TaskCompletionSource<bool>();
 			using var connection = _fixture.CreateConnection(builder => builder
-					.UseSsl(useSsl)
+					.UseSsl(sslType)
 					.LimitReconnectionsTo(0)
 					.WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
 					.SetReconnectionDelayTo(TimeSpan.Zero)
@@ -41,10 +41,10 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task closes_after_configured_amount_of_failed_reconnections(bool useSsl) {
+		public async Task closes_after_configured_amount_of_failed_reconnections(SslType sslType) {
 			var closedSource = new TaskCompletionSource<bool>();
 			using var connection = _fixture.CreateConnection(
-				builder => builder.UseSsl(useSsl)
+				builder => builder.UseSsl(sslType)
 					.LimitReconnectionsTo(1)
 					.WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
 					.SetReconnectionDelayTo(TimeSpan.Zero)

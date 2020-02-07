@@ -12,10 +12,10 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task from_non_existing_stream(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
+		public async Task from_non_existing_stream(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
 			var eventAppearedSource = new TaskCompletionSource<ResolvedEvent>();
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared, subscriptionDropped: SubscriptionDropped);
@@ -38,11 +38,11 @@ namespace EventStore.ClientAPI.Tests {
 
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task concurrently(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
+		public async Task concurrently(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
 			var eventAppearedSource1 = new TaskCompletionSource<ResolvedEvent>();
 			var eventAppearedSource2 = new TaskCompletionSource<ResolvedEvent>();
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared1, subscriptionDropped: SubscriptionDropped1);
@@ -78,11 +78,11 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task drops_on_subscriber_error(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
+		public async Task drops_on_subscriber_error(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
 			var droppedSource = new TaskCompletionSource<(SubscriptionDropReason, Exception)>();
 			var expectedException = new Exception("subscriber error");
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			connection.SubscribeToStreamFrom(streamName, default, CatchUpSubscriptionSettings.Default,
 				EventAppeared, subscriptionDropped: SubscriptionDropped);
@@ -104,10 +104,10 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task drops_on_unsubscribed(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
+		public async Task drops_on_unsubscribed(SslType sslType) {
+			var streamName = $"{GetStreamName()}_{sslType}";
 			var droppedSource = new TaskCompletionSource<(SubscriptionDropReason, Exception)>();
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[sslType];
 
 			var subscription = connection.SubscribeToStreamFrom(streamName, 0L, CatchUpSubscriptionSettings.Default,
 				EventAppeared, subscriptionDropped: SubscriptionDropped);
