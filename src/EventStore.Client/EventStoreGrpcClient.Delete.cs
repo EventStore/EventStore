@@ -18,6 +18,14 @@ namespace EventStore.Client {
 				}
 			}, operationOptions, userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Soft Deletes a stream asynchronously.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to delete.</param>
+		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream being deleted.</param>
+		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
 			StreamRevision expectedRevision,
@@ -25,6 +33,15 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) => SoftDeleteAsync(streamName, expectedRevision,
 			_settings.OperationOptions, userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Soft Deletes a stream asynchronously.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to delete.</param>
+		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream being deleted.</param>
+		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
+		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
 			StreamRevision expectedRevision,
@@ -50,6 +67,14 @@ namespace EventStore.Client {
 				}
 			}.WithAnyStreamRevision(expectedRevision), operationOptions, userCredentials, cancellationToken);
 		
+		/// <summary>
+		/// Soft Deletes a stream asynchronously.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to delete.</param>
+		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream being deleted.</param>
+		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
 			AnyStreamRevision expectedRevision,
@@ -57,6 +82,15 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) => SoftDeleteAsync(streamName, expectedRevision,
 			_settings.OperationOptions, userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Soft Deletes a stream asynchronously.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to delete.</param>
+		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream being deleted.</param>
+		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
+		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
 			AnyStreamRevision expectedRevision,

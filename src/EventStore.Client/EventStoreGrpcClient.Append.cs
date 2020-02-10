@@ -21,6 +21,15 @@ namespace EventStore.Client {
 				}
 			}, eventData, operationOptions, userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Appends events asynchronously to a stream.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to append events to.</param>
+		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream to append to.</param>
+		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
+		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
 			StreamRevision expectedRevision,
@@ -30,6 +39,16 @@ namespace EventStore.Client {
 			AppendToStreamAsync(streamName, expectedRevision, eventData, _settings.OperationOptions,
 				userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Appends events asynchronously to a stream.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to append events to.</param>
+		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream to append to.</param>
+		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
+		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
+		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
 			StreamRevision expectedRevision,
@@ -58,6 +77,16 @@ namespace EventStore.Client {
 				}
 			}.WithAnyStreamRevision(expectedRevision), eventData, operationOptions, userCredentials, cancellationToken);
 
+		/// <summary>
+		/// Appends events asynchronously to a stream.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to append events to.</param>
+		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream to append to.</param>
+		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
+		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
+		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
 			AnyStreamRevision expectedRevision,
@@ -73,6 +102,15 @@ namespace EventStore.Client {
 				cancellationToken);
 		}
 
+		/// <summary>
+		/// Appends events asynchronously to a stream.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to append events to.</param>
+		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream to append to.</param>
+		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
+		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
 		public Task<WriteResult> AppendToStreamAsync(
 			string streamName,
 			AnyStreamRevision expectedRevision,
