@@ -17,6 +17,7 @@ namespace EventStore.Client {
 			},
 		};
 
+		private readonly EventStoreClientSettings _settings;
 		private readonly GrpcChannel _channel;
 		private readonly Streams.Streams.StreamsClient _client;
 		public EventStorePersistentSubscriptionsClient PersistentSubscriptions { get; }
@@ -24,7 +25,7 @@ namespace EventStore.Client {
 		public EventStoreUserManagerClient UsersManager { get; }
 
 		public EventStoreClient(EventStoreClientSettings settings = null) {
-			settings ??= new EventStoreClientSettings(new UriBuilder {
+			_settings = settings ??= new EventStoreClientSettings(new UriBuilder {
 				Scheme = Uri.UriSchemeHttps,
 				Port = 2113
 			}.Uri);

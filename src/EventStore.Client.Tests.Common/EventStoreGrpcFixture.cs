@@ -27,7 +27,8 @@ namespace EventStore.Client {
 
 		protected EventStoreGrpcFixture(
 			Action<VNodeBuilder> configureVNode = default,
-			Action<IWebHostBuilder> configureWebHost = default) {
+			Action<IWebHostBuilder> configureWebHost = default,
+			EventStoreClientSettings clientSettings = default) {
 			var webHostBuilder = new WebHostBuilder();
 			configureWebHost?.Invoke(webHostBuilder);
 
@@ -42,11 +43,15 @@ namespace EventStore.Client {
 				webHostBuilder
 					.UseStartup(new TestClusterVNodeStartup(Node)));
 
-			Client = new EventStoreClient(new UriBuilder().Uri, () => new HttpClient(new ResponseVersionHandler {
-				InnerHandler = TestServer.CreateHandler()
-			}) {
-				Timeout = Timeout.InfiniteTimeSpan
-			});
+			var settings = clientSettings ?? new EventStoreClientSettings(new UriBuilder().Uri) {
+				CreateHttpClient = () => new HttpClient(new ResponseVersionHandler {
+					InnerHandler = TestServer.CreateHandler()
+				}) {
+					Timeout = Timeout.InfiniteTimeSpan
+				}
+			};
+
+			Client = new EventStoreClient(settings);
 		}
 
 
@@ -88,6 +93,20 @@ namespace EventStore.Client {
 				response.Version = request.Version;
 
 				return response;
+			}
+		}
+		
+
+		protected class DelayedHandler : HttpClientHandler {
+			private readonly int _delay;
+
+			public DelayedHandler(int delay) {
+				_delay = delay;
+			}
+			protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+				CancellationToken cancellationToken) {
+				await Task.Delay(_delay, cancellationToken);
+				return await base.SendAsync(request, cancellationToken);
 			}
 		}
 
