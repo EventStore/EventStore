@@ -23,16 +23,20 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			var master = GetMaster();
 			_masterEndPoint = master.ExternalHttpEndPoint;
 			
-			// Wait for the admin user to be created before starting our tests
+			// Wait for the admin user to be created
 			await master.AdminUserCreated;
 			var replica = GetSlaves().First();
 			_slaveEndPoint = replica.ExternalHttpEndPoint;
 			_client = replica.CreateHttpClient();
 
+			// Wait for the admin user created event to be replicated before starting our tests
+			var masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == masterIndex);
+			
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_slaveEndPoint, path, requireMaster: false);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-			var masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
+			masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
 			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == masterIndex);
 		}
 
