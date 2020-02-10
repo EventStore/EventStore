@@ -9,6 +9,8 @@ namespace EventStore.Client {
 		public string ConnectionName { get; set; }
 		public Func<HttpClient> CreateHttpClient { get; set; }
 
+		public EventStoreClientOperationOptions OperationOptions { get; set; } = EventStoreClientOperationOptions.Default;
+
 		public EventStoreClientSettings(Uri address) {
 			if (address == null) throw new ArgumentNullException(nameof(address));
 			Address = address;

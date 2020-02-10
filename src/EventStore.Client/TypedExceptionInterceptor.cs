@@ -105,7 +105,10 @@ namespace EventStore.Client {
 						.FirstOrDefault(x => x.Key == Constants.Exceptions.ScavengeId)?.Value),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
-				false => new InvalidOperationException(ex.Message, ex)
+				false => ex.StatusCode switch {
+					StatusCode.DeadlineExceeded => ex,
+					_ => new InvalidOperationException()
+				}
 			};
 
 		class AsyncStreamReader<TResponse> : IAsyncStreamReader<TResponse> {
