@@ -35,16 +35,16 @@ namespace EventStore.Client {
 		public EventStoreClient Client { get; }
 
 		static EventStoreGrpcFixture() {
-			if (!Enum.TryParse<LogEventLevel>(Environment.GetEnvironmentVariable("LOGLEVEL"), out var logLevel)) {
-				logLevel = LogEventLevel.Fatal;
-			}
-
-			Log.Logger = new LoggerConfiguration()
-				.WriteTo
-				.Observers(observable => observable.Subscribe(s_logEventSubject.OnNext))
+			var loggerConfiguration = new LoggerConfiguration()
 				.Enrich.FromLogContext()
-				.MinimumLevel.Is(logLevel)
-				.CreateLogger();
+				.MinimumLevel.Is(LogEventLevel.Verbose)
+				.MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+				.MinimumLevel.Override("Grpc", LogEventLevel.Warning)
+				.WriteTo.Observers(observable => observable.Subscribe(s_logEventSubject.OnNext))
+				.WriteTo.Seq("http://localhost:5341/", period: TimeSpan.FromMilliseconds(1));
+			Log.Logger = loggerConfiguration.CreateLogger();
+
+			AppDomain.CurrentDomain.DomainUnload += (_, e) => Log.CloseAndFlush();
 		}
 
 		protected EventStoreGrpcFixture(
@@ -102,7 +102,7 @@ namespace EventStore.Client {
 		public string GetStreamName([CallerMemberName] string testMethod = default) {
 			var type = GetType();
 
-			return $"{type.DeclaringType.Name}_{testMethod ?? "unknown"}";
+			return $"{type.DeclaringType.Name}.{testMethod ?? "unknown"}";
 		}
 
 		public void CaptureLogs(ITestOutputHelper testOutputHelper) {
@@ -114,16 +114,6 @@ namespace EventStore.Client {
 			MessageTemplateTextFormatter formatterWithException =
 				new MessageTemplateTextFormatter(
 					"{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}");
-
-			var captureId = Guid.NewGuid();
-
-			var callContextData = new AsyncLocal<Tuple<string, Guid>> {
-				Value = Tuple.Create(captureCorrelationId, captureId)
-			};
-
-			bool Filter(LogEvent logEvent) {
-				return callContextData.Value.Item2.Equals(captureId);
-			}
 
 			var subscription = s_logEventSubject.Subscribe(logEvent => {
 				using var writer = new StringWriter();
@@ -155,6 +145,7 @@ namespace EventStore.Client {
 			public DelayedHandler(int delay) {
 				_delay = delay;
 			}
+
 			protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
 				CancellationToken cancellationToken) {
 				await Task.Delay(_delay, cancellationToken);
