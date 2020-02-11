@@ -14,7 +14,6 @@ namespace EventStore.Core.Services.Transport.Http {
 	public static class Configure {
 		private const int MaxPossibleAge = 31536000;
 		public static bool DisableHTTPCaching = false;
-		public static bool EnableHTTPInterface = true;
 
 		public static ResponseConfiguration Ok(string contentType) {
 			return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, Helper.UTF8NoBom);

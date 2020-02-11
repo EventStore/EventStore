@@ -39,7 +39,7 @@ namespace EventStore.Core {
 		protected bool _disableHTTPCaching;
 		protected bool _logHttpRequests;
 		protected bool _enableHistograms;
-		protected bool _enableHTTPInterface;
+		protected bool _enableAtomPubOverHTTP;
 		protected IPEndPoint _internalTcp;
 		protected IPEndPoint _internalSecureTcp;
 		protected IPEndPoint _externalTcp;
@@ -155,7 +155,7 @@ namespace EventStore.Core {
 			_inMemoryDb = true;
 			_projectionType = ProjectionType.None;
 
-			_enableHTTPInterface = Opts.EnableHTTPInterfaceDefault;
+			_enableAtomPubOverHTTP = Opts.EnableAtomPubOverHTTPDefault;
 			_externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
 			_externalSecureTcp = null;
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalTcpPortDefault);
@@ -256,10 +256,10 @@ namespace EventStore.Core {
 		/// <summary>
 		/// Enable HTTP API Interface
 		/// </summary>
-		/// <param name="EnableHTTPInterface">Enable HTTP Interface</param>
+		/// <param name="EnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithEnableHTTPInterface(bool enableHTTPInterface) {
-			_enableHTTPInterface = enableHTTPInterface;
+		public VNodeBuilder WithEnableAtomPubOverHTTP(bool EnableAtomPubOverHTTP) {
+			_enableAtomPubOverHTTP = EnableAtomPubOverHTTP;
 			return this;
 		}
 
@@ -1388,7 +1388,7 @@ namespace EventStore.Core {
 				_maxAppendSize,
 				_createHttpMessageHandler,
 				_unsafeAllowSurplusNodes,
-				_enableHTTPInterface);
+				_enableAtomPubOverHTTP);
 
 			var infoController = new InfoController(options, _projectionType);
 
