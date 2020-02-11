@@ -16,7 +16,7 @@ using TestFixtureWithExistingEvents =
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
 	[TestFixture]
-	public class when_starting_a_managed_projection_without_slave_projections : TestFixtureWithExistingEvents {
+	public class when_starting_a_managed_projection_without_follower_projections : TestFixtureWithExistingEvents {
 		private new ITimeProvider _timeProvider;
 
 		private ManagedProjection _mp;

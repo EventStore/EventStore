@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace EventStore.ClientAPI {
+﻿namespace EventStore.ClientAPI {
 	/// <summary>
 	/// Indicates which order of preferred nodes for connecting to.
 	/// </summary>
@@ -15,9 +9,9 @@ namespace EventStore.ClientAPI {
 		Leader,
 
 		/// <summary>
-		/// When attempting connnection, prefers slave node.
+		/// When attempting connnection, prefers follower node.
 		/// </summary>
-		Slave,
+		Follower,
 
 		/// <summary>
 		/// When attempting connnection, has no node preference.

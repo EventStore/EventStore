@@ -252,15 +252,15 @@ namespace EventStore.Core.Messages {
 		}
 
 		[ProtoContract]
-		public class SlaveAssignment {
+		public class FollowerAssignment {
 			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
-			public SlaveAssignment() {
+			public FollowerAssignment() {
 			}
 
-			public SlaveAssignment(byte[] leaderId, byte[] subscriptionId) {
+			public FollowerAssignment(byte[] leaderId, byte[] subscriptionId) {
 				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}

@@ -163,8 +163,8 @@ namespace EventStore.Core.Tests.Helpers {
 						_started.TrySetResult(true);
 					}));
 				Node.MainBus.Subscribe(
-					new AdHocHandler<SystemMessage.BecomeSlave>(m => {
-						NodeState = VNodeState.Slave;
+					new AdHocHandler<SystemMessage.BecomeFollower>(m => {
+						NodeState = VNodeState.Follower;
 						_started.TrySetResult(true);
 					}));
 			} else {

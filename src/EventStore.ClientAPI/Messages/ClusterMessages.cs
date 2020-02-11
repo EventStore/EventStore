@@ -71,7 +71,7 @@ namespace EventStore.ClientAPI.Messages {
 			PreReplica,
 			CatchingUp,
 			Clone,
-			Slave,
+			Follower,
 			PreLeader,
 			Leader,
 			Manager,

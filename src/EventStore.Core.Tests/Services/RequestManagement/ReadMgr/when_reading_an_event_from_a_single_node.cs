@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
-				case Data.VNodeState.Slave:
+				case Data.VNodeState.Follower:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 			}
@@ -49,8 +49,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 			_commitPosition = writeResult.CommitPosition;
 
-			var slaves = GetSlaves();
-			foreach (var s in slaves) {
+			var followers = GetFollowers();
+			foreach (var s in followers) {
 				await ShutdownNode(s.DebugIndex);
 			}
 

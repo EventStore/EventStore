@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.Integration {
 			return _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 		}
 
-		protected MiniClusterNode[] GetSlaves() {
+		protected MiniClusterNode[] GetFollowers() {
 			return _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
 		}
 	}

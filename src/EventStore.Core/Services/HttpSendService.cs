@@ -44,7 +44,7 @@ namespace EventStore.Core.Services {
 				case VNodeState.PreReplica:
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.PreReadOnlyReplica:
 				case VNodeState.ReadOnlyReplica:
 					_leaderInfo = ((SystemMessage.ReplicaStateMessage)message).Leader;

@@ -30,8 +30,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.ReplicaSubscribed, UnwrapReplicaSubscribed, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.ReplicaSubscribed>(WrapReplicaSubscribed, ClientVersion.V2);
 
-			AddUnwrapper(TcpCommand.SlaveAssignment, UnwrapSlaveAssignment, ClientVersion.V2);
-			AddWrapper<ReplicationMessage.SlaveAssignment>(WrapSlaveAssignment, ClientVersion.V2);
+			AddUnwrapper(TcpCommand.FollowerAssignment, UnwrapFollowerAssignment, ClientVersion.V2);
+			AddWrapper<ReplicationMessage.FollowerAssignment>(WrapFollowerAssignment, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.CloneAssignment, UnwrapCloneAssignment, ClientVersion.V2);
 			AddWrapper<ReplicationMessage.CloneAssignment>(WrapCloneAssignment, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.DropSubscription, UnwrapDropSubscription, ClientVersion.V2);
@@ -187,15 +187,15 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return new TcpPackage(TcpCommand.ReplicaSubscribed, Guid.NewGuid(), dto.Serialize());
 		}
 
-		private ReplicationMessage.SlaveAssignment UnwrapSlaveAssignment(TcpPackage package, IEnvelope envelope) {
-			var dto = package.Data.Deserialize<ReplicationMessageDto.SlaveAssignment>();
-			return new ReplicationMessage.SlaveAssignment(new Guid(dto.LeaderId), new Guid(dto.SubscriptionId));
+		private ReplicationMessage.FollowerAssignment UnwrapFollowerAssignment(TcpPackage package, IEnvelope envelope) {
+			var dto = package.Data.Deserialize<ReplicationMessageDto.FollowerAssignment>();
+			return new ReplicationMessage.FollowerAssignment(new Guid(dto.LeaderId), new Guid(dto.SubscriptionId));
 		}
 
-		private TcpPackage WrapSlaveAssignment(ReplicationMessage.SlaveAssignment msg) {
-			var dto = new ReplicationMessageDto.SlaveAssignment(msg.LeaderId.ToByteArray(),
+		private TcpPackage WrapFollowerAssignment(ReplicationMessage.FollowerAssignment msg) {
+			var dto = new ReplicationMessageDto.FollowerAssignment(msg.LeaderId.ToByteArray(),
 				msg.SubscriptionId.ToByteArray());
-			return new TcpPackage(TcpCommand.SlaveAssignment, Guid.NewGuid(), dto.Serialize());
+			return new TcpPackage(TcpCommand.FollowerAssignment, Guid.NewGuid(), dto.Serialize());
 		}
 
 		private ReplicationMessage.CloneAssignment UnwrapCloneAssignment(TcpPackage package, IEnvelope envelope) {

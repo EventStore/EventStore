@@ -237,14 +237,14 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class BecomeSlave : ReplicaStateMessage {
+		public class BecomeFollower : ReplicaStateMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public BecomeSlave(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Slave, leader) {
+			public BecomeFollower(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Follower, leader) {
 			}
 		}
 

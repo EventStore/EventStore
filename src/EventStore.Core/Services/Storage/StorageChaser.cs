@@ -251,7 +251,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (record.SystemRecordType == SystemRecordType.Epoch) {
 				// Epoch record is written to TF, but possibly is not added to EpochManager
-				// as we could be in Slave\Clone mode. We try to add epoch to EpochManager
+				// as we could be in Follower/Clone mode. We try to add epoch to EpochManager
 				// every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent,
 				// but does integrity checks.
 				var epoch = record.GetEpochRecord();

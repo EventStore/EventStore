@@ -116,16 +116,16 @@ namespace EventStore.Core.Services.VNode {
 				.InStates(VNodeState.Unknown, VNodeState.ReadOnlyLeaderless)
 				.WhenOther().ForwardTo(_outputBus)
 				.InStates(VNodeState.Initializing, VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.PreLeader,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower)
 				.When<SystemMessage.BecomeUnknown>().Do(Handle)
 				.InAllStatesExcept(VNodeState.Unknown,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.ReadOnlyLeaderless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
 				.InAllStatesExcept(VNodeState.Leader, VNodeState.ResigningLeader,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.ReadOnlyReplica, VNodeState.PreReadOnlyReplica)
 				.When<ClientMessage.WriteRequestMessage>()
 				.Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
@@ -166,7 +166,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.RequestQueueDrained>().Do(Handle)
 				.InAllStatesExcept(VNodeState.ResigningLeader)
 				.When<SystemMessage.RequestQueueDrained>().Ignore()
-				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
+				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.Unknown, VNodeState.ReadOnlyLeaderless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadEvent>().Do(HandleAsNonLeader)
@@ -189,7 +189,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.VNodeConnectionLost>().Do(HandleAsReadOnlyReplica)
 				.When<ElectionMessage.ElectionsDone>().Do(HandleAsReadOnlyReplica)
 				.When<SystemMessage.BecomePreReadOnlyReplica>().Do(Handle)
-				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone,VNodeState.Slave)
+				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone,VNodeState.Follower)
 				.When<ClientMessage.WriteEvents>().Do(HandleAsNonLeader)
 				.When<ClientMessage.TransactionStart>().Do(HandleAsNonLeader)
 				.When<ClientMessage.TransactionWrite>().Do(HandleAsNonLeader)
@@ -213,11 +213,11 @@ namespace EventStore.Core.Services.VNode {
 				VNodeState.ReadOnlyLeaderless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ElectionMessage.ElectionsDone>().Do(Handle)
 				.InStates(VNodeState.Unknown,
-					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave,
+					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.PreLeader, VNodeState.Leader)
 				.When<SystemMessage.BecomePreReplica>().Do(Handle)
 				.When<SystemMessage.BecomePreLeader>().Do(Handle)
-				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave)
+				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsNonLeader)
 				.When<SystemMessage.VNodeConnectionLost>().Do(Handle)
 				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreLeader, VNodeState.PreReadOnlyReplica)
@@ -237,27 +237,27 @@ namespace EventStore.Core.Services.VNode {
 				.When<ReplicationMessage.SubscribeToLeader>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscribed>().Ignore()
-				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.ReadOnlyReplica)
+				.InStates(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower, VNodeState.ReadOnlyReplica)
 				.When<ReplicationMessage.CreateChunk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.RawChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.DataChunkBulk>().Do(ForwardReplicationMessage)
 				.When<ReplicationMessage.AckLogPosition>().ForwardTo(_outputBus)
 				.WhenOther().ForwardTo(_outputBus)
-				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Slave, VNodeState.ReadOnlyReplica)
+				.InAllStatesExcept(VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower, VNodeState.ReadOnlyReplica)
 				.When<ReplicationMessage.CreateChunk>().Ignore()
 				.When<ReplicationMessage.RawChunkBulk>().Ignore()
 				.When<ReplicationMessage.DataChunkBulk>().Ignore()
 				.When<ReplicationMessage.AckLogPosition>().Ignore()
 				.InState(VNodeState.CatchingUp)
 				.When<ReplicationMessage.CloneAssignment>().Do(Handle)
-				.When<ReplicationMessage.SlaveAssignment>().Do(Handle)
+				.When<ReplicationMessage.FollowerAssignment>().Do(Handle)
 				.When<SystemMessage.BecomeClone>().Do(Handle)
-				.When<SystemMessage.BecomeSlave>().Do(Handle)
+				.When<SystemMessage.BecomeFollower>().Do(Handle)
 				.InState(VNodeState.Clone)
 				.When<ReplicationMessage.DropSubscription>().Do(Handle)
-				.When<ReplicationMessage.SlaveAssignment>().Do(Handle)
-				.When<SystemMessage.BecomeSlave>().Do(Handle)
-				.InState(VNodeState.Slave)
+				.When<ReplicationMessage.FollowerAssignment>().Do(Handle)
+				.When<SystemMessage.BecomeFollower>().Do(Handle)
+				.InState(VNodeState.Follower)
 				.When<ReplicationMessage.CloneAssignment>().Do(Handle)
 				.When<SystemMessage.BecomeClone>().Do(Handle)
 				.InStates(VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
@@ -404,14 +404,14 @@ namespace EventStore.Core.Services.VNode {
 			_outputBus.Publish(message);
 		}
 
-		private void Handle(SystemMessage.BecomeSlave message) {
+		private void Handle(SystemMessage.BecomeFollower message) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS SLAVE... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Info("========== [{internalHttp}] IS FOLLOWER... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
-			_state = VNodeState.Slave;
+			_state = VNodeState.Follower;
 			_outputBus.Publish(message);
 		}
 
@@ -949,16 +949,16 @@ namespace EventStore.Core.Services.VNode {
 				_outputBus.Publish(message);
 		}
 
-		private void Handle(ReplicationMessage.SlaveAssignment message) {
+		private void Handle(ReplicationMessage.FollowerAssignment message) {
 			if (IsLegitimateReplicationMessage(message)) {
 				Log.Info(
-					"========== [{internalHttp}] SLAVE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
+					"========== [{internalHttp}] FOLLOWER ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
 					_leader.InternalTcp,
 					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
 					message.LeaderId);
 				_outputBus.Publish(message);
-				_fsm.Handle(new SystemMessage.BecomeSlave(_stateCorrelationId, _leader));
+				_fsm.Handle(new SystemMessage.BecomeFollower(_stateCorrelationId, _leader));
 			}
 		}
 

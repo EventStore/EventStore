@@ -12,11 +12,11 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 	[TestFixture]
 	[Category("LongRunning")]
-	public class when_reading_an_event_committed_on_leader_and_on_slaves : specification_with_cluster {
+	public class when_reading_an_event_committed_on_leader_and_on_followers : specification_with_cluster {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 
 		private string _streamId =
-			"when_reading_an_event_committed_on_leader_and_on_slaves-" + Guid.NewGuid().ToString();
+			"when_reading_an_event_committed_on_leader_and_on_followers-" + Guid.NewGuid().ToString();
 
 		private long _commitPosition;
 		private long _indexPosition;
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
-				case Data.VNodeState.Slave:
+				case Data.VNodeState.Follower:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 			}
@@ -92,11 +92,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_all_forward_on_slaves() {
-			var slaves = GetSlaves();
-			var quorum = (slaves.Count() + 1) / 2 + 1;
+		public void should_be_able_to_read_event_from_all_forward_on_followers() {
+			var followers = GetFollowers();
+			var quorum = (followers.Count() + 1) / 2 + 1;
 			var successfulReads = 0;
-			foreach (var s in slaves) {
+			foreach (var s in followers) {
 				AssertEx.IsOrBecomesTrue(()=> s.Db.Config.IndexCheckpoint.Read() == _indexPosition);
 				var readResult = ReplicationTestHelper.ReadAllEventsForward(s, _commitPosition);
 				successfulReads += readResult.Events.Count(x => x.OriginalStreamId == _streamId);
@@ -106,11 +106,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_all_backward_on_slaves() {
-			var slaves = GetSlaves();
-			var quorum = (slaves.Count() + 1) / 2 + 1;
+		public void should_be_able_to_read_event_from_all_backward_on_followers() {
+			var followers = GetFollowers();
+			var quorum = (followers.Count() + 1) / 2 + 1;
 			var successfulReads = 0;
-			foreach (var s in slaves) {
+			foreach (var s in followers) {
 				AssertEx.IsOrBecomesTrue(()=> s.Db.Config.IndexCheckpoint.Read() == _indexPosition);
 				var readResult = ReplicationTestHelper.ReadAllEventsBackward(s, _commitPosition);
 				successfulReads += readResult.Events.Count(x => x.OriginalStreamId == _streamId);
@@ -120,11 +120,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_stream_forward_on_slaves() {
-			var slaves = GetSlaves();
-			var quorum = (slaves.Count() + 1) / 2 + 1;
+		public void should_be_able_to_read_event_from_stream_forward_on_followers() {
+			var followers = GetFollowers();
+			var quorum = (followers.Count() + 1) / 2 + 1;
 			var successfulReads = 0;
-			foreach (var s in slaves) {
+			foreach (var s in followers) {
 				AssertEx.IsOrBecomesTrue(()=> s.Db.Config.IndexCheckpoint.Read() == _indexPosition);
 				var readResult = ReplicationTestHelper.ReadStreamEventsForward(s, _streamId);
 				successfulReads += readResult.Events.Count();
@@ -135,11 +135,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_stream_backward_on_slaves() {
-			var slaves = GetSlaves();
-			var quorum = (slaves.Count() + 1) / 2 + 1;
+		public void should_be_able_to_read_event_from_stream_backward_on_followers() {
+			var followers = GetFollowers();
+			var quorum = (followers.Count() + 1) / 2 + 1;
 			var successfulReads = 0;
-			foreach (var s in slaves) {
+			foreach (var s in followers) {
 				AssertEx.IsOrBecomesTrue(()=> s.Db.Config.IndexCheckpoint.Read() == _indexPosition);
 				var readResult = ReplicationTestHelper.ReadStreamEventsBackward(s, _streamId);
 				successfulReads += readResult.Events.Count();
@@ -149,11 +149,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_on_slaves() {
-			var slaves = GetSlaves();
-			var quorum = (slaves.Count() + 1) / 2 + 1;
+		public void should_be_able_to_read_event_on_followers() {
+			var followers = GetFollowers();
+			var quorum = (followers.Count() + 1) / 2 + 1;
 			var successfulReads = 0;
-			foreach (var s in slaves) {
+			foreach (var s in followers) {
 				AssertEx.IsOrBecomesTrue(()=> s.Db.Config.IndexCheckpoint.Read() == _indexPosition);
 				var readResult = ReplicationTestHelper.ReadEvent(s, _streamId, 0);
 				successfulReads += readResult.Result == ReadEventResult.Success ? 1 : 0;

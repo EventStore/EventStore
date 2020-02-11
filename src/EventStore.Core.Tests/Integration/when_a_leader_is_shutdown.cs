@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Integration {
 		protected override void BeforeNodesStart() {
 			_nodes.ToList().ForEach(x => {
 				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeLeader>(Handle));
-				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeSlave>(Handle));
+				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeFollower>(Handle));
 				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(Handle));
 			});
 
@@ -43,9 +43,9 @@ namespace EventStore.Core.Tests.Integration {
 			_expectedNumberOfEvents?.Signal();
 		}
 
-		private void Handle(SystemMessage.BecomeSlave msg) {
+		private void Handle(SystemMessage.BecomeFollower msg) {
 			lock (_lock) {
-				_roleAssignments.Add("slave");
+				_roleAssignments.Add("follower");
 			}
 
 			_expectedNumberOfEvents?.Signal();
@@ -60,15 +60,15 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[Test]
-		public void should_assign_leader_and_slave_roles_correctly() {
+		public void should_assign_leader_and_follower_roles_correctly() {
 			Assert.AreEqual(5, _roleAssignments.Count());
 
 			Assert.AreEqual(1, _roleAssignments.Take(3).Where(x => x.Equals("leader")).Count());
-			Assert.AreEqual(2, _roleAssignments.Take(3).Where(x => x.Equals("slave")).Count());
+			Assert.AreEqual(2, _roleAssignments.Take(3).Where(x => x.Equals("follower")).Count());
 
 			//after shutting down
 			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("leader")).Count());
-			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("slave")).Count());
+			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("follower")).Count());
 		}
 
 		[Test]

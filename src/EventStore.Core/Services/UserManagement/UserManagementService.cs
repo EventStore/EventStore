@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.UserManagement {
 		IHandle<UserManagementMessage.ChangePassword>,
 		IHandle<UserManagementMessage.Delete>,
 		IHandle<SystemMessage.BecomeLeader>,
-		IHandle<SystemMessage.BecomeSlave> {
+		IHandle<SystemMessage.BecomeFollower> {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
@@ -207,7 +207,7 @@ namespace EventStore.Core.Services.UserManagement {
 			}
 		}
 
-		public void Handle(SystemMessage.BecomeSlave message) {
+		public void Handle(SystemMessage.BecomeFollower message) {
 			_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
 		}
 

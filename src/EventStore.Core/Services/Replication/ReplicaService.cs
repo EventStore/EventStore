@@ -107,7 +107,7 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:  {
 					// nothing changed, essentially
 					break;
@@ -217,9 +217,9 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:  {
-					Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
+					Debug.Assert(_connection != null, "Connection manager is null in follower/clone/catching up state");
 					SendTcpMessage(_connection, message.Message);
 					break;
 				}

@@ -8,32 +8,32 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	public class when_5_node_cluster_has_2_lagging_nodes : with_clustered_replication_tracking_service {
 		private readonly long _firstLogPosition = 2000;
 		private readonly long _secondLogPosition = 4000;
-		private Guid[] _slaves;
+		private Guid[] _followers;
 
 		protected override int ClusterSize => 5;
 		
 		public override void When() {
-			_slaves = new [] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()};
+			_followers = new [] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()};
 			BecomeLeader();
 			// All of the nodes have acked the first write
 			WriterCheckpoint.Write(_firstLogPosition);
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
-			foreach (var slave in _slaves) {
-				Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(slave, _firstLogPosition));
+			foreach (var follower in _followers) {
+				Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(follower, _firstLogPosition));
 			}
 			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 
 			ReplicatedTos.Clear();
 			
-			// Slaves 3 and 4 are lagging behind, they ack the previous positions
+			// Followers 3 and 4 are lagging behind, they ack the previous positions
 			WriterCheckpoint.Write(_secondLogPosition);
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[0], _secondLogPosition));
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[1], _secondLogPosition));
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[2], _firstLogPosition));
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slaves[3], _firstLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_followers[0], _secondLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_followers[1], _secondLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_followers[2], _firstLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_followers[3], _firstLogPosition));
 			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 

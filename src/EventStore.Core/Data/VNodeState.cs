@@ -5,7 +5,7 @@ namespace EventStore.Core.Data {
 		PreReplica,
 		CatchingUp,
 		Clone,
-		Slave,
+		Follower,
 		PreLeader,
 		Leader,
 		Manager,
@@ -21,7 +21,7 @@ namespace EventStore.Core.Data {
 		public static bool IsReplica(this VNodeState state) {
 			return state == VNodeState.CatchingUp
 			       || state == VNodeState.Clone
-			       || state == VNodeState.Slave
+			       || state == VNodeState.Follower
 				   || state == VNodeState.ReadOnlyReplica;
 		}
 	}

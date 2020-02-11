@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationTrackingMessage.ReplicatedTo> {
 		public const int MaxQueueSize = 100;
 		public const int CloneThreshold = 1024;
-		public const int SlaveLagThreshold = 256 * 1024;
+		public const int FollowerLagThreshold = 256 * 1024;
 		public const int LagOccurencesThreshold = 2;
 		public const int BulkSize = 8192;
 		public const int ReplicaSendWindow = 16 * 1024 * 1024;
@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.Replication {
 			Guid subscriptionId) {
 			if (epochs.Length == 0) {
 				if (logPosition > 0) {
-					// slave has some data, but doesn't have any epoch
+					// follower has some data, but doesn't have any epoch
 					// for now we'll just report error and close connection
 					var msg = string.Format(
 						"Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
@@ -558,26 +558,26 @@ namespace EventStore.Core.Services.Replication {
 				.ToArray();
 			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 
-			int slavesCnt = 0;
-			int laggedSlaves = 0;
-			var desiredSlaveCount = _clusterSize - 1;
+			int followerCount = 0;
+			int laggedFollowers = 0;
+			var desiredFollowerCount = _clusterSize - 1;
 
 			for (int i = 0; i < candidates.Length; ++i) {
 				var candidate = candidates[i];
-				if (candidate.State == ReplicaState.Slave) {
-					slavesCnt++;
-					candidate.LagOccurences = i < desiredSlaveCount ? 0 : candidate.LagOccurences + 1;
+				if (candidate.State == ReplicaState.Follower) {
+					followerCount++;
+					candidate.LagOccurences = i < desiredFollowerCount ? 0 : candidate.LagOccurences + 1;
 
 					if (candidate.LagOccurences >= LagOccurencesThreshold
-						&& leaderCheckpoint - candidate.LogPosition >= SlaveLagThreshold) {
-						++laggedSlaves;
+						&& leaderCheckpoint - candidate.LogPosition >= FollowerLagThreshold) {
+						++laggedFollowers;
 					}
 				}
 			}
 
 			int cloneIndex = 0;
-			int slaveIndex = candidates.Length - 1;
-			for (int k = slavesCnt; k < desiredSlaveCount; ++k) {
+			int followerIndex = candidates.Length - 1;
+			for (int k = followerCount; k < desiredFollowerCount; ++k) {
 				// find next best clone
 				while (cloneIndex < candidates.Length && candidates[cloneIndex].State != ReplicaState.Clone)
 					cloneIndex++;
@@ -586,40 +586,40 @@ namespace EventStore.Core.Services.Replication {
 				if (cloneIndex >= candidates.Length)
 					break;
 
-				// we need more slaves, even if there is lagging slaves
-				var newSlave = candidates[cloneIndex];
-				newSlave.State = ReplicaState.Slave;
-				newSlave.LagOccurences = 0;
-				newSlave.SendMessage(new ReplicationMessage.SlaveAssignment(_instanceId, newSlave.SubscriptionId));
+				// we need more followers, even if there are lagging followers
+				var newFollower = candidates[cloneIndex];
+				newFollower.State = ReplicaState.Follower;
+				newFollower.LagOccurences = 0;
+				newFollower.SendMessage(new ReplicationMessage.FollowerAssignment(_instanceId, newFollower.SubscriptionId));
 				cloneIndex++;
 			}
 
-			for (int k = 0; k < laggedSlaves; ++k) {
+			for (int k = 0; k < laggedFollowers; ++k) {
 				// find next best clone
 				while (cloneIndex < candidates.Length && candidates[cloneIndex].State != ReplicaState.Clone)
 					cloneIndex++;
 
-				// find next worst slave
-				while (slaveIndex >= 0 && candidates[slaveIndex].State != ReplicaState.Slave)
-					slaveIndex--;
+				// find next worst follower
+				while (followerIndex >= 0 && candidates[followerIndex].State != ReplicaState.Follower)
+					followerIndex--;
 
 				// no more suitable clones - get out of here
-				if (cloneIndex > slaveIndex)
+				if (cloneIndex > followerIndex)
 					break;
 
-				// we have enough slaves, but some of them are probably lagging behind
-				Debug.Assert(slaveIndex >= 0);
+				// we have enough follower, but some of them are probably lagging behind
+				Debug.Assert(followerIndex >= 0);
 
-				var oldSlave = candidates[slaveIndex];
-				oldSlave.State = ReplicaState.Clone;
-				oldSlave.LagOccurences = 0;
-				oldSlave.SendMessage(new ReplicationMessage.CloneAssignment(_instanceId, oldSlave.SubscriptionId));
-				slaveIndex--;
+				var oldFollower = candidates[followerIndex];
+				oldFollower.State = ReplicaState.Clone;
+				oldFollower.LagOccurences = 0;
+				oldFollower.SendMessage(new ReplicationMessage.CloneAssignment(_instanceId, oldFollower.SubscriptionId));
+				followerIndex--;
 
-				var newSlave = candidates[cloneIndex];
-				newSlave.State = ReplicaState.Slave;
-				newSlave.LagOccurences = 0;
-				newSlave.SendMessage(new ReplicationMessage.SlaveAssignment(_instanceId, newSlave.SubscriptionId));
+				var newFollower = candidates[cloneIndex];
+				newFollower.State = ReplicaState.Follower;
+				newFollower.LagOccurences = 0;
+				newFollower.SendMessage(new ReplicationMessage.FollowerAssignment(_instanceId, newFollower.SubscriptionId));
 				cloneIndex++;
 			}
 
@@ -655,7 +655,7 @@ namespace EventStore.Core.Services.Replication {
 		private enum ReplicaState {
 			CatchingUp,
 			Clone,
-			Slave
+			Follower
 		}
 
 		private class SendReplicationData {

@@ -11,12 +11,12 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	[TestFixture, Category("LongRunning")]
-	public class when_subscribed_to_stream_on_leader_and_event_is_replicated_to_slaves : specification_with_cluster {
+	public class when_subscribed_to_stream_on_leader_and_event_is_replicated_to_followers : specification_with_cluster {
 		private const string _streamId = "test-stream";
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 		private CountdownEvent _subscriptionsConfirmed;
 		private TestSubscription _leaderSubscription;
-		private List<TestSubscription> _slaveSubscriptions;
+		private List<TestSubscription> _followerSubscriptions;
 
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
-				case Data.VNodeState.Slave:
+				case Data.VNodeState.Follower:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 			}
@@ -51,12 +51,12 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			_leaderSubscription = new TestSubscription(leader, 1, _streamId, _subscriptionsConfirmed);
 			_leaderSubscription.CreateSubscription();
 
-			_slaveSubscriptions = new List<TestSubscription>();
-			var slaves = GetSlaves();
-			foreach (var s in slaves) {
-				var slaveSubscription = new TestSubscription(s, 1, _streamId, _subscriptionsConfirmed);
-				_slaveSubscriptions.Add(slaveSubscription);
-				slaveSubscription.CreateSubscription();
+			_followerSubscriptions = new List<TestSubscription>();
+			var followers = GetFollowers();
+			foreach (var s in followers) {
+				var followerSubscription = new TestSubscription(s, 1, _streamId, _subscriptionsConfirmed);
+				_followerSubscriptions.Add(followerSubscription);
+				followerSubscription.CreateSubscription();
 			}
 
 			if (!_subscriptionsConfirmed.Wait(_timeout)) {
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 
 			await base.Given();
-			var replicas = GetSlaves();
+			var replicas = GetFollowers();
 			AssertEx.IsOrBecomesTrue(
 				() => {
 					var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
@@ -85,9 +85,9 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 		}
 
 		[Test]
-		public void should_receive_event_on_slaves() {
-			if (!(_slaveSubscriptions[0].EventAppeared.Wait(2000) && _slaveSubscriptions[1].EventAppeared.Wait(2000))) {
-				Assert.Fail("Timed out waiting for slave subscriptions to get events");
+		public void should_receive_event_on_followers() {
+			if (!(_followerSubscriptions[0].EventAppeared.Wait(2000) && _followerSubscriptions[1].EventAppeared.Wait(2000))) {
+				Assert.Fail("Timed out waiting for follower subscriptions to get events");
 			}
 		}
 	}

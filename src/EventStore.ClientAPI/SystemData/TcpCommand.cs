@@ -6,7 +6,7 @@ namespace EventStore.ClientAPI.SystemData {
 		Ping = 0x03,
 		Pong = 0x04,
 				
-		SlaveAssignment = 0x07,
+		FollowerAssignment = 0x07,
 		CloneAssignment = 0x08,
 		DropSubscription = 0x09,
 

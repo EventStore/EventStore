@@ -254,7 +254,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SlaveAssignment : Message, IReplicationMessage {
+		public class FollowerAssignment : Message, IReplicationMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -272,7 +272,7 @@ namespace EventStore.Core.Messages {
 			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
-			public SlaveAssignment(Guid leaderId, Guid subscriptionId) {
+			public FollowerAssignment(Guid leaderId, Guid subscriptionId) {
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				LeaderId = leaderId;

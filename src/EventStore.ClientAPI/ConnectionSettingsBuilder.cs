@@ -350,11 +350,11 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Whether to prioritize choosing a slave node that's alive from the known nodes.
+		/// Whether to prioritize choosing a follower node that's alive from the known nodes.
 		/// </summary>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder PreferSlaveNode() {
-			_nodePreference = NodePreference.Slave;
+		public ConnectionSettingsBuilder PreferFollowerNode() {
+			_nodePreference = NodePreference.Follower;
 			return this;
 		}
 
