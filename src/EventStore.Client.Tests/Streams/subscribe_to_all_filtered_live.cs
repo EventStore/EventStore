@@ -26,7 +26,7 @@ namespace EventStore.Client.Streams {
 			var source = new TaskCompletionSource<bool>();
 
 			await _fixture.Client.SubscribeToAllAsync(Position.End, EventAppeared,
-				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
+				false, filter: StreamFilter.RegularExpression(new Regex($"^{streamPrefix}")));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -55,7 +55,7 @@ namespace EventStore.Client.Streams {
 			var source = new TaskCompletionSource<bool>();
 
 			await _fixture.Client.SubscribeToAllAsync(Position.End, EventAppeared, false,
-				filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
+				filter: StreamFilter.Prefix(streamPrefix));
 
 
 			foreach (var e in events) {
@@ -89,7 +89,7 @@ namespace EventStore.Client.Streams {
 			var source = new TaskCompletionSource<bool>();
 
 			await _fixture.Client.SubscribeToAllAsync(Position.End, EventAppeared, false,
-				filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
+				filter: EventTypeFilter.RegularExpression(new Regex($"^{eventTypePrefix}")));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
@@ -122,7 +122,7 @@ namespace EventStore.Client.Streams {
 			var source = new TaskCompletionSource<bool>();
 
 			await _fixture.Client.SubscribeToAllAsync(Position.End, EventAppeared, false,
-				filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
+				filter: EventTypeFilter.Prefix(eventTypePrefix));
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
