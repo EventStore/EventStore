@@ -88,7 +88,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				await _inner.DisposeAsync().ConfigureAwait(false);
 				var currentStreamRevision = _inner.CurrentStreamRevision;
-				Log.Trace("Subscription {subscriptionId} to {streamName} reached the end at {streamRevision}, switching...",
+				Log.Trace(
+					"Subscription {subscriptionId} to {streamName} reached the end at {streamRevision}, switching...",
 					_subscriptionId, _streamName, currentStreamRevision);
 
 				if (_inner is LiveStreamSubscription)
@@ -291,9 +292,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private ResolvedEvent _current;
 				private StreamRevision _currentStreamRevision;
+				private int _maxBufferSizeExceeded;
+
+				private bool MaxBufferSizeExceeded => _maxBufferSizeExceeded > 0;
 
 				public ResolvedEvent Current => _current;
-
 				public StreamRevision CurrentStreamRevision => _currentStreamRevision;
 
 				public LiveStreamSubscription(Guid subscriptionId,
@@ -378,6 +381,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										return;
 								}
 							case ClientMessage.StreamEventAppeared appeared:
+								if (MaxBufferSizeExceeded) {
+									return;
+								}
+
+								if (_liveEventBuffer.Count > MaxLiveEventBufferCount) {
+									MaximumBufferSizeExceeded();
+									return;
+								}
+
 								if (appeared.Event.OriginalEvent.EventType == SystemEventTypes.StreamDeleted) {
 									_liveEventBuffer.Enqueue((default, RpcExceptions.StreamDeleted(_streamName)));
 									return;
@@ -428,7 +440,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										continue;
 									}
 
-									if (streamRevision < _subscriptionConfirmed.Task.Result && streamRevision > currentStreamRevision) {
+									if (streamRevision < _subscriptionConfirmed.Task.Result &&
+									    streamRevision > currentStreamRevision) {
 										Log.Trace(
 											"Live subscription {subscriptionId} to {streamName} enqueueing missed event at {streamRevision}.",
 											_subscriptionId, streamName, streamRevision);
@@ -440,6 +453,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										_readHistoricalEventsCompleted.TrySetResult(true);
 										return;
 									}
+								}
+
+								if (_historicalEventBuffer.Count > MaxLiveEventBufferCount) {
+									MaximumBufferSizeExceeded();
+									return;
 								}
 
 								var fromStreamRevision = StreamRevision.FromInt64(completed.NextEventNumber);
@@ -504,16 +522,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						var streamRevision = StreamRevision.FromInt64(historicalEvent.OriginalEventNumber);
 
-						if (_liveEventBuffer.Count > MaxLiveEventBufferCount) {
-							Log.Warn("Live subscription {subscriptionId} to {streamName} buffer is full.",
-								_subscriptionId, _streamName);
-
-							_liveEventBuffer.Clear();
-							_historicalEventBuffer.Clear();
-
-							return false;
-						}
-
 						_current = historicalEvent;
 						_currentStreamRevision = streamRevision;
 						Log.Trace(
@@ -525,6 +533,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var delay = 1;
 
 					while (!_liveEventBuffer.TryDequeue(out _)) {
+						if (MaxBufferSizeExceeded) {
+							return false;
+						}
+
 						await Task.Delay(Math.Max(delay *= 2, 50), _disposedTokenSource.Token)
 							.ConfigureAwait(false);
 					}
@@ -541,6 +553,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						_subscriptionId, _streamName, _currentStreamRevision);
 					_current = resolvedEvent;
 					return true;
+				}
+
+				private void MaximumBufferSizeExceeded() {
+					Interlocked.Exchange(ref _maxBufferSizeExceeded, 1);
+					Log.Warn("Live subscription {subscriptionId} to {streamName} buffer is full.",
+						_subscriptionId, _streamName);
+
+					_liveEventBuffer.Clear();
+					_historicalEventBuffer.Clear();
 				}
 
 				public ValueTask DisposeAsync() {

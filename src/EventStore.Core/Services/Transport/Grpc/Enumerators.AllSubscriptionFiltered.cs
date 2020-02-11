@@ -276,6 +276,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private ResolvedEvent _current;
 				private Position _currentPosition;
+				private int _maxBufferSizeExceeded;
+
+				private bool MaxBufferSizeExceeded => _maxBufferSizeExceeded > 0;
 
 				public ResolvedEvent Current => _current;
 				public Position CurrentPosition => _currentPosition;
@@ -306,6 +309,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_disposedTokenSource = new CancellationTokenSource();
 					_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 					_currentPosition = currentPosition;
+					_maxBufferSizeExceeded = 0;
 
 					Log.Info("Live subscription {subscriptionId} to $all:{eventFilter} running...",
 						_subscriptionId, eventFilter);
@@ -342,6 +346,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										return;
 								}
 							case ClientMessage.StreamEventAppeared appeared:
+								if (MaxBufferSizeExceeded) {
+									return;
+								}
+								if (_liveEventBuffer.Count > MaxLiveEventBufferCount) {
+									MaximumBufferSizeExceeded();
+									return;
+								}
 								_liveEventBuffer.Enqueue((appeared.Event, null));
 								return;
 							default:
@@ -396,6 +407,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									}
 								}
 
+								if (_historicalEventBuffer.Count > MaxLiveEventBufferCount) {
+									MaximumBufferSizeExceeded();
+									return;
+								}
+
 								var fromPosition = Position.FromInt64(
 									completed.NextPos.CommitPosition,
 									completed.NextPos.PreparePosition);
@@ -438,6 +454,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					await Task.WhenAll(_subscriptionConfirmed.Task, _readHistoricalEventsCompleted.Task)
 						.ConfigureAwait(false);
 
+					if (MaxBufferSizeExceeded) {
+						return false;
+					}
+
 					if (_historicalEventBuffer.TryDequeue(out _)) {
 						var (historicalEvent, historicalException) = _;
 
@@ -448,16 +468,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						var position = Position.FromInt64(
 							historicalEvent.OriginalPosition.Value.CommitPosition,
 							historicalEvent.OriginalPosition.Value.PreparePosition);
-
-						if (_liveEventBuffer.Count > MaxLiveEventBufferCount) {
-							Log.Warn("Live subscription {subscriptionId} to $all:{eventFilter} buffer is full.",
-								_subscriptionId, _eventFilter);
-
-							_liveEventBuffer.Clear();
-							_historicalEventBuffer.Clear();
-
-							return false;
-						}
 
 						_current = historicalEvent;
 						_currentPosition = position;
@@ -470,6 +480,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var delay = 1;
 
 					while (!_liveEventBuffer.TryDequeue(out _)) {
+						if (MaxBufferSizeExceeded) {
+							return false;
+						}
 						await Task.Delay(Math.Max(delay *= 2, 50), _disposedTokenSource.Token)
 							.ConfigureAwait(false);
 					}
@@ -487,6 +500,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_currentPosition = Position.FromInt64(resolvedEvent.OriginalPosition.Value.CommitPosition,
 						resolvedEvent.OriginalPosition.Value.PreparePosition);
 					return true;
+				}
+
+				private void MaximumBufferSizeExceeded() {
+					Interlocked.Exchange(ref _maxBufferSizeExceeded, 1);
+					Log.Warn("Live subscription {subscriptionId} to $all:{eventFilter} buffer is full.",
+						_subscriptionId, _eventFilter);
+
+					_liveEventBuffer.Clear();
+					_historicalEventBuffer.Clear();
 				}
 
 				public ValueTask DisposeAsync() {
