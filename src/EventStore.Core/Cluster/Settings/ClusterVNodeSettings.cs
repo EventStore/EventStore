@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -40,6 +38,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int NodePriority;
 
 		public readonly bool UseSsl;
+		public readonly bool EnableExternalTCP;
 		public readonly bool DisableInsecureTCP;
 		public readonly string SslTargetHost;
 		public readonly bool SslValidateServer;
@@ -160,8 +159,8 @@ namespace EventStore.Core.Cluster.Settings {
 			int maxAppendSize = 1024 * 1024,
 			Func<HttpMessageHandler> createHttpMessageHandler = null,
 			bool unsafeAllowSurplusNodes = false,
-			bool enableAtomPubOverHTTP = true
-			) {
+			bool enableExternalTCP = false,
+			bool enableAtomPubOverHTTP = true) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -218,6 +217,7 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitTimeout = commitTimeout;
 
 			UseSsl = useSsl;
+			EnableExternalTCP = enableExternalTCP;
 			DisableInsecureTCP = disableInsecureTCP;
 			SslTargetHost = sslTargetHost;
 			SslValidateServer = sslValidateServer;

@@ -339,6 +339,11 @@ namespace EventStore.Core.Util {
 		public const string UseInternalSslDescr = "Whether to use secure internal communication.";
 		public const bool UseInternalSslDefault = false;
 
+		
+		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
+		public const bool EnableExternalTCPDefault = false;
+
+		
 		public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
 		public const bool DisableInsecureTCPDefault = false;
 
