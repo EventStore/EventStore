@@ -23,7 +23,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Replication {
-	public class MasterReplicationService : IMonitoredQueue,
+	public class LeaderReplicationService : IMonitoredQueue,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Replication {
 		public static readonly TimeSpan RoleAssignmentsInterval = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan NoQuorumTimeout = TimeSpan.FromMilliseconds(3000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<MasterReplicationService>();
+		private static readonly ILogger Log = LogManager.GetLoggerFor<LeaderReplicationService>();
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Replication {
 			get { return _tcs.Task; }
 		}
 
-		public MasterReplicationService(
+		public LeaderReplicationService(
 			IPublisher publisher,
 			Guid instanceId,
 			TFChunkDb db,
@@ -98,7 +98,7 @@ namespace EventStore.Core.Services.Replication {
 			_epochManager = epochManager;
 			_clusterSize = clusterSize;
 			_unsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
-			_queueStats = queueStatsManager.CreateQueueStatsCollector("Master Replication Service");
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Leader Replication Service");
 
 			_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
 			_mainLoopThread = new Thread(MainLoop) {Name = _queueStats.Name, IsBackground = true};
@@ -119,7 +119,7 @@ namespace EventStore.Core.Services.Replication {
 			_publisher.Publish(new SystemMessage.VNodeConnectionEstablished(message.ReplicaEndPoint,
 				message.Connection.ConnectionId));
 
-			if (_state != VNodeState.Master || message.MasterId != _instanceId) {
+			if (_state != VNodeState.Leader || message.LeaderId != _instanceId) {
 				message.Envelope.ReplyWith(
 					new ReplicationMessage.ReplicaSubscriptionRetry(_instanceId, message.SubscriptionId));
 				return;
@@ -227,7 +227,7 @@ namespace EventStore.Core.Services.Replication {
 				return 0;
 			}
 
-			var masterCheckpoint = _db.Config.WriterCheckpoint.Read();
+			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 			Epoch afterCommonEpoch = null;
 			Epoch commonEpoch = null;
 			for (int i = 0; i < epochs.Length; ++i) {
@@ -241,11 +241,11 @@ namespace EventStore.Core.Services.Replication {
 
 			if (commonEpoch == null) {
 				Log.Error(
-					"No common epoch found for replica [{replicaEndPoint},S{subscriptionId},{logPosition}(0x{logPosition:X}),{epochs}]. Subscribing at 0. Master LogPosition: {masterCheckpoint} (0x{masterCheckpoint:X}), known epochs: {knownEpochs}.",
+					"No common epoch found for replica [{replicaEndPoint},S{subscriptionId},{logPosition}(0x{logPosition:X}),{epochs}]. Subscribing at 0. Leader LogPosition: {leaderCheckpoint} (0x{leaderCheckpoint:X}), known epochs: {knownEpochs}.",
 					replicaEndPoint, subscriptionId,
 					logPosition, logPosition,
 					string.Join(", ", epochs.Select(x => x.AsString())),
-					masterCheckpoint, masterCheckpoint,
+					leaderCheckpoint, leaderCheckpoint,
 					string.Join(", ", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())));
 				return 0;
 			}
@@ -255,7 +255,7 @@ namespace EventStore.Core.Services.Replication {
 			var replicaPosition = afterCommonEpoch == null ? logPosition : afterCommonEpoch.EpochPosition;
 
 			if (commonEpoch.EpochNumber == _epochManager.LastEpochNumber)
-				return Math.Min(replicaPosition, masterCheckpoint);
+				return Math.Min(replicaPosition, leaderCheckpoint);
 
 			var nextEpoch = _epochManager.GetEpoch(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
 			if (nextEpoch == null) {
@@ -265,17 +265,17 @@ namespace EventStore.Core.Services.Replication {
 			if (nextEpoch == null) {
 				var msg = string.Format(
 					"Replica [{0},S:{1},{2}(0x{3:X}),epochs:\n{4}]\n provided epochs which are not in "
-					+ "EpochManager (possibly too old, known epochs:\n{5}).\nMaster LogPosition: {6} (0x{7:X}). "
+					+ "EpochManager (possibly too old, known epochs:\n{5}).\nLeader LogPosition: {6} (0x{7:X}). "
 					+ "We do not support this case as of now.\n"
 					+ "CommonEpoch: {8}, AfterCommonEpoch: {9}",
 					replicaEndPoint, subscriptionId, logPosition, logPosition,
 					string.Join("\n", epochs.Select(x => x.AsString())),
 					string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())),
-					masterCheckpoint, masterCheckpoint,
+					leaderCheckpoint, leaderCheckpoint,
 					commonEpoch.AsString(), afterCommonEpoch == null ? "<none>" : afterCommonEpoch.AsString());
 				Log.Error(
 					"Replica [{replicaEndPoint},S:{subscriptionId},{logPosition}(0x{logPosition:X}),epochs:\n{epochs}]\n provided epochs which are not in "
-					+ "EpochManager (possibly too old, known epochs:\n{lastEpochs}).\nMaster LogPosition: {masterCheckpoint} (0x{masterCheckpoint:X}). "
+					+ "EpochManager (possibly too old, known epochs:\n{lastEpochs}).\nLeader LogPosition: {leaderCheckpoint} (0x{leaderCheckpoint:X}). "
 					+ "We do not support this case as of now.\n"
 					+ "CommonEpoch: {commonEpoch}, AfterCommonEpoch: {afterCommonEpoch}",
 					replicaEndPoint,
@@ -284,8 +284,8 @@ namespace EventStore.Core.Services.Replication {
 					logPosition,
 					string.Join("\n", epochs.Select(x => x.AsString())),
 					string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())),
-					masterCheckpoint,
-					masterCheckpoint,
+					leaderCheckpoint,
+					leaderCheckpoint,
 					commonEpoch.AsString(),
 					afterCommonEpoch == null ? "<none>" : afterCommonEpoch.AsString()
 				);
@@ -307,7 +307,7 @@ namespace EventStore.Core.Services.Replication {
 			try {
 				var chunk = _db.Manager.GetChunkFor(logPosition);
 				Debug.Assert(chunk != null, string.Format(
-					"Chunk for LogPosition {0} (0x{0:X}) is null in MasterReplicationService! Replica: [{1},C:{2},S:{3}]",
+					"Chunk for LogPosition {0} (0x{0:X}) is null in LeaderReplicationService! Replica: [{1},C:{2},S:{3}]",
 					logPosition, sub.ReplicaEndPoint, sub.ConnectionId, sub.SubscriptionId));
 				var bulkReader = chunk.AcquireReader();
 				if (chunk.ChunkHeader.IsScavenged && (chunkId == Guid.Empty || chunkId != chunk.ChunkHeader.ChunkId)) {
@@ -389,7 +389,7 @@ namespace EventStore.Core.Services.Replication {
 							_flushSignal.Wait(TimeSpan.FromMilliseconds(500));
 						}
 					} catch (Exception exc) {
-						Log.InfoException(exc, "Error during master replication iteration.");
+						Log.InfoException(exc, "Error during leader replication iteration.");
 #if DEBUG
 						throw;
 #endif
@@ -444,13 +444,13 @@ namespace EventStore.Core.Services.Replication {
 				if (subscription.BulkReader == null) throw new Exception("BulkReader is null for subscription.");
 
 				try {
-					var masterCheckpoint = _db.Config.WriterCheckpoint.Read();
+					var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 
-					if (TrySendLogBulk(subscription, masterCheckpoint))
+					if (TrySendLogBulk(subscription, leaderCheckpoint))
 						dataFound = true;
 
 					if (subscription.State == ReplicaState.CatchingUp &&
-						masterCheckpoint - subscription.LogPosition <= CloneThreshold) {
+						leaderCheckpoint - subscription.LogPosition <= CloneThreshold) {
 						subscription.State = ReplicaState.Clone;
 						subscription.SendMessage(
 							new ReplicationMessage.CloneAssignment(_instanceId, subscription.SubscriptionId));
@@ -463,7 +463,7 @@ namespace EventStore.Core.Services.Replication {
 			return dataFound;
 		}
 
-		private bool TrySendLogBulk(ReplicaSubscription subscription, long masterCheckpoint) {
+		private bool TrySendLogBulk(ReplicaSubscription subscription, long leaderCheckpoint) {
 			/*
 			if (subscription == null) throw new Exception("subscription == null");
 			if (subscription.BulkReader == null) throw new Exception("subscription.BulkReader == null");
@@ -479,7 +479,7 @@ namespace EventStore.Core.Services.Replication {
 				bulkResult = bulkReader.ReadNextRawBytes(subscription.DataBuffer.Length, subscription.DataBuffer);
 			} else {
 				var bytesToRead = (int)Math.Min(subscription.DataBuffer.Length,
-					masterCheckpoint - subscription.LogPosition);
+					leaderCheckpoint - subscription.LogPosition);
 				bulkResult = bulkReader.ReadNextDataBytes(bytesToRead, subscription.DataBuffer);
 			}
 
@@ -516,7 +516,7 @@ namespace EventStore.Core.Services.Replication {
 
 			if (bulkResult.IsEOF) {
 				var newLogPosition = chunkHeader.ChunkEndPosition;
-				if (newLogPosition < masterCheckpoint) {
+				if (newLogPosition < leaderCheckpoint) {
 					dataFound = true;
 					SetSubscriptionPosition(subscription, newLogPosition, Guid.Empty, replicationStart: false,
 						verbose: true, trial: 0);
@@ -527,7 +527,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		private void ManageNoQuorumDetection() {
-			if (_state == VNodeState.Master) {
+			if (_state == VNodeState.Leader) {
 				var now = _stopwatch.Elapsed;
 				if (_subscriptions.Count(x => x.Value.IsPromotable) >= _clusterSize / 2) // everything is ok
 					_noQuorumTimestamp = TimeSpan.Zero;
@@ -556,7 +556,7 @@ namespace EventStore.Core.Services.Replication {
 			var candidates = subscribers.Where(x => x.IsPromotable && x.State != ReplicaState.CatchingUp)
 				.OrderByDescending(x => x.LogPosition)
 				.ToArray();
-			var masterCheckpoint = _db.Config.WriterCheckpoint.Read();
+			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 
 			int slavesCnt = 0;
 			int laggedSlaves = 0;
@@ -569,7 +569,7 @@ namespace EventStore.Core.Services.Replication {
 					candidate.LagOccurences = i < desiredSlaveCount ? 0 : candidate.LagOccurences + 1;
 
 					if (candidate.LagOccurences >= LagOccurencesThreshold
-						&& masterCheckpoint - candidate.LogPosition >= SlaveLagThreshold) {
+						&& leaderCheckpoint - candidate.LogPosition >= SlaveLagThreshold) {
 						++laggedSlaves;
 					}
 				}

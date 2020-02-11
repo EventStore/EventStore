@@ -50,8 +50,8 @@ namespace EventStore.Core.Messages {
 		}
 
 		public partial class NotHandled {
-			public partial class MasterInfo {
-				public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
+			public partial class LeaderInfo {
+				public LeaderInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 					IPEndPoint externalHttpEndPoint) {
 					ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
 					ExternalTcpPort = externalTcpEndPoint.Port;

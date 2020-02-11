@@ -14,13 +14,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		private readonly ManualResetEventSlim _initializedReceived = new ManualResetEventSlim();
 		
 		protected override void Given() {
-			Subsystem.MasterOutputBus.Subscribe(
+			Subsystem.LeaderOutputBus.Subscribe(
 				new AdHocHandler<SystemMessage.SubSystemInitialized>(msg => {
 					_initializedReceived.Set();
 				}));
 			
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			
@@ -44,13 +44,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		private readonly ManualResetEventSlim _initializedReceived = new ManualResetEventSlim();
 		
 		protected override void Given() {
-			Subsystem.MasterOutputBus.Subscribe(
+			Subsystem.LeaderOutputBus.Subscribe(
 				new AdHocHandler<SystemMessage.SubSystemInitialized>(msg => {
 					_initializedReceived.Set();
 				}));
 			
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			
 			WaitForStartMessage();
 
@@ -69,13 +69,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 	}
 
 	[TestFixture]
-	public class when_projection_subsystem_started_and_master_changes
+	public class when_projection_subsystem_started_and_leader_changes
 		: TestFixtureWithProjectionSubsystem {
 		private Guid _instanceCorrelation;
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		[Test]
 		public void should_allow_starting_the_subsystem_again() {
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var startMessage = WaitForStartMessage();
 			
 			Assert.AreNotEqual(_instanceCorrelation, startMessage.InstanceCorrelationId);
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -163,13 +163,13 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 	}
 
 	[TestFixture]
-	public class when_projection_subsystem_stopping_and_node_becomes_master
+	public class when_projection_subsystem_stopping_and_node_becomes_leader
 		: TestFixtureWithProjectionSubsystem {
 		private Guid _instanceCorrelation;
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -183,8 +183,8 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 			WaitForStopMessage();
 
-			// Become master again before subsystem fully stopped
-			Subsystem.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			// Become leader again before subsystem fully stopped
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
 				ProjectionManager.ServiceName, _instanceCorrelation));

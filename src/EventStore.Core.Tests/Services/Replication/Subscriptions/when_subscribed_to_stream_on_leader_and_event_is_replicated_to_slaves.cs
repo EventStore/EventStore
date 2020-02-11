@@ -4,7 +4,6 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Tests.Integration;
 using EventStore.Core.Messages;
@@ -12,11 +11,11 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	[TestFixture, Category("LongRunning")]
-	public class when_subscribed_to_stream_on_master_and_event_is_replicated_to_slaves : specification_with_cluster {
+	public class when_subscribed_to_stream_on_leader_and_event_is_replicated_to_slaves : specification_with_cluster {
 		private const string _streamId = "test-stream";
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 		private CountdownEvent _subscriptionsConfirmed;
-		private TestSubscription _masterSubscription;
+		private TestSubscription _leaderSubscription;
 		private List<TestSubscription> _slaveSubscriptions;
 
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
@@ -30,7 +29,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 
 		private void Handle(SystemMessage.StateChangeMessage msg) {
 			switch (msg.State) {
-				case Data.VNodeState.Master:
+				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 				case Data.VNodeState.Slave:
@@ -42,15 +41,15 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 		protected override async Task Given() {
 			_expectedNumberOfRoleAssignments.Wait(5000);
 
-			var master = GetMaster();
-			Assert.IsNotNull(master, "Could not get master node");
+			var leader = GetLeader();
+			Assert.IsNotNull(leader, "Could not get leader node");
 
 			// Set the checkpoint so the check is not skipped
-			master.Db.Config.ReplicationCheckpoint.Write(0);
+			leader.Db.Config.ReplicationCheckpoint.Write(0);
 
 			_subscriptionsConfirmed = new CountdownEvent(3);
-			_masterSubscription = new TestSubscription(master, 1, _streamId, _subscriptionsConfirmed);
-			_masterSubscription.CreateSubscription();
+			_leaderSubscription = new TestSubscription(leader, 1, _streamId, _subscriptionsConfirmed);
+			_leaderSubscription.CreateSubscription();
 
 			_slaveSubscriptions = new List<TestSubscription>();
 			var slaves = GetSlaves();
@@ -65,24 +64,24 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			}
 
 			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
-			var writeResult = ReplicationTestHelper.WriteEvent(master, events, _streamId);
+			var writeResult = ReplicationTestHelper.WriteEvent(leader, events, _streamId);
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 
 			await base.Given();
 			var replicas = GetSlaves();
 			AssertEx.IsOrBecomesTrue(
 				() => {
-					var masterIndex = master.Db.Config.IndexCheckpoint.Read();
-					return replicas[0].Db.Config.IndexCheckpoint.Read() == masterIndex &&
-					       replicas[1].Db.Config.IndexCheckpoint.Read() == masterIndex;
+					var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
+					return replicas[0].Db.Config.IndexCheckpoint.Read() == leaderIndex &&
+					       replicas[1].Db.Config.IndexCheckpoint.Read() == leaderIndex;
 
 				},
 				timeout:TimeSpan.FromSeconds(2));
 		}
 
 		[Test]
-		public void should_receive_event_on_master() {
-			Assert.IsTrue(_masterSubscription.EventAppeared.Wait(2000));
+		public void should_receive_event_on_leader() {
+			Assert.IsTrue(_leaderSubscription.EventAppeared.Wait(2000));
 		}
 
 		[Test]

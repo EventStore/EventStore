@@ -48,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			Subsystem.Register(_standardComponents);
 
 			// Unsubscribe from the actual components so we can test in isolation
-			Subsystem.MasterMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);
-			Subsystem.MasterMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStopped>(Subsystem);
+			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStarted>(Subsystem);
+			Subsystem.LeaderMainBus.Unsubscribe<ProjectionSubsystemMessage.ComponentStopped>(Subsystem);
 			
-			Subsystem.MasterMainBus.Subscribe(new AdHocHandler<Message>(
+			Subsystem.LeaderMainBus.Subscribe(new AdHocHandler<Message>(
 				msg => {
 					switch (msg) {
 						case ProjectionSubsystemMessage.StartComponents start: {

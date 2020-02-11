@@ -838,9 +838,9 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the node priority used during master election
+		/// Sets the node priority used during leader election
 		/// </summary>
-		/// <param name="nodePriority">The node priority used during master election</param>
+		/// <param name="nodePriority">The node priority used during leader election</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithNodePriority(int nodePriority) {
 			_nodePriority = nodePriority;
@@ -1427,7 +1427,7 @@ namespace EventStore.Core {
 			var tfChunkMaxReaderCount = ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, readerThreadsCount)
                                             + 2 /* for caching/uncaching, populating midpoints */
                                             + 1 /* for epoch manager usage of elections/replica service */
-                                            + 1 /* for epoch manager usage of master replication service */;
+                                            + 1 /* for epoch manager usage of leader replication service */;
 			return Math.Max(tfChunkMaxReaderCount, tfChunkInitialReaderCount);
 		}
 

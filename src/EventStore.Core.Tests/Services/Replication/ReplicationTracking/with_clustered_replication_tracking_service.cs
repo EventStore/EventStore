@@ -36,8 +36,8 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 
 		public abstract void When();
 		
-		protected void BecomeMaster() {
-			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+		protected void BecomeLeader() {
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {
@@ -45,10 +45,10 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		}
 
 		protected void BecomeSlave() {
-			var masterIpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
+			var leaderIpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
 			Service.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
-				masterIpEndPoint, masterIpEndPoint, masterIpEndPoint,
-				masterIpEndPoint, masterIpEndPoint, masterIpEndPoint, false)));
+				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint,
+				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint, false)));
 		}
 
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {

@@ -269,7 +269,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					Version = -1,
 					Mode = Mode,
 					Status = _state.EnumValueName(),
-					MasterStatus = _state
+					LeaderStatus = _state
 				};
 			} else {
 				status = _lastReceivedStatistics.Clone();
@@ -285,7 +285,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					                : (!status.Status.StartsWith(_state.EnumValueName())
 						                ? _state.EnumValueName() + "/" + status.Status
 						                : status.Status)) + enabledSuffix;
-				status.MasterStatus = _state;
+				status.LeaderStatus = _state;
 			}
 
 			if (_state == ManagedProjectionState.Faulted)
@@ -611,7 +611,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				new ClientMessage.ReadStreamEventsBackward(
 					corrId, corrId, _readDispatcher.Envelope, ProjectionNamesBuilder.ProjectionsStreamPrefix + name, -1,
 					1,
-					resolveLinkTos: false, requireMaster: false, validationStreamVersion: null,
+					resolveLinkTos: false, requireLeader: false, validationStreamVersion: null,
 					user: SystemAccount.Principal),
 				PersistedStateReadCompleted);
 		}

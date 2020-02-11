@@ -297,7 +297,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_publisher.Messages.Clear();
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+				proposalMessage.LeaderId, proposalMessage.LeaderInternalHttp, 0));
 			_publisher.Messages.Clear();
 			_sut.Handle(new ElectionMessage.SendViewChangeProof());
 
@@ -725,13 +725,13 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
-						proposalMessage.MasterId,
-						proposalMessage.MasterInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
+						proposalMessage.LeaderId,
+						proposalMessage.LeaderInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
-						proposalMessage.MasterId,
-						proposalMessage.MasterInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
+						proposalMessage.LeaderId,
+						proposalMessage.LeaderInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
@@ -957,8 +957,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 	
-	public class when_receiving_accept_without_a_master_having_been_proposed : ElectionsFixture {
-		public when_receiving_accept_without_a_master_having_been_proposed() :
+	public class when_receiving_accept_without_a_leader_having_been_proposed : ElectionsFixture {
+		public when_receiving_accept_without_a_leader_having_been_proposed() :
 			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -980,8 +980,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 	
-	public class when_receiving_accept_and_master_proposal_does_not_match_accept_master : ElectionsFixture {
-		public when_receiving_accept_and_master_proposal_does_not_match_accept_master() :
+	public class when_receiving_accept_and_leader_proposal_does_not_match_accept_leader : ElectionsFixture {
+		public when_receiving_accept_and_leader_proposal_does_not_match_accept_leader() :
 			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1027,7 +1027,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_publisher.Messages.Clear();
 
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+				proposalMessage.LeaderId, proposalMessage.LeaderInternalHttp, 0));
 
 			var expected = new Message[] {
 				new ElectionMessage.ElectionsDone(0,
@@ -1062,7 +1062,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+				proposalMessage.LeaderId, proposalMessage.LeaderInternalHttp, 0));
 			_publisher.Messages.Clear();
 			_sut.Handle(new ElectionMessage.ElectionsTimedOut(0));
 
@@ -1091,8 +1091,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_resigning_node_and_node_is_not_the_current_master : ElectionsFixture {
-		public when_resigning_node_and_node_is_not_the_current_master() :
+	public class when_resigning_node_and_node_is_not_the_current_leader : ElectionsFixture {
+		public when_resigning_node_and_node_is_not_the_current_leader() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1110,7 +1110,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 0));
+				proposalMessage.LeaderId, proposalMessage.LeaderInternalHttp, 0));
 			_publisher.Messages.Clear();
 			_sut.Handle(new ClientMessage.ResignNode());
 
@@ -1118,8 +1118,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_resigning_node_and_is_the_current_master : ElectionsFixture {
-		public when_resigning_node_and_is_the_current_master() :
+	public class when_resigning_node_and_is_the_current_leader : ElectionsFixture {
+		public when_resigning_node_and_is_the_current_leader() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1128,7 +1128,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_initiate_master_resignation_and_inform_other_nodes() {
+		public void should_initiate_leader_resignation_and_inform_other_nodes() {
 			_sut.Handle(new ElectionMessage.StartElections());
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
@@ -1141,18 +1141,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
-					new ElectionMessage.MasterIsResigning(_node.InstanceId, _node.InternalHttp),
+					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
-					new ElectionMessage.MasterIsResigning(_node.InstanceId, _node.InternalHttp),
+					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 	
-	public class when_receiving_master_is_resigning_and_readonly_replica : ElectionsFixture {
-		public when_receiving_master_is_resigning_and_readonly_replica() :
+	public class when_receiving_leader_is_resigning_and_readonly_replica : ElectionsFixture {
+		public when_receiving_leader_is_resigning_and_readonly_replica() :
 			base(NodeFactory(1, true), NodeFactory(2, false), NodeFactory(3, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1161,15 +1161,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_ignore_master_is_resigning() {
-			_sut.Handle(new ElectionMessage.MasterIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
+		public void should_ignore_leader_is_resigning() {
+			_sut.Handle(new ElectionMessage.LeaderIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
 
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
 	
-	public class when_receiving_master_is_resigning : ElectionsFixture {
-		public when_receiving_master_is_resigning() :
+	public class when_receiving_leader_is_resigning : ElectionsFixture {
+		public when_receiving_leader_is_resigning() :
 			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1178,12 +1178,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_reply_with_master_is_resigning_ok() {
-			_sut.Handle(new ElectionMessage.MasterIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
+		public void should_reply_with_leader_is_resigning_ok() {
+			_sut.Handle(new ElectionMessage.LeaderIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
 
 			var expected = new Message[] {
 				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
-					new ElectionMessage.MasterIsResigningOk(
+					new ElectionMessage.LeaderIsResigningOk(
 						_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 						_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
@@ -1202,7 +1202,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_initiate_master_resignation() {
+		public void should_initiate_leader_resignation() {
 			_sut.Handle(new ElectionMessage.StartElections());
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
@@ -1212,21 +1212,21 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ClientMessage.ResignNode());
 			_publisher.Messages.Clear();
 
-			_sut.Handle(new ElectionMessage.MasterIsResigningOk(
+			_sut.Handle(new ElectionMessage.LeaderIsResigningOk(
 				_node.InstanceId,
 				_node.InternalHttp,
 				_nodeTwo.InstanceId,
 				_nodeTwo.InternalHttp));
 
 			var expected = new Message[] {
-				new SystemMessage.InitiateMasterResignation(),
+				new SystemMessage.InitiateLeaderResignation(),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
 
-	public class when_electing_a_master_and_master_node_resigned : ElectionsFixture {
-		public when_electing_a_master_and_master_node_resigned() :
+	public class when_electing_a_leader_and_leader_node_resigned : ElectionsFixture {
+		public when_electing_a_leader_and_leader_node_resigned() :
 			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1235,7 +1235,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void should_attempt_not_to_elect_previously_elected_master() {
+		public void should_attempt_not_to_elect_previously_elected_leader() {
 			_sut.Handle(new ElectionMessage.StartElections());
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, -1, 0,
@@ -1245,7 +1245,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_publisher.Messages.Clear();
 
 			_sut.Handle(new ClientMessage.ResignNode());
-			_sut.Handle(new ElectionMessage.MasterIsResigningOk(
+			_sut.Handle(new ElectionMessage.LeaderIsResigningOk(
 				_node.InstanceId,
 				_node.InternalHttp,
 				_nodeTwo.InstanceId,
@@ -1261,7 +1261,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_publisher.Messages.Clear();
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
-				proposalMessage.MasterId, proposalMessage.MasterInternalHttp, 3));
+				proposalMessage.LeaderId, proposalMessage.LeaderInternalHttp, 3));
 
 			var expected = new Message[] {
 				new ElectionMessage.ElectionsDone(3,

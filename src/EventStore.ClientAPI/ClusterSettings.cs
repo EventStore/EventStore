@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="gossipSeeds">Endpoints for seeding gossip</param>.
 		/// <param name="maxDiscoverAttempts">Maximum number of attempts to discover the cluster</param>.
 		/// <param name="gossipTimeout">Timeout for cluster gossip</param>.
-		/// <param name="nodePreference">Whether to prefer slave, random, or master node selection</param>.
+		/// <param name="nodePreference">Whether to prefer slave, random, or leader node selection</param>.
 		internal ClusterSettings(GossipSeed[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout,
 			NodePreference nodePreference) {
 			ClusterDns = "";
@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="maxDiscoverAttempts">The maximum number of attempts for discovering endpoints</param>.
 		/// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>.
 		/// <param name="gossipTimeout">Timeout for cluster gossip</param>.
-		/// <param name="nodePreference">Whether to prefer slave, random, or master node selection</param>.
+		/// <param name="nodePreference">Whether to prefer slave, random, or leader node selection</param>.
 		internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort,
 			TimeSpan gossipTimeout, NodePreference nodePreference) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");

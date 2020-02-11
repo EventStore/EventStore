@@ -6,15 +6,15 @@ namespace EventStore.Core.Data {
 		CatchingUp,
 		Clone,
 		Slave,
-		PreMaster,
-		Master,
+		PreLeader,
+		Leader,
 		Manager,
 		ShuttingDown,
 		Shutdown,
-		ReadOnlyMasterless,
+		ReadOnlyLeaderless,
 		PreReadOnlyReplica,
 		ReadOnlyReplica,
-		ResigningMaster
+		ResigningLeader
 	}
 
 	public static class VNodeStateExtensions {

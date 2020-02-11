@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 
 		private void Handle(SystemMessage.StateChangeMessage msg) {
 			switch (msg.State) {
-				case Data.VNodeState.Master:
+				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 				case Data.VNodeState.Slave:
@@ -41,8 +41,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		protected override async Task Given() {
 			_expectedNumberOfRoleAssignments.Wait(5000);
 
-			_liveNode = GetMaster();
-			Assert.IsNotNull(_liveNode, "Could not get master node");
+			_liveNode = GetLeader();
+			Assert.IsNotNull(_liveNode, "Could not get leader node");
 
 			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
 			var writeResult = ReplicationTestHelper.WriteEvent(_liveNode, events, _streamId);

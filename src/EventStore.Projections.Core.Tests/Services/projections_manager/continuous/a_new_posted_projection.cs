@@ -151,7 +151,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
 						.Single()
 						.Projections.Single()
-						.MasterStatus);
+						.LeaderStatus);
 			}
 		}
 	}

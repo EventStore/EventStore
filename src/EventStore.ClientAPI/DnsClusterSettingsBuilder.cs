@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI {
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
 		private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
-		private NodePreference _nodePreference = NodePreference.Master;
+		private NodePreference _nodePreference = NodePreference.Leader;
 
 		/// <summary>
 		/// Sets the DNS name under which cluster nodes are listed.

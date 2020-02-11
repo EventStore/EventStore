@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Gossip {
 
 		protected override MemberInfo GetInitialMe() {
 			var lastEpoch = _epochManager.GetLastEpoch();
-			var initialState = NodeInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
+			var initialState = NodeInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
 			return MemberInfo.ForVNode(NodeInfo.InstanceId,
 				_timeProvider.UtcNow,
 				initialState,

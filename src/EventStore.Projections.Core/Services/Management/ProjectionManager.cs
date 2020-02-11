@@ -679,7 +679,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					from,
 					_readEventsBatchSize,
 					resolveLinkTos: false,
-					requireMaster: false,
+					requireLeader: false,
 					validationStreamVersion: null,
 					user: SystemAccount.Principal),
 				m => OnProjectionsListReadCompleted(m, registeredProjections, from, completedAction));
@@ -1023,7 +1023,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					0,
 					_readEventsBatchSize,
 					resolveLinkTos: false,
-					requireMaster: false,
+					requireLeader: false,
 					validationStreamVersion: null,
 					user: SystemAccount.Principal),
 				onComplete);

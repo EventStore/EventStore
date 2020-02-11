@@ -12,11 +12,11 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 	[TestFixture]
 	[Category("LongRunning")]
-	public class when_reading_an_event_committed_on_master_and_on_slaves : specification_with_cluster {
+	public class when_reading_an_event_committed_on_leader_and_on_slaves : specification_with_cluster {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 
 		private string _streamId =
-			"when_reading_an_event_committed_on_master_and_on_slaves-" + Guid.NewGuid().ToString();
+			"when_reading_an_event_committed_on_leader_and_on_slaves-" + Guid.NewGuid().ToString();
 
 		private long _commitPosition;
 		private long _indexPosition;
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 
 		private void Handle(SystemMessage.StateChangeMessage msg) {
 			switch (msg.State) {
-				case Data.VNodeState.Master:
+				case Data.VNodeState.Leader:
 					_expectedNumberOfRoleAssignments.Signal();
 					break;
 				case Data.VNodeState.Slave:
@@ -42,52 +42,52 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		protected override async Task Given() {
 			_expectedNumberOfRoleAssignments.Wait(5000);
 
-			var master = GetMaster();
-			Assert.IsNotNull(master, "Could not get master node");
+			var leader = GetLeader();
+			Assert.IsNotNull(leader, "Could not get leader node");
 
 			// Set the checkpoint so the check is not skipped
-			master.Db.Config.ReplicationCheckpoint.Write(0);
+			leader.Db.Config.ReplicationCheckpoint.Write(0);
 
 			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
-			var writeResult = ReplicationTestHelper.WriteEvent(master, events, _streamId);
+			var writeResult = ReplicationTestHelper.WriteEvent(leader, events, _streamId);
 			Assert.AreEqual(OperationResult.Success, writeResult.Result);
 			_commitPosition = writeResult.CommitPosition;
 			Thread.Sleep(100);
-			Assert.IsTrue(_commitPosition <= GetMaster().Db.Config.ReplicationCheckpoint.Read(),
+			Assert.IsTrue(_commitPosition <= GetLeader().Db.Config.ReplicationCheckpoint.Read(),
 				"Replication checkpoint should be greater than event commit position");
 			await base.Given();
-			_indexPosition = master.Db.Config.IndexCheckpoint.Read();
+			_indexPosition = leader.Db.Config.IndexCheckpoint.Read();
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_all_forward_on_master() {
-			var readResult = ReplicationTestHelper.ReadAllEventsForward(GetMaster(), _commitPosition);
+		public void should_be_able_to_read_event_from_all_forward_on_leader() {
+			var readResult = ReplicationTestHelper.ReadAllEventsForward(GetLeader(), _commitPosition);
 			Assert.AreEqual(1, readResult.Events.Count(x => x.OriginalStreamId == _streamId));
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_all_backward_on_master() {
-			var readResult = ReplicationTestHelper.ReadAllEventsBackward(GetMaster(), _commitPosition);
+		public void should_be_able_to_read_event_from_all_backward_on_leader() {
+			var readResult = ReplicationTestHelper.ReadAllEventsBackward(GetLeader(), _commitPosition);
 			Assert.AreEqual(1, readResult.Events.Count(x => x.OriginalStreamId == _streamId));
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_stream_forward_on_master() {
-			var readResult = ReplicationTestHelper.ReadStreamEventsForward(GetMaster(), _streamId);
+		public void should_be_able_to_read_event_from_stream_forward_on_leader() {
+			var readResult = ReplicationTestHelper.ReadStreamEventsForward(GetLeader(), _streamId);
 			Assert.AreEqual(1, readResult.Events.Count());
 			Assert.AreEqual(ReadStreamResult.Success, readResult.Result);
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_from_stream_backward_on_master() {
-			var readResult = ReplicationTestHelper.ReadStreamEventsBackward(GetMaster(), _streamId);
+		public void should_be_able_to_read_event_from_stream_backward_on_leader() {
+			var readResult = ReplicationTestHelper.ReadStreamEventsBackward(GetLeader(), _streamId);
 			Assert.AreEqual(ReadStreamResult.Success, readResult.Result);
 			Assert.AreEqual(1, readResult.Events.Count());
 		}
 
 		[Test]
-		public void should_be_able_to_read_event_on_master() {
-			var readResult = ReplicationTestHelper.ReadEvent(GetMaster(), _streamId, 0);
+		public void should_be_able_to_read_event_on_leader() {
+			var readResult = ReplicationTestHelper.ReadEvent(GetLeader(), _streamId, 0);
 			Assert.AreEqual(ReadEventResult.Success, readResult.Result);
 		}
 

@@ -29,11 +29,11 @@ namespace EventStore.Projections.Core {
 		IHandle<ProjectionSubsystemMessage.IODispatcherDrained> {
 		private static readonly PathString ProjectionsSegment = "/event_store.client.projections.Projections";
 
-		public InMemoryBus MasterMainBus {
-			get { return _masterMainBus; }
+		public InMemoryBus LeaderMainBus {
+			get { return _leaderMainBus; }
 		}
-		public InMemoryBus MasterOutputBus {
-			get { return _masterOutputBus; }
+		public InMemoryBus LeaderOutputBus {
+			get { return _leaderOutputBus; }
 		}
 		
 		private readonly int _projectionWorkerThreadCount;
@@ -43,9 +43,9 @@ namespace EventStore.Projections.Core {
 		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionsSubsystem>();
 		public const int VERSION = 3;
 
-		private IQueuedHandler _masterInputQueue;
-		private readonly InMemoryBus _masterMainBus;
-		private InMemoryBus _masterOutputBus;
+		private IQueuedHandler _leaderInputQueue;
+		private readonly InMemoryBus _leaderMainBus;
+		private InMemoryBus _leaderOutputBus;
 		private IDictionary<Guid, IQueuedHandler> _coreQueues;
 		private Dictionary<Guid, IPublisher> _queueMap;
 		private bool _subsystemStarted;
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core {
 
 		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
 			services.AddSingleton(provider =>
-				new ProjectionManagement(_masterInputQueue, provider.GetService<IAuthenticationProvider>()));
+				new ProjectionManagement(_leaderInputQueue, provider.GetService<IAuthenticationProvider>()));
 
 		public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
 			bool startStandardProjections, TimeSpan projectionQueryExpiry, bool faultOutOfOrderProjections) {
@@ -92,27 +92,27 @@ namespace EventStore.Projections.Core {
 			_startStandardProjections = startStandardProjections;
 			_projectionsQueryExpiry = projectionQueryExpiry;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
-			_masterMainBus = new InMemoryBus("manager input bus");
+			_leaderMainBus = new InMemoryBus("manager input bus");
 		}
 
 		public void Register(StandardComponents standardComponents) {
-			_masterInputQueue = QueuedHandler.CreateQueuedHandler(_masterMainBus, "Projections Master",
+			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(_leaderMainBus, "Projections Leader",
 				standardComponents.QueueStatsManager);
-			_masterOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
+			_leaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 			
-			_masterMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
-			_masterMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
-			_masterMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
-			_masterMainBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
-			_masterMainBus.Subscribe<SystemMessage.SystemCoreReady>(this);
-			_masterMainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);
+			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStarted>(this);
+			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.ComponentStopped>(this);
+			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.IODispatcherDrained>(this);
+			_leaderMainBus.Subscribe<SystemMessage.SystemCoreReady>(this);
+			_leaderMainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 			
 			var projectionsStandardComponents = new ProjectionsStandardComponents(
 				_projectionWorkerThreadCount,
 				_runProjections,
-				_masterOutputBus,
-				_masterInputQueue,
-				_masterMainBus, _faultOutOfOrderProjections);
+				_leaderOutputBus,
+				_leaderInputQueue,
+				_leaderMainBus, _faultOutOfOrderProjections);
 
 			CreateAwakerService(standardComponents);
 			_coreQueues =
@@ -121,8 +121,8 @@ namespace EventStore.Projections.Core {
 
 			ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap,
 				_projectionsQueryExpiry);
-			projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
-			projectionsStandardComponents.MasterMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
+			projectionsStandardComponents.LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(this);
+			projectionsStandardComponents.LeaderMainBus.Subscribe<CoreProjectionStatusMessage.Started>(this);
 		}
 		
 		private static void CreateAwakerService(StandardComponents standardComponents) {
@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core {
 		public void Handle(SystemMessage.SystemCoreReady message) {
 			if (_subsystemState != SubsystemState.NotReady) return;
 			_subsystemState = SubsystemState.Ready;
-			if (_nodeState == VNodeState.Master)
+			if (_nodeState == VNodeState.Leader)
 				StartComponents();
 		}
 
@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core {
 			_nodeState = message.State;
 			if (_subsystemState == SubsystemState.NotReady) return;
 			
-			if (_nodeState == VNodeState.Master) {
+			if (_nodeState == VNodeState.Leader) {
 				StartComponents();
 			} else {
 				StopComponents();
@@ -152,8 +152,8 @@ namespace EventStore.Projections.Core {
 		}
 
 		private void StartComponents() {
-			if (_nodeState != VNodeState.Master) {
-				_logger.Debug("PROJECTIONS SUBSYSTEM: Not starting because node is not master. Current node state: {nodeState}",
+			if (_nodeState != VNodeState.Leader) {
+				_logger.Debug("PROJECTIONS SUBSYSTEM: Not starting because node is not leader. Current node state: {nodeState}",
 					_nodeState);
 				return;
 			}
@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core {
 			_instanceCorrelationId = Guid.NewGuid();
 			_logger.Info("PROJECTIONS SUBSYSTEM: Starting components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_pendingComponentStarts = _componentCount;
-			_masterMainBus.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
+			_leaderMainBus.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
 		}
 
 		private void StopComponents() {
@@ -183,7 +183,7 @@ namespace EventStore.Projections.Core {
 			
 			_logger.Info("PROJECTIONS SUBSYSTEM: Stopping components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_subsystemState = SubsystemState.Stopping;
-			_masterMainBus.Publish(new ProjectionSubsystemMessage.StopComponents(_instanceCorrelationId));
+			_leaderMainBus.Publish(new ProjectionSubsystemMessage.StopComponents(_instanceCorrelationId));
 		}
 		
 		public void Handle(ProjectionSubsystemMessage.RestartSubsystem message) {
@@ -242,10 +242,10 @@ namespace EventStore.Projections.Core {
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Started;
 			_runningDispatchers = _dispatcherCount;
-			_masterOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
+			_leaderOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
 
-			if (_nodeState != VNodeState.Master) {
-				_logger.Info("PROJECTIONS SUBSYSTEM: Node state is no longer Master. Stopping projections. Current node state: {nodeState}",
+			if (_nodeState != VNodeState.Leader) {
+				_logger.Info("PROJECTIONS SUBSYSTEM: Node state is no longer Leader. Stopping projections. Current node state: {nodeState}",
 					_nodeState);
 				StopComponents();
 			}
@@ -288,8 +288,8 @@ namespace EventStore.Projections.Core {
 				return;
 			}
 
-			if (_nodeState == VNodeState.Master) {
-				_logger.Info("PROJECTIONS SUBSYSTEM: Node state has changed to Master. Starting projections.");
+			if (_nodeState == VNodeState.Leader) {
+				_logger.Info("PROJECTIONS SUBSYSTEM: Node state has changed to Leader. Starting projections.");
 				StartComponents();
 			}
 		}
@@ -297,8 +297,8 @@ namespace EventStore.Projections.Core {
 		public IEnumerable<Task> Start() {
 			var tasks = new List<Task>();
 			if (_subsystemStarted == false) {
-				if (_masterInputQueue != null)
-					tasks.Add(_masterInputQueue.Start());
+				if (_leaderInputQueue != null)
+					tasks.Add(_leaderInputQueue.Start());
 				foreach (var queue in _coreQueues)
 					tasks.Add(queue.Value.Start());
 			}
@@ -309,8 +309,8 @@ namespace EventStore.Projections.Core {
 
 		public void Stop() {
 			if (_subsystemStarted) {
-				if (_masterInputQueue != null)
-					_masterInputQueue.Stop();
+				if (_leaderInputQueue != null)
+					_leaderInputQueue.Stop();
 				foreach (var queue in _coreQueues)
 					queue.Value.Stop();
 			}
@@ -331,7 +331,7 @@ namespace EventStore.Projections.Core {
 				if (_standardProjections.Contains(message.Name)) {
 					_standardProjections.Remove(message.Name);
 					var envelope = new NoopEnvelope();
-					_masterMainBus.Publish(new ProjectionManagementMessage.Command.Enable(envelope, message.Name,
+					_leaderMainBus.Publish(new ProjectionManagementMessage.Command.Enable(envelope, message.Name,
 						ProjectionManagementMessage.RunAs.System));
 				}
 			}

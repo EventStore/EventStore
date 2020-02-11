@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionService :
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
-		IHandle<SystemMessage.BecomeMaster>,
+		IHandle<SystemMessage.BecomeLeader>,
 		IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
 		IHandle<ClientMessage.ReplayParkedMessages>,
 		IHandle<ClientMessage.ReplayParkedMessage>,
@@ -83,14 +83,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
 
-			if (message.State == VNodeState.Master) return;
+			if (message.State == VNodeState.Leader) return;
 			Log.Debug("Persistent subscriptions received state change to {state}. Stopping listening", _state);
 			ShutdownSubscriptions();
 			Stop();
 		}
 
-		public void Handle(SystemMessage.BecomeMaster message) {
-			Log.Debug("Persistent subscriptions Became Master so now handling subscriptions");
+		public void Handle(SystemMessage.BecomeLeader message) {
+			Log.Debug("Persistent subscriptions Became Leader so now handling subscriptions");
 			InitToEmpty();
 			_handleTick = true;
 			_bus.Publish(_tickRequestMessage);

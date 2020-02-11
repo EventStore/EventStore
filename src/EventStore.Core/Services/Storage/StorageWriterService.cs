@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			}
 
-			if (_vnodeState != VNodeState.Master && _vnodeState != VNodeState.ResigningMaster && message is StorageMessage.IMasterWriteMessage) {
+			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.ResigningLeader && message is StorageMessage.ILeaderWriteMessage) {
 				Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
 					_vnodeState);
 				var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
@@ -176,7 +176,7 @@ namespace EventStore.Core.Services.Storage {
 			_vnodeState = message.State;
 
 			switch (message.State) {
-				case VNodeState.Master: {
+				case VNodeState.Leader: {
 						_indexWriter.Reset();
 						EpochManager.WriteNewEpoch(); // forces flush
 						break;
@@ -189,17 +189,17 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
-			if (_vnodeState == VNodeState.PreMaster)
+			if (_vnodeState == VNodeState.PreLeader)
 				return;
-			if (_vnodeState != VNodeState.Master)
-				throw new Exception(string.Format("New Epoch request not in master state. State: {0}.", _vnodeState));
+			if (_vnodeState != VNodeState.Leader)
+				throw new Exception(string.Format("New Epoch request not in leader state. State: {0}.", _vnodeState));
 			EpochManager.WriteNewEpoch();
 			PurgeNotProcessedInfo();
 		}
 
 		void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
 			// if we are in states, that doesn't need to wait for chaser, ignore
-			if (_vnodeState != VNodeState.PreMaster &&
+			if (_vnodeState != VNodeState.PreLeader &&
 				_vnodeState != VNodeState.PreReplica &&
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));

@@ -16,28 +16,28 @@ namespace EventStore.Core.Tests.Http.Cluster {
 	public class when_requesting_from_slave : specification_with_cluster {
 		private const string TestStream = "test-stream";
 		private IPEndPoint _slaveEndPoint;
-		private IPEndPoint _masterEndPoint;
+		private IPEndPoint _leaderEndPoint;
 		private HttpClient _client;
 
 		protected override async Task Given() {
-			var master = GetMaster();
-			_masterEndPoint = master.ExternalHttpEndPoint;
+			var leader = GetLeader();
+			_leaderEndPoint = leader.ExternalHttpEndPoint;
 			
 			// Wait for the admin user to be created
-			await master.AdminUserCreated;
+			await leader.AdminUserCreated;
 			var replica = GetSlaves().First();
 			_slaveEndPoint = replica.ExternalHttpEndPoint;
 			_client = replica.CreateHttpClient();
 
 			// Wait for the admin user created event to be replicated before starting our tests
-			var masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == masterIndex);
+			var leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
 			
 			var path = $"streams/{TestStream}";
-			var response = await PostEvent(_slaveEndPoint, path, requireMaster: false);
+			var response = await PostEvent(_slaveEndPoint, path, requireLeader: false);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-			masterIndex = GetMaster().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == masterIndex);
+			leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
 		}
 
 		public override Task TestFixtureTearDown() {
@@ -46,129 +46,129 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		public async Task post_events_should_succeed_when_master_not_required() {
+		public async Task post_events_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}";
-			var response = await PostEvent(_slaveEndPoint, path, requireMaster: false);
+			var response = await PostEvent(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 		}
 
 		[Test]
-		public async Task delete_stream_should_succeed_when_master_not_required() {
+		public async Task delete_stream_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}";
-			var response = await DeleteStream(_slaveEndPoint, path, requireMaster: false);
+			var response = await DeleteStream(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
 		}
 
 		[Test]
-		public async Task read_from_stream_forward_should_succeed_when_master_not_required() {
+		public async Task read_from_stream_forward_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}/0/forward/1";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: false);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
 		[Test]
-		public async Task read_from_stream_backward_should_succeed_when_master_not_required() {
+		public async Task read_from_stream_backward_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: false);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
 		[Test]
-		public async Task read_from_all_forward_should_succeed_when_master_not_required() {
+		public async Task read_from_all_forward_should_succeed_when_leader_not_required() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: false);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
 		[Test]
-		public async Task read_from_all_backward_should_succeed_when_master_not_required() {
+		public async Task read_from_all_backward_should_succeed_when_leader_not_required() {
 			var path = $"streams/$all";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: false);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_writing_with_requires_master() {
+		public async Task should_redirect_to_leader_when_writing_with_requires_leader() {
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_slaveEndPoint, path);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_deleting_with_requires_master() {
+		public async Task should_redirect_to_leader_when_deleting_with_requires_leader() {
 			var path = $"streams/{TestStream}";
-			var response = await DeleteStream(_slaveEndPoint, path, requireMaster: true);
+			var response = await DeleteStream(_slaveEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_reading_from_stream_backwards_with_requires_master() {
+		public async Task should_redirect_to_leader_when_reading_from_stream_backwards_with_requires_leader() {
 			var path = $"streams/{TestStream}";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: true);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_reading_from_stream_forwards_with_requires_master() {
+		public async Task should_redirect_to_leader_when_reading_from_stream_forwards_with_requires_leader() {
 			var path = $"streams/{TestStream}/0/forward/1";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: true);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_reading_from_all_backwards_with_requires_master() {
+		public async Task should_redirect_to_leader_when_reading_from_all_backwards_with_requires_leader() {
 			var path = $"streams/$all";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: true);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
 		[Test]
-		public async Task should_redirect_to_master_when_reading_from_all_forwards_with_requires_master() {
+		public async Task should_redirect_to_leader_when_reading_from_all_forwards_with_requires_leader() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
-			var response = await ReadStream(_slaveEndPoint, path, requireMaster: true);
+			var response = await ReadStream(_slaveEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-			var masterLocation = CreateUri(_masterEndPoint, path);
-			Assert.AreEqual(masterLocation, response.Headers.Location);
+			var leaderLocation = CreateUri(_leaderEndPoint, path);
+			Assert.AreEqual(leaderLocation, response.Headers.Location);
 		}
 
-		private Task<HttpResponseMessage> ReadStream(IPEndPoint nodeEndpoint, string path, bool requireMaster) {
+		private Task<HttpResponseMessage> ReadStream(IPEndPoint nodeEndpoint, string path, bool requireLeader) {
 			var uri = CreateUri(nodeEndpoint, path);
-			var request = CreateRequest(uri, HttpMethod.Get, requireMaster);
+			var request = CreateRequest(uri, HttpMethod.Get, requireLeader);
 			request.Headers.Add("Accept", "application/json");
 			return GetRequestResponse(request);
 		}
 
-		private Task<HttpResponseMessage> DeleteStream(IPEndPoint nodeEndpoint, string path, bool requireMaster = true) {
+		private Task<HttpResponseMessage> DeleteStream(IPEndPoint nodeEndpoint, string path, bool requireLeader = true) {
 			var uri = CreateUri(nodeEndpoint, path);
-			var request = CreateRequest(uri, HttpMethod.Delete, requireMaster);
+			var request = CreateRequest(uri, HttpMethod.Delete, requireLeader);
 			return GetRequestResponse(request);
 		}
 
-		private Task<HttpResponseMessage> PostEvent(IPEndPoint nodeEndpoint, string path, bool requireMaster = true) {
+		private Task<HttpResponseMessage> PostEvent(IPEndPoint nodeEndpoint, string path, bool requireLeader = true) {
 			var uri = CreateUri(nodeEndpoint, path);
-			var request = CreateRequest(uri, HttpMethod.Post, requireMaster);
+			var request = CreateRequest(uri, HttpMethod.Post, requireLeader);
 
 			request.Headers.Add("ES-EventType", "SomeType");
 			request.Headers.Add("ES-ExpectedVersion", ExpectedVersion.Any.ToString());
@@ -182,9 +182,9 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		private static string GetAuthorizationHeader(NetworkCredential credentials)
 			=> Convert.ToBase64String(Encoding.ASCII.GetBytes($"{credentials.UserName}:{credentials.Password}"));
 
-		private HttpRequestMessage CreateRequest(Uri uri, HttpMethod method, bool requireMaster) {
+		private HttpRequestMessage CreateRequest(Uri uri, HttpMethod method, bool requireLeader) {
 			var request = new HttpRequestMessage(method, uri);
-			request.Headers.Add("ES-RequireMaster", requireMaster ? "True" : "False");
+			request.Headers.Add("ES-RequireLeader", requireLeader ? "True" : "False");
 			request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
             					GetAuthorizationHeader(DefaultData.AdminNetworkCredentials));
 			return request;

@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ReplicationTrackingMessage.ReplicaWriteAck>,
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
-		IHandle<ReplicationTrackingMessage.MasterReplicatedTo>,
+		IHandle<ReplicationTrackingMessage.LeaderReplicatedTo>,
 		IHandle<SystemMessage.VNodeConnectionLost> {
 		private readonly ILogger _log = LogManager.GetLoggerFor<ReplicationTrackingService>();
 		private readonly IPublisher _publisher;
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 		
 		public bool IsCurrent() {
-			Debug.Assert(_state == VNodeState.Master);
+			Debug.Assert(_state == VNodeState.Leader);
 			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
 		}
 
@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Replication {
 			try {
 				while (!_stop) {
 					_replicationChange.Reset();
-					if (_state == VNodeState.Master) {
+					if (_state == VNodeState.Leader) {
 						//Publish Log Commit Position
 						var newPos = _replicationCheckpoint.Read();
 						if (newPos > Interlocked.Read(ref _publishedPosition)) {
@@ -96,8 +96,8 @@ namespace EventStore.Core.Services.Replication {
 			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(ReplicationTrackingService)));
 		}
 
-		public void Handle(ReplicationTrackingMessage.MasterReplicatedTo message) {
-			if (_state != VNodeState.Master && message.LogPosition > _replicationCheckpoint.Read()) {
+		public void Handle(ReplicationTrackingMessage.LeaderReplicatedTo message) {
+			if (_state != VNodeState.Leader && message.LogPosition > _replicationCheckpoint.Read()) {
 				_replicationCheckpoint.Write(message.LogPosition);
 				_replicationCheckpoint.Flush();
 				_publisher.Publish(new ReplicationTrackingMessage.ReplicatedTo(message.LogPosition));
@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Replication {
 			var writerCp = _writerCheckpoint.Read();
 			if (writerCp <= replicationCp) { return; }
 
-			var minReplicas = _quorumSize - 1; //total - master = min replicas
+			var minReplicas = _quorumSize - 1; //total - leader = min replicas
 			if (minReplicas == 0) {
 				_replicationCheckpoint.Write(writerCp);
 				_replicationCheckpoint.Flush();
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.Replication {
 
 
 		public void Handle(ReplicationTrackingMessage.ReplicaWriteAck message) {
-			if (_state != VNodeState.Master) { return; }
+			if (_state != VNodeState.Leader) { return; }
 			if (_replicaLogPositions.TryGetValue(message.SubscriptionId, out var position) &&
 				message.ReplicationLogPosition <= position) { return; }
 			_replicaLogPositions.AddOrUpdate(message.SubscriptionId, message.ReplicationLogPosition, (k, v) => message.ReplicationLogPosition);
@@ -145,12 +145,12 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationTrackingMessage.WriterCheckpointFlushed message) {
-			if (_state != VNodeState.Master) { return; }
+			if (_state != VNodeState.Leader) { return; }
 			UpdateReplicationPosition();
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage msg) {
-			//switching to master from non-Master
+			//switching to leader from non-leader
 			if (_state != msg.State) {
 				_replicaLogPositions.Clear();
 			}
@@ -158,7 +158,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(SystemMessage.VNodeConnectionLost msg) {
-			if (_state != VNodeState.Master || !msg.SubscriptionId.HasValue) return;
+			if (_state != VNodeState.Leader || !msg.SubscriptionId.HasValue) return;
 			_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
 		}
 

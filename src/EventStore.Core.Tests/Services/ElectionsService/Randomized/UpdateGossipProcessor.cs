@@ -47,16 +47,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			if (electionsDone != null) {
 				MemberInfo[] previousMembers;
 				if (_previousGossip.TryGetValue(item.EndPoint, out previousMembers)) {
-					var masterMemberIndex = Array.FindIndex(previousMembers,
-						x => x.Is(electionsDone.Master.InternalHttpEndPoint));
-					if (masterMemberIndex != -1) {
-						var previousMasterInfo = previousMembers[masterMemberIndex];
-						var masterEndPoint = previousMasterInfo.InternalHttpEndPoint;
+					var leaderIndex = Array.FindIndex(previousMembers,
+						x => x.Is(electionsDone.Leader.InternalHttpEndPoint));
+					if (leaderIndex != -1) {
+						var previousLeaderInfo = previousMembers[leaderIndex];
+						var leaderEndPoint = previousLeaderInfo.InternalHttpEndPoint;
 
-						previousMembers[masterMemberIndex] =
-							MemberInfo.ForVNode(previousMasterInfo.InstanceId, DateTime.UtcNow, VNodeState.Master,
-								previousMasterInfo.IsAlive,
-								masterEndPoint, null, masterEndPoint, null, masterEndPoint, masterEndPoint,
+						previousMembers[leaderIndex] =
+							MemberInfo.ForVNode(previousLeaderInfo.InstanceId, DateTime.UtcNow, VNodeState.Leader,
+								previousLeaderInfo.IsAlive,
+								leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint, leaderEndPoint,
 								-1, 0, 0, -1, -1, Guid.Empty, 0, false);
 					}
 				}
@@ -79,10 +79,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				_enqueue(item, updateGossipMessage);
 				_previousGossip[item.EndPoint] = updatedGossip;
 
-				var master =
-					updateGossipMessage.ClusterInfo.Members.FirstOrDefault(x =>
-						x.IsAlive && x.State == VNodeState.Master);
-				if (master == null)
+				var leader = updateGossipMessage.ClusterInfo.Members.FirstOrDefault(x => x.IsAlive && x.State == VNodeState.Leader);
+				if (leader == null)
 					_enqueue(item, new ElectionMessage.StartElections());
 			}
 		}

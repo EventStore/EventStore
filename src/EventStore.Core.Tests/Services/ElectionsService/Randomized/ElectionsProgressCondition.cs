@@ -30,15 +30,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		public virtual void Process(int iteration, RandTestQueueItem item) {
 			var msg = item.Message as ElectionMessage.ElectionsDone;
 			if (msg != null) {
-				var master = msg.Master.ExternalHttpEndPoint;
-				ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, master);
+				var leader = msg.Leader.ExternalHttpEndPoint;
+				ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, leader);
 				Done = ElectionsResults.Values.Count(x => x.Item1 == msg.InstalledView) >= _majorityCount;
 			}
 		}
 
 		public void Log() {
 			Console.WriteLine("Success Condition data:");
-			Console.WriteLine("node - (installed view, master)");
+			Console.WriteLine("node - (installed view, leader)");
 			foreach (var electionsResult in ElectionsResults) {
 				Console.WriteLine("{0} - ({1}, {2})",
 					electionsResult.Key.Port,

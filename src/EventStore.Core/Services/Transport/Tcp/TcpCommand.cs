@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		DataChunkBulk = 0x14,
 		ReplicaSubscriptionRetry = 0x15,
 		ReplicaSubscribed = 0x16,
-		MasterReplicatedTo = 0x17,
+		LeaderReplicatedTo = 0x17,
 
 		// CLIENT COMMANDS
 //        CreateStream = 0x80,

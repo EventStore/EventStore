@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.RequestManager {
 		
 		
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			//TODO(clc): if we have become resigning master should all requests be actively disposed?
+			//TODO(clc): if we have become resigning leader should all requests be actively disposed?
 			_nodeState = message.State;
 		}
 
@@ -164,8 +164,8 @@ namespace EventStore.Core.Services.RequestManager {
 			foreach (var currentRequest in _currentRequests) {
 				currentRequest.Value.Handle(message);
 			}
-			//TODO(clc): if we have become resigning master should all requests be actively disposed?
-			if (_nodeState == VNodeState.ResigningMaster && _currentRequests.Count == 0) {
+			//TODO(clc): if we have become resigning leader should all requests be actively disposed?
+			if (_nodeState == VNodeState.ResigningLeader && _currentRequests.Count == 0) {
 				_bus.Publish(new SystemMessage.RequestQueueDrained());
 			}
 

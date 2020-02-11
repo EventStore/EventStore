@@ -94,7 +94,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.VerboseLogging,
 						connectionSettings.MaxQueueSize, connectionSettings.MaxConcurrentItems,
 						connectionSettings.MaxRetries, connectionSettings.MaxReconnections,
-						connectionSettings.RequireMaster, connectionSettings.ReconnectionDelay,
+						connectionSettings.RequireLeader, connectionSettings.ReconnectionDelay,
 						connectionSettings.QueueTimeout, connectionSettings.OperationTimeout,
 						connectionSettings.OperationTimeoutCheckPeriod, credential, connectionSettings.UseSslConnection,
 						connectionSettings.TargetHost,

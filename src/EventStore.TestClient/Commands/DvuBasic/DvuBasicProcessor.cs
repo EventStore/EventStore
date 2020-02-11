@@ -348,7 +348,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 					var stream = _streams[streamIdx];
 					var corrid = Guid.NewGuid();
 					var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false,
-						requireMaster: false);
+						requireLeader: false);
 					var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
 					connection.EnqueueSend(package.AsByteArray());

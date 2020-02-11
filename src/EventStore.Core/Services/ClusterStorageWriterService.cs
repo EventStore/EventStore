@@ -53,7 +53,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public override void Handle(SystemMessage.StateChangeMessage message) {
-			if (message.State == VNodeState.PreMaster) {
+			if (message.State == VNodeState.PreLeader) {
 				if (_activeChunk != null) {
 					_activeChunk.MarkForDeletion();
 					_activeChunk = null;
@@ -79,23 +79,23 @@ namespace EventStore.Core.Services {
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
 
 			Log.Info(
-				"=== SUBSCRIBED to [{masterEndPoint},{masterId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
-				message.MasterEndPoint, message.MasterId, message.SubscriptionPosition, message.SubscriptionPosition,
+				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
+				message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition, message.SubscriptionPosition,
 				message.SubscriptionId);
 
 			var writerCheck = Db.Config.WriterCheckpoint.ReadNonFlushed();
 			if (message.SubscriptionPosition > writerCheck) {
 				ReplicationFail(
-					"Master [{0},{1:B}] subscribed us at {2} (0x{3:X}), which is greater than our writer checkpoint {4} (0x{5:X}). REPLICATION BUG.",
-					"Master [{masterEndpoint},{masterId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is greater than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). REPLICATION BUG.",
-					message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,
+					"Leader [{0},{1:B}] subscribed us at {2} (0x{3:X}), which is greater than our writer checkpoint {4} (0x{5:X}). REPLICATION BUG.",
+					"Leader [{leaderEndpoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is greater than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). REPLICATION BUG.",
+					message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 					message.SubscriptionPosition, writerCheck, writerCheck);
 			}
 
 			if (message.SubscriptionPosition < writerCheck) {
 				Log.Info(
-					"Master [{masterEndPoint},{masterId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). TRUNCATION IS NEEDED.",
-					message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,
+					"Leader [{leaderEndPoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). TRUNCATION IS NEEDED.",
+					message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 					message.SubscriptionPosition, writerCheck, writerCheck);
 
 				var lastIndexedPosition = _getLastIndexedPosition();
@@ -112,12 +112,12 @@ namespace EventStore.Core.Services {
 				if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch,
 					lastIndexedPosition)) {
 					Log.Error(
-						"Master [{masterEndPoint},{masterId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our last epoch and LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X}) >= lastEpoch.EpochPosition {lastEpochPosition} (0x{lastEpochPosition:X}). That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.",
-						message.MasterEndPoint, message.MasterId, message.SubscriptionPosition,
+						"Leader [{leaderEndPoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our last epoch and LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X}) >= lastEpoch.EpochPosition {lastEpochPosition} (0x{lastEpochPosition:X}). That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.",
+						message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 						message.SubscriptionPosition, lastIndexedPosition, lastIndexedPosition, lastEpoch.EpochPosition,
 						lastEpoch.EpochPosition);
 					Log.Error(
-						"ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF JUST-ELECTED MASTER FAILS IMMEDIATELY AFTER ITS ELECTION.");
+						"ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF A NEWLY-ELECTED LEADER FAILS IMMEDIATELY AFTER ELECTION.");
 				}
 
 				Db.Config.TruncateCheckpoint.Write(message.SubscriptionPosition);

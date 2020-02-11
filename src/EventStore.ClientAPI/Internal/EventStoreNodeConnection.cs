@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNullOrEmpty(stream, "stream");
 
 			var source = TaskCompletionSourceFactory.Create<DeleteResult>();
-			var operation = new DeleteStreamOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new DeleteStreamOperation(Settings.Log, source, Settings.RequireLeader,
 				stream, expectedVersion, hardDelete, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -114,7 +114,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(events, "events");
 
 			var source = TaskCompletionSourceFactory.Create<WriteResult>();
-			var operation = new AppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new AppendToStreamOperation(Settings.Log, source, Settings.RequireLeader,
 				stream, expectedVersion, events, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -129,7 +129,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(events, "events");
 
 			var source = TaskCompletionSourceFactory.Create<ConditionalWriteResult>();
-			var operation = new ConditionalAppendToStreamOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new ConditionalAppendToStreamOperation(Settings.Log, source, Settings.RequireLeader,
 				stream, expectedVersion, events, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -141,7 +141,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNullOrEmpty(stream, "stream");
 
 			var source = TaskCompletionSourceFactory.Create<EventStoreTransaction>();
-			var operation = new StartTransactionOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new StartTransactionOperation(Settings.Log, source, Settings.RequireLeader,
 				stream, expectedVersion, this, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -159,7 +159,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(events, "events");
 
 			var source = TaskCompletionSourceFactory.Create<object>();
-			var operation = new TransactionalWriteOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new TransactionalWriteOperation(Settings.Log, source, Settings.RequireLeader,
 				transaction.TransactionId, events, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			await source.Task.ConfigureAwait(false);
@@ -171,7 +171,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(transaction, "transaction");
 
 			var source = TaskCompletionSourceFactory.Create<WriteResult>();
-			var operation = new CommitTransactionOperation(Settings.Log, source, Settings.RequireMaster,
+			var operation = new CommitTransactionOperation(Settings.Log, source, Settings.RequireLeader,
 				transaction.TransactionId, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -184,7 +184,7 @@ namespace EventStore.ClientAPI.Internal {
 			if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
 			var source = TaskCompletionSourceFactory.Create<EventReadResult>();
 			var operation = new ReadEventOperation(Settings.Log, source, stream, eventNumber, resolveLinkTos,
-				Settings.RequireMaster, userCredentials);
+				Settings.RequireLeader, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 			var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
 			var operation = new ReadStreamEventsForwardOperation(Settings.Log, source, stream, start, count,
-				resolveLinkTos, Settings.RequireMaster, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -216,7 +216,7 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 			var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
 			var operation = new ReadStreamEventsBackwardOperation(Settings.Log, source, stream, start, count,
-				resolveLinkTos, Settings.RequireMaster, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -230,7 +230,7 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -256,7 +256,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new FilteredReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, maxSearchWindow, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -271,7 +271,7 @@ namespace EventStore.ClientAPI.Internal {
 					ClientApiConstants.MaxReadSize));
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, userCredentials);
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
 		}
@@ -296,7 +296,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new FilteredReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
-				resolveLinkTos, Settings.RequireMaster, maxSearchWindow, filter.Value, userCredentials);
+				resolveLinkTos, Settings.RequireLeader, maxSearchWindow, filter.Value, userCredentials);
 
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			return await source.Task.ConfigureAwait(false);
@@ -611,7 +611,7 @@ namespace EventStore.ClientAPI.Internal {
 				metadata ?? Empty.ByteArray, null);
 			var operation = new AppendToStreamOperation(Settings.Log,
 				source,
-				Settings.RequireMaster,
+				Settings.RequireLeader,
 				SystemStreams.MetastreamOf(stream),
 				expectedMetastreamVersion,
 				new[] {metaevent},

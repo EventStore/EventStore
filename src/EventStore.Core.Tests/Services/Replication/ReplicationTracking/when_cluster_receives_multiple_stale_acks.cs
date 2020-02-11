@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		protected override int ClusterSize => 3;
 
 		public override void When() {
-			BecomeMaster();
+			BecomeLeader();
 			// All of the nodes have acked the first write
 			WriterCheckpoint.Write(_firstLogPosition);
 			WriterCheckpoint.Flush();

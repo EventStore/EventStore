@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
 						.Single()
 						.Projections.Single()
-						.MasterStatus);
+						.LeaderStatus);
 			}
 		}
 	}

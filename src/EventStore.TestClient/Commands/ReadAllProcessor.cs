@@ -8,7 +8,7 @@ using EventStore.Core.Services.Transport.Tcp;
 namespace EventStore.TestClient.Commands {
 	internal class ReadAllProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "RDALL [[F|B] [<commit pos> <prepare pos> [<only-if-master>]]]"; }
+			get { return "RDALL [[F|B] [<commit pos> <prepare pos> [<only-if-leader>]]]"; }
 		}
 
 		public string Keyword {
@@ -21,7 +21,7 @@ namespace EventStore.TestClient.Commands {
 			long preparePos = 0;
 			bool posOverriden = false;
 			bool resolveLinkTos = false;
-			bool requireMaster = false;
+			bool requireLeader = false;
 
 			if (args.Length > 0) {
 				if (args.Length != 1 && args.Length != 3 && args.Length != 4)
@@ -41,7 +41,7 @@ namespace EventStore.TestClient.Commands {
 				}
 
 				if (args.Length >= 4)
-					requireMaster = bool.Parse(args[3]);
+					requireLeader = bool.Parse(args[3]);
 			}
 
 			if (!posOverriden) {
@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands {
 						conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
 					var readDto =
-						new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster);
+						new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					sw.Start();
 					conn.EnqueueSend(package);
@@ -99,7 +99,7 @@ namespace EventStore.TestClient.Commands {
 					context.Log.Info("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
 
 					var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
-						10, resolveLinkTos, requireMaster);
+						10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					conn.EnqueueSend(package);
 				},

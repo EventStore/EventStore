@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		
 		public override void When() {
 			_slaves = new [] {Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()};
-			BecomeMaster();
+			BecomeLeader();
 			// All of the nodes have acked the first write
 			WriterCheckpoint.Write(_firstLogPosition);
 			WriterCheckpoint.Flush();

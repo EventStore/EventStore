@@ -31,7 +31,7 @@ namespace EventStore.Core.Services {
 		private readonly HttpMessagePipe _httpPipe;
 		private readonly bool _forwardRequests;
 		private const string _httpSendHistogram = "http-send";
-		private VNodeInfo _masterInfo;
+		private VNodeInfo _leaderInfo;
 
 		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests) {
 			Ensure.NotNull(httpPipe, "httpPipe");
@@ -47,18 +47,18 @@ namespace EventStore.Core.Services {
 				case VNodeState.Slave:
 				case VNodeState.PreReadOnlyReplica:
 				case VNodeState.ReadOnlyReplica:
-					_masterInfo = ((SystemMessage.ReplicaStateMessage)message).Master;
+					_leaderInfo = ((SystemMessage.ReplicaStateMessage)message).Leader;
 					break;
 				case VNodeState.Initializing:
 				case VNodeState.Unknown:
-				case VNodeState.PreMaster:
-				case VNodeState.Master:
-				case VNodeState.ResigningMaster:
+				case VNodeState.PreLeader:
+				case VNodeState.Leader:
+				case VNodeState.ResigningLeader:
 				case VNodeState.Manager:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown:
-				case VNodeState.ReadOnlyMasterless:
-					_masterInfo = null;
+				case VNodeState.ReadOnlyLeaderless:
+					_leaderInfo = null;
 					break;
 				default:
 					throw new Exception(string.Format("Unknown node state: {0}.", message.State));
@@ -154,12 +154,12 @@ namespace EventStore.Core.Services {
 		}
 
 		bool IHttpForwarder.ForwardRequest(HttpEntityManager manager) {
-			var masterInfo = _masterInfo;
-			if (_forwardRequests && masterInfo != null) {
+			var leaderInfo = _leaderInfo;
+			if (_forwardRequests && leaderInfo != null) {
 				var srcUrl = manager.RequestedUrl;
 				var srcBase = new Uri(string.Format("{0}://{1}:{2}/", srcUrl.Scheme, srcUrl.Host, srcUrl.Port),
 					UriKind.Absolute);
-				var baseUri = new Uri(string.Format("http://{0}/", masterInfo.InternalHttp));
+				var baseUri = new Uri(string.Format("http://{0}/", leaderInfo.InternalHttp));
 				var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
 				ForwardRequest(manager, forwardUri);
 				return true;

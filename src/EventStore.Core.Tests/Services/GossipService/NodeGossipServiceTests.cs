@@ -490,7 +490,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		}
 	}
 
-	public class when_state_changed_to_master : NodeGossipServiceTestFixture {
+	public class when_state_changed_to_leader : NodeGossipServiceTestFixture {
 		protected override Message[] Given() =>
 			GivenSystemInitializedWithKnownGossipSeedSources(
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
@@ -501,19 +501,19 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			);
 
 		protected override Message When() =>
-			new SystemMessage.BecomeMaster(Guid.NewGuid());
+			new SystemMessage.BecomeLeader(Guid.NewGuid());
 
 		[Test]
 		public void should_update_gossip() {
 			ExpectMessages(
 				new GossipMessage.GossipUpdated(new ClusterInfo(
-					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, nodeState: VNodeState.Master),
+					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, nodeState: VNodeState.Leader),
 					InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow))));
 		}
 	}
 
-	public class when_state_changed_to_non_master : NodeGossipServiceTestFixture {
+	public class when_state_changed_to_non_leader : NodeGossipServiceTestFixture {
 		protected override Message[] Given() =>
 			GivenSystemInitializedWithKnownGossipSeedSources(
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
@@ -570,13 +570,13 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		}
 	}
 
-	public class when_gossip_send_failed_to_the_current_master_node : NodeGossipServiceTestFixture {
+	public class when_gossip_send_failed_to_the_current_leader_node : NodeGossipServiceTestFixture {
 		protected override Message[] Given() =>
 			GivenSystemInitializedWithKnownGossipSeedSources(
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
-						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, nodeState: VNodeState.Master)),
+						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, nodeState: VNodeState.Leader)),
 					_nodeTwo.InternalHttp),
 				new SystemMessage.BecomeSlave(Guid.NewGuid(), _nodeTwo)
 			);
@@ -808,14 +808,14 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		protected override Message When() =>
 			new ElectionMessage.ElectionsDone(0,
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Master));
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Leader));
 
 		[Test]
-		public void should_set_master_node_and_other_nodes_to_unknown() {
+		public void should_set_leader_node_and_other_nodes_to_unknown() {
 			ExpectMessages(
 				new GossipMessage.GossipUpdated(new ClusterInfo(
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, nodeState: VNodeState.Unknown),
-					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Master),
+					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Leader),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, nodeState: VNodeState.Unknown))));
 		}
 	}

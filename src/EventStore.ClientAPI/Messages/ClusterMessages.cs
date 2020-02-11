@@ -72,12 +72,12 @@ namespace EventStore.ClientAPI.Messages {
 			CatchingUp,
 			Clone,
 			Slave,
-			PreMaster,
-			Master,
+			PreLeader,
+			Leader,
 			Manager,
 			ShuttingDown,
 			Shutdown,
-			ReadOnlyMasterless,
+			ReadOnlyLeaderless,
 			PreReadOnlyReplica,
 			ReadOnlyReplica
 		}

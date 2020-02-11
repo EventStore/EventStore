@@ -176,12 +176,12 @@ namespace EventStore.Core.Tests.Integration {
 		protected static void WaitIdle() {
 		}
 
-		protected MiniClusterNode GetMaster() {
-			return _nodes.First(x => x.NodeState == Data.VNodeState.Master);
+		protected MiniClusterNode GetLeader() {
+			return _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 		}
 
 		protected MiniClusterNode[] GetSlaves() {
-			return _nodes.Where(x => x.NodeState != Data.VNodeState.Master).ToArray();
+			return _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
 		}
 	}
 }

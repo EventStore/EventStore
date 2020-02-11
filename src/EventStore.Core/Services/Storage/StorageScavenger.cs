@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			if (message.State == VNodeState.Master || message.State == VNodeState.Slave) {
+			if (message.State == VNodeState.Leader || message.State == VNodeState.Slave) {
 				_logManager.Initialise();
 			}
 		}

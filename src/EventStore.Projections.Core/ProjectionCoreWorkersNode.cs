@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core {
 					coreTimeoutSchedulers[coreQueues.Count],
 					projectionsStandardComponents.RunProjections,
 					projectionsStandardComponents.FaultOutOfOrderProjections,
-					projectionsStandardComponents.MasterOutputBus);
+					projectionsStandardComponents.LeaderOutputBus);
 				projectionNode.SetupMessaging(coreInputBus);
 
 				var forwarder = new RequestResponseQueueForwarder(
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core {
 						Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(
 						Forwarder.Create<ProjectionSubsystemMessage.IODispatcherDrained>(projectionsStandardComponents
-							.MasterOutputBus));
+							.LeaderOutputBus));
 				}
 
 				coreOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
@@ -80,11 +80,11 @@ namespace EventStore.Projections.Core {
 				projectionsStandardComponents.RunProjections,
 				coreTimeoutSchedulers,
 				queues,
-				projectionsStandardComponents.MasterOutputBus,
-				new PublishEnvelope(projectionsStandardComponents.MasterInputQueue, crossThread: true));
+				projectionsStandardComponents.LeaderOutputBus,
+				new PublishEnvelope(projectionsStandardComponents.LeaderInputQueue, crossThread: true));
 
-			coordinator.SetupMessaging(projectionsStandardComponents.MasterMainBus);
-			projectionsStandardComponents.MasterMainBus.Subscribe(
+			coordinator.SetupMessaging(projectionsStandardComponents.LeaderMainBus);
+			projectionsStandardComponents.LeaderMainBus.Subscribe(
 				Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreQueues.Values.Cast<IPublisher>().ToArray()));
 			return coreQueues;
 		}

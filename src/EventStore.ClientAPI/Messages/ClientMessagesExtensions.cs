@@ -6,7 +6,7 @@ using EventStore.ClientAPI.Internal;
 namespace EventStore.ClientAPI.Messages {
 	internal static partial class ClientMessage {
 		public partial class NotHandled {
-			public partial class MasterInfo {
+			public partial class LeaderInfo {
 				public IPEndPoint ExternalTcpEndPoint {
 					get { return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); }
 				}

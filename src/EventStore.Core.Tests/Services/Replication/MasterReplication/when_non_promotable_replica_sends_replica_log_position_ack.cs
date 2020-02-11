@@ -1,7 +1,7 @@
 using EventStore.Core.Messages;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
+namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 	[TestFixture]
 	public class when_non_promotable_replica_sends_replica_log_position_ack : with_replication_service {
 		private long _logPosition;

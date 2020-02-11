@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class Authorization : specification_with_cluster {
 		private readonly Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
-		private int _masterId;
+		private int _leaderId;
 
 		private HttpClient CreateHttpClient(string username, string password) {
 			var client = new HttpClient(new HttpClientHandler {
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 					content.Headers.Add("Content-Type", "application/json");
 
 					var res = await _httpClients["Admin"].PostAsync(
-						string.Format("http://{0}/users/", _nodes[_masterId].ExternalHttpEndPoint),
+						string.Format("http://{0}/users/", _nodes[_leaderId].ExternalHttpEndPoint),
 						content
 					);
 					res.EnsureSuccessStatusCode();
@@ -106,10 +106,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			//find the master node
+			//find the leader node
 			for (int i = 0; i < _nodes.Length; i++) {
-				if (_nodes[i].NodeState == Data.VNodeState.Master) {
-					_masterId = i;
+				if (_nodes[i].NodeState == Data.VNodeState.Leader) {
+					_leaderId = i;
 					break;
 				}
 			}
@@ -220,8 +220,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/web;GET;None"
 			)] string httpEndpointDetails
 		) {
-			/*use the master node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_masterId].InternalHttpEndPoint : _nodes[_masterId].ExternalHttpEndPoint;
+			/*use the leader node endpoint to avoid any redirects*/
+			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);

@@ -154,13 +154,12 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
-					NodeState = _isReadOnlyReplica ?
-VNodeState.ReadOnlyMasterless : VNodeState.Unknown;
+					NodeState = _isReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
 				}));
 			if (!_isReadOnlyReplica) {
 				Node.MainBus.Subscribe(
-					new AdHocHandler<SystemMessage.BecomeMaster>(m => {
-						NodeState = VNodeState.Master;
+					new AdHocHandler<SystemMessage.BecomeLeader>(m => {
+						NodeState = VNodeState.Leader;
 						_started.TrySetResult(true);
 					}));
 				Node.MainBus.Subscribe(

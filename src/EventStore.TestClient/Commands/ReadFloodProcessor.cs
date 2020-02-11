@@ -21,7 +21,7 @@ namespace EventStore.TestClient.Commands {
 			long requestsCnt = 5000;
 			var eventStreamId = "test-stream";
 			bool resolveLinkTos = false;
-			bool requireMaster = false;
+			bool requireLeader = false;
 			if (args.Length > 0) {
 				if (args.Length != 2 && args.Length != 3 && args.Length != 4)
 					return false;
@@ -32,19 +32,19 @@ namespace EventStore.TestClient.Commands {
 					if (args.Length >= 3)
 						eventStreamId = args[2];
 					if (args.Length >= 4)
-						requireMaster = bool.Parse(args[3]);
+						requireLeader = bool.Parse(args[3]);
 				} catch {
 					return false;
 				}
 			}
 
 			RequestMonitor monitor = new RequestMonitor();
-			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireMaster, monitor);
+			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireLeader, monitor);
 			return true;
 		}
 
 		private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt,
-			bool resolveLinkTos, bool requireMaster, RequestMonitor monitor) {
+			bool resolveLinkTos, bool requireLeader, RequestMonitor monitor) {
 			context.IsAsync();
 
 			var clients = new List<TcpTypedConnection<byte[]>>();
@@ -94,7 +94,7 @@ namespace EventStore.TestClient.Commands {
 				threads.Add(new Thread(() => {
 					for (int j = 0; j < count; ++j) {
 						var corrId = Guid.NewGuid();
-						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireMaster);
+						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireLeader);
 						var package = new TcpPackage(TcpCommand.ReadEvent, corrId, read.Serialize());
 						monitor.StartOperation(corrId);
 						client.EnqueueSend(package.AsByteArray());

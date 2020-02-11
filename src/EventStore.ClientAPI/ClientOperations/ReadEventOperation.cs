@@ -9,19 +9,19 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly string _stream;
 		private readonly long _eventNumber;
 		private readonly bool _resolveLinkTo;
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 
 		public ReadEventOperation(ILogger log, TaskCompletionSource<EventReadResult> source,
-			string stream, long eventNumber, bool resolveLinkTo, bool requireMaster, UserCredentials userCredentials)
+			string stream, long eventNumber, bool resolveLinkTo, bool requireLeader, UserCredentials userCredentials)
 			: base(log, source, TcpCommand.ReadEvent, TcpCommand.ReadEventCompleted, userCredentials) {
 			_stream = stream;
 			_eventNumber = eventNumber;
 			_resolveLinkTo = resolveLinkTo;
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 		}
 
 		protected override object CreateRequestDto() {
-			return new ClientMessage.ReadEvent(_stream, _eventNumber, _resolveLinkTo, _requireMaster);
+			return new ClientMessage.ReadEvent(_stream, _eventNumber, _resolveLinkTo, _requireLeader);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.ReadEventCompleted response) {
@@ -71,8 +71,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		public override string ToString() {
-			return string.Format("Stream: {0}, EventNumber: {1}, ResolveLinkTo: {2}, RequireMaster: {3}",
-				_stream, _eventNumber, _resolveLinkTo, _requireMaster);
+			return string.Format("Stream: {0}, EventNumber: {1}, ResolveLinkTo: {2}, RequireLeader: {3}",
+				_stream, _eventNumber, _resolveLinkTo, _requireLeader);
 		}
 	}
 }

@@ -60,7 +60,7 @@ fromStream('stream').when({
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
 					.Single()
 					.Projections.Single()
-					.MasterStatus);
+					.LeaderStatus);
 		}
 	}
 }

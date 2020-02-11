@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.UserManagement {
 		IHandle<UserManagementMessage.ResetPassword>,
 		IHandle<UserManagementMessage.ChangePassword>,
 		IHandle<UserManagementMessage.Delete>,
-		IHandle<SystemMessage.BecomeMaster>,
+		IHandle<SystemMessage.BecomeLeader>,
 		IHandle<SystemMessage.BecomeSlave> {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.UserManagement {
 							: new UserManagementMessage.AllUserDetailsResult(error)));
 		}
 
-		public void Handle(SystemMessage.BecomeMaster message) {
+		public void Handle(SystemMessage.BecomeLeader message) {
 			_numberOfStandardUsersToBeCreated = 2;
 			if (!_skipInitializeStandardUsersCheck) {
 				BeginReadUserDetails(

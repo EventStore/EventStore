@@ -11,7 +11,7 @@ namespace EventStore.ClientAPI {
 		private GossipSeed[] _gossipSeeds;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private NodePreference _nodePreference = NodePreference.Master;
+		private NodePreference _nodePreference = NodePreference.Leader;
 
 
 		/// <summary>

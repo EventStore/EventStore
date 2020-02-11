@@ -12,26 +12,26 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly Position _position;
 		private readonly int _maxCount;
 		private readonly bool _resolveLinkTos;
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly int _maxSearchWindow;
 		private readonly ClientMessage.Filter _filter;
 
 		public FilteredReadAllEventsBackwardOperation(ILogger log, TaskCompletionSource<AllEventsSlice> source,
-			Position position, int maxCount, bool resolveLinkTos, bool requireMaster, int maxSearchWindow,
+			Position position, int maxCount, bool resolveLinkTos, bool requireLeader, int maxSearchWindow,
 			ClientMessage.Filter filter, UserCredentials userCredentials)
 			: base(log, source, TcpCommand.ReadAllEventsBackwardFiltered,
 				TcpCommand.ReadAllEventsBackwardFilteredCompleted, userCredentials) {
 			_position = position;
 			_maxCount = maxCount;
 			_resolveLinkTos = resolveLinkTos;
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_maxSearchWindow = maxSearchWindow;
 			_filter = filter;
 		}
 
 		protected override object CreateRequestDto() {
 			return new ClientMessage.FilteredReadAllEvents(_position.CommitPosition, _position.PreparePosition,
-				_maxCount, _maxSearchWindow, _resolveLinkTos, _requireMaster, _filter);
+				_maxCount, _maxSearchWindow, _resolveLinkTos, _requireLeader, _filter);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.FilteredReadAllEventsCompleted response) {
@@ -59,8 +59,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		public override string ToString() {
-			return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, RequireMaster: {3}",
-				_position, _maxCount, _resolveLinkTos, _requireMaster);
+			return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, RequireLeader: {3}",
+				_position, _maxCount, _resolveLinkTos, _requireLeader);
 		}
 	}
 }
