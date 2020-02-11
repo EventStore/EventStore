@@ -69,14 +69,23 @@ namespace EventStore.Client {
 		}
 
 		public bool Equals(StreamFilter other) =>
-			Prefixes.SequenceEqual(other.Prefixes) &&
-			Regex.Equals(other.Regex) &&
-			MaxSearchWindow.Equals(other.MaxSearchWindow);
+			Prefixes == null || other.Prefixes == null
+				? Prefixes == other.Prefixes &&
+				  Regex.Equals(other.Regex) &&
+				  MaxSearchWindow.Equals(other.MaxSearchWindow)
+				: Prefixes.SequenceEqual(other.Prefixes) &&
+				  Regex.Equals(other.Regex) &&
+				  MaxSearchWindow.Equals(other.MaxSearchWindow);
 
 		public override bool Equals(object obj) => obj is StreamFilter other && Equals(other);
 		public override int GetHashCode() => HashCode.Hash.Combine(Prefixes).Combine(Regex).Combine(MaxSearchWindow);
 		public static bool operator ==(StreamFilter left, StreamFilter right) => left.Equals(right);
 		public static bool operator !=(StreamFilter left, StreamFilter right) => !left.Equals(right);
+
+		public override string ToString() =>
+			this == None
+				? "(none)"
+				: $"{nameof(StreamFilter)} {(Prefixes.Length == 0 ? Regex.ToString() : $"[{string.Join(", ", Prefixes)}]")}";
 	}
 
 #if EVENTSTORE_GRPC_PUBLIC
@@ -137,14 +146,23 @@ namespace EventStore.Client {
 		}
 
 		public bool Equals(EventTypeFilter other) =>
-			Prefixes.SequenceEqual(other.Prefixes) &&
-			Regex.Equals(other.Regex) &&
-			MaxSearchWindow.Equals(other.MaxSearchWindow);
+			Prefixes == null || other.Prefixes == null
+				? Prefixes == other.Prefixes &&
+				  Regex.Equals(other.Regex) &&
+				  MaxSearchWindow.Equals(other.MaxSearchWindow)
+				: Prefixes.SequenceEqual(other.Prefixes) &&
+				  Regex.Equals(other.Regex) &&
+				  MaxSearchWindow.Equals(other.MaxSearchWindow);
 
 		public override bool Equals(object obj) => obj is EventTypeFilter other && Equals(other);
 		public override int GetHashCode() => HashCode.Hash.Combine(Prefixes).Combine(Regex).Combine(MaxSearchWindow);
 		public static bool operator ==(EventTypeFilter left, EventTypeFilter right) => left.Equals(right);
 		public static bool operator !=(EventTypeFilter left, EventTypeFilter right) => !left.Equals(right);
+
+		public override string ToString() =>
+			this == None
+				? "(none)"
+				: $"{nameof(EventTypeFilter)} {(Prefixes.Length == 0 ? Regex.ToString() : $"[{string.Join(", ", Prefixes)}]")}";
 	}
 
 #if EVENTSTORE_GRPC_PUBLIC
