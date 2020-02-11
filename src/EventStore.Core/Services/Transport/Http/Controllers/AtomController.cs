@@ -390,7 +390,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			bool resolveLinkTos;
-			if (!GetResolveLinkTos(manager, out resolveLinkTos)) {
+			if (!GetResolveLinkTos(manager, out resolveLinkTos, true)) {
 				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
 				return;
 			}
@@ -432,7 +432,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			bool resolveLinkTos;
-			if (!GetResolveLinkTos(manager, out resolveLinkTos)) {
+			if (!GetResolveLinkTos(manager, out resolveLinkTos, true)) {
 				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
 				return;
 			}
@@ -465,7 +465,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return SendBadRequest(manager,
 					string.Format("'{0}' is not valid count. Should be positive integer", cnt));
 			bool resolveLinkTos;
-			if (!GetResolveLinkTos(manager, out resolveLinkTos))
+			if (!GetResolveLinkTos(manager, out resolveLinkTos, true))
 				return SendBadRequest(manager,
 					string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
 			bool requireMaster;
@@ -880,18 +880,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			return false;
 		}
 
-		private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos) {
-			resolveLinkTos = true;
-			var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
-			if (StringValues.IsNullOrEmpty(onlyMaster))
+		private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
+			resolveLinkTos = defaultOption;
+			var linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
+			if (StringValues.IsNullOrEmpty(linkToHeader))
 				return true;
-			if (string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase)) {
-				resolveLinkTos = false;
+			if (string.Equals(linkToHeader, "False", StringComparison.OrdinalIgnoreCase)) {
 				return true;
 			}
 
-			if (string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(linkToHeader, "True", StringComparison.OrdinalIgnoreCase)) {
+				resolveLinkTos = true;
 				return true;
+			}
+
 			return false;
 		}
 
