@@ -16,7 +16,7 @@ namespace EventStore.Transport.Http.Codecs {
 			ContractResolver = new CamelCasePropertyNamesContractResolver(),
 			DateParseHandling = DateParseHandling.None,
 			NullValueHandling = NullValueHandling.Ignore,
-			DefaultValueHandling = DefaultValueHandling.Ignore,
+			DefaultValueHandling = DefaultValueHandling.Include,
 			MissingMemberHandling = MissingMemberHandling.Ignore,
 			TypeNameHandling = TypeNameHandling.None,
 			MetadataPropertyHandling = MetadataPropertyHandling.Ignore,

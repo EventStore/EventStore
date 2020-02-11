@@ -23,6 +23,8 @@ using NUnit.Framework;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using EventStore.ClientAPI.Transport.Http;
+using Newtonsoft.Json.Serialization;
+using Newtonsoft.Json.Converters;
 
 namespace EventStore.Core.Tests.Http {
 	public abstract class HttpBehaviorSpecification : SpecificationWithDirectoryPerTestFixture {
@@ -321,11 +323,26 @@ namespace EventStore.Core.Tests.Http {
 			return index < 0 ? bytes.Length : index;
 		}
 
+		protected readonly JsonSerializerSettings TestJsonSettings = new JsonSerializerSettings {
+			ContractResolver = new CamelCasePropertyNamesContractResolver(),
+			DateFormatHandling = DateFormatHandling.IsoDateFormat,
+			NullValueHandling = NullValueHandling.Ignore,
+			DefaultValueHandling = DefaultValueHandling.Include,
+			MissingMemberHandling = MissingMemberHandling.Ignore,
+			TypeNameHandling = TypeNameHandling.None,
+			Converters = new JsonConverter[] { new StringEnumConverter() }
+		};
+
+		protected byte[] ToJsonBytes(object source) {
+			string instring = JsonConvert.SerializeObject(source, Newtonsoft.Json.Formatting.Indented, TestJsonSettings);
+			return Helper.UTF8NoBom.GetBytes(instring);
+		}
+
 		protected HttpRequestMessage CreateEventsJsonPostRequest<T>(
 			string path, string method, T body, NetworkCredential credentials = null, string extra = null) {
 			credentials = credentials ?? _defaultCredentials;
 			var request = CreateRequest(path, extra, method, "application/vnd.eventstore.events+json", credentials);
-			request.Content = new ByteArrayContent(body.ToJsonBytes()) {
+			request.Content = new ByteArrayContent(ToJsonBytes(body)) {
 				Headers = { ContentType = new MediaTypeHeaderValue("application/vnd.eventstore.events+json") }
 			};
 			return request;
@@ -335,7 +352,7 @@ namespace EventStore.Core.Tests.Http {
 			string path, string method, T body, NetworkCredential credentials = null, string extra = null) {
 			credentials ??= _defaultCredentials;
 			var request = CreateRequest(path, extra, method, "application/json", credentials);
-			request.Content = new ByteArrayContent(body.ToJsonBytes()) {
+			request.Content = new ByteArrayContent(ToJsonBytes(body)) {
 				Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
 			};
 			return request;

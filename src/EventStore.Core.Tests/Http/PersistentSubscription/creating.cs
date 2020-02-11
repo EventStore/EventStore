@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using HttpStatusCode = System.Net.HttpStatusCode;
+using HttpResponseMessage = System.Net.Http.HttpResponseMessage;
+using Newtonsoft.Json.Linq;
+using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture, Category("LongRunning")]
@@ -170,4 +174,90 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			Assert.AreEqual(HttpStatusCode.BadRequest, Response.StatusCode);
 		}
 	}
+
+	[TestFixture, Category("LongRunning")]
+	class when_creating_persistent_subscription_with_message_timeout_0 : with_admin_user {
+		protected List<object> Events;
+		protected string SubscriptionPath;
+		protected string GroupName;
+		protected HttpResponseMessage Response;
+		protected JObject SubsciptionInfo;
+
+		protected override async Task Given() {
+
+		}
+
+		protected override async Task When() {
+			GroupName = Guid.NewGuid().ToString();
+			SubscriptionPath = string.Format("/subscriptions/{0}/{1}", TestStream.Substring(9), GroupName);
+			Response = await MakeJsonPut(SubscriptionPath,
+				new {
+					ResolveLinkTos = true,
+					MessageTimeoutMilliseconds = 0
+				},
+				_admin);
+
+			SubsciptionInfo = await GetJson<JObject>(SubscriptionPath + "/info", ContentType.Json);
+		}
+
+		[OneTimeTearDown]
+		public void TearDown() {
+			Response?.Dispose();
+		}
+
+		[Test]
+		public void returns_created() {
+			Assert.AreEqual(HttpStatusCode.Created, Response.StatusCode);
+
+		}
+
+		[Test]
+		public void timeout_set_to_0() {
+			Assert.AreEqual(0, SubsciptionInfo.Value<JObject>("config").Value<long?>("messageTimeoutMilliseconds"));
+
+		}
+	}
+
+	[TestFixture, Category("LongRunning")]
+	class when_creating_persistent_subscription_without_message_timeout : with_admin_user {
+		protected List<object> Events;
+		protected string SubscriptionPath;
+		protected string GroupName;
+		protected HttpResponseMessage Response;
+		protected JObject SubsciptionInfo;
+
+		protected override async Task Given() {
+
+		}
+		protected override async Task When() {
+			GroupName = Guid.NewGuid().ToString();
+			SubscriptionPath = string.Format("/subscriptions/{0}/{1}", TestStream.Substring(9), GroupName);
+			Response = await MakeJsonPut(SubscriptionPath,
+				new {
+					ResolveLinkTos = true,
+				},
+				_admin);
+
+			SubsciptionInfo = await GetJson<JObject>(SubscriptionPath + "/info", ContentType.Json);
+		}
+
+		[OneTimeTearDown]
+		public void TearDown() {
+			Response?.Dispose();
+		}
+
+		[Test]
+		public void returns_created() {
+			Assert.AreEqual(HttpStatusCode.Created, Response.StatusCode);
+
+		}
+
+		[Test]
+		public void timeout_set_to_default_10000() {
+			Assert.AreEqual(10000, SubsciptionInfo.Value<JObject>("config").Value<long?>("messageTimeoutMilliseconds"));
+
+		}
+	}
+
 }
+

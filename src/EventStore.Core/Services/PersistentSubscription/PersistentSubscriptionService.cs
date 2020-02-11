@@ -175,12 +175,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.LiveBufferSize,
 				message.BufferSize,
 				message.ReadBatchSize,
-				ToTimeout(message.CheckPointAfterMilliseconds),
+				ToCheckPointAfterTimeout(message.CheckPointAfterMilliseconds),
 				message.MinCheckPointCount,
 				message.MaxCheckPointCount,
 				message.MaxSubscriberCount,
 				message.NamedConsumerStrategy,
-				ToTimeout(message.MessageTimeoutMilliseconds)
+				ToMessageTimeout(message.MessageTimeoutMilliseconds)
 			);
 
 			Log.Debug("New persistent subscription {subscriptionKey}", key);
@@ -248,12 +248,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.LiveBufferSize,
 				message.BufferSize,
 				message.ReadBatchSize,
-				ToTimeout(message.CheckPointAfterMilliseconds),
+				ToCheckPointAfterTimeout(message.CheckPointAfterMilliseconds),
 				message.MinCheckPointCount,
 				message.MaxCheckPointCount,
 				message.MaxSubscriberCount,
 				message.NamedConsumerStrategy,
-				ToTimeout(message.MessageTimeoutMilliseconds)
+				ToMessageTimeout(message.MessageTimeoutMilliseconds)
 			);
 			_config.Updated = DateTime.Now;
 			_config.UpdatedBy = message.User.Identity.Name;
@@ -643,12 +643,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 								entry.LiveBufferSize,
 								entry.HistoryBufferSize,
 								entry.ReadBatchSize,
-								ToTimeout(entry.CheckPointAfter),
+								ToCheckPointAfterTimeout(entry.CheckPointAfter),
 								entry.MinCheckPointCount,
 								entry.MaxCheckPointCount,
 								entry.MaxSubscriberCount,
 								entry.NamedConsumerStrategy,
-								ToTimeout(entry.MessageTimeout));
+								ToMessageTimeout(entry.MessageTimeout));
 						}
 
 						continueWith();
@@ -782,8 +782,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		private TimeSpan ToTimeout(int milliseconds) {
+		
+		private TimeSpan ToCheckPointAfterTimeout(int milliseconds) {
 			return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+		}
+
+		private TimeSpan ToMessageTimeout(int milliseconds) {
+			return milliseconds == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(milliseconds);
 		}
 	}
 }
