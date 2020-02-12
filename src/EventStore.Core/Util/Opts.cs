@@ -221,9 +221,9 @@ namespace EventStore.Core.Util {
 		public static readonly string CertificateThumbprintDefault = string.Empty;
 		
 		public const string EnableAtomPubOverHTTPDescr =
-			"Enable Atom over HTTP Interface.";
+			"Enable AtomPub over HTTP Interface.";
 
-		public static readonly bool EnableAtomPubOverHTTPDefault = true;
+		public static readonly bool EnableAtomPubOverHTTPDefault = false;
 
 		/*
 		 *  SINGLE NODE OPTIONS

@@ -258,8 +258,8 @@ namespace EventStore.Core {
 		/// </summary>
 		/// <param name="EnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithEnableAtomPubOverHTTP(bool EnableAtomPubOverHTTP) {
-			_enableAtomPubOverHTTP = EnableAtomPubOverHTTP;
+		public VNodeBuilder EnableAtomPubOverHTTP() {
+			_enableAtomPubOverHTTP = true;
 			return this;
 		}
 
