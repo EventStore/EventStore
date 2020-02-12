@@ -74,6 +74,7 @@ message ReadReq {
 				Empty structured = 1;
 				Empty string = 2;
 			}
+
 		}
 	}
 	message Empty {
@@ -81,7 +82,10 @@ message ReadReq {
 }
 
 message ReadResp {
-	ReadEvent event = 1;
+	oneof content {
+		ReadEvent event = 1;
+		SubscriptionConfirmation confirmation = 2;
+	}
 
 	message ReadEvent {
 		RecordedEvent event = 1;
@@ -101,6 +105,9 @@ message ReadResp {
 			bytes custom_metadata = 7;
 			bytes data = 8;
 		}
+	}
+	message SubscriptionConfirmation {
+		string subscription_id = 1;
 	}
 	message Empty {
 	}

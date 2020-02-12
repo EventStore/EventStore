@@ -2,11 +2,13 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using EventStore.Client.Logging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
 using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
 namespace EventStore.Client {
@@ -16,6 +18,8 @@ namespace EventStore.Client {
 				StreamMetadataJsonConverter.Instance
 			},
 		};
+
+		private static readonly ILogger Log = LogProvider.CreateLogger<EventStoreClient>();
 
 		private readonly EventStoreClientSettings _settings;
 		private readonly GrpcChannel _channel;
@@ -30,7 +34,8 @@ namespace EventStore.Client {
 				Port = 2113
 			}.Uri);
 			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
-				HttpClient = settings.CreateHttpClient?.Invoke()
+				HttpClient = settings.CreateHttpClient?.Invoke(),
+				LoggerFactory = LogProvider.LoggerFactory
 			});
 			var connectionName = settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
 

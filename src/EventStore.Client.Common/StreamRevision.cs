@@ -30,11 +30,17 @@ namespace EventStore.Client {
 		public static bool operator ==(StreamRevision left, StreamRevision right) => left.Equals(right);
 		public static bool operator !=(StreamRevision left, StreamRevision right) => !left.Equals(right);
 
-		public static StreamRevision operator +(StreamRevision left, uint right) =>
-			new StreamRevision(left._value + right);
+		public static StreamRevision operator +(StreamRevision left, ulong right) {
+			checked {
+				return new StreamRevision(left._value + right);
+			}
+		}
 
-		public static StreamRevision operator +(uint left, StreamRevision right) =>
-			new StreamRevision(left + right._value);
+		public static StreamRevision operator +(ulong left, StreamRevision right) {
+			checked {
+				return new StreamRevision(left + right._value);
+			}
+		}
 
 		public static bool operator >(StreamRevision left, StreamRevision right) => left._value > right._value;
 		public static bool operator <(StreamRevision left, StreamRevision right) => left._value < right._value;

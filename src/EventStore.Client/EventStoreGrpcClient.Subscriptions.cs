@@ -5,7 +5,7 @@ using EventStore.Client.Streams;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
-		private StreamSubscription SubscribeToAll(
+		private Task<StreamSubscription> SubscribeToAllAsync(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
@@ -15,17 +15,18 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
 
-			var subscription = new StreamSubscription(ReadInternal(new ReadReq {
+			return StreamSubscription.Confirm(ReadInternal(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						ResolveLinks = resolveLinkTos,
-						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(Position.Start),
+						All = new ReadReq.Types.Options.Types.AllOptions {
+							Start = new ReadReq.Types.Empty()
+						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 						Filter = GetFilterOptions(filter)
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped);
-			return subscription;
+				subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -38,13 +39,13 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAll(
+		public Task<StreamSubscription> SubscribeToAllAsync(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToAll(eventAppeared,
+			CancellationToken cancellationToken = default) => SubscribeToAllAsync(eventAppeared,
 			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped, filter, userCredentials,
 			cancellationToken);
 
@@ -59,7 +60,7 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAll(
+		public Task<StreamSubscription> SubscribeToAllAsync(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
@@ -70,12 +71,12 @@ namespace EventStore.Client {
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
 
-			return SubscribeToAll(eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
+			return SubscribeToAllAsync(eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
 				userCredentials,
 				cancellationToken);
 		}
 
-		private StreamSubscription SubscribeToAll(Position start,
+		private Task<StreamSubscription> SubscribeToAllAsync(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
@@ -85,7 +86,7 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
 
-			var subscription = new StreamSubscription(ReadInternal(new ReadReq {
+			return StreamSubscription.Confirm(ReadInternal(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						ResolveLinks = resolveLinkTos,
@@ -94,8 +95,7 @@ namespace EventStore.Client {
 						Filter = GetFilterOptions(filter)
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped);
-			return subscription;
+				subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -109,13 +109,13 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAll(Position start,
+		public Task<StreamSubscription> SubscribeToAllAsync(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToAll(start, eventAppeared,
+			CancellationToken cancellationToken = default) => SubscribeToAllAsync(start, eventAppeared,
 			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped, filter, userCredentials,
 			cancellationToken);
 
@@ -131,7 +131,7 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToAll(Position start,
+		public Task<StreamSubscription> SubscribeToAllAsync(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
@@ -142,11 +142,11 @@ namespace EventStore.Client {
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
 
-			return SubscribeToAll(start, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
+			return SubscribeToAllAsync(start, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
 				userCredentials, cancellationToken);
 		}
 
-		private StreamSubscription SubscribeToStream(string streamName,
+		private Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
@@ -155,18 +155,18 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
 
-			var subscription = new StreamSubscription(ReadInternal(new ReadReq {
+			return StreamSubscription.Confirm(ReadInternal(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						ResolveLinks = resolveLinkTos,
-						Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(
-							streamName,
-							StreamRevision.Start),
+						Stream = new ReadReq.Types.Options.Types.StreamOptions {
+							Start = new ReadReq.Types.Empty(),
+							StreamName = streamName
+						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped);
-			return subscription;
+				subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -179,12 +179,12 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToStream(string streamName,
+		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToStream(streamName, eventAppeared,
+			CancellationToken cancellationToken = default) => SubscribeToStreamAsync(streamName, eventAppeared,
 			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped,
 			userCredentials, cancellationToken);
 
@@ -199,22 +199,22 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToStream(string streamName,
+		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
-			
-			return SubscribeToStream(streamName, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped,
+
+			return SubscribeToStreamAsync(streamName, eventAppeared, operationOptions, resolveLinkTos,
+				subscriptionDropped,
 				userCredentials, cancellationToken);
 		}
 
-		private StreamSubscription SubscribeToStream(string streamName,
+		private Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			StreamRevision start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			EventStoreClientOperationOptions operationOptions,
@@ -222,21 +222,26 @@ namespace EventStore.Client {
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
 			operationOptions.TimeoutAfter = DeadLine.None;
 
-			var subscription = new StreamSubscription(ReadInternal(new ReadReq {
+			return StreamSubscription.Confirm(ReadInternal(new ReadReq {
 						Options = new ReadReq.Types.Options {
 							ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 							ResolveLinks = resolveLinkTos,
-							Stream = ReadReq.Types.Options.Types.StreamOptions.FromStreamNameAndRevision(streamName,
-								start),
+							Stream = start == StreamRevision.End
+								? new ReadReq.Types.Options.Types.StreamOptions {
+									End = new ReadReq.Types.Empty(),
+									StreamName = streamName
+								}
+								: new ReadReq.Types.Options.Types.StreamOptions {
+									Revision = start,
+									StreamName = streamName
+								},
 							Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 						}
 					},
 					operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped);
-			return subscription;
+				subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -250,13 +255,13 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToStream(string streamName,
+		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			StreamRevision start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToStream(streamName, start, eventAppeared,
+			CancellationToken cancellationToken = default) => SubscribeToStreamAsync(streamName, start, eventAppeared,
 			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped,
 			userCredentials, cancellationToken);
 
@@ -272,7 +277,7 @@ namespace EventStore.Client {
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
-		public StreamSubscription SubscribeToStream(string streamName,
+		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			StreamRevision start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			Action<EventStoreClientOperationOptions> configureOperationOptions,
@@ -280,11 +285,10 @@ namespace EventStore.Client {
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions(operationOptions);
-			
-			return SubscribeToStream(streamName, start, eventAppeared, operationOptions, resolveLinkTos,
+
+			return SubscribeToStreamAsync(streamName, start, eventAppeared, operationOptions, resolveLinkTos,
 				subscriptionDropped,
 				userCredentials, cancellationToken);
 		}

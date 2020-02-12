@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionOneofCase.NoFilter) => new Enumerators.StreamSubscription(
 						_queue,
 						request.Options.Stream.StreamName,
-						request.Options.Stream.ToStreamRevision(),
+						request.Options.Stream.ToSubscriptionStreamRevision(),
 						request.Options.ResolveLinks,
 						user,
 						_readIndex,
@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.AllSubscription(
 						_queue,
-						request.Options.All.ToPosition(),
+						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						user,
 						_readIndex,
@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.Filter) => new Enumerators.AllSubscriptionFiltered(
 						_queue,
-						request.Options.All.ToPosition(),
+						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						user,
@@ -140,10 +140,21 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_ => throw new InvalidOperationException()
 				};
 
-			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
-				await responseStream.WriteAsync(new ReadResp {
-					Event = ConvertToReadEvent(enumerator.Current)
-				}).ConfigureAwait(false);
+			await using (context.CancellationToken.Register(() => enumerator.DisposeAsync())) {
+				if (enumerator is Enumerators.ISubscriptionEnumerator subscription) {
+					await subscription.Started.ConfigureAwait(false);
+					await responseStream.WriteAsync(new ReadResp {
+						Confirmation = new ReadResp.Types.SubscriptionConfirmation {
+							SubscriptionId = subscription.SubscriptionId
+						}
+					}).ConfigureAwait(false);
+				}
+
+				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+					await responseStream.WriteAsync(new ReadResp {
+						Event = ConvertToReadEvent(enumerator.Current)
+					}).ConfigureAwait(false);
+				}
 			}
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {

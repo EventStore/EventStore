@@ -151,7 +151,7 @@ namespace EventStore.Client {
 		/// A <see cref="T:System.String"/> containing a fully qualified type name.
 		/// </returns>
 		/// <filterpriority>2</filterpriority>
-		public override string ToString() => $"{CommitPosition}/{PreparePosition}";
+		public override string ToString() => $"C:{CommitPosition}/P:{PreparePosition}";
 
 		internal readonly (long commitPosition, long preparePosition) ToInt64() => Equals(End)
 			? (-1, -1)

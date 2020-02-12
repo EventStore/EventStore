@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Client.Operations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

@@ -166,28 +166,28 @@ namespace EventStore.Client.Streams {
 
 		public async Task SubscribeToStream(string streamId, UserCredentials userCredentials = default) {
 			var source = new TaskCompletionSource<bool>();
-			using (Client.SubscribeToStream(streamId, (x, y, ct) => {
+			using (await Client.SubscribeToStreamAsync(streamId, (x, y, ct) => {
 					source.TrySetResult(true);
 					return Task.CompletedTask;
 				},
 				subscriptionDropped: (x, y, ex) => {
 					if (ex == null) source.TrySetResult(true);
 					else source.TrySetException(ex);
-				}, userCredentials: userCredentials)) {
+				}, userCredentials: userCredentials).WithTimeout()) {
 				await source.Task.WithTimeout();
 			}
 		}
 
 		public async Task SubscribeToAll(UserCredentials userCredentials = default) {
 			var source = new TaskCompletionSource<bool>();
-			using (Client.SubscribeToAll((x, y, ct) => {
+			using (await Client.SubscribeToAllAsync((x, y, ct) => {
 					source.TrySetResult(true);
 					return Task.CompletedTask;
 				},
 				subscriptionDropped: (x, y, ex) => {
 					if (ex == null) source.TrySetResult(true);
 					else source.TrySetException(ex);
-				}, userCredentials: userCredentials)) {
+				}, userCredentials: userCredentials).WithTimeout()) {
 				await source.Task.WithTimeout();
 			}
 		}

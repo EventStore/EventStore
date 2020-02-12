@@ -28,6 +28,22 @@ namespace EventStore.Client {
 			Assert.True(new StreamRevision(2) != sut);
 		}
 
+		[Fact]
+		public void AdditionOperator() {
+			var sut = StreamRevision.Start;
+			Assert.Equal(new StreamRevision(1), sut + 1);
+		}
+
+		public static IEnumerable<object[]> AdditionOutOfBoundsCases() {
+			yield return new object[] {StreamRevision.End, 1};
+			yield return new object[] {new StreamRevision(long.MaxValue), long.MaxValue + 2UL};
+		}
+
+		[Theory, MemberData(nameof(AdditionOutOfBoundsCases))]
+		public void AdditionOutOfBoundsThrows(StreamRevision left, ulong right) {
+			Assert.Throws<OverflowException>(() => left + right);
+		}
+
 		public static IEnumerable<object[]> ArgumentOutOfRangeTestCases() {
 			yield return new object[] { long.MaxValue + 1UL };
 			yield return new object[] { ulong.MaxValue - 1UL };
