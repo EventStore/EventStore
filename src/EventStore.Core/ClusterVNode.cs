@@ -188,7 +188,7 @@ namespace EventStore.Core {
 						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
 							endpoint.Address.ToString(), endpoint.Port).Uri, publisher,
 							() => _httpMessageHandler));
-			
+
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
@@ -418,7 +418,7 @@ namespace EventStore.Core {
 				bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
 				bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
 			});
-			
+
 			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
 			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
 			SubscribeWorkers(bus => {
@@ -455,7 +455,7 @@ namespace EventStore.Core {
 			_externalHttpService.SetupController(infoController);
 			if (vNodeSettings.StatsOnPublic)
 				_externalHttpService.SetupController(statController);
-			if (vNodeSettings.EnableAtomPubOverHTTP) 
+			if (vNodeSettings.EnableAtomPubOverHTTP)
 				_externalHttpService.SetupController(atomController);
 			if (vNodeSettings.GossipOnPublic)
 				_externalHttpService.SetupController(gossipController);
@@ -667,9 +667,9 @@ namespace EventStore.Core {
 
 				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
-					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
-					vNodeSettings.GossipAllowedTimeDifference,
+					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,
+					vNodeSettings.DeadMemberRemovalTimeout,
 					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);

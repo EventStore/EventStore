@@ -27,8 +27,7 @@ namespace EventStore.Core.Services.Gossip {
 		public const int GossipRoundStartupThreshold = 20;
 		public static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
-		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
-
+		private readonly TimeSpan DeadMemberRemovalTimeout;
 		private static readonly ILogger Log = Serilog.Log.ForContext<GossipServiceBase>();
 
 		protected readonly VNodeInfo NodeInfo;
@@ -54,6 +53,7 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan gossipInterval,
 			TimeSpan allowedTimeDifference,
 			TimeSpan gossipTimeout,
+			TimeSpan deadMemberRemovalTimeout,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null) {
 			Ensure.NotNull(bus, "bus");
@@ -68,6 +68,7 @@ namespace EventStore.Core.Services.Gossip {
 			GossipInterval = gossipInterval;
 			AllowedTimeDifference = allowedTimeDifference;
 			GossipTimeout = gossipTimeout;
+			DeadMemberRemovalTimeout = deadMemberRemovalTimeout;
 			_state = GossipState.Startup;
 			_timeProvider = timeProvider;
 			_getNodeToGossipTo = getNodeToGossipTo ?? GetNodeToGossipTo;

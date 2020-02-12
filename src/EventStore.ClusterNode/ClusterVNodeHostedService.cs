@@ -232,6 +232,7 @@ namespace EventStore.ClusterNode {
 				.WithPrepareTimeout(TimeSpan.FromMilliseconds(options.PrepareTimeoutMs))
 				.WithCommitTimeout(TimeSpan.FromMilliseconds(options.CommitTimeoutMs))
 				.WithStatsPeriod(TimeSpan.FromSeconds(options.StatsPeriodSec))
+				.WithDeadMemberRemovalPeriod(TimeSpan.FromSeconds(options.DeadMemberRemovalPeriodSec))
 				.WithPrepareCount(prepareCount)
 				.WithCommitCount(commitCount)
 				.WithNodePriority(options.NodePriority)

@@ -319,6 +319,9 @@ namespace EventStore.ClusterNode {
 		
 		[ArgDescription(Opts.EnableAtomPubOverHTTPDescr, Opts.InterfacesGroup)]
 		public bool EnableAtomPubOverHTTP { get; set; }
+
+		[ArgDescription(Opts.DeadMemberRemovalPeriodDescr, Opts.ClusterGroup)]
+		public int DeadMemberRemovalPeriodSec { get; set; }
 		
 		public ClusterNodeOptions() {
 			Config = "";
@@ -354,9 +357,9 @@ namespace EventStore.ClusterNode {
 			GossipSeed = Opts.GossipSeedDefault;
 			ReadOnlyReplica = Opts.ReadOnlyReplicaDefault;
 			UnsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
+			DeadMemberRemovalPeriodSec = Opts.DeadMemberRemovalTimeoutDefault;
 
 			StatsPeriodSec = Opts.StatsPeriodDefault;
-
 			CachedChunks = Opts.CachedChunksDefault;
 			ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
