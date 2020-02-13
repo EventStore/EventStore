@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
@@ -11,48 +12,35 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
+using Microsoft.Extensions.Hosting;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
-	public abstract class ProgramBase<TOptions> where TOptions : class, IOptions, new() {
+	public abstract class EventStoreHostedService<TOptions> : IHostedService where TOptions : class, IOptions, new() {
 		// ReSharper disable StaticFieldInGenericType
-		protected static readonly ILogger Log = Serilog.Log.ForContext<ProgramBase<TOptions>>();
+		protected static readonly ILogger Log = Serilog.Log.ForContext<EventStoreHostedService<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
 
-		private readonly TaskCompletionSource<int> _exitSource = new TaskCompletionSource<int>();
-		private readonly TaskCompletionSource<bool> _startupSource = new TaskCompletionSource<bool>();
+		private readonly bool _skipRun;
+		public TOptions Options { get; }
 
-		protected abstract string GetLogsDirectory(TOptions options);
-		protected abstract string GetComponentName(TOptions options);
-
-		protected abstract void Create(TOptions options);
-		protected abstract Task Start();
-		public abstract Task Stop();
-		private bool _skipRun;
-
-		public virtual IEnumerable<OptionSource> MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
-			return effectiveOptions;
-		}
-
-		protected ProgramBase(string[] args) {
-			Application.RegisterExitAction(Exit);
+		protected EventStoreHostedService(string[] args) {
 			try {
-				var options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
+				Options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
 					MutateEffectiveOptions);
-				if (options.Help) {
+				if (Options.Help) {
 					Console.WriteLine("Options:");
 					Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
 					_skipRun = true;
-				} else if (options.Version) {
+				} else if (Options.Version) {
 					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 					_skipRun = true;
 				} else {
-					PreInit(options);
-					Init(options);
-					Create(options);
-					_startupSource.SetResult(true);
+					PreInit(Options);
+					Init(Options);
+					Create(Options);
 				}
 			} catch (OptionException exc) {
 				Console.Error.WriteLine("Error while parsing options:");
@@ -60,45 +48,23 @@ namespace EventStore.Core {
 				Console.Error.WriteLine();
 				Console.Error.WriteLine("Options:");
 				Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
-				_startupSource.SetException(exc);
-			} catch (ApplicationInitializationException ex) {
-				var msg = String.Format("Application initialization error: {0}", FormatExceptionMessage(ex));
-				Log.Fatal(ex, msg);
-
-				_startupSource.SetException(ex);
-			} catch (Exception ex) {
-				var msg = "Unhandled exception while starting application:";
-				Log.Fatal(ex, msg);
-				Log.Fatal(ex, "{e}", FormatExceptionMessage(ex));
-				_startupSource.SetException(ex);
+				throw;
 			}
 		}
 
-		public async Task<int> Run() {
-			if (_skipRun)
-				return 0;
-			try {
-				await _startupSource.Task.ConfigureAwait(false);
-				await Start().ConfigureAwait(false);
-				var exitCode = await _exitSource.Task.ConfigureAwait(false);
-				await Stop().ConfigureAwait(false);
+		protected abstract string GetLogsDirectory(TOptions options);
+		protected abstract string GetComponentName(TOptions options);
 
-				return exitCode;
-			} catch (Exception ex) {
-				Log.Fatal(ex, "{e}", FormatExceptionMessage(ex));
+		protected abstract void Create(TOptions options);
 
-				return 1;
-			} finally {
-				Serilog.Log.CloseAndFlush();
-			}
-		}
+		protected virtual IEnumerable<OptionSource>
+			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) =>
+			effectiveOptions;
+
+		protected abstract Task StartInternalAsync(CancellationToken cancellationToken);
+		protected abstract Task StopInternalAsync(CancellationToken cancellationToken);
 
 		protected virtual void PreInit(TOptions options) {
-		}
-
-		private void Exit(int exitCode) => _exitSource.TrySetResult(exitCode);
-
-		protected virtual void OnProgramExit() {
 		}
 
 		private void Init(TOptions options) {
@@ -122,9 +88,8 @@ namespace EventStore.Core {
 			Log.Information("{description,-25} {maxGeneration}", "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
-					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1));
+					: $"{GC.MaxGeneration + 1} GENERATIONS");
 			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
-
 
 			Log.Information("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
 
@@ -146,18 +111,20 @@ namespace EventStore.Core {
 		}
 
 		protected static StoreLocation GetCertificateStoreLocation(string certificateStoreLocation) {
-			StoreLocation location;
-			if (!Enum.TryParse(certificateStoreLocation, out location))
-				throw new Exception(string.Format("Could not find certificate store location '{0}'",
-					certificateStoreLocation));
+			if (!Enum.TryParse(certificateStoreLocation, out StoreLocation location))
+				throw new Exception($"Could not find certificate store location '{certificateStoreLocation}'");
 			return location;
 		}
 
 		protected static StoreName GetCertificateStoreName(string certificateStoreName) {
-			StoreName name;
-			if (!Enum.TryParse(certificateStoreName, out name))
-				throw new Exception(string.Format("Could not find certificate store name '{0}'", certificateStoreName));
+			if (!Enum.TryParse(certificateStoreName, out StoreName name))
+				throw new Exception($"Could not find certificate store name '{certificateStoreName}'");
 			return name;
 		}
+
+		Task IHostedService.StartAsync(CancellationToken cancellationToken) =>
+			_skipRun ? Task.CompletedTask : StartInternalAsync(cancellationToken);
+
+		Task IHostedService.StopAsync(CancellationToken cancellationToken) => StopInternalAsync(cancellationToken);
 	}
 }

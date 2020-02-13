@@ -17,10 +17,11 @@ namespace EventStore.Common.Utils {
 		public const string AlwaysKeepScavenged = "ALWAYS_KEEP_SCAVENGED";
 		public const string DisableMergeChunks = "DISABLE_MERGE_CHUNKS";
 
-		protected static readonly ILogger Log = Serilog.Log.ForContext<Application>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<Application>();
 
-		private static Action<int> _exit = exitCode => {
+		private static Action<int> _exit = delegate {
 		};
+
 		private static int _exited;
 
 		private static readonly HashSet<string> _defines = new HashSet<string>();
@@ -31,17 +32,9 @@ namespace EventStore.Common.Utils {
 			_exit = exitAction;
 		}
 
-		public static void ExitSilent(int exitCode, string reason) {
-			Exit(exitCode, reason, silent: true);
-		}
-
-		public static void Exit(ExitCode exitCode, string reason) {
-			Exit((int)exitCode, reason);
-		}
-
-		public static void Exit(int exitCode, string reason) {
-			Exit(exitCode, reason, silent: false);
-		}
+		public static void ExitSilent(int exitCode, string reason) => Exit(exitCode, reason, true);
+		public static void Exit(ExitCode exitCode, string reason) => Exit((int)exitCode, reason);
+		public static void Exit(int exitCode, string reason) => Exit(exitCode, reason, false);
 
 		private static void Exit(int exitCode, string reason, bool silent) {
 			if (Interlocked.CompareExchange(ref _exited, 1, 0) != 0)
@@ -50,13 +43,12 @@ namespace EventStore.Common.Utils {
 			Ensure.NotNullOrEmpty(reason, "reason");
 
 			if (!silent) {
-				var message = string.Format("Exiting with exit code: {0}.\nExit reason: {1}", exitCode, reason);
-				Console.WriteLine(message);
 				if (exitCode != 0)
 					Log.Error("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
 				else
 					Log.Information("Exiting with exit code: {exitCode}.\nExit reason: {e}", exitCode, reason);
 			}
+
 			_exit?.Invoke(exitCode);
 		}
 
