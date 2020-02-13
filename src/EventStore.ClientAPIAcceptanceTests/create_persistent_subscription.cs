@@ -12,13 +12,20 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task without_credentials_throws(SslType sslType) {
+		public async Task without_credentials_throws_except_if_using_admin_client_certificate(SslType sslType) {
 			var streamName = $"{GetStreamName()}_{sslType}";
 			var connection = _fixture.Connections[sslType];
 
-			await Assert.ThrowsAsync<AccessDeniedException>(() => connection.CreatePersistentSubscriptionAsync(
-				streamName, Group,
-				PersistentSubscriptionSettings.Create(), null).WithTimeout());
+			try {
+				await connection.CreatePersistentSubscriptionAsync(
+					streamName, Group,
+					PersistentSubscriptionSettings.Create(), null).WithTimeout();
+			} catch (AccessDeniedException) {
+				Assert.True(sslType != SslType.WithAdminClientCertificate);
+				return;
+			}
+
+			Assert.True(sslType == SslType.WithAdminClientCertificate);
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]

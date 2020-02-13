@@ -40,21 +40,28 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task without_permission_throws(SslType sslType) {
+		public async Task without_permission_throws_except_if_using_admin_client_certificate(SslType sslType) {
 			var connection = _fixture.Connections[sslType];
-			await Assert.ThrowsAsync<AccessDeniedException>(() => connection.SetSystemSettingsAsync(new SystemSettings(
-				new StreamAcl(
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString()),
-				new StreamAcl(
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString(),
-					Guid.NewGuid().ToString()))).WithTimeout());
+			try {
+				await connection.SetSystemSettingsAsync(new SystemSettings(
+					new StreamAcl(
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString()),
+					new StreamAcl(
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString(),
+						Guid.NewGuid().ToString()))).WithTimeout();
+			} catch (AccessDeniedException) {
+				Assert.True(sslType != SslType.WithAdminClientCertificate);
+				return;
+			}
+
+			Assert.True(sslType == SslType.WithAdminClientCertificate);
 		}
 
 		public Task InitializeAsync() => Task.CompletedTask;
