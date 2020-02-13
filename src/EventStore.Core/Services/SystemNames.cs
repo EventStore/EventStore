@@ -4,7 +4,8 @@ using EventStore.Common.Utils;
 namespace EventStore.Core.Services {
 	public static class SystemHeaders {
 		public const string ExpectedVersion = "ES-ExpectedVersion";
-		public const string RequireMaster = "ES-RequireMaster";
+		public const string RequireLeader = "ES-RequireLeader";
+		public const string RequireMaster = "ES-RequireMaster"; // For backwards compatibility
 		public const string ResolveLinkTos = "ES-ResolveLinkTos";
 		public const string LongPoll = "ES-LongPoll";
 		public const string TrustedAuth = "ES-TrustedAuth";

@@ -6,18 +6,18 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class CommitTransactionOperation : OperationBase<WriteResult, ClientMessage.TransactionCommitCompleted> {
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly long _transactionId;
 
 		public CommitTransactionOperation(ILogger log, TaskCompletionSource<WriteResult> source,
-			bool requireMaster, long transactionId, UserCredentials userCredentials)
+			bool requireLeader, long transactionId, UserCredentials userCredentials)
 			: base(log, source, TcpCommand.TransactionCommit, TcpCommand.TransactionCommitCompleted, userCredentials) {
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_transactionId = transactionId;
 		}
 
 		protected override object CreateRequestDto() {
-			return new ClientMessage.TransactionCommit(_transactionId, _requireMaster);
+			return new ClientMessage.TransactionCommit(_transactionId, _requireLeader);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.TransactionCommitCompleted response) {

@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Services {
 
 		public bool Enabled { get; set; }
 
-		public ManagedProjectionState MasterStatus { get; set; }
+		public ManagedProjectionState LeaderStatus { get; set; }
 
 		public string StateReason { get; set; }
 
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services {
 
 		protected bool Equals(ProjectionStatistics other) {
 			return string.Equals(Status, other.Status) && Enabled.Equals(other.Enabled)
-			                                           && MasterStatus == other.MasterStatus &&
+			                                           && LeaderStatus == other.LeaderStatus &&
 			                                           string.Equals(StateReason, other.StateReason)
 			                                           && string.Equals(Name, other.Name) &&
 			                                           ProjectionId == other.ProjectionId && Epoch == other.Epoch
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services {
 			unchecked {
 				int hashCode = (Status != null ? Status.GetHashCode() : 0);
 				hashCode = (hashCode * 397) ^ Enabled.GetHashCode();
-				hashCode = (hashCode * 397) ^ (int)MasterStatus;
+				hashCode = (hashCode * 397) ^ (int)LeaderStatus;
 				hashCode = (hashCode * 397) ^ (StateReason != null ? StateReason.GetHashCode() : 0);
 				hashCode = (hashCode * 397) ^ (Name != null ? Name.GetHashCode() : 0);
 				hashCode = (hashCode * 397) ^ ProjectionId.GetHashCode();

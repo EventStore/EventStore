@@ -221,11 +221,11 @@ namespace EventStore.ClientAPI.Internal {
 				case NodePreference.Random:
 					RandomShuffle(nodes, 0, nodes.Length - 1);
 					break;
-				case NodePreference.Slave:
-					nodes = nodes.OrderBy(nodeEntry => nodeEntry.State != ClusterMessages.VNodeState.Slave)
+				case NodePreference.Follower:
+					nodes = nodes.OrderBy(nodeEntry => nodeEntry.State != ClusterMessages.VNodeState.Follower)
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					RandomShuffle(nodes, 0,
-						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
+						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Follower) - 1);
 					break;
 				case NodePreference.ReadOnlyReplica:
 					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))
@@ -252,7 +252,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
-			return state == ClusterMessages.VNodeState.ReadOnlyMasterless
+			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
 				|| state == ClusterMessages.VNodeState.PreReadOnlyReplica
 				|| state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}

@@ -20,8 +20,8 @@ namespace EventStore.Core.Services.UserManagement {
 		IHandle<UserManagementMessage.ResetPassword>,
 		IHandle<UserManagementMessage.ChangePassword>,
 		IHandle<UserManagementMessage.Delete>,
-		IHandle<SystemMessage.BecomeMaster>,
-		IHandle<SystemMessage.BecomeSlave> {
+		IHandle<SystemMessage.BecomeLeader>,
+		IHandle<SystemMessage.BecomeFollower> {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
@@ -185,7 +185,7 @@ namespace EventStore.Core.Services.UserManagement {
 							: new UserManagementMessage.AllUserDetailsResult(error)));
 		}
 
-		public void Handle(SystemMessage.BecomeMaster message) {
+		public void Handle(SystemMessage.BecomeLeader message) {
 			_numberOfStandardUsersToBeCreated = 2;
 			if (!_skipInitializeStandardUsersCheck) {
 				BeginReadUserDetails(
@@ -207,7 +207,7 @@ namespace EventStore.Core.Services.UserManagement {
 			}
 		}
 
-		public void Handle(SystemMessage.BecomeSlave message) {
+		public void Handle(SystemMessage.BecomeFollower message) {
 			_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
 		}
 

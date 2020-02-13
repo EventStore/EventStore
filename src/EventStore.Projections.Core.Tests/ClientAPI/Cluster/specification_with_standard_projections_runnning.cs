@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
 			WaitIdle();
 
-			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.MasterMainBus)).ToArray();
+			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderMainBus)).ToArray();
 
 			foreach (var node in _nodes) {
 				node.Start();
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
-				_nodes.Single(x => x.NodeState == VNodeState.Master).ExternalHttpEndPoint,
+				_nodes.Single(x => x.NodeState == VNodeState.Leader).ExternalHttpEndPoint,
 				TimeSpan.FromMilliseconds(10000));
 
 			if (GivenStandardProjectionsRunning()) {

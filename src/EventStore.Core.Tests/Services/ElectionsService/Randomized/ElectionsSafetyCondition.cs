@@ -12,8 +12,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			get {
 				if (_electionsResults.Count == 0)
 					return false;
-				var master = _electionsResults.First().Value;
-				return _electionsResults.Values.All(x => x.Equals(master)); // same master for all
+				var leader = _electionsResults.First().Value;
+				return _electionsResults.Values.All(x => x.Equals(leader)); // same leader for all
 			}
 		}
 
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		public void Process(int iteration, RandTestQueueItem item) {
 			var electionsMsg = item.Message as ElectionMessage.ElectionsDone;
 			if (electionsMsg != null) {
-				_electionsResults[item.EndPoint] = electionsMsg.Master.ExternalHttpEndPoint;
+				_electionsResults[item.EndPoint] = electionsMsg.Leader.ExternalHttpEndPoint;
 				Done = _electionsResults.Count == _instancesCount;
 			}
 		}

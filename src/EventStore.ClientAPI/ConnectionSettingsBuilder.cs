@@ -19,7 +19,7 @@ namespace EventStore.ClientAPI {
 		private int _maxRetries = Consts.DefaultMaxOperationRetries;
 		private int _maxReconnections = Consts.DefaultMaxReconnections;
 
-		private bool _requireMaster = Consts.DefaultRequireMaster;
+		private bool _requireLeader = Consts.DefaultRequireLeader;
 
 		private TimeSpan _reconnectionDelay = Consts.DefaultReconnectionDelay;
 		private TimeSpan _queueTimeout = Consts.DefaultQueueTimeout;
@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI {
 		private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
-		private NodePreference _nodePreference = NodePreference.Master;
+		private NodePreference _nodePreference = NodePreference.Leader;
 		private IHttpClient _customHttpClient = null;
 
 
@@ -182,20 +182,20 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Requires all write and read requests to be served only by master (cluster version only).
+		/// Requires all write and read requests to be served only by leader, when running in a cluster.
 		/// </summary>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder PerformOnMasterOnly() {
-			_requireMaster = true;
+		public ConnectionSettingsBuilder PerformOnLeaderOnly() {
+			_requireLeader = true;
 			return this;
 		}
 
 		/// <summary>
-		/// Allow for writes to be forwarded and read requests served locally if node is not master (cluster version only).
+		/// Allow for writes to be forwarded and read requests served locally if node is not leader, when running in a cluster.
 		/// </summary>
 		/// <returns></returns>
 		public ConnectionSettingsBuilder PerformOnAnyNode() {
-			_requireMaster = false;
+			_requireLeader = false;
 			return this;
 		}
 
@@ -350,11 +350,11 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Whether to prioritize choosing a slave node that's alive from the known nodes.
+		/// Whether to prioritize choosing a follower node that's alive from the known nodes.
 		/// </summary>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder PreferSlaveNode() {
-			_nodePreference = NodePreference.Slave;
+		public ConnectionSettingsBuilder PreferFollowerNode() {
+			_nodePreference = NodePreference.Follower;
 			return this;
 		}
 
@@ -364,7 +364,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferReadOnlyReplica() {
 			_nodePreference = NodePreference.ReadOnlyReplica;
-			_requireMaster = false;
+			_requireLeader = false;
 			return this;
 		}
 
@@ -465,7 +465,7 @@ namespace EventStore.ClientAPI {
 				_maxConcurrentItems,
 				_maxRetries,
 				_maxReconnections,
-				_requireMaster,
+				_requireLeader,
 				_reconnectionDelay,
 				_queueTimeout,
 				_operationTimeout,

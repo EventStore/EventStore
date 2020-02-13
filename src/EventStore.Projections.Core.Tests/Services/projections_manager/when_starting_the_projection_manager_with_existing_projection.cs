@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(
 				ManagedProjectionState.Preparing,
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
-					v => v.Projections[0].Name == "projection1").Projections[0].MasterStatus);
+					v => v.Projections[0].Name == "projection1").Projections[0].LeaderStatus);
 		}
 	}
 }

@@ -21,8 +21,8 @@ namespace EventStore.Projections.Core {
 			ProjectionsStandardComponents projectionsStandardComponents,
 			IDictionary<Guid, IPublisher> queues,
 			TimeSpan projectionQueryExpiry) {
-			IQueuedHandler inputQueue = projectionsStandardComponents.MasterInputQueue;
-			InMemoryBus outputBus = projectionsStandardComponents.MasterOutputBus;
+			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
+			InMemoryBus outputBus = projectionsStandardComponents.LeaderOutputBus;
 			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
 
 			var projectionsController = new ProjectionsController(
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core {
 				standardComponents.NetworkSendService);
 
 			var forwarder = new RequestResponseQueueForwarder(
-				inputQueue: projectionsStandardComponents.MasterInputQueue,
+				inputQueue: projectionsStandardComponents.LeaderInputQueue,
 				externalRequestQueue: standardComponents.MainQueue);
 
 			if (projectionsStandardComponents.RunProjections != ProjectionType.None) {
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core {
 				projectionQueryExpiry);
 
 			SubscribeMainBus(
-				projectionsStandardComponents.MasterMainBus,
+				projectionsStandardComponents.LeaderMainBus,
 				projectionManager,
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
@@ -116,13 +116,13 @@ namespace EventStore.Projections.Core {
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents,
 			RequestResponseQueueForwarder forwarder) {
-			var managerOutput = projectionsStandardComponents.MasterOutputBus;
+			var managerOutput = projectionsStandardComponents.LeaderOutputBus;
 			managerOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
 			managerOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 			managerOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
-			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.MasterInputQueue));
+			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.LeaderInputQueue));
 
 			managerOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
 			managerOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
@@ -132,18 +132,18 @@ namespace EventStore.Projections.Core {
 
 			// self forward all
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents
-					.MasterInputQueue));
+					.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents
-					.MasterInputQueue));
-			projectionsStandardComponents.MasterMainBus.Subscribe(new UnwrapEnvelopeHandler());
+					.LeaderInputQueue));
+			projectionsStandardComponents.LeaderMainBus.Subscribe(new UnwrapEnvelopeHandler());
 		}
 	}
 }

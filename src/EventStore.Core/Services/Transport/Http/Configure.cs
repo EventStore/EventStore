@@ -433,17 +433,17 @@ namespace EventStore.Core.Services.Transport.Http {
 					return ServiceUnavailable("Server Is Not Ready");
 				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
 					return ServiceUnavailable("Server Is Too Busy");
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotMaster: {
-					var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
-					if (masterInfo == null)
-						return InternalServerError("No master info available in response");
-					return TemporaryRedirect(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader: {
+					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+					if (leaderInfo == null)
+						return InternalServerError("No leader info available in response");
+					return TemporaryRedirect(requestedUri, leaderInfo.ExternalHttpAddress, leaderInfo.ExternalHttpPort);
 				}
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
-					var masterInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.MasterInfo;
-					if (masterInfo == null)
-						return InternalServerError("No master info available in response");
-					return DenyRequestBecauseReadOnly(requestedUri, masterInfo.ExternalHttpAddress, masterInfo.ExternalHttpPort);
+					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+					if (leaderInfo == null)
+						return InternalServerError("No leader info available in response");
+					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.ExternalHttpAddress, leaderInfo.ExternalHttpPort);
 				}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));

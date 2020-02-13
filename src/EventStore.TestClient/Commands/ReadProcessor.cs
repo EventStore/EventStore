@@ -8,7 +8,7 @@ using EventStore.Core.Services.Transport.Tcp;
 namespace EventStore.TestClient.Commands {
 	internal class ReadProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "RD [<stream-id> [<from-number> [<only-if-master>]]]"; }
+			get { return "RD [<stream-id> [<from-number> [<only-if-leader>]]]"; }
 		}
 
 		public string Keyword {
@@ -19,7 +19,7 @@ namespace EventStore.TestClient.Commands {
 			var eventStreamId = "test-stream";
 			var fromNumber = 0;
 			const bool resolveLinkTos = false;
-			var requireMaster = false;
+			var requireLeader = false;
 
 			if (args.Length > 0) {
 				if (args.Length > 3)
@@ -28,7 +28,7 @@ namespace EventStore.TestClient.Commands {
 				if (args.Length >= 2)
 					fromNumber = int.Parse(args[1]);
 				if (args.Length >= 3)
-					requireMaster = bool.Parse(args[2]);
+					requireLeader = bool.Parse(args[2]);
 			}
 
 			context.IsAsync();
@@ -40,7 +40,7 @@ namespace EventStore.TestClient.Commands {
 					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
 					var readDto =
-						new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireMaster);
+						new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireLeader);
 					var package =
 						new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					sw.Start();

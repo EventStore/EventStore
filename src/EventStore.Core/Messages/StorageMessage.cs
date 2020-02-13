@@ -18,10 +18,10 @@ namespace EventStore.Core.Messages {
 		public interface IFlushableMessage {
 		}
 
-		public interface IMasterWriteMessage {
+		public interface ILeaderWriteMessage {
 		}
 
-		public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage {
+		public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -55,7 +55,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage {
+		public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -86,7 +86,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteCommit : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -105,7 +105,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
-			IMasterWriteMessage {
+			ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -134,7 +134,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionData : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -154,7 +154,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionEnd : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {

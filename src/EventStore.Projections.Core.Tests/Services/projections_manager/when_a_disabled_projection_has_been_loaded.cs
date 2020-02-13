@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(
 				ManagedProjectionState.Stopped,
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
-					.MasterStatus);
+					.LeaderStatus);
 		}
 
 		[Test]

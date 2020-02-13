@@ -128,125 +128,125 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class ChoosingMasterTests {
+	public class ChoosingLeaderTests {
 		static IEnumerable<TestCase> CreateCases() {
 			//Basic cases
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				ProposingNode = 0,
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				NodePriorities = new[] {3, 2, 1}
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 1,
+				ExpectedLeaderCandidateNode = 1,
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2,
-				ResigningMaster = 2
+				LastElectedLeader = 2,
+				ResigningLeader = 2
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				NodePriorities = new[] {int.MinValue, int.MinValue, int.MinValue},
-				LastElectedMaster = 0,
+				LastElectedLeader = 0,
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				CommitPositions = new long[] {1, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2,
-				ResigningMaster = 2
+				LastElectedLeader = 2,
+				ResigningLeader = 2
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 1,
+				ExpectedLeaderCandidateNode = 1,
 				WriterCheckpoints = new long[] {0, 1, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2,
-				ResigningMaster = 2
+				LastElectedLeader = 2,
+				ResigningLeader = 2
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				ChaserCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2,
-				ResigningMaster = 2
+				LastElectedLeader = 2,
+				ResigningLeader = 2
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				CommitPositions = new long[] {1, 0, 0},
 				NodePriorities = new[] {int.MinValue, 0, 0},
-				LastElectedMaster = 0
+				LastElectedLeader = 0
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 1,
+				ExpectedLeaderCandidateNode = 1,
 				WriterCheckpoints = new long[] {0, 1, 0},
 				NodePriorities = new[] {0, int.MinValue, 0},
-				LastElectedMaster = 1
+				LastElectedLeader = 1
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				ChaserCheckpoints = new long[] {0, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
-				LastElectedMaster = 2
+				LastElectedLeader = 2
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 0,
+				ExpectedLeaderCandidateNode = 0,
 				NodePriorities = new[] {0, int.MinValue, int.MinValue},
-				LastElectedMaster = 1,
-				ResigningMaster = 1
+				LastElectedLeader = 1,
+				ResigningLeader = 1
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 1,
+				ExpectedLeaderCandidateNode = 1,
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0,
-				ResigningMaster = 0
+				LastElectedLeader = 0,
+				ResigningLeader = 0
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				NodePriorities = new[] {int.MinValue, int.MinValue, 0},
-				LastElectedMaster = 1,
-				ResigningMaster = 1
+				LastElectedLeader = 1,
+				ResigningLeader = 1
 			};
 
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				CommitPositions = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0,
-				ResigningMaster = 0
+				LastElectedLeader = 0,
+				ResigningLeader = 0
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				WriterCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0,
-				ResigningMaster = 0
+				LastElectedLeader = 0,
+				ResigningLeader = 0
 			};
 			
 			yield return new TestCase {
-				ExpectedMasterCandidateNode = 2,
+				ExpectedLeaderCandidateNode = 2,
 				ChaserCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
-				LastElectedMaster = 0,
-				ResigningMaster = 0
+				LastElectedLeader = 0,
+				ResigningLeader = 0
 			};
 		}
 
 		[Test, TestCaseSource(nameof(TestCases))]
-		public void should_select_valid_best_master_candidate(TestCase tc) {
+		public void should_select_valid_best_leader_candidate(TestCase tc) {
 			var epochId = Guid.NewGuid();
 			var members = new MemberInfo[3];
 			var prepareOks = new Dictionary<Guid, ElectionMessage.PrepareOk>();
@@ -263,24 +263,24 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
 
-			var lastElectedMaster = tc.LastElectedMaster.HasValue
-				? (Guid?)IdForNode(tc.LastElectedMaster.Value)
+			var lastElectedLeader = tc.LastElectedLeader.HasValue
+				? (Guid?)IdForNode(tc.LastElectedLeader.Value)
 				: null;
-			var resigningMaster = tc.ResigningMaster.HasValue
-				? (Guid?)IdForNode(tc.ResigningMaster.Value)
+			var resigningLeadership = tc.ResigningLeader.HasValue
+				? (Guid?)IdForNode(tc.ResigningLeader.Value)
 				: null;
-			var mc = SUT.GetBestMasterCandidate(prepareOks, members, lastElectedMaster, resigningMaster);
+			var mc = SUT.GetBestLeaderCandidate(prepareOks, members, lastElectedLeader, resigningLeadership);
 
-			Assert.AreEqual(IdForNode(tc.ExpectedMasterCandidateNode), mc.InstanceId);
+			Assert.AreEqual(IdForNode(tc.ExpectedLeaderCandidateNode), mc.InstanceId);
 
-			var ownInfo = CreateMasterCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+			var ownInfo = CreateLeaderCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
 				nodePriority);
 
 			var localNode = FromMember(0, members);
 
-			var isLegit = SUT.IsLegitimateMaster(1, EndpointForNode(tc.ProposingNode),
+			var isLegit = SUT.IsLegitimateLeader(1, EndpointForNode(tc.ProposingNode),
 				IdForNode(tc.ProposingNode), mc, members, null, localNode,
-				ownInfo, resigningMaster);
+				ownInfo, resigningLeadership);
 
 			Assert.True(isLegit);
 		}
@@ -297,14 +297,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				chaserCheckpoint(i), nodePriority(i));
 		}
 
-		static SUT.MasterCandidate CreateMasterCandidate(int i, Guid epochId,
+		static SUT.LeaderCandidate CreateLeaderCandidate(int i, Guid epochId,
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return new SUT.MasterCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
+			return new SUT.LeaderCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
 				chaserCheckpoint(i), nodePriority(i));
 		}
 
@@ -321,7 +321,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Slave, true, ep, ep, ep, ep, ep, ep,
+			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Follower, true, ep, ep, ep, ep, ep, ep,
 				lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
 		}
 
@@ -338,16 +338,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		public class TestCase {
-			public int ExpectedMasterCandidateNode { get; set; }
-			public int? ResigningMaster { get; set; }
+			public int ExpectedLeaderCandidateNode { get; set; }
+			public int? ResigningLeader { get; set; }
 			public int ProposingNode { get; set; }
-			public int? LastElectedMaster { get; set; }
+			public int? LastElectedLeader { get; set; }
 			public long[] CommitPositions { get; set; } = {1L, 1, 1};
 			public long[] WriterCheckpoints { get; set; } = {1L, 1, 1};
 			public long[] ChaserCheckpoints { get; set; } = {1L, 1, 1};
 			public int[] NodePriorities { get; set; } = {1, 1, 1};
 
-			private static string GenerateName(int expectedMasterCandidateNode, long[] commitPositions,
+			private static string GenerateName(int expectedLeaderCandidateNode, long[] commitPositions,
 				long[] writerCheckpoints,
 				long[] chaserCheckpoints, int[] nodePriorities) {
 				var nameBuilder = new StringBuilder();
@@ -380,14 +380,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				}
 
 				if (nameBuilder.Length == 0)
-					nameBuilder.AppendFormat("All nodes caught up with the same priority expect {0} to be master",
-						expectedMasterCandidateNode);
+					nameBuilder.AppendFormat("All nodes caught up with the same priority expect {0} to be leader",
+						expectedLeaderCandidateNode);
 				var name = nameBuilder.ToString();
 				return name;
 			}
 
 			public override string ToString() {
-				return GenerateName(ExpectedMasterCandidateNode, CommitPositions, WriterCheckpoints, ChaserCheckpoints,
+				return GenerateName(ExpectedLeaderCandidateNode, CommitPositions, WriterCheckpoints, ChaserCheckpoints,
 					NodePriorities);
 			}
 		}

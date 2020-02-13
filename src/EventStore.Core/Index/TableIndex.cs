@@ -136,7 +136,7 @@ namespace EventStore.Core.Index {
 
 			// if TableIndex's CommitCheckpoint is >= amount of written TFChunk data,
 			// we'll have to remove some of PTables as they point to non-existent data
-			// this can happen (very unlikely, though) on master crash
+			// this can happen (very unlikely, though) on leader crash
 			try {
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
 					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);

@@ -25,7 +25,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_externalRequestQueue.Publish(
 				new ClientMessage.ReadEvent(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
-					msg.EventStreamId, msg.EventNumber, msg.ResolveLinkTos, msg.RequireMaster, msg.User));
+					msg.EventStreamId, msg.EventNumber, msg.ResolveLinkTos, msg.RequireLeader, msg.User));
 		}
 
 		public void Handle(ClientMessage.WriteEvents msg) {
@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_externalRequestQueue.Publish(
 				new ClientMessage.ReadStreamEventsBackward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
-					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
 					msg.ValidationStreamVersion, msg.User));
 		}
 
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_externalRequestQueue.Publish(
 				new ClientMessage.ReadStreamEventsForward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
-					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
 					msg.ValidationStreamVersion, msg.User));
 		}
 
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_externalRequestQueue.Publish(
 				new ClientMessage.ReadAllEventsForward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
-					msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireMaster,
+					msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
 					msg.ValidationTfLastCommitPosition, msg.User));
 		}
 

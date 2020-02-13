@@ -18,19 +18,19 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
+namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 	public abstract class with_replication_service : SpecificationWithDirectoryPerTestFixture {
 		protected string EventStreamId = "test_stream";
 		protected int ClusterSize = 3;
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected InMemoryBus TcpSendPublisher = new InMemoryBus("tcpSend");
-		protected MasterReplicationService Service;
+		protected LeaderReplicationService Service;
 		protected ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck> ReplicaWriteAcks = new ConcurrentQueue<ReplicationTrackingMessage.ReplicaWriteAck>();
 		protected ConcurrentQueue<SystemMessage.VNodeConnectionLost> ReplicaLostMessages = new ConcurrentQueue<SystemMessage.VNodeConnectionLost>();
 		protected ConcurrentQueue<TcpMessage.TcpSend> TcpSends = new ConcurrentQueue<TcpMessage.TcpSend>();
 		private int _connectionPendingSendBytesThreshold = 10 * 1024;
 		private int _connectionQueueSizeThreshold = 50000;
-		protected Guid MasterId = Guid.NewGuid();
+		protected Guid LeaderId = Guid.NewGuid();
 		protected Guid ReplicaId = Guid.NewGuid();
 		protected Guid ReplicaId2 = Guid.NewGuid();
 		protected Guid ReadOnlyReplicaId = Guid.NewGuid();
@@ -55,9 +55,9 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 			DbConfig = CreateDbConfig();
 			var db = new TFChunkDb(DbConfig);
 			db.Open();
-			Service = new MasterReplicationService(
+			Service = new LeaderReplicationService(
 				publisher: Publisher,
-				instanceId: MasterId,
+				instanceId: LeaderId,
 				db: db,
 				tcpSendPublisher: TcpSendPublisher,
 				epochManager: new FakeEpochManager(),
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
 			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 				Guid.NewGuid(),
 				new Epoch[0],
 				PortsHelper.GetLoopback(),
-				MasterId,
+				LeaderId,
 				replicaId,
 				isPromotable);
 			Service.Handle(subRequest);
@@ -110,19 +110,19 @@ namespace EventStore.Core.Tests.Services.Replication.MasterReplication {
 
 
 		public abstract void When();
-		protected void BecomeMaster() {
-			Service.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
+		protected void BecomeLeader() {
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {
 			Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
-		protected void BecomeSlave() {
-			var masterIpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
-			Service.Handle(new SystemMessage.BecomeSlave(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
-				masterIpEndPoint, masterIpEndPoint, masterIpEndPoint,
-				masterIpEndPoint, masterIpEndPoint, masterIpEndPoint, false)));
+		protected void BecomeFollower() {
+			var leaderIpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
+			Service.Handle(new SystemMessage.BecomeFollower(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
+				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint,
+				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint, false)));
 		}
 		private TFChunkDbConfig CreateDbConfig() {
 			ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);

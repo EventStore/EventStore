@@ -43,9 +43,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 		}
 
 		[TestFixture]
-		public class when_starting_as_slave : with_projections_subsystem {
+		public class when_starting_as_follower : with_projections_subsystem {
 			protected override IEnumerable<WhenStep> PreWhen() {
-				yield return (new SystemMessage.BecomeSlave(Guid.NewGuid(),
+				yield return (new SystemMessage.BecomeFollower(Guid.NewGuid(),
 					new EventStore.Core.Data.VNodeInfo(Guid.NewGuid(), 1,
 						new IPEndPoint(IPAddress.Loopback, 1111),
 						new IPEndPoint(IPAddress.Loopback, 1112),
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 
 			[Test]
 			public void projections_core_coordinator_should_not_publish_start_core_message() {
-				//projections are not allowed (yet) to run on slaves
+				//projections are not allowed (yet) to run on followers
 				var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
 				Assert.AreEqual(0, startCoreMessages.Select(x => x.InstanceCorrelationId).Distinct().Count());
 			}

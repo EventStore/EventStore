@@ -8,7 +8,7 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class AppendToStreamOperation : OperationBase<WriteResult, ClientMessage.WriteEventsCompleted> {
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly string _stream;
 		private readonly long _expectedVersion;
 		private readonly IEnumerable<EventData> _events;
@@ -17,13 +17,13 @@ namespace EventStore.ClientAPI.ClientOperations {
 
 		public AppendToStreamOperation(ILogger log,
 			TaskCompletionSource<WriteResult> source,
-			bool requireMaster,
+			bool requireLeader,
 			string stream,
 			long expectedVersion,
 			IEnumerable<EventData> events,
 			UserCredentials userCredentials)
 			: base(log, source, TcpCommand.WriteEvents, TcpCommand.WriteEventsCompleted, userCredentials) {
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_stream = stream;
 			_expectedVersion = expectedVersion;
 			_events = events;
@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 					new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson ? 1 : 0, 0, x.Data,
 						x.Metadata))
 				.ToArray();
-			return new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _requireMaster);
+			return new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _requireLeader);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.WriteEventsCompleted response) {

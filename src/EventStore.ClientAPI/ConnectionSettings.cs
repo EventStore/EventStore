@@ -65,9 +65,9 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxReconnections;
 
 		/// <summary>
-		/// Whether to require EventStore to refuse serving read or write request if it is not master.
+		/// Whether to require EventStore to refuse serving read or write request if it is not leader.
 		/// </summary>
-		public readonly bool RequireMaster;
+		public readonly bool RequireLeader;
 
 		/// <summary>
 		/// The amount of time to delay before attempting to reconnect.
@@ -165,7 +165,7 @@ namespace EventStore.ClientAPI {
 			int maxConcurrentItems,
 			int maxRetries,
 			int maxReconnections,
-			bool requireMaster,
+			bool requireLeader,
 			TimeSpan reconnectionDelay,
 			TimeSpan queueTimeout,
 			TimeSpan operationTimeout,
@@ -199,9 +199,9 @@ namespace EventStore.ClientAPI {
 			if (useSslConnection)
 				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
-			if (nodePreference == NodePreference.ReadOnlyReplica && requireMaster) {
-				throw new ArgumentException($"Having the Node Preference set to {nodePreference} and Requires Master" +
-				                            $" to {requireMaster} will reconnect the client to a master node once" +
+			if (nodePreference == NodePreference.ReadOnlyReplica && requireLeader) {
+				throw new ArgumentException($"Having the Node Preference set to {nodePreference} and Requires Leader" +
+				                            $" to {requireLeader} will reconnect the client to a leader node once" +
 				                            " an operation is performed.");
 			}
 
@@ -211,7 +211,7 @@ namespace EventStore.ClientAPI {
 			MaxConcurrentItems = maxConcurrentItems;
 			MaxRetries = maxRetries;
 			MaxReconnections = maxReconnections;
-			RequireMaster = requireMaster;
+			RequireLeader = requireLeader;
 			ReconnectionDelay = reconnectionDelay;
 			QueueTimeout = queueTimeout;
 			OperationTimeout = operationTimeout;

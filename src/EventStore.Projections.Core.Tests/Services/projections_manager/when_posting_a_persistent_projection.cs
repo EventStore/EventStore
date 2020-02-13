@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(
 				ManagedProjectionState.Prepared,
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0]
-					.MasterStatus);
+					.LeaderStatus);
 		}
 
 		[Test, Category("v8")]

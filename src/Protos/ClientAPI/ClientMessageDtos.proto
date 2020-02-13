@@ -52,7 +52,7 @@ message WriteEvents {
 	required string event_stream_id = 1;
 	required int64 expected_version = 2;
 	repeated NewEvent events = 3;
-	required bool require_master = 4;
+	required bool require_leader = 4;
 }
 
 message WriteEventsCompleted {
@@ -68,7 +68,7 @@ message WriteEventsCompleted {
 message DeleteStream {
 	required string event_stream_id = 1;
 	required int64 expected_version = 2;
-	required bool require_master = 3;
+	required bool require_leader = 3;
 	optional bool hard_delete = 4;
 }
 
@@ -82,7 +82,7 @@ message DeleteStreamCompleted {
 message TransactionStart {
 	required string event_stream_id = 1;
 	required int64 expected_version = 2;
-	required bool require_master = 3;
+	required bool require_leader = 3;
 }
 
 message TransactionStartCompleted {
@@ -94,7 +94,7 @@ message TransactionStartCompleted {
 message TransactionWrite {
 	required int64 transaction_id = 1;
 	repeated NewEvent events = 2;
-	required bool require_master = 3;
+	required bool require_leader = 3;
 }
 
 message TransactionWriteCompleted {
@@ -105,7 +105,7 @@ message TransactionWriteCompleted {
 
 message TransactionCommit {
 	required int64 transaction_id = 1;
-	required bool require_master = 2;
+	required bool require_leader = 2;
 }
 
 message TransactionCommitCompleted {
@@ -122,7 +122,7 @@ message ReadEvent {
 	required string event_stream_id = 1;
 	required int64 event_number = 2;
 	required bool resolve_link_tos = 3;
-	required bool require_master = 4;
+	required bool require_leader = 4;
 }
 
 message ReadEventCompleted {
@@ -147,7 +147,7 @@ message ReadStreamEvents {
 	required int64 from_event_number = 2;
 	required int32 max_count = 3;
 	required bool resolve_link_tos = 4;
-	required bool require_master = 5;
+	required bool require_leader = 5;
 }
 
 message ReadStreamEventsCompleted {
@@ -176,7 +176,7 @@ message ReadAllEvents {
 	required int64 prepare_position = 2;
 	required int32 max_count = 3;
 	required bool resolve_link_tos = 4;
-	required bool require_master = 5;
+	required bool require_leader = 5;
 }
 
 message ReadAllEventsCompleted {
@@ -222,7 +222,7 @@ message FilteredReadAllEvents {
     required int32 max_count = 3;
     optional int32 max_search_window = 4;
     required bool resolve_link_tos = 5;
-    required bool require_master = 6;
+    required bool require_leader = 6;
     required Filter filter = 7;
 }
 
@@ -407,14 +407,14 @@ message NotHandled {
 	enum NotHandledReason {
 		NotReady = 0;
 		TooBusy = 1;
-		NotMaster = 2;
+		NotLeader = 2;
 		IsReadOnly = 3;
 	}
 	
 	required NotHandledReason reason = 1;
 	optional bytes additional_info = 2;
 
-	message MasterInfo {
+	message LeaderInfo {
 		required string external_tcp_address = 1;
 		required int32 external_tcp_port = 2;
 		required string external_http_address = 3;

@@ -90,7 +90,7 @@ namespace EventStore.Core.Util {
 		public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
 		public static double MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs.TotalMilliseconds;
 
-		public const string NodePriorityDescr = "The node priority used during master election";
+		public const string NodePriorityDescr = "The node priority used during leader election";
 		public const int NodePriorityDefault = 0;
 
 		public const string DisableScavengeMergeDescr = "Disables the merging of chunks when scavenge is running";
@@ -361,7 +361,7 @@ namespace EventStore.Core.Util {
 			"Sets this node as a read only replica that is not allowed to participate in elections or accept writes from clients.";
 		public static readonly bool ReadOnlyReplicaDefault = false;
 
-		public const string UnsafeAllowSurplusNodesDescr = "Allow more nodes than the cluster size to join the cluster as clones. (UNSAFE: can cause data loss if a clone is promoted as master)";
+		public const string UnsafeAllowSurplusNodesDescr = "Allow more nodes than the cluster size to join the cluster as clones. (UNSAFE: can cause data loss if a clone is promoted as leader)";
 		public static readonly bool UnsafeAllowSurplusNodesDefault = false;
 
 		/*

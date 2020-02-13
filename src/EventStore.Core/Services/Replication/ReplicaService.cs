@@ -20,8 +20,8 @@ using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Replication {
 	public class ReplicaService : IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<ReplicationMessage.ReconnectToMaster>,
-		IHandle<ReplicationMessage.SubscribeToMaster>,
+		IHandle<ReplicationMessage.ReconnectToLeader>,
+		IHandle<ReplicationMessage.SubscribeToLeader>,
 		IHandle<ReplicationMessage.AckLogPosition>,
 		IHandle<ClientMessage.TcpForwardMessage> {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<ReplicaService>();
@@ -86,10 +86,10 @@ namespace EventStore.Core.Services.Replication {
 			switch (message.State) {
 				case VNodeState.Initializing:
 				case VNodeState.Unknown:
-				case VNodeState.ReadOnlyMasterless:
-				case VNodeState.PreMaster:
-				case VNodeState.Master:
-				case VNodeState.ResigningMaster:
+				case VNodeState.ReadOnlyLeaderless:
+				case VNodeState.PreLeader:
+				case VNodeState.Leader:
+				case VNodeState.ResigningLeader:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown: {
 					Disconnect();
@@ -97,17 +97,17 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.PreReplica: {
 					var m = (SystemMessage.BecomePreReplica)message;
-					ConnectToMaster(m.Master);
+					ConnectToLeader(m.Leader);
 					break;
 				}
 				case VNodeState.PreReadOnlyReplica: {
 					var m = (SystemMessage.BecomePreReadOnlyReplica)message;
-					ConnectToMaster(m.Master);
+					ConnectToLeader(m.Leader);
 					break;
 				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:  {
 					// nothing changed, essentially
 					break;
@@ -133,24 +133,24 @@ namespace EventStore.Core.Services.Replication {
 			_publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
 		}
 
-		public void Handle(ReplicationMessage.ReconnectToMaster message) {
-			ConnectToMaster(message.Master);
+		public void Handle(ReplicationMessage.ReconnectToLeader message) {
+			ConnectToLeader(message.Leader);
 		}
 
-		private void ConnectToMaster(VNodeInfo master) {
+		private void ConnectToLeader(VNodeInfo leader) {
 			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
-			var masterEndPoint = GetMasterEndPoint(master, _useSsl);
+			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
 
 			if (_connection != null)
-				_connection.Stop(string.Format("Reconnecting from old master [{0}] to new master: [{1}].",
-					_connection.RemoteEndPoint, masterEndPoint));
+				_connection.Stop(string.Format("Reconnecting from old leader [{0}] to new leader: [{1}].",
+					_connection.RemoteEndPoint, leaderEndPoint));
 
-			_connection = new TcpConnectionManager(_useSsl ? "master-secure" : "master-normal",
+			_connection = new TcpConnectionManager(_useSsl ? "leader-secure" : "leader-normal",
 				Guid.NewGuid(),
 				_tcpDispatcher,
 				_publisher,
-				masterEndPoint,
+				leaderEndPoint,
 				_connector,
 				_useSsl,
 				_sslTargetHost,
@@ -164,16 +164,16 @@ namespace EventStore.Core.Services.Replication {
 			_connection.StartReceiving();
 		}
 
-		private static IPEndPoint GetMasterEndPoint(VNodeInfo master, bool useSsl) {
-			Ensure.NotNull(master, "master");
-			if (useSsl && master.InternalSecureTcp == null)
+		private static IPEndPoint GetLeaderEndPoint(VNodeInfo leader, bool useSsl) {
+			Ensure.NotNull(leader, "leader");
+			if (useSsl && leader.InternalSecureTcp == null)
 				Log.Error(
-					"Internal secure connections are required, but no internal secure TCP end point is specified for master [{master}]!",
-					master);
-			return useSsl ? master.InternalSecureTcp ?? master.InternalTcp : master.InternalTcp;
+					"Internal secure connections are required, but no internal secure TCP end point is specified for leader [{leader}]!",
+					leader);
+			return useSsl ? leader.InternalSecureTcp ?? leader.InternalTcp : leader.InternalTcp;
 		}
 
-		public void Handle(ReplicationMessage.SubscribeToMaster message) {
+		public void Handle(ReplicationMessage.SubscribeToLeader message) {
 			if (_state != VNodeState.PreReplica && _state != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("_state is {0}, but is expected to be {1} or {2}", _state,
 					VNodeState.PreReplica, VNodeState.PreReadOnlyReplica));
@@ -182,9 +182,9 @@ namespace EventStore.Core.Services.Replication {
 			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
 
 			Log.Info(
-				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to MASTER [{remoteEndPoint}, {masterId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
+				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to LEADER [{remoteEndPoint}, {leaderId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
 				+ "ConnectionId: {connectionId:B}, LocalEndPoint: [{localEndPoint}], Epochs:\n{epochs}...\n.",
-				logPosition, logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
+				logPosition, logPosition, _connection.RemoteEndPoint, message.LeaderId, message.SubscriptionId,
 				_connection.ConnectionId, _connection.LocalEndPoint,
 				string.Join("\n", epochs.Select(x => x.AsString())));
 
@@ -194,7 +194,7 @@ namespace EventStore.Core.Services.Replication {
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
 					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
-					message.MasterId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
+					message.LeaderId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
 		}
 
 		public void Handle(ReplicationMessage.AckLogPosition message) {
@@ -217,9 +217,9 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:  {
-					Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
+					Debug.Assert(_connection != null, "Connection manager is null in follower/clone/catching up state");
 					SendTcpMessage(_connection, message.Message);
 					break;
 				}

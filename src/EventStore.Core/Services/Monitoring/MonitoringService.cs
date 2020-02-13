@@ -206,9 +206,9 @@ namespace EventStore.Core.Services.Monitoring {
 			switch (message.State) {
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
+				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:
-				case VNodeState.Master: {
+				case VNodeState.Leader: {
 					SetStatsStreamMetadata();
 					break;
 				}

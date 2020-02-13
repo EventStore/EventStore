@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
 						.Single()
 						.Projections.Single()
-						.MasterStatus);
+						.LeaderStatus);
 				Assert.AreEqual(
 					true,
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
@@ -133,7 +133,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
 						.Single()
 						.Projections.Single()
-						.MasterStatus);
+						.LeaderStatus);
 				Assert.AreEqual(
 					true,
 					_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()

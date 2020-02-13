@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 				var done = it.Message as Messages.ElectionMessage.ElectionsDone;
 				if (done != null) {
-					Console.WriteLine("=== master on {0}: {1}", it.EndPoint, done.Master);
+					Console.WriteLine("=== leader on {0}: {1}", it.EndPoint, done.Leader);
 				}
 			}
 		}

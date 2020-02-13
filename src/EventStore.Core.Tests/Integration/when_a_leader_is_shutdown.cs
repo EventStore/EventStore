@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture, Category("LongRunning"), Ignore("Flaky test - e.g. if multiple elections take place")]
-	public class when_a_master_is_shutdown : specification_with_cluster {
+	public class when_a_leader_is_shutdown : specification_with_cluster {
 		private List<Guid> _epochIds = new List<Guid>();
 		private List<string> _roleAssignments = new List<string>();
 		private CountdownEvent _expectedNumberOfEvents;
@@ -17,8 +17,8 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected override void BeforeNodesStart() {
 			_nodes.ToList().ForEach(x => {
-				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeMaster>(Handle));
-				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeSlave>(Handle));
+				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeLeader>(Handle));
+				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.BecomeFollower>(Handle));
 				x.Node.MainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(Handle));
 			});
 
@@ -28,24 +28,24 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected override async Task Given() {
 			_expectedNumberOfEvents.Wait(5000);
-			var master = _nodes.First(x => x.NodeState == Data.VNodeState.Master);
-			await ShutdownNode(master.DebugIndex);
+			var leader = _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
+			await ShutdownNode(leader.DebugIndex);
 			_expectedNumberOfEvents = new CountdownEvent(2 /*role assignments*/ + 1 /*epoch write*/);
 			_expectedNumberOfEvents.Wait(5000);
 			await base.Given();
 		}
 
-		private void Handle(SystemMessage.BecomeMaster msg) {
+		private void Handle(SystemMessage.BecomeLeader msg) {
 			lock (_lock) {
-				_roleAssignments.Add("master");
+				_roleAssignments.Add("leader");
 			}
 
 			_expectedNumberOfEvents?.Signal();
 		}
 
-		private void Handle(SystemMessage.BecomeSlave msg) {
+		private void Handle(SystemMessage.BecomeFollower msg) {
 			lock (_lock) {
-				_roleAssignments.Add("slave");
+				_roleAssignments.Add("follower");
 			}
 
 			_expectedNumberOfEvents?.Signal();
@@ -60,15 +60,15 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[Test]
-		public void should_assign_master_and_slave_roles_correctly() {
+		public void should_assign_leader_and_follower_roles_correctly() {
 			Assert.AreEqual(5, _roleAssignments.Count());
 
-			Assert.AreEqual(1, _roleAssignments.Take(3).Where(x => x.Equals("master")).Count());
-			Assert.AreEqual(2, _roleAssignments.Take(3).Where(x => x.Equals("slave")).Count());
+			Assert.AreEqual(1, _roleAssignments.Take(3).Where(x => x.Equals("leader")).Count());
+			Assert.AreEqual(2, _roleAssignments.Take(3).Where(x => x.Equals("follower")).Count());
 
 			//after shutting down
-			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("master")).Count());
-			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("slave")).Count());
+			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("leader")).Count());
+			Assert.AreEqual(1, _roleAssignments.Skip(3).Take(2).Where(x => x.Equals("follower")).Count());
 		}
 
 		[Test]

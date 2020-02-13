@@ -108,10 +108,10 @@ namespace EventStore.ClientAPI.ClientOperations {
 				case ClientMessage.NotHandled.NotHandledReason.TooBusy:
 					return new InspectionResult(InspectionDecision.Retry, "NotHandled - TooBusy");
 
-				case ClientMessage.NotHandled.NotHandledReason.NotMaster:
-					var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-					return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotMaster",
-						masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
+				case ClientMessage.NotHandled.NotHandledReason.NotLeader:
+					var leaderInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.LeaderInfo>();
+					return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotLeader",
+						leaderInfo.ExternalTcpEndPoint, leaderInfo.ExternalSecureTcpEndPoint);
 
 				case ClientMessage.NotHandled.NotHandledReason.IsReadOnly:
 					Log.Error("Cannot perform operation as this node is Read Only");

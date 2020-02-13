@@ -61,7 +61,7 @@ namespace EventStore.Core.Messages {
 
 			[ProtoMember(5)] public int Port { get; set; }
 
-			[ProtoMember(6)] public byte[] MasterId { get; set; }
+			[ProtoMember(6)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(7)] public byte[] SubscriptionId { get; set; }
 
@@ -71,14 +71,14 @@ namespace EventStore.Core.Messages {
 			}
 
 			public SubscribeReplica(long logPosition, byte[] chunkId, Epoch[] lastEpochs, byte[] ip, int port,
-				byte[] masterId, byte[] subscriptionId, bool isPromotable) {
+				byte[] leaderId, byte[] subscriptionId, bool isPromotable) {
 				LogPosition = logPosition;
 				ChunkId = chunkId;
 				LastEpochs = lastEpochs;
 
 				Ip = ip;
 				Port = port;
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				IsPromotable = isPromotable;
 			}
@@ -86,25 +86,25 @@ namespace EventStore.Core.Messages {
 
 		[ProtoContract]
 		public class ReplicaSubscriptionRetry {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
 			public ReplicaSubscriptionRetry() {
 			}
 
-			public ReplicaSubscriptionRetry(byte[] masterId, byte[] subscriptionId) {
-				Ensure.NotNull(masterId, "masterId");
+			public ReplicaSubscriptionRetry(byte[] leaderId, byte[] subscriptionId) {
+				Ensure.NotNull(leaderId, "leaderId");
 				Ensure.NotNull(subscriptionId, "subscriptionId");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
 
 		[ProtoContract]
 		public class ReplicaSubscribed {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
@@ -113,12 +113,12 @@ namespace EventStore.Core.Messages {
 			public ReplicaSubscribed() {
 			}
 
-			public ReplicaSubscribed(byte[] masterId, byte[] subscriptionId, long subscriptionPosition) {
-				Ensure.NotNull(masterId, "masterId");
+			public ReplicaSubscribed(byte[] leaderId, byte[] subscriptionId, long subscriptionPosition) {
+				Ensure.NotNull(leaderId, "leaderId");
 				Ensure.NotNull(subscriptionId, "subscriptionId");
 				Ensure.Nonnegative(subscriptionPosition, "subscriptionPosition");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				SubscriptionPosition = subscriptionPosition;
 			}
@@ -141,7 +141,7 @@ namespace EventStore.Core.Messages {
 
 		[ProtoContract]
 		public class CreateChunk {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
@@ -154,13 +154,13 @@ namespace EventStore.Core.Messages {
 			public CreateChunk() {
 			}
 
-			public CreateChunk(byte[] masterId, byte[] subscriptionId, byte[] chunkHeaderBytes, int fileSize,
+			public CreateChunk(byte[] leaderId, byte[] subscriptionId, byte[] chunkHeaderBytes, int fileSize,
 				bool isCompletedChunk) {
-				Ensure.NotNull(masterId, "masterId");
+				Ensure.NotNull(leaderId, "leaderId");
 				Ensure.NotNull(subscriptionId, "subscriptionId");
 				Ensure.NotNull(chunkHeaderBytes, "chunkHeaderBytes");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkHeaderBytes = chunkHeaderBytes;
 				FileSize = fileSize;
@@ -170,7 +170,7 @@ namespace EventStore.Core.Messages {
 
 		[ProtoContract]
 		public class RawChunkBulk {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
@@ -187,19 +187,19 @@ namespace EventStore.Core.Messages {
 			public RawChunkBulk() {
 			}
 
-			public RawChunkBulk(byte[] masterId,
+			public RawChunkBulk(byte[] leaderId,
 				byte[] subscriptionId,
 				int chunkStartNumber,
 				int chunkEndNumber,
 				int rawPosition,
 				byte[] rawBytes,
 				bool completeChunk) {
-				Ensure.NotNull(masterId, "masterId");
+				Ensure.NotNull(leaderId, "leaderId");
 				Ensure.NotNull(subscriptionId, "subscriptionId");
 				Ensure.NotNull(rawBytes, "rawBytes");
 				Ensure.Positive(rawBytes.Length, "rawBytes.Length"); // we should never send empty array, NEVER
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkStartNumber = chunkStartNumber;
 				ChunkEndNumber = chunkEndNumber;
@@ -211,7 +211,7 @@ namespace EventStore.Core.Messages {
 
 		[ProtoContract]
 		public class DataChunkBulk {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
@@ -228,20 +228,20 @@ namespace EventStore.Core.Messages {
 			public DataChunkBulk() {
 			}
 
-			public DataChunkBulk(byte[] masterId,
+			public DataChunkBulk(byte[] leaderId,
 				byte[] subscriptionId,
 				int chunkStartNumber,
 				int chunkEndNumber,
 				long subscriptionPosition,
 				byte[] dataBytes,
 				bool completeChunk) {
-				Ensure.NotNull(masterId, "masterId");
+				Ensure.NotNull(leaderId, "leaderId");
 				Ensure.NotNull(subscriptionId, "subscriptionId");
 				Ensure.NotNull(dataBytes, "rawBytes");
 				Ensure.Nonnegative(dataBytes.Length,
 					"dataBytes.Length"); // we CAN send empty dataBytes array here, unlike as with completed chunks
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkStartNumber = chunkStartNumber;
 				ChunkEndNumber = chunkEndNumber;
@@ -252,46 +252,46 @@ namespace EventStore.Core.Messages {
 		}
 
 		[ProtoContract]
-		public class SlaveAssignment {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+		public class FollowerAssignment {
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
-			public SlaveAssignment() {
+			public FollowerAssignment() {
 			}
 
-			public SlaveAssignment(byte[] masterId, byte[] subscriptionId) {
-				MasterId = masterId;
+			public FollowerAssignment(byte[] leaderId, byte[] subscriptionId) {
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
 
 		[ProtoContract]
 		public class CloneAssignment {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
 			public CloneAssignment() {
 			}
 
-			public CloneAssignment(byte[] masterId, byte[] subscriptionId) {
-				MasterId = masterId;
+			public CloneAssignment(byte[] leaderId, byte[] subscriptionId) {
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
 
 		[ProtoContract]
 		public class DropSubscription {
-			[ProtoMember(1)] public byte[] MasterId { get; set; }
+			[ProtoMember(1)] public byte[] LeaderId { get; set; }
 
 			[ProtoMember(2)] public byte[] SubscriptionId { get; set; }
 
 			public DropSubscription() {
 			}
 
-			public DropSubscription(byte[] masterId, byte[] subscriptionId) {
-				MasterId = masterId;
+			public DropSubscription(byte[] leaderId, byte[] subscriptionId) {
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}

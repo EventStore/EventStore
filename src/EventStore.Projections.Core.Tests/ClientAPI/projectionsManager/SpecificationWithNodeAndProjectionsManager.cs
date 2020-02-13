@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
-			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.MasterMainBus);
+			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
 			return new MiniNode(
 				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] {_projectionsSubsystem});

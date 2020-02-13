@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		protected override int ClusterSize => 3;
 
 		public override void When() {
-			BecomeMaster();
+			BecomeLeader();
 			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(Guid.NewGuid(), _logPosition));
 			WriterCheckpoint.Write(_logPosition);
 			WriterCheckpoint.Flush();

@@ -14,8 +14,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static Exception ServerBusy() =>
 			new RpcException(new Status(StatusCode.Unavailable, "Server Is Too Busy"));
 
-		private static Exception NoMasterInfo() =>
-			new RpcException(new Status(StatusCode.Unknown, "No master info available in response"));
+		private static Exception NoLeaderInfo() =>
+			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
 
 		public static Exception StreamNotFound(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
@@ -102,13 +102,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
 					exception = ServerBusy();
 					return true;
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotMaster:
+				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader:
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
 					switch (notHandled.AdditionalInfo) {
-						case TcpClientMessageDto.NotHandled.MasterInfo _:
+						case TcpClientMessageDto.NotHandled.LeaderInfo _:
 							return false;
 						default:
-							exception = NoMasterInfo();
+							exception = NoLeaderInfo();
 							return true;
 					}
 

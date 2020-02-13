@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 	public class Authorization : specification_with_standard_projections_runnning {
 		private Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
-		private int _masterId;
+		private int _leaderId;
 
 		private HttpClient CreateHttpClient(string username, string password) =>
 			new HttpClient(new SocketsHttpHandler {
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 					content.Headers.Add("Content-Type", "application/json");
 
 					var res = await _httpClients["Admin"].PostAsync(
-						string.Format("http://{0}/users/", _nodes[_masterId].ExternalHttpEndPoint),
+						string.Format("http://{0}/users/", _nodes[_leaderId].ExternalHttpEndPoint),
 						content
 					);
 					res.EnsureSuccessStatusCode();
@@ -102,10 +102,10 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 
 		protected override async Task Given() {
 			await base.Given();
-			//find the master node
+			//find the leader node
 			for (int i = 0; i < _nodes.Length; i++) {
-				if (_nodes[i].NodeState == EventStore.Core.Data.VNodeState.Master) {
-					_masterId = i;
+				if (_nodes[i].NodeState == EventStore.Core.Data.VNodeState.Leader) {
+					_leaderId = i;
 					break;
 				}
 			}
@@ -167,8 +167,8 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 				/*"/sys/subsystems;GET;Ops"*/ /* this endpoint has been commented since this controller is not registered when using a MiniNode */
 			)] string httpEndpointDetails
 		) {
-			/*use the master node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_masterId].InternalHttpEndPoint : _nodes[_masterId].ExternalHttpEndPoint;
+			/*use the leader node endpoint to avoid any redirects*/
+			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);

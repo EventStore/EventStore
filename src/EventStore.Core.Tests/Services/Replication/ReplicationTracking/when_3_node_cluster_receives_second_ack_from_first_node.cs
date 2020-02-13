@@ -8,28 +8,28 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		with_clustered_replication_tracking_service {
 		private readonly long _firstLogPosition = 2000;
 		private readonly long _secondLogPosition = 4000;
-		private readonly Guid _slave1 = Guid.NewGuid();
-		private readonly Guid _slave2 = Guid.NewGuid();
+		private readonly Guid _follower1 = Guid.NewGuid();
+		private readonly Guid _follower2 = Guid.NewGuid();
 
 		protected override int ClusterSize => 3;
 
 		public override void When() {
-			BecomeMaster();
+			BecomeLeader();
 			// All of the nodes have acked the first write
 			WriterCheckpoint.Write(_firstLogPosition);
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slave1, _firstLogPosition));
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slave2, _firstLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_follower1, _firstLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_follower2, _firstLogPosition));
 			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 
 			ReplicatedTos.Clear();
 			
-			// Slave 2 has lost connection and does not ack the write
+			// Follower 2 has lost connection and does not ack the write
 			WriterCheckpoint.Write(_secondLogPosition);
 			WriterCheckpoint.Flush();
 			Service.Handle(new ReplicationTrackingMessage.WriterCheckpointFlushed());
-			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_slave1, _secondLogPosition));
+			Service.Handle(new ReplicationTrackingMessage.ReplicaWriteAck(_follower1, _secondLogPosition));
 			AssertEx.IsOrBecomesTrue(() => Service.IsCurrent());
 		}
 

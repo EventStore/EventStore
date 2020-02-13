@@ -299,7 +299,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(replicationTracker);
 			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicaWriteAck>(replicationTracker);
 			_mainBus.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
-			_mainBus.Subscribe<ReplicationTrackingMessage.MasterReplicatedTo>(replicationTracker);
+			_mainBus.Subscribe<ReplicationTrackingMessage.LeaderReplicatedTo>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
@@ -590,7 +590,7 @@ namespace EventStore.Core {
 			var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher,
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
-			perSubscrBus.Subscribe<SystemMessage.BecomeMaster>(persistentSubscription);
+			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
 			perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
@@ -644,19 +644,19 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.ExternalHttp,
 				vNodeSettings.ReadOnlyReplica);
 			if (!isSingleNode) {
-				// MASTER REPLICATION
-				var masterReplicationService = new MasterReplicationService(_mainQueue, gossipInfo.InstanceId, db,
+				// LEADER REPLICATION
+				var leaderReplicationService = new LeaderReplicationService(_mainQueue, gossipInfo.InstanceId, db,
 					_workersHandler,
 					epochManager, vNodeSettings.ClusterNodeCount,
 					vNodeSettings.UnsafeAllowSurplusNodes,
 					_queueStatsManager);
-				AddTask(masterReplicationService.Task);
-				_mainBus.Subscribe<SystemMessage.SystemStart>(masterReplicationService);
-				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(masterReplicationService);
-				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(masterReplicationService);
-				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(masterReplicationService);
-				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(masterReplicationService);
-				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(masterReplicationService);
+				AddTask(leaderReplicationService.Task);
+				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
+				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
+				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(leaderReplicationService);
 
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
@@ -664,8 +664,8 @@ namespace EventStore.Core {
 					gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
-				_mainBus.Subscribe<ReplicationMessage.ReconnectToMaster>(replicaService);
-				_mainBus.Subscribe<ReplicationMessage.SubscribeToMaster>(replicaService);
+				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
+				_mainBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.AckLogPosition>(replicaService);
 				_mainBus.Subscribe<ClientMessage.TcpForwardMessage>(replicaService);
 			}

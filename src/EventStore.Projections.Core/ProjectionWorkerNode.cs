@@ -23,7 +23,7 @@ namespace EventStore.Projections.Core {
 
 		private readonly FeedReaderService _feedReaderService;
 		private readonly IODispatcher _ioDispatcher;
-		private readonly IPublisher _masterOutputBus;
+		private readonly IPublisher _leaderOutputBus;
 
 		public ProjectionWorkerNode(
 			Guid workerId,
@@ -33,12 +33,12 @@ namespace EventStore.Projections.Core {
 			ISingletonTimeoutScheduler timeoutScheduler,
 			ProjectionType runProjections,
 			bool faultOutOfOrderProjections,
-			IPublisher masterOutputBus) {
+			IPublisher leaderOutputBus) {
 			_runProjections = runProjections;
 			Ensure.NotNull(db, "db");
 
 			_coreOutput = new InMemoryBus("Core Output");
-			_masterOutputBus = masterOutputBus;
+			_leaderOutputBus = leaderOutputBus;
 			
 			IPublisher publisher = CoreOutput;
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
@@ -122,11 +122,11 @@ namespace EventStore.Projections.Core {
 
 				// Forward messages back to projection manager
 				coreInputBus.Subscribe(
-					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(_masterOutputBus));
+					Forwarder.Create<ProjectionManagementMessage.Command.ControlMessage>(_leaderOutputBus));
 				coreInputBus.Subscribe(
-					Forwarder.Create<CoreProjectionStatusMessage.CoreProjectionStatusMessageBase>(_masterOutputBus));
+					Forwarder.Create<CoreProjectionStatusMessage.CoreProjectionStatusMessageBase>(_leaderOutputBus));
 				coreInputBus.Subscribe(
-					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_masterOutputBus));
+					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_leaderOutputBus));
 			}
 
 			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);

@@ -41,7 +41,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class MasterReplicatedTo : Message { 
+		public class LeaderReplicatedTo : Message { 
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -50,7 +50,7 @@ namespace EventStore.Core.Messages {
 			
 			public readonly long LogPosition;
 			
-			public MasterReplicatedTo(long logPosition ) {
+			public LeaderReplicatedTo(long logPosition ) {
 				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
