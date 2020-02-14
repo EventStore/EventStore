@@ -74,7 +74,7 @@ namespace EventStore.Client.Streams {
 				AllStream,
 				AnyStreamRevision.Any,
 				new StreamMetadata(acl: new StreamAcl(readRole: TestCredentials.TestUser1.Username)),
-				TestCredentials.TestAdmin);
+				userCredentials: TestCredentials.TestAdmin);
 
 			await Client.SetStreamMetadataAsync(
 				SystemAclStream,
@@ -84,7 +84,7 @@ namespace EventStore.Client.Streams {
 					readRole: TestCredentials.TestUser1.Username,
 					metaWriteRole: TestCredentials.TestUser1.Username,
 					metaReadRole: TestCredentials.TestUser1.Username)),
-				TestCredentials.TestAdmin);
+				userCredentials: TestCredentials.TestAdmin);
 
 			await Client.SetStreamMetadataAsync(
 				SystemAdminStream,
@@ -94,7 +94,7 @@ namespace EventStore.Client.Streams {
 					readRole: SystemRoles.Admins,
 					metaWriteRole: SystemRoles.Admins,
 					metaReadRole: SystemRoles.Admins)),
-				TestCredentials.TestAdmin);
+				userCredentials: TestCredentials.TestAdmin);
 
 			await Client.SetStreamMetadataAsync(
 				NormalAllStream,
@@ -113,7 +113,7 @@ namespace EventStore.Client.Streams {
 					readRole: SystemRoles.All,
 					metaWriteRole: SystemRoles.All,
 					metaReadRole: SystemRoles.All)),
-				TestCredentials.TestAdmin);
+				userCredentials: TestCredentials.TestAdmin);
 
 
 			void OnUserCreated(Message message) {
@@ -124,35 +124,41 @@ namespace EventStore.Client.Streams {
 		}
 
 		public Task ReadEvent(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, resolveLinkTos: false,
+					userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadStreamForward(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Forwards, streamId, StreamRevision.Start, 1, resolveLinkTos: false,
+					userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadStreamBackward(string streamId, UserCredentials userCredentials = default) =>
-			Client.ReadStreamAsync(Direction.Backwards, streamId, StreamRevision.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadStreamAsync(Direction.Backwards, streamId, StreamRevision.Start, 1, resolveLinkTos: false,
+					userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task<WriteResult> AppendStream(string streamId, UserCredentials userCredentials = default) =>
-			Client.AppendToStreamAsync(streamId, AnyStreamRevision.Any, CreateTestEvents(3), userCredentials);
+			Client.AppendToStreamAsync(streamId, AnyStreamRevision.Any, CreateTestEvents(3),
+				userCredentials: userCredentials);
 
 		public Task ReadAllForward(UserCredentials userCredentials = default) =>
-			Client.ReadAllAsync(Direction.Forwards, Position.Start, 1, false, userCredentials: userCredentials)
+			Client.ReadAllAsync(Direction.Forwards, Position.Start, 1, resolveLinkTos: false,
+					userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task ReadAllBackward(UserCredentials userCredentials = default) =>
-			Client.ReadAllAsync(Direction.Backwards, Position.End, 1, false, userCredentials: userCredentials)
+			Client.ReadAllAsync(Direction.Backwards, Position.End, 1, resolveLinkTos: false,
+					userCredentials: userCredentials)
 				.ToArrayAsync()
 				.AsTask();
 
 		public Task<StreamMetadataResult> ReadMeta(string streamId, UserCredentials userCredentials = default) =>
-			Client.GetStreamMetadataAsync(streamId, userCredentials);
+			Client.GetStreamMetadataAsync(streamId, userCredentials: userCredentials);
 
 		public Task<WriteResult> WriteMeta(string streamId, UserCredentials userCredentials = default,
 			string role = default) =>
@@ -162,7 +168,7 @@ namespace EventStore.Client.Streams {
 					readRole: role,
 					metaWriteRole: role,
 					metaReadRole: role)),
-				userCredentials);
+				userCredentials: userCredentials);
 
 		public async Task SubscribeToStream(string streamId, UserCredentials userCredentials = default) {
 			var source = new TaskCompletionSource<bool>();
@@ -195,11 +201,11 @@ namespace EventStore.Client.Streams {
 		public async Task<string> CreateStreamWithMeta(StreamMetadata metadata,
 			[CallerMemberName] string streamId = default) {
 			await Client.SetStreamMetadataAsync(streamId, AnyStreamRevision.NoStream,
-				metadata, TestCredentials.TestAdmin);
+				metadata, userCredentials: TestCredentials.TestAdmin);
 			return streamId;
 		}
 
 		public Task<DeleteResult> DeleteStream(string streamId, UserCredentials userCredentials = default) =>
-			Client.TombstoneAsync(streamId, AnyStreamRevision.Any, userCredentials);
+			Client.TombstoneAsync(streamId, AnyStreamRevision.Any, userCredentials: userCredentials);
 	}
 }

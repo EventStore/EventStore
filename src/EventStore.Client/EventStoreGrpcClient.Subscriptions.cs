@@ -33,26 +33,6 @@ namespace EventStore.Client {
 		/// Subscribes to all events. Use this when you have no checkpoint.
 		/// </summary>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
-		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<StreamSubscription> SubscribeToAllAsync(
-			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			bool resolveLinkTos = false,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToAllAsync(eventAppeared,
-			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped, filter, userCredentials,
-			cancellationToken);
-
-		/// <summary>
-		/// Subscribes to all events. Use this when you have no checkpoint.
-		/// </summary>
-		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
@@ -62,14 +42,14 @@ namespace EventStore.Client {
 		/// <returns></returns>
 		public Task<StreamSubscription> SubscribeToAllAsync(
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
 			return SubscribeToAllAsync(eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
 				userCredentials,
@@ -101,27 +81,6 @@ namespace EventStore.Client {
 		/// <summary>
 		/// Subscribes to all events from a checkpoint. This is exclusive of.
 		/// </summary>
-		/// <param name="start">A position (exclusive of) to start the subscription from.</param>
-		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
-		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<StreamSubscription> SubscribeToAllAsync(Position start,
-			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			bool resolveLinkTos = false,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToAllAsync(start, eventAppeared,
-			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped, filter, userCredentials,
-			cancellationToken);
-
-		/// <summary>
-		/// Subscribes to all events from a checkpoint. This is exclusive of.
-		/// </summary>
 		/// <param name="start">A <see cref="Position"/> (exclusive of) to start the subscription from.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
@@ -133,14 +92,14 @@ namespace EventStore.Client {
 		/// <returns></returns>
 		public Task<StreamSubscription> SubscribeToAllAsync(Position start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			IEventFilter filter = null,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
 			return SubscribeToAllAsync(start, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
 				userCredentials, cancellationToken);
@@ -174,25 +133,6 @@ namespace EventStore.Client {
 		/// </summary>
 		/// <param name="streamName">The name of the stream to read events from.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
-			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			bool resolveLinkTos = false,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToStreamAsync(streamName, eventAppeared,
-			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped,
-			userCredentials, cancellationToken);
-
-		/// <summary>
-		/// Subscribes to a stream from a checkpoint. This is exclusive of.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to read events from.</param>
-		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
@@ -201,13 +141,13 @@ namespace EventStore.Client {
 		/// <returns></returns>
 		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
 			return SubscribeToStreamAsync(streamName, eventAppeared, operationOptions, resolveLinkTos,
 				subscriptionDropped,
@@ -250,27 +190,6 @@ namespace EventStore.Client {
 		/// <param name="start">A <see cref="Position"/> (exclusive of) to start the subscription from.</param>
 		/// <param name="streamName">The name of the stream to read events from.</param>
 		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
-			StreamRevision start,
-			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			bool resolveLinkTos = false,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SubscribeToStreamAsync(streamName, start, eventAppeared,
-			_settings.OperationOptions.Clone(), resolveLinkTos, subscriptionDropped,
-			userCredentials, cancellationToken);
-
-		/// <summary>
-		/// Subscribes to a stream from a checkpoint. This is exclusive of.
-		/// </summary>
-		/// <param name="start">A <see cref="Position"/> (exclusive of) to start the subscription from.</param>
-		/// <param name="streamName">The name of the stream to read events from.</param>
-		/// <param name="eventAppeared">A Task invoked and awaited when a new event is received over the subscription.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
@@ -280,17 +199,16 @@ namespace EventStore.Client {
 		public Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
 			StreamRevision start,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
 			return SubscribeToStreamAsync(streamName, start, eventAppeared, operationOptions, resolveLinkTos,
-				subscriptionDropped,
-				userCredentials, cancellationToken);
+				subscriptionDropped, userCredentials, cancellationToken);
 		}
 	}
 }

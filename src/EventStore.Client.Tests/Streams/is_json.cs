@@ -39,7 +39,9 @@ namespace EventStore.Client.Streams {
 
 			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.Any, new[] {eventData});
 
-			var @event = await _fixture.Client.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1, true).FirstOrDefaultAsync();
+			var @event = await _fixture.Client
+				.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1, resolveLinkTos: true)
+				.FirstOrDefaultAsync();
 
 			Assert.Equal(isJson, @event.Event.IsJson);
 			Assert.Equal(data, encoding.GetString(@event.Event.Data));
@@ -48,7 +50,8 @@ namespace EventStore.Client.Streams {
 
 		private string GetStreamName(bool isJson, string data, string metadata,
 			[CallerMemberName] string testMethod = default)
-			=> $"{_fixture.GetStreamName(testMethod)}_{isJson}_{(data == string.Empty ? "no_data" : "data")}_{(metadata == string.Empty ? "no_metadata" : "metadata")}";
+			=>
+				$"{_fixture.GetStreamName(testMethod)}_{isJson}_{(data == string.Empty ? "no_data" : "data")}_{(metadata == string.Empty ? "no_metadata" : "metadata")}";
 
 		public class Fixture : EventStoreGrpcFixture {
 			protected override Task Given() => Task.CompletedTask;

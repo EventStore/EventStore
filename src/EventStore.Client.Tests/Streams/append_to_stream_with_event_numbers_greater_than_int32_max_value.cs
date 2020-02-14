@@ -21,7 +21,7 @@ namespace EventStore.Client.Streams {
 			Assert.Equal(int.MaxValue + 6L, writeResult.NextExpectedVersion);
 
 			var actual = await _fixture.Client.ReadStreamAsync(Direction.Forwards, Stream,
-					new StreamRevision(int.MaxValue + 6L), 1, false, userCredentials: TestCredentials.Root)
+					new StreamRevision(int.MaxValue + 6L), 1, userCredentials: TestCredentials.Root)
 				.SingleAsync();
 			Assert.Equal(expected.Single().EventId, actual.Event.EventId);
 		}

@@ -42,27 +42,6 @@ namespace EventStore.Client {
 		/// <param name="direction">The <see cref="Direction"/> in which to read.</param>
 		/// <param name="position">The <see cref="Position"/> to start reading from.</param>
 		/// <param name="maxCount">The maximum count to read.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
-		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
-			Direction direction,
-			Position position,
-			ulong maxCount,
-			bool resolveLinkTos = false,
-			IEventFilter filter = null,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => ReadAllAsync(direction, position, maxCount,
-			_settings.OperationOptions, resolveLinkTos, filter, userCredentials, cancellationToken);
-
-		/// <summary>
-		/// Asynchronously reads all events.
-		/// </summary>
-		/// <param name="direction">The <see cref="Direction"/> in which to read.</param>
-		/// <param name="position">The <see cref="Position"/> to start reading from.</param>
-		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
@@ -73,17 +52,17 @@ namespace EventStore.Client {
 			Direction direction,
 			Position position,
 			ulong maxCount,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			bool resolveLinkTos = false,
 			IEventFilter filter = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
-			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filter, userCredentials,
-				cancellationToken);
+			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filter,
+				userCredentials, cancellationToken);
 		}
 
 		private IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(
@@ -113,27 +92,6 @@ namespace EventStore.Client {
 			.Select(x => x.Item2);
 
 		/// <summary>
-		/// Asynchronously reads all events from a stream.
-		/// </summary>
-		/// <param name="direction">The <see cref="Direction"/> in which to read.</param>
-		/// <param name="streamName">The name of the stream to read.</param>
-		/// <param name="revision">The <see cref="StreamRevision"/> to start reading from.</param>
-		/// <param name="count">The number of events to read from the stream.</param>
-		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(
-			Direction direction,
-			string streamName,
-			StreamRevision revision,
-			ulong count,
-			bool resolveLinkTos = false,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => ReadStreamAsync(direction, streamName, revision, count,
-			_settings.OperationOptions, resolveLinkTos, userCredentials, cancellationToken);
-
-		/// <summary>
 		/// Asynchronously reads all the events from a stream.
 		/// </summary>
 		/// <param name="direction">The <see cref="Direction"/> in which to read.</param>
@@ -150,16 +108,15 @@ namespace EventStore.Client {
 			string streamName,
 			StreamRevision revision,
 			ulong count,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			bool resolveLinkTos = false,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 
-			return ReadStreamAsync(direction, streamName, revision, count, operationOptions, resolveLinkTos, userCredentials,
-				cancellationToken);
+			return ReadStreamAsync(direction, streamName, revision, count, operationOptions, resolveLinkTos,
+				userCredentials, cancellationToken);
 		}
 
 		private async IAsyncEnumerable<(SubscriptionConfirmation, ResolvedEvent)> ReadInternal(

@@ -21,7 +21,7 @@ namespace EventStore.Client {
 				new[] {
 					new EventData(Uuid.NewUuid(), SystemEventTypes.Settings,
 						JsonSerializer.SerializeToUtf8Bytes(settings, SystemSettingsJsonSerializerOptions))
-				}, userCredentials, cancellationToken);
+				}, userCredentials: userCredentials, cancellationToken: cancellationToken);
 		}
 
 		public static async Task<ConditionalWriteResult> ConditionalAppendToStreamAsync(
@@ -33,8 +33,8 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
-				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken).ConfigureAwait(false);
+				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData,
+					userCredentials: userCredentials, cancellationToken: cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;
@@ -52,8 +52,8 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			if (client == null) throw new ArgumentNullException(nameof(client));
 			try {
-				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData, userCredentials,
-					cancellationToken).ConfigureAwait(false);
+				var result = await client.AppendToStreamAsync(streamName, expectedRevision, eventData,
+					userCredentials: userCredentials, cancellationToken: cancellationToken).ConfigureAwait(false);
 				return ConditionalWriteResult.FromWriteResult(result);
 			} catch (StreamDeletedException) {
 				return ConditionalWriteResult.StreamDeleted;

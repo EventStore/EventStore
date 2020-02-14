@@ -155,7 +155,7 @@ namespace EventStore.Client.Streams {
 		public class Fixture : EventStoreGrpcFixture {
 			protected override Task Given() =>
 				Client.SetStreamMetadataAsync("$all", AnyStreamRevision.NoStream,
-					new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), TestCredentials.Root);
+					new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), userCredentials: TestCredentials.Root);
 
 			protected override Task When() => Task.CompletedTask;
 		}

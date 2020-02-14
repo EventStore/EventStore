@@ -5,34 +5,6 @@ using EventStore.Client.Streams;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
-		private Task<DeleteResult> SoftDeleteAsync(
-			string streamName,
-			StreamRevision expectedRevision,
-			EventStoreClientOperationOptions operationOptions,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) =>
-			DeleteInternal(new DeleteReq {
-				Options = new DeleteReq.Types.Options {
-					StreamName = streamName,
-					Revision = expectedRevision
-				}
-			}, operationOptions, userCredentials, cancellationToken);
-
-		/// <summary>
-		/// Soft Deletes a stream asynchronously.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to delete.</param>
-		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream being deleted.</param>
-		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<DeleteResult> SoftDeleteAsync(
-			string streamName,
-			StreamRevision expectedRevision,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SoftDeleteAsync(streamName, expectedRevision,
-			_settings.OperationOptions, userCredentials, cancellationToken);
-
 		/// <summary>
 		/// Soft Deletes a stream asynchronously.
 		/// </summary>
@@ -45,14 +17,36 @@ namespace EventStore.Client {
 		public Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
 			StreamRevision expectedRevision,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 			
 			return SoftDeleteAsync(streamName, expectedRevision, operationOptions, userCredentials, cancellationToken);
+		}
+
+		/// <summary>
+		/// Soft Deletes a stream asynchronously.
+		/// </summary>
+		/// <param name="streamName">The name of the stream to delete.</param>
+		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream being deleted.</param>
+		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
+		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
+		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
+		/// <returns></returns>
+		public Task<DeleteResult> SoftDeleteAsync(
+			string streamName,
+			AnyStreamRevision expectedRevision,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = null,
+			UserCredentials userCredentials = default,
+			CancellationToken cancellationToken = default) {
+			
+			var options = _settings.OperationOptions.Clone();
+			configureOperationOptions?.Invoke(options);
+			
+			return SoftDeleteAsync(streamName, expectedRevision, options, userCredentials, cancellationToken);
 		}
 
 		private Task<DeleteResult> SoftDeleteAsync(
@@ -66,43 +60,19 @@ namespace EventStore.Client {
 					StreamName = streamName
 				}
 			}.WithAnyStreamRevision(expectedRevision), operationOptions, userCredentials, cancellationToken);
-		
-		/// <summary>
-		/// Soft Deletes a stream asynchronously.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to delete.</param>
-		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream being deleted.</param>
-		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<DeleteResult> SoftDeleteAsync(
-			string streamName,
-			AnyStreamRevision expectedRevision,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => SoftDeleteAsync(streamName, expectedRevision,
-			_settings.OperationOptions, userCredentials, cancellationToken);
 
-		/// <summary>
-		/// Soft Deletes a stream asynchronously.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to delete.</param>
-		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream being deleted.</param>
-		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
-		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<DeleteResult> SoftDeleteAsync(
+		private Task<DeleteResult> SoftDeleteAsync(
 			string streamName,
-			AnyStreamRevision expectedRevision,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			StreamRevision expectedRevision,
+			EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) {
-			
-			var options = _settings.OperationOptions.Clone();
-			configureOperationOptions(options);
-			
-			return SoftDeleteAsync(streamName, expectedRevision, options, userCredentials, cancellationToken);
-		}
+			CancellationToken cancellationToken = default) =>
+			DeleteInternal(new DeleteReq {
+				Options = new DeleteReq.Types.Options {
+					StreamName = streamName,
+					Revision = expectedRevision
+				}
+			}, operationOptions, userCredentials, cancellationToken);
 
 		private async Task<DeleteResult> DeleteInternal(DeleteReq request, EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials,

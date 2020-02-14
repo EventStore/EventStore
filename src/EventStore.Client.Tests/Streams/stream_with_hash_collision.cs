@@ -66,7 +66,8 @@ namespace EventStore.Client.Streams {
 				await fixture.Node.StartAsync(true);
 
 				await Assert.ThrowsAsync<StreamNotFoundException>(
-					() => fixture.Client.ReadStreamAsync(Direction.Forwards, Stream1, StreamRevision.Start, 1, true)
+					() => fixture.Client.ReadStreamAsync(Direction.Forwards, Stream1, StreamRevision.Start, 1,
+							resolveLinkTos: true)
 						.ToArrayAsync().AsTask());
 			}
 
@@ -88,7 +89,7 @@ namespace EventStore.Client.Streams {
 				await fixture.Node.StartAsync(true);
 
 				await Assert.ThrowsAsync<StreamNotFoundException>(
-					() => fixture.Client.ReadStreamAsync(Direction.Backwards, Stream1, StreamRevision.End, 1, true)
+					() => fixture.Client.ReadStreamAsync(Direction.Backwards, Stream1, StreamRevision.End, 1, resolveLinkTos: true)
 						.ToArrayAsync().AsTask());
 			}
 

@@ -15,13 +15,14 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task return_empty_if_reading_from_end() {
-			var count = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.End, 1, false).CountAsync();
+			var count = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.End, 1).CountAsync();
 			Assert.Equal(0, count);
 		}
 
 		[Fact]
 		public async Task return_partial_slice_if_not_enough_events() {
-			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
+			var events = await _fixture.Client
+				.ReadAllAsync(Direction.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
 				.ToArrayAsync();
 
 			Assert.True(events.Length < _fixture.Events.Length * 2);
@@ -29,7 +30,8 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task return_events_in_correct_order_compared_to_written() {
-			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
+			var events = await _fixture.Client
+				.ReadAllAsync(Direction.Forwards, Position.Start, (ulong)_fixture.Events.Length * 2)
 				.ToArrayAsync();
 
 			Assert.True(EventDataComparer.Equal(_fixture.Events, events.AsResolvedTestEvents().ToArray()));
@@ -68,7 +70,7 @@ namespace EventStore.Client.Streams {
 					"$all",
 					AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(readRole: "$all")),
-					TestCredentials.Root);
+					userCredentials: TestCredentials.Root);
 				Events = CreateTestEvents(20).ToArray();
 
 				await Client.AppendToStreamAsync(Stream, AnyStreamRevision.NoStream, Events);

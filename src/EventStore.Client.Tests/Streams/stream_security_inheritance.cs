@@ -17,36 +17,38 @@ namespace EventStore.Client.Streams {
 				await Client.SetSystemSettingsAsync(settings, TestCredentials.TestAdmin);
 
 				await Client.SetStreamMetadataAsync("user-no-acl", AnyStreamRevision.NoStream,
-					new StreamMetadata(), TestCredentials.TestAdmin);
+					new StreamMetadata(), userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("user-w-diff", AnyStreamRevision.NoStream,
-					new StreamMetadata(acl: new StreamAcl(writeRole: "user2")), TestCredentials.TestAdmin);
+					new StreamMetadata(acl: new StreamAcl(writeRole: "user2")),
+					userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("user-w-multiple", AnyStreamRevision.NoStream,
-						new StreamMetadata(acl: new StreamAcl(writeRoles: new[] {"user1", "user2"})),
-						TestCredentials.TestAdmin);
+					new StreamMetadata(acl: new StreamAcl(writeRoles: new[] {"user1", "user2"})),
+					userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("user-w-restricted", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(writeRoles: new string[0])),
-					TestCredentials.TestAdmin);
+					userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("user-w-all", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(writeRole: SystemRoles.All)),
-					TestCredentials.TestAdmin);
+					userCredentials: TestCredentials.TestAdmin);
 
 				await Client.SetStreamMetadataAsync("user-r-restricted", AnyStreamRevision.NoStream,
-					new StreamMetadata(acl: new StreamAcl("user1")), TestCredentials.TestAdmin);
+					new StreamMetadata(acl: new StreamAcl("user1")), userCredentials: TestCredentials.TestAdmin);
 
 				await Client.SetStreamMetadataAsync("$sys-no-acl", AnyStreamRevision.NoStream,
-					new StreamMetadata(), TestCredentials.TestAdmin);
+					new StreamMetadata(), userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("$sys-w-diff", AnyStreamRevision.NoStream,
-					new StreamMetadata(acl: new StreamAcl(writeRole: "user2")), TestCredentials.TestAdmin);
+					new StreamMetadata(acl: new StreamAcl(writeRole: "user2")),
+					userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("$sys-w-multiple", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(writeRoles: new[] {"user1", "user2"})),
-					TestCredentials.TestAdmin);
+					userCredentials: TestCredentials.TestAdmin);
 
 				await Client.SetStreamMetadataAsync("$sys-w-restricted", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(writeRoles: new string[0])),
-					TestCredentials.TestAdmin);
+					userCredentials: TestCredentials.TestAdmin);
 				await Client.SetStreamMetadataAsync("$sys-w-all", AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(writeRole: SystemRoles.All)),
-					TestCredentials.TestAdmin);
+					userCredentials: TestCredentials.TestAdmin);
 			}
 		}
 
@@ -130,8 +132,10 @@ namespace EventStore.Client.Streams {
 			await _fixture.AppendStream("$sys-w-all", TestCredentials.TestAdmin);
 
 			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.ReadEvent("$sys-no-acl"));
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.ReadEvent("$sys-no-acl", TestCredentials.TestUser1));
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.ReadEvent("$sys-no-acl", TestCredentials.TestUser2));
+			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+				_fixture.ReadEvent("$sys-no-acl", TestCredentials.TestUser1));
+			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+				_fixture.ReadEvent("$sys-no-acl", TestCredentials.TestUser2));
 			await _fixture.ReadEvent("$sys-no-acl", TestCredentials.TestAdmin);
 		}
 	}

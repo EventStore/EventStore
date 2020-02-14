@@ -88,7 +88,7 @@ namespace EventStore.Client.Streams {
 			public const string FilteredOutStream = nameof(FilteredOutStream);
 
 			protected override Task Given() => Client.SetStreamMetadataAsync("$all", AnyStreamRevision.Any,
-				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), TestCredentials.Root);
+				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), userCredentials: TestCredentials.Root);
 
 			protected override Task When() =>
 				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(10));
