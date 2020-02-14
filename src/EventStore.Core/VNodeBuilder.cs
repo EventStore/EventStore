@@ -256,10 +256,10 @@ namespace EventStore.Core {
 		/// <summary>
 		/// Enable HTTP API Interface
 		/// </summary>
-		/// <param name="EnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
+		/// <param name="WithEnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableAtomPubOverHTTP() {
-			_enableAtomPubOverHTTP = true;
+		public VNodeBuilder WithEnableAtomPubOverHTTP(bool enableAtomPubOverHTTP) {
+			_enableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			return this;
 		}
 

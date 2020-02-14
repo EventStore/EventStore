@@ -223,7 +223,7 @@ namespace EventStore.Core.Util {
 		public const string EnableAtomPubOverHTTPDescr =
 			"Enable AtomPub over HTTP Interface.";
 
-		public static readonly bool EnableAtomPubOverHTTPDefault = false;
+		public static readonly bool EnableAtomPubOverHTTPDefault = true;
 
 		/*
 		 *  SINGLE NODE OPTIONS

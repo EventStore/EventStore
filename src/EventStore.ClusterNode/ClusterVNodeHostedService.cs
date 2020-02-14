@@ -263,7 +263,7 @@ namespace EventStore.ClusterNode {
 				.WithInitializationThreads(options.InitializationThreads)
 				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel)
 				.WithMaxAppendSize(options.MaxAppendSize)
-				.EnableAtomPubOverHTTP();
+				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP);
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);
