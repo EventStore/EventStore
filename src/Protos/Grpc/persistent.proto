@@ -56,7 +56,7 @@ message ReadReq {
 message ReadResp {
 	oneof content {
 		ReadEvent event = 1;
-		event_store.client.shared.Empty empty = 2;
+		SubscriptionConfirmation subscription_confirmation = 2;
 	}
 	message ReadEvent {
 		RecordedEvent event = 1;
@@ -79,6 +79,9 @@ message ReadResp {
 			bytes custom_metadata = 7;
 			bytes data = 8;
 		}
+	}
+	message SubscriptionConfirmation {
+		string subscription_id = 1;
 	}
 }
 

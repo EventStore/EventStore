@@ -48,8 +48,8 @@ namespace EventStore.Client.PersistentSubscriptions {
 					Options = _options
 				}).ConfigureAwait(false);
 
-				if (!await _call.ResponseStream.MoveNext(_disposed.Token)
-.ConfigureAwait(false) || _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.Empty) {
+				if (!await _call.ResponseStream.MoveNext(_disposed.Token).ConfigureAwait(false) ||
+				    _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.SubscriptionConfirmation) {
 					throw new InvalidOperationException();
 				}
 			} catch (Exception ex) {

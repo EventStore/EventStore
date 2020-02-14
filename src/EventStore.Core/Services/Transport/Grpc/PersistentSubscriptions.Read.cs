@@ -51,7 +51,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
 			await responseStream.WriteAsync(new ReadResp {
-				Empty = new Empty()
+				SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
+					SubscriptionId = subscriptionId
+				}
 			}).ConfigureAwait(false);
 
 			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
