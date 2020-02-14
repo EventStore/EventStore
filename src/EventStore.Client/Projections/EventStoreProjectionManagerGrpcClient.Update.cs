@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 
 namespace EventStore.Client.Projections {
 	public partial class EventStoreProjectionManagerClient {
@@ -12,7 +13,7 @@ namespace EventStore.Client.Projections {
 			if (emitEnabled.HasValue) {
 				options.EmitEnabled = emitEnabled.Value;
 			} else {
-				options.NoEmitOptions = new UpdateReq.Types.Empty();
+				options.NoEmitOptions = new Empty();
 			}
 
 			using var call = _client.UpdateAsync(new UpdateReq {

@@ -17,27 +17,15 @@ namespace EventStore.Client {
 		public static Uuid Parse(string value) => new Uuid(value);
 		public static Uuid FromInt64(long msb, long lsb) => new Uuid(msb, lsb);
 
-		internal static Uuid FromDto(Streams.UUID dto) {
+		internal static Uuid FromDto(Shared.UUID dto) {
 			if (dto == null) throw new ArgumentNullException(nameof(dto));
 			return dto.ValueCase switch {
-				Streams.UUID.ValueOneofCase.String => new Uuid(dto.String),
-				Streams.UUID.ValueOneofCase.Structured => new Uuid(dto.Structured.MostSignificantBits,
+				Shared.UUID.ValueOneofCase.String => new Uuid(dto.String),
+				Shared.UUID.ValueOneofCase.Structured => new Uuid(dto.Structured.MostSignificantBits,
 					dto.Structured.LeastSignificantBits),
 				_ => throw new ArgumentException($"Invalid argument: {dto.ValueCase}", nameof(dto))
 			};
 		}
-
-		internal static Uuid FromDto(PersistentSubscriptions.UUID dto) {
-			if (dto == null) throw new ArgumentNullException(nameof(dto));
-			return dto.ValueCase switch {
-				PersistentSubscriptions.UUID.ValueOneofCase.String => new Uuid(dto.String),
-				PersistentSubscriptions.UUID.ValueOneofCase.Structured => new Uuid(
-					dto.Structured.MostSignificantBits,
-					dto.Structured.LeastSignificantBits),
-				_ => throw new ArgumentException($"Invalid argument: {dto.ValueCase}", nameof(dto))
-			};
-		}
-
 		private Uuid(Guid value) {
 			if (!BitConverter.IsLittleEndian) {
 				throw new NotSupportedException();
@@ -69,17 +57,9 @@ namespace EventStore.Client {
 			_lsb = lsb;
 		}
 
-		internal readonly PersistentSubscriptions.UUID ToPersistentSubscriptionsDto() =>
-			new PersistentSubscriptions.UUID {
-				Structured = new PersistentSubscriptions.UUID.Types.Structured {
-					LeastSignificantBits = _lsb,
-					MostSignificantBits = _msb,
-				}
-			};
-
-		internal readonly Streams.UUID ToStreamsDto() =>
-			new Streams.UUID {
-				Structured = new Streams.UUID.Types.Structured {
+		internal readonly Shared.UUID ToDto() =>
+			new Shared.UUID {
+				Structured = new Shared.UUID.Types.Structured {
 					LeastSignificantBits = _lsb,
 					MostSignificantBits = _msb
 				}

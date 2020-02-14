@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 using EventStore.Client;
+using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Google.Protobuf;
 using Grpc.Core;
@@ -180,7 +181,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
 							String = e.EventId.ToString()
 						},
-						_ => Uuid.FromGuid(e.EventId).ToStreamsDto()
+						_ => Uuid.FromGuid(e.EventId).ToDto()
 					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
@@ -207,7 +208,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						e.OriginalPosition.Value.PreparePosition);
 					readEvent.CommitPosition = position.CommitPosition;
 				} else {
-					readEvent.NoPosition = new ReadResp.Types.Empty();
+					readEvent.NoPosition = new Empty();
 				}
 
 				return readEvent;

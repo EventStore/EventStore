@@ -11,11 +11,12 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
+using EventStore.Client.Shared;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
-using UUID = EventStore.Client.PersistentSubscriptions.UUID;
+using UUID = EventStore.Client.Shared.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
@@ -50,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
 			await responseStream.WriteAsync(new ReadResp {
-				Empty = new ReadResp.Types.Empty()
+				Empty = new Empty()
 			}).ConfigureAwait(false);
 
 			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
@@ -91,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
 							String = e.EventId.ToString()
 						},
-						_ => Uuid.FromGuid(e.EventId).ToPersistentSubscriptionsDto()
+						_ => Uuid.FromGuid(e.EventId).ToDto()
 					},
 					StreamName = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
@@ -120,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						e.OriginalPosition.Value.PreparePosition);
 					readEvent.CommitPosition = position.CommitPosition;
 				} else {
-					readEvent.NoPosition = new ReadResp.Types.Empty();
+					readEvent.NoPosition = new Empty();
 				}
 
 				return readEvent;

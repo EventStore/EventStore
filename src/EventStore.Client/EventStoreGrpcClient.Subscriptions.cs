@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 
 namespace EventStore.Client {
@@ -20,7 +21,7 @@ namespace EventStore.Client {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						ResolveLinks = resolveLinkTos,
 						All = new ReadReq.Types.Options.Types.AllOptions {
-							Start = new ReadReq.Types.Empty()
+							Start = new Empty()
 						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
 						Filter = GetFilterOptions(filterOptions)
@@ -119,7 +120,7 @@ namespace EventStore.Client {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						ResolveLinks = resolveLinkTos,
 						Stream = new ReadReq.Types.Options.Types.StreamOptions {
-							Start = new ReadReq.Types.Empty(),
+							Start = new Empty(),
 							StreamName = streamName
 						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
@@ -170,7 +171,7 @@ namespace EventStore.Client {
 							ResolveLinks = resolveLinkTos,
 							Stream = start == StreamRevision.End
 								? new ReadReq.Types.Options.Types.StreamOptions {
-									End = new ReadReq.Types.Empty(),
+									End = new Empty(),
 									StreamName = streamName
 								}
 								: new ReadReq.Types.Options.Types.StreamOptions {

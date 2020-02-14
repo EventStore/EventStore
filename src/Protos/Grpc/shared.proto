@@ -1,0 +1,17 @@
+syntax = "proto3";
+package event_store.client.shared;
+option java_package = "com.eventstore.client.shared";
+
+message UUID {
+	oneof value {
+		Structured structured = 1;
+		string string = 2;
+	}
+
+	message Structured {
+		int64 most_significant_bits = 1;
+		int64 least_significant_bits = 2;
+	}
+}
+message Empty {
+}

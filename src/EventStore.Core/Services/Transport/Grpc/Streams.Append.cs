@@ -5,9 +5,9 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
+using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Grpc.Core;
-using UUID = EventStore.Client.Streams.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
@@ -100,13 +100,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						var response = new AppendResp();
 
 						if (completed.LastEventNumber == -1) {
-							response.NoStream = new AppendResp.Types.Empty();
+							response.NoStream = new Empty();
 						} else {
 							response.CurrentRevision = StreamRevision.FromInt64(completed.LastEventNumber);
 						}
 
 						if (completed.CommitPosition == -1) {
-							response.Empty = new AppendResp.Types.Empty();
+							response.Empty = new Empty();
 						} else {
 							var position = Position.FromInt64(completed.CommitPosition, completed.PreparePosition);
 							response.Position = new AppendResp.Types.Position {

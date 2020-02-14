@@ -29,7 +29,7 @@ CMD ["/build/test.sh"]
 FROM build as publish
 ARG RUNTIME=linux-x64
 
-RUN dotnet publish --configuration=Release --no-build --runtime=${RUNTIME} --self-contained \
+RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
      --framework=netcoreapp3.1 --output /publish /p:PublishTrimmed=true EventStore.ClusterNode
 
 FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-${CONTAINER_RUNTIME} AS runtime

@@ -3,6 +3,7 @@ package event_store.client.projections;
 option java_package = "com.eventstore.client.projections";
 
 import "google/protobuf/struct.proto";
+import "shared.proto";
 
 service Projections {
 	rpc Create (CreateReq) returns (CreateResp);
@@ -21,7 +22,7 @@ message CreateReq {
 
 	message Options {
 		oneof mode {
-			Empty one_time = 1;
+			event_store.client.shared.Empty one_time = 1;
 			Transient transient = 2;
 			Continuous continuous = 3;
 		}
@@ -34,8 +35,6 @@ message CreateReq {
 			string name = 1;
 			bool track_emitted_streams = 2;
 		}
-	}
-	message Empty {
 	}
 }
 
@@ -50,10 +49,8 @@ message UpdateReq {
 		string query = 2;
 		oneof emit_option {
 			bool emit_enabled = 3;
-			Empty no_emit_options = 4;
+			event_store.client.shared.Empty no_emit_options = 4;
 		}
-	}
-	message Empty {
 	}
 }
 
@@ -79,13 +76,11 @@ message StatisticsReq {
 	message Options {
 		oneof mode {
 			string name = 1;
-			Empty all = 2;
-			Empty transient = 3;
-			Empty continuous = 4;
-			Empty one_time = 5;
+			event_store.client.shared.Empty all = 2;
+			event_store.client.shared.Empty transient = 3;
+			event_store.client.shared.Empty continuous = 4;
+			event_store.client.shared.Empty one_time = 5;
 		}
-	}
-	message Empty {
 	}
 }
 

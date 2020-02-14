@@ -93,8 +93,6 @@ message DetailsResp {
 			int64 ticks_since_epoch = 1;
 		}
 	}
-	message Empty {
-	}
 }
 
 message ChangePasswordReq {
