@@ -7,6 +7,7 @@ using Grpc.Core.Interceptors;
 
 namespace EventStore.Client {
 	public class TypedExceptionInterceptor : Interceptor {
+		
 		public override AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(
 			TRequest request,
 			ClientInterceptorContext<TRequest, TResponse> context,
@@ -107,7 +108,7 @@ namespace EventStore.Client {
 				},
 				false => ex.StatusCode switch {
 					StatusCode.DeadlineExceeded => ex,
-					_ => new InvalidOperationException()
+					_ => new InvalidOperationException(ex.Message, ex)
 				}
 			};
 

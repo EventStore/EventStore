@@ -42,11 +42,9 @@ namespace EventStore.Client {
 				webHostBuilder
 					.UseStartup(new TestClusterVNodeStartup(Node)));
 
-			var settings = clientSettings ?? new EventStoreClientSettings(new UriBuilder().Uri) {
-				CreateHttpClient = () => new HttpClient(new ResponseVersionHandler {
+			var settings = clientSettings ?? new EventStoreClientSettings() {
+				CreateHttpMessageHandler = () => new ResponseVersionHandler {
 					InnerHandler = TestServer.CreateHandler()
-				}) {
-					Timeout = Timeout.InfiniteTimeSpan
 				}
 			};
 

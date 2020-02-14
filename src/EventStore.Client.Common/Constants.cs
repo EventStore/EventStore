@@ -46,6 +46,7 @@ namespace EventStore.Client {
 			public const string BasicScheme = "Basic";
 
 			public const string ConnectionName = "connection-name";
+			public const string RequiresLeader = "requires-leader";
 		}
 	}
 }

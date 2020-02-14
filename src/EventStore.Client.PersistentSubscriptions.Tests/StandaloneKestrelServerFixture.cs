@@ -51,13 +51,10 @@ namespace EventStore.Client {
 			Client = new EventStoreClient(new UriBuilder {
 				Port = port,
 				Scheme = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? Uri.UriSchemeHttp : Uri.UriSchemeHttps
-			}.Uri, () => new HttpClient(new SocketsHttpHandler {
+			}.Uri, () => new SocketsHttpHandler {
 				SslOptions = new SslClientAuthenticationOptions {
 					RemoteCertificateValidationCallback = delegate { return true; }
 				}
-			}) {
-				DefaultRequestVersion = new Version(2, 0),
-				Timeout = Timeout.InfiniteTimeSpan
 			});
 		}
 

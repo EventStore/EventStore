@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
@@ -74,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				correlationId,
 				correlationId,
 				envelope,
-				true,
+				requiresLeader,
 				streamName,
 				expectedVersion,
 				events.ToArray(),

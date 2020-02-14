@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using EventStore.Client.Logging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
@@ -29,12 +30,27 @@ namespace EventStore.Client {
 		public EventStoreUserManagerClient UsersManager { get; }
 
 		public EventStoreClient(EventStoreClientSettings settings = null) {
-			_settings = settings ??= new EventStoreClientSettings(new UriBuilder {
-				Scheme = Uri.UriSchemeHttps,
-				Port = 2113
-			}.Uri);
+			_settings = settings ??= new EventStoreClientSettings();
+			
+			var handler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+			
 			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
-				HttpClient = settings.CreateHttpClient?.Invoke(),
+				HttpClient = new HttpClient(
+					settings.ConnectivitySettings.GossipSeeds.Length > 0
+						? new ClusterAwareHttpHandler(
+							settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
+							new ClusterEndpointDiscoverer(
+								settings.ConnectivitySettings.MaxDiscoverAttempts,
+								settings.ConnectivitySettings.GossipSeeds,
+								settings.ConnectivitySettings.GossipTimeout,
+								settings.ConnectivitySettings.DiscoveryInterval,
+								settings.ConnectivitySettings.NodePreference)) {
+							InnerHandler = handler
+						}
+						: handler) {
+					Timeout = Timeout.InfiniteTimeSpan,
+					DefaultRequestVersion = new Version(2, 0),
+				},
 				LoggerFactory = LogProvider.LoggerFactory
 			});
 			var connectionName = settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
@@ -50,9 +66,10 @@ namespace EventStore.Client {
 			UsersManager = new EventStoreUserManagerClient(callInvoker);
 		}
 
-		public EventStoreClient(Uri address, Func<HttpClient> createHttpClient = default) : this(
-			new EventStoreClientSettings(address) {
-				CreateHttpClient = createHttpClient
+		public EventStoreClient(Uri address, Func<HttpMessageHandler> createHttpClient = default) : this(
+			new EventStoreClientSettings {
+				Address = address,
+				CreateHttpMessageHandler = createHttpClient
 			}) {
 		}
 

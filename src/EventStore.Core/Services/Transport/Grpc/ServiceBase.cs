@@ -72,6 +72,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return true;
 			}
 		}
+		
+		public static bool GetRequiresLeader(Metadata requestHeaders) {
+			var requiresLeader =
+				requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.RequiresLeader)?.Value;
+			return !string.IsNullOrEmpty(requiresLeader) && bool.Parse(requiresLeader);
+		}
 
 		private class GrpcBasicAuthenticationRequest : AuthenticationRequest {
 			private readonly TaskCompletionSource<IPrincipal> _principalSource;

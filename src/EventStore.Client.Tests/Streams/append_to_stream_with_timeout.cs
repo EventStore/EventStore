@@ -36,9 +36,9 @@ namespace EventStore.Client.Streams {
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
-			public Fixture() : base(clientSettings: new EventStoreClientSettings(new UriBuilder().Uri) {
-				CreateHttpClient = () =>
-					new HttpClient(new ResponseVersionHandler {InnerHandler = new DelayedHandler(200)})
+			public Fixture() : base(clientSettings: new EventStoreClientSettings {
+				CreateHttpMessageHandler = () =>
+					new ResponseVersionHandler {InnerHandler = new DelayedHandler(200)}
 			}) {
 			}
 
