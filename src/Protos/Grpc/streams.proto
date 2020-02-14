@@ -146,7 +146,7 @@ message AppendResp {
 	}
 	oneof position_option {
 		Position position = 3;
-		event_store.client.shared.Empty empty = 4;
+		event_store.client.shared.Empty no_position = 4;
 	}
 
 	message Position {
@@ -172,7 +172,7 @@ message DeleteReq {
 message DeleteResp {
 	oneof position_option {
 		Position position = 1;
-		event_store.client.shared.Empty empty = 2;
+		event_store.client.shared.Empty no_position = 2;
 	}
 
 	message Position {
@@ -198,7 +198,7 @@ message TombstoneReq {
 message TombstoneResp {
 	oneof position_option {
 		Position position = 1;
-		event_store.client.shared.Empty empty = 2;
+		event_store.client.shared.Empty no_position = 2;
 	}
 
 	message Position {

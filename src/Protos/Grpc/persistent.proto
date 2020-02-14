@@ -67,7 +67,7 @@ message ReadResp {
 		}
 		oneof count {
 			int32 retry_count = 5;
-			event_store.client.shared.Empty empty = 6;
+			event_store.client.shared.Empty no_retry_count = 6;
 		}
 		message RecordedEvent {
 			event_store.client.shared.UUID id = 1;

@@ -106,7 +106,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						}
 
 						if (completed.CommitPosition == -1) {
-							response.Empty = new Empty();
+							response.NoPosition = new Empty();
 						} else {
 							var position = Position.FromInt64(completed.CommitPosition, completed.PreparePosition);
 							response.Position = new AppendResp.Types.Position {

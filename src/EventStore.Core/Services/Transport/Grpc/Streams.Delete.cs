@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				}
 				: new DeleteResp {
-					Empty = new Empty()
+					NoPosition = new Empty()
 				};
 		}
 
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				}
 				: new TombstoneResp {
-					Empty = new Empty()
+					NoPosition = new Empty()
 				};
 		}
 
