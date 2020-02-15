@@ -33,21 +33,20 @@ namespace EventStore.Client {
 			_settings = settings ??= new EventStoreClientSettings();
 			
 			var handler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+			var httpHandler = settings.ConnectivitySettings.GossipSeeds.Length > 0
+				? new ClusterAwareHttpHandler(
+					settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
+					new ClusterEndpointDiscoverer(
+						settings.ConnectivitySettings.MaxDiscoverAttempts,
+						settings.ConnectivitySettings.GossipSeeds,
+						settings.ConnectivitySettings.GossipTimeout,
+						settings.ConnectivitySettings.DiscoveryInterval,
+						settings.ConnectivitySettings.NodePreference)) {
+					InnerHandler = handler
+				} : handler;
 			
 			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
-				HttpClient = new HttpClient(
-					settings.ConnectivitySettings.GossipSeeds.Length > 0
-						? new ClusterAwareHttpHandler(
-							settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
-							new ClusterEndpointDiscoverer(
-								settings.ConnectivitySettings.MaxDiscoverAttempts,
-								settings.ConnectivitySettings.GossipSeeds,
-								settings.ConnectivitySettings.GossipTimeout,
-								settings.ConnectivitySettings.DiscoveryInterval,
-								settings.ConnectivitySettings.NodePreference)) {
-							InnerHandler = handler
-						}
-						: handler) {
+				HttpClient = new HttpClient(httpHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
@@ -57,7 +56,9 @@ namespace EventStore.Client {
 
 			var callInvoker = settings.Interceptors.Aggregate(
 				_channel.CreateCallInvoker()
-					.Intercept(new TypedExceptionInterceptor())
+					.Intercept(new TypedExceptionInterceptor(ex => {
+						(httpHandler as ClusterAwareHttpHandler)?.ExceptionOccurred(ex);
+					}))
 					.Intercept(new ConnectionNameInterceptor(connectionName)),
 				(invoker, interceptor) => invoker.Intercept(interceptor));
 			_client = new Streams.Streams.StreamsClient(callInvoker);

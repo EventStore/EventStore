@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Principal;
 using System.Text;
@@ -42,7 +43,8 @@ namespace EventStore.Client.Operations {
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
-		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider, Metadata requestHeaders) {
+		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider,
+			Metadata requestHeaders) {
 			var principalSource = new TaskCompletionSource<IPrincipal>();
 
 			if (AuthenticationHeaderValue.TryParse(
@@ -72,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return true;
 			}
 		}
-		
+
 		public static bool GetRequiresLeader(Metadata requestHeaders) {
 			var requiresLeader =
 				requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.RequiresLeader)?.Value;
@@ -106,6 +108,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
+
+		private static Exception LeaderInfo(IPEndPoint leaderEndpoint) =>
+			new RpcException(new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
+				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotLeader},
+				{Constants.Exceptions.LeaderEndpoint, leaderEndpoint.ToString()}
+			});
 
 		public static Exception NotFound(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
@@ -166,7 +174,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader:
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
 					switch (notHandled.AdditionalInfo) {
-						case TcpClientMessageDto.NotHandled.LeaderInfo _:
+						case TcpClientMessageDto.NotHandled.LeaderInfo leaderInfo:
+							result.TrySetException(
+								LeaderInfo(new IPEndPoint(IPAddress.Parse(leaderInfo.ExternalHttpAddress),
+									leaderInfo.ExternalHttpPort)));
 							return;
 						default:
 							result.TrySetException(NoLeaderInfo());
