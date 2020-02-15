@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
@@ -7,14 +8,20 @@ using Grpc.Core.Interceptors;
 
 namespace EventStore.Client {
 	public class TypedExceptionInterceptor : Interceptor {
-		
+		private readonly Action<Exception> _exceptionOccurred;
+
+		public TypedExceptionInterceptor(Action<Exception> exceptionOccurred = null) {
+			_exceptionOccurred = exceptionOccurred;
+		}
+
 		public override AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(
 			TRequest request,
 			ClientInterceptorContext<TRequest, TResponse> context,
 			AsyncServerStreamingCallContinuation<TRequest, TResponse> continuation) {
 			var response = continuation(request, context);
 
-			return new AsyncServerStreamingCall<TResponse>(new AsyncStreamReader<TResponse>(response.ResponseStream),
+			return new AsyncServerStreamingCall<TResponse>(
+				new AsyncStreamReader<TResponse>(_exceptionOccurred, response.ResponseStream),
 				response.ResponseHeadersAsync, response.GetStatus, response.GetTrailers, response.Dispose);
 		}
 
@@ -27,7 +34,9 @@ namespace EventStore.Client {
 				response.RequestStream,
 				response.ResponseAsync.ContinueWith(t => {
 					if (t.Exception?.InnerException is RpcException ex) {
-						throw ConvertRpcException(ex);
+						var exception = ConvertRpcException(ex);
+						_exceptionOccurred?.Invoke(exception);
+						throw exception;
 					}
 
 					return t.Result;
@@ -46,7 +55,9 @@ namespace EventStore.Client {
 
 			return new AsyncUnaryCall<TResponse>(response.ResponseAsync.ContinueWith(t => {
 				if (t.Exception?.InnerException is RpcException ex) {
-					throw ConvertRpcException(ex);
+					var exception = ConvertRpcException(ex);
+					_exceptionOccurred?.Invoke(exception);
+					throw exception;
 				}
 
 				return t.Result;
@@ -60,7 +71,7 @@ namespace EventStore.Client {
 
 			return new AsyncDuplexStreamingCall<TRequest, TResponse>(
 				response.RequestStream,
-				new AsyncStreamReader<TResponse>(response.ResponseStream),
+				new AsyncStreamReader<TResponse>(_exceptionOccurred, response.ResponseStream),
 				response.ResponseHeadersAsync,
 				response.GetStatus,
 				response.GetTrailers,
@@ -100,10 +111,13 @@ namespace EventStore.Client {
 						ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.LoginName)?.Value),
 					Constants.Exceptions.MissingRequiredMetadataProperty => new
 						RequiredMetadataPropertyMissingException(
-							ex.Trailers.FirstOrDefault(x => x.Key == Constants.Exceptions.MissingRequiredMetadataProperty)
+							ex.Trailers.FirstOrDefault(x =>
+									x.Key == Constants.Exceptions.MissingRequiredMetadataProperty)
 								?.Value, ex),
 					Constants.Exceptions.ScavengeNotFound => new ScavengeNotFoundException(ex.Trailers
 						.FirstOrDefault(x => x.Key == Constants.Exceptions.ScavengeId)?.Value),
+					Constants.Exceptions.NotLeader => new NotLeaderException(IPEndPoint.Parse(ex.Trailers
+						.FirstOrDefault(x => x.Key == Constants.Exceptions.LeaderEndpoint)?.Value)),
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => ex.StatusCode switch {
@@ -113,10 +127,12 @@ namespace EventStore.Client {
 			};
 
 		class AsyncStreamReader<TResponse> : IAsyncStreamReader<TResponse> {
+			private readonly Action<Exception> _exceptionOccurred;
 			private readonly IAsyncStreamReader<TResponse> _inner;
 
-			public AsyncStreamReader(IAsyncStreamReader<TResponse> inner) {
+			public AsyncStreamReader(Action<Exception> exceptionOccurred, IAsyncStreamReader<TResponse> inner) {
 				if (inner == null) throw new ArgumentNullException(nameof(inner));
+				_exceptionOccurred = exceptionOccurred;
 				_inner = inner;
 			}
 
@@ -124,7 +140,9 @@ namespace EventStore.Client {
 				try {
 					return await _inner.MoveNext(cancellationToken).ConfigureAwait(false);
 				} catch (RpcException ex) {
-					throw ConvertRpcException(ex);
+					var exception = ConvertRpcException(ex);
+					_exceptionOccurred?.Invoke(exception);
+					throw exception;
 				}
 			}
 

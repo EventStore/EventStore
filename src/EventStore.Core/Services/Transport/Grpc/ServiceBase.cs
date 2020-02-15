@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Principal;
 using System.Text;
@@ -42,7 +43,8 @@ namespace EventStore.Client.Operations {
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
-		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider, Metadata requestHeaders) {
+		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider,
+			Metadata requestHeaders) {
 			var principalSource = new TaskCompletionSource<IPrincipal>();
 
 			if (AuthenticationHeaderValue.TryParse(
@@ -72,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return true;
 			}
 		}
-		
+
 		public static bool GetRequiresLeader(Metadata requestHeaders) {
 			var requiresLeader =
 				requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.RequiresLeader)?.Value;
