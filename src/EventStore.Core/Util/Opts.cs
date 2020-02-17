@@ -350,12 +350,6 @@ namespace EventStore.Core.Util {
 		public const string SslTargetHostDescr = "Target host of this node's SSL certificate.";
 		public static readonly string SslTargetHostDefault = "n/a";
 
-		public const string SslValidateMasterNodeDescr = "Whether to validate a master node's certificate when connecting to it as a slave.";
-		public const bool SslValidateMasterNodeDefault = true;
-
-		public const string SslValidateSlaveNodeDescr = "Whether to require a valid certificate from the slave node when this node is master.";
-		public const bool SslValidateSlaveNodeDefault = true;
-
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;
 
