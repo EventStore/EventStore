@@ -178,8 +178,8 @@ namespace EventStore.ClusterNode {
 			}
 
 			if (!options.DisableInternalTls) {
-				if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault))
-					throw new Exception("No SSL target host specified.");
+				if (ReferenceEquals(options.TlsTargetHost, Opts.TlsTargetHostDefault))
+					throw new Exception("No TLS target host specified.");
 				if (intSecTcp == null)
 					throw new Exception(
 						"Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
@@ -240,7 +240,7 @@ namespace EventStore.ClusterNode {
 				.WithIndexVerification(options.SkipIndexVerify)
 				.WithIndexCacheDepth(options.IndexCacheDepth)
 				.WithIndexMergeOptimization(options.OptimizeIndexMerge)
-				.WithSslTargetHost(options.SslTargetHost)
+				.WithTlsTargetHost(options.TlsTargetHost)
 				.RunProjections(options.RunProjections, options.ProjectionThreads, options.FaultOutOfOrderProjections)
 				.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
 				.WithTfCachedChunks(options.CachedChunks)
