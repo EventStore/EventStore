@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -10,6 +11,7 @@ using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
 namespace EventStore.Client {
@@ -29,23 +31,18 @@ namespace EventStore.Client {
 		public EventStoreProjectionManagerClient ProjectionsManager { get; }
 		public EventStoreUserManagerClient UsersManager { get; }
 
+		public EventStoreClient(IOptions<EventStoreClientSettings> options) : this(options.Value) {
+		}
+		
 		public EventStoreClient(EventStoreClientSettings settings = null) {
 			_settings = settings ??= new EventStoreClientSettings();
+			Action<Exception> exceptionNotificationHook = null;
+			var httpHandler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+			if (settings.ConnectivitySettings.GossipSeeds.Length > 0) {
+				ConfigureClusterAwareHandler();
+			}
 			
-			var handler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
-			var httpHandler = settings.ConnectivitySettings.GossipSeeds.Length > 0
-				? new ClusterAwareHttpHandler(
-					settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
-					new ClusterEndpointDiscoverer(
-						settings.ConnectivitySettings.MaxDiscoverAttempts,
-						settings.ConnectivitySettings.GossipSeeds,
-						settings.ConnectivitySettings.GossipTimeout,
-						settings.ConnectivitySettings.DiscoveryInterval,
-						settings.ConnectivitySettings.NodePreference)) {
-					InnerHandler = handler
-				} : handler;
-			
-			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
+			_channel = GrpcChannel.ForAddress(settings.ConnectivitySettings.Address, new GrpcChannelOptions {
 				HttpClient = new HttpClient(httpHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
@@ -56,22 +53,29 @@ namespace EventStore.Client {
 
 			var callInvoker = settings.Interceptors.Aggregate(
 				_channel.CreateCallInvoker()
-					.Intercept(new TypedExceptionInterceptor(ex => {
-						(httpHandler as ClusterAwareHttpHandler)?.ExceptionOccurred(ex);
-					}))
+					.Intercept(new TypedExceptionInterceptor(exceptionNotificationHook))
 					.Intercept(new ConnectionNameInterceptor(connectionName)),
 				(invoker, interceptor) => invoker.Intercept(interceptor));
 			_client = new Streams.Streams.StreamsClient(callInvoker);
 			PersistentSubscriptions = new EventStorePersistentSubscriptionsClient(callInvoker);
 			ProjectionsManager = new EventStoreProjectionManagerClient(callInvoker);
 			UsersManager = new EventStoreUserManagerClient(callInvoker);
-		}
 
-		public EventStoreClient(Uri address, Func<HttpMessageHandler> createHttpClient = default) : this(
-			new EventStoreClientSettings {
-				Address = address,
-				CreateHttpMessageHandler = createHttpClient
-			}) {
+			void ConfigureClusterAwareHandler()
+			{
+				var clusterAwareHttpHandler = new ClusterAwareHttpHandler(
+					settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
+					new ClusterEndpointDiscoverer(
+						settings.ConnectivitySettings.MaxDiscoverAttempts,
+						settings.ConnectivitySettings.GossipSeeds,
+						settings.ConnectivitySettings.GossipTimeout,
+						settings.ConnectivitySettings.DiscoveryInterval,
+						settings.ConnectivitySettings.NodePreference)) {
+					InnerHandler = httpHandler
+				};
+				exceptionNotificationHook = clusterAwareHttpHandler.ExceptionOccurred;
+				httpHandler = clusterAwareHttpHandler;
+			}
 		}
 
 		public void Dispose() => _channel.Dispose();

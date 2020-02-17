@@ -48,12 +48,19 @@ namespace EventStore.Client {
 				.UseStartup(_node.Startup)
 				.Build();
 
-			Client = new EventStoreClient(new UriBuilder {
-				Port = port,
-				Scheme = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? Uri.UriSchemeHttp : Uri.UriSchemeHttps
-			}.Uri, () => new SocketsHttpHandler {
-				SslOptions = new SslClientAuthenticationOptions {
-					RemoteCertificateValidationCallback = delegate { return true; }
+			Client = new EventStoreClient(new EventStoreClientSettings {
+				CreateHttpMessageHandler = () => new SocketsHttpHandler {
+					SslOptions = new SslClientAuthenticationOptions {
+						RemoteCertificateValidationCallback = delegate { return true; }
+					}
+				},
+				ConnectivitySettings = new EventStoreClientConnectivitySettings {
+					Address = new UriBuilder {
+						Port = port,
+						Scheme = RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+							? Uri.UriSchemeHttp
+							: Uri.UriSchemeHttps
+					}.Uri,
 				}
 			});
 		}
