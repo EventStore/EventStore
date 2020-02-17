@@ -5,10 +5,10 @@ using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
-	internal class SendOverHttpBlockingProcessor : SendOverHttpProcessor {
+	internal class SendOverGrpcGrpcBlockingProcessor : SendOverGrpcProcessor {
 		private readonly Dictionary<IPEndPoint, bool> _endpointsToSkip;
 
-		public SendOverHttpBlockingProcessor(Random rnd,
+		public SendOverGrpcGrpcBlockingProcessor(Random rnd,
 			RandomTestRunner runner,
 			double lossProb,
 			double dupProb,
@@ -20,9 +20,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			_endpointsToSkip[endPoint] = shouldSkip;
 		}
 
-		protected override bool ShouldSkipMessage(HttpMessage.SendOverHttp message) {
+		protected override bool ShouldSkipMessage(GrpcMessage.SendOverGrpc message) {
 			bool shouldSkip;
-			return _endpointsToSkip.TryGetValue(message.EndPoint, out shouldSkip) && shouldSkip;
+			return _endpointsToSkip.TryGetValue(message.DestinationEndpoint, out shouldSkip) && shouldSkip;
 		}
 	}
 }

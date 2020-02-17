@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
-					o.Listen(InternalHttpEndPoint);
+					o.Listen(InternalHttpEndPoint, options => options.UseHttps());
 					o.Listen(ExternalHttpEndPoint);
 				})
 				.UseStartup(Node.Startup)

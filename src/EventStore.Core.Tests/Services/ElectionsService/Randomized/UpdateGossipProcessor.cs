@@ -11,7 +11,7 @@ using EventStore.Core.Tests.Infrastructure;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 	internal class UpdateGossipProcessor : IRandTestItemProcessor {
-		private readonly SendOverHttpBlockingProcessor _sendOverHttpProcessor;
+		private readonly SendOverGrpcGrpcBlockingProcessor _sendOverGrpcGrpcProcessor;
 		private readonly RandomizedElectionsAndGossipTestCase.CreateUpdatedGossip _createUpdatedGossip;
 		private readonly Action<RandTestQueueItem, Message> _enqueue;
 		private ElectionsInstance[] _instances;
@@ -21,10 +21,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		private Dictionary<IPEndPoint, MemberInfo[]> _previousGossip;
 
 		public UpdateGossipProcessor(IEnumerable<ElectionsInstance> allInstances,
-			SendOverHttpBlockingProcessor sendOverHttpProcessor,
+			SendOverGrpcGrpcBlockingProcessor sendOverGrpcGrpcProcessor,
 			RandomizedElectionsAndGossipTestCase.CreateUpdatedGossip createUpdatedGossip,
 			Action<RandTestQueueItem, Message> enqueue) {
-			_sendOverHttpProcessor = sendOverHttpProcessor;
+			_sendOverGrpcGrpcProcessor = sendOverGrpcGrpcProcessor;
 			_createUpdatedGossip = createUpdatedGossip;
 			_enqueue = enqueue;
 			_instances = allInstances.ToArray();
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				_processedItems.Add(item);
 
 				foreach (var memberInfo in updatedGossip) {
-					_sendOverHttpProcessor.RegisterEndpointToSkip(memberInfo.ExternalTcpEndPoint, !memberInfo.IsAlive);
+					_sendOverGrpcGrpcProcessor.RegisterEndpointToSkip(memberInfo.ExternalTcpEndPoint, !memberInfo.IsAlive);
 				}
 
 				var updateGossipMessage = new GossipMessage.GossipUpdated(new ClusterInfo(updatedGossip));

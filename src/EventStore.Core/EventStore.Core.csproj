@@ -14,6 +14,7 @@
 		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.27.0" />
 		<PackageReference Include="Grpc.Core" Version="2.27.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.27.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.27.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -38,8 +39,11 @@
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
+		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
 		<Compile Include="../EventStore.Client.Common/*.cs" LinkBase="Services/Transport/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
 	</ItemGroup>
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

@@ -73,10 +73,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.StartElections());
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
@@ -106,10 +106,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.StartElections());
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
@@ -219,10 +219,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ElectionsTimedOut(view));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, newView),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, newView),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
@@ -292,7 +292,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_publisher.Messages.Clear();
@@ -302,10 +302,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.SendViewChangeProof());
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
@@ -393,10 +393,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 10));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 10),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 10),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
@@ -466,10 +466,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.Prepare(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.Prepare(_node.InstanceId, _node.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
 			};
@@ -588,7 +588,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.Prepare(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.PrepareOk(0,
 						_node.InstanceId, _node.InternalHttp, -1, -1, Guid.Empty, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
@@ -718,17 +718,17 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
 
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
 						proposalMessage.LeaderId,
 						proposalMessage.LeaderInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.InternalHttp,
 						proposalMessage.LeaderId,
 						proposalMessage.LeaderInternalHttp, 0, 0, 0, _epochId, 0, 0, 0, 0),
@@ -899,12 +899,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.InternalHttp,
 						_nodeThree.ExternalHttp, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
 						_nodeThree.InstanceId,
 						_nodeThree.InternalHttp, 0),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.Accept(_node.InstanceId, _node.InternalHttp,
 						_nodeThree.InstanceId,
 						_nodeThree.InternalHttp, 0),
@@ -1021,7 +1021,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_publisher.Messages.Clear();
@@ -1058,7 +1058,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
@@ -1106,7 +1106,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
 			_sut.Handle(new ElectionMessage.PrepareOk(0, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
@@ -1140,10 +1140,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ClientMessage.ResignNode());
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new HttpMessage.SendOverHttp(_nodeThree.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
 					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.InternalHttp),
 					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
 			};
@@ -1182,7 +1182,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.LeaderIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
 
 			var expected = new Message[] {
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp,
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
 					new ElectionMessage.LeaderIsResigningOk(
 						_nodeTwo.InstanceId, _nodeTwo.InternalHttp,
 						_node.InstanceId, _node.InternalHttp),
@@ -1256,7 +1256,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 3));
 			_sut.Handle(new ElectionMessage.PrepareOk(3, _nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0, 0,
 				_epochId, 0, 0, 0, 0));
-			var proposalHttpMessage = _publisher.Messages.OfType<HttpMessage.SendOverHttp>()
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
 				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
 			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
 			_publisher.Messages.Clear();

@@ -37,6 +37,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Core.Cluster;
 using Microsoft.AspNetCore.Hosting;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
@@ -115,6 +116,7 @@ namespace EventStore.Core {
 		private readonly X509Certificate2 _certificate;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
+		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
 
@@ -184,6 +186,14 @@ namespace EventStore.Core {
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
+
+			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
+				(endpoint, publisher) =>
+					new EventStoreClusterClient(
+						new UriBuilder(Uri.UriSchemeHttps, endpoint.Address.ToString(), endpoint.Port).Uri, publisher));
+			
+			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
 			//SELF
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
@@ -411,6 +421,12 @@ namespace EventStore.Core {
 				bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
 				bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
 			});
+			
+			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
+			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
+			SubscribeWorkers(bus => {
+				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
+			});
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
@@ -424,11 +440,9 @@ namespace EventStore.Core {
 				_httpMessageHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var electController = new ElectController(_mainQueue, _httpMessageHandler);
 
 			// HTTP SENDERS
 			gossipController.SubscribeSenders(httpPipe);
-			electController.SubscribeSenders(httpPipe);
 
 			// EXTERNAL HTTP
 			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
@@ -467,8 +481,6 @@ namespace EventStore.Core {
 				_internalHttpService.SetupController(infoController);
 				_internalHttpService.SetupController(statController);
 				_internalHttpService.SetupController(atomController);
-				_internalHttpService.SetupController(gossipController);
-				_internalHttpService.SetupController(electController);
 				_internalHttpService.SetupController(histogramController);
 				_internalHttpService.SetupController(persistentSubscriptionController);
 			}
@@ -682,8 +694,9 @@ namespace EventStore.Core {
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
 					vNodeSettings.GossipAllowedTimeDifference,
+					vNodeSettings.GossipTimeout,
 					_timeProvider);
-				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
+					_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.Gossip>(gossip);

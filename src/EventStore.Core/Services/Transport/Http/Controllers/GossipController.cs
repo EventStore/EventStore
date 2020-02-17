@@ -38,9 +38,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		protected override void SubscribeCore(IHttpService service) {
 			service.RegisterAction(new ControllerAction("/gossip", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
 				OnGetGossip);
-			if (service.Accessibility == ServiceAccessibility.Private)
-				service.RegisterAction(
-					new ControllerAction("/gossip", HttpMethod.Post, SupportedCodecs, SupportedCodecs, AuthorizationLevel.None), OnPostGossip);
 		}
 
 		public void SubscribeSenders(HttpMessagePipe pipe) {
@@ -116,46 +113,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						new GossipMessage.GetGossipReceived(new ClusterInfo(clusterInfo), endPoint));
 				},
 				error => Publish(new GossipMessage.GetGossipFailed(error.Message, endPoint)));
-		}
-
-		private void OnPostGossip(HttpEntityManager entity, UriTemplateMatch match) {
-			entity.ReadTextRequestAsync(OnPostGossipRequestRead,
-				e => Log.Debug("Error while reading request (gossip): {e}", e.Message));
-		}
-
-		private void OnPostGossipRequestRead(HttpEntityManager manager, string body) {
-			var clusterInfoDto = manager.RequestCodec.From<ClusterInfoDto>(body);
-			if (clusterInfoDto == null) {
-				var msg = string.Format(
-					"Received as POST invalid ClusterInfo from [{0}]. Content-Type: {1}, Body:\n{2}.",
-					manager.RequestedUrl, manager.RequestCodec.ContentType, body);
-				Log.Error("Received as POST invalid ClusterInfo from [{requestedUrl}]. Content-Type: {contentType}.",
-					manager.RequestedUrl, manager.RequestCodec.ContentType);
-				Log.Error("Received as POST invalid ClusterInfo from [{requestedUrl}]. Body: {body}.",
-					manager.RequestedUrl, body);
-				SendBadRequest(manager, msg);
-				return;
-			}
-
-			var sendToHttpEnvelope = new SendToHttpEnvelope(_networkSendQueue,
-				manager,
-				Format.SendGossip,
-				(e, m) => Configure.Ok(e.ResponseCodec.ContentType));
-			var serverEndPoint = TryGetServerEndPoint(clusterInfoDto);
-			Publish(new GossipMessage.GossipReceived(sendToHttpEnvelope, new ClusterInfo(clusterInfoDto),
-				serverEndPoint));
-		}
-
-		private static IPEndPoint TryGetServerEndPoint(ClusterInfoDto clusterInfoDto) {
-			IPEndPoint serverEndPoint = null;
-			IPAddress serverAddress;
-			if (IPAddress.TryParse(clusterInfoDto.ServerIp, out serverAddress)
-			    && clusterInfoDto.ServerPort > 0
-			    && clusterInfoDto.ServerPort <= 65535) {
-				serverEndPoint = new IPEndPoint(serverAddress, clusterInfoDto.ServerPort);
-			}
-
-			return serverEndPoint;
 		}
 
 		private void OnGetGossip(HttpEntityManager entity, UriTemplateMatch match) {

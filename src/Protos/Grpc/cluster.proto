@@ -1,0 +1,138 @@
+﻿syntax = "proto3";
+package event_store.cluster;
+
+import "shared.proto";
+
+service Cluster {
+	rpc Gossip (GossipRequest) returns (ClusterInfo);
+	rpc GetGossip (event_store.client.shared.Empty) returns (ClusterInfo);
+	
+	rpc ViewChange (ViewChangeRequest) returns (event_store.client.shared.Empty);
+	rpc ViewChangeProof (ViewChangeProofRequest) returns (event_store.client.shared.Empty);
+	rpc Prepare (PrepareRequest) returns (event_store.client.shared.Empty);
+	rpc PrepareOk (PrepareOkRequest) returns (event_store.client.shared.Empty);
+	rpc Proposal (ProposalRequest) returns (event_store.client.shared.Empty);
+	rpc Accept (AcceptRequest) returns (event_store.client.shared.Empty);
+	
+	rpc LeaderIsResigning (LeaderIsResigningRequest) returns (event_store.client.shared.Empty);
+	rpc LeaderIsResigningOk (LeaderIsResigningOkRequest) returns (event_store.client.shared.Empty);
+}
+
+message GossipRequest {
+	ClusterInfo info = 1;
+	EndPoint server = 2;
+}
+
+message ViewChangeRequest {
+	event_store.client.shared.UUID serverId = 1;
+	EndPoint serverInternalHttp = 2;
+	int32 attemptedView = 3;
+}
+
+message ViewChangeProofRequest {
+	event_store.client.shared.UUID serverId = 1;
+	EndPoint serverInternalHttp = 2;
+	int32 installedView = 3;
+}
+
+message PrepareRequest {
+	event_store.client.shared.UUID serverId = 1;
+	EndPoint serverInternalHttp = 2;
+	int32 view = 3;
+}
+
+message PrepareOkRequest {
+	int32 view = 1;
+	event_store.client.shared.UUID serverId = 2;
+	EndPoint serverInternalHttp = 3;
+	int32 epochNumber = 4;
+	int64 epochPosition = 5;
+	event_store.client.shared.UUID epochId = 6;
+	int64 lastCommitPosition = 7;
+	int64 writerCheckpoint = 8;
+	int64 chaserCheckpoint = 9;
+	int32 nodePriority = 10;
+}
+
+message ProposalRequest {
+	event_store.client.shared.UUID serverId = 1;
+	EndPoint serverInternalHttp = 2;
+	event_store.client.shared.UUID leaderId = 3;
+	EndPoint leaderInternalHttp = 4;
+	int32 view = 5;
+	int32 epochNumber = 6;
+	int64 epochPosition = 7;
+	event_store.client.shared.UUID epochId = 8;
+	int64 lastCommitPosition = 9;
+	int64 writerCheckpoint = 10;
+	int64 chaserCheckpoint = 11;
+	int32 nodePriority = 12;
+}
+
+message AcceptRequest {
+	event_store.client.shared.UUID serverId = 1;
+	EndPoint serverInternalHttp = 2;
+	event_store.client.shared.UUID leaderId = 3;
+	EndPoint leaderInternalHttp = 4;
+	int32 view = 5;
+}
+
+message LeaderIsResigningRequest {
+	event_store.client.shared.UUID leaderId = 1;
+	EndPoint leaderInternalHttp = 2;
+}
+
+message LeaderIsResigningOkRequest {
+	event_store.client.shared.UUID leaderId = 1;
+	EndPoint leaderInternalHttp = 2;
+	event_store.client.shared.UUID serverId = 3;
+	EndPoint serverInternalHttp = 4;
+}
+
+message ClusterInfo {
+	repeated MemberInfo members = 1;
+}
+
+message EndPoint {
+	string address = 1;
+	uint32 port = 2;
+}
+
+message MemberInfo {
+	enum VNodeState {
+		Initializing = 0;
+		Unknown = 1;
+		PreReplica = 2;
+		CatchingUp = 3;
+		Clone = 4;
+		Follower = 5;
+		PreLeader = 6;
+		Leader = 7;
+		Manager = 8;
+		ShuttingDown = 9;
+		Shutdown = 10;
+		ReadOnlyLeaderless = 11;
+		PreReadOnlyReplica = 12;
+		ReadOnlyReplica = 13;
+		ResigningLeader = 14;
+	}
+	event_store.client.shared.UUID instance_id = 1;
+	int64 time_stamp = 2;
+	VNodeState state = 3;
+	bool is_alive = 4;
+	EndPoint external_http = 5;
+	EndPoint internal_http = 6;
+	EndPoint internal_tcp = 7;
+	EndPoint external_tcp = 8;
+	
+    int64 last_commit_position = 9;
+    int64 writer_checkpoint = 10;
+	int64 chaser_checkpoint = 11;
+    int64 epoch_position = 12;
+    int32 epoch_number = 13;
+    event_store.client.shared.UUID epoch_id = 14;
+
+    int32 node_priority = 15;
+    bool is_read_only_replica = 16;
+}
+
