@@ -48,17 +48,8 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.InternalTcpPortDescr, Opts.InterfacesGroup)]
 		public int IntTcpPort { get; set; }
 
-		[ArgDescription(Opts.InternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-		public int IntSecureTcpPort { get; set; }
-
 		[ArgDescription(Opts.ExternalTcpPortDescr, Opts.InterfacesGroup)]
 		public int ExtTcpPort { get; set; }
-
-		[ArgDescription(Opts.ExternalSecureTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int ExtSecureTcpPortAdvertiseAs { get; set; }
-
-		[ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-		public int ExtSecureTcpPort { get; set; }
 
 		[ArgDescription(Opts.ExternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public IPAddress ExtIpAdvertiseAs { get; set; }
@@ -71,9 +62,6 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.InternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public IPAddress IntIpAdvertiseAs { get; set; }
-
-		[ArgDescription(Opts.InternalSecureTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int IntSecureTcpPortAdvertiseAs { get; set; }
 
 		[ArgDescription(Opts.InternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public int IntTcpPortAdvertiseAs { get; set; }
@@ -334,9 +322,7 @@ namespace EventStore.ClusterNode {
 			ExtHttpPort = Opts.ExternalHttpPortDefault;
 			EnableExternalTCP = Opts.EnableExternalTCPDefault;
 			IntTcpPort = Opts.InternalTcpPortDefault;
-			IntSecureTcpPort = Opts.InternalSecureTcpPortDefault;
 			ExtTcpPort = Opts.ExternalTcpPortDefault;
-			ExtSecureTcpPort = Opts.ExternalSecureTcpPortDefault;
 			Force = Opts.ForceDefault;
 			ClusterSize = Opts.ClusterSizeDefault;
 			MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
@@ -383,12 +369,10 @@ namespace EventStore.ClusterNode {
 			ExtIpAdvertiseAs = Opts.ExternalIpAdvertiseAsDefault;
 			ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
 			ExtHttpPortAdvertiseAs = Opts.ExternalHttpPortAdvertiseAsDefault;
-			ExtSecureTcpPortAdvertiseAs = Opts.ExternalSecureTcpPortAdvertiseAsDefault;
 
 			IntIpAdvertiseAs = Opts.InternalIpAdvertiseAsDefault;
 			IntTcpPortAdvertiseAs = Opts.InternalTcpPortAdvertiseAsDefault;
 			IntHttpPortAdvertiseAs = Opts.InternalHttpPortAdvertiseAsDefault;
-			IntSecureTcpPortAdvertiseAs = Opts.InternalSecureTcpPortAdvertiseAsDefault;
 
 			CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
 			CertificateStoreName = Opts.CertificateStoreNameDefault;
