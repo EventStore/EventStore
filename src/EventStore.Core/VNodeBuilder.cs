@@ -67,8 +67,8 @@ namespace EventStore.Core {
 
 		protected int _nodePriority;
 
-		protected bool _useSsl;
 		protected bool _enableExternalTCP;
+		protected bool _disableInternalTls;
 		protected bool _disableInsecureTCP;
 		protected string _sslTargetHost;
 
@@ -185,7 +185,7 @@ namespace EventStore.Core {
 
 			_nodePriority = Opts.NodePriorityDefault;
 
-			_useSsl = Opts.UseInternalSslDefault;
+			_disableInternalTls = Opts.DisableInternalTlsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
 			_sslTargetHost = Opts.SslTargetHostDefault;
@@ -520,11 +520,11 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets that SSL should be used on connections
+		/// Sets that TLS should be disabled on internal connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableSsl() {
-			_useSsl = true;
+		public VNodeBuilder DisableInternalTls() {
+			_disableInternalTls = true;
 			return this;
 		}
 
@@ -1374,7 +1374,7 @@ namespace EventStore.Core {
 				_commitAckCount,
 				_prepareTimeout,
 				_commitTimeout,
-				_useSsl,
+				_disableInternalTls,
 				_disableInsecureTCP,
 				_sslTargetHost,
 				_statsPeriod,
