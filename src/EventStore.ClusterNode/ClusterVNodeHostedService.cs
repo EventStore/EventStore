@@ -277,9 +277,7 @@ namespace EventStore.ClusterNode {
 				.WithInitializationThreads(options.InitializationThreads)
 				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel)
 				.WithMaxAppendSize(options.MaxAppendSize)
-				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP)
-				.WithSslValidateMasterNode(options.SslValidateMasterNode)
-				.WithSslValidateSlaveNode(options.SslValidateSlaveNode);
+				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP);
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);

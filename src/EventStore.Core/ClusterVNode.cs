@@ -383,7 +383,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_internalAuthenticationProvider, vNodeSettings.Certificate, vNodeSettings.SslValidateSlaveNode,
+							_internalAuthenticationProvider, vNodeSettings.Certificate, true,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -647,7 +647,7 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_internalAuthenticationProvider,
-					gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateMasterNode,
+					gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, true,
 					Certificate == null ? null : new X509Certificate2Collection(Certificate),
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);

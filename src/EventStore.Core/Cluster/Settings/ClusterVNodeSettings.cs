@@ -42,8 +42,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool EnableExternalTCP;
 		public readonly bool DisableInsecureTCP;
 		public readonly string SslTargetHost;
-		public readonly bool SslValidateMasterNode;
-		public readonly bool SslValidateSlaveNode;
 
 		public readonly TimeSpan StatsPeriod;
 		public readonly StatsStorage StatsStorage;
@@ -115,8 +113,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool useSsl,
 			bool disableInsecureTCP,
 			string sslTargetHost,
-			bool sslValidateMasterNode,
-			bool sslValidateSlaveNode,
 			TimeSpan statsPeriod,
 			StatsStorage statsStorage,
 			int nodePriority,
@@ -228,8 +224,6 @@ namespace EventStore.Core.Cluster.Settings {
 			EnableExternalTCP = enableExternalTCP;
 			DisableInsecureTCP = disableInsecureTCP;
 			SslTargetHost = sslTargetHost;
-			SslValidateMasterNode = sslValidateMasterNode;
-			SslValidateSlaveNode = sslValidateSlaveNode;
 
 			StatsPeriod = statsPeriod;
 			StatsStorage = statsStorage;
@@ -295,7 +289,6 @@ namespace EventStore.Core.Cluster.Settings {
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" + $"UseSsl: {UseSsl}\n" +
 			$"SslTargetHost: {SslTargetHost}\n" +
-			$"SslValidateMasterNode: {SslValidateMasterNode}\n" + $"SslValidateSlaveNode: {SslValidateSlaveNode}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +
