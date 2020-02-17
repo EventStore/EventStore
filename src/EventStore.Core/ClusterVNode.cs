@@ -647,7 +647,7 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_internalAuthenticationProvider,
-					gossipInfo, !vNodeSettings.DisableInternalTls, vNodeSettings.SslTargetHost, true,
+					gossipInfo, !vNodeSettings.DisableInternalTls, vNodeSettings.TlsTargetHost, true,
 					Certificate == null ? null : new X509Certificate2Collection(Certificate),
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);

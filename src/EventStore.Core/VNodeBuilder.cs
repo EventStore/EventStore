@@ -68,7 +68,7 @@ namespace EventStore.Core {
 		protected bool _enableExternalTCP;
 		protected bool _disableInternalTls;
 		protected bool _disableInsecureTCP;
-		protected string _sslTargetHost;
+		protected string _tlsTargetHost;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -186,7 +186,7 @@ namespace EventStore.Core {
 			_disableInternalTls = Opts.DisableInternalTlsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
-			_sslTargetHost = Opts.SslTargetHostDefault;
+			_tlsTargetHost = Opts.TlsTargetHostDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
 
@@ -549,8 +549,8 @@ namespace EventStore.Core {
 		/// </summary>
 		/// <param name="targetHost">The target host of the server's SSL certificate</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithSslTargetHost(string targetHost) {
-			_sslTargetHost = targetHost;
+		public VNodeBuilder WithTlsTargetHost(string targetHost) {
+			_tlsTargetHost = targetHost;
 			return this;
 		}
 
@@ -1351,7 +1351,7 @@ namespace EventStore.Core {
 				_commitTimeout,
 				_disableInternalTls,
 				_disableInsecureTCP,
-				_sslTargetHost,
+				_tlsTargetHost,
 				_statsPeriod,
 				_statsStorage,
 				_nodePriority,
