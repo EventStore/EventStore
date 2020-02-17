@@ -348,7 +348,7 @@ namespace EventStore.ClusterNode {
 					options.CertificatePrivateKeyFile,
 					options.CertificatePassword);
 			} else if (!options.Dev)
-				throw new Exception("An SSL Certificate is required unless development mode (--dev) is set.");
+				throw new Exception("A TLS Certificate is required unless development mode (--dev) is set.");
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
