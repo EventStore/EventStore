@@ -544,9 +544,9 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the target host of the server's SSL certificate.
+		/// Sets the target host of the server's TLS certificate.
 		/// </summary>
-		/// <param name="targetHost">The target host of the server's SSL certificate</param>
+		/// <param name="targetHost">The target host of the server's TLS certificate</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithTlsTargetHost(string targetHost) {
 			_tlsTargetHost = targetHost;
@@ -663,7 +663,7 @@ namespace EventStore.Core {
 		}
 		
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a file
+		/// Sets the Server TLS Certificate to be loaded from a file
 		/// </summary>
 		/// <param name="path">The path to the certificate file</param>
 		/// <param name="password">The password for the certificate</param>
@@ -1064,9 +1064,9 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate
+		/// Sets the Server TLS Certificate
 		/// </summary>
-		/// <param name="sslCertificate">The server SSL certificate to use</param>
+		/// <param name="sslCertificate">The server TLS certificate to use</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithServerCertificate(X509Certificate2 sslCertificate) {
 			_certificate = sslCertificate;
@@ -1074,7 +1074,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeLocation">The location of the certificate store</param>
 		/// <param name="storeName">The name of the certificate store</param>
@@ -1089,7 +1089,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeName">The name of the certificate store</param>
 		/// <param name="certificateSubjectName">The subject name of the certificate</param>
