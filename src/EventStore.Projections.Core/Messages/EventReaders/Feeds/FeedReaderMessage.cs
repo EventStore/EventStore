@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
@@ -23,14 +23,14 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 
 			public readonly QuerySourcesDefinition QuerySource;
 			public readonly CheckpointTag FromPosition;
 			public readonly int MaxEvents;
 
 			public ReadPage(
-				Guid correlationId, IEnvelope envelope, IPrincipal user, QuerySourcesDefinition querySource,
+				Guid correlationId, IEnvelope envelope, ClaimsPrincipal user, QuerySourcesDefinition querySource,
 				CheckpointTag fromPosition,
 				int maxEvents) {
 				User = user;

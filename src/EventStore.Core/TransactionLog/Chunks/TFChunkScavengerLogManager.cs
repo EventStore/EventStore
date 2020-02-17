@@ -49,7 +49,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private void SetScavengeStreamMetadata() {
 			var metaStreamId = SystemStreams.MetastreamOf(SystemStreams.ScavengesStream);
 
-			_ioDispatcher.ReadBackward(metaStreamId, -1, 1, false, SystemAccount.Principal, readResult => {
+			_ioDispatcher.ReadBackward(metaStreamId, -1, 1, false, SystemAccounts.System, readResult => {
 				if (readResult.Result == ReadStreamResult.Success || readResult.Result == ReadStreamResult.NoStream) {
 					if (readResult.Events.Length == 1) {
 						var currentMetadata = StreamMetadata.FromJsonBytes(readResult.Events[0].Event.Data);
@@ -80,7 +80,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var metaStreamEvent = new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, isJson: true,
 						data: metadata.ToJsonBytes(), metadata: null);
 					_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent,
-						SystemAccount.Principal, m => {
+						SystemAccounts.System, m => {
 							if (m.Result != OperationResult.Success) {
 								Log.Error(
 									"Failed to write the $maxAge of {days} days and set $ops permission for the {stream} stream. Reason: {reason}",
@@ -93,7 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private void GatherIncompleteScavenges(long from, ISet<string> completedScavenges,
 			IList<string> incompleteScavenges, IList<string> recentScavenges) {
-			_ioDispatcher.ReadBackward(SystemStreams.ScavengesStream, from, 20, true, SystemAccount.Principal,
+			_ioDispatcher.ReadBackward(SystemStreams.ScavengesStream, from, 20, true, SystemAccounts.System,
 				readResult => {
 					if (readResult.Result != ReadStreamResult.Success &&
 					    readResult.Result != ReadStreamResult.NoStream) {
@@ -171,7 +171,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var metaStreamEvent = new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, isJson: true,
 					data: metadata.ToJsonBytes(), metadata: null);
 				_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent,
-					SystemAccount.Principal, m => {
+					SystemAccounts.System, m => {
 						if (m.Result != OperationResult.Success) {
 							Log.Error(
 								"Failed to set $ops read permission for the {stream} stream. Reason: {reason}",

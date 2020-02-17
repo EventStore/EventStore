@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.CommitIndexed> {
 		private readonly TimeSpan _commitTimeout;
 		private readonly bool _betterOrdering;
-		private readonly IPrincipal _user;
+		private readonly ClaimsPrincipal _user;
 		private bool _transactionWritten;
 
 		public TransactionCommit(
@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid clientCorrId,
 					long transactionId,
 					bool betterOrdering,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					CommitSource commitSource)
 			: base(
 					 publisher,

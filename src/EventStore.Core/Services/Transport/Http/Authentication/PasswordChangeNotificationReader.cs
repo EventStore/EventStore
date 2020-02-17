@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		private void Start() {
 			_stopped = false;
 			_ioDispatcher.ReadBackward(
-				UserManagementService.UserPasswordNotificationsStreamId, -1, 1, false, SystemAccount.Principal,
+				UserManagementService.UserPasswordNotificationsStreamId, -1, 1, false, SystemAccounts.System,
 				completed => {
 					switch (completed.Result) {
 						case ReadStreamResult.NoStream:
@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			if (_stopped) return;
 			_ioDispatcher.ReadForward(
 				UserManagementService.UserPasswordNotificationsStreamId, fromEventNumber, 100, false,
-				SystemAccount.Principal, completed => {
+				SystemAccounts.System, completed => {
 					if (_stopped) return;
 					switch (completed.Result) {
 						case ReadStreamResult.AccessDenied:

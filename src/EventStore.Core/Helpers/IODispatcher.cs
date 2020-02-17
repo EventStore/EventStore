@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -164,7 +164,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
@@ -194,7 +194,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
@@ -234,7 +234,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsForwardCompleted> action,
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
@@ -264,7 +264,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsForwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
@@ -305,7 +305,7 @@ namespace EventStore.Core.Helpers {
 			bool resolveLinks,
 			bool requireLeader,
 			long? validationTfLastCommitPosition,
-			IPrincipal user,
+			ClaimsPrincipal user,
 			TimeSpan? longPollTimeout,
 			Action<ClientMessage.ReadAllEventsForwardCompleted> action,
 			Action timeoutAction,
@@ -349,7 +349,7 @@ namespace EventStore.Core.Helpers {
 			bool resolveLinks,
 			bool requireLeader,
 			long? validationTfLastCommitPosition,
-			IPrincipal user,
+			ClaimsPrincipal user,
 			TimeSpan? longPollTimeout,
 			Action<ClientMessage.ReadAllEventsBackwardCompleted> action,
 			Action timeoutAction,
@@ -394,7 +394,7 @@ namespace EventStore.Core.Helpers {
 			int maxSearchWindow,
 			long? validationTfLastCommitPosition,
 			IEventFilter eventFilter,
-			IPrincipal user,
+			ClaimsPrincipal user,
 			TimeSpan? longPollTimeout,
 			Action<ClientMessage.FilteredReadAllEventsForwardCompleted> action,
 			Action timeoutAction,
@@ -442,7 +442,7 @@ namespace EventStore.Core.Helpers {
 			int maxSearchWindow,
 			long? validationTfLastCommitPosition,
 			IEventFilter eventFilter,
-			IPrincipal user,
+			ClaimsPrincipal user,
 			Action<ClientMessage.FilteredReadAllEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
@@ -484,7 +484,7 @@ namespace EventStore.Core.Helpers {
 			long expectedVersion,
 			Lazy<StreamMetadata> streamMetadata,
 			Event[] events,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			if (expectedVersion != ExpectedVersion.Any && expectedVersion != ExpectedVersion.NoStream)
 				WriteEvents(streamId, expectedVersion, events, principal, action);
@@ -534,7 +534,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			Event[] events,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
 			AddPendingRequest(corrId);
@@ -667,7 +667,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			Event[] events,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
 			AddPendingRequest(corrId);
@@ -711,7 +711,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			Event @event,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
 			AddPendingRequest(corrId);
@@ -736,7 +736,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			bool hardDelete,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.DeleteStreamCompleted> action) {
 			var corrId = Guid.NewGuid();
 			AddPendingRequest(corrId);
@@ -783,7 +783,7 @@ namespace EventStore.Core.Helpers {
 		public void UpdateStreamAcl(
 			string streamId,
 			long expectedVersion,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			StreamMetadata metadata,
 			Action<ClientMessage.WriteEventsCompleted> completed) {
 			WriteEvents(

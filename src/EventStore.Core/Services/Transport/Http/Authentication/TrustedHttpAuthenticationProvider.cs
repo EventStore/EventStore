@@ -1,41 +1,39 @@
-﻿using System;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
-using EventStore.Core.Services.Transport.Http.Messages;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
-	public class TrustedHttpAuthenticationProvider : HttpAuthenticationProvider {
-		public override bool Authenticate(IncomingHttpRequestMessage message) {
-			var header = message.Entity.Request.GetHeaderValues(SystemHeaders.TrustedAuth);
-			if (!string.IsNullOrEmpty(header)) {
-				var principal = CreatePrincipal(header);
-				if (principal != null)
-					Authenticated(message, principal);
-				else
-					ReplyUnauthorized(message.Entity);
-				return true;
+	public class TrustedHttpAuthenticationProvider : IHttpAuthenticationProvider {
+		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
+			request = null;
+			if (!context.Request.Headers.TryGetValue(SystemHeaders.TrustedAuth, out var values)) {
+				return false;
 			}
-
-			return false;
+			request = new HttpAuthenticationRequest(context, null, null);
+			var principal = CreatePrincipal(values[0]);
+			if (principal != null)
+				request.Authenticated(principal);
+			else
+				request.Unauthorized();
+			return true;
 		}
 
-		private IPrincipal CreatePrincipal(string header) {
+		private ClaimsPrincipal CreatePrincipal(string header) {
 			var loginAndGroups = header.Split(';');
 			if (loginAndGroups.Length == 0 || loginAndGroups.Length > 2)
 				return null;
 			var login = loginAndGroups[0];
+			var claims = new List<Claim>() {
+				new Claim(ClaimTypes.Name, login)
+			};
 			if (loginAndGroups.Length == 2) {
 				var groups = loginAndGroups[1];
-				var groupsSplit = groups.Split(',');
-				var roles = new string[groupsSplit.Length + 1];
-				Array.Copy(groupsSplit, roles, groupsSplit.Length);
-				roles[roles.Length - 1] = login;
+				var roles = groups.Split(',');
 				for (var i = 0; i < roles.Length; i++)
-					roles[i] = roles[i].Trim();
-				return new OpenGenericPrincipal(new GenericIdentity(login), roles);
-			} else {
-				return new OpenGenericPrincipal(new GenericIdentity(login), new[] { login });
+					claims.Add(new Claim(ClaimTypes.Role, roles[i].Trim()));
+
 			}
+			return new ClaimsPrincipal(new ClaimsIdentity(claims, SystemHeaders.TrustedAuth));
 		}
 	}
 }

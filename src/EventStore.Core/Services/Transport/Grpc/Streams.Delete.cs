@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, false, requiresLeader).ConfigureAwait(false);
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, true, requiresLeader).ConfigureAwait(false);
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		}
 
 		private async Task<Position?> DeleteInternal(string streamName, long expectedVersion,
-			IPrincipal user, bool hardDelete, bool requiresLeader) {
+			ClaimsPrincipal user, bool hardDelete, bool requiresLeader) {
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 			var deleteResponseSource = new TaskCompletionSource<Position?>();
 

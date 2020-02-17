@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var actualBatchSize = GetBatchSize(batchSize);
 			_ioDispatcher.ReadForward(
 				stream, startEventNumber, Math.Min(countToLoad, actualBatchSize),
-				resolveLinkTos, SystemAccount.Principal, new ResponseHandler(onEventsFound).FetchCompleted);
+				resolveLinkTos, SystemAccounts.System, new ResponseHandler(onEventsFound).FetchCompleted);
 		}
 
 		private int GetBatchSize(int batchSize) {

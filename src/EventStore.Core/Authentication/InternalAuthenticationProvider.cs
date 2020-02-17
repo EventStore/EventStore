@@ -1,5 +1,7 @@
 using System;
-using System.Security.Principal;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -16,23 +18,23 @@ namespace EventStore.Core.Authentication {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _logFailedAuthenticationAttempts;
-		private readonly LRUCache<string, Tuple<string, IPrincipal>> _userPasswordsCache;
+		private readonly LRUCache<string, Tuple<string, ClaimsPrincipal>> _userPasswordsCache;
 
 		public InternalAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
 			int cacheSize, bool logFailedAuthenticationAttempts) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
-			_userPasswordsCache = new LRUCache<string, Tuple<string, IPrincipal>>(cacheSize);
+			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>(cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 		}
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
-			Tuple<string, IPrincipal> cached;
+			Tuple<string, ClaimsPrincipal> cached;
 			if (_userPasswordsCache.TryGet(authenticationRequest.Name, out cached)) {
 				AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
 			} else {
 				var userStreamId = "$user-" + authenticationRequest.Name;
-				_ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccount.Principal,
+				_ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccounts.System,
 					m => ReadUserDataCompleted(m, authenticationRequest));
 			}
 		}
@@ -90,21 +92,24 @@ namespace EventStore.Core.Authentication {
 			authenticationRequest.Authenticated(principal);
 		}
 
-		private static OpenGenericPrincipal CreatePrincipal(UserData userData) {
-			var roles = new string[userData.Groups != null ? userData.Groups.Length + 1 : 1];
-			if (userData.Groups != null)
-				Array.Copy(userData.Groups, roles, userData.Groups.Length);
-			roles[roles.Length - 1] = userData.LoginName;
-			var principal = new OpenGenericPrincipal(new GenericIdentity(userData.LoginName), roles);
+		private static ClaimsPrincipal CreatePrincipal(UserData userData) {
+			var claims = new List<Claim> {new Claim(ClaimTypes.Name, userData.LoginName)};
+			if (userData.Groups != null) {
+				claims.AddRange(userData.Groups.Select(x => new Claim(ClaimTypes.Role, x)));
+			}
+
+
+			var identity = new ClaimsIdentity(claims, "ES-Legacy");
+			var principal = new ClaimsPrincipal(identity);
 			return principal;
 		}
 
-		private void CachePassword(string loginName, string password, IPrincipal principal) {
+		private void CachePassword(string loginName, string password, ClaimsPrincipal principal) {
 			_userPasswordsCache.Put(loginName, Tuple.Create(password, principal));
 		}
 
 		private void AuthenticateWithPassword(AuthenticationRequest authenticationRequest, string correctPassword,
-			IPrincipal principal) {
+			ClaimsPrincipal principal) {
 			if (authenticationRequest.SuppliedPassword != correctPassword) {
 				if (_logFailedAuthenticationAttempts)
 					Log.Warn("Authentication Failed for {id}: {reason}", authenticationRequest.Id,

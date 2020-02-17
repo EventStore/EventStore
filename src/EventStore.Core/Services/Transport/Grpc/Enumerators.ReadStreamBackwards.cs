@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly string _streamName;
 			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
-			private readonly IPrincipal _user;
+			private readonly ClaimsPrincipal _user;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				StreamRevision startRevision,
 				ulong maxCount,
 				bool resolveLinks,
-				IPrincipal user,
+				ClaimsPrincipal user,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));

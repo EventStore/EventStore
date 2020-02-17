@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly bool _resolveLinks;
-			private readonly IPrincipal _user;
+			private readonly ClaimsPrincipal _user;
 			private readonly IReadIndex _readIndex;
 			private readonly CancellationToken _cancellationToken;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				string streamName,
 				StreamRevision? startRevision,
 				bool resolveLinks,
-				IPrincipal user,
+				ClaimsPrincipal user,
 				IReadIndex readIndex,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -115,7 +115,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly IPublisher _bus;
 				private readonly string _streamName;
 				private readonly bool _resolveLinks;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly CancellationTokenSource _disposedTokenSource;
 				private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					string streamName,
 					StreamRevision startRevision,
 					bool resolveLinks,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					IReadIndex readIndex,
 					TaskCompletionSource<bool> subscriptionStarted,
 					CancellationToken cancellationToken) {
@@ -284,7 +284,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
 				private readonly string _streamName;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly TaskCompletionSource<StreamRevision> _subscriptionConfirmed;
 				private readonly TaskCompletionSource<bool> _readHistoricalEventsCompleted;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -304,7 +304,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					string streamName,
 					StreamRevision currentStreamRevision,
 					bool resolveLinks,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					TaskCompletionSource<bool> subscriptionStarted,
 					CancellationToken cancellationToken) {
 					if (bus == null) {

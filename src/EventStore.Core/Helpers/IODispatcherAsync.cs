@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -47,7 +47,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsForwardCompleted> handler,
 			Action timeoutHandler) {
 			return
@@ -81,7 +81,7 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			int maxCount,
 			bool resolveLinks,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> handler,
 			Action timeoutHandler) {
 			return
@@ -113,7 +113,7 @@ namespace EventStore.Core.Helpers {
 			CancellationScope cancellationScope,
 			string streamId,
 			long expectedVersion,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Event[] events,
 			Action<ClientMessage.WriteEventsCompleted> handler) {
 			return
@@ -128,7 +128,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			bool hardDelete,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.DeleteStreamCompleted> handler) {
 			return
 				steps =>
@@ -166,7 +166,7 @@ namespace EventStore.Core.Helpers {
 			CancellationScope cancellationScope,
 			string streamId,
 			long expectedVersion,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			StreamMetadata metadata,
 			Action<ClientMessage.WriteEventsCompleted> handler) {
 			return
@@ -201,7 +201,7 @@ namespace EventStore.Core.Helpers {
 			CancellationScope cancellationScope,
 			string streamId,
 			long expectedVersion,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Event[] events,
 			Action<ClientMessage.WriteEventsCompleted> handler,
 			IEnumerator<Step> steps) {
@@ -230,7 +230,7 @@ namespace EventStore.Core.Helpers {
 			string streamId,
 			long expectedVersion,
 			bool hardDelete,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.DeleteStreamCompleted> handler,
 			IEnumerator<Step> steps) {
 			PerformWithRetry(
@@ -258,7 +258,7 @@ namespace EventStore.Core.Helpers {
 			CancellationScope cancellationScope,
 			string streamId,
 			long expectedVersion,
-			IPrincipal principal,
+			ClaimsPrincipal principal,
 			StreamMetadata metadata,
 			Action<ClientMessage.WriteEventsCompleted> handler,
 			IEnumerator<Step> steps) {

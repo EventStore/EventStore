@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ConcurrentDictionary<string, Guid> _pendingRequests;
 
 		public MultiStreamEventReader(
-			IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs,
+			IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, ClaimsPrincipal readAs,
 			int phase,
 			string[] streams, Dictionary<string, long> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
 			bool stopOnEof = false, int? stopAfterNEvents = null)

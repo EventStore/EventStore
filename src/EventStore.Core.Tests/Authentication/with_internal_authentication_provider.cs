@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Authentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
@@ -28,12 +28,12 @@ namespace EventStore.Core.Tests.Authentication {
 
 	class TestAuthenticationRequest : AuthenticationRequest {
 		private readonly Action _unauthorized;
-		private readonly Action<IPrincipal> _authenticated;
+		private readonly Action<ClaimsPrincipal> _authenticated;
 		private readonly Action _error;
 		private readonly Action _notReady;
 
 		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
-			Action<IPrincipal> authenticated, Action error, Action notReady)
+			Action<ClaimsPrincipal> authenticated, Action error, Action notReady)
 			: base("test", name, suppliedPassword) {
 			_unauthorized = unauthorized;
 			_authenticated = authenticated;
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Authentication {
 			_unauthorized();
 		}
 
-		public override void Authenticated(IPrincipal principal) {
+		public override void Authenticated(ClaimsPrincipal principal) {
 			_authenticated(principal);
 		}
 

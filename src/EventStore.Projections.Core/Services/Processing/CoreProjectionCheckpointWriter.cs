@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void PublishWriteStreamMetadata() {
 			var metaStreamId = SystemStreams.MetastreamOf(_projectionCheckpointStreamId);
 			_writeRequestId = _ioDispatcher.WriteEvent(
-				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccount.Principal, msg => {
+				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccounts.System, msg => {
 					switch (msg.Result) {
 						case OperationResult.Success:
 							_metaStreamWritten = true;
@@ -163,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void PublishWriteCheckpointEvent() {
 			_writeRequestId = _ioDispatcher.WriteEvent(
 				_projectionCheckpointStreamId, _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				msg => WriteCheckpointEventCompleted(_projectionCheckpointStreamId, msg.Result, msg.FirstEventNumber));
 		}
 

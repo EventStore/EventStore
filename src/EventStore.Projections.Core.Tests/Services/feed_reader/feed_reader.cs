@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			[Test]
 			public void it_can_be_created() {
 				new FeedReader(
-					_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+					_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition,
 					CheckpointTag.FromPosition(0, 0, -1), 10, Guid.NewGuid(), new NoopEnvelope(),
 					new RealTimeProvider());
 			}
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void null_subscription_dispatcher_throws_argument_null_exception() {
 				Assert.Throws<ArgumentNullException>(() => {
 					new FeedReader(
-						null, SystemAccount.Principal, _testQueryDefinition, CheckpointTag.FromPosition(0, 0, -1), 10,
+						null, SystemAccounts.System, _testQueryDefinition, CheckpointTag.FromPosition(0, 0, -1), 10,
 						Guid.NewGuid(), new NoopEnvelope(), new RealTimeProvider());
 				});
 			}
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void null_query_definition_throws_argument_null_exception() {
 				Assert.Throws<ArgumentNullException>(() => {
 					new FeedReader(
-						_subscriptionDispatcher, SystemAccount.Principal, null, CheckpointTag.FromPosition(0, 0, -1),
+						_subscriptionDispatcher, SystemAccounts.System, null, CheckpointTag.FromPosition(0, 0, -1),
 						10, Guid.NewGuid(),
 						new NoopEnvelope(), new RealTimeProvider());
 				});
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void null_from_position_throws_argument_null_exception() {
 				Assert.Throws<ArgumentNullException>(() => {
 					new FeedReader(
-						_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, null, 10,
+						_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition, null, 10,
 						Guid.NewGuid(),
 						new NoopEnvelope(), new RealTimeProvider());
 				});
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void null_envelope_throws_argument_null_exception() {
 				Assert.Throws<ArgumentNullException>(() => {
 					new FeedReader(
-						_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+						_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition,
 						CheckpointTag.FromPosition(0, 0, -1), 10, Guid.NewGuid(), null, new RealTimeProvider());
 				});
 			}
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void zero_max_events_throws_argument_exception() {
 				Assert.Throws<ArgumentException>(() => {
 					new FeedReader(
-						_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+						_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition,
 						CheckpointTag.FromPosition(0, 0, -1), 0, Guid.NewGuid(), new NoopEnvelope(),
 						new RealTimeProvider());
 				});
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			public void negative_max_events_throws_argument_exception() {
 				Assert.Throws<ArgumentException>(() => {
 					new FeedReader(
-						_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition,
+						_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition,
 						CheckpointTag.FromPosition(0, 0, -1), -1, Guid.NewGuid(), new NoopEnvelope(),
 						new RealTimeProvider());
 				});
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 				_subscriptionDispatcher = new ReaderSubscriptionDispatcher(_bus);
 				_testQueryDefinition = GivenQuerySource();
 				_feedReader = new FeedReader(
-					_subscriptionDispatcher, SystemAccount.Principal, _testQueryDefinition, GivenFromPosition(), 10,
+					_subscriptionDispatcher, SystemAccounts.System, _testQueryDefinition, GivenFromPosition(), 10,
 					Guid.NewGuid(), new PublishEnvelope(_bus), new RealTimeProvider());
 				Given();
 				When();
@@ -283,7 +283,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 			}
 
@@ -321,12 +321,12 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 				var feedPage = _consumer.HandledMessages.OfType<FeedReaderMessage.FeedPage>().Single();
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
 						_querySourcesDefinition, feedPage.LastReaderPosition, _maxEvents);
 			}
 

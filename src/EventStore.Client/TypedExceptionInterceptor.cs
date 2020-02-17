@@ -78,8 +78,8 @@ namespace EventStore.Client {
 				response.Dispose);
 		}
 
-		private static Exception ConvertRpcException(RpcException ex)
-			=> ex.Trailers.TryGetValue(Constants.Exceptions.ExceptionKey, out var value) switch {
+		private static Exception ConvertRpcException(RpcException ex) {
+			return ex.Trailers.TryGetValue(Constants.Exceptions.ExceptionKey, out var value) switch {
 				true => value switch {
 					Constants.Exceptions.AccessDenied => new AccessDeniedException(ex.Message, ex),
 					Constants.Exceptions.InvalidTransaction => new InvalidTransactionException(ex.Message, ex),
@@ -122,9 +122,11 @@ namespace EventStore.Client {
 				},
 				false => ex.StatusCode switch {
 					StatusCode.DeadlineExceeded => ex,
+					StatusCode.Unauthenticated => new NotAuthenticatedException(ex.Message, ex),
 					_ => new InvalidOperationException(ex.Message, ex)
 				}
 			};
+		}
 
 		class AsyncStreamReader<TResponse> : IAsyncStreamReader<TResponse> {
 			private readonly Action<Exception> _exceptionOccurred;

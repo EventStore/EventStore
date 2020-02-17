@@ -8,13 +8,10 @@ using static EventStore.Core.Messages.UserManagementMessage;
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users : EventStore.Client.Users.Users.UsersBase {
 		private readonly IQueuedHandler _queue;
-		private readonly IAuthenticationProvider _authenticationProvider;
-
-		public Users(IQueuedHandler queue, IAuthenticationProvider authenticationProvider) {
+		
+		public Users(IQueuedHandler queue) {
 			if (queue == null) throw new ArgumentNullException(nameof(queue));
-			if (authenticationProvider == null) throw new ArgumentNullException(nameof(authenticationProvider));
 			_queue = queue;
-			_authenticationProvider = authenticationProvider;
 		}
 
 		private static bool HandleErrors<T>(string loginName, Message message, TaskCompletionSource<T> source) {

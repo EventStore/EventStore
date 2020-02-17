@@ -19,13 +19,11 @@ namespace EventStore.Client.Projections {
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
 		private readonly IQueuedHandler _queue;
-		private readonly IAuthenticationProvider _authenticationProvider;
-
-		public ProjectionManagement(IQueuedHandler queue, IAuthenticationProvider authenticationProvider) {
+		
+		public ProjectionManagement(IQueuedHandler queue) {
 			if (queue == null) throw new ArgumentNullException(nameof(queue));
-			if (authenticationProvider == null) throw new ArgumentNullException(nameof(authenticationProvider));
 			_queue = queue;
-			_authenticationProvider = authenticationProvider;
+
 		}
 
 		private static Exception UnknownMessage<T>(Message message) where T : Message =>

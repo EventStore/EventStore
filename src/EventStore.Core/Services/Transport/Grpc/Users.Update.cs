@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			var updateSource = new TaskCompletionSource<bool>();
 

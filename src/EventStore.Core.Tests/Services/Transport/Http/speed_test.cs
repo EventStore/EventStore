@@ -140,10 +140,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var bus = InMemoryBus.CreateTest();
 			var queue = new QueuedHandlerThreadPool(bus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
 			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] { queue }, null);
-			var providers = new HttpAuthenticationProvider[] { new AnonymousHttpAuthenticationProvider() };
+			var providers = new IHttpAuthenticationProvider[] { new AnonymousHttpAuthenticationProvider() };
 			var httpService = new KestrelHttpService(ServiceAccessibility.Public, inputBus,
 				new TrieUriRouter(), multiQueuedHandler, false, null, 0, false);
-			KestrelHttpService.CreateAndSubscribePipeline(bus, providers);
+			KestrelHttpService.CreateAndSubscribePipeline(bus);
 
 			using var server = new TestServer(new WebHostBuilder().UseStartup(new HttpServiceStartup(httpService)));
 			using var httpMessageHandler = server.CreateHandler();

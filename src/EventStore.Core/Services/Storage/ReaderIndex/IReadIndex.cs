@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 
@@ -46,7 +45,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		StreamMetadata GetStreamMetadata(string streamId);
 
 		string GetEventStreamIdByTransactionId(long transactionId);
-		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user);
 
 		void Close();
 		void Dispose();

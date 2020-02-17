@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -9,7 +9,7 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class EventReader : IEventReader {
 		protected readonly Guid EventReaderCorrelationId;
-		private readonly IPrincipal _readAs;
+		private readonly ClaimsPrincipal _readAs;
 		protected readonly IPublisher _publisher;
 
 		protected readonly bool _stopOnEof;
@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected bool _disposed;
 		private bool _startingSent;
 
-		protected EventReader(IPublisher publisher, Guid eventReaderCorrelationId, IPrincipal readAs, bool stopOnEof) {
+		protected EventReader(IPublisher publisher, Guid eventReaderCorrelationId, ClaimsPrincipal readAs, bool stopOnEof) {
 			if (publisher == null) throw new ArgumentNullException("publisher");
 			if (eventReaderCorrelationId == Guid.Empty)
 				throw new ArgumentException("eventReaderCorrelationId");
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			get { return _paused; }
 		}
 
-		protected IPrincipal ReadAs {
+		protected ClaimsPrincipal ReadAs {
 			get { return _readAs; }
 		}
 

@@ -15,8 +15,8 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task reading_all_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.ReadAllForward(TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.ReadAllBackward(TestCredentials.TestBadUser));
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() => _fixture.ReadAllForward(TestCredentials.TestBadUser));
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() => _fixture.ReadAllBackward(TestCredentials.TestBadUser));
 		}
 
 		[Fact]

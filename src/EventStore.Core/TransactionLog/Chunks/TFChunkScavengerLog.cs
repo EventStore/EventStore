@@ -49,7 +49,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
 			var metaStreamEvent = new Event(metadataEventId, SystemEventTypes.StreamMetadata, isJson: true,
 				data: metadata.ToJsonBytes(), metadata: null);
-			_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => {
+			_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccounts.System, m => {
 				if (m.Result != OperationResult.Success) {
 					Log.Error(
 						"Failed to write the $maxAge of {days} days metadata for the {stream} stream. Reason: {reason}",
@@ -186,7 +186,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void WriteScavengeChunkCompletedEvent(string streamId, Event eventToWrite, int retryCount) {
-			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccounts.System,
 				m => WriteScavengeChunkCompletedEventCompleted(m, streamId, eventToWrite, retryCount));
 		}
 
@@ -204,13 +204,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void WriteScavengeDetailEvent(string streamId, Event eventToWrite, int retryCount) {
-			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccounts.System,
 				x => WriteScavengeDetailEventCompleted(x, eventToWrite, streamId, retryCount));
 		}
 
 		private void WriteScavengeIndexEvent(Event linkToEvent, int retryCount) {
 			_ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, linkToEvent,
-				SystemAccount.Principal, m => WriteScavengeIndexEventCompleted(m, linkToEvent, retryCount));
+				SystemAccounts.System, m => WriteScavengeIndexEventCompleted(m, linkToEvent, retryCount));
 		}
 
 		private void WriteScavengeIndexEventCompleted(ClientMessage.WriteEventsCompleted msg, Event linkToEvent,

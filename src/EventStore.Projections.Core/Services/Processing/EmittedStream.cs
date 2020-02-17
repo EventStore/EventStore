@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly string _metadataStreamId;
 		private readonly WriterConfiguration _writerConfiguration;
 		private readonly ProjectionVersion _projectionVersion;
-		private readonly IPrincipal _writeAs;
+		private readonly ClaimsPrincipal _writeAs;
 		private readonly PositionTagger _positionTagger;
 		private readonly CheckpointTag _zeroPosition;
 		private readonly CheckpointTag _fromCheckpointPosition;
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private Random _random = new Random();
 
 		public class WriterConfiguration {
-			private readonly IPrincipal _writeAs;
+			private readonly ClaimsPrincipal _writeAs;
 			private readonly int _maxWriteBatchLength;
 			private readonly ILogger _logger;
 
@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			public WriterConfiguration(
-				IEmittedStreamsWriter writer, StreamMetadata streamMetadata, IPrincipal writeAs,
+				IEmittedStreamsWriter writer, StreamMetadata streamMetadata, ClaimsPrincipal writeAs,
 				int maxWriteBatchLength, ILogger logger = null) {
 				_writer = writer;
 				_writeAs = writeAs;
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				}
 			}
 
-			public IPrincipal WriteAs {
+			public ClaimsPrincipal WriteAs {
 				get { return _writeAs; }
 			}
 
@@ -395,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_awaitingListEventsCompleted = true;
 			_pendingRequestCorrelationId = Guid.NewGuid();
 			_ioDispatcher.ReadBackward(
-				_streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccount.Principal,
+				_streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccounts.System,
 				action: completed => ReadStreamEventsBackwardCompleted(completed, upTo),
 				corrId: _pendingRequestCorrelationId);
 			ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, _streamId, upTo, fromEventNumber);

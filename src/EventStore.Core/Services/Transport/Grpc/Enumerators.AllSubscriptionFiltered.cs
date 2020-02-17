@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
 			private readonly IEventFilter _eventFilter;
-			private readonly IPrincipal _user;
+			private readonly ClaimsPrincipal _user;
 			private readonly IReadIndex _readIndex;
 			private readonly uint? _maxWindowSize;
 			private readonly uint _checkpointIntervalMultiplier;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Position? startPosition,
 				bool resolveLinks,
 				IEventFilter eventFilter,
-				IPrincipal user,
+				ClaimsPrincipal user,
 				IReadIndex readIndex,
 				uint? maxWindowSize,
 				uint checkpointIntervalMultiplier,
@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly IPublisher _bus;
 				private readonly bool _resolveLinks;
 				private readonly IEventFilter _eventFilter;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly uint _maxWindowSize;
 				private readonly CancellationTokenSource _disposedTokenSource;
 				private readonly ConcurrentQueueWrapper<ResolvedEvent> _buffer;
@@ -140,7 +140,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					Position position,
 					bool resolveLinks,
 					IEventFilter eventFilter,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					IReadIndex readIndex,
 					uint? maxWindowSize,
 					CancellationToken cancellationToken) {
@@ -287,7 +287,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
 				private readonly IEventFilter _eventFilter;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly uint _maxWindowSize;
 				private readonly Func<Position, Task> _checkpointReached;
 				private readonly TaskCompletionSource<Position> _subscriptionConfirmed;
@@ -309,7 +309,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					Position currentPosition,
 					bool resolveLinks,
 					IEventFilter eventFilter,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					uint? maxWindowSize,
 					uint checkpointIntervalMultiplier,
 					Func<Position, Task> checkpointReached,

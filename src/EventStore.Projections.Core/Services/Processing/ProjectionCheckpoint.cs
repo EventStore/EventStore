@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ILogger _logger;
 
 		private readonly Dictionary<string, EmittedStream> _emittedStreams = new Dictionary<string, EmittedStream>();
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly CheckpointTag _from;
 		private CheckpointTag _last;
 		private readonly IProjectionCheckpointManager _readyHandler;
@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IPublisher publisher,
 			IODispatcher ioDispatcher,
 			ProjectionVersion projectionVersion,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			IProjectionCheckpointManager readyHandler,
 			CheckpointTag from,
 			PositionTagger positionTagger,

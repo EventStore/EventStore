@@ -49,7 +49,7 @@ namespace EventStore.Client.Users {
 			Assert.Equal(paramName, ex.ParamName);
 		}
 
-		[Theory(Skip = "This can't be right"), ClassData(typeof(InsufficientCredentialsCases))]
+		[Theory(Skip = "This can't be right"), ClassData(typeof(InvalidCredentialsCases))]
 		public async Task with_user_with_insufficient_credentials_throws(string loginName,
 			UserCredentials userCredentials) {
 			await _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", Array.Empty<string>(),

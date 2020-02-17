@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace EventStore.Client.Users {
-	public class InsufficientCredentialsCases : IEnumerable<object[]> {
+	public class InvalidCredentialsCases : IEnumerable<object[]> {
 		public IEnumerator<object[]> GetEnumerator() {
 			var loginName = Guid.NewGuid().ToString();
 

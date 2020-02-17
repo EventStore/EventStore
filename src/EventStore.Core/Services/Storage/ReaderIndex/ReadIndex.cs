@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _indexReader.GetEventStreamIdByTransactionId(transactionId);
 		}
 
-		StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user) {
+		StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
 			return _indexReader.CheckStreamAccess(streamId, streamAccessType, user);
 		}
 

@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				Guid.NewGuid(),
 				_bus,
 				Guid.NewGuid(),
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				_bus,
 				_ioDispatcher,
 				_subscriptionDispatcher,

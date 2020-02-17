@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void ReadEmittedStreamStreamIdsIntoCache(long position) {
 			_ioDispatcher.ReadForward(_projectionNamesBuilder.GetEmittedStreamsName(), position, 1, false,
-				SystemAccount.Principal, x => {
+				SystemAccounts.System, x => {
 					if (x.Events.Length > 0) {
 						for (int i = 0; i < x.Events.Length; i++) {
 							var streamId = Helper.UTF8NoBom.GetString(x.Events[i].Event.Data);
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void WriteEvent(Event evnt, int retryCount) {
 			_ioDispatcher.WriteEvent(_projectionNamesBuilder.GetEmittedStreamsName(), ExpectedVersion.Any, evnt,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				x => OnWriteComplete(x, evnt, Helper.UTF8NoBom.GetString(evnt.Data), retryCount));
 		}
 

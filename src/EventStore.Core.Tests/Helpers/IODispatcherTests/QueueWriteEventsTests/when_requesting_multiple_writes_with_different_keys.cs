@@ -11,10 +11,10 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests 
 		protected override void Given() {
 			_ioDispatcher.QueueWriteEvents(Guid.NewGuid(), $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
-				SystemAccount.Principal, (msg) => { });
+				SystemAccounts.System, (msg) => { });
 			_ioDispatcher.QueueWriteEvents(Guid.NewGuid(), $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
-				SystemAccount.Principal, (msg) => { });
+				SystemAccounts.System, (msg) => { });
 		}
 
 		[Test]

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			var options = requestStream.Current.Options;
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 			var connectionName =
 				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
 				"<unknown>";
@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				string streamName,
 				string groupName,
 				int bufferSize,
-				IPrincipal user,
+				ClaimsPrincipal user,
 				CancellationToken cancellationToken) {
 				if (connectionName == null) throw new ArgumentNullException(nameof(connectionName));
 				if (queue == null) {

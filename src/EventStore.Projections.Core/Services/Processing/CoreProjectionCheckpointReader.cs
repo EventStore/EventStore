@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_readRequestId = Guid.NewGuid();
 			_ioDispatcher.ReadBackward(
 				_projectionCheckpointStreamId, _nextStateIndexToRequest, recordsToRequest, false,
-				SystemAccount.Principal, OnLoadStateReadRequestCompleted,
+				SystemAccounts.System, OnLoadStateReadRequestCompleted,
 				() => {
 					_logger.Warn("Read forward of stream {stream} timed out. Retrying.", _projectionCheckpointStreamId);
 					RequestLoadState();

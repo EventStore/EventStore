@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?

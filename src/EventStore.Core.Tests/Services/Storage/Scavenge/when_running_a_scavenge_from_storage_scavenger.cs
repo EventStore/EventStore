@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			await _node.Start();
 
 			var scavengeMessage =
-				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal, 0, 1);
+				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccounts.System, 0, 1);
 			_node.Node.MainQueue.Publish(scavengeMessage);
 
 			try {

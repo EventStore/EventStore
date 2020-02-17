@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				new CoreProjectionCheckpointWriter(
 					namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
 			var checkpointManager2 = new DefaultCheckpointManager(
-				publisher, projectionCorrelationId, _projectionVersion, SystemAccount.Principal, ioDispatcher,
+				publisher, projectionCorrelationId, _projectionVersion, SystemAccounts.System, ioDispatcher,
 				_projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,
 				_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 

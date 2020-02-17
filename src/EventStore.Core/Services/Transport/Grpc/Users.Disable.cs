@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			var disableSource = new TaskCompletionSource<bool>();
 

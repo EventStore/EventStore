@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
-		public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user) {
+		public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
 			throw new NotImplementedException();
 		}
 

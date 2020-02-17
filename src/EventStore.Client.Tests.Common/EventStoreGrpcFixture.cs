@@ -88,7 +88,6 @@ namespace EventStore.Client {
 				CancellationToken cancellationToken) {
 				var response = await base.SendAsync(request, cancellationToken);
 				response.Version = request.Version;
-
 				return response;
 			}
 		}

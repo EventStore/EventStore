@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -620,7 +620,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private ResolvedEvent[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks, IPrincipal user) {
+		private ResolvedEvent[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks, ClaimsPrincipal user) {
 			var resolved = new ResolvedEvent[records.Length];
 			if (resolveLinks) {
 				for (var i = 0; i < records.Length; i++) {
@@ -638,7 +638,7 @@ namespace EventStore.Core.Services.Storage {
 			return resolved;
 		}
 
-		private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, IPrincipal user, long? commitPosition) {
+		private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, ClaimsPrincipal user, long? commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
 					var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
@@ -666,7 +666,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private ResolvedEvent[] ResolveReadAllResult(IList<CommitEventRecord> records, bool resolveLinks,
-			IPrincipal user) {
+			ClaimsPrincipal user) {
 			var result = new ResolvedEvent[records.Count];
 			if (resolveLinks) {
 				for (var i = 0; i < result.Length; ++i) {

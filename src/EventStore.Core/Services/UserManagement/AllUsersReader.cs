@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.UserManagement {
 		private void BeginReadForward(long fromEventNumber) {
 			_activeRequests++;
 			_ioDispatcher.ReadForward(
-				"$users", fromEventNumber, 1, false, SystemAccount.Principal, ReadUsersForwardCompleted);
+				"$users", fromEventNumber, 1, false, SystemAccounts.System, ReadUsersForwardCompleted);
 		}
 
 		private void ReadUsersForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted result) {
@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.UserManagement {
 		private void BeginReadUserDetails(string loginName) {
 			_activeRequests++;
 			_ioDispatcher.ReadBackward(
-				UserStreamPrefix + loginName, -1, 1, false, SystemAccount.Principal,
+				UserStreamPrefix + loginName, -1, 1, false, SystemAccounts.System,
 				result => ReadUserDetailsBackwardCompleted(loginName, result));
 		}
 

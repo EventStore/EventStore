@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var filterOptionsCase = options.FilterOptionCase;
 			var uuidOptionsCase = options.UuidOption.ContentCase;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			await using var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {

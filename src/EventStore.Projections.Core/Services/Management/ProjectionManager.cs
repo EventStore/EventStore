@@ -640,7 +640,7 @@ namespace EventStore.Projections.Core.Services.Management {
 						false,
 						Helper.UTF8NoBom.GetBytes(message.Name),
 						Empty.ByteArray),
-					SystemAccount.Principal);
+					SystemAccounts.System);
 
 			BeginWriteProjectionDeleted(writeDelete, message, completed);
 		}
@@ -681,7 +681,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					resolveLinkTos: false,
 					requireLeader: false,
 					validationStreamVersion: null,
-					user: SystemAccount.Principal),
+					user: SystemAccounts.System),
 				m => OnProjectionsListReadCompleted(m, registeredProjections, from, completedAction));
 		}
 
@@ -804,7 +804,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					ExpectedVersion.NoStream,
 					new Event(registrationEventId, ProjectionEventTypes.ProjectionsInitialized, false, Empty.ByteArray,
 						Empty.ByteArray),
-					SystemAccount.Principal),
+					SystemAccounts.System),
 				completed => WriteProjectionsInitializedCompleted(completed, registrationEventId, action));
 		}
 
@@ -928,7 +928,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				ProjectionNamesBuilder.ProjectionsRegistrationStream,
 				expectedVersion,
 				events.ToArray(),
-				SystemAccount.Principal);
+				SystemAccounts.System);
 
 			_writeDispatcher.Publish(
 				writeEvents,
@@ -1025,7 +1025,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					resolveLinkTos: false,
 					requireLeader: false,
 					validationStreamVersion: null,
-					user: SystemAccount.Principal),
+					user: SystemAccounts.System),
 				onComplete);
 		}
 

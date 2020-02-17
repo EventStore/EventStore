@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 		public void TestFixtureSetUp() {
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
 			_projectionVersion = new ProjectionVersion(3, 1, 2);
-			_projectionConfig = new ProjectionConfig(SystemAccount.Principal, 10, 1000, 1000, 10, true, true, true,
+			_projectionConfig = new ProjectionConfig(SystemAccounts.System, 10, 1000, 1000, 10, true, true, true,
 				false,
 				false, 5000, 10);
 			_positionTagger = new MultiStreamPositionTagger(3, _streams);
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 				_projectionVersion, _projectionName);
 
 			_checkpointManager = new MultiStreamMultiOutputCheckpointManager(_bus, _projectionId, _projectionVersion,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				_ioDispatcher, _projectionConfig, _projectionName, _positionTagger, _namingBuilder, true, true, false,
 				_coreProjectionCheckpointWriter);
 

@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public interface IEmittedStreamsWriter {
-		void WriteEvents(string streamId, long expectedVersion, Event[] events, IPrincipal writeAs,
+		void WriteEvents(string streamId, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
 			Action<ClientMessage.WriteEventsCompleted> complete);
 	}
 }

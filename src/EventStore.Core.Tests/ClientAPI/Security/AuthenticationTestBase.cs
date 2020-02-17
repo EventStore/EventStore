@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 							userCreateEvent1.SetResult(true);
 						}),
-					SystemAccount.Principal,
+					SystemAccounts.System,
 					"user1",
 					"Test User 1",
 					new string[0],
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 							userCreateEvent2.SetResult(true);
 						}),
-					SystemAccount.Principal,
+					SystemAccounts.System,
 					"user2",
 					"Test User 2",
 					new string[0],
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 							adminCreateEvent2.SetResult(true);
 						}),
-					SystemAccount.Principal,
+					SystemAccounts.System,
 					"adm",
 					"Administrator User",
 					new[] { SystemRoles.Admins },

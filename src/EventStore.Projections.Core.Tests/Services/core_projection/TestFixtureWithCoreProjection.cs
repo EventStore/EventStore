@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				_projectionCorrelationId,
 				_bus,
 				_workerId,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				_bus,
 				_ioDispatcher,
 				_subscriptionDispatcher,

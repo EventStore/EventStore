@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core {
 
 		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
 			services.AddSingleton(provider =>
-				new ProjectionManagement(_leaderInputQueue, provider.GetService<IAuthenticationProvider>()));
+				new ProjectionManagement(_leaderInputQueue));
 
 		public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
 			bool startStandardProjections, TimeSpan projectionQueryExpiry, bool faultOutOfOrderProjections) {

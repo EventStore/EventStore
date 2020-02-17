@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -206,7 +206,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void CreateCoreProjection(
-			Guid projectionCorrelationId, IPrincipal runAs, ProjectionProcessingStrategy processingStrategy) {
+			Guid projectionCorrelationId, ClaimsPrincipal runAs, ProjectionProcessingStrategy processingStrategy) {
 			var projection = processingStrategy.Create(
 				projectionCorrelationId,
 				_inputQueue,

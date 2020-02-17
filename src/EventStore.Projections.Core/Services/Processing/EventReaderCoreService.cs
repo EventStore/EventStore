@@ -252,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var transactionFileReader = new TransactionFileEventReader(
 				_publisher,
 				_defaultEventReaderId,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				new TFPos(_writerCheckpoint.Read(), -1),
 				new RealTimeProvider(),
 				deliverEndOfTFPosition: false);

@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<ScavengeResp> StartScavenge(StartScavengeReq request, ServerCallContext context) {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			_queue.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.StartFromChunk, request.Options.ThreadCount));
@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<ScavengeResp> StopScavenge(StopScavengeReq request, ServerCallContext context) {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			_queue.Publish(new ClientMessage.StopDatabaseScavenge(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.ScavengeId));

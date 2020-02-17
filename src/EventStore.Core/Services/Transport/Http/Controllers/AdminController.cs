@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -42,7 +43,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
-			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
 				Log.Info("Request shut down of node because shutdown command has been received.");
 				Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
@@ -148,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
-			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
 				Log.Info("Request to set node priority.");
 
 				int nodePriority;
@@ -172,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnResignNode(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
-			    (entity.User.IsInRole(SystemRoles.Admins) || entity.User.IsInRole(SystemRoles.Operations))) {
+			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
 				Log.Info("Request to resign node.");
 				Publish(new ClientMessage.ResignNode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
