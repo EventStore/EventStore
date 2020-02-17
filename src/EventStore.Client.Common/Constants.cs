@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.Client {
 	internal static class Constants {
 		public static class Exceptions {
@@ -37,10 +39,17 @@ namespace EventStore.Client {
 		}
 
 		public static class Metadata {
+			[Obsolete]
 			public const string IsJson = "is-json";
 			public const string Type = "type";
 			public const string Created = "created";
-			public static readonly string[] RequiredMetadata = {Type, IsJson};
+			public const string ContentType = "content-type";
+			public static readonly string[] RequiredMetadata = {Type, ContentType};
+
+			public static class ContentTypes {
+				public const string ApplicationJson = "application/json";
+				public const string ApplicationOctetStream = "application/octet-stream";
+			}
 		}
 
 		public static class Headers {

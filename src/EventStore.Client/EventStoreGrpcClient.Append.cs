@@ -103,7 +103,8 @@ namespace EventStore.Client {
 						CustomMetadata = ByteString.CopyFrom(e.Metadata),
 						Metadata = {
 							{Constants.Metadata.Type, e.Type},
-							{Constants.Metadata.IsJson, e.IsJson.ToString().ToLowerInvariant()}
+							{Constants.Metadata.IsJson, e.IsJson.ToString().ToLowerInvariant()},
+							{Constants.Metadata.ContentType, e.ContentType}
 						}
 					}
 				}).ConfigureAwait(false);

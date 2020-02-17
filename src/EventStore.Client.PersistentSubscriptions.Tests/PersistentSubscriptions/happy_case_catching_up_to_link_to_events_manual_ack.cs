@@ -34,7 +34,8 @@ namespace EventStore.Client.PersistentSubscriptions {
 			public Fixture() {
 				_events = CreateTestEvents(EventWriteCount)
 					.Select((e, i) => new EventData(e.EventId, SystemEventTypes.LinkTo,
-						Helper.UTF8NoBom.GetBytes($"{i}@{Stream}"), isJson: false))
+						Helper.UTF8NoBom.GetBytes($"{i}@{Stream}"),
+						contentType: Constants.Metadata.ContentTypes.ApplicationOctetStream))
 					.ToArray();
 				_eventsReceived = new TaskCompletionSource<bool>();
 			}
