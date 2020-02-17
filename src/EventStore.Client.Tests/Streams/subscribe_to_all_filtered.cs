@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
@@ -9,7 +8,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
-	public class subscribe_to_all_filtered : IClassFixture<subscribe_to_all_filtered.Fixture>, IAsyncLifetime, IDisposable {
+	public class subscribe_to_all_filtered : IAsyncLifetime, IDisposable {
 		private readonly Fixture _fixture;
 		private readonly IDisposable _loggingContext;
 
@@ -18,157 +17,71 @@ namespace EventStore.Client.Streams {
 			_loggingContext = LoggingHelper.Capture(outputHelper);
 		}
 
-		[Fact]
-		public async Task regular_expression_stream_name() {
+		public static IEnumerable<object[]> FilterCases() => Filters.All.Select(filter => new object[] {filter});
+
+		[Theory, MemberData(nameof(FilterCases))]
+		public async Task reads_all_existing_events_and_keep_listening_to_new_ones(string filterName) {
 			var streamPrefix = _fixture.GetStreamName();
-			var events = _fixture.CreateTestEvents(20).ToArray();
-			var beforeEvents = events.Take(10).ToArray();
-			var afterEvents = events.Skip(10).ToArray();
-			var result = new List<EventRecord>();
-			var source = new TaskCompletionSource<bool>();
+			var (getFilter, prepareEvent) = Filters.GetFilter(filterName);
 
-			foreach (var e in beforeEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
-
-			await _fixture.Client.SubscribeToAllAsync(EventAppeared,
-				false, filter: new StreamFilter(new RegularFilterExpression(new Regex($"^{streamPrefix}"))));
-
-			foreach (var e in afterEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
-
-			Task EventAppeared(StreamSubscription _, ResolvedEvent e, CancellationToken ct) {
-				result.Add(e.Event);
-				if (result.Count >= events.Length) {
-					source.TrySetResult(true);
-				}
-
-				return Task.CompletedTask;
-			}
-
-			await source.Task.WithTimeout();
-
-			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.EventId));
-		}
-
-		[Fact]
-		public async Task prefix_stream_name() {
-			var streamPrefix = _fixture.GetStreamName();
-			var events = _fixture.CreateTestEvents(20).ToArray();
-			var beforeEvents = events.Take(10).ToArray();
-			var afterEvents = events.Skip(10).ToArray();
-			var result = new List<EventRecord>();
-			var source = new TaskCompletionSource<bool>();
-
-			foreach (var e in beforeEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
-
-			await _fixture.Client.SubscribeToAllAsync(EventAppeared,
-				false, filter: new StreamFilter(new PrefixFilterExpression(streamPrefix)));
-
-			foreach (var e in afterEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
-
-			Task EventAppeared(StreamSubscription _, ResolvedEvent e, CancellationToken ct) {
-				result.Add(e.Event);
-				if (result.Count >= events.Length) {
-					source.TrySetResult(true);
-				}
-
-				return Task.CompletedTask;
-			}
-
-			await source.Task.WithTimeout();
-
-			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.EventId));
-		}
-
-		[Fact]
-		public async Task regular_expression_event_type() {
-			const string eventTypePrefix = nameof(regular_expression_event_type);
-			var streamPrefix = _fixture.GetStreamName();
-			var events = _fixture.CreateTestEvents(20)
-				.Select(e =>
-					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.IsJson))
+			var appeared = new TaskCompletionSource<bool>();
+			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
+			var filter = getFilter(streamPrefix);
+			var events = _fixture.CreateTestEvents(20).Select(e => prepareEvent(streamPrefix, e))
 				.ToArray();
 			var beforeEvents = events.Take(10);
 			var afterEvents = events.Skip(10);
-			var result = new List<EventRecord>();
-			var source = new TaskCompletionSource<bool>();
+
+			using var enumerator = events.OfType<EventData>().GetEnumerator();
+			enumerator.MoveNext();
 
 			foreach (var e in beforeEvents) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			await _fixture.Client.SubscribeToAllAsync(EventAppeared,
-				false, filter: new EventTypeFilter(new RegularFilterExpression(new Regex($"^{eventTypePrefix}"))));
+			using var subscription = await _fixture.Client.SubscribeToAllAsync(EventAppeared, false, filter: filter,
+				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in afterEvents) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
+			await appeared.Task.WithTimeout();
+
+			Assert.False(dropped.Task.IsCompleted);
+
+			subscription.Dispose();
+
+			var (reason, ex) = await dropped.Task.WithTimeout();
+
+			Assert.Equal(SubscriptionDroppedReason.Disposed, reason);
+			Assert.Null(ex);
+
 			Task EventAppeared(StreamSubscription _, ResolvedEvent e, CancellationToken ct) {
-				result.Add(e.Event);
-				if (result.Count >= events.Length) {
-					source.TrySetResult(true);
+				try {
+					Assert.Equal(enumerator.Current.EventId, e.OriginalEvent.EventId);
+					if (!enumerator.MoveNext()) {
+						appeared.TrySetResult(true);
+					}
+				} catch (Exception ex) {
+					appeared.TrySetException(ex);
+					throw;
 				}
 
 				return Task.CompletedTask;
 			}
 
-			await source.Task.WithTimeout();
-
-			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.EventId));
+			void SubscriptionDropped(StreamSubscription s, SubscriptionDroppedReason reason, Exception ex) =>
+				dropped.SetResult((reason, ex));
 		}
 
-		[Fact]
-		public async Task prefix_event_type() {
-			const string eventTypePrefix = nameof(prefix_event_type);
-			var streamPrefix = _fixture.GetStreamName();
-			var events = _fixture.CreateTestEvents(20)
-				.Select(e =>
-					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.IsJson))
-				.ToArray();
-			var beforeEvents = events.Take(10);
-			var afterEvents = events.Skip(10);
-			var result = new List<EventRecord>();
-			var source = new TaskCompletionSource<bool>();
+		public Task InitializeAsync() => _fixture.InitializeAsync();
 
-			foreach (var e in beforeEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
+		public Task DisposeAsync() => _fixture.DisposeAsync();
 
-			await _fixture.Client.SubscribeToAllAsync(EventAppeared,
-				false, filter: new EventTypeFilter(new PrefixFilterExpression(eventTypePrefix)));
-
-			foreach (var e in afterEvents) {
-				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
-			}
-
-			Task EventAppeared(StreamSubscription _, ResolvedEvent e, CancellationToken ct) {
-				result.Add(e.Event);
-				if (result.Count >= events.Length) {
-					source.TrySetResult(true);
-				}
-
-				return Task.CompletedTask;
-			}
-
-			await source.Task.WithTimeout();
-
-			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.EventId));
-		}
+		public void Dispose() => _loggingContext.Dispose();
 
 		public class Fixture : EventStoreGrpcFixture {
 			public const string FilteredOutStream = nameof(FilteredOutStream);
@@ -179,10 +92,5 @@ namespace EventStore.Client.Streams {
 			protected override Task When() =>
 				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(10));
 		}
-
-		public Task InitializeAsync() => _fixture.InitializeAsync();
-
-		public Task DisposeAsync() => _fixture.DisposeAsync();
-		public void Dispose() => _loggingContext.Dispose();
 	}
 }

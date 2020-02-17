@@ -48,6 +48,6 @@ namespace EventStore.Client {
 		public static bool operator <=(StreamRevision left, StreamRevision right) => left._value <= right._value;
 		internal readonly long ToInt64() => Equals(End) ? -1 : Convert.ToInt64(_value);
 		public static implicit operator ulong(StreamRevision streamRevision) => streamRevision._value;
-		public override readonly string ToString() => _value.ToString();
+		public override readonly string ToString() => this == End ? "End" : _value.ToString();
 	}
 }
