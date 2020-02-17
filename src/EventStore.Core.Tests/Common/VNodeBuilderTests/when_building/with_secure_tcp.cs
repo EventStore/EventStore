@@ -20,14 +20,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
 				.WithSslTargetHost("Host")
 				.WithServerCertificateFromFile(certPath, "1111");
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
 		}
 
 		[Test]
@@ -75,14 +74,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
 				.WithSslTargetHost("Host")
 				.WithServerCertificate(_certificate);
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
 		}
 
 		[Test]

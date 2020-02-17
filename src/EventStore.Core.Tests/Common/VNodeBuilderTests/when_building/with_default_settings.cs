@@ -32,10 +32,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		}
 
 		[Test]
-		public void should_not_use_ssl() {
-			Assert.AreEqual("n/a", _settings.Certificate == null ? "n/a" : _settings.Certificate.ToString());
-			Assert.IsFalse(_settings.UseSsl);
-			Assert.AreEqual("n/a", _settings.SslTargetHost == null ? "n/a" : _settings.SslTargetHost);
+		public void should_use_tls() {
+			Assert.IsFalse(_settings.DisableInternalTls);
 		}
 
 		[Test]
@@ -114,10 +112,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		}
 
 		[Test]
-		public void should_not_use_ssl() {
-			Assert.AreEqual("n/a", _settings.Certificate == null ? "n/a" : _settings.Certificate.ToString());
-			Assert.IsFalse(_settings.UseSsl);
-			Assert.AreEqual("n/a", _settings.SslTargetHost == null ? "n/a" : _settings.SslTargetHost.ToString());
+		public void should_use_tls() {
+			Assert.IsFalse(_settings.DisableInternalTls);
 		}
 
 		[Test]
