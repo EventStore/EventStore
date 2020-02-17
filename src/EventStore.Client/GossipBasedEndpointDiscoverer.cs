@@ -184,7 +184,6 @@ namespace EventStore.Client {
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
 			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
-			       || state == ClusterMessages.VNodeState.PreReadOnlyReplica
 			       || state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}
 	}
