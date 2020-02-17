@@ -70,7 +70,6 @@ namespace EventStore.Core {
 		protected bool _enableExternalTCP;
 		protected bool _disableInternalTls;
 		protected bool _disableExternalTls;
-		protected bool _disableInsecureTCP;
 		protected string _tlsTargetHost;
 
 		protected TimeSpan _statsPeriod;
@@ -189,7 +188,6 @@ namespace EventStore.Core {
 			_disableInternalTls = Opts.DisableInternalTlsDefault;
 			_disableExternalTls = Opts.DisableExternalTlsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
-			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
 			_tlsTargetHost = Opts.TlsTargetHostDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
@@ -544,15 +542,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableExternalTCP() {
 			_enableExternalTCP = true;
-			return this;
-		}
-
-		/// <summary>
-		/// Disable Insecure TCP Communication
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableInsecureTCP() {
-			_disableInsecureTCP = true;
 			return this;
 		}
 
@@ -1386,7 +1375,6 @@ namespace EventStore.Core {
 				_commitTimeout,
 				_disableInternalTls,
 				_disableExternalTls,
-				_disableInsecureTCP,
 				_tlsTargetHost,
 				_statsPeriod,
 				_statsStorage,
