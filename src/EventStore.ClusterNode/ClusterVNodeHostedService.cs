@@ -296,6 +296,8 @@ namespace EventStore.ClusterNode {
 				builder.WithBetterOrdering();
 			if (options.DisableInternalTls)
 				builder.DisableInternalTls();
+			if (options.DisableExternalTls)
+				builder.DisableExternalTls();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableInsecureTCP)

@@ -34,6 +34,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_use_tls() {
 			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -114,6 +115,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_use_tls() {
 			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]

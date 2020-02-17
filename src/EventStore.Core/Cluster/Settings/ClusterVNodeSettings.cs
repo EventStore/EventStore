@@ -39,6 +39,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int NodePriority;
 
 		public readonly bool DisableInternalTls;
+		public readonly bool DisableExternalTls;
 		public readonly bool EnableExternalTCP;
 		public readonly bool DisableInsecureTCP;
 		public readonly string TlsTargetHost;
@@ -109,6 +110,7 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
 			bool disableInternalTls,
+			bool disableExternalTls,
 			bool disableInsecureTCP,
 			string tlsTargetHost,
 			TimeSpan statsPeriod,
@@ -218,6 +220,7 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitTimeout = commitTimeout;
 
 			DisableInternalTls = disableInternalTls;
+			DisableExternalTls = disableExternalTls;
 			EnableExternalTCP = enableExternalTCP;
 			DisableInsecureTCP = disableInsecureTCP;
 			TlsTargetHost = tlsTargetHost;
@@ -283,7 +286,8 @@ namespace EventStore.Core.Cluster.Settings {
 			$"GossipSeeds: {string.Join(",", GossipSeeds.Select(x => x.ToString()))}\n" +
 			$"ClusterNodeCount: {ClusterNodeCount}\n" + $"MinFlushDelay: {MinFlushDelay}\n" +
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
-			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" + $"DisableInternalTls: {DisableInternalTls}\n" +
+			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
+			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
 			$"TlsTargetHost: {TlsTargetHost}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
