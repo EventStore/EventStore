@@ -283,20 +283,11 @@ namespace EventStore.Core.Util {
 		public const string InternalTcpPortDescr = "Internal TCP Port.";
 		public const int InternalTcpPortDefault = 1112;
 
-		public const string InternalSecureTcpPortDescr = "Internal Secure TCP Port.";
-		public const int InternalSecureTcpPortDefault = 0;
-
 		public const string ExternalTcpPortDescr = "External TCP Port.";
 		public const int ExternalTcpPortDefault = 1113;
 
-		public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
-		public const int ExternalSecureTcpPortDefault = 0;
-
 		public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
 		public static readonly IPAddress ExternalIpAdvertiseAsDefault = null;
-
-		public const string ExternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure External Tcp Port As.";
-		public static readonly int ExternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
@@ -309,9 +300,6 @@ namespace EventStore.Core.Util {
 
 		public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
 		public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
-
-		public const string InternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure Internal Tcp Port As.";
-		public static readonly int InternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string InternalHttpPortAdvertiseAsDescr = "Advertise Internal Http Port As.";
 		public static readonly int InternalHttpPortAdvertiseAsDefault = 0;
