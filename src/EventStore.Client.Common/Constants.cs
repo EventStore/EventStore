@@ -10,6 +10,7 @@ namespace EventStore.Client {
 			public const string StreamNotFound = "stream-not-found";
 			public const string MaximumAppendSizeExceeded = "maximum-append-size-exceeded";
 			public const string MissingRequiredMetadataProperty = "missing-required-metadata-property";
+			public const string NotLeader = "not-leader";
 
 			public const string PersistentSubscriptionFailed = "persistent-subscription-failed";
 			public const string PersistentSubscriptionDoesNotExist = "persistent-subscription-does-not-exist";
@@ -30,6 +31,7 @@ namespace EventStore.Client {
 			public const string MaximumAppendSize = "maximum-append-size";
 			public const string RequiredMetadataProperties = "required-metadata-properties";
 			public const string ScavengeId = "scavenge-id";
+			public const string LeaderEndpoint = "leader-endpoint";
 
 			public const string LoginName = "login-name";
 		}
@@ -46,6 +48,7 @@ namespace EventStore.Client {
 			public const string BasicScheme = "Basic";
 
 			public const string ConnectionName = "connection-name";
+			public const string RequiresLeader = "requires-leader";
 		}
 	}
 }

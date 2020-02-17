@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using EventStore.Client.Logging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
@@ -9,6 +11,7 @@ using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
 namespace EventStore.Client {
@@ -28,32 +31,51 @@ namespace EventStore.Client {
 		public EventStoreProjectionManagerClient ProjectionsManager { get; }
 		public EventStoreUserManagerClient UsersManager { get; }
 
+		public EventStoreClient(IOptions<EventStoreClientSettings> options) : this(options.Value) {
+		}
+		
 		public EventStoreClient(EventStoreClientSettings settings = null) {
-			_settings = settings ??= new EventStoreClientSettings(new UriBuilder {
-				Scheme = Uri.UriSchemeHttps,
-				Port = 2113
-			}.Uri);
-			_channel = GrpcChannel.ForAddress(settings.Address, new GrpcChannelOptions {
-				HttpClient = settings.CreateHttpClient?.Invoke(),
+			_settings = settings ??= new EventStoreClientSettings();
+			Action<Exception> exceptionNotificationHook = null;
+			var httpHandler = settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+			if (settings.ConnectivitySettings.GossipSeeds.Length > 0) {
+				ConfigureClusterAwareHandler();
+			}
+			
+			_channel = GrpcChannel.ForAddress(settings.ConnectivitySettings.Address, new GrpcChannelOptions {
+				HttpClient = new HttpClient(httpHandler) {
+					Timeout = Timeout.InfiniteTimeSpan,
+					DefaultRequestVersion = new Version(2, 0),
+				},
 				LoggerFactory = LogProvider.LoggerFactory
 			});
 			var connectionName = settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
 
 			var callInvoker = settings.Interceptors.Aggregate(
 				_channel.CreateCallInvoker()
-					.Intercept(new TypedExceptionInterceptor())
+					.Intercept(new TypedExceptionInterceptor(exceptionNotificationHook))
 					.Intercept(new ConnectionNameInterceptor(connectionName)),
 				(invoker, interceptor) => invoker.Intercept(interceptor));
 			_client = new Streams.Streams.StreamsClient(callInvoker);
 			PersistentSubscriptions = new EventStorePersistentSubscriptionsClient(callInvoker);
 			ProjectionsManager = new EventStoreProjectionManagerClient(callInvoker);
 			UsersManager = new EventStoreUserManagerClient(callInvoker);
-		}
 
-		public EventStoreClient(Uri address, Func<HttpClient> createHttpClient = default) : this(
-			new EventStoreClientSettings(address) {
-				CreateHttpClient = createHttpClient
-			}) {
+			void ConfigureClusterAwareHandler()
+			{
+				var clusterAwareHttpHandler = new ClusterAwareHttpHandler(
+					settings.ConnectivitySettings.NodePreference == NodePreference.Leader,
+					new ClusterEndpointDiscoverer(
+						settings.ConnectivitySettings.MaxDiscoverAttempts,
+						settings.ConnectivitySettings.GossipSeeds,
+						settings.ConnectivitySettings.GossipTimeout,
+						settings.ConnectivitySettings.DiscoveryInterval,
+						settings.ConnectivitySettings.NodePreference)) {
+					InnerHandler = httpHandler
+				};
+				exceptionNotificationHook = clusterAwareHttpHandler.ExceptionOccurred;
+				httpHandler = clusterAwareHttpHandler;
+			}
 		}
 
 		public void Dispose() => _channel.Dispose();

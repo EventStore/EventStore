@@ -25,8 +25,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
-			var position = await DeleteInternal(streamName, expectedVersion, user, false).ConfigureAwait(false);
+			var position = await DeleteInternal(streamName, expectedVersion, user, false, requiresLeader).ConfigureAwait(false);
 
 			return position.HasValue
 				? new DeleteResp {
@@ -56,8 +57,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
-			var position = await DeleteInternal(streamName, expectedVersion, user, true).ConfigureAwait(false);
+			var position = await DeleteInternal(streamName, expectedVersion, user, true, requiresLeader).ConfigureAwait(false);
 
 			return position.HasValue
 				? new TombstoneResp {
@@ -72,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		}
 
 		private async Task<Position?> DeleteInternal(string streamName, long expectedVersion,
-			IPrincipal user, bool hardDelete) {
+			IPrincipal user, bool hardDelete, bool requiresLeader) {
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 			var deleteResponseSource = new TaskCompletionSource<Position?>();
 
@@ -82,7 +84,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				correlationId,
 				correlationId,
 				envelope,
-				true,
+				requiresLeader,
 				streamName,
 				expectedVersion,
 				hardDelete,
