@@ -10,7 +10,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -23,10 +23,10 @@ namespace EventStore.Client {
 							Start = new ReadReq.Types.Empty()
 						},
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
-						Filter = GetFilterOptions(filter)
+						Filter = GetFilterOptions(filterOptions)
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped, cancellationToken);
+				filterOptions?.CheckpointReached, subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -36,7 +36,7 @@ namespace EventStore.Client {
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
+		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -44,16 +44,15 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 
-			return SubscribeToAllAsync(eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
-				userCredentials,
-				cancellationToken);
+			return SubscribeToAllAsync(eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped,
+				filterOptions, userCredentials, cancellationToken);
 		}
 
 		private Task<StreamSubscription> SubscribeToAllAsync(Position start,
@@ -61,7 +60,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -72,10 +71,10 @@ namespace EventStore.Client {
 						ResolveLinks = resolveLinkTos,
 						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(start),
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions(),
-						Filter = GetFilterOptions(filter)
+						Filter = GetFilterOptions(filterOptions)
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped, cancellationToken);
+				filterOptions?.CheckpointReached, subscriptionDropped, cancellationToken);
 		}
 
 		/// <summary>
@@ -86,7 +85,7 @@ namespace EventStore.Client {
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
+		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -94,15 +93,16 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 
-			return SubscribeToAllAsync(start, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped, filter,
-				userCredentials, cancellationToken);
+			return SubscribeToAllAsync(start, eventAppeared, operationOptions, resolveLinkTos, subscriptionDropped,
+				filterOptions, userCredentials, cancellationToken);
 		}
 
 		private Task<StreamSubscription> SubscribeToStreamAsync(string streamName,
@@ -125,7 +125,7 @@ namespace EventStore.Client {
 						Subscription = new ReadReq.Types.Options.Types.SubscriptionOptions()
 					}
 				}, operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped, cancellationToken);
+				subscriptionDropped: subscriptionDropped, cancellationToken: cancellationToken);
 		}
 
 		/// <summary>
@@ -181,7 +181,7 @@ namespace EventStore.Client {
 						}
 					},
 					operationOptions, userCredentials, cancellationToken), eventAppeared,
-				subscriptionDropped, cancellationToken);
+				subscriptionDropped: subscriptionDropped, cancellationToken: cancellationToken);
 		}
 
 		/// <summary>

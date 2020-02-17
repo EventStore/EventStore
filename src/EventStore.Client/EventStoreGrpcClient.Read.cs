@@ -15,7 +15,7 @@ namespace EventStore.Client {
 			ulong maxCount,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
 				Options = new ReadReq.Types.Options {
@@ -27,14 +27,14 @@ namespace EventStore.Client {
 					ResolveLinks = resolveLinkTos,
 					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
 					Count = maxCount,
-					Filter = GetFilterOptions(filter)
+					Filter = GetFilterOptions(filterOptions)
 				}
 			},
 			operationOptions,
 			userCredentials,
 			cancellationToken)
-			.Where(x => x.Item1 == SubscriptionConfirmation.None)
-			.Select(x => x.Item2);
+			.Where(x => x.Item1 == SubscriptionConfirmation.None && !x.Item2.HasValue)
+			.Select(x => x.Item3);
 
 		/// <summary>
 		/// Asynchronously reads all events.
@@ -44,7 +44,7 @@ namespace EventStore.Client {
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="filter">The optional <see cref="IEventFilter"/> to apply.</param>
+		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -54,14 +54,14 @@ namespace EventStore.Client {
 			ulong maxCount,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			bool resolveLinkTos = false,
-			IEventFilter filter = null,
+			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 
-			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filter,
+			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filterOptions,
 				userCredentials, cancellationToken);
 		}
 
@@ -88,8 +88,8 @@ namespace EventStore.Client {
 			operationOptions,
 			userCredentials,
 			cancellationToken)
-			.Where(x => x.Item1 == SubscriptionConfirmation.None)
-			.Select(x => x.Item2);
+			.Where(x => x.Item1 == SubscriptionConfirmation.None && !x.Item2.HasValue)
+			.Select(x => x.Item3);
 
 		/// <summary>
 		/// Asynchronously reads all the events from a stream.
@@ -119,7 +119,7 @@ namespace EventStore.Client {
 				userCredentials, cancellationToken);
 		}
 
-		private async IAsyncEnumerable<(SubscriptionConfirmation, ResolvedEvent)> ReadInternal(
+		private async IAsyncEnumerable<(SubscriptionConfirmation, Position?, ResolvedEvent)> ReadInternal(
 			ReadReq request,
 			EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials,
@@ -148,11 +148,15 @@ namespace EventStore.Client {
 				yield return e;
 			}
 
-			(SubscriptionConfirmation, ResolvedEvent) ConvertToItem(ReadResp response) => response.ContentCase switch {
+			(SubscriptionConfirmation, Position?, ResolvedEvent) ConvertToItem(ReadResp response) => response.ContentCase switch {
 				ReadResp.ContentOneofCase.Confirmation => (
-					new SubscriptionConfirmation(response.Confirmation.SubscriptionId), default),
+					new SubscriptionConfirmation(response.Confirmation.SubscriptionId), null, default),
 				ReadResp.ContentOneofCase.Event => (SubscriptionConfirmation.None,
+					null,
 					ConvertToResolvedEvent(response.Event)),
+				ReadResp.ContentOneofCase.Checkpoint => (SubscriptionConfirmation.None,
+					new Position(response.Checkpoint.CommitPosition, response.Checkpoint.PreparePosition),
+					default),
 				_ => throw new InvalidOperationException()
 			};
 

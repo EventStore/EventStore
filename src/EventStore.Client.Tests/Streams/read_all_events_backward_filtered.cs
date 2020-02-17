@@ -25,7 +25,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
-					filter: StreamFilter.RegularExpression($"^{streamPrefix}"))
+					filterOptions: new FilterOptions(StreamFilter.RegularExpression($"^{streamPrefix}")))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Reverse().Select(x => x.OriginalEvent.EventId));
@@ -42,7 +42,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
-					filter: StreamFilter.Prefix(streamPrefix))
+					filterOptions: new FilterOptions(StreamFilter.Prefix(streamPrefix)))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Reverse().Select(x => x.OriginalEvent.EventId));
@@ -63,7 +63,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
-					filter: EventTypeFilter.RegularExpression(new Regex($"^{eventTypePrefix}")))
+					filterOptions: new FilterOptions(EventTypeFilter.RegularExpression(new Regex($"^{eventTypePrefix}"))))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Reverse().Select(x => x.OriginalEvent.EventId));
@@ -84,7 +84,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, 20,
-					filter: EventTypeFilter.Prefix(eventTypePrefix))
+					filterOptions: new FilterOptions(EventTypeFilter.Prefix(eventTypePrefix)))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Reverse().Select(x => x.OriginalEvent.EventId));
@@ -100,7 +100,7 @@ namespace EventStore.Client.Streams {
 				_fixture.CreateTestEvents(count));
 
 			var events = await _fixture.Client.ReadAllAsync(Direction.Backwards, Position.End, maxCount,
-					filter: EventTypeFilter.ExcludeSystemEvents)
+					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents))
 				.Take(count)
 				.ToArrayAsync();
 
