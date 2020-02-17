@@ -1,5 +1,3 @@
-using System;
-
 namespace EventStore.Client {
 	internal static class Constants {
 		public static class Exceptions {
@@ -39,8 +37,6 @@ namespace EventStore.Client {
 		}
 
 		public static class Metadata {
-			[Obsolete]
-			public const string IsJson = "is-json";
 			public const string Type = "type";
 			public const string Created = "created";
 			public const string ContentType = "content-type";

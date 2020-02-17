@@ -7,7 +7,6 @@ namespace EventStore.Client {
 		public readonly Uuid EventId;
 		public readonly byte[] Metadata;
 		public readonly string Type;
-		[Obsolete] public bool IsJson => ContentType == Constants.Metadata.ContentTypes.ApplicationJson;
 		public readonly string ContentType;
 
 		public EventData(Uuid eventId, string type, byte[] data, byte[] metadata = default,

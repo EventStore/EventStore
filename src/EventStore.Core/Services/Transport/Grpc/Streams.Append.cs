@@ -55,14 +55,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.Type);
 				}
 
-				if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.IsJson, out var isJson)) {
-					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.IsJson);
+				if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.ContentType, out var contentType)) {
+					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.ContentType);
 				}
 
 				events.Add(new Event(
 					Uuid.FromDto(proposedMessage.Id).ToGuid(),
 					eventType,
-					bool.Parse(isJson),
+					contentType == Constants.Metadata.ContentTypes.ApplicationJson,
 					data,
 					proposedMessage.CustomMetadata.ToByteArray()));
 			}

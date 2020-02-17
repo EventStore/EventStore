@@ -45,7 +45,9 @@ namespace EventStore.Client.Streams {
 				.ReadStreamAsync(Direction.Forwards, stream, StreamRevision.Start, 1, resolveLinkTos: true)
 				.FirstOrDefaultAsync();
 
-			Assert.Equal(isJson, @event.Event.IsJson);
+			Assert.Equal(isJson
+				? Constants.Metadata.ContentTypes.ApplicationJson
+				: Constants.Metadata.ContentTypes.ApplicationOctetStream, @event.Event.ContentType);
 			Assert.Equal(data, encoding.GetString(@event.Event.Data));
 			Assert.Equal(metadata, encoding.GetString(@event.Event.Metadata));
 		}

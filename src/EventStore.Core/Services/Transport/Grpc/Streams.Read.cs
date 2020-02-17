@@ -189,8 +189,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					PreparePosition = position.PreparePosition,
 					Metadata = {
 						[Constants.Metadata.Type] = e.EventType,
-						[Constants.Metadata.IsJson] = e.IsJson.ToString(),
-						[Constants.Metadata.Created] = EpochExtensions.ToTicksSinceEpoch(e.TimeStamp).ToString()
+						[Constants.Metadata.Created] = e.TimeStamp.ToTicksSinceEpoch().ToString(),
+						[Constants.Metadata.ContentType] = e.IsJson
+							? Constants.Metadata.ContentTypes.ApplicationJson
+							: Constants.Metadata.ContentTypes.ApplicationOctetStream
 					},
 					Data = ByteString.CopyFrom(e.Data),
 					CustomMetadata = ByteString.CopyFrom(e.Metadata)
