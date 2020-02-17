@@ -336,8 +336,8 @@ namespace EventStore.Core.Util {
 		public const string ExternalManagerHttpPortDescr = null;
 		public const int ExternalManagerHttpPortDefault = 30778;
 
-		public const string UseInternalSslDescr = "Whether to use secure internal communication.";
-		public const bool UseInternalSslDefault = false;
+		public const string DisableInternalTlsDescr = "Whether to disable secure internal communication.";
+		public const bool DisableInternalTlsDefault = false;
 
 		
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
