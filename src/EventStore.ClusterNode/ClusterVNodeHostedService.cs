@@ -153,14 +153,15 @@ namespace EventStore.ClusterNode {
 
 			var intHttp = new IPEndPoint(options.IntIp, options.IntHttpPort);
 			var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
-			var intTcp = new IPEndPoint(options.IntIp, options.IntTcpPort);
-			var intSecTcp = options.IntSecureTcpPort > 0
-				? new IPEndPoint(options.IntIp, options.IntSecureTcpPort)
-				: null;
-			var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
-			var extSecTcp = options.ExtSecureTcpPort > 0
-				? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort)
-				: null;
+			var intTcp = options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var intSecTcp = !options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
+			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
+
+			var intTcpPortAdvertiseAs = options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
 
 			var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
 			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -169,9 +170,6 @@ namespace EventStore.ClusterNode {
 			if (!options.DisableInternalTls) {
 				if (ReferenceEquals(options.TlsTargetHost, Opts.TlsTargetHostDefault))
 					throw new Exception("No TLS target host specified.");
-				if (intSecTcp == null)
-					throw new Exception(
-						"Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
 			}
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
@@ -238,10 +236,10 @@ namespace EventStore.ClusterNode {
 				.AdvertiseExternalIPAs(options.ExtIpAdvertiseAs)
 				.AdvertiseInternalHttpPortAs(options.IntHttpPortAdvertiseAs)
 				.AdvertiseExternalHttpPortAs(options.ExtHttpPortAdvertiseAs)
-				.AdvertiseInternalTCPPortAs(options.IntTcpPortAdvertiseAs)
-				.AdvertiseExternalTCPPortAs(options.ExtTcpPortAdvertiseAs)
-				.AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
-				.AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
+				.AdvertiseInternalTCPPortAs(intTcpPortAdvertiseAs)
+				.AdvertiseExternalTCPPortAs(extTcpPortAdvertiseAs)
+				.AdvertiseInternalSecureTCPPortAs(intSecTcpPortAdvertiseAs)
+				.AdvertiseExternalSecureTCPPortAs(extSecTcpPortAdvertiseAs)
 				.HavingReaderThreads(options.ReaderThreadsCount)
 				.WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold)
 				.WithConnectionQueueSizeThreshold(options.ConnectionQueueSizeThreshold)
