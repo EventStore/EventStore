@@ -60,9 +60,10 @@ message ReadReq {
 				Expression event_type = 2;
 			}
 			oneof window {
-				int32 max = 3;
+				uint32 max = 3;
 				Empty count = 4;
 			}
+			uint32 checkpointIntervalMultiplier = 5;
 
 			message Expression {
 				string regex = 1;
@@ -74,7 +75,6 @@ message ReadReq {
 				Empty structured = 1;
 				Empty string = 2;
 			}
-
 		}
 	}
 	message Empty {
@@ -85,6 +85,7 @@ message ReadResp {
 	oneof content {
 		ReadEvent event = 1;
 		SubscriptionConfirmation confirmation = 2;
+		Checkpoint checkpoint = 3;
 	}
 
 	message ReadEvent {
@@ -108,6 +109,10 @@ message ReadResp {
 	}
 	message SubscriptionConfirmation {
 		string subscription_id = 1;
+	}
+	message Checkpoint {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
 	}
 	message Empty {
 	}

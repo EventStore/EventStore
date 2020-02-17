@@ -80,10 +80,12 @@ namespace EventStore.Client {
 
 		public void Dispose() => _channel.Dispose();
 
-		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(IEventFilter filter) {
-			if (filter == null) {
+		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(FilterOptions filterOptions) {
+			if (filterOptions == null) {
 				return null;
 			}
+
+			var filter = filterOptions.Filter;
 
 			var options = filter switch {
 				StreamFilter _ => new ReadReq.Types.Options.Types.FilterOptions {
@@ -126,6 +128,8 @@ namespace EventStore.Client {
 			} else {
 				options.Count = new ReadReq.Types.Empty();
 			}
+
+			options.CheckpointIntervalMultiplier = filterOptions.CheckpointInterval;
 
 			return options;
 		}

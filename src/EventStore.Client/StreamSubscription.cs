@@ -7,13 +7,16 @@ namespace EventStore.Client {
 	public class StreamSubscription : IDisposable {
 		private readonly IAsyncEnumerable<ResolvedEvent> _events;
 		private readonly Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> _eventAppeared;
+		private readonly Func<StreamSubscription, Position, CancellationToken, Task> _checkpointReached;
 		private readonly Action<StreamSubscription, SubscriptionDroppedReason, Exception> _subscriptionDropped;
+		private readonly CancellationToken _cancellationToken;
 		private readonly CancellationTokenSource _disposed;
 		private int _subscriptionDroppedInvoked;
 
 		internal static async Task<StreamSubscription> Confirm(
-			IAsyncEnumerable<(SubscriptionConfirmation, ResolvedEvent)> read,
+			IAsyncEnumerable<(SubscriptionConfirmation, Position?, ResolvedEvent)> read,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
 			CancellationToken cancellationToken = default) {
 			var enumerator = read.GetAsyncEnumerator(cancellationToken);
@@ -22,13 +25,15 @@ namespace EventStore.Client {
 				throw new InvalidOperationException();
 			}
 
-			return new StreamSubscription(enumerator, eventAppeared, subscriptionDropped);
+			return new StreamSubscription(enumerator, eventAppeared, checkpointReached, subscriptionDropped,
+				cancellationToken);
 		}
 
-		private StreamSubscription(
-			IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent)> events,
+		private StreamSubscription(IAsyncEnumerator<(SubscriptionConfirmation, Position?, ResolvedEvent)> events,
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
-			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default) {
+			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default,
+			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
+			CancellationToken cancellationToken = default) {
 			if (events == null) {
 				throw new ArgumentNullException(nameof(events));
 			}
@@ -38,13 +43,17 @@ namespace EventStore.Client {
 			}
 
 			_disposed = new CancellationTokenSource();
-			_events = new Enumerable(events);
+			_events = new Enumerable(events, CheckpointReached);
 			_eventAppeared = eventAppeared;
+			_checkpointReached = checkpointReached ?? ((_, __, ct) => Task.CompletedTask);
 			_subscriptionDropped = subscriptionDropped;
+			_cancellationToken = cancellationToken;
 			_subscriptionDroppedInvoked = 0;
 
 			Task.Run(Subscribe);
 		}
+
+		private Task CheckpointReached(Position position) => _checkpointReached(this, position, _cancellationToken);
 
 		private async Task Subscribe() {
 			try {
@@ -97,27 +106,61 @@ namespace EventStore.Client {
 		}
 
 		private class Enumerable : IAsyncEnumerable<ResolvedEvent> {
-			private readonly IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> _inner;
+			private readonly IAsyncEnumerator<(SubscriptionConfirmation, Position?, ResolvedEvent)> _inner;
+			private readonly Func<Position, Task> _checkpointReached;
 
-			public Enumerable(IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> inner) {
-				if (inner == null) throw new ArgumentNullException(nameof(inner));
+			public Enumerable(IAsyncEnumerator<(SubscriptionConfirmation, Position?, ResolvedEvent)> inner,
+				Func<Position, Task> checkpointReached) {
+				if (inner == null) {
+					throw new ArgumentNullException(nameof(inner));
+				}
+
+				if (checkpointReached == null) {
+					throw new ArgumentNullException(nameof(checkpointReached));
+				}
+
 				_inner = inner;
+				_checkpointReached = checkpointReached;
 			}
 
 			public IAsyncEnumerator<ResolvedEvent> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-				=> new Enumerator(_inner);
+				=> new Enumerator(_inner, _checkpointReached);
 
 			private class Enumerator : IAsyncEnumerator<ResolvedEvent> {
-				private readonly IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> _inner;
+				private readonly IAsyncEnumerator<(SubscriptionConfirmation, Position? position, ResolvedEvent
+					resolvedEvent)> _inner;
 
-				public Enumerator(IAsyncEnumerator<(SubscriptionConfirmation, ResolvedEvent resolvedEvent)> inner) {
-					if (inner == null) throw new ArgumentNullException(nameof(inner));
+				private readonly Func<Position, Task> _checkpointReached;
+
+				public Enumerator(IAsyncEnumerator<(SubscriptionConfirmation, Position?, ResolvedEvent)> inner,
+					Func<Position, Task> checkpointReached) {
+					if (inner == null) {
+						throw new ArgumentNullException(nameof(inner));
+					}
+
+					if (checkpointReached == null) {
+						throw new ArgumentNullException(nameof(checkpointReached));
+					}
+
 					_inner = inner;
+					_checkpointReached = checkpointReached;
 				}
 
 				public ValueTask DisposeAsync() => _inner.DisposeAsync();
 
-				public ValueTask<bool> MoveNextAsync() => _inner.MoveNextAsync();
+				public async ValueTask<bool> MoveNextAsync() {
+					ReadLoop:
+					if (!await _inner.MoveNextAsync().ConfigureAwait(false)) {
+						return false;
+					}
+
+					if (!_inner.Current.position.HasValue) {
+						return true;
+					}
+
+					await _checkpointReached(_inner.Current.position.Value).ConfigureAwait(false);
+					goto ReadLoop;
+				}
 
 				public ResolvedEvent Current => _inner.Current.resolvedEvent;
 			}

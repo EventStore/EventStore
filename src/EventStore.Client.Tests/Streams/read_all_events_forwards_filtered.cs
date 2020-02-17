@@ -25,7 +25,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
-					filter: StreamFilter.RegularExpression(new Regex($"^{streamPrefix}")))
+					filterOptions: new FilterOptions(StreamFilter.RegularExpression(new Regex($"^{streamPrefix}"))))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
@@ -42,7 +42,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
-					filter: StreamFilter.Prefix(streamPrefix))
+					filterOptions: new FilterOptions(StreamFilter.Prefix(streamPrefix)))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
@@ -63,7 +63,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
-					filter: EventTypeFilter.RegularExpression(new Regex($"^{eventTypePrefix}")))
+					filterOptions: new FilterOptions(EventTypeFilter.RegularExpression(new Regex($"^{eventTypePrefix}"))))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
@@ -84,7 +84,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
-					filter: EventTypeFilter.Prefix(eventTypePrefix))
+					filterOptions: new FilterOptions(EventTypeFilter.Prefix(eventTypePrefix)))
 				.ToArrayAsync();
 
 			Assert.Equal(events.Select(x => x.EventId), result.Select(x => x.OriginalEvent.EventId));
@@ -100,7 +100,7 @@ namespace EventStore.Client.Streams {
 				_fixture.CreateTestEvents(count));
 
 			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, maxCount,
-					filter: EventTypeFilter.ExcludeSystemEvents)
+					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents))
 				.Take(count)
 				.ToArrayAsync();
 
@@ -111,7 +111,7 @@ namespace EventStore.Client.Streams {
 			public const string FilteredOutStream = nameof(FilteredOutStream);
 
 			protected override Task Given() => Client.SetStreamMetadataAsync("$all", AnyStreamRevision.Any,
-				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), TestCredentials.Root);
+				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), userCredentials: TestCredentials.Root);
 
 			protected override Task When() =>
 				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(10));

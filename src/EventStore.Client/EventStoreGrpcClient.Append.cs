@@ -7,38 +7,6 @@ using Google.Protobuf;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
-		private Task<WriteResult> AppendToStreamAsync(
-			string streamName,
-			StreamRevision expectedRevision,
-			IEnumerable<EventData> eventData,
-			EventStoreClientOperationOptions operationOptions,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) =>
-			AppendToStreamInternal(new AppendReq {
-				Options = new AppendReq.Types.Options {
-					StreamName = streamName,
-					Revision = expectedRevision
-				}
-			}, eventData, operationOptions, userCredentials, cancellationToken);
-
-		/// <summary>
-		/// Appends events asynchronously to a stream.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to append events to.</param>
-		/// <param name="expectedRevision">The expected <see cref="StreamRevision"/> of the stream to append to.</param>
-		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
-		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<WriteResult> AppendToStreamAsync(
-			string streamName,
-			StreamRevision expectedRevision,
-			IEnumerable<EventData> eventData,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) =>
-			AppendToStreamAsync(streamName, expectedRevision, eventData, _settings.OperationOptions,
-				userCredentials, cancellationToken);
-
 		/// <summary>
 		/// Appends events asynchronously to a stream.
 		/// </summary>
@@ -53,12 +21,12 @@ namespace EventStore.Client {
 			string streamName,
 			StreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			
 			var options = _settings.OperationOptions.Clone();
-			configureOperationOptions(options);
+			configureOperationOptions?.Invoke(options);
 			
 			return AppendToStreamAsync(streamName, expectedRevision, eventData, options, userCredentials,
 				cancellationToken);
@@ -91,34 +59,30 @@ namespace EventStore.Client {
 			string streamName,
 			AnyStreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
-			Action<EventStoreClientOperationOptions> configureOperationOptions,
+			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			
 			var operationOptions = _settings.OperationOptions.Clone();
-			configureOperationOptions(operationOptions);
+			configureOperationOptions?.Invoke(operationOptions);
 			
 			return AppendToStreamAsync(streamName, expectedRevision, eventData, operationOptions, userCredentials,
 				cancellationToken);
 		}
 
-		/// <summary>
-		/// Appends events asynchronously to a stream.
-		/// </summary>
-		/// <param name="streamName">The name of the stream to append events to.</param>
-		/// <param name="expectedRevision">The expected <see cref="AnyStreamRevision"/> of the stream to append to.</param>
-		/// <param name="eventData">An <see cref="IEnumerable{EventData}"/> to append to the stream.</param>
-		/// <param name="userCredentials">The <see cref="UserCredentials"/> for the operation.</param>
-		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
-		/// <returns></returns>
-		public Task<WriteResult> AppendToStreamAsync(
+		private Task<WriteResult> AppendToStreamAsync(
 			string streamName,
-			AnyStreamRevision expectedRevision,
+			StreamRevision expectedRevision,
 			IEnumerable<EventData> eventData,
+			EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) =>
-			AppendToStreamAsync(streamName, expectedRevision, eventData, _settings.OperationOptions,
-				userCredentials, cancellationToken);
+			AppendToStreamInternal(new AppendReq {
+				Options = new AppendReq.Types.Options {
+					StreamName = streamName,
+					Revision = expectedRevision
+				}
+			}, eventData, operationOptions, userCredentials, cancellationToken);
 
 		private async Task<WriteResult> AppendToStreamInternal(
 			AppendReq header,

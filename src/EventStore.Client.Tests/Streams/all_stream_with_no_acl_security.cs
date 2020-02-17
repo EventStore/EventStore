@@ -68,7 +68,7 @@ namespace EventStore.Client.Streams {
 			protected override async Task Given() {
 				await base.Given();
 				await Client.SetStreamMetadataAsync(AllStream, AnyStreamRevision.Any, new StreamMetadata(),
-					TestCredentials.Root);
+					userCredentials: TestCredentials.Root);
 			}
 
 			protected override Task When() => Task.CompletedTask;

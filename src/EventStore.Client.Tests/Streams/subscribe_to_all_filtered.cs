@@ -26,6 +26,7 @@ namespace EventStore.Client.Streams {
 
 			var appeared = new TaskCompletionSource<bool>();
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
+			var checkpointSeen = new TaskCompletionSource<bool>();
 			var filter = getFilter(streamPrefix);
 			var events = _fixture.CreateTestEvents(20).Select(e => prepareEvent(streamPrefix, e))
 				.ToArray();
@@ -40,7 +41,8 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			using var subscription = await _fixture.Client.SubscribeToAllAsync(EventAppeared, false, filter: filter,
+			using var subscription = await _fixture.Client.SubscribeToAllAsync(EventAppeared, false,
+				filterOptions: new FilterOptions(filter, 5, CheckpointReached),
 				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in afterEvents) {
@@ -48,7 +50,7 @@ namespace EventStore.Client.Streams {
 					AnyStreamRevision.NoStream, new[] {e});
 			}
 
-			await appeared.Task.WithTimeout();
+			await Task.WhenAll(appeared.Task, checkpointSeen.Task).WithTimeout();
 
 			Assert.False(dropped.Task.IsCompleted);
 
@@ -75,6 +77,12 @@ namespace EventStore.Client.Streams {
 
 			void SubscriptionDropped(StreamSubscription s, SubscriptionDroppedReason reason, Exception ex) =>
 				dropped.SetResult((reason, ex));
+
+			Task CheckpointReached(StreamSubscription _, Position position, CancellationToken ct) {
+				checkpointSeen.TrySetResult(true);
+
+				return Task.CompletedTask;
+			}
 		}
 
 		public Task InitializeAsync() => _fixture.InitializeAsync();
@@ -87,7 +95,7 @@ namespace EventStore.Client.Streams {
 			public const string FilteredOutStream = nameof(FilteredOutStream);
 
 			protected override Task Given() => Client.SetStreamMetadataAsync("$all", AnyStreamRevision.Any,
-				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), TestCredentials.Root);
+				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), userCredentials: TestCredentials.Root);
 
 			protected override Task When() =>
 				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(10));

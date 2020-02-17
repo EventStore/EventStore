@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
@@ -136,6 +137,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ConvertToEventFilter(request.Options.Filter),
 						user,
 						_readIndex,
+						request.Options.Filter.WindowCase switch {
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max
+						},
+						request.Options.Filter.CheckpointIntervalMultiplier,
+						CheckpointReached,
 						context.CancellationToken),
 					_ => throw new InvalidOperationException()
 				};
@@ -156,6 +163,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}).ConfigureAwait(false);
 				}
 			}
+
+			Task CheckpointReached(Position checkpoint)
+				=> responseStream.WriteAsync(new ReadResp {
+					Checkpoint = new ReadResp.Types.Checkpoint {
+						CommitPosition = checkpoint.CommitPosition,
+						PreparePosition = checkpoint.PreparePosition
+					}
+				});
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {
 				if (e == null) return null;

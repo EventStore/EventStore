@@ -39,7 +39,7 @@ namespace EventStore.Client.Streams {
 					"$all",
 					AnyStreamRevision.NoStream,
 					new StreamMetadata(acl: new StreamAcl(readRole: "$all")),
-					TestCredentials.Root);
+					userCredentials: TestCredentials.Root);
 				Events = CreateTestEvents(20).ToArray();
 
 				await Client.AppendToStreamAsync(Stream, AnyStreamRevision.NoStream, Events);

@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly IPublisher _bus;
 			private readonly ulong _maxCount;
 			private readonly Util.IEventFilter _eventFilter;
-			private readonly int _maxSearchWindow;
+			private readonly uint _maxSearchWindow;
 			private readonly bool _resolveLinks;
 			private readonly IPrincipal _user;
 			private readonly CancellationTokenSource _disposedTokenSource;
@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ulong maxCount,
 				bool resolveLinks,
 				Util.IEventFilter eventFilter,
-				int? maxSearchWindow,
+				uint? maxSearchWindow,
 				IPrincipal user,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -51,14 +51,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentOutOfRangeException(nameof(maxCount));
 				}
 
-				if (maxSearchWindow.HasValue && (ulong)maxSearchWindow.Value <= maxCount) {
+				if (maxSearchWindow.HasValue && maxSearchWindow.Value <= maxCount) {
 					throw new ArgumentOutOfRangeException(nameof(maxSearchWindow));
 				}
 
 				_bus = bus;
 				_nextPosition = position;
 				_maxCount = maxCount;
-				_maxSearchWindow = maxSearchWindow ?? (int)maxCount;
+				_maxSearchWindow = maxSearchWindow ?? (uint)maxCount;
 				_eventFilter = eventFilter;
 				_resolveLinks = resolveLinks;
 				_user = user;
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus.Publish(new ClientMessage.FilteredReadAllEventsForward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
 					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
-					_resolveLinks, false, _maxSearchWindow, default, _eventFilter, _user));
+					_resolveLinks, false, (int)_maxSearchWindow, default, _eventFilter, _user));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;
