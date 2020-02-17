@@ -42,6 +42,7 @@ jobs:
       env:
         CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
       run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         dotnet tool install --global minver-cli --version 2.0.0
         version=$(~/.dotnet/tools/minver \
                            --tag-prefix=oss-v \
