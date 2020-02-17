@@ -37,8 +37,8 @@ namespace EventStore.Client {
 		}
 
 		public void ExceptionOccurred(Exception exception) {
-			if (exception is NotLeaderException) {
-				_endpoint = new Lazy<Task<IPEndPoint>>(Task.FromResult(((NotLeaderException)exception).LeaderEndpoint));
+			if (exception is NotLeaderException ex) {
+				_endpoint = new Lazy<Task<IPEndPoint>>(Task.FromResult(ex.LeaderEndpoint));
 			}
 		}
 	}
