@@ -1,19 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Platforms>x64</Platforms>
-  </PropertyGroup>
-  <ItemGroup>
-      <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-      <PackageReference Include="NLog" Version="4.6.8" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />
-    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
-  </ItemGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+		<PackageReference Include="NLog" Version="4.6.8" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />
+		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+	</ItemGroup>
 </Project>

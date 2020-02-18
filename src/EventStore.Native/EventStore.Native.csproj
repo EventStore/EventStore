@@ -1,14 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Platforms>x64</Platforms>
-  </PropertyGroup>
-  <ItemGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-  </ItemGroup>
-  
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+	</ItemGroup>
 </Project>

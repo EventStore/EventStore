@@ -1,37 +1,38 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <OutputType>Exe</OutputType>
-    <ApplicationIcon>app2.ico</ApplicationIcon>
-	<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-	<Platforms>x64</Platforms>
-  </PropertyGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<OutputType>Exe</OutputType>
+		<ApplicationIcon>app2.ico</ApplicationIcon>
+		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0" />
 		<PackageReference Include="NLog.Web.AspNetCore" Version="4.9.0" />
 	</ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />   
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\EventStore.Common\Log\log.config">
-      <Link>log.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="app2.ico" />
-  </ItemGroup>
-  <!-- TODO(jen20): Investigate which of these are correct -->
-  <PropertyGroup>
-    <IsMac>false</IsMac>
-    <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
-  </PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\EventStore.Common\Log\log.config">
+			<Link>log.config</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="app2.ico" />
+	</ItemGroup>
+	<!-- TODO(jen20): Investigate which of these are correct -->
+	<PropertyGroup>
+		<IsMac>false</IsMac>
+		<IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
+	</PropertyGroup>
 	<ItemGroup>
 		<Content Include="..\EventStore.Projections.Core\Prelude\**\*">
 			<PackagePath>Prelude</PackagePath>

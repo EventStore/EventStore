@@ -1,15 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Platforms>x64</Platforms>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="protobuf-net" Version="2.4.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup />
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="protobuf-net" Version="2.4.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+	</ItemGroup>
+	<ItemGroup />
 </Project>

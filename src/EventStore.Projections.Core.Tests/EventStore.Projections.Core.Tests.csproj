@@ -1,15 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Platforms>x64</Platforms>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Playground\Launchpad.cs" />
-    <Compile Remove="Playground\Launchpad2.cs" />
-    <Compile Remove="Playground\Launchpad3.cs" />
-    <Compile Remove="Playground\LaunchpadBase.cs" />
-  </ItemGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="Playground\Launchpad.cs" />
+		<Compile Remove="Playground\Launchpad2.cs" />
+		<Compile Remove="Playground\Launchpad3.cs" />
+		<Compile Remove="Playground\LaunchpadBase.cs" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
@@ -17,29 +18,29 @@
 		<PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
 	</ItemGroup>
 	<ItemGroup>
-    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-    </ItemGroup>
-  <ItemGroup>
-    <Content Include="Queries\1Query.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\checkpoint_strategy\" />
-  </ItemGroup>
-  <!-- TODO(jen20): Decide what is correct here -->
-  <PropertyGroup>
-    <IsMac>false</IsMac>
-    <IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>
-  </PropertyGroup>
-  <Target BeforeTargets="BeforeBuild" Name="ProjectionDependencies">
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-  </Target>
+		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="Queries\1Query.js">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Services\checkpoint_strategy\" />
+	</ItemGroup>
+	<!-- TODO(jen20): Decide what is correct here -->
+	<PropertyGroup>
+		<IsMac>false</IsMac>
+		<IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>
+	</PropertyGroup>
+	<Target BeforeTargets="BeforeBuild" Name="ProjectionDependencies">
+		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
+		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
+		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+	</Target>
 </Project>
