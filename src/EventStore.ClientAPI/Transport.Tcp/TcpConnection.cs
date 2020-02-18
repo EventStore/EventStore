@@ -28,8 +28,11 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			var connection = new TcpConnection(log, connectionId, remoteEndPoint, onConnectionClosed);
 // ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
-				(_, socket) => {
+				(socket) => {
 					connection.InitSocket(socket);
+				},
+				(_, socket) => {
+					connection.InitSendReceive();
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},
@@ -66,6 +69,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private readonly object _sendLock = new object();
 		private bool _isSending;
 		private volatile int _closed;
+		private int _dispatchingData; //states: 0 - not dispatching data, 1 - dispatching data, 2 - final state, data should not be dispatched after reaching this state
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 		private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
@@ -82,26 +86,31 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void InitSocket(Socket socket) {
-			InitConnectionBase(socket);
+			_socket = socket;
+		}
+
+		private void InitSendReceive() {
+			InitConnectionBase(_socket);
 			//_log.Info("TcpConnection::InitSocket[{0}, L{1}]", RemoteEndPoint, LocalEndPoint);
 			lock (_sendLock) {
-				_socket = socket;
 				try {
-					socket.NoDelay = true;
+					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
 					CloseInternal(SocketError.Shutdown, "Socket disposed.");
-					_socket = null;
+					return;
+				} catch (SocketException) {
+					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
 					return;
 				}
 
 				var receiveSocketArgs = SocketArgsPool.Get();
 				_receiveSocketArgs = receiveSocketArgs;
-				_receiveSocketArgs.AcceptSocket = socket;
+				_receiveSocketArgs.AcceptSocket = _socket;
 				_receiveSocketArgs.Completed += OnReceiveAsyncCompleted;
 
 				var sendSocketArgs = SocketArgsPool.Get();
 				_sendSocketArgs = sendSocketArgs;
-				_sendSocketArgs.AcceptSocket = socket;
+				_sendSocketArgs.AcceptSocket = _socket;
 				_sendSocketArgs.Completed += OnSendAsyncCompleted;
 			}
 
@@ -125,7 +134,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private void TrySend() {
 			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _socket == null) return;
+				if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
 				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 				_isSending = true;
 			}
@@ -252,7 +261,16 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				_receiveCallback = null;
 			}
 
+			var oldState = Interlocked.CompareExchange(ref _dispatchingData, 1, 0);
+			if (oldState == 0 || oldState == 1) { //oldState can be 1 if there's a recursive ReceiveAsync call in the callback
+				try {
 			callback(this, res);
+				} finally {
+					if (oldState == 0) {
+						Interlocked.Exchange(ref _dispatchingData, 0);
+					}
+				}
+			}
 
 			int bytes = 0;
 			for (int i = 0, n = res.Count; i < n; ++i) {
@@ -272,6 +290,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				return;
 #pragma warning restore 420
 
+			SpinWait spinWait = new SpinWait();
+			while(Interlocked.CompareExchange(ref _dispatchingData, 2, 0) != 0)
+				spinWait.SpinOnce();
+
 			NotifyClosed();
 
 			_log.Info("ClientAPI {0} closed [{1:HH:mm:ss.fff}: N{2}, L{3}, {4:B}]:", GetType().Name, DateTime.UtcNow,
@@ -283,8 +305,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 			if (_socket != null) {
 				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
-				Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutMs));
-				_socket = null;
+				Helper.EatException(() => _socket.Close(TcpConfiguration.SocketCloseTimeoutSecs));
 			}
 
 			lock (_sendLock) {
