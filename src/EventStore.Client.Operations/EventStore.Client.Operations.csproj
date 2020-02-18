@@ -2,7 +2,6 @@
 
 		<PropertyGroup>
 				<TargetFramework>netcoreapp3.1</TargetFramework>
-				<Platform>x64</Platform>
 				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 				<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
 				<PackageId>EventStore.Client.Operations.Grpc</PackageId>
@@ -16,6 +15,7 @@
 				<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
 				<PackageTags>eventstore client grpc</PackageTags>
 				<RootNamespace>EventStore.Client.Operations</RootNamespace>
+				<Platforms>x64</Platforms>
 		</PropertyGroup>
 		<ItemGroup>
 				<PackageReference Include="Google.Protobuf" Version="3.11.3" />

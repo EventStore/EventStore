@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Platform>x64</Platform>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
     <ApplicationIcon>app2.ico</ApplicationIcon>
-		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+	<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+	<Platforms>x64</Platforms>
   </PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0" />
