@@ -24,7 +24,8 @@ namespace EventStore.ClientAPI.Tests {
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort))
 				.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecurePort))
 				.WithServerCertificate(new X509Certificate2(mem.ToArray(), "1111"))
-				.RunInMemory();
+				.RunInMemory()
+				.EnableExternalTCP();
 
 			_node = vNodeBuilder.Build();
 			Connections = new Dictionary<bool, IEventStoreConnection> {

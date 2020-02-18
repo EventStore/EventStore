@@ -116,7 +116,8 @@ namespace EventStore.Core.Tests.Helpers {
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
 				readOnlyReplica: readOnlyReplica,
-				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
+				enableExternalTCP: true);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(

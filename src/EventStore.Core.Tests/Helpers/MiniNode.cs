@@ -115,7 +115,8 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
 				.WithIndexBitnessVersion(indexBitnessVersion)
-				.WithHttpMessageHandlerFactory(() => HttpMessageHandler);
+				.WithHttpMessageHandlerFactory(() => HttpMessageHandler)
+				.EnableExternalTCP();
 
 			if (enableTrustedAuth)
 				builder.EnableTrustedAuth();
