@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 			}
 		}
 
-		[Fact]
+		[Test]
 		public void when_connection_closed_quickly_socket_should_be_properly_disposed() {
 			for (int i = 0; i < 1000; i++) {
 				var listeningSocket = CreateListeningSocket();
