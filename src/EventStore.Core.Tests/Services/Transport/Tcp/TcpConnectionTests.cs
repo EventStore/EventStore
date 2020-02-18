@@ -112,10 +112,12 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					mre.Wait(TimeSpan.FromSeconds(10));
 					SpinWait.SpinUntil(() => serverTcpConnection.IsClosed, TimeSpan.FromSeconds(10));
 
-					var disposed = false;
+					bool disposed;
 					try {
-						int x = serverSocket.Available;
+						disposed = serverSocket.Poll(1000, SelectMode.SelectRead) && (serverSocket.Available == 0);
 					} catch (ObjectDisposedException) {
+						disposed = true;
+					} catch (SocketException) {
 						disposed = true;
 					}
 
