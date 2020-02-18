@@ -9,9 +9,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
-using Xunit;
+using NUnit.Framework;
 
 namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
+	[TestFixture]
 	public class TcpConnectionSslTests {
 		protected static Socket CreateListeningSocket() {
 			var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -26,7 +27,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 			return data;
 		}
 
-		[Fact]
+		[Test]
 		public async Task no_data_should_be_dispatched_after_tcp_connection_closed() {
 			for (int i = 0; i < 1000; i++) {
 				bool closed = false;
@@ -64,7 +65,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					using (var b = new Barrier(2)) {
 						Task sendData = Task.Factory.StartNew(() => {
 							b.SignalAndWait();
-							for (int i = 0; i < 1000; i++)
+							for (int j = 0; j < 1000; j++)
 								serverTcpConnection.EnqueueSend(GenerateData());
 						}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
@@ -85,10 +86,13 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 		}
 
 		private X509Certificate GetCertificate() {
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(typeof(EventStoreClientAPIFixture), "server.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
+			using (var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.ClientAPI.Tests.server.p12")) {
+				using (var mem = new MemoryStream()) {
+					stream.CopyTo(mem);
+					return new X509Certificate2(mem.ToArray(), "1111");
+				}
+			}
 		}
 	}
 }

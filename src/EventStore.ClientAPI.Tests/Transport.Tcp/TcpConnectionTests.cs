@@ -6,9 +6,10 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
-using Xunit;
+using NUnit.Framework;
 
 namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
+	[TestFixture]
 	public class TcpConnectionTests {
 		protected static Socket CreateListeningSocket() {
 			var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -23,7 +24,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 			return data;
 		}
 
-		[Fact]
+		[Test]
 		public async Task no_data_should_be_dispatched_after_tcp_connection_closed() {
 			for (int i = 0; i < 1000; i++) {
 				bool closed = false;
@@ -58,7 +59,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					using (var b = new Barrier(2)) {
 						Task sendData = Task.Factory.StartNew(() => {
 							b.SignalAndWait();
-							for (int i = 0; i < 1000; i++)
+							for (int j = 0; j < 1000; j++)
 								serverTcpConnection.EnqueueSend(GenerateData());
 						}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
