@@ -2,6 +2,8 @@ syntax = "proto3";
 package event_store.client.streams;
 option java_package = "com.eventstore.client.streams";
 
+import "shared.proto";
+
 service Streams {
 	rpc Read (ReadReq) returns (stream ReadResp);
 	rpc Append (stream AppendReq) returns (AppendResp);
@@ -25,7 +27,7 @@ message ReadReq {
 		}
 		oneof filter_option {
 			FilterOptions filter = 7;
-			Empty no_filter = 8;
+			event_store.client.shared.Empty no_filter = 8;
 		}
 		UUIDOption uuid_option = 9;
 
@@ -37,15 +39,15 @@ message ReadReq {
 			string stream_name = 1;
 			oneof revision_option {
 				uint64 revision = 2;
-				Empty start = 3;
-				Empty end = 4;
+				event_store.client.shared.Empty start = 3;
+				event_store.client.shared.Empty end = 4;
 			}
 		}
 		message AllOptions {
 			oneof all_option {
 				Position position = 1;
-				Empty start = 2;
-				Empty end = 3;
+				event_store.client.shared.Empty start = 2;
+				event_store.client.shared.Empty end = 3;
 			}
 		}
 		message SubscriptionOptions {
@@ -61,7 +63,7 @@ message ReadReq {
 			}
 			oneof window {
 				uint32 max = 3;
-				Empty count = 4;
+				event_store.client.shared.Empty count = 4;
 			}
 			uint32 checkpointIntervalMultiplier = 5;
 
@@ -72,12 +74,10 @@ message ReadReq {
 		}
 		message UUIDOption {
 			oneof content {
-				Empty structured = 1;
-				Empty string = 2;
+				event_store.client.shared.Empty structured = 1;
+				event_store.client.shared.Empty string = 2;
 			}
 		}
-	}
-	message Empty {
 	}
 }
 
@@ -93,11 +93,11 @@ message ReadResp {
 		RecordedEvent link = 2;
 		oneof position {
 			uint64 commit_position = 3;
-			Empty no_position = 4;
+			event_store.client.shared.Empty no_position = 4;
 		}
 
 		message RecordedEvent {
-			UUID id = 1;
+			event_store.client.shared.UUID id = 1;
 			string stream_name = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
@@ -114,8 +114,6 @@ message ReadResp {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
 	}
-	message Empty {
-	}
 }
 
 message AppendReq {
@@ -128,37 +126,32 @@ message AppendReq {
 		string stream_name = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			Empty no_stream = 3;
-			Empty any = 4;
-			Empty stream_exists = 5;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
 		}
 	}
 	message ProposedMessage {
-		UUID id = 1;
+		event_store.client.shared.UUID id = 1;
 		map<string, string> metadata = 2;
 		bytes custom_metadata = 3;
 		bytes data = 4;
 	}
-	message Empty {
-	}
-
 }
 
 message AppendResp {
 	oneof current_revision_option {
 		uint64 current_revision = 1;
-		Empty no_stream = 2;
+		event_store.client.shared.Empty no_stream = 2;
 	}
 	oneof position_option {
 		Position position = 3;
-		Empty empty = 4;
+		event_store.client.shared.Empty no_position = 4;
 	}
 
 	message Position {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
-	}
-	message Empty {
 	}
 }
 
@@ -169,26 +162,22 @@ message DeleteReq {
 		string stream_name = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			Empty no_stream = 3;
-			Empty any = 4;
-			Empty stream_exists = 5;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
 		}
-	}
-	message Empty {
 	}
 }
 
 message DeleteResp {
 	oneof position_option {
 		Position position = 1;
-		Empty empty = 2;
+		event_store.client.shared.Empty no_position = 2;
 	}
 
 	message Position {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
-	}
-	message Empty {
 	}
 }
 
@@ -199,37 +188,21 @@ message TombstoneReq {
 		string stream_name = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			Empty no_stream = 3;
-			Empty any = 4;
-			Empty stream_exists = 5;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
 		}
-	}
-	message Empty {
 	}
 }
 
 message TombstoneResp {
 	oneof position_option {
 		Position position = 1;
-		Empty empty = 2;
+		event_store.client.shared.Empty no_position = 2;
 	}
 
 	message Position {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
-	}
-	message Empty {
-	}
-}
-
-message UUID {
-	oneof value {
-		Structured structured = 1;
-		string string = 2;
-	}
-
-	message Structured {
-		int64 most_significant_bits = 1;
-		int64 least_significant_bits = 2;
 	}
 }

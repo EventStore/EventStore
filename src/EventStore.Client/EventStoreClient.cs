@@ -7,6 +7,7 @@ using System.Threading;
 using EventStore.Client.Logging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
+using EventStore.Client.Shared;
 using EventStore.Client.Users;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
@@ -126,7 +127,7 @@ namespace EventStore.Client {
 			if (filter.MaxSearchWindow.HasValue) {
 				options.Max = filter.MaxSearchWindow.Value;
 			} else {
-				options.Count = new ReadReq.Types.Empty();
+				options.Count = new Empty();
 			}
 
 			options.CheckpointIntervalMultiplier = filterOptions.CheckpointInterval;

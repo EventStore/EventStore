@@ -1,4 +1,5 @@
 using System;
+using EventStore.Client.Shared;
 
 namespace EventStore.Client.Streams {
 	partial class ReadReq {

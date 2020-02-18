@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 
 namespace EventStore.Client.PersistentSubscriptions {
 	partial class EventStorePersistentSubscriptionsClient {
@@ -36,7 +37,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 				BufferSize = bufferSize,
 				GroupName = groupName,
 				StreamName = streamName,
-				UuidOption = new ReadReq.Types.Options.Types.UUIDOption {Structured = new ReadReq.Types.Empty()}
+				UuidOption = new ReadReq.Types.Options.Types.UUIDOption {Structured = new Empty()}
 			};
 
 

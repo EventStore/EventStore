@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 
 namespace EventStore.Client.Projections {
 	public partial class EventStoreProjectionManagerClient {
@@ -8,7 +8,7 @@ namespace EventStore.Client.Projections {
 			CancellationToken cancellationToken = default) {
 			using var call = _client.CreateAsync(new CreateReq {
 				Options = new CreateReq.Types.Options {
-					OneTime = new CreateReq.Types.Empty(),
+					OneTime = new Empty(),
 					Query = query
 				}
 			}, RequestMetadata.Create(userCredentials), cancellationToken: cancellationToken);

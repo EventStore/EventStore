@@ -2,6 +2,8 @@ syntax = "proto3";
 package event_store.client.persistent_subscriptions;
 option java_package = "com.eventstore.client.persistentsubscriptions";
 
+import "shared.proto";
+
 service PersistentSubscriptions {
 	rpc Create (CreateReq) returns (CreateResp);
 	rpc Update (UpdateReq) returns (UpdateResp);
@@ -24,23 +26,23 @@ message ReadReq {
 
 		message UUIDOption {
 			oneof content {
-				Empty structured = 1;
-				Empty string = 2;
+				event_store.client.shared.Empty structured = 1;
+				event_store.client.shared.Empty string = 2;
 			}
 		}
 	}
 
 	message Ack {
 		bytes id = 1;
-		repeated UUID ids = 2;
+		repeated event_store.client.shared.UUID ids = 2;
 	}
 
 	message Nack {
 		bytes id = 1;
-		repeated UUID ids = 2;
+		repeated event_store.client.shared.UUID ids = 2;
 		Action action = 3;
 		string reason = 4;
-		
+
 		enum Action {
 			Unknown = 0;
 			Park = 1;
@@ -49,30 +51,26 @@ message ReadReq {
 			Stop = 4;
 		}
 	}
-
-	message Empty {
-
-	}
 }
 
 message ReadResp {
 	oneof content {
 		ReadEvent event = 1;
-		Empty empty = 2;
+		SubscriptionConfirmation subscription_confirmation = 2;
 	}
 	message ReadEvent {
 		RecordedEvent event = 1;
 		RecordedEvent link = 2;
 		oneof position {
 			uint64 commit_position = 3;
-			Empty no_position = 4;
+			event_store.client.shared.Empty no_position = 4;
 		}
 		oneof count {
 			int32 retry_count = 5;
-			Empty empty = 6;			
+			event_store.client.shared.Empty no_retry_count = 6;
 		}
 		message RecordedEvent {
-			UUID id = 1;
+			event_store.client.shared.UUID id = 1;
 			string stream_name = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
@@ -82,7 +80,8 @@ message ReadResp {
 			bytes data = 8;
 		}
 	}
-	message Empty {
+	message SubscriptionConfirmation {
+		string subscription_id = 1;
 	}
 }
 
@@ -166,16 +165,4 @@ message DeleteReq {
 }
 
 message DeleteResp {
-}
-
-message UUID {
-	oneof value {
-		Structured structured = 1;
-		string string = 2;
-	}
-
-	message Structured {
-		int64 most_significant_bits = 1;
-		int64 least_significant_bits = 2;
-	}
 }

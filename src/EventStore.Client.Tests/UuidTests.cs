@@ -56,28 +56,15 @@ namespace EventStore.Client {
 			Assert.Equal(sut.ToGuid().ToString("n"),sut.ToString("n"));
 		}
 
+
 		[Fact]
-		public void ToPersistentSubscriptionDtoReturnsExpectedResult() {
+		public void ToDtoReturnsExpectedResult() {
 			var msb = GetRandomInt64();
 			var lsb = GetRandomInt64();
 
 			var sut = Uuid.FromInt64(msb, lsb);
 
-			var result = sut.ToPersistentSubscriptionsDto();
-
-			Assert.NotNull(result.Structured);
-			Assert.Equal(lsb, result.Structured.LeastSignificantBits);
-			Assert.Equal(msb, result.Structured.MostSignificantBits);
-		}
-
-		[Fact]
-		public void ToStreamsDtoReturnsExpectedResult() {
-			var msb = GetRandomInt64();
-			var lsb = GetRandomInt64();
-
-			var sut = Uuid.FromInt64(msb, lsb);
-
-			var result = sut.ToStreamsDto();
+			var result = sut.ToDto();
 
 			Assert.NotNull(result.Structured);
 			Assert.Equal(lsb, result.Structured.LeastSignificantBits);

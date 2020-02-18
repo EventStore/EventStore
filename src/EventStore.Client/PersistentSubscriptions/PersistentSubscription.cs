@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 using Google.Protobuf;
 using Grpc.Core;
 
@@ -47,8 +48,8 @@ namespace EventStore.Client.PersistentSubscriptions {
 					Options = _options
 				}).ConfigureAwait(false);
 
-				if (!await _call.ResponseStream.MoveNext(_disposed.Token)
-.ConfigureAwait(false) || _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.Empty) {
+				if (!await _call.ResponseStream.MoveNext(_disposed.Token).ConfigureAwait(false) ||
+				    _call.ResponseStream.Current.ContentCase != ReadResp.ContentOneofCase.SubscriptionConfirmation) {
 					throw new InvalidOperationException();
 				}
 			} catch (Exception ex) {
@@ -179,7 +180,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Ack = new ReadReq.Types.Ack {
 					Ids = {
-						Array.ConvertAll(ids, id => id.ToPersistentSubscriptionsDto())
+						Array.ConvertAll(ids, id => id.ToDto())
 					}
 				}
 			});
@@ -188,7 +189,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 			_call.RequestStream.WriteAsync(new ReadReq {
 				Nack = new ReadReq.Types.Nack {
 					Ids = {
-						Array.ConvertAll(ids, id => id.ToPersistentSubscriptionsDto())
+						Array.ConvertAll(ids, id => id.ToDto())
 					},
 					Action = action switch {
 						PersistentSubscriptionNakEventAction.Park => ReadReq.Types.Nack.Types.Action.Park,

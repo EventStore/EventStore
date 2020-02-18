@@ -98,7 +98,7 @@ namespace EventStore.Client {
 			foreach (var e in eventData)
 				await call.RequestStream.WriteAsync(new AppendReq {
 					ProposedMessage = new AppendReq.Types.ProposedMessage {
-						Id = e.EventId.ToStreamsDto(),
+						Id = e.EventId.ToDto(),
 						Data = ByteString.CopyFrom(e.Data),
 						CustomMetadata = ByteString.CopyFrom(e.Metadata),
 						Metadata = {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Grpc.Core;
 
@@ -130,11 +131,11 @@ namespace EventStore.Client {
 			}
 
 			if (request.Options.Filter == null) {
-				request.Options.NoFilter = new ReadReq.Types.Empty();
+				request.Options.NoFilter = new Empty();
 			}
 
 			request.Options.UuidOption = new ReadReq.Types.Options.Types.UUIDOption
-				{Structured = new ReadReq.Types.Empty()};
+				{Structured = new Empty()};
 
 			using var call = _client.Read(
 				request, RequestMetadata.Create(userCredentials),

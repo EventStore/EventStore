@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
+using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Grpc.Core;
 
@@ -37,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				}
 				: new DeleteResp {
-					Empty = new DeleteResp.Types.Empty()
+					NoPosition = new Empty()
 				};
 		}
 
@@ -69,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				}
 				: new TombstoneResp {
-					Empty = new TombstoneResp.Types.Empty()
+					NoPosition = new Empty()
 				};
 		}
 

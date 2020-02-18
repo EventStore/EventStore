@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
 using Grpc.Core;
 
 namespace EventStore.Client.Projections {
@@ -10,13 +11,13 @@ namespace EventStore.Client.Projections {
 		public IAsyncEnumerable<ProjectionDetails> ListOneTimeAsync(UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) =>
 			ListInternalAsync(new StatisticsReq.Types.Options {
-				OneTime = new StatisticsReq.Types.Empty()
+				OneTime = new Empty()
 			}, userCredentials, cancellationToken);
 
 		public IAsyncEnumerable<ProjectionDetails> ListContinuousAsync(UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) =>
 			ListInternalAsync(new StatisticsReq.Types.Options {
-				Continuous = new StatisticsReq.Types.Empty()
+				Continuous = new Empty()
 			}, userCredentials, cancellationToken);
 
 		public Task<ProjectionDetails> GetStatusAsync(string name, UserCredentials userCredentials = default,
@@ -55,7 +56,7 @@ namespace EventStore.Client.Projections {
 		public IAsyncEnumerable<ProjectionDetails> ListAllAsync(UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) =>
 			ListInternalAsync(new StatisticsReq.Types.Options {
-				All = new StatisticsReq.Types.Empty()
+				All = new Empty()
 			}, userCredentials, cancellationToken);
 	}
 }

@@ -1,12 +1,14 @@
+using EventStore.Client.Shared;
+
 namespace EventStore.Client.Streams {
 	partial class DeleteReq {
 		public DeleteReq WithAnyStreamRevision(AnyStreamRevision expectedRevision) {
 			if (expectedRevision == AnyStreamRevision.Any) {
-				Options.Any = new Types.Empty();
+				Options.Any = new Empty();
 			} else if (expectedRevision == AnyStreamRevision.NoStream) {
-				Options.NoStream = new Types.Empty();
+				Options.NoStream = new Empty();
 			} else if (expectedRevision == AnyStreamRevision.StreamExists) {
-				Options.StreamExists = new Types.Empty();
+				Options.StreamExists = new Empty();
 			}
 
 			return this;
