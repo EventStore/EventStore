@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					using (var b = new Barrier(2)) {
 						Task sendData = Task.Factory.StartNew(() => {
 							b.SignalAndWait();
-							for (int i = 0; i < 1000; i++)
+							for (int j = 0; j < 1000; j++)
 								serverTcpConnection.EnqueueSend(GenerateData());
 						}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
@@ -86,10 +86,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		}
 
 		private X509Certificate GetCertificate() {
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("EventStore.Core.Tests.server.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
+			using (var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.Core.Tests.server.p12")) {
+				using (var mem = new MemoryStream()) {
+					stream.CopyTo(mem);
+					return new X509Certificate2(mem.ToArray(), "1111");
+				}
+			}
 		}
 	}
 }

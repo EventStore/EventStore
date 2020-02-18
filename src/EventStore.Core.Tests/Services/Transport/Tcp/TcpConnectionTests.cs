@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					using (var b = new Barrier(2)) {
 						Task sendData = Task.Factory.StartNew(() => {
 							b.SignalAndWait();
-							for (int i = 0; i < 1000; i++)
+							for (int j = 0; j < 1000; j++)
 								serverTcpConnection.EnqueueSend(GenerateData());
 						}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
