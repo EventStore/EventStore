@@ -83,7 +83,6 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
-		public readonly bool StructuredLog;
 		public readonly bool ReadOnlyReplica;
 		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
 		public int PTableMaxReaderCount;
@@ -153,7 +152,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool reduceFileCachePressure = false,
 			int initializationThreads = 1,
 			bool faultOutOfOrderProjections = false,
-			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
 			bool logFailedAuthenticationAttempts = false,
@@ -261,7 +259,6 @@ namespace EventStore.Core.Cluster.Settings {
 			InitializationThreads = initializationThreads;
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
-			StructuredLog = structuredLog;
 			ReadOnlyReplica = readOnlyReplica;
 			MaxAppendSize = maxAppendSize;
 			CreateHttpMessageHandler = createHttpMessageHandler;
@@ -292,7 +289,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ScavengeHistoryMaxAge: {ScavengeHistoryMaxAge}\n" +
 			$"ConnectionPendingSendBytesThreshold: {ConnectionPendingSendBytesThreshold}\n" +
 			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
-			$"InitializationThreads: {InitializationThreads}\n" + $"StructuredLog: {StructuredLog}\n" +
+			$"InitializationThreads: {InitializationThreads}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
 			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n";

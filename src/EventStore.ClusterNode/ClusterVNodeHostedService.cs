@@ -316,8 +316,6 @@ namespace EventStore.ClusterNode {
 				builder.SkipIndexScanOnReads();
 			if (options.ReduceFileCachePressure)
 				builder.ReduceFileCachePressure();
-			if (options.StructuredLog)
-				builder.WithStructuredLogging(options.StructuredLog);
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)

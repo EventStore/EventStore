@@ -339,9 +339,9 @@ namespace EventStore.Core.Services.Gossip {
 			Log.Verbose(
 				"CLUSTER HAS CHANGED {source}"
 				+ "\nOld:"
-				+ "\n{@oldMembers}"
+				+ "\n{oldMembers}"
 				+ "\nNew:"
-				+ "\n{@newMembers}"
+				+ "\n{newMembers}"
 				, source.IsNotEmptyString() ? source : string.Empty
 				, oldMembers
 				, newMembers

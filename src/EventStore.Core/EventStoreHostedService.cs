@@ -91,7 +91,7 @@ namespace EventStore.Core {
 					: $"{GC.MaxGeneration + 1} GENERATIONS");
 			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 
-			Log.Information("{@esOptions}", EventStoreOptions.DumpOptionsStructured());
+			Log.Information(EventStoreOptions.DumpOptions());
 
 			if (options.WhatIf)
 				Application.Exit(ExitCode.Success, "WhatIf option specified");

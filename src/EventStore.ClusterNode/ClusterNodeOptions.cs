@@ -302,9 +302,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.InitializationThreadsDescr, Opts.DbGroup)]
 		public int InitializationThreads { get; set; }
 
-		[ArgDescription(Opts.StructuredLogDescr, Opts.DbGroup)]
-		public bool StructuredLog { get; set; }
-
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
@@ -432,7 +429,6 @@ namespace EventStore.ClusterNode {
 			SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
 			ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			InitializationThreads = Opts.InitializationThreadsDefault;
-			StructuredLog = Opts.StructuredLogDefault;
 
 			ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
 			ConnectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
