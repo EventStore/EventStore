@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Guid projectionCorrelationId,
 			IPublisher inputQueue,
 			Guid workerId,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			IPublisher publisher,
 			IODispatcher ioDispatcher,
 			ReaderSubscriptionDispatcher subscriptionDispatcher,

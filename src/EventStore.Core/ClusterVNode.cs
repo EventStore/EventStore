@@ -393,7 +393,7 @@ namespace EventStore.Core {
 				// ReSharper restore RedundantTypeArgumentsOfMethod
 			});
 
-			var httpAuthenticationProviders = new List<HttpAuthenticationProvider> {
+			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
 				new BasicHttpAuthenticationProvider(_internalAuthenticationProvider),
 			};
 			if (vNodeSettings.EnableTrustedAuth)
@@ -482,7 +482,7 @@ namespace EventStore.Core {
 			}
 
 			SubscribeWorkers(bus => {
-				KestrelHttpService.CreateAndSubscribePipeline(bus, httpAuthenticationProviders.ToArray());
+				KestrelHttpService.CreateAndSubscribePipeline(bus);
 			});
 
 			// REQUEST FORWARDING
@@ -699,7 +699,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _internalAuthenticationProvider, _readIndex,
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, httpAuthenticationProviders, _readIndex,
 				_vNodeSettings, _externalHttpService, _internalHttpService);
 
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);

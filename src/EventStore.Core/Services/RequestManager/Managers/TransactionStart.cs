@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionStart : RequestManagerBase {
 		private readonly string _streamId;
 		private readonly bool _betterOrdering;
-		private readonly IPrincipal _user;
+		private readonly ClaimsPrincipal _user;
 
 		public TransactionStart(
 					IPublisher publisher,
@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					CommitSource commitSource)
 			: base(
 					 publisher,

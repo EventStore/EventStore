@@ -1,4 +1,4 @@
-﻿using System.Security.Principal;
+﻿using System.Security.Claims;
 
 namespace EventStore.Core.Authentication {
 	public abstract class AuthenticationRequest {
@@ -13,7 +13,7 @@ namespace EventStore.Core.Authentication {
 		}
 
 		public abstract void Unauthorized();
-		public abstract void Authenticated(IPrincipal principal);
+		public abstract void Authenticated(ClaimsPrincipal principal);
 		public abstract void Error();
 		public abstract void NotReady();
 	}

@@ -1,10 +1,10 @@
 using EventStore.Projections.Core.Common;
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 
 namespace EventStore.Projections.Core.Services {
 	public class ProjectionConfig {
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly int _checkpointHandledThreshold;
 		private readonly int _checkpointUnhandledBytesThreshold;
 		private readonly int _pendingEventsThreshold;
@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Services {
 		private readonly int _checkpointAfterMs;
 		private readonly int _maximumAllowedWritesInFlight;
 
-		public ProjectionConfig(IPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
+		public ProjectionConfig(ClaimsPrincipal runAs, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
 			int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
 			bool createTempStreams, bool stopOnEof, bool trackEmittedStreams,
 			int checkpointAfterMs, int maximumAllowedWritesInFlight) {
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services {
 			get { return _stopOnEof; }
 		}
 
-		public IPrincipal RunAs {
+		public ClaimsPrincipal RunAs {
 			get { return _runAs; }
 		}
 

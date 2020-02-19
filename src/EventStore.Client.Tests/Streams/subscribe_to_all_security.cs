@@ -15,7 +15,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task subscribing_to_all_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.SubscribeToAll(TestCredentials.TestBadUser));
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() => _fixture.SubscribeToAll(TestCredentials.TestBadUser));
 		}
 
 		[Fact]

@@ -15,11 +15,11 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task reading_stream_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadEvent(SecurityFixture.ReadStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamForward(SecurityFixture.ReadStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamBackward(SecurityFixture.ReadStream, TestCredentials.TestBadUser));
 		}
 
@@ -72,11 +72,11 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task reading_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(
+			await Assert.ThrowsAsync<NotAuthenticatedException>(
 				() => _fixture.ReadEvent(SecurityFixture.NoAclStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamForward(SecurityFixture.NoAclStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamBackward(SecurityFixture.NoAclStream, TestCredentials.TestBadUser));
 		}
 
@@ -112,11 +112,11 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task
 			reading_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadEvent(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamForward(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser));
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.ReadStreamBackward(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser));
 		}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
@@ -40,14 +41,14 @@ namespace EventStore.Core.Tests.Http {
 		}
 
 		private void Test1Handler(HttpEntityManager http, UriTemplateMatch match) {
-			if (http.User != null)
+			if (http.User != null && !http.User.HasClaim(ClaimTypes.Anonymous, ""))
 				http.Reply("OK", 200, "OK", "text/plain");
 			else
 				http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
 		}
 
 		private void TestAnonymousHandler(HttpEntityManager http, UriTemplateMatch match) {
-			if (http.User != null)
+			if (!http.User.HasClaim(ClaimTypes.Anonymous, ""))
 				http.Reply("ERROR", 500, "ERROR", "text/plain");
 			else
 				http.Reply("OK", 200, "OK", "text/plain");

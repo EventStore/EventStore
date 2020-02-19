@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
+using System.Security.Claims;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -13,15 +12,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 		[TestFixture]
 		public class authenticated : TestFixtureWithProjectionCoreAndManagementServices {
 			private string _projectionName;
-			private OpenGenericPrincipal _testUserPrincipal;
+			private ClaimsPrincipal _testUserPrincipal;
 
 			private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
 
 			protected override void Given() {
 				_projectionName = "test-projection";
 				_projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
-				_testUserPrincipal = new OpenGenericPrincipal(
-					new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
+				_testUserPrincipal = new ClaimsPrincipal(new ClaimsIdentity(
+					new [] {
+						new Claim(ClaimTypes.Name,"test-user"),
+						new Claim(ClaimTypes.Role,"test-role1"), 
+						new Claim(ClaimTypes.Role,"test-role2")
+					}
+					, "ES-Test"));
 
 				AllWritesSucceed();
 				NoOtherStreams();

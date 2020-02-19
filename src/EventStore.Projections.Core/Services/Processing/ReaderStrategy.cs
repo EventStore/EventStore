@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly HashSet<string> _events;
 		private readonly bool _includeStreamDeletedNotification;
 		private readonly bool _reorderEvents;
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly int _processingLag;
 
 
@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IQuerySources sources,
 			ITimeProvider timeProvider,
 			bool stopOnEof,
-			IPrincipal runAs) {
+			ClaimsPrincipal runAs) {
 			if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams())
 				throw new InvalidOperationException("None of streams and categories are included");
 			if (!sources.AllEvents && !sources.HasEvents())
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			bool includeStreamDeletedNotification,
 			int? processingLag,
 			bool reorderEvents,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			ITimeProvider timeProvider) {
 			_tag = tag;
 			_phase = phase;

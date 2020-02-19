@@ -23,7 +23,7 @@ namespace EventStore.Client.Streams
 
 		[Fact]
 		public async Task writing_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.AppendStream(SecurityFixture.WriteStream, TestCredentials.TestBadUser));
 		}
 
@@ -55,7 +55,7 @@ namespace EventStore.Client.Streams
 
 		[Fact]
 		public async Task writing_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.AppendStream(SecurityFixture.NoAclStream, TestCredentials.TestBadUser));
 		}
 
@@ -79,7 +79,7 @@ namespace EventStore.Client.Streams
 		[Fact]
 		public async Task
 			writing_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(
+			await Assert.ThrowsAsync<NotAuthenticatedException>(
 				() => _fixture.AppendStream(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser));
 		}
 

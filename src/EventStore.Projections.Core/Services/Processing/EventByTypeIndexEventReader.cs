@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public EventByTypeIndexEventReader(
 			IPublisher publisher,
 			Guid eventReaderCorrelationId,
-			IPrincipal readAs,
+			ClaimsPrincipal readAs,
 			string[] eventTypes,
 			bool includeDeletedStreamNotification,
 			TFPos fromTfPosition,
@@ -124,9 +124,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			public abstract void Dispose();
 
 			protected readonly EventByTypeIndexEventReader _reader;
-			protected readonly IPrincipal _readAs;
+			protected readonly ClaimsPrincipal _readAs;
 
-			protected State(EventByTypeIndexEventReader reader, IPrincipal readAs) {
+			protected State(EventByTypeIndexEventReader reader, ClaimsPrincipal readAs) {
 				_reader = reader;
 				_readAs = readAs;
 			}
@@ -193,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			private readonly Dictionary<string, Guid> _pendingRequests;
 			private readonly object _lock = new object();
 
-			public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, IPrincipal readAs)
+			public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, ClaimsPrincipal readAs)
 				: base(reader, readAs) {
 				_streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
 				_eofs = _streamToEventType.Keys.ToDictionary(v => v, v => false);
@@ -556,7 +556,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			public TfBased(
 				ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
-				IPublisher publisher, IPrincipal readAs)
+				IPublisher publisher, ClaimsPrincipal readAs)
 				: base(reader, readAs) {
 				_timeProvider = timeProvider;
 				_eventTypes = reader._eventTypes;

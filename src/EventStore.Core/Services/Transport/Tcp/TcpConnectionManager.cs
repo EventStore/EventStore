@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -298,7 +298,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				default: {
 					var defaultUser = _defaultUser;
 					if ((package.Flags & TcpFlags.TrustedWrite) != 0) {
-						UnwrapAndPublishPackage(package, UserManagement.SystemAccount.Principal, null, null);
+						UnwrapAndPublishPackage(package, UserManagement.SystemAccounts.System, null, null);
 					} else if ((package.Flags & TcpFlags.Authenticated) != 0) {
 						_authProvider.Authenticate(new TcpAuthRequest(this, package, package.Login, package.Password));
 					} else if (defaultUser != null) {
@@ -316,7 +316,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user, string login, string password) {
+		private void UnwrapAndPublishPackage(TcpPackage package, ClaimsPrincipal user, string login, string password) {
 			Message message = null;
 			string error = "";
 			try {
@@ -341,7 +341,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, description));
 		}
 
-		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, IPrincipal user) {
+		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, ClaimsPrincipal user) {
 			var authCredentials = new UserCredentials(userCredentials.Login, userCredentials.Password, user);
 			Interlocked.CompareExchange(ref _defaultUser, authCredentials, userCredentials);
 			_tcpEnvelope.ReplyWith(new TcpMessage.Authenticated(correlationId));
@@ -464,7 +464,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				_manager.ReplyNotAuthenticated(_package.CorrelationId, "Not Authenticated");
 			}
 
-			public override void Authenticated(IPrincipal principal) {
+			public override void Authenticated(ClaimsPrincipal principal) {
 				_manager.UnwrapAndPublishPackage(_package, principal, Name, SuppliedPassword);
 			}
 
@@ -495,7 +495,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				_manager.ReplyNotAuthenticated(_correlationId, "Unauthorized");
 			}
 
-			public override void Authenticated(IPrincipal principal) {
+			public override void Authenticated(ClaimsPrincipal principal) {
 				_manager.ReplyAuthenticated(_correlationId, _userCredentials, principal);
 			}
 
@@ -511,9 +511,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private class UserCredentials {
 			public readonly string Login;
 			public readonly string Password;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 
-			public UserCredentials(string login, string password, IPrincipal user) {
+			public UserCredentials(string login, string password, ClaimsPrincipal user) {
 				Login = login;
 				Password = password;
 				User = user;

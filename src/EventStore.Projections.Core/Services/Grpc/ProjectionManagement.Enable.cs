@@ -1,4 +1,4 @@
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core;
 using EventStore.Core.Messaging;
@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			var name = options.Name;
 			var runAs = new ProjectionManagementMessage.RunAs(user);

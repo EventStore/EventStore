@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Specialized;
 using System.Net;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
 using System.Linq;
@@ -16,9 +15,9 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public readonly IHttpRequest Request;
 		internal readonly IHttpResponse Response;
-		public readonly IPrincipal User;
+		public readonly ClaimsPrincipal User;
 
-		public HttpEntity(IHttpRequest request, IHttpResponse response, IPrincipal user,
+		public HttpEntity(IHttpRequest request, IHttpResponse response, ClaimsPrincipal user,
 			bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort, Action onComplete) {
 			Ensure.NotNull(request, "request");
 			Ensure.NotNull(response, "response");
@@ -82,7 +81,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			return uriBuilder.Uri;
 		}
 
-		private HttpEntity(IPrincipal user, bool logHttpRequests) {
+		private HttpEntity(ClaimsPrincipal user, bool logHttpRequests) {
 			RequestedUrl = null;
 			ResponseUrl = null;
 
@@ -93,7 +92,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			OnComplete = () => { };
 		}
 
-		private HttpEntity(HttpEntity httpEntity, IPrincipal user, bool logHttpRequests) {
+		private HttpEntity(HttpEntity httpEntity, ClaimsPrincipal user, bool logHttpRequests) {
 			RequestedUrl = httpEntity.RequestedUrl;
 			ResponseUrl = httpEntity.ResponseUrl;
 
@@ -113,7 +112,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 		public HttpEntityManager CreateManager()
 			=> CreateManager(Codec.NoCodec, Codec.NoCodec, Array.Empty<string>(), _ => { });
 
-		public HttpEntity SetUser(IPrincipal user) {
+		public HttpEntity SetUser(ClaimsPrincipal user) {
 			return new HttpEntity(this, user, _logHttpRequests);
 		}
 	}

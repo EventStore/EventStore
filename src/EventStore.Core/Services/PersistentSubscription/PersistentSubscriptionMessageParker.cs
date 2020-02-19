@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			var parkedEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, data, metadata.ToJson());
 
-			_ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccounts.System,
 				x => WriteStateCompleted(completed, ev, x));
 		}
 
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 
 		public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed) {
-			_ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccount.Principal,
+			_ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccounts.System,
 				x => completed(this));
 		}
 
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				long.MaxValue,
 				1,
 				false,
-				SystemAccount.Principal, comp => {
+				SystemAccounts.System, comp => {
 					switch (comp.Result) {
 						case ReadStreamResult.Success:
 							completed(comp.LastEventNumber);
@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void BeginMarkParkedMessagesReprocessed(long sequence) {
 			var metaStreamId = SystemStreams.MetastreamOf(_parkedStreamId);
 			_ioDispatcher.WriteEvent(
-				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(sequence), SystemAccount.Principal,
+				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(sequence), SystemAccounts.System,
 				msg => {
 					switch (msg.Result) {
 						case OperationResult.Success:

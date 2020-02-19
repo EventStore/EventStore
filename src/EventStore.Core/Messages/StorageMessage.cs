@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -431,7 +431,7 @@ namespace EventStore.Core.Messages {
 			public readonly StreamAccessType AccessType;
 
 			public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, IPrincipal user, bool singleAffinity = false)
+				StreamAccessType accessType, ClaimsPrincipal user, bool singleAffinity = false)
 				: base(correlationId, correlationId, envelope, user) {
 				if (eventStreamId == null && transactionId == null)
 					throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");

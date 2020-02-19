@@ -32,19 +32,19 @@ namespace EventStore.Client.Streams {
 			var envelope = new CallbackEnvelope(OnUserCreated);
 
 			Node.MainQueue.Publish(new UserManagementMessage.Create(envelope,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				TestCredentials.TestUser1.Username,
 				nameof(TestCredentials.TestUser1),
 				Array.Empty<string>(),
 				TestCredentials.TestUser1.Password));
 			Node.MainQueue.Publish(new UserManagementMessage.Create(envelope,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				TestCredentials.TestUser2.Username,
 				nameof(TestCredentials.TestUser2),
 				Array.Empty<string>(),
 				TestCredentials.TestUser2.Password));
 			Node.MainQueue.Publish(new UserManagementMessage.Create(envelope,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				TestCredentials.TestAdmin.Username,
 				nameof(TestCredentials.TestAdmin),
 				new[] {SystemRoles.Admins},

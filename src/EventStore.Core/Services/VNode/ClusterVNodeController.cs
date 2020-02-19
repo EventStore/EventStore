@@ -740,7 +740,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
 			}
-			if (message.User != SystemAccount.Principal) {
+			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
 			}
@@ -755,7 +755,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
 			}
-			if (message.User != SystemAccount.Principal) {
+			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
 			}
@@ -769,7 +769,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
 			}
-			if (message.User != SystemAccount.Principal) {
+			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
 			}
@@ -784,7 +784,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
 			}
-			if (message.User != SystemAccount.Principal) {
+			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
 			}
@@ -799,7 +799,7 @@ namespace EventStore.Core.Services.VNode {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 				return;
 			}
-			if (message.User != SystemAccount.Principal) {
+			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
 			} 

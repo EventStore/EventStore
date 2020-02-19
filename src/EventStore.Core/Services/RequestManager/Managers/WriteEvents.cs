@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteEvents : RequestManagerBase {
 		private readonly string _streamId;
 		private readonly bool _betterOrdering;
-		private readonly IPrincipal _user;
+		private readonly ClaimsPrincipal _user;
 		private readonly Event[] _events;
 		private readonly StreamAccessType _accessType;
 		public WriteEvents(
@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					Event[] events,
 					CommitSource commitSource)
 			: base(

@@ -26,12 +26,12 @@ namespace EventStore.Client.Users {
 			Assert.Equal("loginName", ex.ParamName);
 		}
 
-		[Theory, ClassData(typeof(InsufficientCredentialsCases))]
+		[Theory, ClassData(typeof(InvalidCredentialsCases))]
 		public async Task with_user_with_insufficient_credentials_throws(string loginName,
 			UserCredentials userCredentials) {
 			await _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] {"foo", "bar"},
 				"password", TestCredentials.Root);
-			await Assert.ThrowsAsync<AccessDeniedException>(
+			await Assert.ThrowsAsync<NotAuthenticatedException>(
 				() => _fixture.Client.UsersManager.DisableUserAsync(loginName, userCredentials));
 		}
 

@@ -11,13 +11,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Operations
 		: EventStore.Client.Operations.Operations.OperationsBase {
 		private readonly IQueuedHandler _queue;
-		private readonly IAuthenticationProvider _authenticationProvider;
 
-		public Operations(IQueuedHandler queue, IAuthenticationProvider authenticationProvider) {
+		public Operations(IQueuedHandler queue) {
 			if (queue == null) throw new ArgumentNullException(nameof(queue));
-			if (authenticationProvider == null) throw new ArgumentNullException(nameof(authenticationProvider));
 			_queue = queue;
-			_authenticationProvider = authenticationProvider;
 		}
 	}
 }

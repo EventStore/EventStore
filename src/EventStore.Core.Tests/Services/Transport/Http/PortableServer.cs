@@ -46,12 +46,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
 			_multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
 			_multiQueuedHandler.Start();
-			var httpAuthenticationProviders = new HttpAuthenticationProvider[]
+			var httpAuthenticationProviders = new IHttpAuthenticationProvider[]
 				{new AnonymousHttpAuthenticationProvider()};
 
 			_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
 				_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
-			KestrelHttpService.CreateAndSubscribePipeline(pipelineBus, httpAuthenticationProviders);
+			KestrelHttpService.CreateAndSubscribePipeline(pipelineBus);
 			_server = new TestServer(
 				new WebHostBuilder()
 					.UseStartup(new HttpServiceStartup(_service)));

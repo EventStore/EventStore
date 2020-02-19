@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
-			if (entity.User != null && (entity.User.IsInRole(SystemRoles.Operations) || entity.User.IsInRole(SystemRoles.Admins))) {
+			if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
 				entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] {"CertificatePassword"})),
 					HttpStatusCode.OK,
 					"OK",

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -8,6 +10,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -31,7 +35,7 @@ namespace EventStore.Core {
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IQueuedHandler _mainQueue;
-		private readonly IAuthenticationProvider _internalAuthenticationProvider;
+		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly KestrelHttpService _externalHttpService;
@@ -43,7 +47,7 @@ namespace EventStore.Core {
 		public ClusterVNodeStartup(
 			ISubsystem[] subsystems,
 			IQueuedHandler mainQueue,
-			IAuthenticationProvider internalAuthenticationProvider,
+			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
 			IReadIndex readIndex,
 			ClusterVNodeSettings vNodeSettings,
 			KestrelHttpService externalHttpService,
@@ -56,10 +60,10 @@ namespace EventStore.Core {
 				throw new ArgumentNullException(nameof(mainQueue));
 			}
 
-			if (internalAuthenticationProvider == null) {
-				throw new ArgumentNullException(nameof(internalAuthenticationProvider));
+			if (httpAuthenticationProviders == null) {
+				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			}
-
+			
 			if (readIndex == null) {
 				throw new ArgumentNullException(nameof(readIndex));
 			}
@@ -71,10 +75,10 @@ namespace EventStore.Core {
 			if (externalHttpService == null) {
 				throw new ArgumentNullException(nameof(externalHttpService));
 			}
-
+			
 			_subsystems = subsystems;
 			_mainQueue = mainQueue;
-			_internalAuthenticationProvider = internalAuthenticationProvider;
+			_httpAuthenticationProviders = httpAuthenticationProviders;
 			_readIndex = readIndex;
 			_vNodeSettings = vNodeSettings;
 			_externalHttpService = externalHttpService;
@@ -85,13 +89,14 @@ namespace EventStore.Core {
 
 		public void Configure(IApplicationBuilder app) {
 			app.Map("/health", _statusCheck.Configure);
+			app.UseMiddleware<AuthenticationMiddleware>();
 			_subsystems
 				.Aggregate(app
 						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<PersistentSubscriptions>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
+							inner => inner.UseRouting().Use(RequireAuthenticated).UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Users>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
@@ -107,17 +112,29 @@ namespace EventStore.Core {
 			}
 		}
 
+		private RequestDelegate RequireAuthenticated(RequestDelegate next) {
+			return context => {
+				if (context.User.HasClaim(x => x.Type == ClaimTypes.Anonymous)) {
+					context.Response.StatusCode = HttpStatusCode.Unauthorized;
+					return Task.CompletedTask;
+				}
+
+				return next(context);
+			};
+		}
+
 		public IServiceProvider ConfigureServices(IServiceCollection services) =>
 			_subsystems
 				.Aggregate(services
 						.AddRouting()
-						.AddSingleton(_internalAuthenticationProvider)
+						.AddSingleton(_httpAuthenticationProviders)
+						.AddSingleton<AuthenticationMiddleware>()
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _internalAuthenticationProvider, _readIndex,
+						.AddSingleton(new Streams(_mainQueue, _readIndex,
 							_vNodeSettings.MaxAppendSize))
-						.AddSingleton(new PersistentSubscriptions(_mainQueue, _internalAuthenticationProvider))
-						.AddSingleton(new Users(_mainQueue, _internalAuthenticationProvider))
-						.AddSingleton(new Operations(_mainQueue, _internalAuthenticationProvider))
+						.AddSingleton(new PersistentSubscriptions(_mainQueue))
+						.AddSingleton(new Users(_mainQueue))
+						.AddSingleton(new Operations(_mainQueue))
 						.AddGrpc().Services,
 					(s, subsystem) => subsystem.ConfigureServices(s))
 				.BuildServiceProvider();

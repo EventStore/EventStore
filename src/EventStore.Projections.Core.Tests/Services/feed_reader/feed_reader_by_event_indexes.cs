@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 			}
 
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new FeedReaderMessage.ReadPage(
-						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccount.Principal,
+						Guid.NewGuid(), new PublishEnvelope(GetInputQueue()), SystemAccounts.System,
 						_querySourcesDefinition, _fromPosition, _maxEvents);
 			}
 

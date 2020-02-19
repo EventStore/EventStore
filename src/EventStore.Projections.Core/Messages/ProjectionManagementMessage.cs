@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -7,6 +7,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Messages {
 	public static class ProjectionManagementMessage {
@@ -626,14 +627,14 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		public sealed class RunAs {
-			private readonly IPrincipal _runAs;
+			private readonly ClaimsPrincipal _runAs;
 
-			public RunAs(IPrincipal runAs) {
+			public RunAs(ClaimsPrincipal runAs) {
 				_runAs = runAs;
 			}
 
-			private static readonly RunAs _anonymous = new RunAs(null);
-			private static readonly RunAs _system = new RunAs(SystemAccount.Principal);
+			private static readonly RunAs _anonymous = new RunAs(SystemAccounts.Anonymous);
+			private static readonly RunAs _system = new RunAs(SystemAccounts.System);
 
 			public static RunAs Anonymous {
 				get { return _anonymous; }
@@ -643,17 +644,17 @@ namespace EventStore.Projections.Core.Messages {
 				get { return _system; }
 			}
 
-			public IPrincipal Principal {
+			public ClaimsPrincipal Principal {
 				get { return _runAs; }
 			}
 
-			public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, IPrincipal existingRunAs,
+			public static bool ValidateRunAs(ProjectionMode mode, ReadWrite readWrite, ClaimsPrincipal existingRunAs,
 				Command.ControlMessage message, bool replace = false) {
 				if (mode > ProjectionMode.Transient && readWrite == ReadWrite.Write
 				                                    && (message.RunAs == null || message.RunAs.Principal == null
 				                                                              || !(
-																					   message.RunAs.Principal.IsInRole(SystemRoles.Admins)
-																			  		|| message.RunAs.Principal.IsInRole(SystemRoles.Operations)
+																					   message.RunAs.Principal.LegacyRoleCheck(SystemRoles.Admins)
+																			  		|| message.RunAs.Principal.LegacyRoleCheck(SystemRoles.Operations)
 																				  ))) {
 					message.Envelope.ReplyWith(new NotAuthorized());
 					return false;

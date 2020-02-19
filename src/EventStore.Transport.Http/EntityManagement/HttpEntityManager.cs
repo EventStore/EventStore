@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -87,7 +87,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			get { return _requestedUrl; }
 		}
 
-		public IPrincipal User {
+		public ClaimsPrincipal User {
 			get { return HttpEntity.User; }
 		}
 

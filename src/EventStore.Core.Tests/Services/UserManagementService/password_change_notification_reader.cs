@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				yield return new SystemMessage.SystemStart();
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "UserOne", new string[] { }, "password");
+						Envelope, SystemAccounts.System, "user1", "UserOne", new string[] { }, "password");
 			}
 
 			[TearDown]
@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "password", "drowssap");
+						Envelope, SystemAccounts.System, "user1", "password", "drowssap");
 			}
 
 			//TODO GFY THIS TEST LOOKS LIKE ITS NO LONGER VALID AS THE

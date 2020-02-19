@@ -1,8 +1,8 @@
 using System;
-using System.Security.Principal;
+using System.Linq;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -17,6 +17,7 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using System.Threading;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Common;
+using FastSerialization;
 
 namespace EventStore.Projections.Core.Services.Management {
 	/// <summary>
@@ -105,7 +106,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private DateTime _lastAccessed;
 		private long _lastWrittenVersion = -1;
 
-		private IPrincipal _runAs;
+		private ClaimsPrincipal _runAs;
 		internal bool Prepared;
 		internal bool Created;
 		private bool _pendingWritePersistedState;
@@ -202,7 +203,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			get { return PersistedProjectionState.Mode; }
 		}
 
-		public IPrincipal RunAs {
+		public ClaimsPrincipal RunAs {
 			get { return _runAs; }
 		}
 
@@ -612,7 +613,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					corrId, corrId, _readDispatcher.Envelope, ProjectionNamesBuilder.ProjectionsStreamPrefix + name, -1,
 					1,
 					resolveLinkTos: false, requireLeader: false, validationStreamVersion: null,
-					user: SystemAccount.Principal),
+					user: SystemAccounts.System),
 				PersistedStateReadCompleted);
 		}
 
@@ -644,7 +645,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void FixUpOldProjectionRunAs(PersistedState persistedState) {
 			if (persistedState.RunAs == null || string.IsNullOrEmpty(persistedState.RunAs.Name)) {
-				_runAs = SystemAccount.Principal;
+				_runAs = SystemAccounts.System;
 				persistedState.RunAs = SerializedRunAs.SerializePrincipal(ProjectionManagementMessage.RunAs.System);
 			}
 		}
@@ -706,7 +707,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				correlationId, correlationId, _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
 				new Event(Guid.NewGuid(), ProjectionEventTypes.ProjectionUpdated, true, persistedState.ToJsonBytes(),
 					Empty.ByteArray),
-				SystemAccount.Principal);
+				SystemAccounts.System);
 		}
 
 		private void WritePersistedState(ClientMessage.WriteEvents persistedStateEvent) {
@@ -766,7 +767,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				streamId,
 				ExpectedVersion.Any,
 				false,
-				SystemAccount.Principal), m => DeleteStreamCompleted(m, streamId, completed));
+				SystemAccounts.System), m => DeleteStreamCompleted(m, streamId, completed));
 		}
 
 		private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted message, string streamId,
@@ -1044,40 +1045,39 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public static implicit operator ProjectionManagementMessage.RunAs(SerializedRunAs runAs) {
-			if (runAs == null)
-				return null;
-			if (runAs.Name == null)
-				return ProjectionManagementMessage.RunAs.Anonymous;
-			if (runAs.Name == "$system") //TODO: make sure nobody else uses it
-				return ProjectionManagementMessage.RunAs.System;
-			return
-				new ProjectionManagementMessage.RunAs(
-					new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles));
+			return new ProjectionManagementMessage.RunAs(DeserializePrincipal(runAs));
 		}
 
 		public static SerializedRunAs SerializePrincipal(ProjectionManagementMessage.RunAs runAs) {
-			if (runAs == null)
-				return null;
-			if (runAs.Principal == null)
+			if (runAs?.Principal == null || runAs.Principal.HasClaim(x=>x.Type == ClaimTypes.Anonymous))
 				return null; // anonymous
-			if (runAs.Principal == SystemAccount.Principal)
+			if (runAs.Principal == SystemAccounts.System)
 				return new SerializedRunAs {Name = "$system"};
 
-			var genericPrincipal = runAs.Principal as OpenGenericPrincipal;
-			if (genericPrincipal == null)
-				throw new ArgumentException(
-					"OpenGenericPrincipal is the only supported principal type in projections", "runAs");
-			return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = genericPrincipal.Roles};
+			var principal = runAs.Principal;
+			var roles = principal.Claims.Where(x => x.Type != ClaimTypes.Name).Select(c => $"{c.Type}$$${c.Value}").ToArray();
+			return new SerializedRunAs {Name = runAs.Principal.Identity.Name, Roles = roles};
 		}
 
-		public static IPrincipal DeserializePrincipal(SerializedRunAs runAs) {
-			if (runAs == null)
-				return null;
-			if (runAs.Name == null)
-				return null;
+		public static ClaimsPrincipal DeserializePrincipal(SerializedRunAs runAs) {
+			if (runAs?.Name == null)
+				return SystemAccounts.Anonymous;
 			if (runAs.Name == "$system") //TODO: make sure nobody else uses it
-				return SystemAccount.Principal;
-			return new OpenGenericPrincipal(new GenericIdentity(runAs.Name), runAs.Roles);
+				return SystemAccounts.System;
+			var claims = runAs.Roles.Select(x => x.Split("$$$")).Select(x => {
+				return x.Length switch 
+				{
+					1 =>  new Claim(ClaimTypes.Role, x[0]),
+					2 => new Claim(x[0], x[1]),
+					_ =>throw new SerializationException("Could not deserialize run as")
+				};
+
+			}).ToList();
+			if (!claims.Exists(x => x.Type == ClaimTypes.Name)) {
+				claims.Add(new Claim(ClaimTypes.Name, runAs.Name));
+			}
+			
+			return new ClaimsPrincipal(new ClaimsIdentity(claims, "ES-Projections"));
 		}
 	}
 }

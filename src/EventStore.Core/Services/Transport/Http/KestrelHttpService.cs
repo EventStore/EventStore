@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -106,7 +106,8 @@ namespace EventStore.Core.Services.Transport.Http {
 			var entity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
 				new CoreHttpResponseAdapter(context.Response), context.User, _logHttpRequests,
 				_advertiseAsAddress, _advertiseAsPort, () => tcs.TrySetResult(true));
-			_requestsMultiHandler.Handle(new IncomingHttpRequestMessage(this, entity, _requestsMultiHandler));
+			entity.SetUser(context.User);
+			_requestsMultiHandler.Handle(new AuthenticatedHttpRequestMessage(this, entity));
 			return tcs.Task;
 		}
 
@@ -137,6 +138,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				if (_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)) {
 					handler(man, match);
 				} else {
+					
 					man.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", (exc) => {
 						Log.Debug("Error while sending reply (http service): {exc}.", exc.Message);
 					});
@@ -146,16 +148,16 @@ namespace EventStore.Core.Services.Transport.Http {
 			});
 		}
 
-		private bool Authorized(IPrincipal user, AuthorizationLevel requiredAuthorizationLevel) {
+		private bool Authorized(ClaimsPrincipal user, AuthorizationLevel requiredAuthorizationLevel) {
 			switch (requiredAuthorizationLevel) {
 				case AuthorizationLevel.None:
 					return true;
 				case AuthorizationLevel.User:
-					return user != null;
+					return user != null && !user.HasClaim(ClaimTypes.Anonymous, "");
 				case AuthorizationLevel.Ops:
-					return user != null && (user.IsInRole(SystemRoles.Admins) || user.IsInRole(SystemRoles.Operations));
+					return user != null && (user.LegacyRoleCheck(SystemRoles.Admins) || user.LegacyRoleCheck(SystemRoles.Operations));
 				case AuthorizationLevel.Admin:
-					return user != null && user.IsInRole(SystemRoles.Admins);
+					return user != null && user.LegacyRoleCheck(SystemRoles.Admins);
 				default:
 					return false;
 			}
@@ -163,16 +165,10 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => _uriRouter.GetAllUriMatches(uri);
 
-		public static void CreateAndSubscribePipeline(IBus bus,
-			HttpAuthenticationProvider[] httpAuthenticationProviders) {
+		public static void CreateAndSubscribePipeline(IBus bus) {
 			Ensure.NotNull(bus, "bus");
-			Ensure.NotNull(httpAuthenticationProviders, "httpAuthenticationProviders");
 
-			// ReSharper disable RedundantTypeArgumentsOfMethod
-			var requestAuthenticationManager =
-				new IncomingHttpRequestAuthenticationManager(httpAuthenticationProviders);
-			bus.Subscribe<IncomingHttpRequestMessage>(requestAuthenticationManager);
-			// ReSharper restore RedundantTypeArgumentsOfMethod
+
 
 			var requestProcessor = new AuthenticatedHttpRequestProcessor();
 			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);

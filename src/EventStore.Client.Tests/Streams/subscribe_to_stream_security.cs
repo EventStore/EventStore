@@ -15,7 +15,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task subscribing_to_stream_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.SubscribeToStream(SecurityFixture.ReadStream, TestCredentials.TestBadUser));
 		}
 
@@ -51,7 +51,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task subscribing_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.SubscribeToStream(SecurityFixture.NoAclStream, TestCredentials.TestBadUser));
 		}
 
@@ -78,7 +78,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task
 			subscribing_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.SubscribeToStream(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser));
 		}
 

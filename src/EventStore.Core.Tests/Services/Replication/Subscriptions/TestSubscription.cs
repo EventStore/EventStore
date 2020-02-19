@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 							Assert.Fail("Unexpected message type :" + x.GetType().Name);
 							break;
 					}
-				}), Guid.NewGuid(), StreamId, false, SystemAccount.Principal);
+				}), Guid.NewGuid(), StreamId, false, SystemAccounts.System);
 			Node.Node.MainQueue.Publish(subscribeMsg);
 		}
 	}

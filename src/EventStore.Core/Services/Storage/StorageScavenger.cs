@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -106,8 +106,8 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private bool IsAllowed(IPrincipal user, Guid correlationId, IEnvelope envelope) {
-			if (user == null || (!user.IsInRole(SystemRoles.Admins) && !user.IsInRole(SystemRoles.Operations))) {
+		private bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
+			if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) && !user.LegacyRoleCheck(SystemRoles.Operations))) {
 				envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId,
 					ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
 				return false;

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 	public class DefaultCheckpointManager : CoreProjectionCheckpointManager,
 		IHandle<CoreProjectionCheckpointWriterMessage.CheckpointWritten>,
 		IHandle<CoreProjectionCheckpointWriterMessage.RestartRequested> {
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly CheckpointTag _zeroTag;
 		private int _readRequestsInProgress;
 		private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private PartitionStateUpdateManager _partitionStateUpdateManager;
 
 		public DefaultCheckpointManager(
-			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
+			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, ClaimsPrincipal runAs,
 			IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
 			ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults,
 			bool definesFold,
@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_readRequestsInProgress++;
 			var requestId = Guid.NewGuid();
 			_ioDispatcher.ReadBackward(
-				partitionStreamName, eventNumber, 1, false, SystemAccount.Principal,
+				partitionStreamName, eventNumber, 1, false, SystemAccounts.System,
 				m =>
 					OnLoadPartitionStateReadStreamEventsBackwardCompleted(
 						m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType),

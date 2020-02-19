@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var settings = request.Options.Settings;
 			var correlationId = Guid.NewGuid();
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			_queue.Publish(new ClientMessage.CreatePersistentSubscription(
 				correlationId,

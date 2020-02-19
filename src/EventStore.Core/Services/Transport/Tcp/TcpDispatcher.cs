@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Core.Messaging;
 
@@ -8,18 +8,18 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	public abstract class TcpDispatcher : ITcpDispatcher {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpDispatcher>();
 
-		private readonly Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, Message>[][]
+		private readonly Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>[][]
 			_unwrappers;
 
 		private readonly IDictionary<Type, Func<Message, TcpPackage>>[] _wrappers;
 
 		protected TcpDispatcher() {
 			_unwrappers =
-				new Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, Message>[2][];
+				new Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>[2][];
 			_unwrappers[0] =
-				new Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, Message>[255];
+				new Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>[255];
 			_unwrappers[1] =
-				new Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, Message>[255];
+				new Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>[255];
 
 			_wrappers = new Dictionary<Type, Func<Message, TcpPackage>>[2];
 			_wrappers[0] = new Dictionary<Type, Func<Message, TcpPackage>>();
@@ -41,26 +41,26 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				(pkg, env, user, login, pass, conn) => unwrapper(pkg, env, conn);
 		}
 
-		protected void AddUnwrapper<T>(TcpCommand command, Func<TcpPackage, IEnvelope, IPrincipal, T> unwrapper,
+		protected void AddUnwrapper<T>(TcpCommand command, Func<TcpPackage, IEnvelope, ClaimsPrincipal, T> unwrapper,
 			ClientVersion version) where T : Message {
 			_unwrappers[(byte)version][(byte)command] =
 				(pkg, env, user, login, pass, conn) => unwrapper(pkg, env, user);
 		}
 
 		protected void AddUnwrapper<T>(TcpCommand command,
-			Func<TcpPackage, IEnvelope, IPrincipal, string, string, T> unwrapper, ClientVersion version)
+			Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, T> unwrapper, ClientVersion version)
 			where T : Message {
 			_unwrappers[(byte)version][(byte)command] = (pkg, env, user, login, pass, conn) =>
 				unwrapper(pkg, env, user, login, pass);
 		}
 
 		protected void AddUnwrapper<T>(TcpCommand command,
-			Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, T> unwrapper,
+			Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, T> unwrapper,
 			ClientVersion version)
 			where T : Message {
 // ReSharper disable RedundantCast
 			_unwrappers[(byte)version][(byte)command] =
-				(Func<TcpPackage, IEnvelope, IPrincipal, string, string, TcpConnectionManager, Message>)unwrapper;
+				(Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>)unwrapper;
 // ReSharper restore RedundantCast
 		}
 
@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return null;
 		}
 
-		public Message UnwrapPackage(TcpPackage package, IEnvelope envelope, IPrincipal user, string login, string pass,
+		public Message UnwrapPackage(TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string login, string pass,
 			TcpConnectionManager connection, byte version) {
 			if (envelope == null)
 				throw new ArgumentNullException("envelope");

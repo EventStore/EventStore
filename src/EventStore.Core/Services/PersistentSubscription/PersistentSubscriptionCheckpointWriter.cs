@@ -36,14 +36,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void BeginDelete(Action<IPersistentSubscriptionCheckpointWriter> completed) {
-			_ioDispatcher.DeleteStream(_subscriptionStateStream, ExpectedVersion.Any, false, SystemAccount.Principal,
+			_ioDispatcher.DeleteStream(_subscriptionStateStream, ExpectedVersion.Any, false, SystemAccounts.System,
 				x => completed(this));
 		}
 
 		private void PublishCheckpoint(long state) {
 			_outstandingWrite = true;
 			var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToJson(), null);
-			_ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccounts.System,
 				WriteStateCompleted);
 		}
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_outstandingWrite = true;
 			var metaStreamId = SystemStreams.MetastreamOf(_subscriptionStateStream);
 			_ioDispatcher.WriteEvent(
-				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccount.Principal, msg => {
+				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccounts.System, msg => {
 					_outstandingWrite = false;
 					switch (msg.Result) {
 						case OperationResult.Success:

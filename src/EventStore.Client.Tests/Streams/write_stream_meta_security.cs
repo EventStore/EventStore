@@ -16,7 +16,7 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task writing_meta_with_not_existing_credentials_is_not_authenticated() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.WriteMeta(SecurityFixture.MetaWriteStream, TestCredentials.TestBadUser, TestCredentials.TestUser1.Username));
 		}
 
@@ -51,7 +51,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task
 			writing_meta_to_no_acl_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.WriteMeta(SecurityFixture.NoAclStream, TestCredentials.TestBadUser, null));
 		}
 
@@ -75,7 +75,7 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task
 			writing_meta_to_all_access_normal_stream_is_not_authenticated_when_not_existing_credentials_are_passed() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+			await Assert.ThrowsAsync<NotAuthenticatedException>(() =>
 				_fixture.WriteMeta(SecurityFixture.NormalAllStream, TestCredentials.TestBadUser, SystemRoles.All));
 		}
 

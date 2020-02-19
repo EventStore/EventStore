@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.UserManagement {
 				message,
 				(completed, data) =>
 					_ioDispatcher.DeleteStream(
-						"$user-" + message.LoginName, completed.FromEventNumber, false, SystemAccount.Principal,
+						"$user-" + message.LoginName, completed.FromEventNumber, false, SystemAccounts.System,
 						streamCompleted =>
 							WritePasswordChangedEventConditionalAnd(
 								message, true, () => ReplyByWriteResult(message, streamCompleted.Result))));
@@ -262,7 +262,7 @@ namespace EventStore.Core.Services.UserManagement {
 		private void BeginReadUserDetails(
 			string loginName, Action<ClientMessage.ReadStreamEventsBackwardCompleted> completed) {
 			var streamId = "$user-" + loginName;
-			_ioDispatcher.ReadBackward(streamId, -1, 1, false, SystemAccount.Principal, completed);
+			_ioDispatcher.ReadBackward(streamId, -1, 1, false, SystemAccounts.System, completed);
 		}
 
 		private void ReadUpdateWriteReply(
@@ -296,7 +296,7 @@ namespace EventStore.Core.Services.UserManagement {
 				new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1)));
 			_ioDispatcher.ConfigureStreamAndWriteEvents(
 				UserPasswordNotificationsStreamId, ExpectedVersion.Any, streamMetadata,
-				new[] {CreatePasswordChangedEvent(loginName)}, SystemAccount.Principal, completed);
+				new[] {CreatePasswordChangedEvent(loginName)}, SystemAccounts.System, completed);
 		}
 
 		private void WritePasswordChangedEventCompleted(
@@ -356,7 +356,7 @@ namespace EventStore.Core.Services.UserManagement {
 
 		private void WriteStreamAcl(string loginName, Action<ClientMessage.WriteEventsCompleted> onCompleted) {
 			_ioDispatcher.UpdateStreamAcl(
-				"$user-" + loginName, ExpectedVersion.Any, SystemAccount.Principal,
+				"$user-" + loginName, ExpectedVersion.Any, SystemAccounts.System,
 				new StreamMetadata(
 					null, null, null, null, null,
 					new StreamAcl(null, SystemRoles.Admins, SystemRoles.Admins, null, SystemRoles.Admins)),
@@ -376,7 +376,7 @@ namespace EventStore.Core.Services.UserManagement {
 			Action<ClientMessage.WriteEventsCompleted> onCompleted) {
 			var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
 			_ioDispatcher.WriteEvents(
-				"$user-" + userData.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccount.Principal,
+				"$user-" + userData.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccounts.System,
 				onCompleted);
 		}
 
@@ -398,7 +398,7 @@ namespace EventStore.Core.Services.UserManagement {
 		private void WriteUsersStreamEvent(string loginName, Action<ClientMessage.WriteEventsCompleted> onCompleted) {
 			var userCreatedEvent = new Event(Guid.NewGuid(), UsersStreamType, false, loginName, null);
 			_ioDispatcher.WriteEvents(
-				"$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccount.Principal,
+				"$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccounts.System,
 				onCompleted);
 		}
 
@@ -562,8 +562,8 @@ namespace EventStore.Core.Services.UserManagement {
 				});
 		}
 
-		private bool IsAdmin(IPrincipal principal) {
-			return principal != null && principal.IsInRole(SystemRoles.Admins);
+		private bool IsAdmin(ClaimsPrincipal principal) {
+			return principal != null && principal.LegacyRoleCheck(SystemRoles.Admins);
 		}
 	}
 }

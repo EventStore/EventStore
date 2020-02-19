@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -119,8 +119,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_started = false;
 		}
 
-		public bool IsUserOpsOrAdmin(IPrincipal user){
-			return user != null && (user.IsInRole(SystemRoles.Admins) || user.IsInRole(SystemRoles.Operations));
+		public bool IsUserOpsOrAdmin(ClaimsPrincipal user){
+			return user != null && (user.LegacyRoleCheck(SystemRoles.Admins) || user.LegacyRoleCheck(SystemRoles.Operations));
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
@@ -615,7 +615,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void LoadConfiguration(Action continueWith) {
 			_ioDispatcher.ReadBackward(SystemStreams.PersistentSubscriptionConfig, -1, 1, false,
-				SystemAccount.Principal, x => HandleLoadCompleted(continueWith, x));
+				SystemAccounts.System, x => HandleLoadCompleted(continueWith, x));
 		}
 
 		private void HandleLoadCompleted(Action continueWith,
@@ -675,7 +675,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(() => metadata);
 			Event[] events = new Event[] {ev};
 			_ioDispatcher.ConfigureStreamAndWriteEvents(SystemStreams.PersistentSubscriptionConfig,
-				ExpectedVersion.Any, streamMetadata, events, SystemAccount.Principal,
+				ExpectedVersion.Any, streamMetadata, events, SystemAccounts.System,
 				x => HandleSaveConfigurationCompleted(continueWith, x));
 		}
 

@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Common.Log;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		PrepareLogRecord ReadPrepare(string streamId, long eventNumber);
 
 		string GetEventStreamIdByTransactionId(long transactionId);
-		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
+		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user);
 
 		StreamMetadata GetStreamMetadata(string streamId);
 		long GetStreamLastEventNumber(string streamId);
@@ -314,7 +314,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 
 		StreamAccess IIndexReader.
-			CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user) {
+			CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
 			Ensure.NotNullOrEmpty(streamId, "streamId");
 			using (var reader = _backend.BorrowReader()) {
 				return CheckStreamAccessInternal(reader, streamId, streamAccessType, user);
@@ -322,7 +322,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private StreamAccess CheckStreamAccessInternal(TFReaderLease reader, string streamId,
-			StreamAccessType streamAccessType, IPrincipal user) {
+			StreamAccessType streamAccessType, ClaimsPrincipal user) {
 			if (SystemStreams.IsMetastream(streamId)) {
 				switch (streamAccessType) {
 					case StreamAccessType.Read:
@@ -382,15 +382,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var isPublic = roles.Contains(x => x == SystemRoles.All);
 			if (isPublic) return new StreamAccess(true, true);
 			if (user == null) return new StreamAccess(false);
-			if (user.IsInRole(SystemRoles.Admins)) return new StreamAccess(true);
+			if (user.LegacyRoleCheck(SystemRoles.Admins)) return new StreamAccess(true);
 			for (int i = 0; i < roles.Length; ++i) {
-				if (user.IsInRole(roles[i]))
+				if (user.LegacyRoleCheck(roles[i]))
 					return new StreamAccess(true);
+				
 			}
 
 			return new StreamAccess(false);
 		}
-
+		
 		long IIndexReader.GetStreamLastEventNumber(string streamId) {
 			Ensure.NotNullOrEmpty(streamId, "streamId");
 			using (var reader = _backend.BorrowReader()) {

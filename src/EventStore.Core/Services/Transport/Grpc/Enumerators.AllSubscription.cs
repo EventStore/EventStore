@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
-using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -22,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
-			private readonly IPrincipal _user;
+			private readonly ClaimsPrincipal _user;
 			private readonly IReadIndex _readIndex;
 			private readonly CancellationToken _cancellationToken;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
@@ -35,7 +33,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public AllSubscription(IPublisher bus,
 				Position? startPosition,
 				bool resolveLinks,
-				IPrincipal user,
+				ClaimsPrincipal user,
 				IReadIndex readIndex,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -98,7 +96,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
 				private readonly bool _resolveLinks;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly CancellationTokenSource _disposedTokenSource;
 				private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -115,7 +113,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					IPublisher bus,
 					Position position,
 					bool resolveLinks,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					IReadIndex readIndex,
 					CancellationToken cancellationToken) {
 					if (bus == null) {
@@ -251,7 +249,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
-				private readonly IPrincipal _user;
+				private readonly ClaimsPrincipal _user;
 				private readonly TaskCompletionSource<Position> _subscriptionConfirmed;
 				private readonly TaskCompletionSource<bool> _readHistoricalEventsCompleted;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -270,7 +268,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					IPublisher bus,
 					Position currentPosition,
 					bool resolveLinks,
-					IPrincipal user,
+					ClaimsPrincipal user,
 					CancellationToken cancellationToken) {
 					if (bus == null) {
 						throw new ArgumentNullException(nameof(bus));

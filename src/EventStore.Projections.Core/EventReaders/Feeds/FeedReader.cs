@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase>
 			_subscriptionDispatcher;
 
-		private readonly IPrincipal _user;
+		private readonly ClaimsPrincipal _user;
 
 		private readonly QuerySourcesDefinition _querySource;
 		private readonly CheckpointTag _fromPosition;
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				<Guid, ReaderSubscriptionManagement.Subscribe,
 					ReaderSubscriptionManagement.ReaderSubscriptionManagementMessage, EventReaderSubscriptionMessageBase
 				>
-				subscriptionDispatcher, IPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
+				subscriptionDispatcher, ClaimsPrincipal user, QuerySourcesDefinition querySource, CheckpointTag fromPosition,
 			int maxEvents, Guid requestCorrelationId, IEnvelope replyEnvelope, ITimeProvider timeProvider) {
 			if (subscriptionDispatcher == null) throw new ArgumentNullException("subscriptionDispatcher");
 			if (querySource == null) throw new ArgumentNullException("querySource");

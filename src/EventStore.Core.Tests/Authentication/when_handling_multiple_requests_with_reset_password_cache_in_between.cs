@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Messages;
 using NUnit.Framework;
 
@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Authentication {
 	public class when_handling_multiple_requests_with_reset_password_cache_in_between :
 		with_internal_authentication_provider {
 		private bool _unauthorized;
-		private IPrincipal _authenticatedAs;
+		private ClaimsPrincipal _authenticatedAs;
 		private bool _error;
 
 		protected override void Given() {
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Authentication {
 			Assert.IsFalse(_unauthorized);
 			Assert.IsFalse(_error);
 			Assert.NotNull(_authenticatedAs);
-			Assert.IsTrue(_authenticatedAs.IsInRole("user"));
+			Assert.IsTrue(_authenticatedAs.Identity.Name == "user");
 		}
 
 		[Test]

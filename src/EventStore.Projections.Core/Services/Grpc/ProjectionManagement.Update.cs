@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var updatedSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
-			var user = await GetUser(_authenticationProvider, context.RequestHeaders).ConfigureAwait(false);
+			var user = context.GetHttpContext().User;
 
 			const string handlerType = "JS";
 			var name = options.Name;

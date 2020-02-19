@@ -1,33 +1,28 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using System.Security.Principal;
+﻿using System.Net.Http.Headers;
 using System.Text;
 using EventStore.Core.Authentication;
-using EventStore.Core.Services.Transport.Http.Messages;
+using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
-	public class BasicHttpAuthenticationProvider : HttpAuthenticationProvider {
+	public class BasicHttpAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
 		public BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
 			_internalAuthenticationProvider = internalAuthenticationProvider;
 		}
 
-		public override bool Authenticate(IncomingHttpRequestMessage message) {
-			//NOTE: this method can be invoked on multiple threads - needs to be thread safe
-			var entity = message.Entity;
-
-			if (!AuthenticationHeaderValue.TryParse(
-				    entity.Request.GetHeaderValues("authorization"),
-				    out var authenticationHeader)
-			    || authenticationHeader.Scheme != "Basic"
-			    || !TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
-				return false;
+		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
+			if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 && AuthenticationHeaderValue.TryParse(
+				    values[0], out var authenticationHeader) && 
+			    authenticationHeader.Scheme == "Basic"
+			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
+				request = new HttpAuthenticationRequest(context, username, password);
+				_internalAuthenticationProvider.Authenticate(request);
+				return true;
 			}
 
-			var authenticationRequest = new HttpBasicAuthenticationRequest(this, message, username, password);
-			_internalAuthenticationProvider.Authenticate(authenticationRequest);
-			return true;
+			request = null;
+			return false;
 		}
 
 		private static bool TryDecodeCredential(string value, out string username, out string password) {
@@ -42,36 +37,6 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			password = parts[1];
 
 			return true;
-		}
-
-
-		private class HttpBasicAuthenticationRequest : AuthenticationRequest {
-			private readonly BasicHttpAuthenticationProvider _basicHttpAuthenticationProvider;
-			private readonly IncomingHttpRequestMessage _message;
-
-			public HttpBasicAuthenticationRequest(
-				BasicHttpAuthenticationProvider basicHttpAuthenticationProvider, IncomingHttpRequestMessage message,
-				string name, string suppliedPassword)
-				: base($"(HTTP) {message.Entity.Request?.RemoteEndPoint}", name, suppliedPassword) {
-				_basicHttpAuthenticationProvider = basicHttpAuthenticationProvider;
-				_message = message;
-			}
-
-			public override void Unauthorized() {
-				ReplyUnauthorized(_message.Entity);
-			}
-
-			public override void Authenticated(IPrincipal principal) {
-				_basicHttpAuthenticationProvider.Authenticated(_message, principal);
-			}
-
-			public override void Error() {
-				ReplyInternalServerError(_message.Entity);
-			}
-
-			public override void NotReady() {
-				ReplyNotYetAvailable(_message.Entity);
-			}
 		}
 	}
 }

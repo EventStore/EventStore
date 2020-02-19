@@ -1,11 +1,6 @@
 using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Security.Principal;
-using System.Text;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Grpc;
@@ -43,38 +38,7 @@ namespace EventStore.Client.Operations {
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
-		public static Task<IPrincipal> GetUser(IAuthenticationProvider authenticationProvider,
-			Metadata requestHeaders) {
-			var principalSource = new TaskCompletionSource<IPrincipal>();
-
-			if (AuthenticationHeaderValue.TryParse(
-				    requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.Authorization)?.Value,
-				    out var authenticationHeader)
-			    && authenticationHeader.Scheme == Constants.Headers.BasicScheme
-			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
-				authenticationProvider.Authenticate(
-					new GrpcBasicAuthenticationRequest(principalSource, username, password));
-			} else {
-				principalSource.TrySetResult(default);
-			}
-
-			return principalSource.Task;
-
-			bool TryDecodeCredential(string value, out string username, out string password) {
-				username = password = default;
-				var parts = Encoding.ASCII.GetString(Convert.FromBase64String(value))
-					.Split(':'); // TODO: JPB maybe use Convert.TryFromBase64String when in dotnet core 3.0
-				if (parts.Length != 2) {
-					return false;
-				}
-
-				username = parts[0];
-				password = parts[1];
-
-				return true;
-			}
-		}
-
+		
 		public static bool GetRequiresLeader(Metadata requestHeaders) {
 			var requiresLeaderHeaderValue =
 				requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.RequiresLeader)?.Value;
@@ -82,23 +46,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			bool.TryParse(requiresLeaderHeaderValue, out var requiresLeader);
 			return requiresLeader;
 		}
-
-		private class GrpcBasicAuthenticationRequest : AuthenticationRequest {
-			private readonly TaskCompletionSource<IPrincipal> _principalSource;
-
-			public GrpcBasicAuthenticationRequest(
-				TaskCompletionSource<IPrincipal> principalSource,
-				string name,
-				string suppliedPassword) : base("(GRPC)", name, suppliedPassword) {
-				_principalSource = principalSource;
-			}
-
-			public override void Authenticated(IPrincipal principal) => _principalSource.TrySetResult(principal);
-			public override void Unauthorized() => _principalSource.TrySetException(AccessDenied());
-			public override void Error() => _principalSource.TrySetException(UnknownError(1));
-			public override void NotReady() => _principalSource.TrySetException(ServerNotReady());
-		}
-
 
 		public static Exception Timeout() => new RpcException(new Status(StatusCode.Aborted, "Operation timed out"));
 
