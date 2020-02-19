@@ -35,7 +35,7 @@ namespace EventStore.Core {
 							? new[] {HttpMethod.Get, HttpMethod.Head}
 							: new[] {action.method},
 						HandleRequest)
-					.WithMetadata(action.authorizationLevel));
+					.WithMetadata(new OptionalAuthorizationLevel(action.authorizationLevel)));
 
 			static string ConvertToRoute(string uriTemplate) {
 				var route = uriTemplate.Split('?').First();
