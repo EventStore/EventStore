@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer.Dispose();
 			HttpMessageHandler.Dispose();
 			HttpClient.Dispose();
-			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+			await Node.StopAsync(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
 
 			if (!keepDb)
 				TryDeleteDirectory(DbPath);

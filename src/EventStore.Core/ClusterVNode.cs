@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
@@ -117,6 +118,8 @@ namespace EventStore.Core {
 		private readonly X509Certificate2 _certificate;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
+
+		private int _stopCalled;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -733,7 +736,13 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task StopAsync() {
+		public async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
+			if (Interlocked.Exchange(ref _stopCalled, 1) == 1) {
+				Log.Warning("Stop was already called.");
+				return;
+			}
+
+			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			if (_subsystems != null) {
@@ -742,6 +751,11 @@ namespace EventStore.Core {
 				}
 			}
 
+			var cts = new CancellationTokenSource();
+
+			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
+
+			cts.CancelAfter(timeout.Value);
 			await _shutdownSource.Task.ConfigureAwait(false);
 		}
 

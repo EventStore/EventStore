@@ -450,13 +450,13 @@ namespace EventStore.ClusterNode {
 			return new CompositionContainer(catalog);
 		}
 
-		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(true);
+		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(false);
 
 		protected override Task StopInternalAsync(CancellationToken cancellationToken) {
 			if (_dbLock != null && _dbLock.IsAcquired)
 				_dbLock.Release();
 
-			return Node.StopAsync();
+			return Node.StopAsync(cancellationToken: cancellationToken);
 		}
 	}
 }
