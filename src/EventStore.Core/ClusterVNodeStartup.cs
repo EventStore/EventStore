@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
@@ -11,12 +10,12 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -88,8 +87,8 @@ namespace EventStore.Core {
 		}
 
 		public void Configure(IApplicationBuilder app) {
-			app.Map("/health", _statusCheck.Configure);
-			app.UseMiddleware<AuthenticationMiddleware>();
+			app.Map("/health", _statusCheck.Configure)
+				.UseMiddleware<AuthenticationMiddleware>();
 			_subsystems
 				.Aggregate(app
 						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),
@@ -101,19 +100,14 @@ namespace EventStore.Core {
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Streams>()))
-						.UseWhen(
-							context =>
-								context.Request.Path
-									.StartsWithSegments(
-										OperationsSegment), // TODO JPB figure out how to delete this sadness
+						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment), // TODO JPB figure out how to delete this sadness
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Operations>())),
-					(b, subsystem) => subsystem.Configure(b))
-				.Use(_externalHttpService.MidFunc);
+					(b, subsystem) => subsystem.Configure(b));
 
-			if (_internalHttpService != null) {
-				app.Use(_internalHttpService.MidFunc);
-			}
+			app.UseLegacyHttp(_internalHttpService == null
+				? new[] {_externalHttpService}
+				: new[] {_externalHttpService, _internalHttpService});
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)

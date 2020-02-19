@@ -151,8 +151,9 @@ namespace EventStore.Core.Tests.Helpers {
 				"HTTP ENDPOINT:", ExtHttpEndPoint);
 
 			Node = builder.Build();
-			Db = ((TestVNodeBuilder)builder).GetDb();
+			Db = builder.GetDb();
 
+			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel()
 				.UseStartup(Node.Startup));
@@ -162,8 +163,6 @@ namespace EventStore.Core.Tests.Helpers {
 					Scheme = Uri.UriSchemeHttps
 				}.Uri
 			};
-
-			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 		}
 
 		public async Task Start() {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -34,12 +34,13 @@ namespace EventStore.Core.Services.Transport.Http {
 		public bool IsListening => _isListening;
 		public IEnumerable<IPEndPoint> EndPoints { get; }
 
+		public IEnumerable<ControllerAction> Actions => _uriRouter.Actions;
+
 		private readonly ServiceAccessibility _accessibility;
 		private readonly IPublisher _inputBus;
 		private readonly IUriRouter _uriRouter;
 		private readonly IEnvelope _publishEnvelope;
 		private readonly bool _logHttpRequests;
-
 		private readonly MultiQueuedHandler _requestsMultiHandler;
 
 		private readonly IPAddress _advertiseAsAddress;
@@ -97,11 +98,7 @@ namespace EventStore.Core.Services.Transport.Http {
 					UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
 		}
 
-		private Task RequestReceived(HttpContext context, Func<Task> next) {
-			if (EndPoints.All(e => e.Port != context.Request.Host.Port)) {
-				return next();
-			}
-
+		private Task RequestReceived(HttpContext context) {
 			var tcs = new TaskCompletionSource<bool>();
 			var entity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
 				new CoreHttpResponseAdapter(context.Response), context.User, _logHttpRequests,
@@ -115,7 +112,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			_isListening = false;
 		}
 
-		public MidFunc MidFunc => RequestReceived;
+		public RequestDelegate AppFunc => RequestReceived;
 
 		public void SetupController(IHttpController controller) {
 			Ensure.NotNull(controller, "controller");
@@ -148,27 +145,21 @@ namespace EventStore.Core.Services.Transport.Http {
 			});
 		}
 
-		private bool Authorized(ClaimsPrincipal user, AuthorizationLevel requiredAuthorizationLevel) {
-			switch (requiredAuthorizationLevel) {
-				case AuthorizationLevel.None:
-					return true;
-				case AuthorizationLevel.User:
-					return user != null && !user.HasClaim(ClaimTypes.Anonymous, "");
-				case AuthorizationLevel.Ops:
-					return user != null && (user.LegacyRoleCheck(SystemRoles.Admins) || user.LegacyRoleCheck(SystemRoles.Operations));
-				case AuthorizationLevel.Admin:
-					return user != null && user.LegacyRoleCheck(SystemRoles.Admins);
-				default:
-					return false;
-			}
-		}
+		private static bool Authorized(ClaimsPrincipal user, AuthorizationLevel requiredAuthorizationLevel) =>
+			requiredAuthorizationLevel switch {
+				AuthorizationLevel.None => true,
+				AuthorizationLevel.User => (user != null && !user.HasClaim(ClaimTypes.Anonymous, "")),
+				AuthorizationLevel.Ops => (user != null &&
+				                           (user.LegacyRoleCheck(SystemRoles.Admins) ||
+				                            user.LegacyRoleCheck(SystemRoles.Operations))),
+				AuthorizationLevel.Admin => (user != null && user.LegacyRoleCheck(SystemRoles.Admins)),
+				_ => false
+			};
 
 		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => _uriRouter.GetAllUriMatches(uri);
 
 		public static void CreateAndSubscribePipeline(IBus bus) {
 			Ensure.NotNull(bus, "bus");
-
-
 
 			var requestProcessor = new AuthenticatedHttpRequestProcessor();
 			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);

@@ -6,9 +6,9 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using System.Linq;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Http;
-using System.Linq;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		[SetUp]
 		public void SetUp() {
-			_portableServer.SetUp();
+			_portableServer.SetUp(HttpBootstrap.RegisterPing);
 		}
 
 		[TearDown]
@@ -65,7 +65,40 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		[Test]
 		[Category("Network")]
-		public void reply_with_404_to_every_request_when_there_are_no_registered_controllers() {
+		public void handle_invalid_characters_in_url() {
+			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping^\"");
+			Func<HttpResponse, bool> verifier = response => string.IsNullOrEmpty(response.Body) &&
+															response.HttpStatusCode == (int)HttpStatusCode.NotFound;
+
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
+			Assert.IsTrue(result.Item1, result.Item2);
+		}
+	}
+
+	[TestFixture, Category("LongRunning")]
+	public class when_http_service_has_no_controllers {
+		private readonly IPEndPoint _serverEndPoint;
+		private readonly PortableServer _portableServer;
+
+		public when_http_service_has_no_controllers() {
+			var port = PortsHelper.GetAvailablePort(IPAddress.Loopback);
+			_serverEndPoint = new IPEndPoint(IPAddress.Loopback, port);
+			_portableServer = new PortableServer(_serverEndPoint);
+		}
+
+		[SetUp]
+		public void SetUp() {
+			_portableServer.SetUp();
+		}
+
+		[TearDown]
+		public void TearDown() {
+			_portableServer.TearDown();
+		}
+
+		[Test]
+		[Category("Network")]
+		public void reply_with_404_to_every_request() {
 			var requests = new[] { "/ping", "/streams", "/gossip", "/stuff", "/notfound", "/magic/url.exe" };
 			var successes = new bool[requests.Length];
 			var errors = new string[requests.Length];
@@ -96,18 +129,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			Assert.IsTrue(successes.All(x => x), string.Join(";", errors.Where(e => !string.IsNullOrEmpty(e))));
 		}
 
-		[Test]
-		[Category("Network")]
-		public void handle_invalid_characters_in_url() {
-			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/ping^\"");
-			Func<HttpResponse, bool> verifier = response => string.IsNullOrEmpty(response.Body) &&
-															response.HttpStatusCode == (int)HttpStatusCode.NotFound;
-
-			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
-			Assert.IsTrue(result.Item1, result.Item2);
-		}
 	}
-
 
 	[TestFixture, Category("LongRunning")]
 	public class when_http_request_times_out {
@@ -124,7 +146,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		
 		[SetUp]
 		public void SetUp() {
-			_portableServer.SetUp();
+			_portableServer.SetUp(service => service.SetupController(new TestController(new FakePublisher())));
 		}
 
 		[TearDown]
@@ -139,8 +161,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			var url = _serverEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA,
 				string.Format("/test-timeout?sleepfor={0}", sleepFor));
 			Func<HttpResponse, bool> verifier = response => { return true; };
-			var result = _portableServer.StartServiceAndSendRequest(service =>
-				service.SetupController(new TestController(new FakePublisher())), url, verifier);
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
 			Assert.IsFalse(result.Item1, "Should not have got a response"); // We should not have got a response
 			Assert.That(!string.IsNullOrEmpty(result.Item2), "Error was empty");
 		}
