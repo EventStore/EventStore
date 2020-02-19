@@ -54,7 +54,7 @@ namespace EventStore.Client.Streams {
 			var streamPrefix = _fixture.GetStreamName();
 			var events = _fixture.CreateTestEvents(10)
 				.Select(e =>
-					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.IsJson))
+					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.ContentType))
 				.ToArray();
 
 			foreach (var e in events) {
@@ -75,7 +75,7 @@ namespace EventStore.Client.Streams {
 			var streamPrefix = _fixture.GetStreamName();
 			var events = _fixture.CreateTestEvents(10)
 				.Select(e =>
-					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.IsJson))
+					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.Data, e.Metadata, e.ContentType))
 				.ToArray();
 
 			foreach (var e in events) {

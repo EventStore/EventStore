@@ -35,7 +35,7 @@ namespace EventStore.Client.Streams {
 				await Client.AppendToStreamAsync(LinkedStream, AnyStreamRevision.Any, new[] {
 					new EventData(
 						Uuid.NewUuid(), SystemEventTypes.LinkTo, Encoding.UTF8.GetBytes("0@" + DeletedStream),
-						Array.Empty<byte>(), false)
+						Array.Empty<byte>(), Constants.Metadata.ContentTypes.ApplicationOctetStream)
 				});
 			}
 

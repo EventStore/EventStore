@@ -16,9 +16,9 @@ namespace EventStore.Client.Streams {
 					[StreamNamePrefix] = (StreamFilter.Prefix, (_, e) => e),
 					[StreamNameRegex] = (StreamFilter.RegularExpression, (_, e) => e),
 					[EventTypePrefix] = (EventTypeFilter.Prefix,
-						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.IsJson)),
+						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.ContentType)),
 					[EventTypeRegex] = (EventTypeFilter.RegularExpression,
-						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.IsJson))
+						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.ContentType))
 				};
 
 		public static readonly IEnumerable<string> All = typeof(Filters)

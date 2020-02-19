@@ -11,7 +11,7 @@ namespace EventStore.Client {
 		public readonly byte[] Metadata;
 		public readonly DateTime Created;
 		public readonly Position Position;
-		public readonly bool IsJson;
+		public readonly string ContentType;
 
 		public EventRecord(
 			string eventStreamId,
@@ -29,7 +29,7 @@ namespace EventStore.Client {
 			Metadata = customMetadata;
 			EventType = metadata[Constants.Metadata.Type];
 			Created = Convert.ToInt64(metadata[Constants.Metadata.Created]).FromTicksSinceEpoch();
-			IsJson = bool.Parse(metadata[Constants.Metadata.IsJson]);
+			ContentType = metadata[Constants.Metadata.ContentType];
 		}
 	}
 }
