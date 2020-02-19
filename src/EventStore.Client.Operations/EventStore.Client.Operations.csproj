@@ -1,34 +1,34 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-		<PropertyGroup>
-				<TargetFramework>netcoreapp3.1</TargetFramework>
-				<Platform>x64</Platform>
-				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-				<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
-				<PackageId>EventStore.Client.Operations.Grpc</PackageId>
-				<Authors>Event Store Ltd</Authors>
-				<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
-				<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
-				<PackageIconUrl>https://eventstore.com/images/ouro.svg</PackageIconUrl>
-				<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-				<Description>The GRPC operations client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.com/</Description>
-				<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
-				<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
-				<PackageTags>eventstore client grpc</PackageTags>
-				<RootNamespace>EventStore.Client.Operations</RootNamespace>
-		</PropertyGroup>
-		<ItemGroup>
-				<PackageReference Include="Google.Protobuf" Version="3.11.3" />
-				<PackageReference Include="Grpc.Net.Client" Version="2.27.0" />
-				<PackageReference Include="Grpc.Tools" Version="2.27.0">
-						<PrivateAssets>all</PrivateAssets>
-						<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-				</PackageReference>
-		</ItemGroup>
-		<ItemGroup>
-				<Protobuf Include="../Protos/Grpc/operations.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />
-		</ItemGroup>
-		<ItemGroup>
-		  <ProjectReference Include="..\EventStore.Client\EventStore.Client.csproj" />
-		</ItemGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<DefineConstants>EVENTSTORE_GRPC_PUBLIC</DefineConstants>
+		<PackageId>EventStore.Client.Operations.Grpc</PackageId>
+		<Authors>Event Store Ltd</Authors>
+		<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
+		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
+		<PackageIconUrl>https://eventstore.com/images/ouro.svg</PackageIconUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Description>The GRPC operations client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.com/</Description>
+		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
+		<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
+		<PackageTags>eventstore client grpc</PackageTags>
+		<RootNamespace>EventStore.Client.Operations</RootNamespace>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.27.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.27.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/operations.proto" Access="internal" GrpcServices="Client" ProtoRoot="../Protos/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Client\EventStore.Client.csproj" />
+	</ItemGroup>
 </Project>

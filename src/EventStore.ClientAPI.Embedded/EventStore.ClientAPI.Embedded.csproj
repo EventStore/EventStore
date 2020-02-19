@@ -1,67 +1,67 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Platform>x64</Platform>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PackageId>EventStore.Client.Embedded</PackageId>
-    <Description>The embedded client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.com/</Description>
-    <PackageTags>eventstore client embedded</PackageTags>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DocumentationFile>$(OutputPath)\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" PrivateAssets="All" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" PrivateAssets="All" />
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" PrivateAssets="All" />
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" PrivateAssets="All" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <!-- This has intentionally not been included since Mono.Posix never required at runtime on Windows. On Linux/Mac, Mono.Posix.dll exists as part of the mono runtime -->
-    <!-- <PackageReference Include="Mono.Posix" Version="5.4.0.201" /> -->
-  </ItemGroup>
-  <ItemGroup>
-      <Content Include="..\EventStore.Projections.Core\Prelude\**\*">
-        <Pack>true</Pack>
-        <PackagePath>Prelude</PackagePath>
-        <Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <Content Include="..\libs\x64\win\js1.dll">
-          <Pack>true</Pack>
-          <PackagePath>runtimes/win-x64/native/js1.dll</PackagePath>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <Content Include="..\libs\x64\linux\libjs1.so">
-          <Pack>true</Pack>
-          <PackagePath>runtimes/linux-x64/native/libjs1.so</PackagePath>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <Content Include="..\libs\x64\mac\libjs1.dylib">
-          <Pack>true</Pack>
-          <PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <Content Include="EventStore.Client.Embedded.targets">
-          <Pack>true</Pack>
-          <PackagePath>/build</PackagePath>
-      </Content>
-  </ItemGroup>
-  <!-- workaround for https://github.com/nuget/home/issues/3891 -->
-  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
-    <ItemGroup>
-      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
-    </ItemGroup>
-  </Target>
-  <ItemGroup>
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<PropertyGroup>
+		<PackageId>EventStore.Client.Embedded</PackageId>
+		<Description>The embedded client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.com/</Description>
+		<PackageTags>eventstore client embedded</PackageTags>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+		<DocumentationFile>$(OutputPath)\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" PrivateAssets="All" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" PrivateAssets="All" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" PrivateAssets="All" />
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" PrivateAssets="All" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<!-- This has intentionally not been included since Mono.Posix never required at runtime on Windows. On Linux/Mac, Mono.Posix.dll exists as part of the mono runtime -->
+		<!-- <PackageReference Include="Mono.Posix" Version="5.4.0.201" /> -->
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="..\EventStore.Projections.Core\Prelude\**\*">
+			<Pack>true</Pack>
+			<PackagePath>Prelude</PackagePath>
+			<Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="..\libs\x64\win\js1.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native/js1.dll</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="..\libs\x64\linux\libjs1.so">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/linux-x64/native/libjs1.so</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="..\libs\x64\mac\libjs1.dylib">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="EventStore.Client.Embedded.targets">
+			<Pack>true</Pack>
+			<PackagePath>/build</PackagePath>
+		</Content>
+	</ItemGroup>
+	<!-- workaround for https://github.com/nuget/home/issues/3891 -->
+	<Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+		</ItemGroup>
+	</Target>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+	</ItemGroup>
 </Project>

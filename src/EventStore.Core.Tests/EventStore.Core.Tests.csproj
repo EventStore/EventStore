@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Platform>x64</Platform>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.1" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -13,25 +14,25 @@
 		<PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
 		<PackageReference Include="CompareNETObjects" Version="4.65.0" />
 	</ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj" />    
-    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />  
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
-    <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="server.p12" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="TestConfigs\*.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\es-tile.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj" />
+		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="server.p12" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="TestConfigs\*.yaml">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="Resources\es-tile.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

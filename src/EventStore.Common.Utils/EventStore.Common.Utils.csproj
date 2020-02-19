@@ -1,14 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
+	<PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
-
-  <ItemGroup>
+	<ItemGroup>
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-
 </Project>

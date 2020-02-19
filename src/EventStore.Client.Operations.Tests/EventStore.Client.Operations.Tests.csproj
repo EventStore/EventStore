@@ -1,28 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-		<PropertyGroup>
-				<TargetFramework>netcoreapp3.1</TargetFramework>
-				<RootNamespace>EventStore.Client</RootNamespace>
-		</PropertyGroup>
-		<ItemGroup>
-				<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.1" />
-				<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
-				<PackageReference Include="Serilog" Version="2.9.0" />
-				<PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
-				<PackageReference Include="Serilog.Sinks.Observable" Version="2.0.2" />
-				<PackageReference Include="System.Reactive" Version="4.3.1" />
-				<PackageReference Include="xunit" Version="2.4.1" />
-				<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
-						<PrivateAssets>all</PrivateAssets>
-						<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-				</PackageReference>
-		</ItemGroup>
-		<ItemGroup>
-				<ProjectReference Include="..\EventStore.Client.Operations\EventStore.Client.Operations.csproj" />
-				<ProjectReference Include="..\EventStore.Client\EventStore.Client.csproj" />
-				<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-		</ItemGroup>
-		<ItemGroup>
-				<Compile Include="..\EventStore.Client.Tests.Common\*.cs" Exclude="..\EventStore.Client.Tests.Common\StreamRevisionGreaterThanIntMaxValueFixture.cs" />
-		</ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<RootNamespace>EventStore.Client</RootNamespace>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.1" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+		<PackageReference Include="Serilog" Version="2.9.0" />
+		<PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
+		<PackageReference Include="Serilog.Sinks.Observable" Version="2.0.2" />
+		<PackageReference Include="System.Reactive" Version="4.3.1" />
+		<PackageReference Include="xunit" Version="2.4.1" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Client.Operations\EventStore.Client.Operations.csproj" />
+		<ProjectReference Include="..\EventStore.Client\EventStore.Client.csproj" />
+		<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Include="..\EventStore.Client.Tests.Common\*.cs" Exclude="..\EventStore.Client.Tests.Common\StreamRevisionGreaterThanIntMaxValueFixture.cs" />
+	</ItemGroup>
 </Project>

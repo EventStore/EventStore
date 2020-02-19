@@ -1,24 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-		<PropertyGroup>
-				<TargetFramework>netcoreapp3.1</TargetFramework>
-				<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
-				<UseLinkBase>true</UseLinkBase>
-		</PropertyGroup>
-		<ItemGroup>
-				<PackageReference Include="EventStore.Client" Version="5.0.5"/>
-				<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0"/>
-				<PackageReference Include="xunit" Version="2.4.1"/>
-				<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
-						<PrivateAssets>all</PrivateAssets>
-						<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-				</PackageReference>
-		</ItemGroup>
-		<ItemGroup>
-				<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj"/>
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
-		</ItemGroup>
-		<ItemGroup>
-				<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\**\*filtered*.cs;..\EventStore.ClientAPIAcceptanceTests\**\*FilterCases.cs"/>
-				<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12"/>
-		</ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
+		<UseLinkBase>true</UseLinkBase>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="EventStore.Client" Version="5.0.5" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+		<PackageReference Include="xunit" Version="2.4.1" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\**\*filtered*.cs;..\EventStore.ClientAPIAcceptanceTests\**\*FilterCases.cs" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
+	</ItemGroup>
 </Project>
