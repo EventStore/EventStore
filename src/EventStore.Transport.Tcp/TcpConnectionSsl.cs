@@ -146,7 +146,7 @@ namespace EventStore.Transport.Tcp {
 				}
 
 				try {
-					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls13;
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
 					_sslStream.BeginAuthenticateAsServer(certificate, validateClient, enabledSslProtocols, false,
 						OnEndAuthenticateAsServer, _sslStream);
 				} catch (AuthenticationException exc) {
@@ -223,7 +223,8 @@ namespace EventStore.Transport.Tcp {
 				}
 
 				try {
-					_sslStream.BeginAuthenticateAsClient(targetHost, clientCertificates, false, OnEndAuthenticateAsClient, _sslStream);
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+					_sslStream.BeginAuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					Log.Information(exc,
 						"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on BeginAuthenticateAsClient.",
