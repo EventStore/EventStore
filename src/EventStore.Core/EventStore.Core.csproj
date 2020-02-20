@@ -7,20 +7,20 @@
 		<Platforms>x64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
+			<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.27.0" />
-		<PackageReference Include="Grpc.Core" Version="2.27.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.27.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.27.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
 		<PackageReference Include="SimpleSyndicate.UriTemplate" Version="1.0.3" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
