@@ -31,7 +31,7 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info(
+					context.Log.Information(
 						"[{remoteEndPoint}, L{localEndPoint}]: Trying to delete event stream '{stream}'...",
 						conn.RemoteEndPoint, conn.LocalEndPoint, eventStreamId);
 					var corrid = Guid.NewGuid();
@@ -42,7 +42,7 @@ namespace EventStore.TestClient.Commands {
 				},
 				handlePackage: (conn, pkg) => {
 					sw.Stop();
-					context.Log.Info("Delete request took: {elapsed}.", sw.Elapsed);
+					context.Log.Information("Delete request took: {elapsed}.", sw.Elapsed);
 
 					if (pkg.Command != TcpCommand.DeleteStreamCompleted) {
 						context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
@@ -51,12 +51,12 @@ namespace EventStore.TestClient.Commands {
 
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.DeleteStreamCompleted>();
 					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
-						context.Log.Info("DELETED event stream {stream}.", eventStreamId);
+						context.Log.Information("DELETED event stream {stream}.", eventStreamId);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));
 						context.Success();
 					} else {
-						context.Log.Info("DELETION FAILED for event stream {stream}: {message} ({e}).", eventStreamId,
+						context.Log.Information("DELETION FAILED for event stream {stream}: {message} ({e}).", eventStreamId,
 							dto.Message, dto.Result);
 						context.Fail();
 					}

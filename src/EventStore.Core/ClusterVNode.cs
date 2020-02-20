@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
@@ -38,6 +38,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -49,7 +50,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
@@ -117,6 +118,8 @@ namespace EventStore.Core {
 		private readonly X509Certificate2 _certificate;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
+
+		private int _stopCalled;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -222,7 +225,7 @@ namespace EventStore.Core {
 			var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
 			var epochCheckpoint = db.Config.EpochCheckpoint.Read();
 			if (truncPos != -1) {
-				Log.Info(
+				Log.Information(
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
@@ -733,7 +736,13 @@ namespace EventStore.Core {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task StopAsync() {
+		public async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
+			if (Interlocked.Exchange(ref _stopCalled, 1) == 1) {
+				Log.Warning("Stop was already called.");
+				return;
+			}
+
+			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
 			if (_subsystems != null) {
@@ -742,6 +751,11 @@ namespace EventStore.Core {
 				}
 			}
 
+			var cts = new CancellationTokenSource();
+
+			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
+
+			cts.CancelAfter(timeout.Value);
 			await _shutdownSource.Task.ConfigureAwait(false);
 		}
 

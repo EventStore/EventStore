@@ -9,13 +9,13 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
-using EventStore.Common.Log;
+using Serilog;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
 		public class StreamSubscription : ISubscriptionEnumerator {
-			private static readonly ILogger Log = LogManager.GetLoggerFor<StreamSubscription>();
+			private static readonly ILogger Log = Serilog.Log.ForContext<StreamSubscription>();
 
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				await _inner.DisposeAsync().ConfigureAwait(false);
 				var currentStreamRevision = _inner.CurrentStreamRevision;
-				Log.Trace(
+				Log.Verbose(
 					"Subscription {subscriptionId} to {streamName} reached the end at {streamRevision}, switching...",
 					_subscriptionId, _streamName, currentStreamRevision);
 
@@ -171,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						subscriptionStarted1.SetResult(true);
 					}
 
-					Log.Info(
+					Log.Information(
 						"Catch-up subscription {subscriptionId} to {streamName}@{streamRevision} running...",
 						_subscriptionId, streamName, _nextRevision);
 				}
@@ -197,7 +197,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var readNextSource = new TaskCompletionSource<bool>();
 
 					Guid correlationId = Guid.NewGuid();
-					Log.Trace(
+					Log.Verbose(
 						"Catch-up subscription {subscriptionId} to {streamName} reading next page starting from {nextRevision}.",
 						_subscriptionId, _streamName, _nextRevision);
 
@@ -241,13 +241,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								foreach (var @event in completed.Events) {
 									var streamRevision = StreamRevision.FromInt64(@event.OriginalEvent.EventNumber);
 									if (streamRevision < _startRevision) {
-										Log.Trace(
+										Log.Verbose(
 											"Catch-up subscription {subscriptionId} to {streamName} skipped event {streamRevision}.",
 											_subscriptionId, _streamName, streamRevision);
 										continue;
 									}
 
-									Log.Trace(
+									Log.Verbose(
 										"Catch-up subscription {subscriptionId} to {streamName} received event {streamRevision}.",
 										_subscriptionId, _streamName, streamRevision);
 
@@ -335,7 +335,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 					_currentStreamRevision = currentStreamRevision;
 
-					Log.Info(
+					Log.Information(
 						"Live subscription {subscriptionId} to {streamName} running from {streamRevision}...",
 						subscriptionId, streamName, currentStreamRevision);
 
@@ -357,7 +357,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							case ClientMessage.SubscriptionConfirmation confirmed:
 								var caughtUp = StreamRevision.FromInt64(Math.Max(confirmed.LastEventNumber.Value + 1,
 									currentStreamRevision.ToInt64()));
-								Log.Trace(
+								Log.Verbose(
 									"Live subscription {subscriptionId} to {streamName} confirmed at {streamRevision}.",
 									_subscriptionId, _streamName, caughtUp);
 								_subscriptionConfirmed.TrySetResult(caughtUp);
@@ -397,7 +397,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 								var streamRevision = StreamRevision.FromInt64(appeared.Event.OriginalEventNumber);
 								if (currentStreamRevision > streamRevision) {
-									Log.Trace(
+									Log.Verbose(
 										"Live subscription {subscriptionId} to {streamName} skipped event {streamRevision}.",
 										_subscriptionId, _streamName, streamRevision);
 									return;
@@ -434,7 +434,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								foreach (var @event in completed.Events) {
 									var streamRevision = StreamRevision.FromInt64(@event.OriginalEvent.EventNumber);
 									if (streamRevision < currentStreamRevision) {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} skipping missed event at {streamRevision}.",
 											_subscriptionId, streamName, streamRevision);
 										continue;
@@ -442,12 +442,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 									if (streamRevision < _subscriptionConfirmed.Task.Result &&
 									    streamRevision > currentStreamRevision) {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} enqueueing missed event at {streamRevision}.",
 											_subscriptionId, streamName, streamRevision);
 										_historicalEventBuffer.Enqueue((@event, null));
 									} else {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} caught up at {streamRevision}.",
 											_subscriptionId, streamName, streamRevision);
 										_readHistoricalEventsCompleted.TrySetResult(true);
@@ -462,7 +462,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 								var fromStreamRevision = StreamRevision.FromInt64(completed.NextEventNumber);
 								if (completed.IsEndOfStream) {
-									Log.Trace(
+									Log.Verbose(
 										"Live subscription {subscriptionId} to {streamName} caught up at {streamRevision}.",
 										_subscriptionId, streamName, fromStreamRevision);
 									_readHistoricalEventsCompleted.TrySetResult(true);
@@ -472,12 +472,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								ReadHistoricalEvents(fromStreamRevision);
 								return;
 							case ReadStreamResult.NoStream:
-								Log.Trace("Live subscription {subscriptionId} to {streamName} stream not found.",
+								Log.Verbose("Live subscription {subscriptionId} to {streamName} stream not found.",
 									_subscriptionId, _streamName);
 								_readHistoricalEventsCompleted.TrySetResult(true);
 								return;
 							case ReadStreamResult.StreamDeleted:
-								Log.Trace("Live subscription {subscriptionId} to {streamName} stream deleted.",
+								Log.Verbose("Live subscription {subscriptionId} to {streamName} stream deleted.",
 									_subscriptionId, _streamName);
 								_readHistoricalEventsCompleted.TrySetException(RpcExceptions.StreamDeleted(streamName));
 								return;
@@ -496,7 +496,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							throw new ArgumentOutOfRangeException(nameof(fromStreamRevision));
 						}
 
-						Log.Trace(
+						Log.Verbose(
 							"Live subscription {subscriptionId} to {streamName} loading any missed events starting from {streamRevision}",
 							subscriptionId, streamName, fromStreamRevision);
 
@@ -524,7 +524,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						_current = historicalEvent;
 						_currentStreamRevision = streamRevision;
-						Log.Trace(
+						Log.Verbose(
 							"Live subscription {subscriptionId} to {streamName} received event {streamRevision} historically.",
 							_subscriptionId, _streamName, streamRevision);
 						return true;
@@ -548,7 +548,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 
 					_currentStreamRevision = StreamRevision.FromInt64(resolvedEvent.OriginalEventNumber);
-					Log.Trace(
+					Log.Verbose(
 						"Live subscription {subscriptionId} to {streamName} received event {streamRevision} live.",
 						_subscriptionId, _streamName, _currentStreamRevision);
 					_current = resolvedEvent;
@@ -557,7 +557,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private void MaximumBufferSizeExceeded() {
 					Interlocked.Exchange(ref _maxBufferSizeExceeded, 1);
-					Log.Warn("Live subscription {subscriptionId} to {streamName} buffer is full.",
+					Log.Warning("Live subscription {subscriptionId} to {streamName} buffer is full.",
 						_subscriptionId, _streamName);
 
 					_liveEventBuffer.Clear();
@@ -565,7 +565,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				public ValueTask DisposeAsync() {
-					Log.Info("Live subscription {subscriptionId} to {streamName} disposed.", _subscriptionId,
+					Log.Information("Live subscription {subscriptionId} to {streamName} disposed.", _subscriptionId,
 						_streamName);
 					_bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _subscriptionId,
 						new NoopEnvelope(), _user));

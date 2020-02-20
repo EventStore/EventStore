@@ -1,6 +1,6 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.DataStructures;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkReaderExistsAtOptimizer {
@@ -25,7 +25,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			MaxBloomFiltersCached =
 				10000; //around 5GB RAM max if we consider 200,000 log positions/chunk and 20 bits/log position
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkReaderExistsAtOptimizer>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkReaderExistsAtOptimizer>();
 
 
 		public TFChunkReaderExistsAtOptimizer(int maxCached) {

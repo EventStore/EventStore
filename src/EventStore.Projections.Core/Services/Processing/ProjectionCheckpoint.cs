@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Common;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ProjectionCheckpoint : IDisposable, IEmittedStreamContainer, IEventWriter {
 		private readonly int _maxWriteBatchLength;
-		private readonly ILogger _logger;
+		private readonly Serilog.ILogger _logger;
 
 		private readonly Dictionary<string, EmittedStream> _emittedStreams = new Dictionary<string, EmittedStream>();
 		private readonly ClaimsPrincipal _runAs;

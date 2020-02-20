@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -13,6 +12,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.VNode {
 	public class ClusterVNodeController : IHandle<Message> {
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.VNode {
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionTimeout = TimeSpan.FromMilliseconds(1000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterVNodeController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 
 		private readonly IPublisher _outputBus;
 		private readonly VNodeInfo _nodeInfo;
@@ -313,12 +313,12 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.SystemInit message) {
-			Log.Info("========== [{internalHttp}] SYSTEM INIT...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] SYSTEM INIT...", _nodeInfo.InternalHttp);
 			_outputBus.Publish(message);
 		}
 
 		private void Handle(SystemMessage.SystemStart message) {
-			Log.Info("========== [{internalHttp}] SYSTEM START...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] SYSTEM START...", _nodeInfo.InternalHttp);
 			_outputBus.Publish(message);
 			if (_nodeInfo.IsReadOnlyReplica) {
 				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(Guid.NewGuid()));
@@ -328,7 +328,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.BecomeUnknown message) {
-			Log.Info("========== [{internalHttp}] IS UNKNOWN...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS UNKNOWN...", _nodeInfo.InternalHttp);
 
 			_state = VNodeState.Unknown;
 			_leader = null;
@@ -337,32 +337,32 @@ namespace EventStore.Core.Services.VNode {
 		}
 		
 		private void Handle(SystemMessage.InitiateLeaderResignation message) {
-			Log.Info("========== [{internalHttp}] IS INITIATING LEADER RESIGNATION...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS INITIATING LEADER RESIGNATION...", _nodeInfo.InternalHttp);
 
 			_fsm.Handle(new SystemMessage.BecomeResigningLeader(_stateCorrelationId));
 		}
 
 		private void Handle(SystemMessage.BecomeResigningLeader message) {
-			Log.Info("========== [{internalHttp}] IS RESIGNING LEADER...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS RESIGNING LEADER...", _nodeInfo.InternalHttp);
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
-			
+
 			_state = VNodeState.ResigningLeader;
 			_outputBus.Publish(message);
 		}
-		
+
 		private void Handle(SystemMessage.RequestQueueDrained message) {
-			Log.Info("========== [{internalHttp}] REQUEST QUEUE DRAINED. RESIGNATION COMPLETE.", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] REQUEST QUEUE DRAINED. RESIGNATION COMPLETE.", _nodeInfo.InternalHttp);
 			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
-		
+
 		private void Handle(SystemMessage.BecomePreReplica message) {
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info(
-				"========== [{internalHttp}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Information(
+				"========== [{internalHttp}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{masterInternalHttp},{masterId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.PreReplica;
 			_outputBus.Publish(message);
@@ -374,7 +374,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info(
+			Log.Information(
 				"========== [{internalHttp}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.PreReadOnlyReplica;
@@ -387,7 +387,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS CATCHING UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Information("========== [{internalHttp}] IS CATCHING UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.CatchingUp;
 			_outputBus.Publish(message);
@@ -398,7 +398,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS CLONE... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Information("========== [{internalHttp}] IS CLONE... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.Clone;
 			_outputBus.Publish(message);
@@ -409,14 +409,14 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS FOLLOWER... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Information("========== [{internalHttp}] IS FOLLOWER... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.Follower;
 			_outputBus.Publish(message);
 		}
 
 		private void Handle(SystemMessage.BecomeReadOnlyLeaderless message) {
-			Log.Info("========== [{internalHttp}] IS READ ONLY REPLICA WITH UNKNOWN LEADER...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS READ ONLY REPLICA WITH UNKNOWN LEADER...", _nodeInfo.InternalHttp);
 			_state = VNodeState.ReadOnlyLeaderless;
 			_leader = null;
 			_outputBus.Publish(message);
@@ -428,7 +428,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS READ ONLY REPLICA... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
+			Log.Information("========== [{internalHttp}] IS READ ONLY REPLICA... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
 				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
 			_state = VNodeState.ReadOnlyReplica;
 			_outputBus.Publish(message);
@@ -439,7 +439,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] PRE-LEADER STATE, WAITING FOR CHASER TO CATCH UP...",
+			Log.Information("========== [{internalHttp}] PRE-LEADER STATE, WAITING FOR CHASER TO CATCH UP...",
 				_nodeInfo.InternalHttp);
 			_state = VNodeState.PreLeader;
 			_outputBus.Publish(message);
@@ -452,7 +452,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS LEADER... SPARTA!", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS LEADER... SPARTA!", _nodeInfo.InternalHttp);
 			_state = VNodeState.Leader;
 			_outputBus.Publish(message);
 		}
@@ -461,7 +461,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
 				return;
 
-			Log.Info("========== [{internalHttp}] IS SHUTTING DOWN...", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS SHUTTING DOWN...", _nodeInfo.InternalHttp);
 			_leader = null;
 			_stateCorrelationId = message.CorrelationId;
 			_exitProcessOnShutdown = message.ExitProcess;
@@ -472,19 +472,19 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.BecomeShutdown message) {
-			Log.Info("========== [{internalHttp}] IS SHUT DOWN.", _nodeInfo.InternalHttp);
+			Log.Information("========== [{internalHttp}] IS SHUT DOWN.", _nodeInfo.InternalHttp);
 			_state = VNodeState.Shutdown;
 			try {
 				_outputBus.Publish(message);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error when publishing {message}.", message);
+				Log.Error(exc, "Error when publishing {message}.", message);
 			}
 
 			try {
 				_node.WorkersHandler.Stop();
 				_mainQueue.RequestStop();
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error when stopping workers/main queue.");
+				Log.Error(exc, "Error when stopping workers/main queue.");
 			}
 
 			if (_exitProcessOnShutdown) {
@@ -524,7 +524,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.ServiceInitialized message) {
-			Log.Info("========== [{internalHttp}] Service '{service}' initialized.", _nodeInfo.InternalHttp,
+			Log.Information("========== [{internalHttp}] Service '{service}' initialized.", _nodeInfo.InternalHttp,
 				message.ServiceName);
 			_serviceInitsToExpect -= 1;
 			_outputBus.Publish(message);
@@ -552,7 +552,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.SubSystemInitialized message) {
-			Log.Info("========== [{internalHttp}] Sub System '{subSystemName}' initialized.", _nodeInfo.InternalHttp,
+			Log.Information("========== [{internalHttp}] Sub System '{subSystemName}' initialized.", _nodeInfo.InternalHttp,
 				message.SubSystemName);
 			if (Interlocked.Decrement(ref _subSystemInitsToExpect) == 0) {
 				_outputBus.Publish(new SystemMessage.SystemReady());
@@ -602,7 +602,7 @@ namespace EventStore.Core.Services.VNode {
 				_outputBus.Publish(message);
 			}
 		}
-		
+
 		private void HandleAsNonLeader(ClientMessage.FilteredReadAllEventsForward message) {
 			if (message.RequireLeader) {
 				if (_leader == null)
@@ -624,7 +624,7 @@ namespace EventStore.Core.Services.VNode {
 				_outputBus.Publish(message);
 			}
 		}
-		
+
 		private void HandleAsNonLeader(ClientMessage.FilteredReadAllEventsBackward message) {
 			if (message.RequireLeader) {
 				if (_leader == null)
@@ -763,7 +763,7 @@ namespace EventStore.Core.Services.VNode {
 				message.CorrelationId, -1, OperationResult.ForwardTimeout, "Forwarding timeout");
 			ForwardRequest(message, timeoutMessage);
 		}
-			
+
 		private void HandleAsReadOnlyReplica(ClientMessage.TransactionWrite message) {
 			if (message.RequireLeader) {
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
@@ -802,7 +802,7 @@ namespace EventStore.Core.Services.VNode {
 			if (message.User != SystemAccounts.System) {
 				DenyRequestBecauseReadOnly(message.CorrelationId, message.Envelope);
 				return;
-			} 
+			}
 			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
 				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1);
 			ForwardRequest(message, timeoutMessage);
@@ -879,7 +879,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.NoQuorumMessage message) {
-			Log.Info("=== NO QUORUM EMERGED WITHIN TIMEOUT... RETIRING...");
+			Log.Information("=== NO QUORUM EMERGED WITHIN TIMEOUT... RETIRING...");
 			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
@@ -951,7 +951,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private void Handle(ReplicationMessage.FollowerAssignment message) {
 			if (IsLegitimateReplicationMessage(message)) {
-				Log.Info(
+				Log.Information(
 					"========== [{internalHttp}] FOLLOWER ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
 					_leader.InternalTcp,
@@ -964,7 +964,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private void Handle(ReplicationMessage.CloneAssignment message) {
 			if (IsLegitimateReplicationMessage(message)) {
-				Log.Info(
+				Log.Information(
 					"========== [{internalHttp}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
 					_leader.InternalTcp,
@@ -977,7 +977,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private void Handle(ReplicationMessage.DropSubscription message) {
 			if (IsLegitimateReplicationMessage(message)) {
-				Log.Info(
+				Log.Information(
 					"========== [{internalHttp}] DROP SUBSCRIPTION REQUEST RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}]. THIS MEANS THAT THERE IS A SURPLUS OF NODES IN THE CLUSTER, SHUTTING DOWN.",
 					_nodeInfo.InternalHttp,
 					_leader.InternalTcp,
@@ -991,7 +991,7 @@ namespace EventStore.Core.Services.VNode {
 			if (message.SubscriptionId == Guid.Empty)
 				throw new Exception("IReplicationMessage with empty SubscriptionId provided.");
 			if (message.SubscriptionId != _subscriptionId) {
-				Log.Trace(
+				Log.Verbose(
 					"Ignoring {message} because SubscriptionId {receivedSubscriptionId:B} is wrong. Current SubscriptionId is {subscriptionId:B}.",
 					message.GetType().Name, message.SubscriptionId, _subscriptionId);
 				return false;
@@ -1018,12 +1018,12 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.ServiceShutdown message) {
-			Log.Info("========== [{internalHttp}] Service '{service}' has shut down.", _nodeInfo.InternalHttp,
+			Log.Information("========== [{internalHttp}] Service '{service}' has shut down.", _nodeInfo.InternalHttp,
 				message.ServiceName);
 
 			_serviceShutdownsToExpect -= 1;
 			if (_serviceShutdownsToExpect == 0) {
-				Log.Info("========== [{internalHttp}] All Services Shutdown.", _nodeInfo.InternalHttp);
+				Log.Information("========== [{internalHttp}] All Services Shutdown.", _nodeInfo.InternalHttp);
 				Shutdown();
 			}
 

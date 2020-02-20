@@ -136,7 +136,7 @@ namespace EventStore.TestClient.Commands {
 
 							if (currentMinute != elapsedMinutesInt) {
 								currentMinute = elapsedMinutesInt;
-								context.Log.Info(
+								context.Log.Information(
 									"\nElapsed {elapsed} of {runTime} minutes, sent {sent}; next block coef. {dataSizeCoefficient}",
 									elapsedMinutesInt,
 									runTimeMinutes,
@@ -188,9 +188,9 @@ namespace EventStore.TestClient.Commands {
 				client.Close();
 			}
 
-			context.Log.Info("Completed. Successes: {success}, failures: {failures}", succ, fail);
+			context.Log.Information("Completed. Successes: {success}, failures: {failures}", succ, fail);
 			var reqPerSec = (requestsCnt + 0.0) / sw.ElapsedMilliseconds * 1000;
-			context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).",
+			context.Log.Information("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).",
 				requestsCnt,
 				sw.ElapsedMilliseconds,
 				reqPerSec);

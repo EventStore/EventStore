@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Monitoring.Stats;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring.Utils {
 	internal class EventCountersHelper : IDisposable {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<EventCountersHelper>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<EventCountersHelper>();
 		private const int InvalidCounterResult = -1;
 
 		private readonly List<EventPipeProvider> _providers;
@@ -79,7 +79,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 					
 					source.Process();
 				} catch (Exception exception) {
-					Log.WarnException(exception, "Error encountered while processing events");
+					Log.Warning(exception, "Error encountered while processing events");
 				}
 			});
 		}

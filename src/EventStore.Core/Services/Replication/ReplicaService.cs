@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -13,10 +12,10 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
 	public class ReplicaService : IHandle<SystemMessage.StateChangeMessage>,
@@ -24,7 +23,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationMessage.SubscribeToLeader>,
 		IHandle<ReplicationMessage.AckLogPosition>,
 		IHandle<ClientMessage.TcpForwardMessage> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ReplicaService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ReplicaService>();
 
 		private readonly TcpClientConnector _connector;
 		private readonly IPublisher _publisher;
@@ -181,7 +180,7 @@ namespace EventStore.Core.Services.Replication {
 			var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
 			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
 
-			Log.Info(
+			Log.Information(
 				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to LEADER [{remoteEndPoint}, {leaderId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
 				+ "ConnectionId: {connectionId:B}, LocalEndPoint: [{localEndPoint}], Epochs:\n{epochs}...\n.",
 				logPosition, logPosition, _connection.RemoteEndPoint, message.LeaderId, message.SubscriptionId,

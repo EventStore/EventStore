@@ -1,4 +1,3 @@
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -6,6 +5,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using System;
 using System.Linq;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public interface IEmittedStreamsDeleter {
@@ -13,7 +13,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 	}
 
 	public class EmittedStreamsDeleter : IEmittedStreamsDeleter {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<EmittedStreamsDeleter>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<EmittedStreamsDeleter>();
 		private readonly IODispatcher _ioDispatcher;
 		private readonly int _checkPointThreshold = 4000;
 		private int _numberOfEventsProcessed = 0;
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_ioDispatcher.DeleteStream(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, false,
 						SystemAccounts.System, x => {
 							if (x.Result == OperationResult.Success || x.Result == OperationResult.StreamDeleted) {
-								Log.Info("PROJECTIONS: Projection Stream '{stream}' deleted",
+								Log.Information("PROJECTIONS: Projection Stream '{stream}' deleted",
 									_emittedStreamsCheckpointStreamId);
 							} else {
 								Log.Error("PROJECTIONS: Failed to delete projection stream '{stream}'. Reason: {e}",
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 								SystemAccounts.System, y => {
 									if (y.Result == OperationResult.Success ||
 									    y.Result == OperationResult.StreamDeleted) {
-										Log.Info("PROJECTIONS: Projection Stream '{stream}' deleted",
+										Log.Information("PROJECTIONS: Projection Stream '{stream}' deleted",
 											_emittedStreamsId);
 									} else {
 										Log.Error(

@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Security.Cryptography;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Unbuffered;
+using ILogger = Serilog.ILogger;
 using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.Index {
@@ -39,7 +39,7 @@ namespace EventStore.Core.Index {
 		public const int DefaultBufferSize = 8192;
 		public const int DefaultSequentialBufferSize = 65536;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PTable>();
 
 		public Guid Id {
 			get { return _id; }
@@ -95,7 +95,7 @@ namespace EventStore.Core.Index {
 			_id = id;
 			_filename = filename;
 
-			Log.Trace("Loading " + (skipIndexVerify ? "" : "and Verification ") + "of PTable '{pTable}' started...",
+			Log.Verbose("Loading " + (skipIndexVerify ? "" : "and Verification ") + "of PTable '{pTable}' started...",
 				Path.GetFileName(Filename));
 			var sw = Stopwatch.StartNew();
 			_size = new FileInfo(_filename).Length;
@@ -211,7 +211,7 @@ namespace EventStore.Core.Index {
 					+ "Performance hit will occur. OOM Exception.", Path.GetFileName(Filename), Count, depth);
 			}
 
-			Log.Trace(
+			Log.Verbose(
 				"Loading PTable (Version: {version}) '{pTable}' ({count} entries, cache depth {depth}) done in {elapsed}.",
 				_version, Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
 		}

@@ -9,16 +9,15 @@ using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
 	[Trait("Category", "LongRunning")]
-	public class subscribe_to_all_live : IAsyncLifetime, IDisposable {
+	public class subscribe_to_all_live : IAsyncLifetime {
 		private readonly Fixture _fixture;
-		private readonly IDisposable _loggingContext;
 
 		/// <summary>
 		/// This class does not implement IClassFixture because it checks $all, and we want a fresh Node for each test.
 		/// </summary>
 		public subscribe_to_all_live(ITestOutputHelper outputHelper) {
 			_fixture = new Fixture();
-			_loggingContext = LoggingHelper.Capture(outputHelper);
+			_fixture.CaptureLogs(outputHelper);
 		}
 
 		[Fact]
@@ -159,6 +158,5 @@ namespace EventStore.Client.Streams {
 
 		public Task InitializeAsync() => _fixture.InitializeAsync();
 		public Task DisposeAsync() => _fixture.DisposeAsync();
-		public void Dispose() => _loggingContext.Dispose();
 	}
 }

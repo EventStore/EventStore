@@ -4,13 +4,14 @@ using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClusterNode;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using Xunit;
 
 namespace EventStore.Client {
@@ -45,6 +46,7 @@ namespace EventStore.Client {
 						}
 					});
 				})
+				.UseSerilog()
 				.UseStartup(_node.Startup)
 				.Build();
 
@@ -61,7 +63,8 @@ namespace EventStore.Client {
 							? Uri.UriSchemeHttp
 							: Uri.UriSchemeHttps
 					}.Uri,
-				}
+				},
+				LoggerFactory = _host.Services.GetRequiredService<ILoggerFactory>()
 			});
 		}
 

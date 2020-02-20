@@ -11,7 +11,7 @@ namespace EventStore.TestClient.Commands {
 		}
 
 		public bool Execute(CommandProcessorContext context, string[] args) {
-			context.Log.Info("Exiting...");
+			context.Log.Information("Exiting...");
 			Application.Exit(ExitCode.Success, "Exit processor called.");
 			return true;
 		}

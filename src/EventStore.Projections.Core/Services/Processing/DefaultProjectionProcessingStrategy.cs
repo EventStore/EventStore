@@ -1,9 +1,9 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class EventReaderBasedProjectionProcessingStrategy : ProjectionProcessingStrategy {
@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		protected EventReaderBasedProjectionProcessingStrategy(
 			string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-			IQuerySources sourceDefinition, ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher)
+			IQuerySources sourceDefinition, Serilog.ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher)
 			: base(name, projectionVersion, logger) {
 			_projectionConfig = projectionConfig;
 			_sourceDefinition = sourceDefinition;

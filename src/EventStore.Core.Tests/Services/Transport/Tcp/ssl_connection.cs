@@ -5,16 +5,16 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Tcp;
 using NUnit.Framework;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
 	public class ssl_connections {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ssl_connections>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ssl_connections>();
 		private IPAddress _ip;
 		private int _port;
 
@@ -48,18 +48,18 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				callback = (x, y) => {
 					foreach (var arraySegment in y) {
 						received.Write(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
-						Log.Info("Received: {0} bytes, total: {1}.", arraySegment.Count, received.Length);
+						Log.Information("Received: {0} bytes, total: {1}.", arraySegment.Count, received.Length);
 					}
 
 					if (received.Length >= sent.Length) {
-						Log.Info("Done receiving...");
+						Log.Information("Done receiving...");
 						done.Set();
 					} else {
-						Log.Info("Receiving...");
+						Log.Information("Receiving...");
 						ssl.ReceiveAsync(callback);
 					}
 				};
-				Log.Info("Receiving...");
+				Log.Information("Receiving...");
 				ssl.ReceiveAsync(callback);
 			}, "Secure");
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
 				conn => {
-					Log.Info("Sending bytes...");
+					Log.Information("Sending bytes...");
 					conn.EnqueueSend(new[] { new ArraySegment<byte>(sent) });
 				},
 				(conn, err) => {
@@ -82,11 +82,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			Assert.IsTrue(done.Wait(20000), "Took too long to receive completion.");
 
-			Log.Info("Stopping listener...");
+			Log.Information("Stopping listener...");
 			listener.Stop();
-			Log.Info("Closing client ssl connection...");
+			Log.Information("Closing client ssl connection...");
 			clientSsl.Close("Normal close.");
-			Log.Info("Checking received data...");
+			Log.Information("Checking received data...");
 			Assert.AreEqual(sent, received.ToArray());
 		}
 

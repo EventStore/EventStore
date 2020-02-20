@@ -2,8 +2,10 @@ using System;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
-namespace EventStore.Client {
-	public class ConnectionNameInterceptor : Interceptor {
+// ReSharper disable CheckNamespace
+namespace EventStore.Client.Interceptors {
+	// ReSharper restore CheckNamespace
+	internal class ConnectionNameInterceptor : Interceptor {
 		private readonly string _connectionName;
 
 		public ConnectionNameInterceptor(string connectionName) {

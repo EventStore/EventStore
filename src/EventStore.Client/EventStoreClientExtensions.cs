@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Client {
-	public static class EventStoreGrpcClientExtensions {
+	public static class EventStoreClientExtensions {
 		private static readonly JsonSerializerOptions SystemSettingsJsonSerializerOptions = new JsonSerializerOptions {
 			Converters = {
 				SystemSettingsJsonConverter.Instance

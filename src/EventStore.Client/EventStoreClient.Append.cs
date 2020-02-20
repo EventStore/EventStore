@@ -4,9 +4,27 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using Google.Protobuf;
+using Microsoft.Extensions.Logging;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
+		private Task<WriteResult> AppendToStreamAsync(
+			string streamName,
+			StreamRevision expectedRevision,
+			IEnumerable<EventData> eventData,
+			EventStoreClientOperationOptions operationOptions,
+			UserCredentials userCredentials = default,
+			CancellationToken cancellationToken = default) {
+			_log.LogDebug("Append to stream - {streamName}@{expectedRevision}.", streamName, expectedRevision);
+
+			return AppendToStreamInternal(new AppendReq {
+				Options = new AppendReq.Types.Options {
+					StreamName = streamName,
+					Revision = expectedRevision
+				}
+			}, eventData, operationOptions, userCredentials, cancellationToken);
+		}
+
 		/// <summary>
 		/// Appends events asynchronously to a stream.
 		/// </summary>
@@ -24,10 +42,9 @@ namespace EventStore.Client {
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
 			var options = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(options);
-			
+
 			return AppendToStreamAsync(streamName, expectedRevision, eventData, options, userCredentials,
 				cancellationToken);
 		}
@@ -38,12 +55,15 @@ namespace EventStore.Client {
 			IEnumerable<EventData> eventData,
 			EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) =>
-			AppendToStreamInternal(new AppendReq {
+			CancellationToken cancellationToken = default) {
+			_log.LogDebug("Append to stream - {streamName}@{expectedRevision}.", streamName, expectedRevision);
+
+			return AppendToStreamInternal(new AppendReq {
 				Options = new AppendReq.Types.Options {
 					StreamName = streamName
 				}
 			}.WithAnyStreamRevision(expectedRevision), eventData, operationOptions, userCredentials, cancellationToken);
+		}
 
 		/// <summary>
 		/// Appends events asynchronously to a stream.
@@ -62,27 +82,12 @@ namespace EventStore.Client {
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
-			
+
 			return AppendToStreamAsync(streamName, expectedRevision, eventData, operationOptions, userCredentials,
 				cancellationToken);
 		}
-
-		private Task<WriteResult> AppendToStreamAsync(
-			string streamName,
-			StreamRevision expectedRevision,
-			IEnumerable<EventData> eventData,
-			EventStoreClientOperationOptions operationOptions,
-			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) =>
-			AppendToStreamInternal(new AppendReq {
-				Options = new AppendReq.Types.Options {
-					StreamName = streamName,
-					Revision = expectedRevision
-				}
-			}, eventData, operationOptions, userCredentials, cancellationToken);
 
 		private async Task<WriteResult> AppendToStreamInternal(
 			AppendReq header,
@@ -95,7 +100,9 @@ namespace EventStore.Client {
 
 			await call.RequestStream.WriteAsync(header).ConfigureAwait(false);
 
-			foreach (var e in eventData)
+			foreach (var e in eventData) {
+				_log.LogTrace("Appending event to stream - {streamName}@{eventId} {eventType}.",
+					header.Options.StreamName, e.EventId, e.Type);
 				await call.RequestStream.WriteAsync(new AppendReq {
 					ProposedMessage = new AppendReq.Types.ProposedMessage {
 						Id = e.EventId.ToDto(),
@@ -107,18 +114,24 @@ namespace EventStore.Client {
 						}
 					}
 				}).ConfigureAwait(false);
+			}
 
 			await call.RequestStream.CompleteAsync().ConfigureAwait(false);
 
 			var response = await call.ResponseAsync.ConfigureAwait(false);
 
-			return new WriteResult(
+			var writeResult = new WriteResult(
 				response.CurrentRevisionOptionCase == AppendResp.CurrentRevisionOptionOneofCase.NoStream
 					? AnyStreamRevision.NoStream.ToInt64()
 					: new StreamRevision(response.CurrentRevision).ToInt64(),
 				response.PositionOptionCase == AppendResp.PositionOptionOneofCase.Position
 					? new Position(response.Position.CommitPosition, response.Position.PreparePosition)
 					: default);
+
+			_log.LogDebug("Append to stream succeeded - {streamName}@{logPosition}/{nextExpectedVersion}.",
+				header.Options.StreamName, writeResult.LogPosition, writeResult.NextExpectedVersion);
+
+			return writeResult;
 		}
 	}
 }

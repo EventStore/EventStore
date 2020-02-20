@@ -56,7 +56,7 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
+					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
 					sw.Start();
 					conn.EnqueueSend(package.AsByteArray());
@@ -72,14 +72,14 @@ namespace EventStore.TestClient.Commands {
 
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
 					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
-						context.Log.Info("Successfully written. EventId: {correlationId}.", package.CorrelationId);
+						context.Log.Information("Successfully written. EventId: {correlationId}.", package.CorrelationId);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));
 					} else {
-						context.Log.Info("Error while writing: {message} ({e}).", dto.Message, dto.Result);
+						context.Log.Information("Error while writing: {message} ({e}).", dto.Message, dto.Result);
 					}
 
-					context.Log.Info("Write request took: {elapsed}.", sw.Elapsed);
+					context.Log.Information("Write request took: {elapsed}.", sw.Elapsed);
 					conn.Close();
 					context.Success();
 				},

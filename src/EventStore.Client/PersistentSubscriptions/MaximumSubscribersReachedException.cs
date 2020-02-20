@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.Client {
+namespace EventStore.Client.PersistentSubscriptions {
 	public class MaximumSubscribersReachedException : Exception {
 		public readonly string StreamName;
 		public readonly string GroupName;

@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
-namespace EventStore.Client.Streams
-{
+namespace EventStore.Client.Streams {
 	public class write_stream_security : IClassFixture<write_stream_security.Fixture> {
 		private readonly Fixture _fixture;
 
-		public write_stream_security(Fixture fixture) {
+		public write_stream_security(Fixture fixture, ITestOutputHelper outputHelper) {
 			_fixture = fixture;
+			_fixture.CaptureLogs(outputHelper);
 		}
 
 		public class Fixture : SecurityFixture {
@@ -17,8 +18,10 @@ namespace EventStore.Client.Streams
 		[Fact]
 		public async Task writing_to_all_is_never_allowed() {
 			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.AppendStream(SecurityFixture.AllStream));
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.AppendStream(SecurityFixture.AllStream, TestCredentials.TestUser1));
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.AppendStream(SecurityFixture.AllStream, TestCredentials.TestAdmin));
+			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+				_fixture.AppendStream(SecurityFixture.AllStream, TestCredentials.TestUser1));
+			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+				_fixture.AppendStream(SecurityFixture.AllStream, TestCredentials.TestAdmin));
 		}
 
 		[Fact]
@@ -34,7 +37,8 @@ namespace EventStore.Client.Streams
 
 		[Fact]
 		public async Task writing_to_stream_with_not_authorized_user_credentials_is_denied() {
-			await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.AppendStream(SecurityFixture.WriteStream, TestCredentials.TestUser2));
+			await Assert.ThrowsAsync<AccessDeniedException>(() =>
+				_fixture.AppendStream(SecurityFixture.WriteStream, TestCredentials.TestUser2));
 		}
 
 		[Fact]

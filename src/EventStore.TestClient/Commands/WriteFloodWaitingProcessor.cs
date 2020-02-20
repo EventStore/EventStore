@@ -110,8 +110,8 @@ namespace EventStore.TestClient.Commands {
 			clients.ForEach(client => client.Close());
 
 			var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
-			context.Log.Info("Completed. Successes: {success}, failures: {failures}", succ, fail);
-			context.Log.Info(
+			context.Log.Information("Completed. Successes: {success}, failures: {failures}", succ, fail);
+			context.Log.Information(
 				"{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec, latency: {latency:0.00} ms).",
 				all, sw.ElapsedMilliseconds, reqPerSec, (sw.Elapsed.TotalMilliseconds + 0.0) / requestsCnt);
 			PerfUtils.LogData(Keyword,

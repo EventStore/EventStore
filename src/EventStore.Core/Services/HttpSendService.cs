@@ -5,7 +5,6 @@ using System.Net.Http.Headers;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -15,6 +14,7 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public class HttpSendService : IHttpForwarder,
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services {
 		IHandle<HttpMessage.HttpBeginSend>,
 		IHandle<HttpMessage.HttpSendPart>,
 		IHandle<HttpMessage.HttpEndSend> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<HttpSendService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 		private static HttpClient _client = new HttpClient();
 
 		private readonly Stopwatch _watch = Stopwatch.StartNew();

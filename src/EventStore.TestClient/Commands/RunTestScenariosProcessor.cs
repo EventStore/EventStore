@@ -5,15 +5,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Commands.RunTestScenarios;
 using EventStore.Transport.Tcp;
-using ILogger = EventStore.Common.Log.ILogger;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands {
 	internal class RunTestScenariosProcessor : ICmdProcessor {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<RunTestScenariosProcessor>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<RunTestScenariosProcessor>();
 		private const string AllScenariosFlag = "ALL";
 
 		public string Keyword {
@@ -97,7 +96,7 @@ namespace EventStore.TestClient.Commands {
 
 			context.IsAsync();
 
-			Log.Info("\n---" +
+			Log.Information("\n---" +
 			         "\nRunning scenario {scenario} using {connections} connections with {maxConcurrentRequests} max concurrent requests," +
 			         "\nfor {streams} streams {eventsPerStream} events each deleting every {streamDeleteStep}th stream. " +
 			         "\nExecution period {executionPeriod} minutes. " +
@@ -188,7 +187,7 @@ namespace EventStore.TestClient.Commands {
 					customNode),
 			};
 
-			Log.Info("Found scenarios {scenariosCount} total :\n{scenarios}.", allScenarios.Length,
+			Log.Information("Found scenarios {scenariosCount} total :\n{scenarios}.", allScenarios.Length,
 				allScenarios.Aggregate(new StringBuilder(),
 					(sb, s) => sb.AppendFormat("{0}, ", s.GetType().Name)));
 			var scenarios = allScenarios.Where(x => scenarioName == AllScenariosFlag
@@ -196,22 +195,22 @@ namespace EventStore.TestClient.Commands {
 				                                        StringComparison.InvariantCultureIgnoreCase))
 				.ToArray();
 
-			Log.Info("Running test scenarios ({scenarios} total)...", scenarios.Length);
+			Log.Information("Running test scenarios ({scenarios} total)...", scenarios.Length);
 
 			foreach (var scenario in scenarios) {
 				using (scenario) {
 					try {
-						Log.Info("Run scenario {type}", scenario.GetType().Name);
+						Log.Information("Run scenario {type}", scenario.GetType().Name);
 						scenario.Run();
 						scenario.Clean();
-						Log.Info("Scenario run successfully");
+						Log.Information("Scenario run successfully");
 					} catch (Exception e) {
 						context.Fail(e);
 					}
 				}
 			}
 
-			Log.Info("Finished running test scenarios");
+			Log.Information("Finished running test scenarios");
 
 			if (context.ExitCode == 0)
 				context.Success();

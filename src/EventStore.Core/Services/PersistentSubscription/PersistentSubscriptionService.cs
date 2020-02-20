@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -13,6 +12,7 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.PersistentSubscription {
@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionService>();
 
 		private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
 		private Dictionary<string, PersistentSubscription> _subscriptionsById;
@@ -484,7 +484,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}",
+					Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
 						eventRecord.ToString());
 				}
 
@@ -653,7 +653,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 						continueWith();
 					} catch (Exception ex) {
-						Log.ErrorException(ex, "There was an error loading configuration from storage.");
+						Log.Error(ex, "There was an error loading configuration from storage.");
 					}
 
 					break;
@@ -686,7 +686,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					break;
 				case OperationResult.CommitTimeout:
 				case OperationResult.PrepareTimeout:
-					Log.Info("Timeout while trying to save persistent subscription configuration. Retrying");
+					Log.Information("Timeout while trying to save persistent subscription configuration. Retrying");
 					SaveConfiguration(continueWith);
 					break;
 				default:

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -13,6 +12,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Data;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Atom;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class PersistentSubscriptionController : CommunicationController {
@@ -26,7 +26,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Codec.CompetingJson,
 		};
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionController>();
 
 		public PersistentSubscriptionController(IHttpForwarder httpForwarder, IPublisher publisher,
 			IPublisher networkSendQueue)
@@ -311,7 +311,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						"",
 						"");
 					Publish(message);
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private void PostSubscription(HttpEntityManager http, UriTemplateMatch match) {
@@ -377,7 +377,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						"",
 						"");
 					Publish(message);
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private SubscriptionConfigData ParseConfig(SubscriptionConfigData config) {

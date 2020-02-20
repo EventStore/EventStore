@@ -2,11 +2,11 @@ using System;
 using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
 	public class ClusterNodeMutex {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterNodeMutex>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterNodeMutex>();
 
 		public readonly string MutexName;
 
@@ -29,7 +29,7 @@ namespace EventStore.Core {
 			try {
 				_clusterNodeMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
 			} catch (AbandonedMutexException exc) {
-				Log.InfoException(exc,
+				Log.Information(exc,
 					"Cluster Node mutex '{mutex}' is said to be abandoned. "
 					+ "Probably previous instance of server was terminated abruptly.",
 					MutexName);
@@ -54,7 +54,7 @@ namespace EventStore.Core {
 			} catch (WaitHandleCannotBeOpenedException) {
 				return false;
 			} catch (Exception exc) {
-				Log.TraceException(exc, "Exception while trying to open Cluster Node mutex '{mutex}': {e}.", mutexName,
+				Log.Verbose(exc, "Exception while trying to open Cluster Node mutex '{mutex}': {e}.", mutexName,
 					exc.Message);
 			}
 

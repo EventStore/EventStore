@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -8,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class CoreProjectionCheckpointWriter {
@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			string projectionCheckpointStreamId, IODispatcher ioDispatcher, ProjectionVersion projectionVersion,
 			string name) {
 			_projectionCheckpointStreamId = projectionCheckpointStreamId;
-			_logger = LogManager.GetLoggerFor<CoreProjectionCheckpointWriter>();
+			_logger = Serilog.Log.ForContext<CoreProjectionCheckpointWriter>();
 			_ioDispatcher = ioDispatcher;
 			_projectionVersion = projectionVersion;
 			_name = name;
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException();
 			if (operationResult == OperationResult.Success) {
 				if (_logger != null)
-					_logger.Trace(
+					_logger.Verbose(
 						"Checkpoint has been written for projection {projection} at sequence number {firstWrittenEventNumber} (current)",
 						_name,
 						firstWrittenEventNumber);
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					new CoreProjectionCheckpointWriterMessage.CheckpointWritten(_requestedCheckpointPosition));
 			} else {
 				if (_logger != null) {
-					_logger.Info(
+					_logger.Information(
 						"Failed to write projection checkpoint to stream {stream}. Error: {e}", eventStreamId,
 						Enum.GetName(typeof(OperationResult), operationResult));
 				}
@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				PublishWriteStreamMetadataAndCheckpointEvent();
 			else {
 				if (attempt >= MinAttemptWarnThreshold && _logger != null) {
-					_logger.Warn("Attempt: {attempt} to write checkpoint for {projection} at {requestedCheckpointPosition} with expected version number {lastWrittenCheckpointEventNumber}. Backing off for {time} second(s).",
+					_logger.Warning("Attempt: {attempt} to write checkpoint for {projection} at {requestedCheckpointPosition} with expected version number {lastWrittenCheckpointEventNumber}. Backing off for {time} second(s).",
 						attempt,
 						_name,
 						_requestedCheckpointPosition,
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void PublishWriteStreamMetadataAndCheckpointEvent() {
 			if (_logger != null)
-				_logger.Trace(
+				_logger.Verbose(
 					"Writing checkpoint for {projection} at {requestedCheckpointPosition} with expected version number {lastWrittenCheckpointEventNumber}",
 					_name, _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
 			if (!_metaStreamWritten)

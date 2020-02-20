@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
 
@@ -21,8 +21,7 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
 		IHandle<ReplicationTrackingMessage.LeaderReplicatedTo>,
 		IHandle<SystemMessage.VNodeConnectionLost> {
-		private readonly ILogger _log = LogManager.GetLoggerFor<ReplicationTrackingService>();
-		private readonly IPublisher _publisher;
+		private readonly ILogger _log = Serilog.Log.ForContext<ReplicationTrackingService>();		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly int _quorumSize;
@@ -62,7 +61,7 @@ namespace EventStore.Core.Services.Replication {
 		public void Stop() {
 			_stop = true;
 		}
-		
+
 		public bool IsCurrent() {
 			Debug.Assert(_state == VNodeState.Leader);
 			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
@@ -84,7 +83,7 @@ namespace EventStore.Core.Services.Replication {
 					_replicationChange.Wait(100);
 				}
 			} catch (Exception exc) {
-				_log.FatalException(exc, $"Error in {nameof(ReplicationTrackingService)}. Terminating...");
+				_log.Fatal(exc, $"Error in {nameof(ReplicationTrackingService)}. Terminating...");
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					$"Error in {nameof(ReplicationTrackingService)}. Terminating...\nError: " + exc.Message);

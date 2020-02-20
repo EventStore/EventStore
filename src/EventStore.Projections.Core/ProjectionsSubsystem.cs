@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Authentication;
@@ -16,6 +15,7 @@ using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core {
 	public sealed class ProjectionsSubsystem :ISubsystem,
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core {
 		private readonly ProjectionType _runProjections;
 		private readonly bool _startStandardProjections;
 		private readonly TimeSpan _projectionsQueryExpiry;
-		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionsSubsystem>();
+		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionsSubsystem>();
 		public const int VERSION = 3;
 
 		private IQueuedHandler _leaderInputQueue;
@@ -163,14 +163,14 @@ namespace EventStore.Projections.Core {
 				return;
 			}
 			if (_runningComponentCount > 0) {
-				_logger.Warn("PROJECTIONS SUBSYSTEM: Subsystem is stopped, but components are still running.");
+				_logger.Warning("PROJECTIONS SUBSYSTEM: Subsystem is stopped, but components are still running.");
 				return;
 			}
 
 			_subsystemState = SubsystemState.Starting;
 			_restarting = false;
 			_instanceCorrelationId = Guid.NewGuid();
-			_logger.Info("PROJECTIONS SUBSYSTEM: Starting components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
+			_logger.Information("PROJECTIONS SUBSYSTEM: Starting components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_pendingComponentStarts = _componentCount;
 			_leaderMainBus.Publish(new ProjectionSubsystemMessage.StartComponents(_instanceCorrelationId));
 		}
@@ -181,27 +181,27 @@ namespace EventStore.Projections.Core {
 				return;
 			}
 			
-			_logger.Info("PROJECTIONS SUBSYSTEM: Stopping components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
+			_logger.Information("PROJECTIONS SUBSYSTEM: Stopping components for Instance: {instanceCorrelationId}", _instanceCorrelationId);
 			_subsystemState = SubsystemState.Stopping;
 			_leaderMainBus.Publish(new ProjectionSubsystemMessage.StopComponents(_instanceCorrelationId));
 		}
 		
 		public void Handle(ProjectionSubsystemMessage.RestartSubsystem message) {
 			if (_restarting) {
-				_logger.Info("PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is already being restarted.");
+				_logger.Information("PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is already being restarted.");
 				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart("Restarting"));
 				return;
 			}
 
 			if (_subsystemState != SubsystemState.Started) {
-				_logger.Info(
+				_logger.Information(
 					"PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is not started. Current subsystem state: {state}",
 					_subsystemState);
 				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart(_subsystemState.ToString()));
 				return;
 			}
 
-			_logger.Info("PROJECTIONS SUBSYSTEM: Restarting subsystem.");
+			_logger.Information("PROJECTIONS SUBSYSTEM: Restarting subsystem.");
 			_restarting = true;
 			StopComponents();
 			message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.SubsystemRestarting());
@@ -231,21 +231,21 @@ namespace EventStore.Projections.Core {
 
 		public void Handle(ProjectionSubsystemMessage.IODispatcherDrained message) {
 			_runningDispatchers--;
-			_logger.Info(
+			_logger.Information(
 				"PROJECTIONS SUBSYSTEM: IO Dispatcher from {componentName} has been drained. {runningCount} of {totalCount} queues empty.",
 				message.ComponentName, _runningDispatchers, _dispatcherCount);
 			FinishStopping();
 		}
 
 		private void AllComponentsStarted() {
-			_logger.Info("PROJECTIONS SUBSYSTEM: All components started for Instance: {instanceCorrelationId}",
+			_logger.Information("PROJECTIONS SUBSYSTEM: All components started for Instance: {instanceCorrelationId}",
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Started;
 			_runningDispatchers = _dispatcherCount;
 			_leaderOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
 
 			if (_nodeState != VNodeState.Leader) {
-				_logger.Info("PROJECTIONS SUBSYSTEM: Node state is no longer Leader. Stopping projections. Current node state: {nodeState}",
+				_logger.Information("PROJECTIONS SUBSYSTEM: Node state is no longer Leader. Stopping projections. Current node state: {nodeState}",
 					_nodeState);
 				StopComponents();
 			}
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core {
 				message.ComponentName, message.InstanceCorrelationId);
 			_runningComponentCount--;
 			if (_runningComponentCount < 0) {
-				_logger.Warn("PROJECTIONS SUBSYSTEM: Got more component stopped messages than running components.");
+				_logger.Warning("PROJECTIONS SUBSYSTEM: Got more component stopped messages than running components.");
 				_runningComponentCount = 0;
 			}
 
@@ -278,7 +278,7 @@ namespace EventStore.Projections.Core {
 			if (_runningDispatchers > 0) return;
 			if (_runningComponentCount > 0) return;
 
-			_logger.Info(
+			_logger.Information(
 				"PROJECTIONS SUBSYSTEM: All components stopped and dispatchers drained for Instance: {correlationId}",
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Stopped;
@@ -289,7 +289,7 @@ namespace EventStore.Projections.Core {
 			}
 
 			if (_nodeState == VNodeState.Leader) {
-				_logger.Info("PROJECTIONS SUBSYSTEM: Node state has changed to Leader. Starting projections.");
+				_logger.Information("PROJECTIONS SUBSYSTEM: Node state has changed to Leader. Starting projections.");
 				StartComponents();
 			}
 		}

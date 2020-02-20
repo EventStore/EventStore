@@ -1,12 +1,12 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpServerListener {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpServerListener>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpServerListener>();
 
 		private readonly IPEndPoint _serverEndPoint;
 		private readonly Socket _listeningSocket;
@@ -36,14 +36,14 @@ namespace EventStore.Transport.Tcp {
 
 			_onSocketAccepted = callback;
 
-			Log.Info("Starting {securityType} TCP listening on TCP endpoint: {serverEndPoint}.", securityType,
+			Log.Information("Starting {securityType} TCP listening on TCP endpoint: {serverEndPoint}.", securityType,
 				_serverEndPoint);
 			try {
 				_listeningSocket.ExclusiveAddressUse = true;
 				_listeningSocket.Bind(_serverEndPoint);
 				_listeningSocket.Listen(TcpConfiguration.AcceptBacklogCount);
 			} catch (Exception) {
-				Log.Info("Failed to listen on TCP endpoint: {serverEndPoint}.", _serverEndPoint);
+				Log.Information("Failed to listen on TCP endpoint: {serverEndPoint}.", _serverEndPoint);
 				Helper.EatException(() => _listeningSocket.Close(TcpConfiguration.SocketCloseTimeoutSecs));
 				throw;
 			}

@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageReaderService : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderService>();
 
 		private readonly IPublisher _bus;
 		private readonly IReadIndex _readIndex;
@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Storage {
 			try {
 				_workersMultiHandler.Stop();
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error while stopping readers multi handler.");
+				Log.Error(exc, "Error while stopping readers multi handler.");
 			}
 
 			_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));

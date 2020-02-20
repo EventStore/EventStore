@@ -1,13 +1,13 @@
 using System;
 using System.IO;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using System.Linq;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkManager : IDisposable {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
 		public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
 
@@ -169,7 +169,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var chunkHeader = chunk.ChunkHeader;
 			var oldFileName = chunk.FileName;
 
-			Log.Info("Switching chunk #{chunkStartNumber}-{chunkEndNumber} ({oldFileName})...",
+			Log.Information("Switching chunk #{chunkStartNumber}-{chunkEndNumber} ({oldFileName})...",
 				chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, Path.GetFileName(oldFileName));
 			TFChunk.TFChunk newChunk;
 
@@ -186,7 +186,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				var newFileName =
 					_config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
-				Log.Info("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
+				Log.Information("File {oldFileName} will be moved to file {newFileName}", Path.GetFileName(oldFileName),
 					Path.GetFileName(newFileName));
 				try {
 					File.Move(oldFileName, newFileName);
@@ -202,7 +202,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			lock (_chunksLocker) {
 				if (!ReplaceChunksWith(newChunk, "Old")) {
-					Log.Info("Chunk {chunk} will be not switched, marking for remove...", newChunk);
+					Log.Information("Chunk {chunk} will be not switched, marking for remove...", newChunk);
 					newChunk.MarkForDeletion();
 				}
 
@@ -244,7 +244,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					// Once we've swapped all entries for the previousRemovedChunk we can safely delete it.
 					if (previousRemovedChunk != null) {
 						previousRemovedChunk.MarkForDeletion();
-						Log.Info("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
+						Log.Information("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
 							previousRemovedChunk);
 					}
 
@@ -255,7 +255,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (previousRemovedChunk != null) {
 				// Delete the last chunk swapped out now it's fully replaced.
 				previousRemovedChunk.MarkForDeletion();
-				Log.Info("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
+				Log.Information("{chunkExplanation} chunk #{oldChunk} is marked for deletion.", chunkExplanation,
 					previousRemovedChunk);
 			}
 
@@ -268,7 +268,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
 				if (oldChunk != null && !ReferenceEquals(lastRemovedChunk, oldChunk)) {
 					oldChunk.MarkForDeletion();
-					Log.Info("{chunkExplanation} chunk {oldChunk} is marked for deletion.", chunkExplanation, oldChunk);
+					Log.Information("{chunkExplanation} chunk {oldChunk} is marked for deletion.", chunkExplanation, oldChunk);
 				}
 
 				lastRemovedChunk = oldChunk;

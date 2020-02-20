@@ -1,17 +1,16 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class AdminController : CommunicationController {
 		private readonly IPublisher _networkSendQueue;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<AdminController>();
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
 			{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
@@ -44,7 +43,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-				Log.Info("Request shut down of node because shutdown command has been received.");
+				Log.Information("Request shut down of node because shutdown command has been received.");
 				Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
@@ -53,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private void OnPostMergeIndexes(HttpEntityManager entity, UriTemplateMatch match) {
-			Log.Info("Request merge indexes because /admin/mergeindexes request has been received.");
+			Log.Information("Request merge indexes because /admin/mergeindexes request has been received.");
 
 			var correlationId = Guid.NewGuid();
 			var envelope = new SendToHttpEnvelope(_networkSendQueue, entity,
@@ -93,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				}
 			}
 
-			Log.Info(
+			Log.Information(
 				"Request scavenging because /admin/scavenge?startFromChunk={chunkStartNumber}&threads={numThreads} request has been received.",
 				startFromChunk, threads);
 
@@ -122,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match) {
 			var scavengeId = match.BoundVariables["scavengeId"];
 
-			Log.Info("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.",
+			Log.Information("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.",
 				scavengeId);
 
 			var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) => {
@@ -150,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-				Log.Info("Request to set node priority.");
+				Log.Information("Request to set node priority.");
 
 				int nodePriority;
 				var nodePriorityVariable = match.BoundVariables["nodePriority"];
@@ -163,7 +162,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					SendBadRequest(entity, "nodePriority must be an integer.");
 					return;
 				}
-				
+
 				Publish(new ClientMessage.SetNodePriority(nodePriority));
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
@@ -174,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private void OnResignNode(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
-				Log.Info("Request to resign node.");
+				Log.Information("Request to resign node.");
 				Publish(new ClientMessage.ResignNode());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {

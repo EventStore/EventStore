@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,6 +13,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public class ClusterStorageWriterService : StorageWriterService,
@@ -21,7 +21,7 @@ namespace EventStore.Core.Services {
 		IHandle<ReplicationMessage.CreateChunk>,
 		IHandle<ReplicationMessage.RawChunkBulk>,
 		IHandle<ReplicationMessage.DataChunkBulk> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ClusterStorageWriterService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterStorageWriterService>();
 
 		private readonly Func<long> _getLastIndexedPosition;
 		private readonly LengthPrefixSuffixFramer _framer;
@@ -78,7 +78,7 @@ namespace EventStore.Core.Services {
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
 
-			Log.Info(
+			Log.Information(
 				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
 				message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition, message.SubscriptionPosition,
 				message.SubscriptionId);
@@ -93,17 +93,17 @@ namespace EventStore.Core.Services {
 			}
 
 			if (message.SubscriptionPosition < writerCheck) {
-				Log.Info(
+				Log.Information(
 					"Leader [{leaderEndPoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). TRUNCATION IS NEEDED.",
 					message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 					message.SubscriptionPosition, writerCheck, writerCheck);
 
 				var lastIndexedPosition = _getLastIndexedPosition();
 				if (message.SubscriptionPosition > lastIndexedPosition)
-					Log.Info(
+					Log.Information(
 						"ONLINE TRUNCATION IS NEEDED. NOT IMPLEMENTED. OFFLINE TRUNCATION WILL BE PERFORMED. SHUTTING DOWN NODE.");
 				else
-					Log.Info(
+					Log.Information(
 						"OFFLINE TRUNCATION IS NEEDED (SubscribedAt {subscriptionPosition} (0x{subscriptionPosition:X}) <= LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X})). SHUTTING DOWN NODE.",
 						message.SubscriptionPosition, message.SubscriptionPosition, lastIndexedPosition,
 						lastIndexedPosition);
@@ -201,7 +201,7 @@ namespace EventStore.Core.Services {
 			_subscriptionPos += message.RawBytes.Length;
 
 			if (message.CompleteChunk) {
-				Log.Trace("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
+				Log.Verbose("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
 				Writer.CompleteReplicatedRawChunk(_activeChunk);
 
@@ -246,7 +246,7 @@ namespace EventStore.Core.Services {
 				_subscriptionPos += message.DataBytes.Length;
 
 				if (message.CompleteChunk) {
-					Log.Trace("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
+					Log.Verbose("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 						message.ChunkEndNumber);
 					Writer.CompleteChunk();
 
@@ -259,7 +259,7 @@ namespace EventStore.Core.Services {
 					_framer.Reset();
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();

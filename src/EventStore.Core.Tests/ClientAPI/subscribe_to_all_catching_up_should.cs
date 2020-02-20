@@ -5,17 +5,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Common.Log;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
-using ILogger = EventStore.Common.Log.ILogger;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
 	public class subscribe_to_all_catching_up_should : SpecificationWithDirectory {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<subscribe_to_all_catching_up_should>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<subscribe_to_all_catching_up_should>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
 		private MiniNode _node;
@@ -54,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var subscription = store.SubscribeToAllFrom(null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => Task.CompletedTask,
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 
 				Assert.IsFalse(dropped.Wait(0));
@@ -74,7 +73,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var dropped = new CountdownEvent(1);
 				store.SubscribeToAllFrom(null, CatchUpSubscriptionSettings.Default,
 					(x, y) => { throw new Exception("Error"); },
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
@@ -94,7 +93,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 							appeared.Set();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(_, __, ___) => dropped.Signal());
 
 				await Task.Delay(100); // give time for first pull phase
@@ -132,7 +131,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				for (int i = 10; i < 20; ++i) {
 					await store.AppendToStreamAsync("stream-" + i.ToString(), -1,
@@ -179,9 +178,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => {
-						Log.Info("Subscription dropped: {0}, {1}.", y, z);
+						Log.Information("Subscription dropped: {0}, {1}.", y, z);
 						dropped.Signal();
 					});
 
@@ -190,13 +189,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 						new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
 				}
 
-				Log.Info("Waiting for events...");
+				Log.Information("Waiting for events...");
 				if (!appeared.Wait(Timeout)) {
 					Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
 					Assert.Fail("Could not wait for all events.");
 				}
 
-				Log.Info("Events appeared...");
+				Log.Information("Events appeared...");
 				Assert.AreEqual(10, events.Count);
 				for (int i = 0; i < 10; ++i) {
 					Assert.AreEqual("et-" + (10 + i).ToString(), events[i].OriginalEvent.EventType);
@@ -234,19 +233,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => {
-						Log.Info("Subscription dropped: {0}, {1}.", y, z);
+						Log.Information("Subscription dropped: {0}, {1}.", y, z);
 						dropped.Signal();
 					});
 
-				Log.Info("Waiting for events...");
+				Log.Information("Waiting for events...");
 				if (!appeared.Wait(Timeout)) {
 					Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
 					Assert.Fail("Could not wait for all events.");
 				}
 
-				Log.Info("Events appeared...");
+				Log.Information("Events appeared...");
 				Assert.AreEqual(1, events.Count);
 				Assert.AreEqual("et-9", events[0].OriginalEvent.EventType);
 

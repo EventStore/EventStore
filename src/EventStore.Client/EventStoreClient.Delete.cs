@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
+using Microsoft.Extensions.Logging;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
@@ -20,10 +21,10 @@ namespace EventStore.Client {
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
-			
+
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
-			
+
 			return SoftDeleteAsync(streamName, expectedRevision, operationOptions, userCredentials, cancellationToken);
 		}
 
@@ -45,7 +46,7 @@ namespace EventStore.Client {
 			
 			var options = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(options);
-			
+
 			return SoftDeleteAsync(streamName, expectedRevision, options, userCredentials, cancellationToken);
 		}
 
@@ -77,6 +78,7 @@ namespace EventStore.Client {
 		private async Task<DeleteResult> DeleteInternal(DeleteReq request, EventStoreClientOperationOptions operationOptions,
 			UserCredentials userCredentials,
 			CancellationToken cancellationToken) {
+			_log.LogDebug("Deleting stream {streamName}.", request.Options.StreamName);
 			var result = await _client.DeleteAsync(request, RequestMetadata.Create(userCredentials),
 				deadline: DeadLine.After(operationOptions.TimeoutAfter), cancellationToken);
 

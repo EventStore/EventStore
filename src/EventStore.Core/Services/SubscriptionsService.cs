@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -10,6 +9,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
 using EventStore.Core.Util;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public enum SubscriptionDropReason {
@@ -32,7 +32,7 @@ namespace EventStore.Core.Services {
 		public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 		private const int DontReportCheckpointReached = -1;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<SubscriptionsService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<SubscriptionsService>();
 		private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
 
 		private readonly Dictionary<string, List<Subscription>> _subscriptionTopics =
@@ -330,7 +330,7 @@ namespace EventStore.Core.Services {
 
 					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}",
+					Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
 						eventRecord.ToString());
 				}
 

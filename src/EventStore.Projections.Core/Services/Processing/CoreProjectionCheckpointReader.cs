@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -10,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class CoreProjectionCheckpointReader : ICoreProjectionCheckpointReader {
@@ -18,7 +18,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly string _projectionCheckpointStreamId;
 		private readonly bool _useCheckpoints;
-		private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointReader>();
+		private readonly ILogger _logger = Serilog.Log.ForContext<CoreProjectionCheckpointReader>();
 
 		private bool _stateRequested;
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_projectionCheckpointStreamId, _nextStateIndexToRequest, recordsToRequest, false,
 				SystemAccounts.System, OnLoadStateReadRequestCompleted,
 				() => {
-					_logger.Warn("Read forward of stream {stream} timed out. Retrying.", _projectionCheckpointStreamId);
+					_logger.Warning("Read forward of stream {stream} timed out. Retrying.", _projectionCheckpointStreamId);
 					RequestLoadState();
 				}, _readRequestId);
 		}

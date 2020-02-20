@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -13,13 +12,14 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using HttpMethod = EventStore.Transport.Http.HttpMethod;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class GossipController : CommunicationController,
 		IHttpSender,
 		ISender<GossipMessage.SendGossip>,
 		ISender<GossipMessage.GetGossip>{
-		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<GossipController>();
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
 			{Codec.Json, Codec.ApplicationXml, Codec.Xml, Codec.Text};

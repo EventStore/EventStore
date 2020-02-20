@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring.Stats {
 	public class DiskIo {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<DiskIo>();
+		private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<DiskIo>();
 
 		///<summary>
 		///The number of bytes read by EventStore since start.
@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 			WriteOps = writeOps;
 		}
 
-		public static DiskIo GetDiskIo(int procId, ILogger logger) {
+		public static DiskIo GetDiskIo(int procId, Serilog.ILogger logger) {
 			try {
 				return OS.IsUnix ? GetOnUnix(procId, logger) : GetOnWindows(logger);
 			} catch (Exception exc) {
@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 		}
 
 		// http://stackoverflow.com/questions/3633286/understanding-the-counters-in-proc-pid-io
-		private static DiskIo GetOnUnix(int procId, ILogger log) {
+		private static DiskIo GetOnUnix(int procId, Serilog.ILogger log) {
 			var procIoFile = string.Format("/proc/{0}/io", procId);
 			if (!File.Exists(procIoFile)) // if no procfs exists/is mounted -- just don't return stats
 				return null;
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 			return ParseOnUnix(procIoStr, log);
 		}
 
-		internal static DiskIo ParseOnUnix(string procIoStr, ILogger log) {
+		internal static DiskIo ParseOnUnix(string procIoStr, Serilog.ILogger log) {
 			ulong readBytes, writtenBytes, readOps, writeOps;
 			try {
 				var dict = procIoStr.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries)
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 				readOps = ulong.Parse(dict["syscr"]);
 				writeOps = ulong.Parse(dict["syscw"]);
 			} catch (Exception ex) {
-				log.InfoException(ex, "Could not parse Linux stats.");
+				log.Information(ex, "Could not parse Linux stats.");
 				return null;
 			}
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 				proc = Process.GetCurrentProcess();
 				GetProcessIoCounters(proc.Handle, out counters);
 			} catch (Exception ex) {
-				log.InfoException(ex, "Error while reading disk IO on Windows.");
+				log.Information(ex, "Error while reading disk IO on Windows.");
 				return null;
 			} finally {
 				if (proc != null)

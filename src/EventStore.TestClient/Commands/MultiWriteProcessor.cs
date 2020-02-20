@@ -40,7 +40,7 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
+					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
 					var writeDto = new TcpClientMessageDto.WriteEvents(
 						eventStreamId,
@@ -59,7 +59,7 @@ namespace EventStore.TestClient.Commands {
 				},
 				handlePackage: (conn, pkg) => {
 					sw.Stop();
-					context.Log.Info("Write request took: {elapsed}.", sw.Elapsed);
+					context.Log.Information("Write request took: {elapsed}.", sw.Elapsed);
 
 					if (pkg.Command != TcpCommand.WriteEventsCompleted) {
 						context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
@@ -68,12 +68,12 @@ namespace EventStore.TestClient.Commands {
 
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
 					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
-						context.Log.Info("Successfully written {writeCount} events.", writeCount);
+						context.Log.Information("Successfully written {writeCount} events.", writeCount);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));
 						context.Success();
 					} else {
-						context.Log.Info("Error while writing: {e}.", dto.Result);
+						context.Log.Information("Error while writing: {e}.", dto.Result);
 						context.Fail();
 					}
 

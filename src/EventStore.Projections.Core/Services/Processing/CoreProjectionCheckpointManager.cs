@@ -1,8 +1,8 @@
 using System;
 using System.Diagnostics.Contracts;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager,
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher = publisher;
 			_projectionCorrelationId = projectionCorrelationId;
 			_projectionConfig = projectionConfig;
-			_logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
+			_logger = Serilog.Log.ForContext<CoreProjectionCheckpointManager>();
 			_namingBuilder = namingBuilder;
 			_usePersistentCheckpoints = usePersistentCheckpoints;
 			_requestedCheckpointState = new PartitionState("", null, _zeroTag);

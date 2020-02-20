@@ -4,12 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using System.Collections.Concurrent;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	public static class PortsHelper {
-		private static readonly ILogger Log = LogManager.GetLogger("PortsHelper");
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "PortsHelper");
 
 		public const int PortStart = 45000;
 		public const int PortCount = 200;
@@ -24,7 +25,7 @@ namespace EventStore.TestClient {
 			while (AvailablePorts.TryDequeue(out p)) {
 			}
 
-			Log.Trace("PortsHelper: starting to examine ports at [{ip}].", ip);
+			Log.Verbose("PortsHelper: starting to examine ports at [{ip}].", ip);
 
 			int succ = 0;
 			for (int port = PortStart; port < PortStart + PortCount; ++port) {
@@ -33,7 +34,7 @@ namespace EventStore.TestClient {
 					listener.Start();
 					listener.Stop();
 				} catch (Exception exc) {
-					Log.TraceException(exc, "PortsHelper: port {port} unavailable for TcpListener. Error: {e}.", port,
+					Log.Verbose(exc, "PortsHelper: port {port} unavailable for TcpListener. Error: {e}.", port,
 						exc.Message);
 					continue;
 				}
@@ -66,7 +67,7 @@ namespace EventStore.TestClient {
 
 					httpListener.Stop();
 				} catch (Exception exc) {
-					Log.TraceException(exc, "PortsHelper: port {port} unavailable for HttpListener. Error: {e}.", port,
+					Log.Verbose(exc, "PortsHelper: port {port} unavailable for HttpListener. Error: {e}.", port,
 						exc.Message);
 					continue;
 				}
@@ -75,11 +76,11 @@ namespace EventStore.TestClient {
 				succ += 1;
 			}
 
-			Log.Trace("PortsHelper: {ports} ports are available at [{ip}].", succ, ip);
+			Log.Verbose("PortsHelper: {ports} ports are available at [{ip}].", succ, ip);
 			if (succ <= PortCount / 2)
 				throw new Exception("More than half requested ports are unavailable.");
 
-			Log.Trace("PortsHelper: test took {elapsed}.", sw.Elapsed);
+			Log.Verbose("PortsHelper: test took {elapsed}.", sw.Elapsed);
 		}
 
 		public static int GetAvailablePort(IPAddress ip) {

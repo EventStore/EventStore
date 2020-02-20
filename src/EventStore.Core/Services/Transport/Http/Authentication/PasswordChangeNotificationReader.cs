@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -7,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class PasswordChangeNotificationReader : IHandle<SystemMessage.SystemStart>,
@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		public PasswordChangeNotificationReader(IPublisher publisher, IODispatcher ioDispatcher) {
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_log = LogManager.GetLoggerFor<UserManagementService>();
+			_log = Serilog.Log.ForContext<UserManagementService>();
 		}
 
 		private void Start() {
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 					}
 				},
 				() => {
-					_log.Warn("Timeout reading stream: {stream}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
+					_log.Warning("Timeout reading stream: {stream}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
 					_ioDispatcher.Delay(TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
 				},
 				Guid.NewGuid());

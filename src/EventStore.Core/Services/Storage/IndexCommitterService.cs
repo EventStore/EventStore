@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -13,6 +12,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using ILogger = Serilog.ILogger;
 
 
 namespace EventStore.Core.Services.Storage {
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
-		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
+		private readonly ILogger Log = Serilog.Log.ForContext<IndexCommitterService>();
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
@@ -122,7 +122,7 @@ namespace EventStore.Core.Services.Storage {
 			} catch (Exception exc) {
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
-				Log.FatalException(exc, "Error in IndexCommitterService. Terminating...");
+				Log.Fatal(exc, "Error in IndexCommitterService. Terminating...");
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
@@ -281,7 +281,7 @@ namespace EventStore.Core.Services.Storage {
 
 		public void Handle(ClientMessage.MergeIndexes message) {
 			if (_tableIndex.IsBackgroundTaskRunning) {
-				Log.Info("A background operation is already running...");
+				Log.Information("A background operation is already running...");
 				MakeReplyForMergeIndexes(message);
 				return;
 			}

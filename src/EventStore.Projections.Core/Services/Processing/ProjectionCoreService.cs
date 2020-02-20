@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
@@ -10,6 +9,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ProjectionCoreService
@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly Guid _workerId;
 		private readonly IPublisher _publisher;
 		private readonly IPublisher _inputQueue;
-		private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
+		private readonly ILogger _logger = Log.ForContext<ProjectionCoreService>();
 
 		private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
@@ -297,7 +297,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var stateHandler = new ProjectionStateHandlerFactory().Create(
 				handlerType,
 				query,
-				logger: logger.Trace,
+				logger: logger.Verbose,
 				cancelCallbackFactory:
 				singletonTimeoutScheduler == null ? (Action<int, Action>)null : singletonTimeoutScheduler.Schedule);
 			return stateHandler;

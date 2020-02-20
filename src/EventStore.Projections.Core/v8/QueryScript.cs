@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Projections.Core.Messages;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.v8 {
 	public class QueryScript : IDisposable {
-		private readonly ILogger Log = LogManager.GetLoggerFor<QueryScript>();
+		private readonly ILogger Log = Serilog.Log.ForContext<QueryScript>();
 		private readonly PreludeScript _prelude;
 		private readonly CompiledScript _script;
 		private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();

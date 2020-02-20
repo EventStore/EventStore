@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -12,6 +11,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public enum ElectionsState {
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services {
 		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ElectionsService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ElectionsService>();
 		private static readonly IPEndPointComparer IPComparer = new IPEndPointComparer();
 
 		private readonly IPublisher _publisher;
@@ -154,7 +154,7 @@ namespace EventStore.Core.Services {
 				SendToAllExceptMe(new ElectionMessage.LeaderIsResigning(
 					_nodeInfo.InstanceId, _nodeInfo.InternalHttp));
 			} else {
-				Log.Info("ELECTIONS: ONLY LEADER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
+				Log.Information("ELECTIONS: ONLY LEADER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}
 		}
 
@@ -210,7 +210,7 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.ElectingLeader) return;
 
 			if (_nodeInfo.IsReadOnlyReplica)
-				Log.Trace("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
+				Log.Verbose("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -344,7 +344,7 @@ namespace EventStore.Core.Services {
 				ShiftToAcceptor();
 
 			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Info("ELECTIONS: READ ONLY REPLICA, NOT ACCEPTING PREPARE, NOT ELIGIBLE TO VOTE [{0}]",
+				Log.Information("ELECTIONS: READ ONLY REPLICA, NOT ACCEPTING PREPARE, NOT ELIGIBLE TO VOTE [{0}]",
 					_nodeInfo.InternalHttp);
 				return;
 			}
@@ -406,7 +406,7 @@ namespace EventStore.Core.Services {
 			var leader = GetBestLeaderCandidate(_prepareOkReceived, _servers, _lastElectedLeader,
 				_resigningLeaderInstanceId);
 			if (leader == null) {
-				Log.Trace("ELECTIONS: (V={lastAttemptedView}) NO LEADER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
+				Log.Verbose("ELECTIONS: (V={lastAttemptedView}) NO LEADER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
 				return;
 			}
@@ -563,7 +563,7 @@ namespace EventStore.Core.Services {
 				var leader = _servers.FirstOrDefault(x => x.InstanceId == _leaderProposal.InstanceId);
 				if (leader != null) {
 					_leader = _leaderProposal.InstanceId;
-					Log.Info("ELECTIONS: (V={view}) DONE. ELECTED LEADER = {leaderInfo}. ME={ownInfo}.", message.View,
+					Log.Information("ELECTIONS: (V={view}) DONE. ELECTED LEADER = {leaderInfo}. ME={ownInfo}.", message.View,
 						FormatNodeInfo(_leaderProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedLeader = _leader;
 					_resigningLeaderInstanceId = null;

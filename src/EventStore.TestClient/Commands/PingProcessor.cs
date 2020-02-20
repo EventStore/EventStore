@@ -18,7 +18,7 @@ namespace EventStore.TestClient.Commands {
 				context,
 				connectionEstablished: conn => {
 					var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), null);
-					context.Log.Info("[{ip}:{tcpPort}]: PING...", context.Client.Options.Ip,
+					context.Log.Information("[{ip}:{tcpPort}]: PING...", context.Client.Options.Ip,
 						context.Client.Options.TcpPort);
 					conn.EnqueueSend(package.AsByteArray());
 				},
@@ -28,7 +28,7 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					context.Log.Info("[{ip}:{tcpPort}]: PONG!", context.Client.Options.Ip,
+					context.Log.Information("[{ip}:{tcpPort}]: PONG!", context.Client.Options.Ip,
 						context.Client.Options.TcpPort);
 					context.Success();
 					conn.Close();

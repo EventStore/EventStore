@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using EventStore.Common.Log;
 using EventStore.Transport.Tcp.Formatting;
 using EventStore.Transport.Tcp.Framing;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpTypedConnection<T> {
-		private static readonly ILogger Log = LogManager.GetLogger("TcpTypedConnection");
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "TcpTypedConnection");
 
 		public event Action<TcpTypedConnection<T>, SocketError> ConnectionClosed;
 
@@ -77,7 +78,7 @@ namespace EventStore.Transport.Tcp {
 			try {
 				_framer.UnFrameData(data);
 			} catch (PackageFramingException exc) {
-				Log.InfoException(exc, "Invalid TCP frame received.");
+				Log.Information(exc, "Invalid TCP frame received.");
 				Close("Invalid TCP frame received.");
 				return;
 			}

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -19,10 +18,11 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json.Linq;
 using EventStore.Projections.Core.Services.Management;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Http {
 	public class ProjectionsController : CommunicationController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ProjectionsController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ProjectionsController>();
 
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json};
 
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				new[] {
 					new KeyValuePair<string, string>(
 						"Location", new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private void OnProjectionsRestart(HttpEntityManager http, UriTemplateMatch match) {
@@ -364,7 +364,7 @@ namespace EventStore.Projections.Core.Services.Http {
 							fromPosition.Tag,
 							bodyParsed.MaxEvents ?? 10));
 				},
-				x => Log.DebugException(x, "Read Request Body Failed."));
+				x => Log.Debug(x, "Read Request Body Failed."));
 		}
 
 		private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode) {
@@ -416,7 +416,7 @@ namespace EventStore.Projections.Core.Services.Http {
 							checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled,
 							trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
 					Publish(postMessage);
-				}, x => Log.DebugException(x, "Reply Text Body Failed."));
+				}, x => Log.Debug(x, "Reply Text Body Failed."));
 		}
 
 		private ResponseConfiguration

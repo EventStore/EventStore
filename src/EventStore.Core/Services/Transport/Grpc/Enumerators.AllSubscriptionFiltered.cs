@@ -10,14 +10,14 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
-using EventStore.Common.Log;
+using Serilog;
 using IEventFilter = EventStore.Core.Util.IEventFilter;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
 		public class AllSubscriptionFiltered : ISubscriptionEnumerator {
-			private static readonly ILogger Log = LogManager.GetLoggerFor<StreamSubscription>();
+			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscriptionFiltered>();
 
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
@@ -96,7 +96,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var currentPosition = _inner.CurrentPosition;
 				await _inner.DisposeAsync().ConfigureAwait(false);
-				Log.Trace("Subscription {subscriptionId} to $all:{eventFilter} reached the end, switching...",
+				Log.Verbose("Subscription {subscriptionId} to $all:{eventFilter} reached the end, switching...",
 					_subscriptionId, _eventFilter);
 
 				if (_inner is LiveStreamSubscription)
@@ -170,7 +170,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_buffer = new ConcurrentQueueWrapper<ResolvedEvent>();
 					_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 					_currentPosition = _startPosition;
-					Log.Info("Catch-up subscription {subscriptionId} to $all:{eventFilter} running...",
+					Log.Information("Catch-up subscription {subscriptionId} to $all:{eventFilter} running...",
 						_subscriptionId, _eventFilter);
 				}
 
@@ -199,7 +199,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					var (commitPosition, preparePosition) = _nextPosition.ToInt64();
 
-					Log.Trace(
+					Log.Verbose(
 						"Catch-up subscription {subscriptionId} to $all:{eventFilter} reading next page starting from {nextPosition}.",
 						_subscriptionId, _eventFilter, _nextPosition);
 
@@ -247,13 +247,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										@event.OriginalPosition.Value.CommitPosition,
 										@event.OriginalPosition.Value.PreparePosition);
 									if (position <= _startPosition) {
-										Log.Trace(
+										Log.Verbose(
 											"Catch-up subscription {subscriptionId} to $all:{eventFilter} skipped event {position}.",
 											_subscriptionId, _eventFilter, position);
 										continue;
 									}
 
-									Log.Trace(
+									Log.Verbose(
 										"Catch-up subscription {subscriptionId} to $all:{eventFilter} received event {position}.",
 										_subscriptionId, _eventFilter, position);
 
@@ -341,7 +341,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_currentPosition = currentPosition;
 					_maxBufferSizeExceeded = 0;
 
-					Log.Info("Live subscription {subscriptionId} to $all:{eventFilter} running...",
+					Log.Information("Live subscription {subscriptionId} to $all:{eventFilter} running...",
 						_subscriptionId, eventFilter);
 
 					bus.Publish(new ClientMessage.FilteredSubscribeToStream(Guid.NewGuid(), _subscriptionId,
@@ -359,7 +359,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							case ClientMessage.SubscriptionConfirmation confirmed:
 								var caughtUp = Position.FromInt64(confirmed.LastIndexedPosition,
 									confirmed.LastIndexedPosition);
-								Log.Trace(
+								Log.Verbose(
 									"Live subscription {subscriptionId} to $all:{eventFilter} confirmed at {position}.",
 									_subscriptionId, _eventFilter, caughtUp);
 								_subscriptionConfirmed.TrySetResult(caughtUp);
@@ -424,19 +424,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										@event.OriginalPosition.Value.CommitPosition,
 										@event.OriginalPosition.Value.PreparePosition);
 									if (currentPosition >= position) {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to $all:{eventFilter} skipping missed event at {position}.",
 											_subscriptionId, eventFilter, position);
 										continue;
 									}
 
 									if (position <= _subscriptionConfirmed.Task.Result) {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to $all:{eventFilter} enqueueing missed event at {position}.",
 											_subscriptionId, eventFilter, position);
 										_historicalEventBuffer.Enqueue((@event, null));
 									} else {
-										Log.Trace(
+										Log.Verbose(
 											"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position}.",
 											_subscriptionId, eventFilter, position);
 										_readHistoricalEventsCompleted.TrySetResult(true);
@@ -453,7 +453,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									completed.NextPos.CommitPosition,
 									completed.NextPos.PreparePosition);
 								if (completed.IsEndOfStream) {
-									Log.Trace(
+									Log.Verbose(
 										"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position}.",
 										_subscriptionId, eventFilter, fromPosition);
 									_readHistoricalEventsCompleted.TrySetResult(true);
@@ -473,7 +473,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 
 					void ReadHistoricalEvents(Position fromPosition) {
-						Log.Trace(
+						Log.Verbose(
 							"Live subscription {subscriptionId} to $all:{eventFilter} loading any missed events ending with {fromPosition}.",
 							_subscriptionId, eventFilter, fromPosition);
 
@@ -508,7 +508,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						_current = historicalEvent;
 						_currentPosition = position;
-						Log.Trace(
+						Log.Verbose(
 							"Live subscription {subscriptionId} to $all:{eventFilter} received event {position} historically.",
 							_subscriptionId, _eventFilter, position);
 						return true;
@@ -535,7 +535,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 
 					if (checkpoint.HasValue) {
-						Log.Trace(
+						Log.Verbose(
 							"Live subscription {subscriptionId} to $all:{eventFilter} reached checkpoint at {position}.",
 							_subscriptionId, _eventFilter, checkpoint.Value);
 
@@ -543,7 +543,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						goto ReadLoop;
 					}
 
-					Log.Trace(
+					Log.Verbose(
 						"Live subscription {subscriptionId} to $all:{eventFilter} received event {position} live.",
 						_subscriptionId, _eventFilter, resolvedEvent.OriginalPosition);
 					_current = resolvedEvent;
@@ -554,7 +554,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private void MaximumBufferSizeExceeded() {
 					Interlocked.Exchange(ref _maxBufferSizeExceeded, 1);
-					Log.Warn("Live subscription {subscriptionId} to $all:{eventFilter} buffer is full.",
+					Log.Warning("Live subscription {subscriptionId} to $all:{eventFilter} buffer is full.",
 						_subscriptionId, _eventFilter);
 
 					_liveEventBuffer.Clear();
@@ -562,7 +562,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				public ValueTask DisposeAsync() {
-					Log.Info("Live subscription {subscriptionId} to $all:{eventFilter} disposed.",
+					Log.Information("Live subscription {subscriptionId} to $all:{eventFilter} disposed.",
 						_subscriptionId,
 						_eventFilter);
 					_bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _subscriptionId,

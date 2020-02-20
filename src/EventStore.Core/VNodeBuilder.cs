@@ -4,7 +4,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -21,6 +20,7 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
 using Microsoft.AspNetCore.Hosting;
 using EventStore.Core.Settings;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -29,7 +29,7 @@ namespace EventStore.Core {
 	/// </summary>
 	public abstract class VNodeBuilder {
 		// ReSharper disable FieldCanBeMadeReadOnly.Local - as more options are added
-		protected ILogger _log;
+		protected Serilog.ILogger _log;
 
 		protected int _chunkSize;
 		protected string _dbPath;
@@ -40,7 +40,6 @@ namespace EventStore.Core {
 		protected bool _disableHTTPCaching;
 		protected bool _logHttpRequests;
 		protected bool _enableHistograms;
-		protected bool _structuredLog;
 		protected IPEndPoint _internalTcp;
 		protected IPEndPoint _internalSecureTcp;
 		protected IPEndPoint _externalTcp;
@@ -145,7 +144,7 @@ namespace EventStore.Core {
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
 		protected VNodeBuilder() {
-			_log = LogManager.GetLoggerFor<VNodeBuilder>();
+			_log = Serilog.Log.ForContext<VNodeBuilder>();
 			_statsStorage = StatsStorage.Stream;
 
 			_chunkSize = TFConsts.ChunkSize;
@@ -155,7 +154,6 @@ namespace EventStore.Core {
 			_cachedChunks = Opts.CachedChunksDefault;
 			_inMemoryDb = true;
 			_projectionType = ProjectionType.None;
-			_structuredLog = Opts.StructuredLogDefault;
 
 			_externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
 			_externalSecureTcp = null;
@@ -251,16 +249,6 @@ namespace EventStore.Core {
 			_clusterNodeCount = clusterNodeCount;
 			_prepareAckCount = quorumSize;
 			_commitAckCount = quorumSize;
-			return this;
-		}
-
-		/// <summary>
-		/// Enable structured logging
-		/// </summary>
-		/// <param name="structuredLog">Enable structured logging</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithStructuredLogging(bool structuredLog) {
-			_structuredLog = structuredLog;
 			return this;
 		}
 
@@ -1382,7 +1370,6 @@ namespace EventStore.Core {
 				_reduceFileCachePressure,
 				_initializationThreads,
 				_faultOutOfOrderProjections,
-				_structuredLog,
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
 				_logFailedAuthenticationAttempts,
@@ -1398,15 +1385,15 @@ namespace EventStore.Core {
 			var epochCheckpoint = _db.Config.EpochCheckpoint.Read();
 			var truncateCheckpoint = _db.Config.TruncateCheckpoint.Read();
 
-			_log.Info("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
-			_log.Info("{description,-25} {path}", "DATABASE:", _db.Config.Path);
-			_log.Info("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
+			_log.Information("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
+			_log.Information("{description,-25} {path}", "DATABASE:", _db.Config.Path);
+			_log.Information("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
 				writerCheckpoint, writerCheckpoint);
-			_log.Info("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
+			_log.Information("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
 				chaserCheckpoint, chaserCheckpoint);
-			_log.Info("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
+			_log.Information("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
 				epochCheckpoint, epochCheckpoint);
-			_log.Info("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
+			_log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
 				truncateCheckpoint, truncateCheckpoint);
 
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
@@ -1480,11 +1467,11 @@ namespace EventStore.Core {
 						Directory.CreateDirectory(dbPath);
 				} catch (UnauthorizedAccessException) {
 					if (dbPath == Locations.DefaultDataDirectory) {
-						log.Info(
+						log.Information(
 							"Access to path {dbPath} denied. The Event Store database will be created in {fallbackDefaultDataDirectory}",
 							dbPath, Locations.FallbackDefaultDataDirectory);
 						dbPath = Locations.FallbackDefaultDataDirectory;
-						log.Info("Defaulting DB Path to {dbPath}", dbPath);
+						log.Information("Defaulting DB Path to {dbPath}", dbPath);
 
 						if (!Directory.Exists(dbPath)) // mono crashes without this check
 							Directory.CreateDirectory(dbPath);

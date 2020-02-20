@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Core.Messaging;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public abstract class TcpDispatcher : ITcpDispatcher {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpDispatcher>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpDispatcher>();
 
 		private readonly Func<TcpPackage, IEnvelope, ClaimsPrincipal, string, string, TcpConnectionManager, Message>[][]
 			_unwrappers;
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				if (_wrappers[_wrappers.Length - 1].TryGetValue(message.GetType(), out wrapper))
 					return wrapper(message);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error while wrapping message {message}.", message);
+				Log.Error(exc, "Error while wrapping message {message}.", message);
 			}
 
 			return null;
@@ -95,7 +95,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				try {
 					return unwrapper(package, envelope, user, login, pass, connection);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while unwrapping TcpPackage with command {command}.",
+					Log.Error(exc, "Error while unwrapping TcpPackage with command {command}.",
 						package.Command);
 				}
 			}

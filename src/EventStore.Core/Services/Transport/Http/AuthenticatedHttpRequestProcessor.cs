@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
@@ -12,11 +11,12 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Microsoft.Extensions.Primitives;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http {
 	internal class AuthenticatedHttpRequestProcessor : IHandle<HttpMessage.PurgeTimedOutRequests>,
 		IHandle<AuthenticatedHttpRequestMessage> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<AuthenticatedHttpRequestProcessor>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<AuthenticatedHttpRequestProcessor>();
 
 		private readonly PairingHeap<Tuple<DateTime, HttpEntityManager>> _pending =
 			new PairingHeap<Tuple<DateTime, HttpEntityManager>>((x, y) => x.Item1 < y.Item1);
@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Http {
 						break;
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error purging timed out requests in HTTP request processor.");
+				Log.Error(exc, "Error purging timed out requests in HTTP request processor.");
 			}
 		}
 
@@ -102,11 +102,11 @@ namespace EventStore.Core.Services.Transport.Http {
 					if (!reqParams.IsDone)
 						_pending.Add(Tuple.Create(DateTime.UtcNow + reqParams.Timeout, manager));
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while handling HTTP request '{url}'.", request.Url);
+					Log.Error(exc, "Error while handling HTTP request '{url}'.", request.Url);
 					InternalServerError(httpEntity);
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Unhandled exception while processing HTTP request at {url}.",
+				Log.Error(exc, "Unhandled exception while processing HTTP request at {url}.",
 					httpEntity.RequestedUrl);
 				InternalServerError(httpEntity);
 			}

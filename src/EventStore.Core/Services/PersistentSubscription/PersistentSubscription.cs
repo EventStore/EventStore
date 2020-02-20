@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	//TODO GFY REFACTOR TO USE ACTUAL STATE MACHINE
 	public class PersistentSubscription {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscription>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscription>();
 
 		public string SubscriptionId {
 			get { return _settings.SubscriptionId; }
@@ -333,7 +333,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			string reason) {
 			lock (_lock) {
 				foreach (var id in processedEventIds) {
-					Log.Info("Message NAK'ed id {id} action to take {action} reason '{reason}'", id, action,
+					Log.Information("Message NAK'ed id {id} action to take {action} reason '{reason}'", id, action,
 						reason ?? "");
 					HandleNackedMessage(action, id, reason);
 				}
@@ -379,7 +379,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_settings.MessageParker.BeginParkMessage(resolvedEvent, reason, (e, result) => {
 				if (result != OperationResult.Success) {
 					if (count < 5) {
-						Log.Info("Unable to park message {stream}/{eventNumber} operation failed {e} retrying",
+						Log.Information("Unable to park message {stream}/{eventNumber} operation failed {e} retrying",
 							e.OriginalStreamId,
 							e.OriginalEventNumber, result);
 						ParkMessage(e, reason, count + 1);
@@ -462,7 +462,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var result = _outstandingMessages.StartMessage(message, expires);
 
 			if (result == StartMessageResult.SkippedDuplicate) {
-				Log.Warn("Skipping message {stream}/{eventNumber} with duplicate eventId {eventId}",
+				Log.Warning("Skipping message {stream}/{eventNumber} with duplicate eventId {eventId}",
 					message.ResolvedEvent.OriginalStreamId,
 					message.ResolvedEvent.OriginalEventNumber,
 					message.EventId);

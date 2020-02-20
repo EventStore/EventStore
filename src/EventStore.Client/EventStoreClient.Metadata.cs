@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
+using Microsoft.Extensions.Logging;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
@@ -12,11 +13,14 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken = default) {
 			ResolvedEvent metadata;
 
+			_log.LogDebug("Read stream metadata for {streamName}.");
+
 			try {
 				metadata = await ReadStreamAsync(Direction.Backwards, SystemStreams.MetastreamOf(streamName),
 						StreamRevision.End, 1, operationOptions, false, userCredentials, cancellationToken)
 					.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 			} catch (StreamNotFoundException) {
+				_log.LogWarning("Stream metadata for {streamName} not found.");
 				return StreamMetadataResult.None(streamName);
 			}
 

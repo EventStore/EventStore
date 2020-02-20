@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 							throw new Exception("Cannot read order stream");
 					}
 				}, () => {
-					_logger.Warn("Read backward of stream {stream} timed out. Retrying",
+					_logger.Warning("Read backward of stream {stream} timed out. Retrying",
 						_namingBuilder.GetOrderStreamName());
 					BeginLoadPrerecordedEventsChunk(checkpointTag, fromEventNumber);
 				}, Guid.NewGuid());
@@ -178,7 +178,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action) {
 			_ioDispatcher.ReadBackward(
 				streamId, eventNumber, 1, true, SystemAccounts.System, action, () => {
-					_logger.Warn("Read backward of stream {stream} timed out. Retrying", streamId);
+					_logger.Warning("Read backward of stream {stream} timed out. Retrying", streamId);
 					ReadPrerecordedEventStream(streamId, eventNumber, action);
 				}, Guid.NewGuid());
 		}

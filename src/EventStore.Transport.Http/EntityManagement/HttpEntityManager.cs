@@ -10,12 +10,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Http.EntityManagement {
 	public sealed class HttpEntityManager {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<HttpEntityManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<HttpEntityManager>();
 
 		public object AsyncState { get; set; }
 		public readonly HttpEntity HttpEntity;
@@ -97,7 +97,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (ObjectDisposedException) {
 				// ignore
 			} catch (ProtocolViolationException e) {
-				Log.ErrorException(e, "Attempt to set invalid HTTP status code occurred.");
+				Log.Error(e, "Attempt to set invalid HTTP status code occurred.");
 			}
 		}
 
@@ -107,7 +107,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (ObjectDisposedException) {
 				// ignore
 			} catch (ArgumentException e) {
-				Log.ErrorException(e,
+				Log.Error(e,
 					"Description string '{description}' did not pass validation. Status description was not set.",
 					desc);
 			}
@@ -124,7 +124,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (InvalidOperationException e) {
 				Log.Debug("Error during setting content type on HTTP response: {e}.", e.Message);
 			} catch (ArgumentOutOfRangeException e) {
-				Log.ErrorException(e, "Invalid response type.");
+				Log.Error(e, "Invalid response type.");
 			}
 		}
 
@@ -136,7 +136,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (InvalidOperationException e) {
 				Log.Debug("Error during setting content length on HTTP response: {e}.", e.Message);
 			} catch (ArgumentOutOfRangeException e) {
-				Log.ErrorException(e, "Attempt to set invalid value '{length}' as content length.", length);
+				Log.Error(e, "Attempt to set invalid value '{length}' as content length.", length);
 			}
 		}
 
@@ -306,7 +306,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 					Helper.EatException(_onComplete);
 				}
 			} catch (Exception e) {
-				Log.ErrorException(e, "Failed to set up forwarded response parameters for '{requestedUrl}'.",
+				Log.Error(e, "Failed to set up forwarded response parameters for '{requestedUrl}'.",
 					RequestedUrl);
 			}
 		}
@@ -367,18 +367,15 @@ namespace EventStore.Transport.Http.EntityManagement {
 			if (_logHttpRequests) {
 				var bodyStr = "";
 				if (body != null && body.Length > 0) {
-					bodyStr = System.Text.Encoding.Default.GetString(body);
+					bodyStr = Encoding.Default.GetString(body);
 				}
 
-				Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n" +
-				          (LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}"
+				Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n{headers}" + "\n{body}"
 					, DateTime.Now
 					, HttpEntity.Request.RemoteEndPoint.ToString()
 					, HttpEntity.Request.HttpMethod
 					, HttpEntity.Request.Url
-					, LogManager.StructuredLog
-						? (object)CreateHeaderLogStructured()
-						: (object)CreateHeaderLog()
+					, CreateHeaderLogStructured()
 					, bodyStr
 				);
 			}
@@ -388,18 +385,15 @@ namespace EventStore.Transport.Http.EntityManagement {
 			if (_logHttpRequests) {
 				var bodyStr = "";
 				if (body != null && body.Length > 0) {
-					bodyStr = System.Text.Encoding.Default.GetString(body);
+					bodyStr = Encoding.Default.GetString(body);
 				}
 
 				Log.Debug(
-					"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n" +
-					(LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}",
+					"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n{headers}\n{body}",
 					DateTime.Now,
 					HttpEntity.Response.StatusCode,
 					HttpEntity.Response.StatusDescription,
-					LogManager.StructuredLog
-						? (object)CreateHeaderLogStructured()
-						: (object)CreateHeaderLog(),
+					CreateHeaderLogStructured(),
 					bodyStr
 				);
 			}

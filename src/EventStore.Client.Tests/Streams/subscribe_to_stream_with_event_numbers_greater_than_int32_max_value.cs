@@ -3,21 +3,17 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
 	public class subscribe_to_stream_with_event_numbers_greater_than_int32_max_value
-		: IClassFixture<subscribe_to_stream_with_event_numbers_greater_than_int32_max_value.Fixture>, IDisposable {
+		: IClassFixture<subscribe_to_stream_with_event_numbers_greater_than_int32_max_value.Fixture> {
 		private const string Stream = nameof(subscribe_to_stream_with_event_numbers_greater_than_int32_max_value);
 
 		private const string LinkedStream = "linked-" + Stream;
 		private readonly Fixture _fixture;
-		private readonly IDisposable _loggingContext;
 
-		public subscribe_to_stream_with_event_numbers_greater_than_int32_max_value(Fixture fixture,
-			ITestOutputHelper outputHelper) {
+		public subscribe_to_stream_with_event_numbers_greater_than_int32_max_value(Fixture fixture) {
 			_fixture = fixture;
-			_loggingContext = LoggingHelper.Capture(outputHelper);
 		}
 
 		[Fact]
@@ -64,7 +60,5 @@ namespace EventStore.Client.Streams {
 
 			protected override string StreamName => Stream;
 		}
-
-		public void Dispose() => _loggingContext.Dispose();
 	}
 }

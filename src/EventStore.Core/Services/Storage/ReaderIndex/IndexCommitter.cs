@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
@@ -12,6 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	}
 
 	public class IndexCommitter : IIndexCommitter {
-		public static readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitter>();
+		public static readonly ILogger Log = Serilog.Log.ForContext<IndexCommitter>();
 
 		public long LastIndexedPosition => _indexChk.Read();
 
@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public void Init(long buildToPosition) {
-			Log.Info("TableIndex initialization...");
+			Log.Information("TableIndex initialization...");
 
 			_tableIndex.Initialize(buildToPosition);
 			_persistedPreparePos = _tableIndex.PrepareCheckpoint;
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var lastTime = DateTime.UtcNow;
 			var reportPeriod = TimeSpan.FromSeconds(5);
 
-			Log.Info("ReadIndex building...");
+			Log.Information("ReadIndex building...");
 
 			_indexRebuild = true;
 			using (var reader = _backend.BorrowReader()) {
@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			try {
 				_tableIndex.Close(removeFiles: false);
 			} catch (TimeoutException exc) {
-				Log.ErrorException(exc, "Timeout exception when trying to close TableIndex.");
+				Log.Error(exc, "Timeout exception when trying to close TableIndex.");
 				throw;
 			}
 		}
@@ -405,7 +405,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			try {
 				return SystemSettings.FromJsonBytes(settingsData);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error deserializing SystemSettings record.");
+				Log.Error(exc, "Error deserializing SystemSettings record.");
 			}
 
 			return null;

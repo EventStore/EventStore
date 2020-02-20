@@ -1,15 +1,15 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public abstract class CommunicationController : IHttpController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<CommunicationController>();
 		private static readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 
 		private readonly IPublisher _publisher;

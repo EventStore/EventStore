@@ -8,7 +8,6 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -27,6 +26,7 @@ using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<MiniClusterNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode>();
 
 		public IPEndPoint InternalTcpEndPoint { get; private set; }
 		public IPEndPoint InternalTcpSecEndPoint { get; private set; }
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Helpers {
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault);
 			_isReadOnlyReplica = readOnlyReplica;
 
-			Log.Info(
+			Log.Information(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n" + "{19,-25} {20}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,

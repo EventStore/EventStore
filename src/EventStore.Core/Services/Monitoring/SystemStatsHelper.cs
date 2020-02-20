@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring {
 	public class SystemStatsHelper : IDisposable {
 		internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
 
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
 		private PerfCounterHelper _perfCounter;
@@ -136,7 +136,7 @@ namespace EventStore.Core.Services.Monitoring {
 						stats["sys-cpu"] = -1;
 						break;
 				}
-				
+
 				stats["sys-freeMem"] = GetFreeMem();
 
 				var gcStats = _eventCountersHelper.GetGcStats();
@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
 				stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 			} catch (InvalidOperationException) {
-				_log.Info("Received error reading counters. Attempting to rebuild.");
+				_log.Information("Received error reading counters. Attempting to rebuild.");
 				_perfCounter = new PerfCounterHelper(_log);
 				_giveup = count > 10;
 				if (_giveup)

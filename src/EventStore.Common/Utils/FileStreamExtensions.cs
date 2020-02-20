@@ -3,12 +3,13 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using EventStore.Common.Log;
 using Microsoft.Win32.SafeHandles;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Common.Utils {
 	public static class FileStreamExtensions {
-		private static readonly ILogger Log = LogManager.GetLogger("FileStreamExtensions");
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "FileStreamExtensions");
 		private static Action<FileStream> FlushSafe;
 
 		[DllImport("kernel32.dll", SetLastError = true)]
@@ -29,7 +30,7 @@ namespace EventStore.Common.Utils {
 
 		public static void ConfigureFlush(bool disableFlushToDisk) {
 			if (disableFlushToDisk) {
-				Log.Info("FlushToDisk: DISABLED");
+				Log.Information("FlushToDisk: DISABLED");
 				FlushSafe = f => f.Flush(flushToDisk: false);
 				return;
 			}

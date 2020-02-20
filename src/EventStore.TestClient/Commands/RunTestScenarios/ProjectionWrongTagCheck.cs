@@ -41,13 +41,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
 
-				Log.Info(
+				Log.Information(
 					"=================== Start run #{iteration}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
 					GetIterationCode(),
 					(int)stopWatch.Elapsed.TotalMinutes,
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
-				Log.Info("##teamcity[message '{message}']", msg);
+				Log.Information("##teamcity[message '{message}']", msg);
 
 				var iterationTask = RunIteration();
 				iterationTask.Wait();
@@ -119,9 +119,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			});
 
 			return Task.Factory.ContinueWhenAll(new[] {writeTask, successTask}, tasks => {
-				Log.Info("Iteration {iteration} tasks completed", GetIterationCode());
+				Log.Information("Iteration {iteration} tasks completed", GetIterationCode());
 				Task.WaitAll(tasks);
-				Log.Info("Iteration {iteration} successful", GetIterationCode());
+				Log.Information("Iteration {iteration} successful", GetIterationCode());
 			});
 		}
 	}

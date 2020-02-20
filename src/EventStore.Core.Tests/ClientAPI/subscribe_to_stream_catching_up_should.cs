@@ -4,16 +4,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.Common.Log;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
 	public class subscribe_to_stream_catching_up_should : SpecificationWithDirectoryPerTestFixture {
-		private static readonly EventStore.Common.Log.ILogger Log =
-			LogManager.GetLoggerFor<subscribe_to_stream_catching_up_should>();
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext<subscribe_to_stream_catching_up_should>();
 
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(500);
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Set();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(_, __, ___) => dropped.Signal());
 
 				await Task.Delay(100); // give time for first pull phase
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(_, __, ___) => dropped.Signal());
 
 				await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped1.Set());
 				var sub2 = store.SubscribeToStreamFrom(stream,
 					null,
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped2.Set());
 
 				await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => Task.CompletedTask,
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				Assert.IsFalse(dropped.Wait(0));
 				subscription.Stop(Timeout);
@@ -172,7 +172,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				store.SubscribeToStreamFrom(stream, null,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => { throw new Exception("Error"); },
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				Assert.IsTrue(dropped.Wait(Timeout));
 			}
@@ -201,7 +201,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				for (int i = 10; i < 20; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
@@ -247,7 +247,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				for (int i = 20; i < 30; ++i) {
 					await store.AppendToStreamAsync(stream, i - 1,
@@ -297,7 +297,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						appeared.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Live processing started."),
+					_ => Log.Information("Live processing started."),
 					(x, y, z) => dropped.Signal());
 				if (!appeared.Wait(Timeout)) {
 					Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");

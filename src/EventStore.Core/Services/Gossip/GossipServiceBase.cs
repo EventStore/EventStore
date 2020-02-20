@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -10,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Gossip {
 	public abstract class GossipServiceBase : IHandle<SystemMessage.SystemInit>,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Gossip {
 		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipServiceBase>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<GossipServiceBase>();
 
 		protected readonly VNodeInfo NodeInfo;
 		protected VNodeState CurrentRole = VNodeState.Initializing;
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Gossip {
 			try {
 				_gossipSeedSource.BeginGetHostEndpoints(OnGotGossipSeedSources, null);
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error while retrieving cluster members through DNS.");
+				Log.Error(ex, "Error while retrieving cluster members through DNS.");
 				_bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope,
 					new GossipMessage.RetrieveGossipSeedSources()));
 			}
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Gossip {
 				var entries = _gossipSeedSource.EndGetHostEndpoints(ar);
 				_bus.Publish(new GossipMessage.GotGossipSeedSources(entries));
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "Error while retrieving cluster members through DNS.");
+				Log.Error(ex, "Error while retrieving cluster members through DNS.");
 				_bus.Publish(TimerMessage.Schedule.Create(DnsRetryTimeout, _publishEnvelope,
 					new GossipMessage.RetrieveGossipSeedSources()));
 			}
@@ -182,13 +182,13 @@ namespace EventStore.Core.Services.Gossip {
 				return;
 
 			if (CurrentLeader != null && node.InstanceId == CurrentLeader.InstanceId) {
-				Log.Trace(
+				Log.Debug(
 					"Leader [{leaderEndPoint}, {instanceId:B}] appears to be DEAD (Gossip send failed); wait for TCP to decide.",
 					message.Recipient, node.InstanceId);
 				return;
 			}
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
+			Log.Debug("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
 
 			var oldCluster = _cluster;
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (node == null || !node.IsAlive)
 				return;
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
+			Log.Debug("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
 			_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
 				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
@@ -215,7 +215,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Trace("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
+			Log.Debug("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
 
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster,
@@ -233,7 +233,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Trace("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
+			Log.Debug("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
 				message.Recipient);
 
 			var oldCluster = _cluster;
@@ -332,37 +332,20 @@ namespace EventStore.Core.Services.Gossip {
 		private static void LogClusterChange(ClusterInfo oldCluster, ClusterInfo newCluster, string source) {
 			var ipEndPointComparer = new IPEndPointComparer();
 
-			if (!LogManager.StructuredLog) {
-				Log.Trace("CLUSTER HAS CHANGED{0}", source.IsNotEmptyString() ? " (" + source + ")" : string.Empty);
-				Log.Trace("Old:");
-				foreach (var oldMember in oldCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint,
-					ipEndPointComparer)) {
-					Log.Trace(oldMember.ToString());
-				}
-
-				Log.Trace("New:");
-				foreach (var newMember in newCluster.Members.OrderByDescending(x => x.InternalHttpEndPoint,
-					ipEndPointComparer)) {
-					Log.Trace(newMember.ToString());
-				}
-
-				Log.Trace(new string('-', 80));
-			} else {
-				List<MemberInfo> oldMembers = oldCluster.Members
-					.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
-				List<MemberInfo> newMembers = newCluster.Members
-					.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
-				Log.Trace(
-					"CLUSTER HAS CHANGED {source}"
-					+ "\nOld:"
-					+ "\n{@oldMembers}"
-					+ "\nNew:"
-					+ "\n{@newMembers}"
-					, source.IsNotEmptyString() ? source : string.Empty
-					, oldMembers
-					, newMembers
-				);
-			}
+			List<MemberInfo> oldMembers = oldCluster.Members
+				.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
+			List<MemberInfo> newMembers = newCluster.Members
+				.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
+			Log.Debug(
+				"CLUSTER HAS CHANGED {source}"
+				+ "\nOld:"
+				+ "\n{oldMembers}"
+				+ "\nNew:"
+				+ "\n{newMembers}"
+				, source.IsNotEmptyString() ? source : string.Empty
+				, oldMembers
+				, newMembers
+			);
 		}
 	}
 }

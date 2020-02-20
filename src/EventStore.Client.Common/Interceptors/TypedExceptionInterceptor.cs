@@ -3,11 +3,12 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Client.PersistentSubscriptions;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
 namespace EventStore.Client {
-	public class TypedExceptionInterceptor : Interceptor {
+	internal class TypedExceptionInterceptor : Interceptor {
 		private readonly Action<Exception> _exceptionOccurred;
 
 		public TypedExceptionInterceptor(Action<Exception> exceptionOccurred = null) {

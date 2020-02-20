@@ -63,7 +63,7 @@ namespace EventStore.Core {
 			if (httpAuthenticationProviders == null) {
 				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			}
-			
+
 			if (readIndex == null) {
 				throw new ArgumentNullException(nameof(readIndex));
 			}
@@ -75,7 +75,7 @@ namespace EventStore.Core {
 			if (externalHttpService == null) {
 				throw new ArgumentNullException(nameof(externalHttpService));
 			}
-			
+
 			_subsystems = subsystems;
 			_mainQueue = mainQueue;
 			_httpAuthenticationProviders = httpAuthenticationProviders;
@@ -101,9 +101,13 @@ namespace EventStore.Core {
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Streams>()))
-				.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
-					inner => inner.UseRouting().UseEndpoints(endpoint =>
-						endpoint.MapGrpcService<Operations>())),
+						.UseWhen(
+							context =>
+								context.Request.Path
+									.StartsWithSegments(
+										OperationsSegment), // TODO JPB figure out how to delete this sadness
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<Operations>())),
 					(b, subsystem) => subsystem.Configure(b))
 				.Use(_externalHttpService.MidFunc);
 
@@ -112,18 +116,10 @@ namespace EventStore.Core {
 			}
 		}
 
-		private RequestDelegate RequireAuthenticated(RequestDelegate next) {
-			return context => {
-				if (context.User.HasClaim(x => x.Type == ClaimTypes.Anonymous)) {
-					context.Response.StatusCode = HttpStatusCode.Unauthorized;
-					return Task.CompletedTask;
-				}
+		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
+			.BuildServiceProvider();
 
-				return next(context);
-			};
-		}
-
-		public IServiceProvider ConfigureServices(IServiceCollection services) =>
+		public IServiceCollection ConfigureServices(IServiceCollection services) =>
 			_subsystems
 				.Aggregate(services
 						.AddRouting()
@@ -136,8 +132,16 @@ namespace EventStore.Core {
 						.AddSingleton(new Users(_mainQueue))
 						.AddSingleton(new Operations(_mainQueue))
 						.AddGrpc().Services,
-					(s, subsystem) => subsystem.ConfigureServices(s))
-				.BuildServiceProvider();
+					(s, subsystem) => subsystem.ConfigureServices(s));
+
+		private static RequestDelegate RequireAuthenticated(RequestDelegate next) =>
+			context => {
+				if (!context.User.HasClaim(x => x.Type == ClaimTypes.Anonymous)) {
+					return next(context);
+				}
+				context.Response.StatusCode = HttpStatusCode.Unauthorized;
+				return Task.CompletedTask;
+			};
 
 		public void Handle(SystemMessage.SystemReady message) => _ready = true;
 

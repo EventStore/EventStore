@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp.Framing {
 	/// <summary>
@@ -10,7 +10,7 @@ namespace EventStore.Transport.Tcp.Framing {
 	/// full message arrives.
 	/// </summary>
 	public class LengthPrefixMessageFramer : IMessageFramer {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<LengthPrefixMessageFramer>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixMessageFramer>();
 
 		public const int HeaderLength = sizeof(Int32);
 

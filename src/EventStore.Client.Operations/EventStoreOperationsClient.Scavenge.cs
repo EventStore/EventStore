@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Client.Operations {
-	public partial class EventStoreGrpcOperationsClient {
+	public partial class EventStoreOperationsClient {
 		public async Task<DatabaseScavengeResult> StartScavengeAsync(
 			int threadCount = 1,
 			int startFromChunk = 0,
