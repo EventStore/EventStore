@@ -120,7 +120,13 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				}
 
 				try {
-					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
+					#if NETCOREAPP3_1
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+					#else
+					var enabledSslProtocols = SslProtocols.Tls12;
+					#endif
+
+					_sslStream.BeginAuthenticateAsClient(targetHost, null, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					_log.Info(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.",
 						RemoteEndPoint, LocalEndPoint);
