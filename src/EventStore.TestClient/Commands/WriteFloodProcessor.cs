@@ -121,7 +121,7 @@ namespace EventStore.TestClient.Commands {
 						if (localAll % 100000 == 0) {
 							var elapsed = sw2.Elapsed;
 							sw2.Restart();
-							context.Log.Verbose(
+							context.Log.Debug(
 								"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
 								localAll, elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds,
 								succ, fail,

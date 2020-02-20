@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands {
 							if (localAll % 100000 == 0) {
 								var elapsed = sw2.Elapsed;
 								sw2.Restart();
-								context.Log.Verbose("\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s).",
+								context.Log.Debug("\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s).",
 									localAll,
 									elapsed,
 									1000.0 * 100000 / elapsed.TotalMilliseconds);
