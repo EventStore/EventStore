@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.Projections {
 		/// </summary>
 		public readonly int CheckpointUnhandledBytesThreshold = 10*1000*1000;
 		/// <summary>
-		/// Number of events that can be pending before the projection is temporarily paused.
+		/// Number of events that can be pending before the projection reading is temporarily paused.
 		/// </summary>
 		public readonly int PendingEventsThreshold = 5000;
 		/// <summary>
