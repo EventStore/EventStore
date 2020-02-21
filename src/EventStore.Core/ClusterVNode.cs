@@ -447,7 +447,8 @@ namespace EventStore.Core {
 			_externalHttpService.SetupController(infoController);
 			if (vNodeSettings.StatsOnPublic)
 				_externalHttpService.SetupController(statController);
-			_externalHttpService.SetupController(atomController);
+			if (vNodeSettings.EnableAtomPubOverHTTP) 
+				_externalHttpService.SetupController(atomController);
 			if (vNodeSettings.GossipOnPublic)
 				_externalHttpService.SetupController(gossipController);
 			_externalHttpService.SetupController(histogramController);

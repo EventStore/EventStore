@@ -97,6 +97,10 @@ namespace EventStore.ClusterNode {
 					"========================================================================================================\n");
 			}
 
+			if (opts.EnableAtomPubOverHTTP) {
+				Log.Warning("\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated in version 20.02. It is recommended to use GRPC instead.\n");
+			}
+
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
 				if (Runtime.IsWindows)
@@ -258,7 +262,8 @@ namespace EventStore.ClusterNode {
 				.WithChunkInitialReaderCount(options.ChunkInitialReaderCount)
 				.WithInitializationThreads(options.InitializationThreads)
 				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel)
-				.WithMaxAppendSize(options.MaxAppendSize);
+				.WithMaxAppendSize(options.MaxAppendSize)
+				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP);
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);

@@ -219,6 +219,11 @@ namespace EventStore.Core.Util {
 
 		public const string CertificateThumbprintDescr = "The certificate fingerprint/thumbprint.";
 		public static readonly string CertificateThumbprintDefault = string.Empty;
+		
+		public const string EnableAtomPubOverHTTPDescr =
+			"Enable AtomPub over HTTP Interface.";
+
+		public static readonly bool EnableAtomPubOverHTTPDefault = true;
 
 		/*
 		 *  SINGLE NODE OPTIONS

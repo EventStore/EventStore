@@ -19,6 +19,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly X509Certificate2 Certificate;
 		public readonly int WorkerThreads;
 		public readonly bool StartStandardProjections;
+		public readonly bool EnableAtomPubOverHTTP;
 		public readonly bool DisableHTTPCaching;
 		public readonly bool LogHttpRequests;
 		public readonly bool LogFailedAuthenticationAttempts;
@@ -158,7 +159,9 @@ namespace EventStore.Core.Cluster.Settings {
 			bool readOnlyReplica = false,
 			int maxAppendSize = 1024 * 1024,
 			Func<HttpMessageHandler> createHttpMessageHandler = null,
-			bool unsafeAllowSurplusNodes = false) {
+			bool unsafeAllowSurplusNodes = false,
+			bool enableAtomPubOverHTTP = true
+			) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -195,6 +198,7 @@ namespace EventStore.Core.Cluster.Settings {
 			Certificate = certificate;
 			WorkerThreads = workerThreads;
 			StartStandardProjections = startStandardProjections;
+			EnableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			DisableHTTPCaching = disableHTTPCaching;
 			LogHttpRequests = logHttpRequests;
 			LogFailedAuthenticationAttempts = logFailedAuthenticationAttempts;

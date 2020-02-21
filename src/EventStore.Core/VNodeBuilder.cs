@@ -18,7 +18,6 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
-using Microsoft.AspNetCore.Hosting;
 using EventStore.Core.Settings;
 using ILogger = Serilog.ILogger;
 
@@ -29,7 +28,7 @@ namespace EventStore.Core {
 	/// </summary>
 	public abstract class VNodeBuilder {
 		// ReSharper disable FieldCanBeMadeReadOnly.Local - as more options are added
-		protected Serilog.ILogger _log;
+		protected ILogger _log;
 
 		protected int _chunkSize;
 		protected string _dbPath;
@@ -40,6 +39,7 @@ namespace EventStore.Core {
 		protected bool _disableHTTPCaching;
 		protected bool _logHttpRequests;
 		protected bool _enableHistograms;
+		protected bool _enableAtomPubOverHTTP;
 		protected IPEndPoint _internalTcp;
 		protected IPEndPoint _internalSecureTcp;
 		protected IPEndPoint _externalTcp;
@@ -155,6 +155,7 @@ namespace EventStore.Core {
 			_inMemoryDb = true;
 			_projectionType = ProjectionType.None;
 
+			_enableAtomPubOverHTTP = Opts.EnableAtomPubOverHTTPDefault;
 			_externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
 			_externalSecureTcp = null;
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalTcpPortDefault);
@@ -249,6 +250,16 @@ namespace EventStore.Core {
 			_clusterNodeCount = clusterNodeCount;
 			_prepareAckCount = quorumSize;
 			_commitAckCount = quorumSize;
+			return this;
+		}
+
+		/// <summary>
+		/// Enable HTTP API Interface
+		/// </summary>
+		/// <param name="WithEnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithEnableAtomPubOverHTTP(bool enableAtomPubOverHTTP) {
+			_enableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			return this;
 		}
 
@@ -1376,7 +1387,8 @@ namespace EventStore.Core {
 				_readOnlyReplica,
 				_maxAppendSize,
 				_createHttpMessageHandler,
-				_unsafeAllowSurplusNodes);
+				_unsafeAllowSurplusNodes,
+				_enableAtomPubOverHTTP);
 
 			var infoController = new InfoController(options, _projectionType);
 

@@ -313,7 +313,10 @@ namespace EventStore.ClusterNode {
 		
 		[ArgDescription(Opts.DevDescr, Opts.AppGroup)]
 		public bool Dev { get; set; }
-
+		
+		[ArgDescription(Opts.EnableAtomPubOverHTTPDescr, Opts.InterfacesGroup)]
+		public bool EnableAtomPubOverHTTP { get; set; }
+		
 		public ClusterNodeOptions() {
 			Config = "";
 			Help = Opts.ShowHelpDefault;
@@ -364,6 +367,8 @@ namespace EventStore.ClusterNode {
 			BetterOrdering = Opts.BetterOrderingDefault;
 
 			EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
+
+			EnableAtomPubOverHTTP = Opts.EnableAtomPubOverHTTPDefault;
 
 			ExtTcpHeartbeatTimeout = Opts.ExtTcpHeartbeatTimeoutDefault;
 			IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;
