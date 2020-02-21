@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using EventStore.Core.Bus;
 using Grpc.Net.Client;
+using Serilog.Extensions.Logging;
 
 namespace EventStore.Core.Cluster {
 	public partial class EventStoreClusterClient : IDisposable {
@@ -18,6 +19,7 @@ namespace EventStore.Core.Cluster {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
+				LoggerFactory = new SerilogLoggerFactory()
 			});
 			var callInvoker = _channel.CreateCallInvoker();
 			_client = new EventStore.Cluster.Cluster.ClusterClient(callInvoker);
