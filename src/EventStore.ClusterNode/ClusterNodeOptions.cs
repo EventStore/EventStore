@@ -42,6 +42,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ExternalHttpPortDescr, Opts.InterfacesGroup)]
 		public int ExtHttpPort { get; set; }
 
+		[ArgDescription(Opts.EnableExternalTCPDescr, Opts.InterfacesGroup)]
+		public bool EnableExternalTCP { get; set; }
+		
 		[ArgDescription(Opts.InternalTcpPortDescr, Opts.InterfacesGroup)]
 		public int IntTcpPort { get; set; }
 
@@ -329,6 +332,7 @@ namespace EventStore.ClusterNode {
 			ExtIp = Opts.ExternalIpDefault;
 			IntHttpPort = Opts.InternalHttpPortDefault;
 			ExtHttpPort = Opts.ExternalHttpPortDefault;
+			EnableExternalTCP = Opts.EnableExternalTCPDefault;
 			IntTcpPort = Opts.InternalTcpPortDefault;
 			IntSecureTcpPort = Opts.InternalSecureTcpPortDefault;
 			ExtTcpPort = Opts.ExternalTcpPortDefault;

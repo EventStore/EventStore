@@ -301,6 +301,8 @@ namespace EventStore.ClusterNode {
 				builder.ValidateSslServer();
 			if (options.UseInternalSsl)
 				builder.EnableSsl();
+			if (options.EnableExternalTCP)
+				builder.EnableExternalTCP();
 			if (options.DisableInsecureTCP)
 				builder.DisableInsecureTCP();
 			if (!options.AdminOnExt)

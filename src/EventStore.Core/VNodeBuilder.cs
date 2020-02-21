@@ -66,6 +66,7 @@ namespace EventStore.Core {
 		protected int _nodePriority;
 
 		protected bool _useSsl;
+		protected bool _enableExternalTCP;
 		protected bool _disableInsecureTCP;
 		protected string _sslTargetHost;
 		protected bool _sslValidateServer;
@@ -183,6 +184,7 @@ namespace EventStore.Core {
 			_nodePriority = Opts.NodePriorityDefault;
 
 			_useSsl = Opts.UseInternalSslDefault;
+			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
 			_sslTargetHost = Opts.SslTargetHostDefault;
 			_sslValidateServer = Opts.SslValidateServerDefault;
@@ -521,6 +523,15 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableSsl() {
 			_useSsl = true;
+			return this;
+		}
+
+		/// <summary>
+		/// Enable External TCP Communication
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder EnableExternalTCP() {
+			_enableExternalTCP = true;
 			return this;
 		}
 
@@ -1388,6 +1399,7 @@ namespace EventStore.Core {
 				_maxAppendSize,
 				_createHttpMessageHandler,
 				_unsafeAllowSurplusNodes,
+				_enableExternalTCP,
 				_enableAtomPubOverHTTP);
 
 			var infoController = new InfoController(options, _projectionType);
