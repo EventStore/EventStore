@@ -24,69 +24,69 @@ message GossipRequest {
 }
 
 message ViewChangeRequest {
-	event_store.client.shared.UUID serverId = 1;
-	EndPoint serverInternalHttp = 2;
-	int32 attemptedView = 3;
+	event_store.client.shared.UUID server_id = 1;
+	EndPoint server_internal_http = 2;
+	int32 attempted_view = 3;
 }
 
 message ViewChangeProofRequest {
-	event_store.client.shared.UUID serverId = 1;
-	EndPoint serverInternalHttp = 2;
-	int32 installedView = 3;
+	event_store.client.shared.UUID server_id = 1;
+	EndPoint server_internal_http = 2;
+	int32 installed_view = 3;
 }
 
 message PrepareRequest {
-	event_store.client.shared.UUID serverId = 1;
-	EndPoint serverInternalHttp = 2;
+	event_store.client.shared.UUID server_id = 1;
+	EndPoint server_internal_http = 2;
 	int32 view = 3;
 }
 
 message PrepareOkRequest {
 	int32 view = 1;
-	event_store.client.shared.UUID serverId = 2;
-	EndPoint serverInternalHttp = 3;
-	int32 epochNumber = 4;
-	int64 epochPosition = 5;
-	event_store.client.shared.UUID epochId = 6;
-	int64 lastCommitPosition = 7;
-	int64 writerCheckpoint = 8;
-	int64 chaserCheckpoint = 9;
-	int32 nodePriority = 10;
+	event_store.client.shared.UUID server_id = 2;
+	EndPoint server_internal_http = 3;
+	int32 epoch_number = 4;
+	int64 epoch_position = 5;
+	event_store.client.shared.UUID epoch_id = 6;
+	int64 last_commit_position = 7;
+	int64 writer_checkpoint = 8;
+	int64 chaser_checkpoint = 9;
+	int32 node_priority = 10;
 }
 
 message ProposalRequest {
-	event_store.client.shared.UUID serverId = 1;
-	EndPoint serverInternalHttp = 2;
-	event_store.client.shared.UUID leaderId = 3;
-	EndPoint leaderInternalHttp = 4;
+	event_store.client.shared.UUID server_id = 1;
+	EndPoint server_internal_http = 2;
+	event_store.client.shared.UUID leader_id = 3;
+	EndPoint leader_internal_http = 4;
 	int32 view = 5;
-	int32 epochNumber = 6;
-	int64 epochPosition = 7;
-	event_store.client.shared.UUID epochId = 8;
-	int64 lastCommitPosition = 9;
-	int64 writerCheckpoint = 10;
-	int64 chaserCheckpoint = 11;
-	int32 nodePriority = 12;
+	int32 epoch_number = 6;
+	int64 epoch_position = 7;
+	event_store.client.shared.UUID epoch_id = 8;
+	int64 last_commit_position = 9;
+	int64 writer_checkpoint = 10;
+	int64 chaser_checkpoint = 11;
+	int32 node_priority = 12;
 }
 
 message AcceptRequest {
-	event_store.client.shared.UUID serverId = 1;
-	EndPoint serverInternalHttp = 2;
-	event_store.client.shared.UUID leaderId = 3;
-	EndPoint leaderInternalHttp = 4;
+	event_store.client.shared.UUID server_id = 1;
+	EndPoint server_internal_http = 2;
+	event_store.client.shared.UUID leader_id = 3;
+	EndPoint leader_internal_http = 4;
 	int32 view = 5;
 }
 
 message LeaderIsResigningRequest {
-	event_store.client.shared.UUID leaderId = 1;
-	EndPoint leaderInternalHttp = 2;
+	event_store.client.shared.UUID leader_id = 1;
+	EndPoint leader_internal_http = 2;
 }
 
 message LeaderIsResigningOkRequest {
-	event_store.client.shared.UUID leaderId = 1;
-	EndPoint leaderInternalHttp = 2;
-	event_store.client.shared.UUID serverId = 3;
-	EndPoint serverInternalHttp = 4;
+	event_store.client.shared.UUID leader_id = 1;
+	EndPoint leader_internal_http = 2;
+	event_store.client.shared.UUID server_id = 3;
+	EndPoint server_internal_http = 4;
 }
 
 message ClusterInfo {
