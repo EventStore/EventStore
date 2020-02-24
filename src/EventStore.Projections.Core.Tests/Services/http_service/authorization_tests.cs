@@ -16,19 +16,25 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 		private int _leaderId;
 
-		private HttpClient CreateHttpClient(string username, string password) =>
-			new HttpClient(new SocketsHttpHandler {
-				AllowAutoRedirect = false,
+		private HttpClient CreateHttpClient(string username, string password) {
+			var client = new HttpClient(new SocketsHttpHandler {
 				SslOptions = new SslClientAuthenticationOptions {
 					RemoteCertificateValidationCallback = delegate { return true; }
-				}
+				},
+				AllowAutoRedirect = false
 			}) {
-				Timeout = _timeout,
-				DefaultRequestHeaders = {
-					Authorization = new AuthenticationHeaderValue(
-						"Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")))
-				}
+				Timeout = _timeout
 			};
+			if (!string.IsNullOrEmpty(username)) {
+				client.DefaultRequestHeaders.Authorization =
+					new AuthenticationHeaderValue(
+						"Basic", System.Convert.ToBase64String(
+							System.Text.Encoding.ASCII.GetBytes(
+								$"{username}:{password}")));
+			}
+
+			return client;
+		}
 
 		private async Task<int> SendRequest(HttpClient client, HttpMethod method, string url, string body, string contentType) {
 			using var request = new HttpRequestMessage {Method = method, RequestUri = new Uri(url)};
@@ -114,7 +120,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			_httpClients["Ops"] = CreateHttpClient("ops", "changeit");
 			await CreateUser("user", "changeit");
 			_httpClients["User"] = CreateHttpClient("user", "changeit");
-			_httpClients["None"] = new HttpClient();
+			_httpClients["None"] = CreateHttpClient(null, null);
 		}
 
 		[OneTimeTearDown]
@@ -174,7 +180,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
 			var requiredMinAuthorizationLevel = httpEndpointTokens[2];
 
-			var url = $"http://{nodeEndpoint}{endpointUrl}";
+			var url = $"http{(useInternalEndpoint ? "s" : "")}://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -93,7 +94,7 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpEndPoint = externalTcp;
 			ExternalTcpSecEndPoint = externalTcpSec;
 			ExternalHttpEndPoint = externalHttp;
-
+			
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
@@ -106,8 +107,8 @@ namespace EventStore.Core.Tests.Helpers {
 				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
-				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
-				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
+				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
+				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
 				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				verifyDbHash: false, maxMemtableEntryCount: memTableSize,
@@ -117,7 +118,12 @@ namespace EventStore.Core.Tests.Helpers {
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
-				enableExternalTCP: true);
+				enableExternalTCP: true,
+				createHttpMessageHandler: () => new SocketsHttpHandler {
+					SslOptions = new SslClientAuthenticationOptions {
+						RemoteCertificateValidationCallback = delegate { return true; }
+					}
+				});
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(

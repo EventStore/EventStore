@@ -190,7 +190,8 @@ namespace EventStore.Core {
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
-						new UriBuilder(Uri.UriSchemeHttps, endpoint.Address.ToString(), endpoint.Port).Uri, publisher));
+						new UriBuilder(Uri.UriSchemeHttps, endpoint.Address.ToString(), endpoint.Port).Uri, publisher,
+						() => _httpMessageHandler));
 			
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
