@@ -10,11 +10,11 @@ namespace EventStore.Client.Streams
 			if (expected.Type != actual.EventType)
 				return false;
 
-			var expectedDataString = Helper.UTF8NoBom.GetString(expected.Data ?? new byte[0]);
-			var expectedMetadataString = Helper.UTF8NoBom.GetString(expected.Metadata ?? new byte[0]);
+			var expectedDataString = Helper.UTF8NoBom.GetString(expected.Data.Span);
+			var expectedMetadataString = Helper.UTF8NoBom.GetString(expected.Metadata.Span);
 
-			var actualDataString = Helper.UTF8NoBom.GetString(actual.Data ?? new byte[0]);
-			var actualMetadataDataString = Helper.UTF8NoBom.GetString(actual.Metadata ?? new byte[0]);
+			var actualDataString = Helper.UTF8NoBom.GetString(actual.Data.Span);
+			var actualMetadataDataString = Helper.UTF8NoBom.GetString(actual.Metadata.Span);
 
 			return expectedDataString == actualDataString && expectedMetadataString == actualMetadataDataString;
 		}

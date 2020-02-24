@@ -591,7 +591,7 @@ namespace EventStore.Core.Services.Storage {
 		private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, ClaimsPrincipal user, long? commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
-					var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
+					var parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(LinkToSeparator, 2);
 					long eventNumber = long.Parse(parts[0]);
 					var streamId = parts[1];
 

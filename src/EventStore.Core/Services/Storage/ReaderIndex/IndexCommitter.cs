@@ -270,9 +270,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						sb.Append(Environment.NewLine);
 						sb.Append("Type: " + p.EventType);
 						sb.Append(Environment.NewLine);
-						sb.Append("MetaData: " + Encoding.UTF8.GetString(p.Metadata));
+						sb.Append("MetaData: " + Encoding.UTF8.GetString(p.Metadata.Span));
 						sb.Append(Environment.NewLine);
-						sb.Append("Data: " + Encoding.UTF8.GetString(p.Data));
+						sb.Append("Data: " + Encoding.UTF8.GetString(p.Data.Span));
 						sb.Append(Environment.NewLine);
 					}
 
@@ -401,7 +401,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return res.Result == ReadEventResult.Success ? DeserializeSystemSettings(res.Record.Data) : null;
 		}
 
-		private static SystemSettings DeserializeSystemSettings(byte[] settingsData) {
+		private static SystemSettings DeserializeSystemSettings(ReadOnlyMemory<byte> settingsData) {
 			try {
 				return SystemSettings.FromJsonBytes(settingsData);
 			} catch (Exception exc) {

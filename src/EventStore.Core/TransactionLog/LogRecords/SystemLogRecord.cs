@@ -22,7 +22,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public readonly SystemRecordType SystemRecordType;
 		public readonly SystemRecordSerialization SystemRecordSerialization;
 		public readonly long Reserved;
-		public readonly byte[] Data;
+		public readonly ReadOnlyMemory<byte> Data;
 
 		public SystemLogRecord(long logPosition,
 			DateTime timeStamp,
@@ -84,7 +84,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			writer.Write((byte)SystemRecordSerialization);
 			writer.Write(Reserved);
 			writer.Write(Data.Length);
-			writer.Write(Data);
+			writer.Write(Data.Span);
 		}
 
 		public bool Equals(SystemLogRecord other) {

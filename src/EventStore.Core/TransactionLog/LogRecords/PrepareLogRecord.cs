@@ -51,8 +51,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public readonly Guid CorrelationId;
 		public readonly DateTime TimeStamp;
 		public readonly string EventType;
-		public readonly byte[] Data;
-		public readonly byte[] Metadata;
+		public readonly ReadOnlyMemory<byte> Data;
+		public readonly ReadOnlyMemory<byte> Metadata;
 
 		public long InMemorySize {
 			get {
@@ -83,8 +83,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			DateTime timeStamp,
 			PrepareFlags flags,
 			string eventType,
-			byte[] data,
-			byte[] metadata,
+			ReadOnlyMemory<byte> data,
+			ReadOnlyMemory<byte> metadata,
 			byte prepareRecordVersion = PrepareRecordVersion)
 			: base(LogRecordType.Prepare, prepareRecordVersion, logPosition) {
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
@@ -95,7 +95,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 			if (expectedVersion < Core.Data.ExpectedVersion.Any)
 				throw new ArgumentOutOfRangeException("expectedVersion");
-			Ensure.NotNull(data, "data");
 
 			Flags = flags;
 			TransactionPosition = transactionPosition;
@@ -108,7 +107,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			TimeStamp = timeStamp;
 			EventType = eventType ?? string.Empty;
 			Data = data;
-			Metadata = metadata ?? NoData;
+			Metadata = metadata;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
 
@@ -161,9 +160,9 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			writer.Write(TimeStamp.Ticks);
 			writer.Write(EventType);
 			writer.Write(Data.Length);
-			writer.Write(Data);
+			writer.Write(Data.Span);
 			writer.Write(Metadata.Length);
-			writer.Write(Metadata);
+			writer.Write(Metadata.Span);
 		}
 
 		public bool Equals(PrepareLogRecord other) {
@@ -179,8 +178,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			       && other.CorrelationId == CorrelationId
 			       && other.TimeStamp.Equals(TimeStamp)
 			       && other.EventType.Equals(EventType)
-			       && other.Data.SequenceEqual(Data)
-			       && other.Metadata.SequenceEqual(Metadata);
+			       && other.Data.Span.SequenceEqual(Data.Span)
+			       && other.Metadata.Span.SequenceEqual(Metadata.Span);
 		}
 
 		public override bool Equals(object obj) {

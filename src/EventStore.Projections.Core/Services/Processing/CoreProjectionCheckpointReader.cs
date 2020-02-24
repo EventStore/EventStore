@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 						CheckpointLoaded(null, null);
 					} else {
 						//TODO: check epoch and correctly set _lastWrittenCheckpointEventNumber
-						var checkpointData = Helper.UTF8NoBom.GetString(checkpoint.Data);
+						var checkpointData = Helper.UTF8NoBom.GetString(checkpoint.Data.Span);
 						_lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
 						var adjustedTag = parsed.Tag; // the same projection and epoch, handle upgrades internally
 						CheckpointLoaded(adjustedTag, checkpointData);

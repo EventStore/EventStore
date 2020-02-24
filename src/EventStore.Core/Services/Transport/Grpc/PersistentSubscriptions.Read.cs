@@ -5,14 +5,14 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Bus;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Shared;
 using EventStore.Core.Authorization;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
@@ -114,8 +114,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							? Constants.Metadata.ContentTypes.ApplicationJson
 							: Constants.Metadata.ContentTypes.ApplicationOctetStream
 					},
-					Data = ByteString.CopyFrom(e.Data),
-					CustomMetadata = ByteString.CopyFrom(e.Metadata)
+					Data = ByteString.CopyFrom(e.Data.Span),
+					CustomMetadata = ByteString.CopyFrom(e.Metadata.Span)
 				};
 			}
 

@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				SystemAccounts.System, x => {
 					if (x.Events.Length > 0) {
 						for (int i = 0; i < x.Events.Length; i++) {
-							var streamId = Helper.UTF8NoBom.GetString(x.Events[i].Event.Data);
+							var streamId = Helper.UTF8NoBom.GetString(x.Events[i].Event.Data.Span);
 							lock (_locker) {
 								_streamIdCache.PutRecord(streamId, streamId, false);
 							}

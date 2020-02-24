@@ -17,7 +17,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	}
 
 	public abstract class LogRecord {
-		public static readonly byte[] NoData = Empty.ByteArray;
+		public static readonly ReadOnlyMemory<byte> NoData = Empty.ByteArray;
 
 		public readonly LogRecordType RecordType;
 		public readonly byte Version;
@@ -53,7 +53,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos,
 			int transactionOffset,
 			string eventStreamId, long expectedVersion, PrepareFlags flags, string eventType,
-			byte[] data, byte[] metadata, DateTime? timeStamp = null) {
+			ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata, DateTime? timeStamp = null) {
 			return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset,
 				eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, eventType,
 				data, metadata);
@@ -66,7 +66,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId,
 			string eventStreamId,
-			long expectedVersion, string eventType, byte[] data, byte[] metadata,
+			long expectedVersion, string eventType, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata,
 			DateTime? timestamp = null, PrepareFlags? additionalFlags = null) {
 			return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId,
 				expectedVersion,

@@ -78,18 +78,18 @@ namespace EventStore.Core.Services {
 		public const string ScavengeMergeCompleted = "$scavengeMergeCompleted";
 		public const string ScavengeIndexCompleted = "$scavengeIndexCompleted";
 
-		public static string StreamReferenceEventToStreamId(string eventType, byte[] data) {
+		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;
 			switch (eventType) {
 				case LinkTo: {
-					string[] parts = Helper.UTF8NoBom.GetString(data).Split(_linkToSeparator, 2);
+					string[] parts = Helper.UTF8NoBom.GetString(data.Span).Split(_linkToSeparator, 2);
 					streamId = parts[1];
 					break;
 				}
 				case StreamReference:
 				case V1__StreamCreated__:
 				case V2__StreamCreated_InIndex: {
-					streamId = Helper.UTF8NoBom.GetString(data);
+					streamId = Helper.UTF8NoBom.GetString(data.Span);
 					break;
 				}
 				default:

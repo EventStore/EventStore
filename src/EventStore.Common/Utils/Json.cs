@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Xml;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -46,6 +43,11 @@ namespace EventStore.Common.Utils {
 			return result;
 		}
 
+		public static T ParseJson<T>(this ReadOnlyMemory<byte> json) {
+			var result = JsonConvert.DeserializeObject<T>(Helper.UTF8NoBom.GetString(json.Span), JsonSettings);
+			return result;
+		}
+
 		public static object DeserializeObject(JObject value, Type type, JsonSerializerSettings settings) {
 			JsonSerializer jsonSerializer = JsonSerializer.Create(settings);
 			return jsonSerializer.Deserialize(new JTokenReader(value), type);
@@ -71,6 +73,16 @@ namespace EventStore.Common.Utils {
 		public static bool IsValidJson(this byte[] value) {
 			try {
 				JToken.Parse(Helper.UTF8NoBom.GetString(value));
+			} catch {
+				return false;
+			}
+
+			return true;
+		}
+
+		public static bool IsValidJson(this ReadOnlyMemory<byte> value) {
+			try {
+				JToken.Parse(Helper.UTF8NoBom.GetString(value.Span));
 			} catch {
 				return false;
 			}

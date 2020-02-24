@@ -30,7 +30,7 @@ namespace EventStore.Client.Streams {
 			var tombstone = events.Last();
 			Assert.Equal(SystemStreams.MetastreamOf(Stream), tombstone.Event.EventStreamId);
 			Assert.Equal(SystemEventTypes.StreamMetadata, tombstone.Event.EventType);
-			var metadata = JsonSerializer.Deserialize<StreamMetadata>(tombstone.Event.Data, new JsonSerializerOptions {
+			var metadata = JsonSerializer.Deserialize<StreamMetadata>(tombstone.Event.Data.Span, new JsonSerializerOptions {
 				Converters = { StreamMetadataJsonConverter.Instance }
 			});
 			Assert.True(metadata.TruncateBefore.HasValue);

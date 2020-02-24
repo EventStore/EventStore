@@ -701,7 +701,7 @@ namespace EventStore.Projections.Core.Services.Management {
 							continue;
 						}
 
-						var projectionName = Helper.UTF8NoBom.GetString(evnt.Event.Data);
+						var projectionName = Helper.UTF8NoBom.GetString(evnt.Event.Data.Span);
 						if (string.IsNullOrEmpty(projectionName)
 						    || _projections.ContainsKey(projectionName)) {
 							_logger.Warning(

@@ -108,8 +108,8 @@ namespace EventStore.Client {
 					await call.RequestStream.WriteAsync(new AppendReq {
 						ProposedMessage = new AppendReq.Types.ProposedMessage {
 							Id = e.EventId.ToDto(),
-							Data = ByteString.CopyFrom(e.Data),
-							CustomMetadata = ByteString.CopyFrom(e.Metadata),
+							Data = ByteString.CopyFrom(e.Data.Span),
+							CustomMetadata = ByteString.CopyFrom(e.Metadata.Span),
 							Metadata = {
 								{Constants.Metadata.Type, e.Type},
 								{Constants.Metadata.ContentType, e.ContentType}

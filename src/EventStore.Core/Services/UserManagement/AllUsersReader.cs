@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.UserManagement {
 					foreach (var loginName in from eventData in result.Events
 						let @event = eventData.Event
 						where @event.EventType == UserEventType
-						let stringData = Helper.UTF8NoBom.GetString(@event.Data)
+						let stringData = Helper.UTF8NoBom.GetString(@event.Data.Span)
 						select stringData)
 						BeginReadUserDetails(loginName);
 

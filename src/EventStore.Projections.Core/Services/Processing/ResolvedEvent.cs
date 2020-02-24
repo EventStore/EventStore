@@ -48,17 +48,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Timestamp = positionEvent.TimeStamp;
 
 			//TODO: handle utf-8 conversion exception
-			Data = @event != null && @event.Data != null ? Helper.UTF8NoBom.GetString(@event.Data) : null;
-			Metadata = @event != null && @event.Metadata != null ? Helper.UTF8NoBom.GetString(@event.Metadata) : null;
+			Data = @event != null && @event.Data.Length > 0 ? Helper.UTF8NoBom.GetString(@event.Data.Span) : null;
+			Metadata = @event != null && @event.Metadata.Length > 0 ? Helper.UTF8NoBom.GetString(@event.Metadata.Span) : null;
 			PositionMetadata = _resolvedLinkTo
-				? (positionEvent.Metadata != null ? Helper.UTF8NoBom.GetString(positionEvent.Metadata) : null)
+				? (positionEvent.Metadata.Length > 0 ? Helper.UTF8NoBom.GetString(positionEvent.Metadata.Span) : null)
 				: null;
 			StreamMetadata = streamMetadata != null ? Helper.UTF8NoBom.GetString(streamMetadata) : null;
 
 			TFPos eventOrLinkTargetPosition;
 			if (_resolvedLinkTo) {
 				Dictionary<string, JToken> extraMetadata = null;
-				if (positionEvent.Metadata != null && positionEvent.Metadata.Length > 0) {
+				if (positionEvent.Metadata.Length > 0 && positionEvent.Metadata.Length > 0) {
 					//TODO: parse JSON only when unresolved link and just tag otherwise
 					CheckpointTag tag;
 					if (resolvedEvent.Link != null && resolvedEvent.Event == null) {

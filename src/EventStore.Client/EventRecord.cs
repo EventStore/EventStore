@@ -7,8 +7,8 @@ namespace EventStore.Client {
 		public readonly Uuid EventId;
 		public readonly StreamRevision EventNumber;
 		public readonly string EventType;
-		public readonly byte[] Data;
-		public readonly byte[] Metadata;
+		public readonly ReadOnlyMemory<byte> Data;
+		public readonly ReadOnlyMemory<byte> Metadata;
 		public readonly DateTime Created;
 		public readonly Position Position;
 		public readonly string ContentType;
