@@ -1,11 +1,16 @@
 using System;
+using System.Globalization;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Settings;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using Microsoft.Extensions.Primitives;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
@@ -15,6 +20,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
 			{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
+		
+		public static readonly char[] ETagSeparatorArray = { ';' };
 
 		public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher) {
 			_networkSendQueue = networkSendQueue;
@@ -39,7 +46,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Resign)),
 				OnResignNode);
+			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs,
+				SupportedCodecs, AuthorizationLevel.Ops);
 		}
+	
 
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
@@ -184,6 +194,155 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void LogReplyError(Exception exc) {
 			Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
+		}
+			private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {
+			if (manager.ResponseCodec.ContentType == ContentType.DescriptionDocJson) {
+				var stream = match.BoundVariables["stream"];
+				var accepts = (manager.HttpEntity.Request.AcceptTypes?.Length ?? 0) == 0 ||
+				              manager.HttpEntity.Request.AcceptTypes.Contains(ContentType.Any);
+				var responseStatusCode = accepts ? HttpStatusCode.NotAcceptable : HttpStatusCode.OK;
+				var responseMessage = manager.HttpEntity.Request.AcceptTypes == null
+					? "We are unable to represent the stream in the format requested."
+					: "Description Document";
+				var envelope = new SendToHttpEnvelope(
+					_networkSendQueue, manager,
+					(args, message) => {
+						var m = message as MonitoringMessage.GetPersistentSubscriptionStatsCompleted;
+						if (m == null)
+							throw new Exception("Could not get subscriptions for stream " + stream);
+
+						string[] persistentSubscriptionGroups = null;
+						if (m.Result == MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus
+							    .Success) {
+							persistentSubscriptionGroups = m.SubscriptionStats.Select(x => x.GroupName).ToArray();
+						}
+
+						manager.ReplyTextContent(
+							Format.GetDescriptionDocument(manager, stream, persistentSubscriptionGroups),
+							responseStatusCode, responseMessage,
+							manager.ResponseCodec.ContentType,
+							null,
+							e => Log.Error(e, "Error while writing HTTP response"));
+						return String.Empty;
+					},
+					(args, message) => new ResponseConfiguration(HttpStatusCode.OK, manager.ResponseCodec.ContentType,
+						manager.ResponseCodec.Encoding));
+				var cmd = new MonitoringMessage.GetStreamPersistentSubscriptionStats(envelope, stream);
+				Publish(cmd);
+				return true;
+			}
+
+			return false;
+		}
+		private void GetStreamEventsBackward(HttpEntityManager manager, UriTemplateMatch match) {
+			if (GetDescriptionDocument(manager, match))
+				return;
+			var stream = "$scavenges";
+			long eventNumber = -1;
+			int count = AtomSpecs.FeedPageSize;
+			var embed = GetEmbedLevel(manager, match);
+
+			if (stream.IsEmptyString()) {
+				SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
+				return;
+			}
+
+			bool resolveLinkTos;
+			if (!GetResolveLinkTos(manager, out resolveLinkTos, true)) {
+				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.ResolveLinkTos));
+				return;
+			}
+
+			if (!GetRequireLeader(manager, out var requireLeader)) {
+				SendBadRequest(manager, string.Format("{0} header in wrong format.", SystemHeaders.RequireLeader));
+				return;
+			}
+
+			bool headOfStream = eventNumber == -1;
+			GetStreamEventsBackward(manager, stream, eventNumber, count, resolveLinkTos, requireLeader, headOfStream,
+				embed);
+		}
+		private void GetStreamEventsBackward(HttpEntityManager manager, string stream, long eventNumber, int count,
+			bool resolveLinkTos, bool requireLeader, bool headOfStream, EmbedLevel embed) {
+			var envelope = new SendToHttpEnvelope(_networkSendQueue,
+				manager,
+				(ent, msg) =>
+					Format.GetStreamEventsBackward(ent, msg, embed, headOfStream),
+				(args, msg) => Configure.GetStreamEventsBackward(args, msg, headOfStream));
+			var corrId = Guid.NewGuid();
+			Publish(new ClientMessage.ReadStreamEventsBackward(corrId, corrId, envelope, stream, eventNumber, count,
+				resolveLinkTos, requireLeader, GetETagStreamVersion(manager), manager.User));
+		}
+		private static EmbedLevel GetEmbedLevel(HttpEntityManager manager, UriTemplateMatch match,
+			EmbedLevel htmlLevel = EmbedLevel.PrettyBody) {
+			if (manager.ResponseCodec is IRichAtomCodec)
+				return htmlLevel;
+			var rawValue = match.BoundVariables["embed"] ?? string.Empty;
+			switch (rawValue.ToLowerInvariant()) {
+				case "content":
+					return EmbedLevel.Content;
+				case "rich":
+					return EmbedLevel.Rich;
+				case "body":
+					return EmbedLevel.Body;
+				case "pretty":
+					return EmbedLevel.PrettyBody;
+				case "tryharder":
+					return EmbedLevel.TryHarder;
+				default:
+					return EmbedLevel.None;
+			}
+		}
+		private bool GetResolveLinkTos(HttpEntityManager manager, out bool resolveLinkTos, bool defaultOption = false) {
+			resolveLinkTos = defaultOption;
+			var linkToHeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.ResolveLinkTos);
+			if (StringValues.IsNullOrEmpty(linkToHeader))
+				return true;
+			if (string.Equals(linkToHeader, "False", StringComparison.OrdinalIgnoreCase)) {
+				return true;
+			}
+
+			if (string.Equals(linkToHeader, "True", StringComparison.OrdinalIgnoreCase)) {
+				resolveLinkTos = true;
+				return true;
+			}
+
+			return false;
+		}
+		private bool GetRequireLeader(HttpEntityManager manager, out bool requireLeader) {
+			requireLeader = false;
+			
+			var onlyLeader = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireLeader);
+			var onlyMaster = manager.HttpEntity.Request.GetHeaderValues(SystemHeaders.RequireMaster);
+			
+			if (StringValues.IsNullOrEmpty(onlyLeader) && StringValues.IsNullOrEmpty(onlyMaster))
+				return true;
+		
+			if (string.Equals(onlyLeader, "True", StringComparison.OrdinalIgnoreCase) ||
+			    string.Equals(onlyMaster, "True", StringComparison.OrdinalIgnoreCase)) {
+				requireLeader = true;
+				return true;
+			}
+
+			return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
+			       string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase);
+		}
+		private long? GetETagStreamVersion(HttpEntityManager manager) {
+			var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");
+			if (!StringValues.IsNullOrEmpty(etag)) {
+				// etag format is version;contenttypehash
+				var splitted = etag.ToString().Trim('\"').Split(ETagSeparatorArray);
+				if (splitted.Length == 2) {
+					var typeHash = manager.ResponseCodec.ContentType.GetHashCode()
+						.ToString(CultureInfo.InvariantCulture);
+					var res = splitted[1] == typeHash && long.TryParse(splitted[0], out var streamVersion)
+						? (long?)streamVersion
+						: null;
+					return res;
+				}
+			}
+
+			return null;
 		}
 	}
 }
