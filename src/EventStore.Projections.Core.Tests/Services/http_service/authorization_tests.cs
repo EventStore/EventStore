@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
-using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
@@ -180,7 +180,8 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
 			var requiredMinAuthorizationLevel = httpEndpointTokens[2];
 
-			var url = $"http{(useInternalEndpoint ? "s" : "")}://{nodeEndpoint}{endpointUrl}";
+			var scheme = !_nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
+			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

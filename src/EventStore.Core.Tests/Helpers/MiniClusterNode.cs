@@ -65,6 +65,10 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private TestServer _kestrelTestServer;
 
+		public bool UseHttpsInternally() {
+			return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+		}
+
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
@@ -94,7 +98,7 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpEndPoint = externalTcp;
 			ExternalTcpSecEndPoint = externalTcpSec;
 			ExternalHttpEndPoint = externalHttp;
-			
+
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
@@ -123,7 +127,8 @@ namespace EventStore.Core.Tests.Helpers {
 					SslOptions = new SslClientAuthenticationOptions {
 						RemoteCertificateValidationCallback = delegate { return true; }
 					}
-				});
+				},
+				gossipOverHttps: !UseHttpsInternally());
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(

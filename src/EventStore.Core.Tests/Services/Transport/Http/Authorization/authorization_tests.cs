@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
@@ -15,6 +15,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private readonly Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
 		private int _leaderId;
+
 
 		private HttpClient CreateHttpClient(string username, string password) {
 			var client = new HttpClient(new SocketsHttpHandler {
@@ -238,7 +239,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				return;
 			}
 
-			var url = $"http{(useInternalEndpoint ? "s" : "")}://{nodeEndpoint}{endpointUrl}";
+			var scheme = !_nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
+			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);
