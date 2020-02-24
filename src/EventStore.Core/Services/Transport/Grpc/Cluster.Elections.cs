@@ -8,12 +8,14 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Cluster {
+		private static readonly Task<Empty> EmptyResult = Task.FromResult(new Empty());
+		
 		public override Task<Empty> ViewChange(ViewChangeRequest request, ServerCallContext context) {
 			_bus.Publish(new ElectionMessage.ViewChange(
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
 				request.AttemptedView));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 		
 		public override Task<Empty> ViewChangeProof(ViewChangeProofRequest request, ServerCallContext context) {
@@ -21,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
 				request.InstalledView));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 		
 		public override Task<Empty> Prepare(PrepareRequest request, ServerCallContext context) {
@@ -29,7 +31,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
 				request.View));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 	
 		public override Task<Empty> PrepareOk(PrepareOkRequest request, ServerCallContext context) {
@@ -44,7 +46,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
 				request.NodePriority));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 				
 		public override Task<Empty> Proposal(ProposalRequest request, ServerCallContext context) {
@@ -61,7 +63,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
 				request.NodePriority));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 
 		public override Task<Empty> Accept(AcceptRequest request, ServerCallContext context) {
@@ -73,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address),
 					(int)request.LeaderInternalHttp.Port),
 				request.View));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 
 		public override Task<Empty> LeaderIsResigning(LeaderIsResigningRequest request, ServerCallContext context) {
@@ -81,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Uuid.FromDto(request.LeaderId).ToGuid(),
 				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address),
 					(int)request.LeaderInternalHttp.Port)));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 		
 		public override Task<Empty> LeaderIsResigningOk(LeaderIsResigningOkRequest request, ServerCallContext context) {
@@ -92,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address),
 					(int)request.ServerInternalHttp.Port)));
-			return Task.FromResult(new Empty());
+			return EmptyResult;
 		}
 	}
 }

@@ -57,7 +57,7 @@ namespace EventStore.Core.Services {
 						.SendLeaderIsResigningOk(resigningOk, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				default:
-					throw new NotImplementedException($"Message of type {message.GetType().Name} cannot be handled.");
+					throw new NotImplementedException($"Message of type {message.Message.GetType().Name} cannot be handled.");
 			}
 		}
 	}
