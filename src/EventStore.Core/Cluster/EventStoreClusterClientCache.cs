@@ -47,9 +47,8 @@ namespace EventStore.Core.Cluster {
 				return _clientFactory(endpoint, _bus);
 			});
 		}
-        
-		private static void EvictionCallback(object key, object value, EvictionReason reason, object state)
-		{
+
+		private static void EvictionCallback(object key, object value, EvictionReason reason, object state) {
 			if (value is IDisposable disposable) {
 				disposable.Dispose();
 			}

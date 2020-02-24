@@ -187,14 +187,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/streams/%24all/00000000000000000000000000000000/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/{count}?embed={embed} */
 				"/streams/%24all/head/backward/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/backward/{count}?embed={embed} */
 				/* ------------------------------------------------------------- */
-				"/gossip;GET;None",
-				"/gossip;POST;None",
-				"/elections/viewchange;POST;None",
-				"/elections/viewchangeproof;POST;None",
-				"/elections/prepare;POST;None",
-				"/elections/prepareok;POST;None",
-				"/elections/proposal;POST;None",
-				"/elections/accept;POST;None",
 				"/histogram/{name};GET;Ops",
 				"/subscriptions;GET;User",
 				"/subscriptions/{stream};GET;User",
@@ -239,7 +231,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				return;
 			}
 
-			var scheme = !_nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
+			var scheme = _nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
 			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;

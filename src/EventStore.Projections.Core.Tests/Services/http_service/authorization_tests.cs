@@ -180,7 +180,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
 			var requiredMinAuthorizationLevel = httpEndpointTokens[2];
 
-			var scheme = !_nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
+			var scheme = _nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
 			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;

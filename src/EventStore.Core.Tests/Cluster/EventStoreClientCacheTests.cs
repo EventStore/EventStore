@@ -40,18 +40,15 @@ namespace EventStore.Core.Tests.Cluster {
 		[Test]
 		public async Task CleansCacheOnThreshold() {
 			var interval = TimeSpan.FromMinutes(30);
-			var oldItemThreshold = TimeSpan.FromSeconds(2);
+			var oldItemThreshold = TimeSpan.FromMilliseconds(500);
 			var sut = new EventStoreClusterClientCache(new FakePublisher(), EventStoreClusterClientFactory, interval,
 				oldItemThreshold);
 			var oldClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
 
 			sut.Handle(new ClusterClientMessage.CleanCache());
+			await Task.Delay(oldItemThreshold.Add(TimeSpan.FromMilliseconds(500)));
+			
 			var newClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
-			Assert.AreEqual(oldClient, newClient);
-
-			await Task.Delay(oldItemThreshold);
-
-			sut.Handle(new ClusterClientMessage.CleanCache());
 			newClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
 			Assert.AreNotEqual(oldClient, newClient);
 		}
@@ -70,13 +67,13 @@ namespace EventStore.Core.Tests.Cluster {
 		[Test]
 		public async Task ShouldDisposeClientOnceEvictedFromCache() {
 			var interval = TimeSpan.FromMinutes(30);
-			var oldItemThreshold = TimeSpan.FromSeconds(2);
+			var oldItemThreshold = TimeSpan.FromMilliseconds(500);
 			var sut = new EventStoreClusterClientCache(new FakePublisher(), EventStoreClusterClientFactory, interval,
 				oldItemThreshold);
 			var client = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
 			Assert.NotNull(client);
 
-			await Task.Delay(oldItemThreshold);
+			await Task.Delay(oldItemThreshold.Add(TimeSpan.FromMilliseconds(500)));
 			sut.Handle(new ClusterClientMessage.CleanCache());
 			// Give the cache enough time to dispose the client
 			await Task.Delay(oldItemThreshold);

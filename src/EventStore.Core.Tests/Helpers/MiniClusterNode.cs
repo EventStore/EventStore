@@ -26,6 +26,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 
@@ -66,7 +67,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private TestServer _kestrelTestServer;
 
 		public bool UseHttpsInternally() {
-			return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 		}
 
 		public MiniClusterNode(
@@ -75,6 +76,12 @@ namespace EventStore.Core.Tests.Helpers {
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
+			}
+			
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -128,7 +135,7 @@ namespace EventStore.Core.Tests.Helpers {
 						RemoteCertificateValidationCallback = delegate { return true; }
 					}
 				},
-				gossipOverHttps: !UseHttpsInternally());
+				gossipOverHttps: UseHttpsInternally());
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(
@@ -150,7 +157,13 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
-					o.Listen(InternalHttpEndPoint, options => options.UseHttps());
+					o.Listen(InternalHttpEndPoint, options => {
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+							options.Protocols = HttpProtocols.Http2;
+						} else { 
+							options.UseHttps();
+						}
+					});
 					o.Listen(ExternalHttpEndPoint);
 				})
 				.UseStartup(Node.Startup)
