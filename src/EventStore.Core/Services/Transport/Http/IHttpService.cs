@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http.EntityManagement;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
+using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public interface IHttpController {
@@ -27,6 +24,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		ServiceAccessibility Accessibility { get; }
 		bool IsListening { get; }
 		IEnumerable<IPEndPoint> EndPoints { get; }
+		IEnumerable<ControllerAction> Actions { get; }
 
 		List<UriToActionMatch> GetAllUriMatches(Uri uri);
 		void SetupController(IHttpController controller);
@@ -38,6 +36,6 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		void Shutdown();
 
-		MidFunc MidFunc { get; }
+		RequestDelegate AppFunc { get; }
 	}
 }

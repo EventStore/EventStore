@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.EntityManagement;
 
@@ -7,6 +9,7 @@ namespace EventStore.Core.Services.Transport.Http {
 	public interface IUriRouter {
 		void RegisterAction(ControllerAction action, Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler);
 		List<UriToActionMatch> GetAllUriMatches(Uri uri);
+		IEnumerable<ControllerAction> Actions { get; }
 	}
 
 	public class TrieUriRouter : IUriRouter {
@@ -14,6 +17,11 @@ namespace EventStore.Core.Services.Transport.Http {
 		private const string GreedyPlaceholder = "{*}";
 
 		private readonly RouterNode _root = new RouterNode();
+		private readonly List<ControllerAction> _registeredRoutes;
+
+		public TrieUriRouter() {
+			_registeredRoutes = new List<ControllerAction>();
+		}
 
 		public void RegisterAction(ControllerAction action,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler) {
@@ -40,6 +48,8 @@ namespace EventStore.Core.Services.Transport.Http {
 			if (node.LeafRoutes.Contains(x => x.Action.Equals(action)))
 				throw new ArgumentException("Duplicate route.");
 			node.LeafRoutes.Add(new HttpRoute(action, handler));
+
+			_registeredRoutes.Add(action);
 		}
 
 		public List<UriToActionMatch> GetAllUriMatches(Uri uri) {
@@ -56,6 +66,8 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			return matches;
 		}
+
+		public IEnumerable<ControllerAction> Actions => _registeredRoutes;
 
 		private void GetAllUriMatches(RouterNode node, Uri baseAddress, Uri uri, string[] segments, int index,
 			List<UriToActionMatch> matches) {
@@ -96,6 +108,8 @@ namespace EventStore.Core.Services.Transport.Http {
 
 	public class NaiveUriRouter : IUriRouter {
 		private readonly List<HttpRoute> _actions = new List<HttpRoute>();
+
+		public IEnumerable<ControllerAction> Actions => _actions.Select(x => x.Action);
 
 		public void RegisterAction(ControllerAction action,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler) {

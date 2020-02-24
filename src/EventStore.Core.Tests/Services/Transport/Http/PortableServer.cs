@@ -40,18 +40,17 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_timeout = TimeSpan.FromMilliseconds(timeout);
 		}
 
-		public void SetUp() {
+		public void SetUp(Action<IHttpService> bootstrap = null) {
 			_bus = new InMemoryBus($"bus_{_serverEndPoint.Port}");
 			var pipelineBus = InMemoryBus.CreateTest();
 			var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
 			_multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
 			_multiQueuedHandler.Start();
-			var httpAuthenticationProviders = new IHttpAuthenticationProvider[]
-				{new AnonymousHttpAuthenticationProvider()};
 
 			_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
 				_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
 			KestrelHttpService.CreateAndSubscribePipeline(pipelineBus);
+			bootstrap?.Invoke(_service);
 			_server = new TestServer(
 				new WebHostBuilder()
 					.UseStartup(new HttpServiceStartup(_service)));
@@ -75,12 +74,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_bus.Publish(message);
 		}
 
-		public Tuple<bool, string> StartServiceAndSendRequest(Action<IHttpService> bootstrap,
-			string requestUrl,
+		public Tuple<bool, string> StartServiceAndSendRequest(string requestUrl,
 			Func<HttpResponse, bool> verifyResponse) {
 			_bus.Publish(new SystemMessage.SystemInit());
-
-			bootstrap(_service);
 
 			var signal = new AutoResetEvent(false);
 			var success = false;
@@ -101,15 +97,17 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			return new Tuple<bool, string>(success, error);
 		}
 
-		class HttpServiceStartup : IStartup {
+		private class HttpServiceStartup : IStartup {
 			private readonly KestrelHttpService _httpService;
 
 			public HttpServiceStartup(KestrelHttpService httpService) {
 				_httpService = httpService;
 			}
-			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
+			public IServiceProvider ConfigureServices(IServiceCollection services) => services
+				.AddRouting()
+				.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) => app.Use(_httpService.MidFunc);
+			public void Configure(IApplicationBuilder app) => app.UseLegacyHttp(_httpService);
 		}
 	}
 }

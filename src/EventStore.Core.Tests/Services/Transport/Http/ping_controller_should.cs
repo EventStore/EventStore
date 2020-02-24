@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		[SetUp]
 		public void SetUp() {
-			_portableServer.SetUp();
+			_portableServer.SetUp(HttpBootstrap.RegisterPing);
 		}
 
 		[TearDown]
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			Func<HttpResponse, bool> verifier = response =>
 				Codec.Json.From<HttpMessage.TextMessage>(response.Body) != null;
 
-			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
 			Assert.IsTrue(result.Item1, result.Item2);
 		}
 
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				ContentType.Json,
 				StringComparison.InvariantCultureIgnoreCase);
 
-			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
 			Assert.IsTrue(result.Item1, result.Item2);
 		}
 
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				ContentType.Xml,
 				StringComparison.InvariantCultureIgnoreCase);
 
-			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
 			Assert.IsTrue(result.Item1, result.Item2);
 		}
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				ContentType.PlainText,
 				StringComparison.InvariantCultureIgnoreCase);
 
-			var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
+			var result = _portableServer.StartServiceAndSendRequest(url, verifier);
 			Assert.IsTrue(result.Item1, result.Item2);
 		}
 

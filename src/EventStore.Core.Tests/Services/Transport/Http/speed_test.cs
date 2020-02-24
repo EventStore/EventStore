@@ -219,9 +219,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			public HttpServiceStartup(KestrelHttpService httpService) {
 				_httpService = httpService;
 			}
-			public IServiceProvider ConfigureServices(IServiceCollection services) => services.BuildServiceProvider();
+			public IServiceProvider ConfigureServices(IServiceCollection services) => services
+				.AddRouting()
+				.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) => app.Use(_httpService.MidFunc);
+			public void Configure(IApplicationBuilder app) => app.UseLegacyHttp(_httpService);
 		}
 	}
 }

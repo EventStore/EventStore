@@ -68,9 +68,6 @@ namespace EventStore.Core {
 			get { return _externalHttpService; }
 		}
 
-		public MidFunc InternalHttp => _internalHttpService?.MidFunc ?? ((context, next) => next());
-		public MidFunc ExternalHttp => _externalHttpService.MidFunc;
-
 		public IReadIndex ReadIndex => _readIndex;
 
 		public TimerService TimerService {
@@ -485,9 +482,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
 			}
 
-			SubscribeWorkers(bus => {
-				KestrelHttpService.CreateAndSubscribePipeline(bus);
-			});
+			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 
 			// REQUEST FORWARDING
 			var forwardingService = new RequestForwardingService(_mainQueue, forwardingProxy, TimeSpan.FromSeconds(1));
@@ -702,13 +697,6 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
-
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, httpAuthenticationProviders, _readIndex,
-				_vNodeSettings, _externalHttpService, _internalHttpService);
-
-			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
-			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
-
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
@@ -725,6 +713,11 @@ namespace EventStore.Core {
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
+
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, httpAuthenticationProviders, _readIndex,
+				_vNodeSettings, _externalHttpService, _internalHttpService);
+			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {
