@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Cluster {
 		[Test]
 		public async Task CleansCacheOnThreshold() {
 			var interval = TimeSpan.FromMinutes(30);
-			var oldItemThreshold = TimeSpan.FromSeconds(1);
+			var oldItemThreshold = TimeSpan.FromSeconds(2);
 			var sut = new EventStoreClusterClientCache(new FakePublisher(), EventStoreClusterClientFactory, interval,
 				oldItemThreshold);
 			var oldClient = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Cluster {
 		[Test]
 		public async Task ShouldDisposeClientOnceEvictedFromCache() {
 			var interval = TimeSpan.FromMinutes(30);
-			var oldItemThreshold = TimeSpan.FromMilliseconds(200);
+			var oldItemThreshold = TimeSpan.FromSeconds(2);
 			var sut = new EventStoreClusterClientCache(new FakePublisher(), EventStoreClusterClientFactory, interval,
 				oldItemThreshold);
 			var client = sut.Get(new IPEndPoint(IPAddress.Loopback, 1113));
