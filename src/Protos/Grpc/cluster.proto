@@ -3,10 +3,12 @@ package event_store.cluster;
 
 import "shared.proto";
 
-service Cluster {
-	rpc Gossip (GossipRequest) returns (ClusterInfo);
-	rpc GetGossip (event_store.client.shared.Empty) returns (ClusterInfo);
-	
+service Gossip {
+	rpc Update (GossipRequest) returns (ClusterInfo);
+	rpc Read (event_store.client.shared.Empty) returns (ClusterInfo);
+}
+
+service Elections {	
 	rpc ViewChange (ViewChangeRequest) returns (event_store.client.shared.Empty);
 	rpc ViewChangeProof (ViewChangeProofRequest) returns (event_store.client.shared.Empty);
 	rpc Prepare (PrepareRequest) returns (event_store.client.shared.Empty);

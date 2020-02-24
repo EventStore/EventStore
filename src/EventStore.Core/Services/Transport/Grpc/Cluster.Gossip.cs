@@ -8,14 +8,14 @@ using EventStore.Core.Messaging;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Cluster {
+	partial class Gossip {
 		private readonly IPublisher _bus;
 
-		public Cluster(IPublisher bus) {
+		public Gossip(IPublisher bus) {
 			_bus = bus;
 		}
 
-		public override async Task<ClusterInfo> Gossip(GossipRequest request, ServerCallContext context) {
+		public override async Task<ClusterInfo> Update(GossipRequest request, ServerCallContext context) {
 			var clusterInfo = EventStore.Core.Cluster.ClusterInfo.FromGrpcClusterInfo(request.Info);
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			return await tcs.Task.ConfigureAwait(false);
 		}
 
-		public override async Task<ClusterInfo> GetGossip(Empty request, ServerCallContext context) {
+		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
 				new EventStore.Core.Cluster.ClusterInfo(), null));

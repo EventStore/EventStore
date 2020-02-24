@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
-using EventStore.Common.Log;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using ILogger = Serilog.ILogger;
@@ -44,12 +41,12 @@ namespace EventStore.Core.Cluster {
 				Info = ClusterInfo.ToGrpcClusterInfo(clusterInfo),
 				Server = new EndPoint(server.Address.ToString(), (uint)server.Port)
 			};
-			var clusterInfoDto = await _client.GossipAsync(request, deadline: deadline.ToUniversalTime());
+			var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime());
 			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto);
 		}
 
 		private async Task<ClusterInfo> GetGossipAsync(DateTime deadline) {
-			var clusterInfoDto = await _client.GetGossipAsync(new Empty(), deadline: deadline.ToUniversalTime());
+			var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime());
 			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto);
 		}
 	}

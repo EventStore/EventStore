@@ -100,7 +100,7 @@ namespace EventStore.Core.Cluster {
 				ServerInternalHttp = new EndPoint(serverInternalHttp.Address.ToString(), (uint)serverInternalHttp.Port),
 				AttemptedView = attemptedView
 			};
-			await _client.ViewChangeAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ViewChangeAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendViewChangeProofAsync(Guid serverId, IPEndPoint serverInternalHttp, int installedView,
@@ -110,7 +110,7 @@ namespace EventStore.Core.Cluster {
 				ServerInternalHttp = new EndPoint(serverInternalHttp.Address.ToString(), (uint)serverInternalHttp.Port),
 				InstalledView = installedView
 			};
-			await _client.ViewChangeProofAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ViewChangeProofAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendPrepareAsync(Guid serverId, IPEndPoint serverInternalHttp, int view, DateTime deadline) {
@@ -119,7 +119,7 @@ namespace EventStore.Core.Cluster {
 				ServerInternalHttp = new EndPoint(serverInternalHttp.Address.ToString(), (uint)serverInternalHttp.Port),
 				View = view
 			};
-			await _client.PrepareAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.PrepareAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendPrepareOkAsync(int view, Guid serverId, IPEndPoint serverInternalHttp, int epochNumber,
@@ -137,7 +137,7 @@ namespace EventStore.Core.Cluster {
 				ChaserCheckpoint = chaserCheckpoint,
 				NodePriority = nodePriority
 			};
-			await _client.PrepareOkAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.PrepareOkAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendProposalAsync(Guid serverId, IPEndPoint serverInternalHttp, Guid leaderId,
@@ -158,7 +158,7 @@ namespace EventStore.Core.Cluster {
 				ChaserCheckpoint = chaserCheckpoint,
 				NodePriority = nodePriority
 			};
-			await _client.ProposalAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ProposalAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendAcceptAsync(Guid serverId, IPEndPoint serverInternalHttp, Guid leaderId,
@@ -170,8 +170,8 @@ namespace EventStore.Core.Cluster {
 				LeaderInternalHttp = new EndPoint(leaderInternalHttp.Address.ToString(), (uint)leaderInternalHttp.Port),
 				View = view
 			};
-			await _client.AcceptAsync(request);
-			_client.Accept(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.AcceptAsync(request);
+			_electionsClient.Accept(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendLeaderIsResigningAsync(Guid leaderId, IPEndPoint leaderInternalHttp, DateTime deadline) {
@@ -179,7 +179,7 @@ namespace EventStore.Core.Cluster {
 				LeaderId = Uuid.FromGuid(leaderId).ToDto(),
 				LeaderInternalHttp = new EndPoint(leaderInternalHttp.Address.ToString(), (uint)leaderInternalHttp.Port),
 			};
-			await _client.LeaderIsResigningAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.LeaderIsResigningAsync(request, deadline: deadline.ToUniversalTime());
 		}
 
 		private async Task SendLeaderIsResigningOkAsync(Guid leaderId, IPEndPoint leaderInternalHttp,
@@ -190,7 +190,7 @@ namespace EventStore.Core.Cluster {
 				ServerId = Uuid.FromGuid(serverId).ToDto(),
 				ServerInternalHttp = new EndPoint(serverInternalHttp.Address.ToString(), (uint)serverInternalHttp.Port),
 			};
-			await _client.LeaderIsResigningOkAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.LeaderIsResigningOkAsync(request, deadline: deadline.ToUniversalTime());
 		}
 	}
 }

@@ -6,8 +6,11 @@ using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 
 namespace EventStore.Core.Cluster {
+	
 	public partial class EventStoreClusterClient : IDisposable {
-		private readonly EventStore.Cluster.Cluster.ClusterClient _client;
+		private readonly EventStore.Cluster.Gossip.GossipClient _gossipClient;
+		private readonly EventStore.Cluster.Elections.ElectionsClient _electionsClient;
+		
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
 		internal bool Disposed { get; private set; }
@@ -22,7 +25,8 @@ namespace EventStore.Core.Cluster {
 				LoggerFactory = new SerilogLoggerFactory()
 			});
 			var callInvoker = _channel.CreateCallInvoker();
-			_client = new EventStore.Cluster.Cluster.ClusterClient(callInvoker);
+			_gossipClient = new EventStore.Cluster.Gossip.GossipClient(callInvoker);
+			_electionsClient = new EventStore.Cluster.Elections.ElectionsClient(callInvoker);
 			_bus = bus;
 		}
 

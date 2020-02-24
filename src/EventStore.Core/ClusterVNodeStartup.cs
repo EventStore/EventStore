@@ -21,7 +21,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-using ClusterService = EventStore.Core.Services.Transport.Grpc.Cluster;
+using ElectionsService = EventStore.Core.Services.Transport.Grpc.Elections;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -32,7 +32,8 @@ namespace EventStore.Core {
 		private static readonly PathString StreamsSegment = "/event_store.client.streams.Streams";
 		private static readonly PathString UsersSegment = "/event_store.client.users.Users";
 		private static readonly PathString OperationsSegment = "/event_store.client.operations.Operations";
-		private static readonly PathString ClusterSegment = "/event_store.cluster.Cluster";
+		private static readonly PathString GossipSegment = "/event_store.cluster.Gossip";
+		private static readonly PathString ElectionsSegment = "/event_store.cluster.Elections";
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IQueuedHandler _mainQueue;
@@ -102,9 +103,12 @@ namespace EventStore.Core {
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Streams>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(ClusterSegment),
+						.UseWhen(context => context.Request.Path.StartsWithSegments(GossipSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<ClusterService>()))
+								endpoint.MapGrpcService<Gossip>()))
+						.UseWhen(context => context.Request.Path.StartsWithSegments(ElectionsSegment),
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<Elections>()))
 						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Operations>())),
@@ -130,7 +134,8 @@ namespace EventStore.Core {
 						.AddSingleton(new PersistentSubscriptions(_mainQueue))
 						.AddSingleton(new Users(_mainQueue))
 						.AddSingleton(new Operations(_mainQueue))
-						.AddSingleton(new ClusterService(_mainQueue))
+						.AddSingleton(new Gossip(_mainQueue))
+						.AddSingleton(new Elections(_mainQueue))
 						.AddGrpc().Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 

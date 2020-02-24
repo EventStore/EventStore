@@ -8,9 +8,15 @@ using EventStore.Client;
 using Grpc.Core;
 
 namespace EventStore.Cluster {
-	partial class Cluster {
-		partial class ClusterBase : ServiceBase {
+	partial class Gossip {
+		partial class GossipBase : ServiceBase {
 			
+		}
+	}
+
+	partial class Elections {
+		partial class ElectionsBase : ServiceBase {
+
 		}
 	}
 }

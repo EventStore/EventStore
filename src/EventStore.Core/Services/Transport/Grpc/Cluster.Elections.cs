@@ -3,12 +3,18 @@ using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Cluster {
+	partial class Elections {
 		private static readonly Task<Empty> EmptyResult = Task.FromResult(new Empty());
+		private readonly IPublisher _bus;
+
+		public Elections(IPublisher bus) {
+			_bus = bus;
+		}
 		
 		public override Task<Empty> ViewChange(ViewChangeRequest request, ServerCallContext context) {
 			_bus.Publish(new ElectionMessage.ViewChange(
