@@ -249,10 +249,10 @@ namespace EventStore.Core.Util {
 		public const int GossipAllowedDifferenceMsDefault = 60000;
 
 		public const string GossipIntervalMsDescr = "The interval, in ms, nodes should try to gossip with each other.";
-		public const int GossipIntervalMsDefault = 1000;
+		public const int GossipIntervalMsDefault = 2000;
 
 		public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
-		public const int GossipTimeoutMsDefault = 500;
+		public const int GossipTimeoutMsDefault = 2500;
 
 		public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external HTTP endpoint";
 		public const bool AdminOnExtDefault = true;
