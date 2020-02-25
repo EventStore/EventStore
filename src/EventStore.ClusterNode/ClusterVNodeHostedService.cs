@@ -58,6 +58,20 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
+				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTls)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTls)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
 				return x;
 			});
 		}
@@ -96,6 +110,7 @@ namespace EventStore.ClusterNode {
 					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
 					" - NOT WRITE ANY DATA TO DISK.\n" +
 					" - USE A SELF SIGNED CERTIFICATE.\n" +
+					" - DISABLE TLS FOR INTERNAL AND EXTERNAL TCP CONNECTIONS.\n" +
 					"========================================================================================================\n");
 			}
 
@@ -185,7 +200,7 @@ namespace EventStore.ClusterNode {
 
 			if (!options.DisableInternalTls) {
 				if (ReferenceEquals(options.TlsTargetHost, Opts.TlsTargetHostDefault))
-					throw new Exception("No TLS target host specified.");
+					throw new Exception("TLS target host needs to be specified unless development mode (--dev) is set.");
 			}
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
