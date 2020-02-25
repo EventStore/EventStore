@@ -41,7 +41,6 @@ namespace EventStore.Core {
 		private readonly IReadIndex _readIndex;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly KestrelHttpService _externalHttpService;
-		private readonly KestrelHttpService _internalHttpService;
 		private readonly StatusCheck _statusCheck;
 
 		private bool _ready;
@@ -52,8 +51,7 @@ namespace EventStore.Core {
 			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
 			IReadIndex readIndex,
 			ClusterVNodeSettings vNodeSettings,
-			KestrelHttpService externalHttpService,
-			KestrelHttpService internalHttpService = null) {
+			KestrelHttpService externalHttpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -84,7 +82,6 @@ namespace EventStore.Core {
 			_readIndex = readIndex;
 			_vNodeSettings = vNodeSettings;
 			_externalHttpService = externalHttpService;
-			_internalHttpService = internalHttpService;
 
 			_statusCheck = new StatusCheck(this);
 		}
@@ -114,9 +111,7 @@ namespace EventStore.Core {
 								endpoint.MapGrpcService<Operations>())),
 					(b, subsystem) => subsystem.Configure(b));
 
-			app.UseLegacyHttp(_internalHttpService == null
-				? new[] {_externalHttpService}
-				: new[] {_externalHttpService, _internalHttpService});
+			app.UseLegacyHttp(_externalHttpService);
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)

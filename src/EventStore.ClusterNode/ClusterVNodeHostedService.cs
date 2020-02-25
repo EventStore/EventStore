@@ -134,11 +134,6 @@ namespace EventStore.ClusterNode {
 		}
 
 		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options) {
-			if (Node.InternalHttpService != null) {
-				Node.InternalHttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
-					enabledNodeSubsystems));
-			}
-
 			if (options.AdminOnExt) {
 				Node.ExternalHttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
 					enabledNodeSubsystems));

@@ -140,10 +140,6 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 				"Admin"
 			)] string userAuthorizationLevel,
 			[Values(
-				false,
-				true
-			)] bool useInternalEndpoint,
-			[Values(
 				"/web/es/js/projections/{*remaining_path};GET;None",
 				"/web/es/js/projections/v8/Prelude/{*remaining_path};GET;None",
 				"/web/projections;GET;None",
@@ -174,14 +170,13 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			)] string httpEndpointDetails
 		) {
 			/*use the leader node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
+			var nodeEndpoint = _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
 			var requiredMinAuthorizationLevel = httpEndpointTokens[2];
 
-			var scheme = _nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
-			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
+			var url = $"http://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

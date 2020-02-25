@@ -145,10 +145,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"Admin"
 			)] string userAuthorizationLevel,
 			[Values(
-				false,
-				true
-			)] bool useInternalEndpoint,
-			[Values(
 				"/admin/shutdown;POST;Ops", /* this test is not executed for Ops and Admin to prevent the node from shutting down */
 				"/admin/scavenge?startFromChunk={startFromChunk}&threads={threads};POST;Ops",
 				"/admin/scavenge/{scavengeId};DELETE;Ops",
@@ -220,7 +216,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			)] string httpEndpointDetails
 		) {
 			/*use the leader node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
+			var nodeEndpoint = _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
@@ -231,8 +227,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				return;
 			}
 
-			var scheme = _nodes.First().UseHttpsInternally() && useInternalEndpoint ? "https" : "http";
-			var url = $"{scheme}://{nodeEndpoint}{endpointUrl}";
+			var url = $"http://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

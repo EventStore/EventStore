@@ -61,10 +61,6 @@ namespace EventStore.Core {
 			get { return _mainBus; }
 		}
 
-		public IHttpService InternalHttpService {
-			get { return _internalHttpService; }
-		}
-
 		public IHttpService ExternalHttpService {
 			get { return _externalHttpService; }
 		}
@@ -99,7 +95,6 @@ namespace EventStore.Core {
 
 		private readonly ClusterVNodeController _controller;
 		private readonly TimerService _timerService;
-		private readonly KestrelHttpService _internalHttpService;
 		private readonly KestrelHttpService _externalHttpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
@@ -469,32 +464,10 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
 			_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
-			// INTERNAL HTTP
-			if (!isSingleNode) {
-				_internalHttpService = new KestrelHttpService(ServiceAccessibility.Private, _mainQueue,
-					new TrieUriRouter(),
-					_workersHandler, vNodeSettings.LogHttpRequests,
-					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
-					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs,
-					vNodeSettings.DisableFirstLevelHttpAuthorization,
-					vNodeSettings.NodeInfo.InternalHttp);
-				_internalHttpService.SetupController(adminController);
-				_internalHttpService.SetupController(pingController);
-				_internalHttpService.SetupController(infoController);
-				_internalHttpService.SetupController(statController);
-				_internalHttpService.SetupController(atomController);
-				_internalHttpService.SetupController(histogramController);
-				_internalHttpService.SetupController(persistentSubscriptionController);
-			}
 
 			// Authentication plugin HTTP
-			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService,
-				_internalHttpService, httpSendService, _mainQueue, _workersHandler);
-			if (_internalHttpService != null) {
-				_mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
-				_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
-				_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
-			}
+			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, httpSendService,
+				_mainQueue, _workersHandler);
 
 			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 
@@ -721,16 +694,14 @@ namespace EventStore.Core {
 
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
-					var http = isSingleNode
-						? new[] { _externalHttpService }
-						: new[] { _internalHttpService, _externalHttpService };
+					var http = new[] { _externalHttpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
 
 			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, httpAuthenticationProviders, _readIndex,
-				_vNodeSettings, _externalHttpService, _internalHttpService);
+				_vNodeSettings, _externalHttpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}

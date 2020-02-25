@@ -10,8 +10,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 			return new TestAuthenticationProvider();
 		}
 
-		public void RegisterHttpControllers(IHttpService externalHttpService, IHttpService internalHttpService,
-			HttpSendService httpSendService, IPublisher mainQueue, IPublisher networkSendQueue) {
+		public void RegisterHttpControllers(IHttpService externalHttpService, HttpSendService httpSendService,
+			IPublisher mainQueue, IPublisher networkSendQueue) {
 		}
 	}
 
