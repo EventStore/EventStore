@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		protected IGossipSeedSource _gossipSeedSource;
 		protected TimeSpan _gossipInterval = TimeSpan.FromMilliseconds(1000);
 		private readonly TimeSpan _allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
+		protected readonly TimeSpan _gossipTimeout = TimeSpan.FromMilliseconds(1000);
 
 		public NodeGossipServiceTestFixture() {
 			_bus = new FakePublisher();
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void Setup() {
 			SUT = new NodeGossipService(_bus, _gossipSeedSource, _currentNode,
 				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
-				_gossipInterval, _allowedTimeDifference, _timeProvider, _getNodeToGossipTo);
+				_gossipInterval, _allowedTimeDifference, _gossipTimeout, _timeProvider, _getNodeToGossipTo);
 
 			foreach (var message in Given()) {
 				SUT.Handle((dynamic)message);
@@ -202,7 +203,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_start_gossiping_and_schedule_another_gossip() {
 			ExpectMessages(
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
@@ -224,7 +225,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_send_the_gossip_over_http_and_schedule_the_next_gossip() {
 			ExpectMessages(
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
@@ -278,7 +279,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_use_startup_gossip_interval() {
 			ExpectMessages(
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
@@ -300,7 +301,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_use_provided_gossip_interval_for_next_gossip() {
 			ExpectMessages(
-				new HttpMessage.SendOverHttp(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
@@ -605,8 +606,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_issue_get_gossip() {
 			ExpectMessages(
-				new HttpMessage.SendOverHttp(_currentNode.InternalHttp, new GossipMessage.GetGossip(),
-					_timeProvider.LocalTime.Add(GossipServiceBase.GossipTimeout)));
+				new GrpcMessage.SendOverGrpc(_currentNode.InternalHttp, new GossipMessage.GetGossip(),
+					_timeProvider.LocalTime.Add(_gossipTimeout)));
 		}
 	}
 

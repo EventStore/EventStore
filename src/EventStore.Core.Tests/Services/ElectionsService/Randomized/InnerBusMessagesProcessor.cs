@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		}
 
 		public void Handle(Message message) {
-			// timer message and SendOverHttp is handled differently
+			// timer message and SendOverGrpc is handled differently
 			if (message is TimerMessage.Schedule || message is HttpMessage.SendOverHttp)
 				return;
 

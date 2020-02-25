@@ -37,6 +37,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Core.Cluster;
 using Microsoft.AspNetCore.Hosting;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
@@ -58,10 +59,6 @@ namespace EventStore.Core {
 
 		public ISubscriber MainBus {
 			get { return _mainBus; }
-		}
-
-		public IHttpService InternalHttpService {
-			get { return _internalHttpService; }
 		}
 
 		public IHttpService ExternalHttpService {
@@ -98,7 +95,6 @@ namespace EventStore.Core {
 
 		private readonly ClusterVNodeController _controller;
 		private readonly TimerService _timerService;
-		private readonly KestrelHttpService _internalHttpService;
 		private readonly KestrelHttpService _externalHttpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
@@ -115,6 +111,7 @@ namespace EventStore.Core {
 		private readonly X509Certificate2 _certificate;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
+		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
 
@@ -184,6 +181,16 @@ namespace EventStore.Core {
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
+
+			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
+				(endpoint, publisher) =>
+					new EventStoreClusterClient(
+						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
+							endpoint.Address.ToString(), endpoint.Port).Uri, publisher,
+							() => _httpMessageHandler));
+			
+			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
 
 			//SELF
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
@@ -411,6 +418,12 @@ namespace EventStore.Core {
 				bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
 				bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
 			});
+			
+			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
+			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
+			SubscribeWorkers(bus => {
+				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
+			});
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
@@ -424,11 +437,9 @@ namespace EventStore.Core {
 				_httpMessageHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var electController = new ElectController(_mainQueue, _httpMessageHandler);
 
 			// HTTP SENDERS
 			gossipController.SubscribeSenders(httpPipe);
-			electController.SubscribeSenders(httpPipe);
 
 			// EXTERNAL HTTP
 			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
@@ -453,34 +464,10 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
 			_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_externalHttpService);
-			// INTERNAL HTTP
-			if (!isSingleNode) {
-				_internalHttpService = new KestrelHttpService(ServiceAccessibility.Private, _mainQueue,
-					new TrieUriRouter(),
-					_workersHandler, vNodeSettings.LogHttpRequests,
-					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalIPAs,
-					vNodeSettings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs,
-					vNodeSettings.DisableFirstLevelHttpAuthorization,
-					vNodeSettings.NodeInfo.InternalHttp);
-				_internalHttpService.SetupController(adminController);
-				_internalHttpService.SetupController(pingController);
-				_internalHttpService.SetupController(infoController);
-				_internalHttpService.SetupController(statController);
-				_internalHttpService.SetupController(atomController);
-				_internalHttpService.SetupController(gossipController);
-				_internalHttpService.SetupController(electController);
-				_internalHttpService.SetupController(histogramController);
-				_internalHttpService.SetupController(persistentSubscriptionController);
-			}
 
 			// Authentication plugin HTTP
-			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService,
-				_internalHttpService, httpSendService, _mainQueue, _workersHandler);
-			if (_internalHttpService != null) {
-				_mainBus.Subscribe<SystemMessage.SystemInit>(_internalHttpService);
-				_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_internalHttpService);
-				_mainBus.Subscribe<HttpMessage.PurgeTimedOutRequests>(_internalHttpService);
-			}
+			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, httpSendService,
+				_mainQueue, _workersHandler);
 
 			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 
@@ -682,6 +669,7 @@ namespace EventStore.Core {
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
 					vNodeSettings.GossipAllowedTimeDifference,
+					vNodeSettings.GossipTimeout,
 					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
@@ -706,16 +694,14 @@ namespace EventStore.Core {
 
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
-					var http = isSingleNode
-						? new[] { _externalHttpService }
-						: new[] { _internalHttpService, _externalHttpService };
+					var http = new[] { _externalHttpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
 
 			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, httpAuthenticationProviders, _readIndex,
-				_vNodeSettings, _externalHttpService, _internalHttpService);
+				_vNodeSettings, _externalHttpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}

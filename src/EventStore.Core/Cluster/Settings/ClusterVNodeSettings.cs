@@ -26,6 +26,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
 		public readonly IPEndPoint[] GossipSeeds;
+		public readonly bool GossipOverHttps;
 		public readonly bool EnableHistograms;
 		public readonly TimeSpan MinFlushDelay;
 
@@ -160,7 +161,8 @@ namespace EventStore.Core.Cluster.Settings {
 			Func<HttpMessageHandler> createHttpMessageHandler = null,
 			bool unsafeAllowSurplusNodes = false,
 			bool enableExternalTCP = false,
-			bool enableAtomPubOverHTTP = true) {
+			bool enableAtomPubOverHTTP = true,
+			bool gossipOverHttps = true) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -237,6 +239,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipInterval = gossipInterval;
 			GossipAllowedTimeDifference = gossipAllowedTimeDifference;
 			GossipTimeout = gossipTimeout;
+			GossipOverHttps = gossipOverHttps;
 			IntTcpHeartbeatTimeout = intTcpHeartbeatTimeout;
 			IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
 			ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;

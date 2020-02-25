@@ -21,6 +21,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using ElectionsService = EventStore.Core.Services.Transport.Grpc.Elections;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -31,6 +32,8 @@ namespace EventStore.Core {
 		private static readonly PathString StreamsSegment = "/event_store.client.streams.Streams";
 		private static readonly PathString UsersSegment = "/event_store.client.users.Users";
 		private static readonly PathString OperationsSegment = "/event_store.client.operations.Operations";
+		private static readonly PathString GossipSegment = "/event_store.cluster.Gossip";
+		private static readonly PathString ElectionsSegment = "/event_store.cluster.Elections";
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IQueuedHandler _mainQueue;
@@ -38,7 +41,6 @@ namespace EventStore.Core {
 		private readonly IReadIndex _readIndex;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly KestrelHttpService _externalHttpService;
-		private readonly KestrelHttpService _internalHttpService;
 		private readonly StatusCheck _statusCheck;
 
 		private bool _ready;
@@ -49,8 +51,7 @@ namespace EventStore.Core {
 			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
 			IReadIndex readIndex,
 			ClusterVNodeSettings vNodeSettings,
-			KestrelHttpService externalHttpService,
-			KestrelHttpService internalHttpService = null) {
+			KestrelHttpService externalHttpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -81,7 +82,6 @@ namespace EventStore.Core {
 			_readIndex = readIndex;
 			_vNodeSettings = vNodeSettings;
 			_externalHttpService = externalHttpService;
-			_internalHttpService = internalHttpService;
 
 			_statusCheck = new StatusCheck(this);
 		}
@@ -100,14 +100,18 @@ namespace EventStore.Core {
 						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Streams>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment), // TODO JPB figure out how to delete this sadness
+						.UseWhen(context => context.Request.Path.StartsWithSegments(GossipSegment),
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<Gossip>()))
+						.UseWhen(context => context.Request.Path.StartsWithSegments(ElectionsSegment),
+							inner => inner.UseRouting().UseEndpoints(endpoint =>
+								endpoint.MapGrpcService<Elections>()))
+						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Operations>())),
 					(b, subsystem) => subsystem.Configure(b));
 
-			app.UseLegacyHttp(_internalHttpService == null
-				? new[] {_externalHttpService}
-				: new[] {_externalHttpService, _internalHttpService});
+			app.UseLegacyHttp(_externalHttpService);
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
@@ -125,6 +129,8 @@ namespace EventStore.Core {
 						.AddSingleton(new PersistentSubscriptions(_mainQueue))
 						.AddSingleton(new Users(_mainQueue))
 						.AddSingleton(new Operations(_mainQueue))
+						.AddSingleton(new Gossip(_mainQueue))
+						.AddSingleton(new Elections(_mainQueue))
 						.AddGrpc().Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 

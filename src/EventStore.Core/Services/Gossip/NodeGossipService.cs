@@ -25,11 +25,12 @@ namespace EventStore.Core.Services.Gossip {
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
-			TimeSpan interval,
+			TimeSpan gossipInterval,
 			TimeSpan allowedTimeDifference,
+			TimeSpan gossipTimeout,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
-			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference, timeProvider, getNodeToGossipTo) {
+			: base(bus, gossipSeedSource, nodeInfo, gossipInterval, allowedTimeDifference, gossipTimeout, timeProvider, getNodeToGossipTo) {
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));

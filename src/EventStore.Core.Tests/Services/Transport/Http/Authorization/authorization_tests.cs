@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
@@ -15,17 +14,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
 		private int _leaderId;
 
+
 		private HttpClient CreateHttpClient(string username, string password) {
 			var client = new HttpClient(new HttpClientHandler {
 				AllowAutoRedirect = false
 			}) {
 				Timeout = _timeout
 			};
-			client.DefaultRequestHeaders.Authorization =
-				new AuthenticationHeaderValue(
-					"Basic", System.Convert.ToBase64String(
-						System.Text.Encoding.ASCII.GetBytes(
-						$"{username}:{password}")));
+			
+			if (!string.IsNullOrEmpty(username)) {
+				client.DefaultRequestHeaders.Authorization =
+					new AuthenticationHeaderValue(
+						"Basic", System.Convert.ToBase64String(
+							System.Text.Encoding.ASCII.GetBytes(
+								$"{username}:{password}")));
+			}
 
 			return client;
 		}
@@ -118,7 +121,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_httpClients["Ops"] = CreateHttpClient("ops", "changeit");
 			await CreateUser("user", "changeit");
 			_httpClients["User"] = CreateHttpClient("user", "changeit");
-			_httpClients["None"] = new HttpClient();
+			_httpClients["None"] = CreateHttpClient(null, null);
 		}
 
 		[OneTimeTearDown]
@@ -137,10 +140,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"Ops",
 				"Admin"
 			)] string userAuthorizationLevel,
-			[Values(
-				false,
-				true
-			)] bool useInternalEndpoint,
 			[Values(
 				"/admin/shutdown;POST;Ops", /* this test is not executed for Ops and Admin to prevent the node from shutting down */
 				"/admin/scavenge?startFromChunk={startFromChunk}&threads={threads};POST;Ops",
@@ -180,14 +179,6 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/streams/%24all/00000000000000000000000000000000/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/{count}?embed={embed} */
 				"/streams/%24all/head/backward/10?embed={embed};GET;Admin", /* /streams/%24all/{position}/backward/{count}?embed={embed} */
 				/* ------------------------------------------------------------- */
-				"/gossip;GET;None",
-				"/gossip;POST;None",
-				"/elections/viewchange;POST;None",
-				"/elections/viewchangeproof;POST;None",
-				"/elections/prepare;POST;None",
-				"/elections/prepareok;POST;None",
-				"/elections/proposal;POST;None",
-				"/elections/accept;POST;None",
 				"/histogram/{name};GET;Ops",
 				"/subscriptions;GET;User",
 				"/subscriptions/{stream};GET;User",
@@ -221,7 +212,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			)] string httpEndpointDetails
 		) {
 			/*use the leader node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
+			var nodeEndpoint = _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);
@@ -232,7 +223,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				return;
 			}
 
-			var url = string.Format("http://{0}{1}", nodeEndpoint, endpointUrl);
+			var url = $"http://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

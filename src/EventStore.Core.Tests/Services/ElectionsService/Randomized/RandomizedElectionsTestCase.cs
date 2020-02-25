@@ -94,8 +94,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			}
 		}
 
-		protected virtual SendOverHttpProcessor GetSendOverHttpProcessor() {
-			return new SendOverHttpProcessor(Rnd,
+		protected virtual SendOverGrpcProcessor GetSendOverHttpProcessor() {
+			return new SendOverGrpcProcessor(Rnd,
 				Runner,
 				HttpLossProbability,
 				HttpDupProbability,

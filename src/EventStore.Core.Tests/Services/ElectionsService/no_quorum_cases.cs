@@ -59,9 +59,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only SendOverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 		}
@@ -100,17 +100,17 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 		}
@@ -150,16 +150,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_electionsUnit.RepublishFromPublisher();
 
 			_electionsUnit.RepublishFromPublisher();
-			Assert.That(_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+			Assert.That(_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 
 			_electionsUnit.RepublishFromPublisher();
-			Assert.That(_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+			Assert.That(_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 		}

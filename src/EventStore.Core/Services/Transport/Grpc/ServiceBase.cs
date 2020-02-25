@@ -7,6 +7,20 @@ using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Client;
 using Grpc.Core;
 
+namespace EventStore.Cluster {
+	partial class Gossip {
+		partial class GossipBase : ServiceBase {
+			
+		}
+	}
+
+	partial class Elections {
+		partial class ElectionsBase : ServiceBase {
+
+		}
+	}
+}
+
 namespace EventStore.Client.PersistentSubscriptions {
 	partial class PersistentSubscriptions {
 		partial class PersistentSubscriptionsBase : ServiceBase {

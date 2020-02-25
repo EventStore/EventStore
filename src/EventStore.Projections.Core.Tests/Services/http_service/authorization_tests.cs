@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Security;
-using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
@@ -16,19 +14,22 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 		private int _leaderId;
 
-		private HttpClient CreateHttpClient(string username, string password) =>
-			new HttpClient(new SocketsHttpHandler {
-				AllowAutoRedirect = false,
-				SslOptions = new SslClientAuthenticationOptions {
-					RemoteCertificateValidationCallback = delegate { return true; }
-				}
+		private HttpClient CreateHttpClient(string username, string password) {
+			var client = new HttpClient(new HttpClientHandler {
+				AllowAutoRedirect = false
 			}) {
-				Timeout = _timeout,
-				DefaultRequestHeaders = {
-					Authorization = new AuthenticationHeaderValue(
-						"Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")))
-				}
+				Timeout = _timeout
 			};
+			if (!string.IsNullOrEmpty(username)) {
+				client.DefaultRequestHeaders.Authorization =
+					new AuthenticationHeaderValue(
+						"Basic", System.Convert.ToBase64String(
+							System.Text.Encoding.ASCII.GetBytes(
+								$"{username}:{password}")));
+			}
+
+			return client;
+		}
 
 		private async Task<int> SendRequest(HttpClient client, HttpMethod method, string url, string body, string contentType) {
 			using var request = new HttpRequestMessage {Method = method, RequestUri = new Uri(url)};
@@ -114,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			_httpClients["Ops"] = CreateHttpClient("ops", "changeit");
 			await CreateUser("user", "changeit");
 			_httpClients["User"] = CreateHttpClient("user", "changeit");
-			_httpClients["None"] = new HttpClient();
+			_httpClients["None"] = CreateHttpClient(null, null);
 		}
 
 		[OneTimeTearDown]
@@ -133,10 +134,6 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 				"Ops",
 				"Admin"
 			)] string userAuthorizationLevel,
-			[Values(
-				false,
-				true
-			)] bool useInternalEndpoint,
 			[Values(
 				"/web/es/js/projections/{*remaining_path};GET;None",
 				"/web/es/js/projections/v8/Prelude/{*remaining_path};GET;None",
@@ -168,7 +165,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			)] string httpEndpointDetails
 		) {
 			/*use the leader node endpoint to avoid any redirects*/
-			var nodeEndpoint = useInternalEndpoint ? _nodes[_leaderId].InternalHttpEndPoint : _nodes[_leaderId].ExternalHttpEndPoint;
+			var nodeEndpoint = _nodes[_leaderId].ExternalHttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);

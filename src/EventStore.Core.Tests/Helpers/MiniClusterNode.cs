@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -25,6 +26,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 
@@ -64,12 +66,22 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private TestServer _kestrelTestServer;
 
+		public bool UseHttpsInternally() {
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+		}
+
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
+			}
+			
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -106,8 +118,8 @@ namespace EventStore.Core.Tests.Helpers {
 				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
-				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
-				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
+				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
+				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
 				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				verifyDbHash: false, maxMemtableEntryCount: memTableSize,
@@ -117,7 +129,13 @@ namespace EventStore.Core.Tests.Helpers {
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
-				enableExternalTCP: true);
+				enableExternalTCP: true,
+				createHttpMessageHandler: () => new SocketsHttpHandler {
+					SslOptions = new SslClientAuthenticationOptions {
+						RemoteCertificateValidationCallback = delegate { return true; }
+					}
+				},
+				gossipOverHttps: UseHttpsInternally());
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(
@@ -139,7 +157,13 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
-					o.Listen(InternalHttpEndPoint);
+					o.Listen(InternalHttpEndPoint, options => {
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+							options.Protocols = HttpProtocols.Http2;
+						} else { 
+							options.UseHttps();
+						}
+					});
 					o.Listen(ExternalHttpEndPoint);
 				})
 				.UseStartup(Node.Startup)

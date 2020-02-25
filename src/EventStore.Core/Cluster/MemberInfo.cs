@@ -101,6 +101,40 @@ namespace EventStore.Core.Cluster {
 			NodePriority = nodePriority;
 			IsReadOnlyReplica = isReadOnlyReplica;
 		}
+		
+		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
+			IPEndPoint internalTcpEndPoint, 
+			IPEndPoint externalTcpEndPoint, 
+			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
+			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
+			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
+			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
+			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
+
+			InstanceId = instanceId;
+
+			TimeStamp = timeStamp;
+			State = state;
+			IsAlive = isAlive;
+
+			InternalTcpEndPoint = internalTcpEndPoint;
+			ExternalTcpEndPoint = externalTcpEndPoint;
+			InternalHttpEndPoint = internalHttpEndPoint;
+			ExternalHttpEndPoint = externalHttpEndPoint;
+
+			LastCommitPosition = lastCommitPosition;
+			WriterCheckpoint = writerCheckpoint;
+			ChaserCheckpoint = chaserCheckpoint;
+
+			EpochPosition = epochPosition;
+			EpochNumber = epochNumber;
+			EpochId = epochId;
+
+			NodePriority = nodePriority;
+			IsReadOnlyReplica = isReadOnlyReplica;
+		}
 
 		internal MemberInfo(MemberInfoDto dto) {
 			InstanceId = dto.InstanceId;

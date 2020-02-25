@@ -26,7 +26,6 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<ElectionMessage.ElectionsDone> {
 		public const int GossipRoundStartupThreshold = 20;
 		public static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
-		public static readonly TimeSpan GossipTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
 
@@ -35,8 +34,9 @@ namespace EventStore.Core.Services.Gossip {
 		protected readonly VNodeInfo NodeInfo;
 		protected VNodeState CurrentRole = VNodeState.Initializing;
 		private VNodeInfo CurrentLeader;
-		private readonly TimeSpan GossipInterval = TimeSpan.FromMilliseconds(1000);
-		private readonly TimeSpan AllowedTimeDifference = TimeSpan.FromMinutes(30);
+		private readonly TimeSpan GossipInterval;
+		private readonly TimeSpan AllowedTimeDifference;
+		private readonly TimeSpan GossipTimeout;
 
 		private readonly IPublisher _bus;
 		private readonly IEnvelope _publishEnvelope;
@@ -45,14 +45,15 @@ namespace EventStore.Core.Services.Gossip {
 		private GossipState _state;
 		private ClusterInfo _cluster;
 		private readonly Random _rnd = new Random(Math.Abs(Environment.TickCount));
-		private ITimeProvider _timeProvider;
-		private Func<MemberInfo[], MemberInfo> _getNodeToGossipTo;
+		private readonly ITimeProvider _timeProvider;
+		private readonly Func<MemberInfo[], MemberInfo> _getNodeToGossipTo;
 
 		protected GossipServiceBase(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
 			VNodeInfo nodeInfo,
 			TimeSpan gossipInterval,
 			TimeSpan allowedTimeDifference,
+			TimeSpan gossipTimeout,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null) {
 			Ensure.NotNull(bus, "bus");
@@ -66,6 +67,7 @@ namespace EventStore.Core.Services.Gossip {
 			NodeInfo = nodeInfo;
 			GossipInterval = gossipInterval;
 			AllowedTimeDifference = allowedTimeDifference;
+			GossipTimeout = gossipTimeout;
 			_state = GossipState.Startup;
 			_timeProvider = timeProvider;
 			_getNodeToGossipTo = getNodeToGossipTo ?? GetNodeToGossipTo;
@@ -125,7 +127,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (node != null) {
 				_cluster = UpdateCluster(_cluster, x => x.InstanceId == NodeInfo.InstanceId ? GetUpdatedMe(x) : x,
 					_timeProvider, DeadMemberRemovalTimeout);
-				_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
+				_bus.Publish(new GrpcMessage.SendOverGrpc(node.InternalHttpEndPoint,
 					new GossipMessage.SendGossip(_cluster, NodeInfo.InternalHttp),
 					_timeProvider.LocalTime.Add(GossipInterval)));
 			}
@@ -162,7 +164,7 @@ namespace EventStore.Core.Services.Gossip {
 			message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, NodeInfo.InternalHttp));
 
 			if (_cluster.HasChangedSince(oldCluster))
-				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
+				LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
@@ -196,7 +198,7 @@ namespace EventStore.Core.Services.Gossip {
 					: x,
 				_timeProvider, DeadMemberRemovalTimeout);
 			if (_cluster.HasChangedSince(oldCluster))
-				LogClusterChange(oldCluster, _cluster, string.Format("gossip send failed to [{0}]", message.Recipient));
+				LogClusterChange(oldCluster, _cluster, $"gossip send failed to [{message.Recipient}]");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
@@ -207,7 +209,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			Log.Debug("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
-			_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
+			_bus.Publish(new GrpcMessage.SendOverGrpc(node.InternalHttpEndPoint,
 				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
 		}
 

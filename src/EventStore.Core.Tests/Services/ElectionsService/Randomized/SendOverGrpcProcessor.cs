@@ -6,7 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
-	internal class SendOverHttpProcessor : IHandle<HttpMessage.SendOverHttp> {
+	internal class SendOverGrpcProcessor : IHandle<GrpcMessage.SendOverGrpc> {
 		private readonly Random _rnd;
 		private readonly Dictionary<IPEndPoint, IPublisher> _httpBuses = new Dictionary<IPEndPoint, IPublisher>();
 		private readonly RandomTestRunner _runner;
@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		private readonly double _dupProb;
 		private readonly int _maxDelay;
 
-		public SendOverHttpProcessor(Random rnd, RandomTestRunner runner, double lossProb, double dupProb,
+		public SendOverGrpcProcessor(Random rnd, RandomTestRunner runner, double lossProb, double dupProb,
 			int maxDelay) {
 			if (rnd == null) throw new ArgumentNullException("rnd");
 			if (runner == null) throw new ArgumentNullException("runner");
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			_httpBuses.Add(endPoint, bus);
 		}
 
-		public void Handle(HttpMessage.SendOverHttp message) {
+		public void Handle(GrpcMessage.SendOverGrpc message) {
 			if (_rnd.NextDouble() < _lossProb)
 				return;
 
@@ -41,17 +41,17 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				return;
 
 			IPublisher publisher;
-			if (!_httpBuses.TryGetValue(message.EndPoint, out publisher))
+			if (!_httpBuses.TryGetValue(message.DestinationEndpoint, out publisher))
 				throw new InvalidOperationException(string.Format("No HTTP bus subscribed for EndPoint: {0}.",
-					message.EndPoint));
+					message.DestinationEndpoint));
 
-			_runner.Enqueue(message.EndPoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
+			_runner.Enqueue(message.DestinationEndpoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
 
 			if (_rnd.NextDouble() < _dupProb)
-				_runner.Enqueue(message.EndPoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
+				_runner.Enqueue(message.DestinationEndpoint, message.Message, publisher, 1 + _rnd.Next(_maxDelay));
 		}
 
-		protected virtual bool ShouldSkipMessage(HttpMessage.SendOverHttp message) {
+		protected virtual bool ShouldSkipMessage(GrpcMessage.SendOverGrpc message) {
 			return false;
 		}
 	}
