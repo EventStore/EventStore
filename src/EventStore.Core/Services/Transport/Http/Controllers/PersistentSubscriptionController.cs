@@ -307,9 +307,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						config.MaxCheckPointCount,
 						config.MaxSubscriberCount,
 						CalculateNamedConsumerStrategyForOldClients(data),
-						http.User,
-						"",
-						"");
+						http.User);
 					Publish(message);
 				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
@@ -373,9 +371,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						config.MaxCheckPointCount,
 						config.MaxSubscriberCount,
 						CalculateNamedConsumerStrategyForOldClients(data),
-						http.User,
-						"",
-						"");
+						http.User);
 					Publish(message);
 				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
