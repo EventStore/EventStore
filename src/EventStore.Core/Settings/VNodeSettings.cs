@@ -42,7 +42,6 @@ namespace EventStore.Core.Settings {
 			StatsStorage statsStorage = StatsStorage.StreamAndFile,
 			bool skipInitializeStandardUsersCheck = false,
 			bool disableScavengeMerging = false) {
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
 			Ensure.NotNull(httpPrefixes, "httpPrefixes");
 			if (externalSecureTcpEndPoint != null)
@@ -82,7 +81,7 @@ namespace EventStore.Core.Settings {
 			                     + "CommitTimeout: {9}\n"
 			                     + "StatsPeriod: {10}\n"
 			                     + "StatsStorage: {11}",
-				ExternalTcpEndPoint,
+				ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString(),
 				ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
 				ExternalHttpEndPoint,
 				string.Join(", ", HttpPrefixes),

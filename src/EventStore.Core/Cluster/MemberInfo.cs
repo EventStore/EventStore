@@ -72,8 +72,7 @@ namespace EventStore.Core.Cluster {
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
 			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
 
@@ -142,13 +141,13 @@ namespace EventStore.Core.Cluster {
 			State = dto.State;
 			IsAlive = dto.IsAlive;
 			var internalTcpIp = IPAddress.Parse(dto.InternalTcpIp);
-			var externalTcpIp = IPAddress.Parse(dto.ExternalTcpIp);
+			var externalTcpIp = dto.ExternalTcpIp != null ? IPAddress.Parse(dto.ExternalTcpIp) : null;
 			InternalTcpEndPoint = new IPEndPoint(internalTcpIp, dto.InternalTcpPort);
 			InternalSecureTcpEndPoint = dto.InternalSecureTcpPort > 0
 				? new IPEndPoint(internalTcpIp, dto.InternalSecureTcpPort)
 				: null;
-			ExternalTcpEndPoint = new IPEndPoint(externalTcpIp, dto.ExternalTcpPort);
-			ExternalSecureTcpEndPoint = dto.ExternalSecureTcpPort > 0
+			ExternalTcpEndPoint = externalTcpIp != null ? new IPEndPoint(externalTcpIp, dto.ExternalTcpPort) : null;
+			ExternalSecureTcpEndPoint = externalTcpIp != null && dto.ExternalSecureTcpPort > 0
 				? new IPEndPoint(externalTcpIp, dto.ExternalSecureTcpPort)
 				: null;
 			InternalHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.InternalHttpIp), dto.InternalHttpPort);
@@ -167,9 +166,9 @@ namespace EventStore.Core.Cluster {
 			return endPoint != null
 			       && (InternalHttpEndPoint.Equals(endPoint)
 			           || ExternalHttpEndPoint.Equals(endPoint)
-			           || InternalTcpEndPoint.Equals(endPoint)
+			           || (InternalTcpEndPoint != null && InternalTcpEndPoint.Equals(endPoint))
 			           || (InternalSecureTcpEndPoint != null && InternalSecureTcpEndPoint.Equals(endPoint))
-			           || ExternalTcpEndPoint.Equals(endPoint)
+			           || (ExternalTcpEndPoint != null && ExternalTcpEndPoint.Equals(endPoint))
 			           || (ExternalSecureTcpEndPoint != null && ExternalSecureTcpEndPoint.Equals(endPoint)));
 		}
 
@@ -210,8 +209,8 @@ namespace EventStore.Core.Cluster {
 				"Priority: " + NodePriority + " " + 
 				"VND {0:B} <{1}> [{2}, {3}, {4}, {5}, {6}, {7}, {8}] {9}/{10}/{11}/E{12}@{13}:{14:B} | {15:yyyy-MM-dd HH:mm:ss.fff}",
 				InstanceId, IsAlive ? "LIVE" : "DEAD", State,
-				InternalTcpEndPoint, InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
-				ExternalTcpEndPoint, ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
+				InternalTcpEndPoint == null ? "n/a" : InternalTcpEndPoint.ToString(), InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
+				ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString(), ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
 				InternalHttpEndPoint, ExternalHttpEndPoint,
 				LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 				EpochNumber, EpochPosition, EpochId,
@@ -250,10 +249,10 @@ namespace EventStore.Core.Cluster {
 				int result = InstanceId.GetHashCode();
 				result = (result * 397) ^ State.GetHashCode();
 				result = (result * 397) ^ IsAlive.GetHashCode();
-				result = (result * 397) ^ InternalTcpEndPoint.GetHashCode();
+				result = (result * 397) ^ (InternalTcpEndPoint != null ? InternalTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^
 				         (InternalSecureTcpEndPoint != null ? InternalSecureTcpEndPoint.GetHashCode() : 0);
-				result = (result * 397) ^ ExternalTcpEndPoint.GetHashCode();
+				result = (result * 397) ^ (ExternalTcpEndPoint != null ? ExternalTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^
 				         (ExternalSecureTcpEndPoint != null ? ExternalSecureTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^ InternalHttpEndPoint.GetHashCode();

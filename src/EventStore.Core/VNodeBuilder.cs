@@ -1244,34 +1244,51 @@ namespace EventStore.Core {
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
-				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? _internalTcp.Address;
-				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
+				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
 
-				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))) {
+				IPAddress intTcpAddress = _internalTcp?.Address ?? _internalSecureTcp.Address;
+				IPAddress extTcpAddress = _externalTcp?.Address ?? _externalSecureTcp?.Address;
+
+				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intTcpAddress;
+				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extTcpAddress;
+
+				if ((intTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) ||
+				     (extTcpAddress == null || extTcpAddress.Equals(IPAddress.Parse("0.0.0.0"))))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
+					if (intTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
 						intIpAddressToAdvertise = addressToAdvertise;
 					}
 
-					if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
+					if (extTcpAddress == null || (extTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null)) {
 						extIpAddressToAdvertise = addressToAdvertise;
 					}
 				}
 
-				var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
-				var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
-				var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs :
-					_internalSecureTcp == null ? 0 : _internalSecureTcp.Port;
-				var intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				IPEndPoint intTcpEndPoint = null;
+				if (_internalTcp != null) {
+					var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
+					intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+				}
 
-				var extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
-				var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
-				var extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs :
-					_externalSecureTcp == null ? 0 : _externalSecureTcp.Port;
-				var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				IPEndPoint intSecureTcpEndPoint = null;
+				if (_internalSecureTcp != null) {
+					var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp.Port;
+					intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				}
+
+				IPEndPoint extTcpEndPoint = null;
+				if (_externalTcp != null) {
+					int extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
+					extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+				}
+
+				IPEndPoint extSecureTcpEndPoint = null;
+				if (_externalSecureTcp != null) {
+					int extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp.Port;
+					extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				}
 
 				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
 				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;

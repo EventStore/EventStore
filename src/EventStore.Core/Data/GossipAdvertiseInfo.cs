@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Data {
 	public class GossipAdvertiseInfo {
@@ -18,6 +19,8 @@ namespace EventStore.Core.Data {
 			IPEndPoint internalHttp, IPEndPoint externalHttp,
 			IPAddress advertiseInternalIPAs, IPAddress advertiseExternalIPAs,
 			int advertiseInternalHttpPortAs, int advertiseExternalHttpPortAs) {
+			Ensure.Equal(false, internalTcp == null && internalSecureTcp == null, "Both internal TCP endpoints are null");
+
 			InternalTcp = internalTcp;
 			InternalSecureTcp = internalSecureTcp;
 			ExternalTcp = externalTcp;
