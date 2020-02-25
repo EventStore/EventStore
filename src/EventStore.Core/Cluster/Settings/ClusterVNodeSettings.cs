@@ -165,8 +165,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool enableAtomPubOverHTTP = true,
 			bool gossipOverHttps = true) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
+
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
 			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)

@@ -53,8 +53,8 @@ namespace EventStore.Core.Messages {
 			public partial class LeaderInfo {
 				public LeaderInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 					IPEndPoint externalHttpEndPoint) {
-					ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
-					ExternalTcpPort = externalTcpEndPoint.Port;
+					ExternalTcpAddress = externalTcpEndPoint == null ? null : externalTcpEndPoint.Address.ToString();
+					ExternalTcpPort = externalTcpEndPoint == null ? (int?) null : externalTcpEndPoint.Port;
 					ExternalSecureTcpAddress = externalSecureTcpEndPoint == null
 						? null
 						: externalSecureTcpEndPoint.Address.ToString();
