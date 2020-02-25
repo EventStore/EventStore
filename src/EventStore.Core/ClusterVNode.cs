@@ -671,7 +671,7 @@ namespace EventStore.Core {
 					vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,
 					_timeProvider);
-					_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
+				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.Gossip>(gossip);

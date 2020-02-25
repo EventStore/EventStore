@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
@@ -17,10 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 		private int _leaderId;
 
 		private HttpClient CreateHttpClient(string username, string password) {
-			var client = new HttpClient(new SocketsHttpHandler {
-				SslOptions = new SslClientAuthenticationOptions {
-					RemoteCertificateValidationCallback = delegate { return true; }
-				},
+			var client = new HttpClient(new HttpClientHandler {
 				AllowAutoRedirect = false
 			}) {
 				Timeout = _timeout

@@ -5,10 +5,10 @@ using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
-	internal class SendOverGrpcGrpcBlockingProcessor : SendOverGrpcProcessor {
+	internal class SendOverGrpcBlockingProcessor : SendOverGrpcProcessor {
 		private readonly Dictionary<IPEndPoint, bool> _endpointsToSkip;
 
-		public SendOverGrpcGrpcBlockingProcessor(Random rnd,
+		public SendOverGrpcBlockingProcessor(Random rnd,
 			RandomTestRunner runner,
 			double lossProb,
 			double dupProb,

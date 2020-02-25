@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		private readonly CreateInitialGossip _createInitialGossip;
 		private readonly CreateUpdatedGossip _createUpdatedGossip;
 
-		private readonly SendOverGrpcGrpcBlockingProcessor _sendOverGrpcGrpcBlockingProcessor;
+		private readonly SendOverGrpcBlockingProcessor _sendOverGrpcBlockingProcessor;
 		private readonly UpdateGossipProcessor _updateGossipProcessor;
 
 		public RandomizedElectionsAndGossipTestCase(int maxIterCnt,
@@ -42,14 +42,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			_createInitialGossip = createInitialGossip;
 			_createUpdatedGossip = createUpdatedGossip;
 
-			_sendOverGrpcGrpcBlockingProcessor = new SendOverGrpcGrpcBlockingProcessor(Rnd,
+			_sendOverGrpcBlockingProcessor = new SendOverGrpcBlockingProcessor(Rnd,
 				Runner,
 				HttpLossProbability,
 				HttpDupProbability,
 				HttpMaxDelay);
 
 			_updateGossipProcessor = new UpdateGossipProcessor(new ElectionsInstance[0],
-				_sendOverGrpcGrpcBlockingProcessor,
+				_sendOverGrpcBlockingProcessor,
 				_createUpdatedGossip,
 				Enqueue
 			);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		}
 
 		protected override SendOverGrpcProcessor GetSendOverHttpProcessor() {
-			return _sendOverGrpcGrpcBlockingProcessor;
+			return _sendOverGrpcBlockingProcessor;
 		}
 
 		public int Next(int maxValue) {
