@@ -45,13 +45,13 @@ namespace EventStore.Core.Messages {
 			State = member.State;
 			IsAlive = member.IsAlive;
 
-			InternalTcpIp = member.InternalTcpEndPoint.Address.ToString();
-			InternalTcpPort = member.InternalTcpEndPoint.Port;
+			InternalTcpIp = member.InternalTcpEndPoint?.Address.ToString() ?? member.InternalSecureTcpEndPoint?.Address.ToString();
+			InternalTcpPort = member.InternalTcpEndPoint == null ? 0 : member.InternalTcpEndPoint.Port;
 			InternalSecureTcpPort =
 				member.InternalSecureTcpEndPoint == null ? 0 : member.InternalSecureTcpEndPoint.Port;
 
-			ExternalTcpIp = member.ExternalTcpEndPoint.Address.ToString();
-			ExternalTcpPort = member.ExternalTcpEndPoint.Port;
+			ExternalTcpIp = member.ExternalTcpEndPoint?.Address.ToString() ?? member.ExternalSecureTcpEndPoint?.Address.ToString();
+			ExternalTcpPort = member.ExternalTcpEndPoint == null ? 0 : member.ExternalTcpEndPoint.Port;
 			ExternalSecureTcpPort =
 				member.ExternalSecureTcpEndPoint == null ? 0 : member.ExternalSecureTcpEndPoint.Port;
 

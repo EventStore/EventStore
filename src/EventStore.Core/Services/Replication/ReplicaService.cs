@@ -144,6 +144,10 @@ namespace EventStore.Core.Services.Replication {
 			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
 			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
+			if (leaderEndPoint == null) {
+				Log.Error("No valid endpoint found to connect to the Leader. Aborting connection operation to Leader.");
+				return;
+			}
 
 			if (_connection != null)
 				_connection.Stop(string.Format("Reconnecting from old leader [{0}] to new leader: [{1}].",
@@ -174,7 +178,11 @@ namespace EventStore.Core.Services.Replication {
 				Log.Error(
 					"Internal secure connections are required, but no internal secure TCP end point is specified for leader [{leader}]!",
 					leader);
-			return useSsl ? leader.InternalSecureTcp ?? leader.InternalTcp : leader.InternalTcp;
+			if (!useSsl && leader.InternalTcp == null)
+				Log.Error(
+					"Internal connections are required, but no internal TCP end point is specified for leader [{leader}]!",
+					leader);
+			return useSsl ? leader.InternalSecureTcp : leader.InternalTcp;
 		}
 
 		public void Handle(ReplicationMessage.SubscribeToLeader message) {
@@ -197,7 +205,7 @@ namespace EventStore.Core.Services.Replication {
 				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
-					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
+					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp ?? _nodeInfo.InternalSecureTcp ?? _connection.LocalEndPoint,
 					message.LeaderId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
 		}
 

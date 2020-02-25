@@ -954,7 +954,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] FOLLOWER ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp,
+					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
 					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
 					message.LeaderId);
 				_outputBus.Publish(message);
@@ -967,7 +967,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp,
+					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
 					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
 					message.LeaderId);
 				_outputBus.Publish(message);
@@ -980,7 +980,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] DROP SUBSCRIPTION REQUEST RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}]. THIS MEANS THAT THERE IS A SURPLUS OF NODES IN THE CLUSTER, SHUTTING DOWN.",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp,
+					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
 					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
 					message.LeaderId);
 				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));

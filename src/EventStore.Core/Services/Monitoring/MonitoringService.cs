@@ -78,7 +78,6 @@ namespace EventStore.Core.Services.Monitoring {
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNullOrEmpty(dbPath, "dbPath");
 			Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
-			Ensure.NotNull(tcpEndpoint, "tcpEndpoint");
 
 			_monitoringQueue = monitoringQueue;
 			_statsCollectionBus = statsCollectionBus;
@@ -289,7 +288,7 @@ namespace EventStore.Core.Services.Monitoring {
 				foreach (var conn in connections) {
 					var tcpConn = conn as TcpConnection;
 					if (tcpConn != null) {
-						var isExternalConnection = _tcpEndpoint.Port == tcpConn.LocalEndPoint.Port;
+						var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.Port;
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
 							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),

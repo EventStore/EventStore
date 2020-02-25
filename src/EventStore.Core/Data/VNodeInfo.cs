@@ -20,8 +20,7 @@ namespace EventStore.Core.Data {
 			IPEndPoint internalHttp, IPEndPoint externalHttp,
 			bool isReadOnlyReplica) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
-			Ensure.NotNull(internalTcp, "internalTcp");
-			Ensure.NotNull(externalTcp, "externalTcp");
+			Ensure.Equal(false, internalTcp == null && internalSecureTcp == null, "Both internal TCP endpoints are null");
 			Ensure.NotNull(internalHttp, "internalHttp");
 			Ensure.NotNull(externalHttp, "externalHttp");
 
@@ -40,9 +39,9 @@ namespace EventStore.Core.Data {
 			return endPoint != null
 			       && (InternalHttp.Equals(endPoint)
 			           || ExternalHttp.Equals(endPoint)
-			           || InternalTcp.Equals(endPoint)
+			           || (InternalTcp != null && InternalTcp.Equals(endPoint))
 			           || (InternalSecureTcp != null && InternalSecureTcp.Equals(endPoint))
-			           || ExternalTcp.Equals(endPoint)
+			           || (ExternalTcp != null && ExternalTcp.Equals(endPoint))
 			           || (ExternalSecureTcp != null && ExternalSecureTcp.Equals(endPoint)));
 		}
 
