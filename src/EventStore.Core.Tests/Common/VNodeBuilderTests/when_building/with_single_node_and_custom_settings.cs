@@ -5,10 +5,9 @@ using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
@@ -557,14 +556,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	public class with_custom_advertise_as : SingleNodeScenario {
 		private Data.GossipAdvertiseInfo _advertiseInfo;
 
-		public X509Certificate2 GetServerCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node1.node1.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
-		}
-
 		public override void Given() {
 			var internalIPToAdvertise = IPAddress.Parse("127.0.1.1");
 			var externalIPToAdvertise = IPAddress.Parse("127.0.1.2");
@@ -580,7 +571,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 
 			_builder
-				.WithServerCertificate(GetServerCertificate())
+				.WithServerCertificate(ssl_connections.GetCertificate())
 				.WithInternalTcpOn(intTcpEndpoint)
 				.WithInternalSecureTcpOn(intSecTcpEndpoint)
 				.WithExternalTcpOn(extTcpEndpoint)

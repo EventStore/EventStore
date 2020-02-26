@@ -93,10 +93,18 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		public static X509Certificate2 GetCertificate() {
 			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.server.p12");
+				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node1.node1.p12");
 			using var mem = new MemoryStream();
 			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
+			return new X509Certificate2(mem.ToArray(), "password");
+		}
+
+		public static bool IsValidCertificate(X509Certificate2 certificate) {
+			using (X509Chain chain = new X509Chain())
+			{
+				chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+				return chain.Build(certificate);
+			}
 		}
 	}
 }

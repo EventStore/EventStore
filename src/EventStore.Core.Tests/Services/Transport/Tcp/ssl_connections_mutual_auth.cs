@@ -23,16 +23,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		public void Init() {
 			var validServerCertificate = GetServerCertificate(true);
 			var validClientCertificate = GetClientCertificate(true);
-			_CACertificateInstalled =
-				IsValidCertificate(validServerCertificate) && IsValidCertificate(validClientCertificate);
-		}
-
-		public bool IsValidCertificate(X509Certificate2 certificate) {
-			using (X509Chain chain = new X509Chain())
-			{
-				chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-				return chain.Build(certificate);
-			}
+			_CACertificateInstalled = ssl_connections.IsValidCertificate(validServerCertificate) && ssl_connections.IsValidCertificate(validClientCertificate);
 		}
 
 		[SetUp]
@@ -136,14 +127,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Assert.AreEqual(sent, received.ToArray());
 			else
 				Assert.AreEqual(new byte[0], received.ToArray());
-		}
-
-		private static X509Certificate2 GetCACertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.ca.ca.pem");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
 		}
 
 		private static X509Certificate2 GetServerCertificate(bool useValidCertificate) {
