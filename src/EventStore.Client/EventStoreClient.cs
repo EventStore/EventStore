@@ -49,7 +49,7 @@ namespace EventStore.Client {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
-				LoggerFactory = settings.LoggerFactory
+				LoggerFactory = _settings.LoggerFactory
 			});
 			var callInvoker = (_settings.Interceptors ?? Array.Empty<Interceptor>()).Aggregate(
 				_channel.CreateCallInvoker()
@@ -70,7 +70,8 @@ namespace EventStore.Client {
 						_settings.ConnectivitySettings.GossipSeeds,
 						_settings.ConnectivitySettings.GossipTimeout,
 						_settings.ConnectivitySettings.DiscoveryInterval,
-						_settings.ConnectivitySettings.NodePreference)) {
+						_settings.ConnectivitySettings.NodePreference,
+						httpHandler)) {
 					InnerHandler = httpHandler
 				};
 				exceptionNotificationHook = clusterAwareHttpHandler.ExceptionOccurred;
