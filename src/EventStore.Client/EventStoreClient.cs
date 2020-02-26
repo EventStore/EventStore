@@ -70,7 +70,8 @@ namespace EventStore.Client {
 						_settings.ConnectivitySettings.GossipSeeds,
 						_settings.ConnectivitySettings.GossipTimeout,
 						_settings.ConnectivitySettings.DiscoveryInterval,
-						_settings.ConnectivitySettings.NodePreference)) {
+						_settings.ConnectivitySettings.NodePreference,
+						httpHandler)) {
 					InnerHandler = httpHandler
 				};
 				exceptionNotificationHook = clusterAwareHttpHandler.ExceptionOccurred;
