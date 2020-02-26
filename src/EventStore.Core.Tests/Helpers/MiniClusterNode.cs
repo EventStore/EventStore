@@ -107,6 +107,9 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpSecEndPoint = externalTcpSec;
 			ExternalHttpEndPoint = externalHttp;
 
+			var certificate = ssl_connections.GetCertificate();
+			var disableInternalTls = !ssl_connections.IsValidCertificate(certificate); //use internal TLS only if CA certificate is installed
+
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
@@ -114,9 +117,9 @@ namespace EventStore.Core.Tests.Helpers {
 					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
 					InternalHttpEndPoint, ExternalHttpEndPoint,
 					null, null, 0, 0), enableTrustedAuth,
-				ssl_connections.GetCertificate(), 1, false,
+				certificate, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
-				false, false, "",TimeSpan.FromHours(1), StatsStorage.None, 0,
+				disableInternalTls, false, "es-test-server",TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
