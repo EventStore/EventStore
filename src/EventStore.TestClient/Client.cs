@@ -39,9 +39,9 @@ namespace EventStore.TestClient {
 			TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
 			HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
 
-			UseSsl = options.UseSsl;
-			TargetHost = options.TargetHost;
-			ValidateServer = options.ValidateServer;
+			UseSsl = options.UseTls;
+			TargetHost = options.TlsTargetHost;
+			ValidateServer = options.TlsValidateServer;
 
 			InteractiveMode = options.Command.IsEmpty();
 
