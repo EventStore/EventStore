@@ -5,6 +5,8 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Security;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -322,6 +324,12 @@ namespace EventStore.ClusterNode {
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)
 				builder.WithUnsafeAllowSurplusNodes();
+			if (options.Dev)
+				builder.WithHttpMessageHandlerFactory(() => new SocketsHttpHandler {
+					SslOptions = new SslClientAuthenticationOptions {
+						RemoteCertificateValidationCallback = delegate { return true; }
+					}
+				});
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
