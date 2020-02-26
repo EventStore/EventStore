@@ -184,13 +184,13 @@ namespace EventStore.Core.Services.Gossip {
 				return;
 
 			if (CurrentLeader != null && node.InstanceId == CurrentLeader.InstanceId) {
-				Log.Debug(
+				Log.Information(
 					"Leader [{leaderEndPoint}, {instanceId:B}] appears to be DEAD (Gossip send failed); wait for TCP to decide.",
 					message.Recipient, node.InstanceId);
 				return;
 			}
 
-			Log.Debug("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
+			Log.Information("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
 
 			var oldCluster = _cluster;
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
@@ -207,7 +207,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (node == null || !node.IsAlive)
 				return;
 
-			Log.Debug("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
+			Log.Information("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
 			_bus.Publish(new GrpcMessage.SendOverGrpc(node.InternalHttpEndPoint,
 				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Debug("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
+			Log.Information("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
 
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster,
@@ -235,7 +235,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Debug("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
+			Log.Information("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
 				message.Recipient);
 
 			var oldCluster = _cluster;
@@ -338,7 +338,7 @@ namespace EventStore.Core.Services.Gossip {
 				.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
 			List<MemberInfo> newMembers = newCluster.Members
 				.OrderByDescending(x => x.InternalHttpEndPoint, ipEndPointComparer).ToList();
-			Log.Debug(
+			Log.Information(
 				"CLUSTER HAS CHANGED {source}"
 				+ "\nOld:"
 				+ "\n{oldMembers}"
