@@ -9,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
+using IEventFilter = EventStore.Core.Util.IEventFilter;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Enumerators {
@@ -19,6 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly Util.IEventFilter _eventFilter;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
+			private readonly DateTime _deadline;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
@@ -30,14 +32,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public ResolvedEvent Current => _current;
 
-			public ReadAllBackwardsFiltered(
-				IPublisher bus,
+			public ReadAllBackwardsFiltered(IPublisher bus,
 				Position position,
 				ulong maxCount,
 				bool resolveLinks,
-				Util.IEventFilter eventFilter,
+				IEventFilter eventFilter,
 				uint? maxSearchWindow,
 				ClaimsPrincipal user,
+				DateTime deadline,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -62,6 +64,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_maxSearchWindow = maxSearchWindow ?? (uint)maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
+				_deadline = deadline;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
@@ -97,7 +100,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus.Publish(new ClientMessage.FilteredReadAllEventsBackward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
 					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
-					_resolveLinks, false, (int) _maxSearchWindow, default, _eventFilter, _user));
+					_resolveLinks, false, (int) _maxSearchWindow, default, _eventFilter, _user, expires: _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;

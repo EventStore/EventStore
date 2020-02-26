@@ -18,6 +18,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
+			private readonly DateTime _deadline;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
@@ -29,13 +30,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public ResolvedEvent Current => _current;
 
-			public ReadStreamBackwards(
-				IPublisher bus,
+			public ReadStreamBackwards(IPublisher bus,
 				string streamName,
 				StreamRevision startRevision,
 				ulong maxCount,
 				bool resolveLinks,
 				ClaimsPrincipal user,
+				DateTime deadline,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -51,6 +52,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
+				_deadline = deadline;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
@@ -83,9 +85,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var correlationId = Guid.NewGuid();
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsBackward(
-					correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName,
-					_nextRevision.ToInt64(), Math.Min(32, (int)_maxCount),
-					_resolveLinks, false, default, _user));
+					correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName, _nextRevision.ToInt64(),
+					Math.Min(32, (int)_maxCount), _resolveLinks, false, default, _user, _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;

@@ -707,9 +707,7 @@ namespace EventStore.ClientAPI.Embedded {
 					settings.MaxCheckPointCount,
 					settings.MaxSubscriberCount,
 					settings.NamedConsumerStrategy,
-					user,
-					credentials == null ? null : credentials.Username,
-					credentials == null ? null : credentials.Password));
+					user));
 			await source.Task.ConfigureAwait(false);
 		}
 
@@ -748,9 +746,7 @@ namespace EventStore.ClientAPI.Embedded {
 					settings.MaxCheckPointCount,
 					settings.MaxSubscriberCount,
 					settings.NamedConsumerStrategy,
-					user,
-					credentials == null ? null : credentials.Username,
-					credentials == null ? null : credentials.Password));
+					user));
 			await source.Task.ConfigureAwait(false);
 		}
 

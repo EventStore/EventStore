@@ -431,8 +431,8 @@ namespace EventStore.Core.Messages {
 			public readonly StreamAccessType AccessType;
 
 			public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, ClaimsPrincipal user, bool singleAffinity = false)
-				: base(correlationId, correlationId, envelope, user) {
+				StreamAccessType accessType, ClaimsPrincipal user, bool singleAffinity = false, DateTime? expires = null)
+				: base(correlationId, correlationId, envelope, user, expires) {
 				if (eventStreamId == null && transactionId == null)
 					throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
 				EventStreamId = eventStreamId;

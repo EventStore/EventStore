@@ -584,7 +584,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
 				dto.ReadBatchSize, dto.CheckpointAfterTime, dto.CheckpointMinCount,
 				dto.CheckpointMaxCount, dto.SubscriberMaxCount, namedConsumerStrategy,
-				user, username, password);
+				user);
 		}
 
 		private ClientMessage.UpdatePersistentSubscription UnwrapUpdatePersistentSubscription(
@@ -606,7 +606,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				dto.RecordStatistics, dto.MaxRetryCount, dto.BufferSize, dto.LiveBufferSize,
 				dto.ReadBatchSize, dto.CheckpointAfterTime, dto.CheckpointMinCount,
 				dto.CheckpointMaxCount, dto.SubscriberMaxCount, namedConsumerStrategy,
-				user, username, password);
+				user);
 		}
 
 		private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
