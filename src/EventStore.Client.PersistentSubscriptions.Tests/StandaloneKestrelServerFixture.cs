@@ -32,7 +32,9 @@ namespace EventStore.Client {
 			var port = ((IPEndPoint)socket.LocalEndPoint).Port;
 
 			var vNodeBuilder = new TestVNodeBuilder();
-			vNodeBuilder.RunInMemory();
+			vNodeBuilder
+				.RunInMemory()
+				.WithExternalHttpOn((IPEndPoint)socket.LocalEndPoint);
 			_node = vNodeBuilder.Build();
 			_db = vNodeBuilder.GetDb();
 
