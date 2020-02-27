@@ -66,7 +66,7 @@ namespace EventStore.Core.Cluster {
 				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
 		}
 
-		private MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
+		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
 			IPEndPoint internalTcpEndPoint, IPEndPoint internalSecureTcpEndPoint,
 			IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
@@ -86,40 +86,6 @@ namespace EventStore.Core.Cluster {
 			InternalSecureTcpEndPoint = internalSecureTcpEndPoint;
 			ExternalTcpEndPoint = externalTcpEndPoint;
 			ExternalSecureTcpEndPoint = externalSecureTcpEndPoint;
-			InternalHttpEndPoint = internalHttpEndPoint;
-			ExternalHttpEndPoint = externalHttpEndPoint;
-
-			LastCommitPosition = lastCommitPosition;
-			WriterCheckpoint = writerCheckpoint;
-			ChaserCheckpoint = chaserCheckpoint;
-
-			EpochPosition = epochPosition;
-			EpochNumber = epochNumber;
-			EpochId = epochId;
-
-			NodePriority = nodePriority;
-			IsReadOnlyReplica = isReadOnlyReplica;
-		}
-		
-		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
-			IPEndPoint internalTcpEndPoint, 
-			IPEndPoint externalTcpEndPoint, 
-			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
-			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
-			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
-			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-
-			InstanceId = instanceId;
-
-			TimeStamp = timeStamp;
-			State = state;
-			IsAlive = isAlive;
-
-			InternalTcpEndPoint = internalTcpEndPoint;
-			ExternalTcpEndPoint = externalTcpEndPoint;
 			InternalHttpEndPoint = internalHttpEndPoint;
 			ExternalHttpEndPoint = externalHttpEndPoint;
 
