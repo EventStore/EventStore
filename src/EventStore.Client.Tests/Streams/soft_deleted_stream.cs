@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EventStore.Client.Streams {
 	[Trait("Category", "LongRunning")]
@@ -10,8 +11,9 @@ namespace EventStore.Client.Streams {
 		private readonly Fixture _fixture;
 		private readonly JsonDocument _customMetadata;
 
-		public soft_deleted_stream(Fixture fixture) {
+		public soft_deleted_stream(Fixture fixture, ITestOutputHelper outputHelper) {
 			_fixture = fixture;
+			_fixture.CaptureLogs(outputHelper);
 
 			var customMetadata = new Dictionary<string, object> {
 				["key1"] = true,
@@ -43,6 +45,18 @@ namespace EventStore.Client.Streams {
 		public static IEnumerable<object[]> RecreatingTestCases() {
 			yield return new object[] {AnyStreamRevision.Any, nameof(AnyStreamRevision.Any)};
 			yield return new object[] {AnyStreamRevision.NoStream, nameof(AnyStreamRevision.NoStream)};
+		}
+
+		[Fact]
+		public async Task recreated_with_same_message_id() {
+			var stream = _fixture.GetStreamName();
+			var events = _fixture.CreateTestEvents().ToArray();
+
+			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
+
+			await _fixture.Client.SoftDeleteAsync(stream, AnyStreamRevision.Any);
+
+			await _fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, events);
 		}
 
 		[Theory, MemberData(nameof(RecreatingTestCases))]
