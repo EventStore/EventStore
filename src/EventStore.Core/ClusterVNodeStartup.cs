@@ -91,27 +91,37 @@ namespace EventStore.Core {
 				.UseMiddleware<AuthenticationMiddleware>();
 			_subsystems
 				.Aggregate(app
-						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),
+						.UseWhen(context => IsExternalHttpRequest(context) && context.Request.Path.StartsWithSegments(PersistentSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<PersistentSubscriptions>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),
+						.UseWhen(context => IsExternalHttpRequest(context) && context.Request.Path.StartsWithSegments(UsersSegment),
 							inner => inner.UseRouting().Use(RequireAuthenticated).UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Users>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
+						.UseWhen(context => IsExternalHttpRequest(context) && context.Request.Path.StartsWithSegments(StreamsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Streams>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(GossipSegment),
+						.UseWhen(context => IsInternalHttpRequest(context) && context.Request.Path.StartsWithSegments(GossipSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Gossip>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(ElectionsSegment),
+						.UseWhen(context => IsInternalHttpRequest(context) && context.Request.Path.StartsWithSegments(ElectionsSegment),
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Elections>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
+						.UseWhen(context => IsExternalHttpRequest(context) && context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
 							inner => inner.UseRouting().UseEndpoints(endpoint =>
 								endpoint.MapGrpcService<Operations>())),
 					(b, subsystem) => subsystem.Configure(b));
 
 			app.UseLegacyHttp(_externalHttpService);
+		}
+
+		private bool IsExternalHttpRequest(HttpContext context) {
+			var port = context.Connection.LocalPort;
+			return port == _vNodeSettings.NodeInfo.ExternalHttp.Port || port == 0 /*TestServer*/;
+		}
+
+		private bool IsInternalHttpRequest(HttpContext context) {
+			var port = context.Connection.LocalPort;
+			return port == _vNodeSettings.NodeInfo.InternalHttp.Port || port == 0 /*TestServer*/;
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
