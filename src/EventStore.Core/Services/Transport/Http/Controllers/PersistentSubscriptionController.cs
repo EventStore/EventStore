@@ -11,6 +11,7 @@ using ClientMessages = EventStore.Core.Messages.ClientMessage.PersistentSubscrip
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Data;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Transport.Http.Atom;
 using ILogger = Serilog.ILogger;
 
@@ -36,32 +37,46 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
-				DefaultCodecs, AuthorizationLevel.User);
+				DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs,
-				DefaultCodecs, AuthorizationLevel.Ops);
+				DefaultCodecs, new Operation(Operations.Subscriptions.Create));
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Post, PostSubscription,
-				DefaultCodecs, DefaultCodecs, AuthorizationLevel.Ops);
-			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, AuthorizationLevel.Ops, DeleteSubscription);
+				DefaultCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Update));
+			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Delete, new Operation(Operations.Subscriptions.Delete), DeleteSubscription);
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Get, GetNextNMessages,
-				Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomCodecs, WithParameters(Operations.Subscriptions.ProcessMessages));
 			Register(service, "/subscriptions/{stream}/{subscription}?embed={embed}", HttpMethod.Get, GetNextNMessages,
-				Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomCodecs, WithParameters(Operations.Subscriptions.ProcessMessages));
 			Register(service, "/subscriptions/{stream}/{subscription}/{count}?embed={embed}", HttpMethod.Get,
-				GetNextNMessages, Codec.NoCodecs, AtomCodecs, AuthorizationLevel.User);
+				GetNextNMessages, Codec.NoCodecs, AtomCodecs, WithParameters(Operations.Subscriptions.ProcessMessages));
 			Register(service, "/subscriptions/{stream}/{subscription}/info", HttpMethod.Get, GetSubscriptionInfo,
-				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/replayParked?stopAt={stopAt}", HttpMethod.Post,
-				AuthorizationLevel.User, ReplayParkedMessages);
+				WithParameters(Operations.Subscriptions.ReplayParked), ReplayParkedMessages);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack/{messageid}", HttpMethod.Post, 
-				AuthorizationLevel.User, AckMessage);
+				WithParameters(Operations.Subscriptions.ProcessMessages), AckMessage);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action}",
-				HttpMethod.Post, AuthorizationLevel.User, NackMessage);
+				HttpMethod.Post, WithParameters(Operations.Subscriptions.ProcessMessages), NackMessage);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/ack?ids={messageids}", HttpMethod.Post, 
-				AuthorizationLevel.User, AckMessages);
+				WithParameters(Operations.Subscriptions.ProcessMessages), AckMessages);
 			RegisterUrlBased(service, "/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action}",
-				HttpMethod.Post, AuthorizationLevel.User, NackMessages);
+				HttpMethod.Post, WithParameters(Operations.Subscriptions.ProcessMessages), NackMessages);
+		}
+
+		static Func<UriTemplateMatch, Operation> WithParameters(OperationDefinition definition) {
+			var operation = new Operation(definition);
+			return match => {
+				var stream = match.BoundVariables["stream"];
+				if(!string.IsNullOrEmpty(stream))
+					operation = operation.WithParameter(Operations.Subscriptions.Parameters.StreamId(stream));
+				var subscription = match.BoundVariables["subscription"];
+				if (!string.IsNullOrEmpty(subscription))
+					operation = operation.WithParameter(
+						Operations.Subscriptions.Parameters.SubscriptionId(subscription));
+				return operation;
+			};
 		}
 
 		private static ClientMessages.NakAction GetNackAction(HttpEntityManager manager, UriTemplateMatch match,

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Rags;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -29,10 +30,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
-			service.RegisterAction(new ControllerAction("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
+			service.RegisterAction(new ControllerAction("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Information.Read)),
 				OnGetInfo);
 			service.RegisterAction(
-				new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops), OnGetOptions);
+				new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Information.Options)), OnGetOptions);
 		}
 
 

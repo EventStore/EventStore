@@ -320,7 +320,8 @@ namespace EventStore.Core.Tests.Http.Users {
 			public async Task can_change_password_using_the_new_password() {
 				var response = await MakeJsonPost(
 					"/users/test1/command/change-password",
-					new { CurrentPassword = "NewPassword!", NewPassword = "TheVeryNewPassword!" });
+					new { CurrentPassword = "NewPassword!", NewPassword = "TheVeryNewPassword!" },
+					new NetworkCredential("test1", "NewPassword!"));
 				Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 			}
 		}

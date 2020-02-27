@@ -4,6 +4,8 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
+using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal static class AuthenticationExtensions {
@@ -11,7 +13,7 @@ namespace EventStore.ClientAPI.Embedded {
 			this IPublisher publisher, IAuthenticationProvider authenticationProvider, UserCredentials userCredentials,
 			Action<Exception> setException, Func<ClaimsPrincipal, Message> onUser) {
 			if (userCredentials == null) {
-				var message = onUser(null);
+				var message = onUser(SystemAccounts.Anonymous);
 
 				publisher.Publish(message);
 

@@ -48,8 +48,9 @@ namespace EventStore.Core.Services.Storage {
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsBackward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsBackward>(readerWorkers[i]);
-				storageReaderBuses[i].Subscribe<StorageMessage.CheckStreamAccess>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.BatchLogExpiredMessages>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<StorageMessage.EffectiveStreamAclRequest>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<StorageMessage.StreamIdFromTransactionIdRequest>(readerWorkers[i]);
 			}
 
 			_workersMultiHandler = new MultiQueuedHandler(
@@ -69,8 +70,9 @@ namespace EventStore.Core.Services.Storage {
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsBackward, Message>());
-			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.CheckStreamAccess, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.BatchLogExpiredMessages, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.EffectiveStreamAclRequest, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.StreamIdFromTransactionIdRequest, Message>());
 		}
 
 		void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {

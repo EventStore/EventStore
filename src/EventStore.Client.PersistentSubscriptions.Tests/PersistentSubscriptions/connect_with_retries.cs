@@ -43,7 +43,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 							await subscription.Nack(PersistentSubscriptionNakEventAction.Retry,
 								"Not yet tried enough times", e);
 						}
-					}, autoAck: false);
+					}, autoAck: false, userCredentials:TestCredentials.TestUser1);
 			}
 
 			protected override Task When() =>

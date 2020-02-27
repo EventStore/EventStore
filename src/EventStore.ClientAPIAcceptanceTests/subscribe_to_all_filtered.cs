@@ -56,13 +56,13 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, ClassData(typeof(EventTypeFilterCases))]
-		public async Task event_type_concurrently(bool useSsl, Func<string, Filter> getFilter, string name) {
-			var eventTypePrefix = $"{GetStreamName()}_{useSsl}_{name}";
+		public async Task event_type_concurrently(EventTypeFilterCases.Case testCase) {
+			var eventTypePrefix = $"{GetStreamName()}_{testCase.UseSsl}_{testCase.FilterType}";
 
 			var eventAppearedSource1 = new TaskCompletionSource<ResolvedEvent>();
 			var eventAppearedSource2 = new TaskCompletionSource<ResolvedEvent>();
-			var connection = _fixture.Connections[useSsl];
-			var filter = getFilter(eventTypePrefix);
+			var connection = _fixture.Connections[testCase.UseSsl];
+			var filter = testCase.CreateFilter(eventTypePrefix);
 
 			using (await connection
 				.FilteredSubscribeToAllAsync(false, filter, EventAppeared1, subscriptionDropped: SubscriptionDropped1)

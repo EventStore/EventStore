@@ -20,5 +20,26 @@ namespace EventStore.ClientAPI.Tests {
 
 		private static readonly Func<string, Filter> StreamIdRegex = prefix =>
 			Filter.StreamId.Regex(new Regex($"^{prefix}"));
+
+		public enum FilterType {
+			Prefix, 
+			Regex
+		}
+		public class StreamIdFilterCase {
+			public StreamIdFilterCase(bool useSsl, FilterType filterType) {
+				UseSsl = useSsl;
+				FilterType = filterType;
+			}
+
+			public bool UseSsl { get; }
+			public FilterType FilterType { get; }
+
+			public Filter CreateFilter(string prefix) => FilterType switch
+			{
+				FilterType.Prefix => StreamIdPrefix(prefix),
+				FilterType.Regex => StreamIdRegex(prefix),
+				_ => throw new NotImplementedException(),
+			};
+		}
 	}
 }

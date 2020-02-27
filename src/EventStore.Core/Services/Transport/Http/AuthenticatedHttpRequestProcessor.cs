@@ -9,7 +9,6 @@ using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
-using Microsoft.Extensions.Primitives;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using ILogger = Serilog.ILogger;
 
@@ -49,172 +48,23 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		public void Handle(AuthenticatedHttpRequestMessage message) {
-			ProcessRequest(message.HttpService, message.Entity);
-		}
-
-		private void ProcessRequest(IHttpService httpService, HttpEntity httpEntity) {
-			var request = httpEntity.Request;
+			var manager = message.Manager;
+			var match = message.Match;
 			try {
-				var allMatches = httpService.GetAllUriMatches(request.Url);
-				if (allMatches.Count == 0) {
-					NotFound(httpEntity);
-					return;
-				}
-
-				var allowedMethods = GetAllowedMethods(allMatches);
-
-				if (request.HttpMethod.Equals(HttpMethod.Options, StringComparison.OrdinalIgnoreCase)) {
-					RespondWithOptions(httpEntity, allowedMethods);
-					return;
-				}
-
-				var match = allMatches.LastOrDefault(
-					m => m.ControllerAction.HttpMethod.Equals(request.HttpMethod, StringComparison.OrdinalIgnoreCase));
-				if (match == null) {
-					MethodNotAllowed(httpEntity, allowedMethods);
-					return;
-				}
-
-				ICodec requestCodec = null;
-				var supportedRequestCodecs = match.ControllerAction.SupportedRequestCodecs;
-				if (supportedRequestCodecs != null && supportedRequestCodecs.Length > 0) {
-					requestCodec = SelectRequestCodec(request.HttpMethod, request.ContentType, supportedRequestCodecs);
-					if (requestCodec == null) {
-						BadContentType(httpEntity, "Invalid or missing Content-Type");
-						return;
-					}
-				}
-
-				ICodec responseCodec = SelectResponseCodec(request,
-					request.AcceptTypes,
-					match.ControllerAction.SupportedResponseCodecs,
-					match.ControllerAction.DefaultResponseCodec);
-				if (responseCodec == null) {
-					BadCodec(httpEntity, "Requested URI is not available in requested format");
-					return;
-				}
-
-
-				try {
-					var manager =
-						httpEntity.CreateManager(requestCodec, responseCodec, allowedMethods, satisfied => { });
-					var reqParams = match.RequestHandler(manager, match.TemplateMatch);
-					if (!reqParams.IsDone)
-						_pending.Add(Tuple.Create(DateTime.UtcNow + reqParams.Timeout, manager));
-				} catch (Exception exc) {
-					Log.Error(exc, "Error while handling HTTP request '{url}'.", request.Url);
-					InternalServerError(httpEntity);
-				}
+				var reqParams = match.RequestHandler(manager, match.TemplateMatch);
+				if (!reqParams.IsDone)
+					_pending.Add(Tuple.Create(DateTime.UtcNow + reqParams.Timeout, manager));
 			} catch (Exception exc) {
-				Log.Error(exc, "Unhandled exception while processing HTTP request at {url}.",
-					httpEntity.RequestedUrl);
-				InternalServerError(httpEntity);
+				Log.Error(exc, "Error while handling HTTP request '{url}'.", manager.HttpEntity.Request.Url);
+				InternalServerError(manager);
 			}
 
 			PurgeTimedOutRequests();
 		}
-
-		private static string[] GetAllowedMethods(List<UriToActionMatch> allMatches) {
-			var allowedMethods = new string[allMatches.Count + 1];
-			for (int i = 0; i < allMatches.Count; ++i) {
-				allowedMethods[i] = allMatches[i].ControllerAction.HttpMethod;
-			}
-
-			//add options to the list of allowed request methods
-			allowedMethods[allMatches.Count] = HttpMethod.Options;
-			return allowedMethods;
-		}
-
-		private void RespondWithOptions(HttpEntity httpEntity, string[] allowed) {
-			var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-			entity.ReplyStatus(HttpStatusCode.OK, "OK",
-				e => Log.Debug("Error while closing HTTP connection (http service core): {e}.", e.Message));
-		}
-
-		private void MethodNotAllowed(HttpEntity httpEntity, string[] allowed) {
-			var entity = httpEntity.CreateManager(Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-			entity.ReplyStatus(HttpStatusCode.MethodNotAllowed, "Method Not Allowed",
-				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
-		}
-
-		private void NotFound(HttpEntity httpEntity) {
-			var entity = httpEntity.CreateManager();
-			entity.ReplyStatus(HttpStatusCode.NotFound, "Not Found",
-				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
-		}
-
-		private void InternalServerError(HttpEntity httpEntity) {
-			var entity = httpEntity.CreateManager();
+	
+		private void InternalServerError(HttpEntityManager entity) {
 			entity.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error",
 				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
-		}
-
-		private void BadCodec(HttpEntity httpEntity, string reason) {
-			var entity = httpEntity.CreateManager();
-			entity.ReplyStatus(HttpStatusCode.NotAcceptable, reason,
-				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
-		}
-
-		private void BadContentType(HttpEntity httpEntity, string reason) {
-			var entity = httpEntity.CreateManager();
-			entity.ReplyStatus(HttpStatusCode.UnsupportedMediaType, reason,
-				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));
-		}
-
-		private ICodec SelectRequestCodec(string method, string contentType, ICodec[] supportedCodecs) {
-			if (string.IsNullOrEmpty(contentType))
-				return supportedCodecs != null && supportedCodecs.Length > 0 ? null : Codec.NoCodec;
-			switch (method.ToUpper()) {
-				case HttpMethod.Post:
-				case HttpMethod.Put:
-				case HttpMethod.Delete:
-					return supportedCodecs.SingleOrDefault(c => c.CanParse(MediaType.Parse(contentType)));
-
-				default:
-					return Codec.NoCodec;
-			}
-		}
-
-		private ICodec SelectResponseCodec(IHttpRequest query, string[] acceptTypes, ICodec[] supported,
-			ICodec @default) {
-			var requestedFormat = GetFormatOrDefault(query);
-			if (requestedFormat == null && acceptTypes.IsEmpty())
-				return @default;
-
-			if (requestedFormat != null)
-				return supported.FirstOrDefault(c => c.SuitableForResponse(MediaType.Parse(requestedFormat)));
-
-			return acceptTypes.Select(MediaType.TryParse)
-				.Where(x => x != null)
-				.OrderByDescending(v => v.Priority)
-				.Select(type => supported.FirstOrDefault(codec => codec.SuitableForResponse(type)))
-				.FirstOrDefault(corresponding => corresponding != null);
-		}
-
-		private static string GetFormatOrDefault(IHttpRequest request) {
-			var format = request.GetQueryStringValues("format").FirstOrDefault()?.ToLower();
-
-			switch (format) {
-				case null:
-				case "":
-					return null;
-				case "json":
-					return ContentType.Json;
-				case "text":
-					return ContentType.PlainText;
-				case "xml":
-					return ContentType.Xml;
-				case "atom":
-					return ContentType.Atom;
-				case "atomxj":
-					return ContentType.AtomJson;
-				case "atomsvc":
-					return ContentType.AtomServiceDoc;
-				case "atomsvcxj":
-					return ContentType.AtomServiceDocJson;
-				default:
-					throw new NotSupportedException("Unknown format requested");
-			}
 		}
 	}
 }

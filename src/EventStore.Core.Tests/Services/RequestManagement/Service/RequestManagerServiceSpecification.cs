@@ -5,8 +5,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.RequestManager;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -14,7 +14,6 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 	public abstract class RequestManagerServiceSpecification:
-		IHandle<StorageMessage.CheckStreamAccess>,
 		IHandle<StorageMessage.WritePrepares>,
 		IHandle<StorageMessage.RequestCompleted> {
 		protected readonly TimeSpan PrepareTimeout = TimeSpan.FromMinutes(5);
@@ -39,7 +38,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 
 
 		protected RequestManagerServiceSpecification() {
-			Dispatcher.Subscribe<StorageMessage.CheckStreamAccess>(this);
 			Dispatcher.Subscribe<StorageMessage.WritePrepares>(this);
 			Dispatcher.Subscribe<StorageMessage.RequestCompleted>(this);
 
@@ -49,7 +47,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				TimeSpan.FromSeconds(2),
 				false);
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
-			Dispatcher.Subscribe<StorageMessage.CheckStreamAccessCompleted>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.CommitAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Service);
@@ -74,13 +71,13 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			
 		}
 
-		public void Handle(StorageMessage.CheckStreamAccess message) {
-			Dispatcher.Publish(new StorageMessage.CheckStreamAccessCompleted(
-				message.CorrelationId,
-				message.EventStreamId,
-				message.TransactionId,
-				message.AccessType,
-				new StreamAccess(GrantAccess)));
+
+		private static readonly StreamAcl PublicStream = new StreamAcl(SystemRoles.All, SystemRoles.All, SystemRoles.All,
+			SystemRoles.All, SystemRoles.All);
+		public void Handle(StorageMessage.EffectiveStreamAclRequest message) {
+			message.Envelope.ReplyWith(new StorageMessage.EffectiveStreamAclResponse(new StorageMessage.EffectiveAcl(
+				PublicStream, PublicStream, PublicStream
+				)));
 		}
 
 		public void Handle(StorageMessage.WritePrepares message) {

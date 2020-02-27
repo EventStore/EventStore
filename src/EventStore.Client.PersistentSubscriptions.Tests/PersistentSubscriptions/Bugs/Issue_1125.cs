@@ -47,7 +47,12 @@ namespace EventStore.Client.PersistentSubscriptions.Bugs {
 					if (totalEvents == result) {
 						completed.TrySetResult(true);
 					}
-				})) {
+				}, (s, dr, e) => {
+					if (e != null)
+						completed.TrySetException(e);
+					else
+						completed.TrySetException(new Exception($"{dr}"));
+				}, userCredentials)) {
 				for (var i = 0; i < eventCount; i++) {
 					await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.Any,
 						_fixture.CreateTestEvents());

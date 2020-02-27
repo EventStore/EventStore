@@ -3,21 +3,31 @@ using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
+using EventStore.Core.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
+		private static readonly Operation ReadOperation = new Operation(Authorization.Operations.Users.Read);
 		public override async Task Details(DetailsReq request, IServerStreamWriter<DetailsResp> responseStream,
 			ServerCallContext context) {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-
+			var readOperation = ReadOperation;
+			if (user?.Identity?.Name != null) {
+				readOperation =
+					readOperation.WithParameter(
+						Authorization.Operations.Users.Parameters.User(user.Identity.Name));
+			}
+			if (!await _authorizationProvider.CheckAccessAsync(user, readOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			var detailsSource = new TaskCompletionSource<UserManagementMessage.UserData[]>();
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(string.IsNullOrWhiteSpace(options?.LoginName)
+			_publisher.Publish(string.IsNullOrWhiteSpace(options?.LoginName)
 				? (Message)new UserManagementMessage.GetAll(envelope, user)
 				: new UserManagementMessage.Get(envelope, user, options.LoginName));
 

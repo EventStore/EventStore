@@ -8,6 +8,9 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using EventStore.Core.Authorization;
 using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
 
@@ -49,11 +52,11 @@ namespace EventStore.Core.Services {
 		private readonly IEnvelope _busEnvelope;
 		private readonly IQueuedHandler _queuedHandler;
 		private readonly IReadIndex _readIndex;
-		private static readonly char[] _linkToSeparator = new[] {'@'};
+		private static readonly char[] _linkToSeparator = new[] { '@' };
 
 		public SubscriptionsService(IPublisher bus, IQueuedHandler queuedHandler, IReadIndex readIndex) {
 			Ensure.NotNull(bus, "bus");
-			Ensure.NotNull(queuedHandler, "queudHandler");
+			Ensure.NotNull(queuedHandler, "queuedHandler");
 			Ensure.NotNull(readIndex, "readIndex");
 
 			_bus = bus;
@@ -103,47 +106,29 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ClientMessage.SubscribeToStream msg) {
-			var streamAccess = _readIndex.CheckStreamAccess(
-				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, 
-				StreamAccessType.Read,
-				msg.User);
-
-			if (streamAccess.Granted) {
-				var lastEventNumber = msg.EventStreamId.IsEmptyString()
-					? (long?)null
-					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
-				var lastIndexedPos = _readIndex.LastIndexedPosition;
-				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, EventFilter.None);
-				var subscribedMessage =
-					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
-				msg.Envelope.ReplyWith(subscribedMessage);
-			} else {
-				msg.Envelope.ReplyWith(
-					new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
-			}
+			var lastEventNumber = msg.EventStreamId.IsEmptyString()
+				? (long?)null
+				: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
+			var lastIndexedPos = _readIndex.LastIndexedPosition;
+			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
+				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, EventFilter.None);
+			var subscribedMessage =
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
+			msg.Envelope.ReplyWith(subscribedMessage);
 		}
 
 		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
-			var streamAccess = _readIndex.CheckStreamAccess(
-				msg.EventStreamId.IsEmptyString() ? SystemStreams.AllStream : msg.EventStreamId, StreamAccessType.Read,
-				msg.User);
-
-			if (streamAccess.Granted) {
-				var lastEventNumber = msg.EventStreamId.IsEmptyString()
+			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 					? (long?)null
 					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
-				var lastCommitPos = _readIndex.LastIndexedPosition;
-				SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-					msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
-					msg.CheckpointInterval);
-				var subscribedMessage =
-					new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
-				msg.Envelope.ReplyWith(subscribedMessage);
-			} else {
-				msg.Envelope.ReplyWith(
-					new ClientMessage.SubscriptionDropped(msg.CorrelationId, SubscriptionDropReason.AccessDenied));
-			}
+			var lastCommitPos = _readIndex.LastIndexedPosition;
+			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
+				msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
+				msg.CheckpointInterval);
+			var subscribedMessage =
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+			msg.Envelope.ReplyWith(subscribedMessage);
+
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
@@ -300,13 +285,13 @@ namespace EventStore.Core.Services {
 					subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
 				}
 
-				if (subscr.CheckpointInterval == DontReportCheckpointReached) 
+				if (subscr.CheckpointInterval == DontReportCheckpointReached)
 					continue;
-				
+
 				subscr.CheckpointIntervalCurrent++;
 
 				if (subscr.CheckpointInterval != null &&
-				    subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
+					subscr.CheckpointIntervalCurrent >= subscr.CheckpointInterval) {
 					subscr.Envelope.ReplyWith(new ClientMessage.CheckpointReached(subscr.CorrelationId,
 						pair.OriginalPosition));
 					subscr.CheckpointIntervalCurrent = 0;

@@ -18,11 +18,11 @@ namespace EventStore.Client.PersistentSubscriptions {
 			var dropped = new TaskCompletionSource<(SubscriptionDroppedReason, Exception)>();
 
 			using var first = _fixture.Client.PersistentSubscriptions
-				.Subscribe(Stream, Group, delegate { return Task.CompletedTask; });
+				.Subscribe(Stream, Group, delegate { return Task.CompletedTask; }, userCredentials: TestCredentials.Root);
 			await first.Started.WithTimeout();
 			using var second = _fixture.Client.PersistentSubscriptions
 				.Subscribe(Stream, Group, delegate { return Task.CompletedTask; },
-					(s, r, e) => dropped.SetResult((r, e)));
+					(s, r, e) => dropped.SetResult((r, e)), userCredentials: TestCredentials.Root);
 			await second.Started.WithTimeout();
 
 			var (reason, exception) = await dropped.Task.WithTimeout();
@@ -37,12 +37,13 @@ namespace EventStore.Client.PersistentSubscriptions {
 			public Fixture() {
 			}
 
-			protected override Task Given() =>
-				Client.PersistentSubscriptions.CreateAsync(
+			protected override Task Given() {
+				return Client.PersistentSubscriptions.CreateAsync(
 					Stream,
 					Group,
 					new PersistentSubscriptionSettings(maxSubscriberCount: 1),
 					TestCredentials.Root);
+			}
 
 			protected override Task When() => Task.CompletedTask;
 		}

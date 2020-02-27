@@ -2,18 +2,24 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 using static EventStore.Client.Projections.CreateReq.Types.Options;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
+		private static readonly Operation CreateOperation = new Operation(Operations.Projections.Create);
+
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
 			var createdSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-
+			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			const string handlerType = "JS";
 			var name = options.ModeCase switch {
 				ModeOneofCase.Continuous => options.Continuous.Name,

@@ -29,6 +29,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 					ExpectedVersion,
 					new CommitSource()));
 		}
+
 		[Test]
 		public void null_envelope_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>

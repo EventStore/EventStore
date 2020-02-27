@@ -34,25 +34,26 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 		[Test]
 		public async Task committing_transaction_with_not_existing_credentials_is_not_authenticated() {
-			var transId = (await TransStart("write-stream", "user1", "pa$$1")).TransactionId;
-			var t2 = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-			await t2.WriteAsync(CreateEvents());
+			var t1 = await TransStart("write-stream", "user1", "pa$$1");
+			await t1.WriteAsync(CreateEvents());
+			var t2 = Connection.ContinueTransaction(t1.TransactionId, new UserCredentials("badlogin", "badpass"));
+			
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => t2.CommitAsync());
 		}
 
 		[Test]
 		public async Task committing_transaction_to_stream_with_no_credentials_is_denied() {
-			var transId = (await TransStart("write-stream", "user1", "pa$$1")).TransactionId;
-			var t2 = Connection.ContinueTransaction(transId);
-			await t2.WriteAsync();
+			var t1 = await TransStart("write-stream", "user1", "pa$$1");
+			await t1.WriteAsync();
+			var t2 = Connection.ContinueTransaction(t1.TransactionId);
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => t2.CommitAsync());
 		}
 
 		[Test]
 		public async Task committing_transaction_to_stream_with_not_authorized_user_credentials_is_denied() {
-			var transId = (await TransStart("write-stream", "user1", "pa$$1")).TransactionId;
-			var t2 = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await t2.WriteAsync();
+			var t1 = await TransStart("write-stream", "user1", "pa$$1");
+			await t1.WriteAsync();
+			var t2 = Connection.ContinueTransaction(t1.TransactionId, new UserCredentials("user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => t2.CommitAsync());
 		}
 

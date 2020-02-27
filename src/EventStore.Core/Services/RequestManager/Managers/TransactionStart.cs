@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionStart : RequestManagerBase {
 		private readonly string _streamId;
 		private readonly bool _betterOrdering;
-		private readonly ClaimsPrincipal _user;
 
 		public TransactionStart(
 					IPublisher publisher,
@@ -20,7 +17,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					ClaimsPrincipal user,
 					CommitSource commitSource)
 			: base(
 					 publisher,
@@ -33,19 +29,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 1) {
 			_streamId = streamId;
 			_betterOrdering = betterOrdering;
-			_user = user;
 		}
-
-		protected override Message AccessRequestMsg =>
-				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope,
-						InternalCorrId,
-						_streamId,
-						null,
-						StreamAccessType.Write,
-						_user,
-						_betterOrdering);
-
+		
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionStart(
 					InternalCorrId,

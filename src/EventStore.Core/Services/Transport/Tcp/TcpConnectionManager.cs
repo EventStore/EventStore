@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		public static readonly TimeSpan ConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionManager>();
-
+		private static readonly ClaimsPrincipal Anonymous = new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Anonymous, ""), }));
 		public readonly Guid ConnectionId;
 		public readonly string ConnectionName;
 		public readonly IPEndPoint RemoteEndPoint;
@@ -67,6 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly int _connectionQueueSizeThreshold;
 
 		private readonly IAuthenticationProvider _authProvider;
+		private readonly AuthorizationGateway _authorization;
 		private UserCredentials _defaultUser;
 		private TcpServiceType _serviceType;
 
@@ -77,6 +78,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			ITcpConnection openedConnection,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorization,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			Action<TcpConnectionManager, SocketError> onConnectionClosed,
@@ -87,7 +89,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Ensure.NotNull(openedConnection, "openedConnnection");
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
-
+			Ensure.NotNull(authorization, "authorization");
 			ConnectionId = openedConnection.ConnectionId;
 			ConnectionName = connectionName;
 
@@ -96,6 +98,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_publisher = publisher;
 			_dispatcher = dispatcher;
 			_authProvider = authProvider;
+			_authorization = authorization;
 
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
@@ -130,6 +133,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			X509CertificateCollection sslClientCertificates,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorization,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			Action<TcpConnectionManager> onConnectionEstablished,
@@ -138,6 +142,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Ensure.NotNull(dispatcher, "dispatcher");
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorization, "authorization");
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotNull(connector, "connector");
 
@@ -148,6 +153,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_publisher = publisher;
 			_dispatcher = dispatcher;
 			_authProvider = authProvider;
+			_authorization = authorization;
 
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
@@ -308,7 +314,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 							_authProvider.Authenticate(new TcpAuthRequest(this, package, defaultUser.Login,
 								defaultUser.Password));
 					} else {
-						UnwrapAndPublishPackage(package, null, null, null);
+						UnwrapAndPublishPackage(package, Anonymous, null, null);
 					}
 
 					break;
@@ -326,7 +332,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			if (message != null)
-				_publisher.Publish(message);
+				_authorization.Authorize(message, _publisher);
 			else
 				SendBadRequest(package.CorrelationId,
 					string.Format("Could not unwrap network package for command {0}.\n{1}", package.Command, error));

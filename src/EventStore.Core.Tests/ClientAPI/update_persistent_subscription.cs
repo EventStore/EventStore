@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					_dropped.Set();
 					_reason = reason;
 					_exception = ex;
-				});
+				}, DefaultData.AdminCredentials);
 		}
 
 		protected override async Task When() {

@@ -1,17 +1,21 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using static EventStore.Core.Messages.UserManagementMessage;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users : EventStore.Client.Users.Users.UsersBase {
-		private readonly IQueuedHandler _queue;
-		
-		public Users(IQueuedHandler queue) {
-			if (queue == null) throw new ArgumentNullException(nameof(queue));
-			_queue = queue;
+		private readonly IPublisher _publisher;
+		private IAuthorizationProvider _authorizationProvider;
+
+		public Users(IPublisher publisher, IAuthorizationProvider authorizationProvider) {
+			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
+			if (authorizationProvider == null) throw new ArgumentNullException(nameof(authorizationProvider));
+			_publisher = publisher;
+			_authorizationProvider = authorizationProvider;
 		}
 
 		private static bool HandleErrors<T>(string loginName, Message message, TaskCompletionSource<T> source) {

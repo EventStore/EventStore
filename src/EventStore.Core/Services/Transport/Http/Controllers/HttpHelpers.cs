@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -14,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					HttpMethod.Get,
 					Codec.NoCodecs,
 					new ICodec[] {Codec.ManualEncoding},
-					AuthorizationLevel.None),
+					new Operation(Operations.Node.Redirect)),
 				(http, match) => http.ReplyTextContent(
 					"Moved", 302, "Found", "text/plain",
 					new[] {

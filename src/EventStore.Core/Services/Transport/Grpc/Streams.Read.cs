@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
+using EventStore.Core.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
@@ -17,6 +17,7 @@ using StreamOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.St
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
+		
 		public override async Task Read(
 			ReadReq request,
 			IServerStreamWriter<ReadResp> responseStream,
@@ -30,6 +31,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 
+			var op = streamOptionsCase switch {
+				StreamOptionOneofCase.Stream => ReadOperation.WithParameter(
+					Authorization.Operations.Streams.Parameters.StreamId(request.Options.Stream.StreamName)),
+				StreamOptionOneofCase.All => ReadOperation.WithParameter(
+					Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
+				_ => throw new InvalidOperationException()
+			};
+
+			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+
 			await using var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
 					(StreamOptionOneofCase.Stream,
@@ -37,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => (IAsyncEnumerator<ResolvedEvent>)
 					new Enumerators.ReadStreamForwards(
-						_queue,
+						_publisher,
 						request.Options.Stream.StreamName,
 						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
@@ -49,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadStreamBackwards(
-						_queue,
+						_publisher,
 						request.Options.Stream.StreamName,
 						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
@@ -61,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Count,
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadAllForwards(
-						_queue,
+						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -72,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Count,
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.Filter) => new Enumerators.ReadAllForwardsFiltered(
-						_queue,
+						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -89,7 +102,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadAllBackwards(
-						_queue,
+						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -100,7 +113,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Count,
 					ReadDirection.Backwards,
 					FilterOptionOneofCase.Filter) => new Enumerators.ReadAllBackwardsFiltered(
-						_queue,
+						_publisher,
 						request.Options.All.ToPosition(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -117,7 +130,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.StreamSubscription(
-						_queue,
+						_publisher,
 						request.Options.Stream.StreamName,
 						request.Options.Stream.ToSubscriptionStreamRevision(),
 						request.Options.ResolveLinks,
@@ -128,7 +141,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.AllSubscription(
-						_queue,
+						_publisher,
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						user,
@@ -138,7 +151,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CountOptionOneofCase.Subscription,
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.Filter) => new Enumerators.AllSubscriptionFiltered(
-						_queue,
+						_publisher,
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),

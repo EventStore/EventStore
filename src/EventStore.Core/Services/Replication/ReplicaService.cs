@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IEpochManager _epochManager;
 		private readonly IPublisher _networkSendQueue;
 		private readonly IAuthenticationProvider _authProvider;
+		private readonly AuthorizationGateway _authorizationGateway;
 		private readonly VNodeInfo _nodeInfo;
 		private readonly bool _useSsl;
 		private readonly bool _sslValidateServer;
@@ -49,6 +50,7 @@ namespace EventStore.Core.Services.Replication {
 			IEpochManager epochManager,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			VNodeInfo nodeInfo,
 			bool useSsl,
 			bool sslValidateServer,
@@ -60,6 +62,7 @@ namespace EventStore.Core.Services.Replication {
 			Ensure.NotNull(epochManager, "epochManager");
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorizationGateway, "authorizationGateway");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
 
 			_publisher = publisher;
@@ -67,6 +70,7 @@ namespace EventStore.Core.Services.Replication {
 			_epochManager = epochManager;
 			_networkSendQueue = networkSendQueue;
 			_authProvider = authProvider;
+			_authorizationGateway = authorizationGateway;
 
 			_nodeInfo = nodeInfo;
 			_useSsl = useSsl;
@@ -159,6 +163,7 @@ namespace EventStore.Core.Services.Replication {
 				_sslClientCertificates,
 				_networkSendQueue,
 				_authProvider,
+				_authorizationGateway,
 				_heartbeatInterval,
 				_heartbeatTimeout,
 				OnConnectionEstablished,

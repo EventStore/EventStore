@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-no-acl", "user1", "pa$$1"));
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-acl", "user2", "pa$$2"));
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-adm", "user1", "pa$$1"));

@@ -42,7 +42,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 				_subscription = Client.PersistentSubscriptions.Subscribe(Stream, Group,
 					delegate {
 						throw new Exception("test");
-					}, (subscription, reason, ex) => _subscriptionDroppedSource.SetResult((reason, ex)));
+					}, (subscription, reason, ex) => _subscriptionDroppedSource.SetResult((reason, ex)), TestCredentials.Root);
 			}
 
 			protected override Task When() =>

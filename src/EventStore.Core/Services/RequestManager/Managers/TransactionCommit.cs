@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionCommit : RequestManagerBase,
 		IHandle<StorageMessage.CommitIndexed> {
 		private readonly TimeSpan _commitTimeout;
 		private readonly bool _betterOrdering;
-		private readonly ClaimsPrincipal _user;
 		private bool _transactionWritten;
-
 		public TransactionCommit(
 					IPublisher publisher,
 					TimeSpan prepareTimeout,
@@ -22,7 +18,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid clientCorrId,
 					long transactionId,
 					bool betterOrdering,
-					ClaimsPrincipal user,
 					CommitSource commitSource)
 			: base(
 					 publisher,
@@ -37,19 +32,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 waitForCommit: true) {
 			_commitTimeout = commitTimeout;
 			_betterOrdering = betterOrdering;
-			_user = user;
 		}
-
-		protected override Message AccessRequestMsg =>
-				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope,
-						InternalCorrId,
-						null,
-						TransactionId,
-						StreamAccessType.Write,
-						_user,
-						_betterOrdering);
-
 
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionEnd(

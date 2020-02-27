@@ -14,13 +14,13 @@ namespace EventStore.Client.Users {
 		public static IEnumerable<object[]> NullInputCases() {
 			var loginName = "ouro";
 			var fullName = "greg";
-			var groups = new[] {"foo", "bar"};
+			var groups = new[] { "foo", "bar" };
 			var password = "foofoofoo";
 
-			yield return new object[] {null, fullName, groups, password, nameof(loginName)};
-			yield return new object[] {loginName, null, groups, password, nameof(fullName)};
-			yield return new object[] {loginName, fullName, null, password, nameof(groups)};
-			yield return new object[] {loginName, fullName, groups, null, nameof(password)};
+			yield return new object[] { null, fullName, groups, password, nameof(loginName) };
+			yield return new object[] { loginName, null, groups, password, nameof(fullName) };
+			yield return new object[] { loginName, fullName, null, password, nameof(groups) };
+			yield return new object[] { loginName, fullName, groups, null, nameof(password) };
 		}
 
 		[Theory, MemberData(nameof(NullInputCases))]
@@ -35,12 +35,12 @@ namespace EventStore.Client.Users {
 		public static IEnumerable<object[]> EmptyInputCases() {
 			var loginName = "ouro";
 			var fullName = "greg";
-			var groups = new[] {"foo", "bar"};
+			var groups = new[] { "foo", "bar" };
 			var password = "foofoofoo";
 
-			yield return new object[] {string.Empty, fullName, groups, password, nameof(loginName)};
-			yield return new object[] {loginName, string.Empty, groups, password, nameof(fullName)};
-			yield return new object[] {loginName, fullName, groups, string.Empty, nameof(password)};
+			yield return new object[] { string.Empty, fullName, groups, password, nameof(loginName) };
+			yield return new object[] { loginName, string.Empty, groups, password, nameof(fullName) };
+			yield return new object[] { loginName, fullName, groups, string.Empty, nameof(password) };
 		}
 
 		[Theory, MemberData(nameof(EmptyInputCases))]
@@ -55,20 +55,25 @@ namespace EventStore.Client.Users {
 		[Theory, ClassData(typeof(InvalidCredentialsCases))]
 		public async Task with_user_with_insufficient_credentials_throws(string loginName,
 			UserCredentials userCredentials) {
-			await Assert.ThrowsAsync<NotAuthenticatedException>(
-				() => _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] {"foo", "bar"},
-					"password", userCredentials));
+			if (userCredentials == null)
+				await Assert.ThrowsAsync<AccessDeniedException>(
+					() => _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] { "foo", "bar" },
+						"password", userCredentials));
+			else
+				await Assert.ThrowsAsync<NotAuthenticatedException>(
+					() => _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] { "foo", "bar" },
+						"password", userCredentials));
 		}
 
 		[Fact]
 		public async Task can_be_read() {
 			var loginName = Guid.NewGuid().ToString();
-			await _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] {"foo", "bar"}, "password",
+			await _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] { "foo", "bar" }, "password",
 				TestCredentials.Root);
 
 			var details = await _fixture.Client.UsersManager.GetUserAsync(loginName, TestCredentials.Root);
 
-			Assert.Equal(new UserDetails(loginName, "Full Name", new[] {"foo", "bar"}, false, details.DateLastUpdated),
+			Assert.Equal(new UserDetails(loginName, "Full Name", new[] { "foo", "bar" }, false, details.DateLastUpdated),
 				details);
 		}
 

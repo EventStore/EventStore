@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -24,13 +23,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 			   	streamId: _streamId,
 				betterOrdering: true,
 				expectedVersion: ExpectedVersion.Any,
-				user: null,
 				hardDelete: false,
 				commitSource: CommitSource);
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CheckStreamAccessCompleted(InternalCorrId, _streamId, null, StreamAccessType.Delete, new StreamAccess(true));
 			yield return new StorageMessage.CommitAck(InternalCorrId, commitPosition, 2, 3, 3);
 			}
 

@@ -26,6 +26,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var user = context.GetHttpContext().User;
+			var op = DeleteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, false, requiresLeader).ConfigureAwait(false);
@@ -45,6 +49,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<TombstoneResp> Tombstone(TombstoneReq request, ServerCallContext context) {
 			var options = request.Options;
 			var streamName = options.StreamName;
+
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision =>
 				new StreamRevision(options.Revision).ToInt64(),
@@ -57,8 +62,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
+			
+			var user = context.GetHttpContext().User;
+			var op = DeleteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, true, requiresLeader).ConfigureAwait(false);
 
@@ -81,7 +91,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var envelope = new CallbackEnvelope(HandleStreamDeletedCompleted);
 
-			_queue.Publish(new ClientMessage.DeleteStream(
+			_publisher.Publish(new ClientMessage.DeleteStream(
 				correlationId,
 				correlationId,
 				envelope,

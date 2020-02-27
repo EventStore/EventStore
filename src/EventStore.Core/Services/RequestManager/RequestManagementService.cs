@@ -9,9 +9,6 @@ using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
-using System.Threading;
-using System.Collections.Concurrent;
-using System.Linq;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :		
@@ -22,7 +19,6 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<ClientMessage.TransactionWrite>,
 		IHandle<ClientMessage.TransactionCommit>,
 		IHandle<StorageMessage.RequestCompleted>,
-		IHandle<StorageMessage.CheckStreamAccessCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
@@ -51,7 +47,6 @@ namespace EventStore.Core.Services.RequestManager {
 			TimeSpan commitTimeout,
 			bool betterOrdering) {
 			Ensure.NotNull(bus, "bus");
-
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
 				new PublishEnvelope(bus),
@@ -75,7 +70,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								_betterOrdering,
 								message.ExpectedVersion,
-								message.User,
 								message.Events,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
@@ -93,7 +87,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								_betterOrdering,
 								message.ExpectedVersion,
-								message.User,
 								message.HardDelete,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
@@ -111,7 +104,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								_betterOrdering,
 								message.ExpectedVersion,
-								message.User,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
@@ -143,7 +135,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.CorrelationId,
 								message.TransactionId,
 								_betterOrdering,
-								message.User,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
@@ -187,7 +178,6 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
-		public void Handle(StorageMessage.CheckStreamAccessCompleted message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.CommitAck message)  =>	DispatchInternal(message.CorrelationId, message);

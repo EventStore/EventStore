@@ -1,6 +1,10 @@
 using System;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -413,61 +417,6 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CheckStreamAccess : ClientMessage.ReadRequestMessage, IQueueAffineMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			private readonly int _affinity;
-
-			public int QueueId {
-				get { return _affinity; }
-			}
-
-			public readonly string EventStreamId;
-			public readonly long? TransactionId;
-			public readonly StreamAccessType AccessType;
-
-			public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, ClaimsPrincipal user, bool singleAffinity = false, DateTime? expires = null)
-				: base(correlationId, correlationId, envelope, user, expires) {
-				if (eventStreamId == null && transactionId == null)
-					throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
-				EventStreamId = eventStreamId;
-				TransactionId = transactionId;
-				var hash = String.IsNullOrEmpty(EventStreamId)
-					? TransactionId.GetHashCode()
-					: EventStreamId.GetHashCode();
-				_affinity = singleAffinity ? 1 : hash;
-				AccessType = accessType;
-			}
-		}
-
-		public class CheckStreamAccessCompleted : ClientMessage.ReadResponseMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public readonly Guid CorrelationId;
-			public readonly string EventStreamId;
-			public readonly long? TransactionId;
-			public readonly StreamAccessType AccessType;
-			public readonly StreamAccess AccessResult;
-
-			public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, StreamAccess accessResult) {
-				CorrelationId = correlationId;
-				EventStreamId = eventStreamId;
-				TransactionId = transactionId;
-				AccessType = accessType;
-				AccessResult = accessResult;
-			}
-		}
-
 		public class BatchLogExpiredMessages : Message, IQueueAffineMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -483,6 +432,123 @@ namespace EventStore.Core.Messages {
 				Ensure.Nonnegative(queueId, "queueId");
 				CorrelationId = correlationId;
 				QueueId = queueId;
+			}
+		}
+
+		public class EffectiveStreamAclRequest : Message {
+			public readonly string StreamId;
+			public readonly IEnvelope Envelope;
+			public readonly CancellationToken CancellationToken;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) {
+				StreamId = streamId;
+				Envelope = envelope;
+				CancellationToken = cancellationToken;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class EffectiveStreamAclResponse : Message {
+			public readonly EffectiveAcl Acl;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public EffectiveStreamAclResponse(EffectiveAcl acl) {
+				Acl = acl;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class EffectiveAcl {
+			public readonly StreamAcl Stream;
+			public readonly StreamAcl System;
+			public readonly StreamAcl Default;
+
+			public EffectiveAcl(StreamAcl stream, StreamAcl system, StreamAcl @default) {
+				Stream = stream;
+				System = system;
+				Default = @default;
+			}
+
+			public static Task<EffectiveAcl> LoadAsync(IPublisher publisher, string streamId, CancellationToken cancellationToken) {
+				var envelope = new RequestEffectiveAclEnvelope();
+				publisher.Publish(new EffectiveStreamAclRequest(streamId, envelope, cancellationToken));
+				return envelope.Task;
+			}
+
+			class RequestEffectiveAclEnvelope : IEnvelope {
+				private readonly TaskCompletionSource<EffectiveAcl> _tcs;
+
+				public RequestEffectiveAclEnvelope() {
+					_tcs = new TaskCompletionSource<EffectiveAcl>(TaskCreationOptions.RunContinuationsAsynchronously);
+				}
+				public void ReplyWith<T>(T message) where T : Message {
+					if (message == null) throw new ArgumentNullException(nameof(message));
+					if (message is EffectiveStreamAclResponse response) {
+						_tcs.TrySetResult(response.Acl);
+						return;
+					} else {
+						if (message is OperationCancelledMessage cancelled) {
+							_tcs.TrySetCanceled(cancelled.CancellationToken);
+						}
+					}
+					throw new ArgumentException($"Unexpected message type {typeof(T)}");
+				}
+
+				public Task<EffectiveAcl> Task => _tcs.Task;
+			}
+		}
+
+		public class OperationCancelledMessage : Message {
+
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public CancellationToken CancellationToken { get; }
+
+			public OperationCancelledMessage(CancellationToken cancellationToken) {
+				CancellationToken = cancellationToken;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class StreamIdFromTransactionIdRequest : Message {
+
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public readonly long TransactionId;
+			public readonly IEnvelope Envelope;
+			public readonly CancellationToken CancellationToken;
+
+			public StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken) {
+				CancellationToken = cancellationToken;
+				TransactionId = transactionId;
+				Envelope = envelope;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class StreamIdFromTransactionIdResponse : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public readonly string StreamId;
+			
+			public StreamIdFromTransactionIdResponse(string streamId){
+				StreamId = streamId;
+			}
+			
+			public override int MsgTypeId {
+				get { return TypeId; }
 			}
 		}
 	}

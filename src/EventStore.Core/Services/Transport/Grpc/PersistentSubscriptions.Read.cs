@@ -12,6 +12,7 @@ using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Shared;
+using EventStore.Core.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Core.Utils;
@@ -20,6 +21,7 @@ using UUID = EventStore.Client.Shared.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
+		private static readonly Operation ProcessMessagesOperation = new Operation(Authorization.Operations.Subscriptions.ProcessMessages);
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
 			if (!await requestStream.MoveNext().ConfigureAwait(false)) {
@@ -32,6 +34,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var user = context.GetHttpContext().User;
+
+			if (!await _authorizationProvider.CheckAccessAsync(user,
+				ProcessMessagesOperation.WithParameter(Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamName)), context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			var connectionName =
 				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
 				"<unknown>";
@@ -46,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 #pragma warning restore 4014
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
-				_queue, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
+				_publisher, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
 			subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
@@ -63,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			Task HandleAckNack(ReadReq request) {
-				_queue.Publish(request.ContentCase switch {
+				_publisher.Publish(request.ContentCase switch {
 					ReadReq.ContentOneofCase.Ack => (Message)
 					new ClientMessage.PersistentSubscriptionAckEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,

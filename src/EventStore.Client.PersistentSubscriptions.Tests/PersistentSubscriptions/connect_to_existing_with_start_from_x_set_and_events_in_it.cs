@@ -41,7 +41,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 					(subscription, e, r, ct) => {
 						_firstEventSource.TrySetResult(e);
 						return Task.CompletedTask;
-					});
+					}, userCredentials:TestCredentials.TestUser1);
 			}
 
 			protected override Task When() =>

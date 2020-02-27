@@ -7,6 +7,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 
 namespace EventStore.Core.Tests.Http {
 	public class TestController : CommunicationController {
@@ -37,7 +38,7 @@ namespace EventStore.Core.Tests.Http {
 		private void Register(
 			IHttpService service, string uriTemplate, Action<HttpEntityManager, UriTemplateMatch> handler,
 			string httpMethod = HttpMethod.Get) {
-			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.None);
+			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Node.StaticContent));
 		}
 
 		private void Test1Handler(HttpEntityManager http, UriTemplateMatch match) {

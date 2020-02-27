@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta(stream, "user2", "pa$$2"));
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 			var trans = Connection.ContinueTransaction(transId);
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta(stream, null, null));

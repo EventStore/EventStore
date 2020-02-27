@@ -11,7 +11,6 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public abstract class RequestManagerBase :
-		IHandle<StorageMessage.CheckStreamAccessCompleted>,
 		IHandle<StorageMessage.PrepareAck>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<StorageMessage.InvalidTransaction>,
@@ -93,21 +92,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			}
 		}
 		protected DateTime LiveUntil => NextTimeoutTime - _timeoutOffset;
-		protected abstract Message AccessRequestMsg { get; }
+		
 		protected abstract Message WriteRequestMsg { get; }
 		protected abstract Message ClientSuccessMsg { get; }
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
-			Publisher.Publish(AccessRequestMsg ?? WriteRequestMsg);
-		}
-		public void Handle(StorageMessage.CheckStreamAccessCompleted message) {
-			if (Interlocked.Read(ref _complete) == 1) { return; }
-			if (message.AccessResult.Granted) {
-				Publisher.Publish(WriteRequestMsg);
-			} else {
-				CompleteFailedRequest(OperationResult.AccessDenied, "Access denied.");
-			}
+			Publisher.Publish(WriteRequestMsg);
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {

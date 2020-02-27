@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Util;
 using EventStore.Transport.Http;
@@ -29,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			RegisterRedirectAction(service, "/web", "/web/index.html");
 
 			service.RegisterAction(
-				new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.Json}, AuthorizationLevel.Ops),
+				new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.Json}, new Operation(Operations.Node.Information.Subsystems)),
 				OnListNodeSubsystems);
 		}
 
@@ -51,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					HttpMethod.Get,
 					Codec.NoCodecs,
 					new ICodec[] {Codec.ManualEncoding},
-					AuthorizationLevel.None),
+					new Operation(Operations.Node.Redirect)),
 				(http, match) => http.ReplyTextContent(
 					"Moved", 302, "Found", "text/plain",
 					new[] {

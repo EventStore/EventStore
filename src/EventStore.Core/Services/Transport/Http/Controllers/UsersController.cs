@@ -1,6 +1,7 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Authorization;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -21,20 +22,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			RegisterUrlBased(service, "/users", HttpMethod.Get, AuthorizationLevel.Admin, GetUsers);
-			RegisterUrlBased(service, "/users/", HttpMethod.Get, AuthorizationLevel.Admin, GetUsers);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, AuthorizationLevel.Admin, GetUser);
-			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, AuthorizationLevel.User, GetCurrentUser);
-			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
-			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
-			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, AuthorizationLevel.Admin, DeleteUser);
-			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, AuthorizationLevel.Admin, PostCommandEnable);
-			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, AuthorizationLevel.Admin, PostCommandDisable);
+			RegisterUrlBased(service, "/users", HttpMethod.Get, new Operation(Operations.Users.List), GetUsers);
+			RegisterUrlBased(service, "/users/", HttpMethod.Get, new Operation(Operations.Users.List), GetUsers);
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, new Operation(Operations.Users.Read), GetUser);
+			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, new Operation(Operations.Users.CurrentUser), GetCurrentUser);
+			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Create));
+			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Create));
+			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Update));
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, new Operation(Operations.Users.Delete), DeleteUser);
+			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, new Operation(Operations.Users.Enable), PostCommandEnable);
+			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, new Operation(Operations.Users.Disable), PostCommandDisable);
 			Register(service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword,
-				DefaultCodecs, DefaultCodecs, AuthorizationLevel.Admin);
+				DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.ResetPassword));
 			Register(service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword,
-				DefaultCodecs, DefaultCodecs, AuthorizationLevel.User);
+				DefaultCodecs, DefaultCodecs, ForUser(Operations.Users.ChangePassword));
+		}
+
+		private static Func<UriTemplateMatch, Operation> ForUser(OperationDefinition definition) {
+			var operation = new Operation(definition);
+			return match => operation.WithParameter(Operations.Users.Parameters.User(match.BoundVariables["login"]));
 		}
 
 		private void GetUsers(HttpEntityManager http, UriTemplateMatch match) {

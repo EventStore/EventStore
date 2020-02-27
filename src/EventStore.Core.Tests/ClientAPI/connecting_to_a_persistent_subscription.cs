@@ -25,7 +25,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 							Console.Write("appeared");
 							return Task.CompletedTask;
 						},
-						(sub, reason, ex) => { });
+						(sub, reason, ex) => { },
+						DefaultData.AdminCredentials);
 					throw new Exception("should have thrown");
 				}).InnerException;
 			return Task.CompletedTask;
@@ -51,8 +52,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
 
+		protected override async Task Given() {
+			await _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings,
+				DefaultData.AdminCredentials);
+		}
+
 		protected override async Task When() {
-			await _conn.CreatePersistentSubscriptionAsync(_stream, "agroupname17", _settings, DefaultData.AdminCredentials)
+			
 ;
 			_sub = _conn.ConnectToPersistentSubscription(_stream,
 				"agroupname17",
@@ -60,11 +66,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 					Console.Write("appeared");
 					return Task.CompletedTask;
 				},
-				(sub, reason, ex) => { });
+				(sub, reason, ex) => { },
+				DefaultData.AdminCredentials);
 		}
 
 		[Test]
-		public void the_subscription_suceeds() {
+		public void the_subscription_succeeds() {
 			Assert.IsNotNull(_sub);
 		}
 	}
