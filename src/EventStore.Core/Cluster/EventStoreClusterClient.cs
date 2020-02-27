@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
@@ -15,10 +17,31 @@ namespace EventStore.Core.Cluster {
 		private readonly IPublisher _bus;
 		internal bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(Uri address, IPublisher bus,
+		public EventStoreClusterClient(Uri address, IPublisher bus, string tlsTargetHost = null,
 			Func<HttpMessageHandler> httpMessageHandlerFactory = null) {
+			if(tlsTargetHost == null && address.Scheme == Uri.UriSchemeHttps)
+				throw new Exception("Address scheme is https but TLS target host not specified.");
+
+			HttpMessageHandler httpMessageHandler = httpMessageHandlerFactory?.Invoke() ?? new HttpClientHandler {
+				ServerCertificateCustomValidationCallback = (message, certificate, chain, errors) => {
+					bool isValid = true;
+					chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+					if (!chain.Build(certificate)) {
+						Log.Error("Certificate chain validation failed for certificate: {certificate}.", certificate);
+						isValid = false;
+					}
+
+					if (certificate.GetNameInfo(X509NameType.SimpleName, false) != tlsTargetHost) {
+						Log.Error("Certificate Common Name does not match TLS target host {tlsTargetHost} for certificate: {certificate}.", tlsTargetHost, certificate);
+						isValid = false;
+					}
+
+					return isValid;
+				}
+			};
+
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
-				HttpClient = new HttpClient(httpMessageHandlerFactory?.Invoke() ?? new HttpClientHandler()) {
+				HttpClient = new HttpClient(httpMessageHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
