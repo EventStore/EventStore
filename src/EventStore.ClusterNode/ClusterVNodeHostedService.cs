@@ -99,8 +99,24 @@ namespace EventStore.ClusterNode {
 					"========================================================================================================\n");
 			}
 
+			Log.Information(
+				"\nINTERFACES\n" +
+				"External TCP (Protobuf)\n" +
+				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
+				$"\tPort\t: {(opts.ExtSecureTcpPort > 0 ? opts.ExtSecureTcpPort : opts.ExtTcpPort)}\n" +
+				"External HTTP (AtomPub)\n" +
+				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
+				$"\tPort\t: {opts.ExtHttpPort}\n");
+
 			if (opts.EnableAtomPubOverHTTP) {
-				Log.Warning("\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated in version 20.02. It is recommended to use GRPC instead.\n");
+				Log.Warning("\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.02. It is recommended to use gRPC instead.\n");
+			}
+
+			if (opts.EnableExternalTCP) {
+				Log.Warning(
+					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.02. "
+					+ $"The External TCP Interface can be re-enabled with the '{nameof(Options.EnableExternalTCP)}' option. "
+					+ "It is recommended to use gRPC instead.\n");
 			}
 
 			if (!opts.MemDb) {
