@@ -157,9 +157,9 @@ namespace EventStore.Core.Services {
 			var leaderInfo = _leaderInfo;
 			if (_forwardRequests && leaderInfo != null) {
 				var srcUrl = manager.RequestedUrl;
-				var srcBase = new Uri(string.Format("{0}://{1}:{2}/", srcUrl.Scheme, srcUrl.Host, srcUrl.Port),
+				var srcBase = new Uri($"{srcUrl.Scheme}://{srcUrl.Host}:{srcUrl.Port}/",
 					UriKind.Absolute);
-				var baseUri = new Uri(string.Format("http://{0}/", leaderInfo.ExternalHttp));
+				var baseUri = new Uri($"{srcUrl.Scheme}://{leaderInfo.ExternalHttp}/");
 				var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
 				ForwardRequest(manager, forwardUri);
 				return true;
