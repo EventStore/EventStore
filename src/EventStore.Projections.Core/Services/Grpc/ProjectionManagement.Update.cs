@@ -2,18 +2,23 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 using static EventStore.Client.Projections.UpdateReq.Types.Options;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
+		private static readonly Operation UpdateOperation = new Operation(Operations.Projections.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var updatedSource = new TaskCompletionSource<bool>();
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-
+			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			const string handlerType = "JS";
 			var name = options.Name;
 			var query = options.Query;

@@ -21,7 +21,7 @@ namespace EventStore.Client {
 			CancellationToken cancellationToken) {
 			var endpointResolver = _endpoint;
 			try {
-				var endpoint = await endpointResolver.Value;
+				var endpoint = await endpointResolver.Value.ConfigureAwait(false);
 
 				request.RequestUri = new UriBuilder(Uri.UriSchemeHttps, endpoint.Address.ToString(), endpoint.Port,
 					request.RequestUri.PathAndQuery).Uri;

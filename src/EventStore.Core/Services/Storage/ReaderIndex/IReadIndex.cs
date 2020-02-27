@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
@@ -43,9 +44,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		bool IsStreamDeleted(string streamId);
 		long GetStreamLastEventNumber(string streamId);
 		StreamMetadata GetStreamMetadata(string streamId);
-
+		StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId);
 		string GetEventStreamIdByTransactionId(long transactionId);
-		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user);
 
 		void Close();
 		void Dispose();

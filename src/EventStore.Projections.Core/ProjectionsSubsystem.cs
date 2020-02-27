@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -64,15 +65,11 @@ namespace EventStore.Projections.Core {
 		private Guid _instanceCorrelationId;
 		
 		public Func<IApplicationBuilder, IApplicationBuilder> Configure => builder => builder
-			.UseWhen(
-				context => context.Request.Path.StartsWithSegments(ProjectionsSegment),
-				inner => inner
-					.UseRouting()
-					.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>()));
+			.UseEndpoints(endpoints => endpoints.MapGrpcService<ProjectionManagement>());
 
 		public Func<IServiceCollection, IServiceCollection> ConfigureServices => services =>
 			services.AddSingleton(provider =>
-				new ProjectionManagement(_leaderInputQueue));
+				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
 
 		public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
 			bool startStandardProjections, TimeSpan projectionQueryExpiry, bool faultOutOfOrderProjections) {

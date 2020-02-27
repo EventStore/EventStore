@@ -21,7 +21,7 @@ namespace EventStore.Client.Streams {
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
+					AnyStreamRevision.NoStream, new[] { e });
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
@@ -38,7 +38,7 @@ namespace EventStore.Client.Streams {
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
+					AnyStreamRevision.NoStream, new[] { e });
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
@@ -59,7 +59,7 @@ namespace EventStore.Client.Streams {
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
+					AnyStreamRevision.NoStream, new[] { e });
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
@@ -80,7 +80,7 @@ namespace EventStore.Client.Streams {
 
 			foreach (var e in events) {
 				await _fixture.Client.AppendToStreamAsync($"{streamPrefix}_{Guid.NewGuid():n}",
-					AnyStreamRevision.NoStream, new[] {e});
+					AnyStreamRevision.NoStream, new[] { e });
 			}
 
 			var result = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, 100,
@@ -100,7 +100,8 @@ namespace EventStore.Client.Streams {
 				_fixture.CreateTestEvents(count));
 
 			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, maxCount,
-					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents(40)))
+					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents(40)), 
+					userCredentials: TestCredentials.Root)
 				.Take(count)
 				.ToArrayAsync();
 

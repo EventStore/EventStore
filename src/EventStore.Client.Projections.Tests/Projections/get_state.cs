@@ -11,7 +11,7 @@ namespace EventStore.Client.Projections {
 
 		[Fact]
 		public async Task returns_expected_result() {
-			var result = await _fixture.Client.ProjectionsManager.GetStateAsync<Result>(nameof(get_state));
+			var result = await _fixture.Client.ProjectionsManager.GetStateAsync<Result>(nameof(get_state), userCredentials: TestCredentials.TestUser1);
 			Assert.Equal(1, result.Count);
 		}
 

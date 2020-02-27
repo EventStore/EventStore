@@ -2,14 +2,22 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 using static EventStore.Client.Projections.StatisticsReq.Types.Options;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
+		private static readonly Operation StatisticsOperation = new Operation(Operations.Projections.Statistics);
 		public override async Task Statistics(StatisticsReq request, IServerStreamWriter<StatisticsResp> responseStream,
 			ServerCallContext context) {
+			var user = context.GetHttpContext().User;
+			if (!await _authorizationProvider.CheckAccessAsync(user, StatisticsOperation, context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+
 			var statsSource = new TaskCompletionSource<ProjectionStatistics[]>();
 
 			var options = request.Options;

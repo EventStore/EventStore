@@ -39,7 +39,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 					TestCredentials.Root);
 				_subscription = Client.PersistentSubscriptions.Subscribe(Stream, Group,
 					delegate { return Task.CompletedTask; },
-					(subscription, reason, ex) => _droppedSource.TrySetResult((reason, ex)));
+					(subscription, reason, ex) => _droppedSource.TrySetResult((reason, ex)), userCredentials:TestCredentials.Root);
 				await _subscription.Started;
 			}
 

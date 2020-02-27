@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					Console.Write("appeared");
 					return Task.CompletedTask;
 				},
-				(sub, reason, ex) => { }));
+				(sub, reason, ex) => { }, DefaultData.AdminCredentials));
 		}
 
 		[Test]
@@ -48,11 +48,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 					Console.Write("appeared");
 					return Task.CompletedTask;
 				},
-				(sub, reason, ex) => { });
+				(sub, reason, ex) => { }, DefaultData.AdminCredentials);
 		}
 
 		[Test]
-		public void the_subscription_suceeds() {
+		public void the_subscription_succeeds() {
 			Assert.IsNotNull(_sub);
 		}
 	}

@@ -3,16 +3,21 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Operations;
+using EventStore.Core.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Operations {
+		private static readonly Operation StartOperation = new Operation(Authorization.Operations.Node.Scavenge.Start);
+		private static readonly Operation StopOperation = new Operation(Authorization.Operations.Node.Scavenge.Stop);
 		public override async Task<ScavengeResp> StartScavenge(StartScavengeReq request, ServerCallContext context) {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
 			var user = context.GetHttpContext().User;
-
-			_queue.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
+			if (!await _authorizationProvider.CheckAccessAsync(user, StartOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+			_publisher.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.StartFromChunk, request.Options.ThreadCount));
 
 			var (scavengeId, scavengeResult) = await scavengeResultSource.Task.ConfigureAwait(false);
@@ -29,8 +34,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 
 			var user = context.GetHttpContext().User;
-
-			_queue.Publish(new ClientMessage.StopDatabaseScavenge(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
+			if (!await _authorizationProvider.CheckAccessAsync(user, StopOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+			_publisher.Publish(new ClientMessage.StopDatabaseScavenge(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.ScavengeId));
 
 			var (scavengeId, scavengeResult) = await scavengeResultSource.Task.ConfigureAwait(false);

@@ -10,6 +10,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -27,7 +30,6 @@ namespace EventStore.Client {
 		public const string TestEventType = "-";
 
 		private static readonly Subject<LogEvent> s_logEventSubject = new Subject<LogEvent>();
-
 		private readonly TFChunkDb _db;
 		private readonly IList<IDisposable> _disposables;
 
@@ -87,6 +89,18 @@ namespace EventStore.Client {
 
 		public virtual async Task InitializeAsync() {
 			await Node.StartAsync(true);
+			var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+			var envelope  = new CallbackEnvelope(m => {
+				if (m is UserManagementMessage.ResponseMessage rm) {
+					if (rm.Success) tcs.TrySetResult(true);
+					else tcs.TrySetException(new Exception($"Create user failed {rm.Error}"));
+				} else {
+					tcs.TrySetException(new Exception($"Wrong expected message type {m.GetType().FullName}"));
+				}
+			});
+			Node.MainQueue.Publish(new UserManagementMessage.Create(envelope, SystemAccounts.System, TestCredentials.TestUser1.Username, "test", Array.Empty<string>(), TestCredentials.TestUser1.Password));
+			await tcs.Task;
+			
 			await Given().WithTimeout(TimeSpan.FromMinutes(5));
 			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}

@@ -1,8 +1,7 @@
 using System;
 using System.Linq;
 using System.Text.Json;
-using EventStore.Core;
-using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Grpc;
@@ -19,11 +18,13 @@ namespace EventStore.Client.Projections {
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
 		private readonly IQueuedHandler _queue;
-		
-		public ProjectionManagement(IQueuedHandler queue) {
-			if (queue == null) throw new ArgumentNullException(nameof(queue));
-			_queue = queue;
+		private readonly IAuthorizationProvider _authorizationProvider;
 
+		public ProjectionManagement(IQueuedHandler queue, IAuthorizationProvider authorizationProvider) {
+			if (queue == null) throw new ArgumentNullException(nameof(queue));
+			if (authorizationProvider == null) throw new ArgumentNullException(nameof(authorizationProvider));
+			_queue = queue;
+			_authorizationProvider = authorizationProvider;
 		}
 
 		private static Exception UnknownMessage<T>(Message message) where T : Message =>

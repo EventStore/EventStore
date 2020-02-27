@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
@@ -17,6 +18,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 
 	public class TestAuthenticationProvider : IAuthenticationProvider {
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
+			authenticationRequest.Authenticated(new ClaimsPrincipal(new ClaimsIdentity(new []{new Claim(ClaimTypes.Name, authenticationRequest.Name), })));
 		}
 	}
 }

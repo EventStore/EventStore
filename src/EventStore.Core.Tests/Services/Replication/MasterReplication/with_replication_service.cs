@@ -7,9 +7,11 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Authentication;
+using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.Transport.Tcp;
@@ -91,6 +93,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				new InternalAuthenticationProvider(
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 			var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(

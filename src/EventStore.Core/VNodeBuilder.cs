@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
@@ -142,6 +143,7 @@ namespace EventStore.Core {
 		private bool _readOnlyReplica;
 		private bool _unsafeAllowSurplusNodes;
 		private Func<HttpMessageHandler> _createHttpMessageHandler;
+		private IAuthorizationProviderFactory _authorizationProviderFactory;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -192,6 +194,9 @@ namespace EventStore.Core {
 
 			_authenticationProviderFactory = new InternalAuthenticationProviderFactory();
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
+
+			_authorizationProviderFactory = new LegacyAuthorizationProviderFactory();
+
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
 			_adminOnPublic = Opts.AdminOnExtDefault;
@@ -1388,6 +1393,7 @@ namespace EventStore.Core {
 				_statsStorage,
 				_nodePriority,
 				_authenticationProviderFactory,
+				_authorizationProviderFactory,
 				_disableScavengeMerging,
 				_scavengeHistoryMaxAge,
 				_adminOnPublic,

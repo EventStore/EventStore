@@ -27,7 +27,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 					TestCredentials.Root);
 				_subscription = Client.PersistentSubscriptions.Subscribe(Stream, "groupname123",
 					(s, e, i, ct) => Task.CompletedTask,
-					(s, r, e) => _dropped.TrySetResult((r, e)));
+					(s, r, e) => _dropped.TrySetResult((r, e)), userCredentials:TestCredentials.Root);
 				await _subscription.Started;
 			}
 

@@ -36,6 +36,5 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		void Shutdown();
 
-		RequestDelegate AppFunc { get; }
 	}
 }

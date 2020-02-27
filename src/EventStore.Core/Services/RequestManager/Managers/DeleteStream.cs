@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class DeleteStream : RequestManagerBase {
 		private readonly bool _hardDelete;
 		private readonly string _streamId;
 		private readonly bool _betterOrdering;
-		private readonly ClaimsPrincipal _user;
 
 		public DeleteStream(
 					IPublisher publisher,
@@ -21,7 +18,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					ClaimsPrincipal user,
 					bool hardDelete,
 					CommitSource commitSource)
 			: base(
@@ -37,19 +33,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_hardDelete = hardDelete;
 			_streamId = streamId;
 			_betterOrdering = betterOrdering;
-			_user = user;
 		}
-
-		protected override Message AccessRequestMsg =>
-				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope,
-						InternalCorrId,
-						_streamId,
-						null,
-						StreamAccessType.Delete,
-						_user,
-						_betterOrdering);
-
 
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteDelete(

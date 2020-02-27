@@ -22,6 +22,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var streamName = options.StreamName;
+			
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),
@@ -31,8 +32,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 
-			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
+
+			var user = context.GetHttpContext().User;
+			var op = WriteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
@@ -71,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
 
-			_queue.Publish(new ClientMessage.WriteEvents(
+			_publisher.Publish(new ClientMessage.WriteEvents(
 				correlationId,
 				correlationId,
 				envelope,

@@ -2,15 +2,24 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Authorization;
 using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {
+		private static readonly Operation ResultOperation = new Operation(Operations.Projections.Result);
+		private static readonly Operation StateOperation = new Operation(Operations.Projections.State);
 		public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {
-			var resultSource = new TaskCompletionSource<Value>();
 
+			var user = context.GetHttpContext().User;
+			if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+
+			var resultSource = new TaskCompletionSource<Value>();
 			var options = request.Options;
 
 			var name = options.Name;
@@ -43,6 +52,12 @@ namespace EventStore.Projections.Core.Services.Grpc {
 		}
 
 		public override async Task<StateResp> State(StateReq request, ServerCallContext context) {
+
+			var user = context.GetHttpContext().User;
+			if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			var resultSource = new TaskCompletionSource<Value>();
 
 			var options = request.Options;

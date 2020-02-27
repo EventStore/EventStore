@@ -88,8 +88,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 
 		[Test]
 		public async Task can_change_password() {
-			await _manager.ChangePasswordAsync(_username, "password", "fubar", new UserCredentials(_username, "password"))
-;
+			await _manager.ChangePasswordAsync(_username, "password", "fubar", new UserCredentials(_username, "password"));
 			var ex = await AssertEx.ThrowsAsync<UserCommandFailedException>(
 				() => _manager.ChangePasswordAsync(_username, "password", "foobar",
 					new UserCredentials(_username, "password"))

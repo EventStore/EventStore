@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
@@ -25,8 +26,7 @@ using MidFunc = System.Func<
 namespace EventStore.Core.Services.Transport.Http {
 	public class KestrelHttpService : IHttpService,
 		IHandle<SystemMessage.SystemInit>,
-		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<HttpMessage.PurgeTimedOutRequests> {
+		IHandle<SystemMessage.BecomeShuttingDown> {
 		private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelHttpService>();
 
@@ -34,18 +34,15 @@ namespace EventStore.Core.Services.Transport.Http {
 		public bool IsListening => _isListening;
 		public IEnumerable<IPEndPoint> EndPoints { get; }
 
-		public IEnumerable<ControllerAction> Actions => _uriRouter.Actions;
+		public IEnumerable<ControllerAction> Actions => UriRouter.Actions;
 
 		private readonly ServiceAccessibility _accessibility;
 		private readonly IPublisher _inputBus;
-		private readonly IUriRouter _uriRouter;
-		private readonly IEnvelope _publishEnvelope;
-		private readonly bool _logHttpRequests;
-		private readonly MultiQueuedHandler _requestsMultiHandler;
+		public IUriRouter UriRouter { get; }
+		public bool LogHttpRequests { get; }
 
-		private readonly IPAddress _advertiseAsAddress;
-		private readonly int _advertiseAsPort;
-		private readonly bool _disableAuthorization;
+		public IPAddress AdvertiseAsAddress { get; }
+		public int AdvertiseAsPort { get; }
 
 		private bool _isListening;
 
@@ -58,24 +55,18 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			_accessibility = accessibility;
 			_inputBus = inputBus;
-			_uriRouter = uriRouter;
-			_publishEnvelope = new PublishEnvelope(inputBus);
+			UriRouter = uriRouter;
+			LogHttpRequests = logHttpRequests;
 
-			_requestsMultiHandler = multiQueuedHandler;
-			_logHttpRequests = logHttpRequests;
+			AdvertiseAsAddress = advertiseAsAddress;
+			AdvertiseAsPort = advertiseAsPort;
 
-			_advertiseAsAddress = advertiseAsAddress;
-			_advertiseAsPort = advertiseAsPort;
-
-			_disableAuthorization = disableAuthorization;
 
 			EndPoints = endPoints;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_inputBus.Publish(
-				TimerMessage.Schedule.Create(
-					UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
+			
 			_isListening = true;
 		}
 
@@ -87,32 +78,9 @@ namespace EventStore.Core.Services.Transport.Http {
 					$"HttpServer [{String.Join(", ", EndPoints)}]"));
 		}
 
-		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
-			if (_accessibility != message.Accessibility)
-				return;
-
-			_requestsMultiHandler.PublishToAll(message);
-
-			_inputBus.Publish(
-				TimerMessage.Schedule.Create(
-					UpdateInterval, _publishEnvelope, new HttpMessage.PurgeTimedOutRequests(_accessibility)));
-		}
-
-		private Task RequestReceived(HttpContext context) {
-			var tcs = new TaskCompletionSource<bool>();
-			var entity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
-				new CoreHttpResponseAdapter(context.Response), context.User, _logHttpRequests,
-				_advertiseAsAddress, _advertiseAsPort, () => tcs.TrySetResult(true));
-			entity.SetUser(context.User);
-			_requestsMultiHandler.Handle(new AuthenticatedHttpRequestMessage(this, entity));
-			return tcs.Task;
-		}
-
 		public void Shutdown() {
 			_isListening = false;
 		}
-
-		public RequestDelegate AppFunc => RequestReceived;
 
 		public void SetupController(IHttpController controller) {
 			Ensure.NotNull(controller, "controller");
@@ -124,46 +92,26 @@ namespace EventStore.Core.Services.Transport.Http {
 			Ensure.NotNull(action, "action");
 			Ensure.NotNull(handler, "handler");
 
-			_uriRouter.RegisterAction(action, handler);
+			UriRouter.RegisterAction(action, handler);
 		}
 
 		public void RegisterAction(ControllerAction action, Action<HttpEntityManager, UriTemplateMatch> handler) {
 			Ensure.NotNull(action, "action");
 			Ensure.NotNull(handler, "handler");
 
-			_uriRouter.RegisterAction(action, (man, match) => {
-				if (_disableAuthorization || Authorized(man.User, action.RequiredAuthorizationLevel)) {
-					handler(man, match);
-				} else {
-					
-					man.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", (exc) => {
-						Log.Debug("Error while sending reply (http service): {exc}.", exc.Message);
-					});
-				}
-
+			UriRouter.RegisterAction(action, (man, match) => {
+				handler(man, match);
 				return new RequestParams(ESConsts.HttpTimeout);
 			});
 		}
-
-		private static bool Authorized(ClaimsPrincipal user, AuthorizationLevel requiredAuthorizationLevel) =>
-			requiredAuthorizationLevel switch {
-				AuthorizationLevel.None => true,
-				AuthorizationLevel.User => (user != null && !user.HasClaim(ClaimTypes.Anonymous, "")),
-				AuthorizationLevel.Ops => (user != null &&
-				                           (user.LegacyRoleCheck(SystemRoles.Admins) ||
-				                            user.LegacyRoleCheck(SystemRoles.Operations))),
-				AuthorizationLevel.Admin => (user != null && user.LegacyRoleCheck(SystemRoles.Admins)),
-				_ => false
-			};
-
-		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => _uriRouter.GetAllUriMatches(uri);
-
+		public List<UriToActionMatch> GetAllUriMatches(Uri uri) => UriRouter.GetAllUriMatches(uri);
 		public static void CreateAndSubscribePipeline(IBus bus) {
-			Ensure.NotNull(bus, "bus");
-
 			var requestProcessor = new AuthenticatedHttpRequestProcessor();
 			bus.Subscribe<AuthenticatedHttpRequestMessage>(requestProcessor);
 			bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
+			bus.Publish(
+				TimerMessage.Schedule.Create(
+					UpdateInterval, new PublishEnvelope(bus), new HttpMessage.PurgeTimedOutRequests()));
 		}
 	}
 }

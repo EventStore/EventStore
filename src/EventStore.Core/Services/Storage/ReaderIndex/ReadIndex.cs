@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
+using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -86,10 +87,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _indexReader.GetEventStreamIdByTransactionId(transactionId);
 		}
 
-		StreamAccess IReadIndex.CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
-			return _indexReader.CheckStreamAccess(streamId, streamAccessType, user);
-		}
-
 		IndexReadAllResult IReadIndex.ReadAllEventsForward(TFPos pos, int maxCount) {
 			return _allReader.ReadAllEventsForward(pos, maxCount);
 		}
@@ -106,6 +103,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		IndexReadAllResult IReadIndex.ReadAllEventsBackward(TFPos pos, int maxCount) {
 			return _allReader.ReadAllEventsBackward(pos, maxCount);
+		}
+
+		public StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId) {
+			return _indexReader.GetEffectiveAcl(streamId);
 		}
 
 		ReadIndexStats IReadIndex.GetStatistics() {

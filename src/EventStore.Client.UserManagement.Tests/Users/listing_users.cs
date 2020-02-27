@@ -19,6 +19,7 @@ namespace EventStore.Client.Users {
 			var expected = new[] {
 					new UserDetails("admin", "Event Store Administrator", new[] {"$admins"}, false, default),
 					new UserDetails("ops", "Event Store Operations", new[] {"$ops"}, false, default),
+					new UserDetails(TestCredentials.TestUser1.Username, "test", Array.Empty<string>(), false, default), 
 				}.Concat(Array.ConvertAll(_fixture.Users, user => new UserDetails(
 					user.LoginName,
 					user.FullName,

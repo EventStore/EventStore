@@ -1,21 +1,28 @@
 using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.PersistentSubscriptions;
+using EventStore.Core.Authorization;
 using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.DeletePersistentSubscriptionCompleted;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
+		private static readonly Operation DeleteOperation = new Operation(Authorization.Operations.Subscriptions.Delete);
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
+			
 			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>();
 			var correlationId = Guid.NewGuid();
 
 			var user = context.GetHttpContext().User;
 
-			_queue.Publish(new ClientMessage.DeletePersistentSubscription(
+			if (!await _authorizationProvider.CheckAccessAsync(user,
+				DeleteOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+
+			_publisher.Publish(new ClientMessage.DeletePersistentSubscription(
 				correlationId,
 				correlationId,
 				new CallbackEnvelope(HandleDeletePersistentSubscriptionCompleted),

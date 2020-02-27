@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
-			service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.None),
+			service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Ping)),
 				OnGetPing);
 		}
 

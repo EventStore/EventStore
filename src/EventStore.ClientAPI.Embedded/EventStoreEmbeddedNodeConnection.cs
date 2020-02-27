@@ -4,14 +4,17 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
 using EventStore.Core.Util;
+using Message = EventStore.Core.Messaging.Message;
+using SystemEventTypes = EventStore.ClientAPI.Common.SystemEventTypes;
+using SystemStreams = EventStore.ClientAPI.Common.SystemStreams;
 #if!NET452
 using TaskEx = System.Threading.Tasks.Task;
 
@@ -61,6 +64,7 @@ namespace EventStore.ClientAPI.Embedded {
 		private readonly string _connectionName;
 		private readonly IPublisher _publisher;
 		private readonly IAuthenticationProvider _authenticationProvider;
+		private readonly AuthorizationGateway _authorizationGateway;
 		private readonly IBus _subscriptionBus;
 		private readonly EmbeddedSubscriber _subscriptions;
 
@@ -73,16 +77,17 @@ namespace EventStore.ClientAPI.Embedded {
 		}
 
 		public EventStoreEmbeddedNodeConnection(ConnectionSettings settings, string connectionName,
-			IPublisher publisher, ISubscriber bus, IAuthenticationProvider authenticationProvider) {
+			IPublisher publisher, ISubscriber bus, IAuthenticationProvider authenticationProvider, AuthorizationGateway authorizationGateway) {
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(settings, nameof(settings));
-
+			Ensure.NotNull(authorizationGateway, nameof(authorizationGateway));
 			Guid connectionId = Guid.NewGuid();
 
 			_settings = settings;
 			_connectionName = connectionName;
-			_publisher = publisher;
+			_publisher = new AuthorizingPublisher(publisher, authorizationGateway);
 			_authenticationProvider = authenticationProvider;
+			_authorizationGateway = authorizationGateway;
 			_subscriptionBus = new InMemoryBus("Embedded Client Subscriptions");
 			_subscriptions =
 				new EmbeddedSubscriber(_subscriptionBus, _authenticationProvider, _settings.Log, connectionId, connectionName);
@@ -921,6 +926,20 @@ namespace EventStore.ClientAPI.Embedded {
 
 			var serverFilter = new TcpClientMessageDto.Filter(serverContext, serverType, filter.Value.Data);
 			return serverFilter;
+		}
+
+		class AuthorizingPublisher : IPublisher {
+			private readonly IPublisher _inner;
+			private readonly AuthorizationGateway _authorizationGateway;
+
+			public AuthorizingPublisher(IPublisher inner, AuthorizationGateway authorizationGateway) {
+				_inner = inner;
+				_authorizationGateway = authorizationGateway;
+			}
+
+			public void Publish(Message message) {
+				_authorizationGateway.Authorize(message, _inner);
+			}
 		}
 	}
 }

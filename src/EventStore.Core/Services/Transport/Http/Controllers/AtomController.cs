@@ -13,6 +13,7 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Primitives;
 using ILogger = Serilog.ILogger;
@@ -34,6 +35,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private static readonly ILogger Log = Serilog.Log.ForContext<AtomController>();
 
 		private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
+
+		private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperation =
+			ForStream(Operations.Streams.Read);
+
+		private static readonly Operation RedirectOperation = new Operation(Operations.Node.Redirect);
+		private static readonly Operation ReadForAllOperation = new Operation(Operations.Streams.Read).WithParameter(Operations.Streams.Parameters.StreamId(SystemStreams.AllStream));
 
 		private static readonly ICodec[] AtomCodecsWithoutBatches = {
 			Codec.EventStoreXmlCodec,
@@ -100,51 +107,51 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		protected override void SubscribeCore(IHttpService http) {
 			// STREAMS
 			Register(http, "/streams/{stream}", HttpMethod.Post, PostEvents, AtomCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				ForStream(Operations.Streams.Write));
 			Register(http, "/streams/{stream}", HttpMethod.Delete, DeleteStream, Codec.NoCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				ForStream(Operations.Streams.Delete));
 
 			Register(http, "/streams/{stream}/incoming/{guid}", HttpMethod.Post, PostEventsIdempotent,
-				AtomCodecsWithoutBatches, AtomCodecsWithoutBatches, AuthorizationLevel.User);
+				AtomCodecsWithoutBatches, AtomCodecsWithoutBatches, ForStream(Operations.Streams.Write));
 
 			Register(http, "/streams/{stream}/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 			Register(http, "/streams/{stream}/", HttpMethod.Delete, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 			Register(http, "/streams/{stream}/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 
 			Register(http, "/streams/{stream}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs, AuthorizationLevel.User);
+				AtomWithHtmlCodecs, ReadStreamOperation);
 
 			Register(http, "/streams/{stream}/{event}?embed={embed}", HttpMethod.Get, GetStreamEvent, Codec.NoCodecs,
-				DefaultCodecs, AuthorizationLevel.User);
+				DefaultCodecs, ReadStreamOperation);
 			Register(http, "/streams/{stream}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomWithHtmlCodecs, ReadStreamOperation);
 			Register(http, "/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetStreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadStreamOperation);
 			RegisterCustom(http, "/streams/{stream}/{event}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetStreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadStreamOperation);
 
 			// METASTREAMS
 			Register(http, "/streams/{stream}/metadata", HttpMethod.Post, PostMetastreamEvent, AtomCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				ForStream(Operations.Streams.MetadataWrite));
 			Register(http, "/streams/{stream}/metadata/", HttpMethod.Post, RedirectKeepVerb, AtomCodecs, AtomCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 
 			Register(http, "/streams/{stream}/metadata?embed={embed}", HttpMethod.Get, GetMetastreamEvent,
-				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, DefaultCodecs, ForStream(Operations.Streams.MetadataRead));
 			Register(http, "/streams/{stream}/metadata/?embed={embed}", HttpMethod.Get, RedirectKeepVerb,
-				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, DefaultCodecs, RedirectOperation);
 			Register(http, "/streams/{stream}/metadata/{event}?embed={embed}", HttpMethod.Get, GetMetastreamEvent,
-				Codec.NoCodecs, DefaultCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, DefaultCodecs, ForStream(Operations.Streams.MetadataRead));
 
 			Register(http, "/streams/{stream}/metadata/{event}/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, ForStream(Operations.Streams.MetadataRead));
 			Register(http, "/streams/{stream}/metadata/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetMetastreamEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, ForStream(Operations.Streams.MetadataRead));
 			RegisterCustom(http, "/streams/{stream}/metadata/{event}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetMetastreamEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, ForStream(Operations.Streams.MetadataRead));
 
 			// $ALL Filtered
 			const string querystring =
@@ -153,57 +160,69 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Register(http,
 				"/streams/$all/filtered" + querystring,
 				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
-				AtomWithHtmlCodecs, AuthorizationLevel.User);
+				AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http,
 				"/streams/$all/filtered/{position}/{count}" + querystring,
 				HttpMethod.Get, GetAllEventsBackwardFiltered,
-				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http,
 				"/streams/$all/filtered/{position}/backward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			RegisterCustom(http,
 				"/streams/$all/filtered/{position}/forward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http,
 				"/streams/%24all/filtered" + querystring,
 				HttpMethod.Get, GetAllEventsBackwardFiltered, Codec.NoCodecs,
-				AtomWithHtmlCodecs, AuthorizationLevel.User);
+				AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http,
 				"/streams/%24all/filtered/{position}/{count}" + querystring,
 				HttpMethod.Get, GetAllEventsBackwardFiltered,
-				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http,
 				"/streams/%24all/filtered/{position}/backward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsBackwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			RegisterCustom(http,
 				"/streams/%24all/filtered/{position}/forward/{count}" + querystring,
 				HttpMethod.Get,
-				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsForwardFiltered, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 
 			// $ALL
 			Register(http, "/streams/$all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 			Register(http, "/streams/%24all/", HttpMethod.Get, RedirectKeepVerb, Codec.NoCodecs, AtomWithHtmlCodecs,
-				AuthorizationLevel.User);
+				RedirectOperation);
 			Register(http, "/streams/$all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs, AuthorizationLevel.User);
+				AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http, "/streams/$all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http, "/streams/$all/{position}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			RegisterCustom(http, "/streams/$all/{position}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http, "/streams/%24all?embed={embed}", HttpMethod.Get, GetAllEventsBackward, Codec.NoCodecs,
-				AtomWithHtmlCodecs, AuthorizationLevel.User);
+				AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http, "/streams/%24all/{position}/{count}?embed={embed}", HttpMethod.Get, GetAllEventsBackward,
-				Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			Register(http, "/streams/%24all/{position}/backward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsBackward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
 			RegisterCustom(http, "/streams/%24all/{position}/forward/{count}?embed={embed}", HttpMethod.Get,
-				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, AuthorizationLevel.User);
+				GetAllEventsForward, Codec.NoCodecs, AtomWithHtmlCodecs, ReadForAllOperation);
+		}
+
+		private static Func<UriTemplateMatch, Operation> ForStream(OperationDefinition definition) {
+			var operation = new Operation(definition);
+			return match => {
+				var stream = match.BoundVariables["stream"];
+				if (!string.IsNullOrEmpty(stream)) {
+					return operation.WithParameter(Operations.Streams.Parameters.StreamId(stream));
+				}
+
+				return operation;
+			};
 		}
 
 		private bool GetDescriptionDocument(HttpEntityManager manager, UriTemplateMatch match) {

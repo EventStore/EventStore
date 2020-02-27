@@ -23,7 +23,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 				ClientCorrId,
 				transactionId,
 				true,
-				null,
 				CommitSource);
 		}
 
