@@ -11,7 +11,7 @@ namespace EventStore.Core.Cluster {
 		public void SendViewChange(ElectionMessage.ViewChange msg, IPEndPoint destinationEndpoint, DateTime deadline) {
 			SendViewChangeAsync(msg.ServerId, msg.ServerInternalHttp, msg.AttemptedView, deadline).ContinueWith(r => {
 				if (r.Exception != null) {
-					Log.Error(r.Exception, "View Change Send Failed to {Server}", destinationEndpoint);
+					Log.Information(r.Exception, "View Change Send Failed to {Server}", destinationEndpoint);
 				}
 			});
 		}
@@ -21,7 +21,7 @@ namespace EventStore.Core.Cluster {
 			SendViewChangeProofAsync(msg.ServerId, msg.ServerInternalHttp, msg.InstalledView, deadline).ContinueWith(
 				r => {
 					if (r.Exception != null) {
-						Log.Error(r.Exception, "View Change Proof Send Failed to {Server}",
+						Log.Information(r.Exception, "View Change Proof Send Failed to {Server}",
 							destinationEndpoint);
 					}
 				});
@@ -30,7 +30,7 @@ namespace EventStore.Core.Cluster {
 		public void SendPrepare(ElectionMessage.Prepare msg, IPEndPoint destinationEndpoint, DateTime deadline) {
 			SendPrepareAsync(msg.ServerId, msg.ServerInternalHttp, msg.View, deadline).ContinueWith(r => {
 				if (r.Exception != null) {
-					Log.Error(r.Exception, "Prepare Send Failed to {Server}", destinationEndpoint);
+					Log.Information(r.Exception, "Prepare Send Failed to {Server}", destinationEndpoint);
 				}
 			});
 		}
@@ -43,7 +43,7 @@ namespace EventStore.Core.Cluster {
 					prepareOk.ChaserCheckpoint, prepareOk.NodePriority, deadline)
 				.ContinueWith(r => {
 					if (r.Exception != null) {
-						Log.Error(r.Exception, "Prepare OK Send Failed to {Server}",
+						Log.Information(r.Exception, "Prepare OK Send Failed to {Server}",
 							destinationEndpoint);
 					}
 				});
@@ -58,7 +58,7 @@ namespace EventStore.Core.Cluster {
 					deadline)
 				.ContinueWith(r => {
 					if (r.Exception != null) {
-						Log.Error(r.Exception, "Proposal Send Failed to {Server}",
+						Log.Information(r.Exception, "Proposal Send Failed to {Server}",
 							destinationEndpoint);
 					}
 				});
@@ -69,7 +69,7 @@ namespace EventStore.Core.Cluster {
 					accept.View, deadline)
 				.ContinueWith(r => {
 					if (r.Exception != null) {
-						Log.Error(r.Exception, "Accept Send Failed to {Server}", destinationEndpoint);
+						Log.Information(r.Exception, "Accept Send Failed to {Server}", destinationEndpoint);
 					}
 				});
 		}
@@ -78,7 +78,7 @@ namespace EventStore.Core.Cluster {
 			DateTime deadline) {
 			SendLeaderIsResigningAsync(resigning.LeaderId, resigning.LeaderInternalHttp, deadline).ContinueWith(r => {
 				if (r.Exception != null) {
-					Log.Error(r.Exception, "Leader is Resigning Send Failed to {Server}", destinationEndpoint);
+					Log.Information(r.Exception, "Leader is Resigning Send Failed to {Server}", destinationEndpoint);
 				}
 			});
 		}
@@ -88,7 +88,7 @@ namespace EventStore.Core.Cluster {
 			SendLeaderIsResigningOkAsync(resigningOk.LeaderId, resigningOk.LeaderInternalHttp,
 				resigningOk.ServerId, resigningOk.ServerInternalHttp, deadline).ContinueWith(r => {
 				if (r.Exception != null) {
-					Log.Error(r.Exception, "Leader is Resigning Ok Send Failed to {Server}", destinationEndpoint);
+					Log.Information(r.Exception, "Leader is Resigning Ok Send Failed to {Server}", destinationEndpoint);
 				}
 			});
 		}

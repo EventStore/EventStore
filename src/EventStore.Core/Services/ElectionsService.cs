@@ -136,7 +136,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ClientMessage.SetNodePriority message) {
-			Log.Debug("Setting Node Priority to {nodePriority}.", message.NodePriority);
+			Log.Information("Setting Node Priority to {nodePriority}.", message.NodePriority);
 			_nodePriority = message.NodePriority;
 			_publisher.Publish(new GossipMessage.UpdateNodePriority(_nodePriority));
 		}
@@ -160,12 +160,12 @@ namespace EventStore.Core.Services {
 
 		public void Handle(ElectionMessage.LeaderIsResigning message) {
 			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFORE NOT ALLOWED TO ACKNOWLEDGE LEADER RESIGNATION.");
 				return;
 			}
 
-			Log.Debug("ELECTIONS: LEADER IS RESIGNING [{leaderInternalHttp}, {leaderId:B}].",
+			Log.Information("ELECTIONS: LEADER IS RESIGNING [{leaderInternalHttp}, {leaderId:B}].",
 				message.LeaderInternalHttp, message.LeaderId);
 			var leaderIsResigningMessageOk = new ElectionMessage.LeaderIsResigningOk(
 				message.LeaderId,
@@ -179,7 +179,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigningOk message) {
-			Log.Debug(
+			Log.Information(
 				"ELECTIONS: LEADER IS RESIGNING OK FROM [{serverInternalHttp},{serverId:B}] M=[{leaderInternalHttp},{leaderId:B}]).",
 				message.ServerInternalHttp,
 				message.ServerId,
@@ -187,7 +187,7 @@ namespace EventStore.Core.Services {
 				message.LeaderId);
 			if (_leaderIsResigningOkReceived.Add(message.ServerId) &&
 					_leaderIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF LEADER [{leaderInternalHttp},{leaderId:B}]. NOW INITIATING LEADER RESIGNATION.",
 					message.LeaderInternalHttp, message.LeaderId);
 				_publisher.Publish(new SystemMessage.InitiateLeaderResignation());
@@ -212,7 +212,7 @@ namespace EventStore.Core.Services {
 			if (_nodeInfo.IsReadOnlyReplica)
 				Log.Verbose("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
-			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
+			Log.Information("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
 			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
 				_publisherEnvelope,
@@ -225,12 +225,12 @@ namespace EventStore.Core.Services {
 			// we are still on the same view, but we selected leader
 			if (_state != ElectionsState.ElectingLeader && _leader != null) return;
 
-			Log.Debug("ELECTIONS: (V={view}) TIMED OUT! (S={state}, M={leader}).", message.View, _state, _leader);
+			Log.Information("ELECTIONS: (V={view}) TIMED OUT! (S={state}, M={leader}).", message.View, _state, _leader);
 			ShiftToLeaderElection(_lastAttemptedView + 1);
 		}
 
 		private void ShiftToLeaderElection(int view) {
-			Log.Debug("ELECTIONS: (V={view}) SHIFT TO LEADER ELECTION.", view);
+			Log.Information("ELECTIONS: (V={view}) SHIFT TO LEADER ELECTION.", view);
 
 			_state = ElectionsState.ElectingLeader;
 			_vcReceived.Clear();
@@ -262,14 +262,14 @@ namespace EventStore.Core.Services {
 
 			if (message.AttemptedView <= _lastInstalledView) return;
 
-			Log.Debug("ELECTIONS: (V={view}) VIEWCHANGE FROM [{serverInternalHttp}, {serverId:B}].",
+			Log.Information("ELECTIONS: (V={view}) VIEWCHANGE FROM [{serverInternalHttp}, {serverId:B}].",
 				message.AttemptedView, message.ServerInternalHttp, message.ServerId);
 
 			if (message.AttemptedView > _lastAttemptedView)
 				ShiftToLeaderElection(message.AttemptedView);
 
 			if (_vcReceived.Add(message.ServerId) && _vcReceived.Count == _clusterSize / 2 + 1) {
-				Log.Debug("ELECTIONS: (V={view}) MAJORITY OF VIEWCHANGE.", message.AttemptedView);
+				Log.Information("ELECTIONS: (V={view}) MAJORITY OF VIEWCHANGE.", message.AttemptedView);
 				if (AmILeaderOf(_lastAttemptedView))
 					ShiftToPreparePhase();
 			}
@@ -299,13 +299,13 @@ namespace EventStore.Core.Services {
 				new ElectionMessage.ElectionsTimedOut(_lastAttemptedView)));
 
 			if (AmILeaderOf(_lastAttemptedView)) {
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttp}, {serverId:B}]. JUMPING TO LEADER STATE.",
 					message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
 				ShiftToPreparePhase();
 			} else {
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttp}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
 					message.InstalledView, message.ServerInternalHttp, message.ServerId);
 
@@ -321,7 +321,7 @@ namespace EventStore.Core.Services {
 		}
 
 		private void ShiftToPreparePhase() {
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO PREPARE PHASE.", _lastAttemptedView);
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) SHIFT TO PREPARE PHASE.", _lastAttemptedView);
 
 			_lastInstalledView = _lastAttemptedView;
 			_prepareOkReceived.Clear();
@@ -337,7 +337,7 @@ namespace EventStore.Core.Services {
 			if (message.View != _lastAttemptedView) return;
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return; // unknown instance
 
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) PREPARE FROM [{serverInternalHttp}, {serverId:B}].",
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) PREPARE FROM [{serverInternalHttp}, {serverId:B}].",
 				_lastAttemptedView, message.ServerInternalHttp, message.ServerId);
 
 			if (_state == ElectionsState.ElectingLeader) // install the view
@@ -363,7 +363,7 @@ namespace EventStore.Core.Services {
 		}
 
 		private void ShiftToAcceptor() {
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_ACCEPTOR.", _lastAttemptedView);
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_ACCEPTOR.", _lastAttemptedView);
 
 			_state = ElectionsState.Acceptor;
 			_lastInstalledView = _lastAttemptedView;
@@ -374,7 +374,7 @@ namespace EventStore.Core.Services {
 			if (_state != ElectionsState.ElectingLeader) return;
 			if (msg.View != _lastAttemptedView) return;
 
-			Log.Debug("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
+			Log.Information("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
 				FormatNodeInfo(msg.ServerInternalHttp, msg.ServerId,
 					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
 					msg.EpochNumber, msg.EpochPosition, msg.EpochId, msg.NodePriority));
@@ -388,12 +388,12 @@ namespace EventStore.Core.Services {
 
 		private void ShiftToLeader() {
 			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Debug("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.",
+				Log.Information("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.",
 					_lastAttemptedView);
 				return;
 			}
 
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_LEADER.", _lastAttemptedView);
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_LEADER.", _lastAttemptedView);
 
 			_state = ElectionsState.Leader;
 			SendProposal();
@@ -413,7 +413,7 @@ namespace EventStore.Core.Services {
 
 			_leaderProposal = leader;
 
-			Log.Debug("ELECTIONS: (V={lastAttemptedView}) SENDING PROPOSAL CANDIDATE: {formatNodeInfo}, ME: {ownInfo}.",
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) SENDING PROPOSAL CANDIDATE: {formatNodeInfo}, ME: {ownInfo}.",
 				_lastAttemptedView, FormatNodeInfo(leader), FormatNodeInfo(GetOwnInfo()));
 
 			var proposal = new ElectionMessage.Proposal(_nodeInfo.InstanceId, _nodeInfo.InternalHttp,
@@ -474,7 +474,7 @@ namespace EventStore.Core.Services {
 				    || (candidate.EpochNumber == leader.EpochNumber && candidate.EpochId != leader.EpochId))
 					return true;
 
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE LEADER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
 					+ "PREVIOUS LEADER IS ALIVE: [{leaderInternalHttp},{leaderId:B}].",
 					view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
@@ -486,7 +486,7 @@ namespace EventStore.Core.Services {
 				return true;
 
 			if (!IsCandidateGoodEnough(candidate, ownInfo)) {
-				Log.Debug(
+				Log.Information(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE LEADER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. ME={ownInfo}.",
 					view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
 					FormatNodeInfo(ownInfo));
@@ -526,7 +526,7 @@ namespace EventStore.Core.Services {
 				_resigningLeaderInstanceId))
 				return;
 
-			Log.Debug(
+			Log.Information(
 				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttp},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
 				_lastAttemptedView,
 				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
@@ -554,7 +554,7 @@ namespace EventStore.Core.Services {
 			if (_leaderProposal == null) return;
 			if (_leaderProposal.InstanceId != message.LeaderId) return;
 
-			Log.Debug(
+			Log.Information(
 				"ELECTIONS: (V={view}) ACCEPT FROM [{serverInternalHttp},{serverId:B}] M=[{leaderInternalHttp},{leaderId:B}]).",
 				message.View,
 				message.ServerInternalHttp, message.ServerId, message.LeaderInternalHttp, message.LeaderId);
