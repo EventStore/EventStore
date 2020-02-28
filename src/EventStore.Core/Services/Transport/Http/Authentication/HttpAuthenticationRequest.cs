@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication;
@@ -12,7 +13,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 		private readonly TaskCompletionSource<bool> _tcs;
 		private readonly CancellationTokenRegistration _cancellationRegister;
 
-		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword) : base(context.TraceIdentifier, name, suppliedPassword, null) {
+		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword, X509Certificate suppliedClientCertificate)
+			: base(context.TraceIdentifier, name, suppliedPassword, suppliedClientCertificate) {
 			_context = context;
 			
 			_tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

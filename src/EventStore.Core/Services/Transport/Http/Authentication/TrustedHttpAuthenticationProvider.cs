@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			if (!context.Request.Headers.TryGetValue(SystemHeaders.TrustedAuth, out var values)) {
 				return false;
 			}
-			request = new HttpAuthenticationRequest(context, null, null);
+			request = new HttpAuthenticationRequest(context, null, null, null);
 			var principal = CreatePrincipal(values[0]);
 			if (principal != null)
 				request.Authenticated(principal);

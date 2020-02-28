@@ -1,7 +1,10 @@
 using System;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,7 +44,11 @@ namespace EventStore.ClusterNode {
 							server.Listen(hostedService.Options.IntIp, hostedService.Options.IntHttpPort,
 								listenOptions => listenOptions.UseHttps(hostedService.Node.Certificate));
 							server.Listen(hostedService.Options.ExtIp, hostedService.Options.ExtHttpPort,
-								listenOptions => listenOptions.UseHttps(hostedService.Node.Certificate));
+								listenOptions => listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
+									ServerCertificate = hostedService.Node.Certificate,
+									ClientCertificateMode = ClientCertificateMode.AllowCertificate,
+									ClientCertificateValidation = (certificate2, chain, errors) => true
+								}));
 						})
 						.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 						.Configure(hostedService.Node.Startup.Configure));

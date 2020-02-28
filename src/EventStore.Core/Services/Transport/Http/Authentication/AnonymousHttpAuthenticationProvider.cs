@@ -7,7 +7,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class AnonymousHttpAuthenticationProvider : IHttpAuthenticationProvider {
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
-			request = new HttpAuthenticationRequest(context, null, null);
+			request = new HttpAuthenticationRequest(context, null, null, null);
 			request.Authenticated(SystemAccounts.Anonymous);
 			return true;
 		}

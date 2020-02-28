@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				    values[0], out var authenticationHeader) && 
 			    authenticationHeader.Scheme == "Basic"
 			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
-				request = new HttpAuthenticationRequest(context, username, password);
+				request = new HttpAuthenticationRequest(context, username, password, null);
 				_internalAuthenticationProvider.Authenticate(request);
 				return true;
 			}

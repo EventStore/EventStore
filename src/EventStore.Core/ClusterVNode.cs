@@ -400,7 +400,9 @@ namespace EventStore.Core {
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
 				new BasicHttpAuthenticationProvider(_internalAuthenticationProvider),
+				new ClientCertificateHttpAuthenticationProvider(_internalAuthenticationProvider)
 			};
+
 			if (vNodeSettings.EnableTrustedAuth)
 				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
 			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
