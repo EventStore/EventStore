@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -31,7 +32,13 @@ namespace EventStore.Core.Authentication {
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
 			Tuple<string, ClaimsPrincipal> cached;
 			if (_userPasswordsCache.TryGet(authenticationRequest.Name, out cached)) {
-				AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
+				if (authenticationRequest.SuppliedPassword != null) {
+					AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
+				} else if (authenticationRequest.SuppliedClientCertificate != null) {
+					AuthenticateWithClientCertificate(authenticationRequest, cached.Item2);
+				} else {
+					authenticationRequest.Error();
+				}
 			} else {
 				var userStreamId = "$user-" + authenticationRequest.Name;
 				_ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccounts.System,
@@ -71,7 +78,13 @@ namespace EventStore.Core.Authentication {
 							"The account is disabled.");
 					authenticationRequest.Unauthorized();
 				} else {
-					AuthenticateWithPasswordHash(authenticationRequest, userData);
+					if (authenticationRequest.SuppliedPassword != null) {
+						AuthenticateWithPasswordHash(authenticationRequest, userData);
+					} else if (authenticationRequest.SuppliedClientCertificate != null) {
+						AuthenticateWithClientCertificate(authenticationRequest, CreatePrincipal(userData));
+					} else {
+						authenticationRequest.Error();
+					}
 				}
 			} catch {
 				authenticationRequest.Unauthorized();
@@ -119,6 +132,18 @@ namespace EventStore.Core.Authentication {
 			}
 
 			authenticationRequest.Authenticated(principal);
+		}
+
+		private void AuthenticateWithClientCertificate(AuthenticationRequest authenticationRequest, ClaimsPrincipal principal) {
+			using X509Chain chain = new X509Chain { ChainPolicy = { RevocationMode = X509RevocationMode.NoCheck } };
+			if (chain.Build(new X509Certificate2(authenticationRequest.SuppliedClientCertificate))) {
+				authenticationRequest.Authenticated(principal);
+			} else {
+				if (_logFailedAuthenticationAttempts)
+					Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+						"Invalid client certificate provided.");
+				authenticationRequest.Unauthorized();
+			}
 		}
 
 		public void Handle(InternalAuthenticationProviderMessages.ResetPasswordCache message) {

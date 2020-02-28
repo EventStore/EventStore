@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var dummyConnection = new DummyTcpConnection();
 			_connection = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External,  TcpSecurityType.Normal, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),

@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication
 		private readonly TaskCompletionSource<bool> _tcs;
 		private readonly CancellationTokenRegistration _cancellationRegister;
 
-		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword) : base(context.TraceIdentifier, name, suppliedPassword) {
+		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword) : base(context.TraceIdentifier, name, suppliedPassword, null) {
 			_context = context;
 			
 			_tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

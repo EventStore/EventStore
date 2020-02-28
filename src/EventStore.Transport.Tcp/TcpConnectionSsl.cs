@@ -13,6 +13,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Transport.Tcp {
 	public class TcpConnectionSsl : TcpConnectionBase, ITcpConnection {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionSsl>();
+		public event Action<TcpConnectionSsl, X509Certificate2> SslConnectionEstablished;
 
 		public static ITcpConnection CreateConnectingConnection(Guid connectionId,
 			IPEndPoint remoteEndPoint,
@@ -108,6 +109,7 @@ namespace EventStore.Transport.Tcp {
 		private int _sendingBytes;
 		private bool _validateServer;
 		private bool _validateClient;
+		private X509Certificate2 _clientCertificate;
 		private readonly byte[] _receiveBuffer = new byte[TcpConnection.BufferManager.ChunkSize];
 
 		private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose) : base(remoteEndPoint) {
@@ -147,7 +149,7 @@ namespace EventStore.Transport.Tcp {
 
 				try {
 					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-					_sslStream.BeginAuthenticateAsServer(certificate, validateClient, enabledSslProtocols, false,
+					_sslStream.BeginAuthenticateAsServer(certificate, true, enabledSslProtocols, false,
 						OnEndAuthenticateAsServer, _sslStream);
 				} catch (AuthenticationException exc) {
 					Log.Information(exc,
@@ -173,6 +175,7 @@ namespace EventStore.Transport.Tcp {
 					if (_verbose)
 						DisplaySslStreamInfo(sslStream);
 					_isAuthenticated = true;
+					SslConnectionEstablished?.Invoke(this, _clientCertificate);
 				}
 
 				StartReceive();
@@ -249,6 +252,7 @@ namespace EventStore.Transport.Tcp {
 					if (_verbose)
 						DisplaySslStreamInfo(sslStream);
 					_isAuthenticated = true;
+					SslConnectionEstablished?.Invoke(this, _clientCertificate);
 				}
 
 				StartReceive();
@@ -283,6 +287,8 @@ namespace EventStore.Transport.Tcp {
 
 		public bool ValidateClientCertificate(object sender, X509Certificate certificate, X509Chain chain,
 			SslPolicyErrors sslPolicyErrors) {
+			_clientCertificate = certificate == null ? null : new X509Certificate2(certificate);
+
 			if (!_validateClient)
 				return true;
 

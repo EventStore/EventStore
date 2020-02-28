@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Authentication {
 
 		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
 			Action<ClaimsPrincipal> authenticated, Action error, Action notReady)
-			: base("test", name, suppliedPassword) {
+			: base("test", name, suppliedPassword, null) {
 			_unauthorized = unauthorized;
 			_authenticated = authenticated;
 			_error = error;

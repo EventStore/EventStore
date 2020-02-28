@@ -121,6 +121,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var manager = new TcpConnectionManager(
 				string.Format("{0}-{1}", _serviceType.ToString().ToLower(), _securityType.ToString().ToLower()),
 				_serviceType,
+				_securityType,
 				dispatcher,
 				_publisher,
 				conn,
