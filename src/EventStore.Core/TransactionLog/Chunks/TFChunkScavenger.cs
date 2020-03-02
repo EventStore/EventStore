@@ -114,7 +114,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var totalSw = Stopwatch.StartNew();
 			var sw = Stopwatch.StartNew();
 
-			Log.Verbose(
+			Log.Debug(
 				"SCAVENGING: started scavenging of DB. Chunks count at start: {chunksCount}. Options: alwaysKeepScavenged = {alwaysKeepScavenged}, mergeChunks = {mergeChunks}",
 				_db.Manager.ChunksCount, alwaysKeepScavenged, mergeChunks);
 
@@ -135,7 +135,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					});
 			}
 
-			Log.Verbose("SCAVENGING: initial pass completed in {elapsed}.", sw.Elapsed);
+			Log.Debug("SCAVENGING: initial pass completed in {elapsed}.", sw.Elapsed);
 
 			// Merge scavenge pass
 			if (mergeChunks) {
@@ -173,12 +173,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						}
 					}
 
-					Log.Verbose("SCAVENGING: merge pass #{pass} completed in {elapsed}. {merged} merged.",
+					Log.Debug("SCAVENGING: merge pass #{pass} completed in {elapsed}. {merged} merged.",
 						passNum, sw.Elapsed, mergedSomething ? "Some chunks" : "Nothing");
 				} while (mergedSomething);
 			}
 
-			Log.Verbose("SCAVENGING: total time taken: {elapsed}, total space saved: {spaceSaved}.", totalSw.Elapsed,
+			Log.Debug("SCAVENGING: total time taken: {elapsed}, total space saved: {spaceSaved}.", totalSw.Elapsed,
 				_scavengerLog.SpaceSaved);
 		}
 
@@ -195,11 +195,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
 			var oldChunkName = oldChunk.ToString();
-			Log.Verbose(
+			Log.Debug(
 				"SCAVENGING: started to scavenge chunks: {oldChunkName} {chunkStartNumber} => {chunkEndNumber} ({chunkStartPosition} => {chunkEndPosition})",
 				oldChunkName, chunkStartNumber, chunkEndNumber,
 				chunkStartPos, chunkEndPos);
-			Log.Verbose("Resulting temp chunk file: {tmpChunkPath}.", Path.GetFileName(tmpChunkPath));
+			Log.Debug("Resulting temp chunk file: {tmpChunkPath}.", Path.GetFileName(tmpChunkPath));
 
 			TFChunk.TFChunk newChunk;
 			try {
@@ -248,7 +248,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					}
 				}
 
-				Log.Verbose("Scavenging {oldChunkName} traversed {recordsCount} including {filteredCount}.", oldChunkName,
+				Log.Debug("Scavenging {oldChunkName} traversed {recordsCount} including {filteredCount}.", oldChunkName,
 					threadLocalCache.Records.Count, filteredCount);
 
 				newSize += filteredCount * PosMap.FullSize + ChunkHeader.Size + ChunkFooter.Size;
@@ -259,7 +259,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				long oldSize = oldChunk.FileSize;
 
 				if (oldSize <= newSize && !alwaysKeepScavenged && !_unsafeIgnoreHardDeletes && !oldVersion) {
-					Log.Verbose(
+					Log.Debug(
 						"Scavenging of chunks:"
 						+ "\n{oldChunkName}"
 						+ "\ncompleted in {elapsed}."
@@ -293,17 +293,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					newChunk.CompleteScavenge(positionMapping);
 
 					if (_unsafeIgnoreHardDeletes) {
-						Log.Verbose("Forcing scavenge chunk to be kept even if bigger.");
+						Log.Debug("Forcing scavenge chunk to be kept even if bigger.");
 					}
 
 					if (oldVersion) {
-						Log.Verbose("Forcing scavenged chunk to be kept as old chunk is a previous version.");
+						Log.Debug("Forcing scavenged chunk to be kept as old chunk is a previous version.");
 					}
 
 					var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false,
 						removeChunksWithGreaterNumbers: false);
 					if (chunk != null) {
-						Log.Verbose("Scavenging of chunks:"
+						Log.Debug("Scavenging of chunks:"
 						          + "\n{oldChunkName}"
 						          + "\ncompleted in {elapsed}."
 						          + "\nNew chunk: {tmpChunkPath} --> #{chunkStartNumber}-{chunkEndNumber} ({newChunk})."
@@ -313,7 +313,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						var spaceSaved = oldSize - newSize;
 						_scavengerLog.ChunksScavenged(chunkStartNumber, chunkEndNumber, sw.Elapsed, spaceSaved);
 					} else {
-						Log.Verbose("Scavenging of chunks:"
+						Log.Debug("Scavenging of chunks:"
 						          + "\n{oldChunkName}"
 						          + "\ncompleted in {elapsed}."
 						          + "\nBut switching was prevented for new chunk: #{chunkStartNumber}-{chunkEndNumber} ({tmpChunkPath})."
@@ -354,7 +354,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var oldChunksList = string.Join("\n", oldChunks);
 
 			if (oldChunks.Count < 2) {
-				Log.Verbose("SCAVENGING: Tried to merge less than 2 chunks, aborting: {oldChunksList}", oldChunksList);
+				Log.Debug("SCAVENGING: Tried to merge less than 2 chunks, aborting: {oldChunksList}", oldChunksList);
 				return false;
 			}
 
@@ -364,7 +364,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			int chunkEndNumber = oldChunks.Last().ChunkHeader.ChunkEndNumber;
 
 			var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".merge.scavenge.tmp");
-			Log.Verbose("SCAVENGING: started to merge chunks: {oldChunksList}"
+			Log.Debug("SCAVENGING: started to merge chunks: {oldChunksList}"
 			          + "\nResulting temp chunk file: {tmpChunkPath}.",
 				oldChunksList, Path.GetFileName(tmpChunkPath));
 
@@ -409,16 +409,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				newChunk.CompleteScavenge(positionMapping);
 
 				if (_unsafeIgnoreHardDeletes) {
-					Log.Verbose("Forcing merged chunk to be kept even if bigger.");
+					Log.Debug("Forcing merged chunk to be kept even if bigger.");
 				}
 
 				if (oldVersion) {
-					Log.Verbose("Forcing merged chunk to be kept as old chunk is a previous version.");
+					Log.Debug("Forcing merged chunk to be kept as old chunk is a previous version.");
 				}
 
 				var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, removeChunksWithGreaterNumbers: false);
 				if (chunk != null) {
-					Log.Verbose(
+					Log.Debug(
 						"Merging of chunks:"
 						+ "\n{oldChunksList}"
 						+ "\ncompleted in {elapsed}."
@@ -429,7 +429,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_scavengerLog.ChunksMerged(chunkStartNumber, chunkEndNumber, sw.Elapsed, spaceSaved);
 					return true;
 				} else {
-					Log.Verbose(
+					Log.Debug(
 						"Merging of chunks:"
 						+ "\n{oldChunksList}"
 						+ "\ncompleted in {elapsed}."
@@ -714,7 +714,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				0,
 				threads,
 				() => {
-					Log.Verbose("SCAVENGING: Allocating {size} spaces in thread local cache {threadId}.",
+					Log.Debug("SCAVENGING: Allocating {size} spaces in thread local cache {threadId}.",
 						initialSizeOfThreadLocalCache,
 						Thread.CurrentThread.ManagedThreadId);
 					return new ThreadLocalScavengeCache(initialSizeOfThreadLocalCache);
