@@ -32,6 +32,7 @@ namespace EventStore.Client {
 		public void AdditionOperator() {
 			var sut = StreamRevision.Start;
 			Assert.Equal(new StreamRevision(1), sut + 1);
+			Assert.Equal(new StreamRevision(1), 1 + sut);
 		}
 
 		public static IEnumerable<object[]> AdditionOutOfBoundsCases() {
@@ -40,13 +41,32 @@ namespace EventStore.Client {
 		}
 
 		[Theory, MemberData(nameof(AdditionOutOfBoundsCases))]
-		public void AdditionOutOfBoundsThrows(StreamRevision left, ulong right) {
-			Assert.Throws<OverflowException>(() => left + right);
+		public void AdditionOutOfBoundsThrows(StreamRevision streamRevision, ulong operand) {
+			Assert.Throws<OverflowException>(() => streamRevision + operand);
+			Assert.Throws<OverflowException>(() => operand + streamRevision);
+		}
+
+		[Fact]
+		public void SubtractionOperator() {
+			var sut = new StreamRevision(1);
+			Assert.Equal(new StreamRevision(0), sut - 1);
+			Assert.Equal(new StreamRevision(0), 1 - sut);
+		}
+
+		public static IEnumerable<object[]> SubtractionOutOfBoundsCases() {
+			yield return new object[] {new StreamRevision(1), 2};
+			yield return new object[] {StreamRevision.Start, 1};
+		}
+
+		[Theory, MemberData(nameof(SubtractionOutOfBoundsCases))]
+		public void SubtractionOutOfBoundsThrows(StreamRevision streamRevision, ulong operand) {
+			Assert.Throws<OverflowException>(() => streamRevision - operand);
+			Assert.Throws<OverflowException>(() => (ulong)streamRevision - new StreamRevision(operand));
 		}
 
 		public static IEnumerable<object[]> ArgumentOutOfRangeTestCases() {
-			yield return new object[] { long.MaxValue + 1UL };
-			yield return new object[] { ulong.MaxValue - 1UL };
+			yield return new object[] {long.MaxValue + 1UL};
+			yield return new object[] {ulong.MaxValue - 1UL};
 		}
 
 		[Theory, MemberData(nameof(ArgumentOutOfRangeTestCases))]
@@ -56,9 +76,9 @@ namespace EventStore.Client {
 		}
 
 		public static IEnumerable<object[]> ComparableTestCases() {
-			yield return new object[] { StreamRevision.Start, StreamRevision.Start, 0 };
-			yield return new object[] { StreamRevision.Start, StreamRevision.End, -1 };
-			yield return new object[] { StreamRevision.End, StreamRevision.Start, 1 };
+			yield return new object[] {StreamRevision.Start, StreamRevision.Start, 0};
+			yield return new object[] {StreamRevision.Start, StreamRevision.End, -1};
+			yield return new object[] {StreamRevision.End, StreamRevision.Start, 1};
 		}
 
 		[Theory, MemberData(nameof(ComparableTestCases))]
@@ -66,8 +86,8 @@ namespace EventStore.Client {
 			=> Assert.Equal(expected, left.CompareTo(right));
 
 		public static IEnumerable<object[]> Int64TestCases() {
-			yield return new object[] { -1L, StreamRevision.End };
-			yield return new object[] { 0L, StreamRevision.Start };
+			yield return new object[] {-1L, StreamRevision.End};
+			yield return new object[] {0L, StreamRevision.Start};
 		}
 
 		[Theory, MemberData(nameof(Int64TestCases))]
@@ -96,6 +116,13 @@ namespace EventStore.Client {
 			var expected = 0UL.ToString();
 
 			Assert.Equal(expected, new StreamRevision(0UL).ToString());
+		}
+
+		[Fact]
+		public void ToUInt64ExpectedResult() {
+			var expected = 0UL;
+
+			Assert.Equal(expected, new StreamRevision(expected).ToUInt64());
 		}
 	}
 }
