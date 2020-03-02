@@ -200,7 +200,7 @@ namespace EventStore.ClusterNode {
 
 			if (!options.DisableInternalTls && options.ClusterSize > 1) {
 				if (ReferenceEquals(options.TlsTargetHost, Opts.TlsTargetHostDefault))
-					throw new Exception("TLS target host needs to be specified in a clustered configuration unless development mode (--dev) is set.");
+					throw new Exception($"{nameof(options.TlsTargetHost)} needs to be specified in a clustered configuration unless development mode (--dev) is set.");
 			}
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
