@@ -10,7 +10,7 @@ namespace EventStore.Client {
 #else
 	internal
 #endif
-		struct Position : IEquatable<Position> {
+		struct Position : IEquatable<Position>, IComparable<Position> {
 		/// <summary>
 		/// Position representing the start of the transaction file
 		/// </summary>
@@ -54,6 +54,7 @@ namespace EventStore.Client {
 			if (commitPosition > long.MaxValue && commitPosition != ulong.MaxValue) {
 				throw new ArgumentOutOfRangeException(nameof(commitPosition));
 			}
+
 
 			if (preparePosition > long.MaxValue && preparePosition != ulong.MaxValue) {
 				throw new ArgumentOutOfRangeException(nameof(preparePosition));
@@ -116,6 +117,9 @@ namespace EventStore.Client {
 		/// <param name="p2">A <see cref="Position" />.</param>
 		/// <returns>True if p1 is not equal to p2.</returns>
 		public static bool operator !=(Position p1, Position p2) => !(p1 == p2);
+
+		///<inheritdoc cref="IComparable{T}.CompareTo"/>
+		public int CompareTo(Position other) => this == other ? 0 : this > other ? 1 : -1;
 
 		/// <summary>
 		/// Indicates whether this instance and a specified object are equal.
