@@ -13,12 +13,11 @@ namespace EventStore.Client {
 		public int? MaxCount { get; }
 		public JsonDocument CustomMetadata { get; }
 
-
 		public StreamMetadata(
-			int? maxCount = default,
-			TimeSpan? maxAge = default,
-			StreamRevision? truncateBefore = default,
-			TimeSpan? cacheControl = default,
+			int? maxCount = null,
+			TimeSpan? maxAge = null,
+			StreamRevision? truncateBefore = null,
+			TimeSpan? cacheControl = null,
 			StreamAcl acl = null,
 			JsonDocument customMetadata = null) : this() {
 			if (maxCount <= 0) {

@@ -26,7 +26,7 @@ namespace EventStore.Client {
 			return new StreamMetadataResult(streamName, revision, metadata);
 		}
 
-		private StreamMetadataResult(string streamName, StreamRevision? metastreamRevision = default,
+		private StreamMetadataResult(string streamName, StreamRevision? metastreamRevision = null,
 			StreamMetadata metadata = default, bool streamDeleted = false) {
 			if (streamName == null) {
 				throw new ArgumentNullException(nameof(streamName));
