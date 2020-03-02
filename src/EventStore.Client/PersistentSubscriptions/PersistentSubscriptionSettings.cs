@@ -67,10 +67,10 @@ namespace EventStore.Client.PersistentSubscriptions {
 		/// </summary>
 		public readonly string NamedConsumerStrategy;
 
-		public PersistentSubscriptionSettings(bool resolveLinkTos = false, StreamRevision? startFrom = default,
-			bool extraStatistics = false, TimeSpan? messageTimeout = default, int maxRetryCount = 500,
+		public PersistentSubscriptionSettings(bool resolveLinkTos = false, StreamRevision? startFrom = null,
+			bool extraStatistics = false, TimeSpan? messageTimeout = null, int maxRetryCount = 500,
 			int liveBufferSize = 500, int readBatchSize = 10, int historyBufferSize = 20,
-			TimeSpan? checkPointAfter = default, int minCheckPointCount = 10, int maxCheckPointCount = 1000,
+			TimeSpan? checkPointAfter = null, int minCheckPointCount = 10, int maxCheckPointCount = 1000,
 			int maxSubscriberCount = 0, string namedConsumerStrategy = SystemConsumerStrategies.RoundRobin) {
 			messageTimeout ??= TimeSpan.FromSeconds(30);
 			checkPointAfter ??= TimeSpan.FromSeconds(2);

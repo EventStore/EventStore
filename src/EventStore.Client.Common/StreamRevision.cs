@@ -42,6 +42,18 @@ namespace EventStore.Client {
 			}
 		}
 
+		public static StreamRevision operator -(StreamRevision left, ulong right) {
+			checked {
+				return new StreamRevision(left._value - right);
+			}
+		}
+
+		public static StreamRevision operator -(ulong left, StreamRevision right) {
+			checked {
+				return new StreamRevision(left - right._value);
+			}
+		}
+
 		public static bool operator >(StreamRevision left, StreamRevision right) => left._value > right._value;
 		public static bool operator <(StreamRevision left, StreamRevision right) => left._value < right._value;
 		public static bool operator >=(StreamRevision left, StreamRevision right) => left._value >= right._value;
@@ -49,5 +61,6 @@ namespace EventStore.Client {
 		internal readonly long ToInt64() => Equals(End) ? -1 : Convert.ToInt64(_value);
 		public static implicit operator ulong(StreamRevision streamRevision) => streamRevision._value;
 		public override readonly string ToString() => this == End ? "End" : _value.ToString();
+		public readonly ulong ToUInt64() => _value;
 	}
 }

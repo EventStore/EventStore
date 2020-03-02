@@ -9,9 +9,9 @@ namespace EventStore.Client {
 
 		public override StreamMetadata Read(ref Utf8JsonReader reader, Type typeToConvert,
 			JsonSerializerOptions options) {
-			int? maxCount = default;
-			TimeSpan? maxAge = default, cacheControl = default;
-			StreamRevision? truncateBefore = default;
+			int? maxCount = null;
+			TimeSpan? maxAge = null, cacheControl = null;
+			StreamRevision? truncateBefore = null;
 			StreamAcl acl = null;
 			using var stream = new MemoryStream();
 			using var customMetadataWriter = new Utf8JsonWriter(stream);
@@ -60,7 +60,7 @@ namespace EventStore.Client {
 						}
 
 						var value = reader.GetInt64();
-						truncateBefore = value == Int64.MaxValue
+						truncateBefore = value == long.MaxValue
 							? StreamRevision.End
 							: StreamRevision.FromInt64(value);
 						break;

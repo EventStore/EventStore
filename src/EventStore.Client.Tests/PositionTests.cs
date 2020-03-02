@@ -76,5 +76,15 @@ namespace EventStore.Client {
 
 		[Theory, MemberData(nameof(LessThanOrEqualToTestCases))]
 		public void LessThanOrEqualTo(Position left, Position right) => Assert.True(left <= right);
+
+		public static IEnumerable<object[]> CompareToTestCases() {
+			yield return new object[] {new Position(6, 5), new Position(6, 6), -1};
+			yield return new object[] {new Position(6, 6), new Position(6, 5), 1};
+			yield return new object[] {new Position(6, 6), new Position(6, 6), 0};
+		}
+
+		[Theory, MemberData(nameof(CompareToTestCases))]
+		public void CompareTo(Position left, Position right, int expected) =>
+			Assert.Equal(expected, left.CompareTo(right));
 	}
 }
