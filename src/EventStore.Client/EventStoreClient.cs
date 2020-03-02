@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using EventStore.Client.Interceptors;
@@ -8,6 +10,7 @@ using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Projections;
 using EventStore.Client.Shared;
 using EventStore.Client.Users;
+using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
@@ -39,7 +42,16 @@ namespace EventStore.Client {
 			_settings = settings ?? new EventStoreClientSettings();
 			var connectionName = _settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
 			Action<Exception> exceptionNotificationHook = null;
-			var httpHandler = _settings.CreateHttpMessageHandler?.Invoke() ?? new HttpClientHandler();
+
+			var httpHandler = _settings.CreateHttpMessageHandler?.Invoke();
+
+			if(httpHandler == null) {
+				var httpClientHandler = new HttpClientHandler();
+				if (_settings.ConnectivitySettings.ClientCertificate != null)
+					httpClientHandler.ClientCertificates.Add(_settings.ConnectivitySettings.ClientCertificate);
+				httpHandler = httpClientHandler;
+			}
+
 			if (_settings.ConnectivitySettings.GossipSeeds.Length > 0) {
 				ConfigureClusterAwareHandler();
 			}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace EventStore.Client {
 	public class EventStoreClientConnectivitySettings {
@@ -25,6 +26,8 @@ namespace EventStore.Client {
 		public TimeSpan GossipTimeout { get; set; }
 		public TimeSpan DiscoveryInterval { get; set; }
 		public NodePreference NodePreference { get; set; }
+
+		public X509Certificate ClientCertificate { get; set; }
 
 		public static EventStoreClientConnectivitySettings Default => new EventStoreClientConnectivitySettings {
 			MaxDiscoverAttempts = 10,
