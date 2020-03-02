@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using Microsoft.AspNetCore.Hosting;
@@ -11,14 +12,20 @@ namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
 			try {
+				var cts = new CancellationTokenSource();
 				var hostedService = new ClusterVNodeHostedService(args);
 
 				var exitCodeSource = new TaskCompletionSource<int>();
-				Application.RegisterExitAction(exitCodeSource.SetResult);
-				Console.CancelKeyPress += delegate { Application.Exit(0, "Cancelled."); };
+				Application.RegisterExitAction(code => {
+					cts.Cancel();
+					exitCodeSource.SetResult(code);
+				});
+				Console.CancelKeyPress += delegate {
+					Application.Exit(0, "Cancelled.");
+				};
 
 				await CreateHostBuilder(hostedService, args)
-					.RunConsoleAsync(options => options.SuppressStatusMessages = true);
+					.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
 				return await exitCodeSource.Task;
 			} catch (Exception ex) {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
