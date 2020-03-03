@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
@@ -31,9 +32,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					null, null, 0, 0),
 				false, null, 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2), true, false,TimeSpan.FromHours(1),
-				StatsStorage.StreamAndFile, 0, 
-				new AuthenticationProviderFactory(components => 
+				TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), true, false,TimeSpan.FromHours(1),
+				StatsStorage.StreamAndFile, 0,
+				new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)), false, 30, true, true,

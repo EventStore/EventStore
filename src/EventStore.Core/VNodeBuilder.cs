@@ -66,6 +66,7 @@ namespace EventStore.Core {
 		protected int _commitAckCount;
 		protected TimeSpan _prepareTimeout;
 		protected TimeSpan _commitTimeout;
+		protected TimeSpan _writeTimeout;
 
 		protected int _nodePriority;
 
@@ -183,6 +184,7 @@ namespace EventStore.Core {
 			_commitAckCount = 1;
 			_prepareTimeout = TimeSpan.FromMilliseconds(Opts.PrepareTimeoutMsDefault);
 			_commitTimeout = TimeSpan.FromMilliseconds(Opts.CommitTimeoutMsDefault);
+			_writeTimeout = TimeSpan.FromMilliseconds(Opts.WriteTimeoutMsDefault);
 
 			_nodePriority = Opts.NodePriorityDefault;
 
@@ -832,6 +834,16 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// Sets the write timeout
+		/// </summary>
+		/// <param name="writeTimeout">The write timeout</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithWriteTimeout(TimeSpan writeTimeout) {
+			_writeTimeout = writeTimeout;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the period between statistics gathers
 		/// </summary>
 		/// <param name="statsPeriod">The period between statistics gathers</param>
@@ -1390,6 +1402,7 @@ namespace EventStore.Core {
 				_commitAckCount,
 				_prepareTimeout,
 				_commitTimeout,
+				_writeTimeout,
 				_disableInternalTls,
 				_disableExternalTls,
 				_statsPeriod,

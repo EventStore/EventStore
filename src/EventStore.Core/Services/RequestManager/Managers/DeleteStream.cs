@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -6,6 +7,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class DeleteStream : RequestManagerBase {
 		private readonly bool _hardDelete;
+		private readonly CancellationToken _cancellationToken;
 		private readonly string _streamId;
 
 		public DeleteStream(
@@ -17,7 +19,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					long expectedVersion,
 					bool hardDelete,
-					CommitSource commitSource)
+					CommitSource commitSource,
+					CancellationToken cancellationToken = default)
 			: base(
 					 publisher,
 					 timeout,
@@ -29,6 +32,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 0,
 					 waitForCommit: true) {
 			_hardDelete = hardDelete;
+			_cancellationToken = cancellationToken;
 			_streamId = streamId;
 		}
 
@@ -39,7 +43,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					_streamId,
 					ExpectedVersion,
 					_hardDelete,
-					LiveUntil);
+					LiveUntil,
+					_cancellationToken);
 
 		protected override Message ClientSuccessMsg =>
 			 new ClientMessage.DeleteStreamCompleted(

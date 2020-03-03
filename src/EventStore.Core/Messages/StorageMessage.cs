@@ -1,13 +1,10 @@
 using System;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages {
@@ -37,16 +34,18 @@ namespace EventStore.Core.Messages {
 
 			public string EventStreamId { get; private set; }
 			public long ExpectedVersion { get; private set; }
+			public CancellationToken CancellationToken { get; }
 			public readonly Event[] Events;
 
 			public readonly DateTime LiveUntil;
 
 			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				Event[] events, DateTime liveUntil) {
+				Event[] events, DateTime liveUntil, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
+				CancellationToken = cancellationToken;
 				Events = events;
 
 				LiveUntil = liveUntil;
@@ -70,12 +69,13 @@ namespace EventStore.Core.Messages {
 			public IEnvelope Envelope { get; private set; }
 			public string EventStreamId { get; private set; }
 			public long ExpectedVersion { get; private set; }
+			public CancellationToken CancellationToken { get; }
 			public readonly bool HardDelete;
 
 			public readonly DateTime LiveUntil;
 
 			public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				bool hardDelete, DateTime liveUntil) {
+				bool hardDelete, DateTime liveUntil, CancellationToken cancellationToken = default) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
 				Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -84,6 +84,7 @@ namespace EventStore.Core.Messages {
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
+				CancellationToken = cancellationToken;
 				HardDelete = hardDelete;
 
 				LiveUntil = liveUntil;
@@ -542,11 +543,11 @@ namespace EventStore.Core.Messages {
 		public class StreamIdFromTransactionIdResponse : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 			public readonly string StreamId;
-			
+
 			public StreamIdFromTransactionIdResponse(string streamId){
 				StreamId = streamId;
 			}
-			
+
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}

@@ -241,6 +241,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.CommitTimeoutMsDescr, Opts.DbGroup)]
 		public int CommitTimeoutMs { get; set; }
 
+		[ArgDescription(Opts.WriteTimeoutMsDescr, Opts.DbGroup)]
+		public int WriteTimeoutMs { get; set; }
+
 		[ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
 		public bool UnsafeDisableFlushToDisk { get; set; }
 

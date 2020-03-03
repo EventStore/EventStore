@@ -228,7 +228,7 @@ namespace EventStore.Core.Services.Storage {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 
 			try {
-				if (msg.LiveUntil < DateTime.UtcNow)
+				if (msg.LiveUntil < DateTime.UtcNow || msg.CancellationToken.IsCancellationRequested)
 					return;
 
 				string streamId = msg.EventStreamId;
@@ -339,7 +339,7 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				if (message.LiveUntil < DateTime.UtcNow)
+				if (message.LiveUntil < DateTime.UtcNow || message.CancellationToken.IsCancellationRequested)
 					return;
 
 				var eventId = Guid.NewGuid();

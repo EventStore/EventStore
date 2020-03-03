@@ -172,6 +172,9 @@ namespace EventStore.Core.Util {
 		public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
 		public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
 
+		public const string WriteTimeoutMsDescr = "Write timeout (in milliseconds).";
+		public static readonly int WriteTimeoutMsDefault = 2000; // 2 seconds
+
 		public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
 		public static readonly bool LogHttpRequestsDefault = false;
 		

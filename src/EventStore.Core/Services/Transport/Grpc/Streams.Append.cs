@@ -85,7 +85,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				streamName,
 				expectedVersion,
 				events.ToArray(),
-				user));
+				user,
+				cancellationToken: context.CancellationToken));
 
 			return await appendResponseSource.Task.ConfigureAwait(false);
 

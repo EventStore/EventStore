@@ -37,13 +37,14 @@ namespace EventStore.Core.Services.RequestManager {
 		private const string _requestManagerHistogram = "request-manager";
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
+		private readonly TimeSpan _writeTimeout;
 		private readonly CommitSource _commitSource;
 		private VNodeState _nodeState;		
 
-		public RequestManagementService(
-			IPublisher bus,
+		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout) {
+			TimeSpan commitTimeout,
+			TimeSpan writeTimeout) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -52,20 +53,22 @@ namespace EventStore.Core.Services.RequestManager {
 
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
+			_writeTimeout = writeTimeout;
 			_commitSource = new CommitSource();
 		}
 		
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
 								_bus,
-								_commitTimeout,
+								_writeTimeout,
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
 								message.ExpectedVersion,
 								message.Events,
-								_commitSource);
+								_commitSource,
+								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -74,14 +77,15 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ClientMessage.DeleteStream message) {
 			var manager = new DeleteStream(
 								_bus,
-								_commitTimeout,
+								_writeTimeout,
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
 								message.ExpectedVersion,
 								message.HardDelete,
-								_commitSource);
+								_commitSource,
+								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();

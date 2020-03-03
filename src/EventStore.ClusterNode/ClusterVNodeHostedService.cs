@@ -244,6 +244,7 @@ namespace EventStore.ClusterNode {
 				.WithMinFlushDelay(TimeSpan.FromMilliseconds(options.MinFlushDelayMs))
 				.WithPrepareTimeout(TimeSpan.FromMilliseconds(options.PrepareTimeoutMs))
 				.WithCommitTimeout(TimeSpan.FromMilliseconds(options.CommitTimeoutMs))
+				.WithWriteTimeout(TimeSpan.FromMilliseconds(options.WriteTimeoutMs))
 				.WithStatsPeriod(TimeSpan.FromSeconds(options.StatsPeriodSec))
 				.WithDeadMemberRemovalPeriod(TimeSpan.FromSeconds(options.DeadMemberRemovalPeriodSec))
 				.WithPrepareCount(prepareCount)
