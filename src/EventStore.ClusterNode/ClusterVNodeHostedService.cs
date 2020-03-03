@@ -118,7 +118,7 @@ namespace EventStore.ClusterNode {
 				"\nINTERFACES\n" +
 				"External TCP (Protobuf)\n" +
 				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
-				$"\tPort\t: {(opts.ExtSecureTcpPort > 0 ? opts.ExtSecureTcpPort : opts.ExtTcpPort)}\n" +
+				$"\tPort\t: {(opts.ExtTcpPort)}\n" +
 				"External HTTP (AtomPub)\n" +
 				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
 				$"\tPort\t: {opts.ExtHttpPort}\n");
