@@ -19,7 +19,7 @@ echo "Generating key: $certificate_name.key"
 openssl genrsa -out "$certificate_name".key 2048 &>/dev/null
 
 echo "Generating CSR: $certificate_name.csr"
-openssl req -new -sha256 -key "$certificate_name".key -subj "/C=MU/ST=PW/O=EventStore, Inc./CN=$common_name" -out "$certificate_name".csr  &>/dev/null
+openssl req -new -sha256 -key "$certificate_name".key -subj "/C=MU/ST=PW/O=EventStore Ltd/CN=$common_name" -out "$certificate_name".csr  &>/dev/null
 
 echo "Generating Certificate: $certificate_name.crt"
 openssl x509 -req -in "$certificate_name".csr -CA ../ca/ca.crt -CAkey ../ca/ca.key  -passin pass:password -CAcreateserial -out "$certificate_name".crt -days 10000 -sha256   &>/dev/null
