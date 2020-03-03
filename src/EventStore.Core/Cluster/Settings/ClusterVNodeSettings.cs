@@ -61,6 +61,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly TimeSpan IntTcpHeartbeatInterval;
 		public readonly TimeSpan ExtTcpHeartbeatTimeout;
 		public readonly TimeSpan ExtTcpHeartbeatInterval;
+		public readonly TimeSpan DeadMemberRemovalPeriod;
+
 		public readonly int ConnectionPendingSendBytesThreshold;
 		public readonly int ConnectionQueueSizeThreshold;
 		public readonly bool UnsafeIgnoreHardDeletes;
@@ -129,6 +131,7 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan intTcpHeartbeatInterval,
 			TimeSpan extTcpHeartbeatTimeout,
 			TimeSpan extTcpHeartbeatInterval,
+			TimeSpan deadMemberRemovalPeriod,
 			bool verifyDbHash,
 			int maxMemtableEntryCount,
 			int hashCollisionReadLimit,
@@ -246,6 +249,7 @@ namespace EventStore.Core.Cluster.Settings {
 			ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
 			ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			ConnectionQueueSizeThreshold = connectionQueueSizeThreshold;
+			DeadMemberRemovalPeriod = deadMemberRemovalPeriod;
 
 			VerifyDbHash = verifyDbHash;
 			MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -299,6 +303,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"InitializationThreads: {InitializationThreads}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
-			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n";
+			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" + 
+			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n";
 	}
 }
