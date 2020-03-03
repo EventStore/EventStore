@@ -1,3 +1,11 @@
+variable "dns_names" {
+  type    = list(string)
+}
+
+variable "ip_addresses" {
+  type    = list(string)
+}
+
 resource "tls_private_key" "server" {
   algorithm = "RSA"
   rsa_bits = "2048"
@@ -11,13 +19,8 @@ resource "tls_cert_request" "server" {
     common_name = "Event Store Test Server Cert"
   }
 
-  dns_names = [
-    "localhost",
-  ]
-
-  ip_addresses = [
-    "127.0.0.1"
-  ]
+  dns_names = var.dns_names
+  ip_addresses = var.ip_addresses
 }
 
 resource "tls_locally_signed_cert" "server" {
