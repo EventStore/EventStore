@@ -84,7 +84,7 @@ namespace EventStore.Core {
 		protected bool _gossipOnPublic;
 		protected TimeSpan _gossipInterval;
 		protected TimeSpan _gossipAllowedTimeDifference;
-		protected TimeSpan _deadMemberRemovalTimeout;
+		protected TimeSpan _deadMemberRemovalPeriod;
 		protected TimeSpan _gossipTimeout;
 		protected GossipAdvertiseInfo _gossipAdvertiseInfo;
 
@@ -239,7 +239,7 @@ namespace EventStore.Core {
 			_readOnlyReplica = Opts.ReadOnlyReplicaDefault;
 			_unsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
 			_maxAppendSize = Opts.MaxAppendSizeDefault;
-			_deadMemberRemovalTimeout = TimeSpan.FromSeconds(Opts.DeadMemberRemovalTimeoutDefault);
+			_deadMemberRemovalPeriod = TimeSpan.FromSeconds(Opts.DeadMemberRemovalPeriodDefault);
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -771,10 +771,10 @@ namespace EventStore.Core {
 		/// <summary>
 		/// Sets the period a dead node will remain in the gossip before being pruned
 		/// </summary>
-		/// <param name="deadMemberRemovalTimeout">The period a dead node will remain in the gossip before being pruned</param>
+		/// <param name="deadMemberRemovalPeriod">The period a dead node will remain in the gossip before being pruned</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithDeadMemberRemovalPeriod(TimeSpan deadMemberRemovalTimeout) {
-			_deadMemberRemovalTimeout = deadMemberRemovalTimeout;
+		public VNodeBuilder WithDeadMemberRemovalPeriod(TimeSpan deadMemberRemovalPeriod) {
+			_deadMemberRemovalPeriod = deadMemberRemovalPeriod;
 			return this;
 		}
 		
@@ -1380,7 +1380,7 @@ namespace EventStore.Core {
 				_intTcpHeartbeatInterval,
 				_extTcpHeartbeatTimeout,
 				_extTcpHeartbeatInterval,
-				_deadMemberRemovalTimeout,
+				_deadMemberRemovalPeriod,
 				!_skipVerifyDbHashes,
 				_maxMemtableSize,
 				_hashCollisionReadLimit,

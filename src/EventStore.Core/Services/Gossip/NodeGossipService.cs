@@ -28,10 +28,10 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan gossipInterval,
 			TimeSpan allowedTimeDifference,
 			TimeSpan gossipTimeout,
-			TimeSpan deadMemberRemovalTimeout,
+			TimeSpan deadMemberRemovalPeriod,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
-			: base(bus, gossipSeedSource, nodeInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalTimeout, timeProvider, getNodeToGossipTo) {
+			: base(bus, gossipSeedSource, nodeInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalPeriod, timeProvider, getNodeToGossipTo) {
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));

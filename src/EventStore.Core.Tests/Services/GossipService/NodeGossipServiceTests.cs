@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		protected TimeSpan _gossipInterval = TimeSpan.FromMilliseconds(1000);
 		private readonly TimeSpan _allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
 		protected readonly TimeSpan _gossipTimeout = TimeSpan.FromMilliseconds(1000);
-		private readonly TimeSpan _deadMemberRemovalTimeout = TimeSpan.FromSeconds(1800);
+		private readonly TimeSpan _deadMemberRemovalPeriod = TimeSpan.FromSeconds(1800);
 
 
 		public NodeGossipServiceTestFixture() {
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void Setup() {
 			SUT = new NodeGossipService(_bus, _gossipSeedSource, _currentNode,
 				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
-				_gossipInterval, _allowedTimeDifference, _gossipTimeout, _deadMemberRemovalTimeout, _timeProvider, _getNodeToGossipTo);
+				_gossipInterval, _allowedTimeDifference, _gossipTimeout, _deadMemberRemovalPeriod, _timeProvider, _getNodeToGossipTo);
 
 			foreach (var message in Given()) {
 				SUT.Handle((dynamic)message);

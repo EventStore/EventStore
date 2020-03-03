@@ -669,7 +669,7 @@ namespace EventStore.Core {
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,
-					vNodeSettings.DeadMemberRemovalTimeout,
+					vNodeSettings.DeadMemberRemovalPeriod,
 					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);

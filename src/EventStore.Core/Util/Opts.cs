@@ -373,7 +373,7 @@ namespace EventStore.Core.Util {
 		public static readonly bool UnsafeAllowSurplusNodesDefault = false;
 		
 		public const string DeadMemberRemovalPeriodDescr = "The number of seconds a dead node will remain in the gossip before being pruned";
-		public const int DeadMemberRemovalTimeoutDefault = 1800;
+		public const int DeadMemberRemovalPeriodDefault = 1800;
 
 		/*
 		 *  MANAGER OPTIONS

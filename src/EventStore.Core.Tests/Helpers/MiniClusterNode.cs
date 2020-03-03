@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.Helpers {
 				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
 				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2), 
-				 deadMemberRemovalTimeout: TimeSpan.FromSeconds(1800),
+				 deadMemberRemovalPeriod: TimeSpan.FromSeconds(1800),
 				verifyDbHash: false, maxMemtableEntryCount: memTableSize,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
