@@ -200,6 +200,9 @@ namespace EventStore.Core.Util {
 		//Loading certificates from files
 		public const string CertificateFileDescr = "The path to certificate file.";
 		public static readonly string CertificateFileDefault = string.Empty;
+		
+		public const string CertificatePrivateKeyFileDescr = "The path to certificate private key file.";
+		public static readonly string CertificatePrivateKeyFileDefault = string.Empty;
 
 		public const string CertificatePasswordDescr = "The password to certificate in file.";
 		public static readonly string CertificatePasswordDefault = string.Empty;

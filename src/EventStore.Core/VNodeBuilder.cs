@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -677,13 +679,36 @@ namespace EventStore.Core {
 		/// <summary>
 		/// Sets the Server SSL Certificate to be loaded from a file
 		/// </summary>
-		/// <param name="path">The path to the certificate file</param>
+		/// <param name="certificatePath">The path to the certificate file</param>
+		/// <param name="privateKeyPath">The path to the private key file</param>
 		/// <param name="password">The password for the certificate</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithServerCertificateFromFile(string path, string password) {
-			var cert = new X509Certificate2(path, password);
+		public VNodeBuilder WithServerCertificateFromFile(
+			string certificatePath,
+			string privateKeyPath,
+			string password) {
 
-			_certificate = cert;
+			if (string.IsNullOrEmpty(privateKeyPath)) {
+				_certificate = new X509Certificate2(certificatePath, password);
+				if (!_certificate.HasPrivateKey) {
+					throw new Exception("Expect certificate to contain a private key. " +
+					                    "Please either provide a certificate that contains one or set the private key" +
+					                    " via the `CertificatePrivateKeyFile` option.");
+				}
+				return this;
+			}
+			
+			var privateKey = Convert.FromBase64String(string.Join(string.Empty, File.ReadAllLines(privateKeyPath)
+				.Skip(1)
+				.SkipLast(1)));
+			
+			using var rsa = RSA.Create();
+			rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+			
+			using var publicCertificate = new X509Certificate2(certificatePath, password);
+			using var publicWithPrivate = publicCertificate.CopyWithPrivateKey(rsa);
+			
+			_certificate = new X509Certificate2(publicWithPrivate.Export(X509ContentType.Pfx));
 			return this;
 		}
 

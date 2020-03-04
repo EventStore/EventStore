@@ -6,6 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
@@ -632,6 +633,36 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_connection_queue_size_threshold() {
 			Assert.AreEqual(_threshold, _settings.ConnectionQueueSizeThreshold);
+		}
+	}
+	
+	[TestFixture]
+	public class with_certificate_with_password_from_file : SingleNodeScenario {
+		public override void Given() {
+			var certificateWithPassword =
+				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates",
+					"public_and_private_with_password.p12"));
+			_builder.WithServerCertificateFromFile(certificateWithPassword, string.Empty, "changeit");
+		}
+
+		[Test]
+		public void should_not_be_null() {
+			Assert.IsNotNull(_settings.Certificate);
+		}
+	}
+	
+	[TestFixture]
+	public class with_certificate_and_private_key_from_file : SingleNodeScenario {
+		public override void Given() {
+			var certificate =
+				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "certificate.pem"));
+			var privateKey = HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "private.key"));
+			_builder.WithServerCertificateFromFile(certificate, privateKey, string.Empty);
+		}
+
+		[Test]
+		public void should_not_be_null() {
+			Assert.IsNotNull(_settings.Certificate);
 		}
 	}
 }

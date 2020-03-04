@@ -31,6 +31,11 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+		<None Include="TestCertificates\*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
 		<None Include="Resources\es-tile.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

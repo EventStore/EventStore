@@ -219,6 +219,9 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesGroup)]
 		public string CertificateFile { get; set; }
+		
+		[ArgDescription(Opts.CertificatePrivateKeyFileDescr, Opts.CertificatesGroup)]
+		public string CertificatePrivateKeyFile { get; set; }
 
 		[ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesGroup)]
 		public string CertificatePassword { get; set; }
@@ -399,6 +402,7 @@ namespace EventStore.ClusterNode {
 			CertificateThumbprint = Opts.CertificateThumbprintDefault;
 
 			CertificateFile = Opts.CertificateFileDefault;
+			CertificatePrivateKeyFile = Opts.CertificatePrivateKeyFileDefault;
 			CertificatePassword = Opts.CertificatePasswordDefault;
 
 			UseInternalSsl = Opts.UseInternalSslDefault;

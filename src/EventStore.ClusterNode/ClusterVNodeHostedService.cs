@@ -44,17 +44,17 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.CertificatePassword)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = SystemUsers.DefaultAdminPassword;
-					x.Source = "Set by 'Development Mode' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
-					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pfx");
+					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
+					x.Source = "Set by 'Development Mode' mode";
+				}
+				
+				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.key");
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
@@ -358,7 +358,10 @@ namespace EventStore.ClusterNode {
 				builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
 					options.CertificateThumbprint);
 			} else if (options.CertificateFile.IsNotEmptyString()) {
-				builder.WithServerCertificateFromFile(options.CertificateFile, options.CertificatePassword);
+				builder.WithServerCertificateFromFile(
+					options.CertificateFile,
+					options.CertificatePrivateKeyFile,
+					options.CertificatePassword);
 			} else if (!options.Dev)
 				throw new Exception("An SSL Certificate is required unless development mode (--dev) is set.");
 
