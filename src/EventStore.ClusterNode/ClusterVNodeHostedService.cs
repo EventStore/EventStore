@@ -198,11 +198,6 @@ namespace EventStore.ClusterNode {
 			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
 			Log.Information("Quorum size set to {quorum}", prepareCount);
 
-			if (!options.DisableInternalTls && options.ClusterSize > 1) {
-				if (ReferenceEquals(options.TlsTargetHost, Opts.TlsTargetHostDefault))
-					throw new Exception($"{nameof(options.TlsTargetHost)} needs to be specified in a clustered configuration unless development mode (--dev) is set.");
-			}
-
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
 				throw new Exception(
 					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
@@ -259,7 +254,6 @@ namespace EventStore.ClusterNode {
 				.WithIndexVerification(options.SkipIndexVerify)
 				.WithIndexCacheDepth(options.IndexCacheDepth)
 				.WithIndexMergeOptimization(options.OptimizeIndexMerge)
-				.WithTlsTargetHost(options.TlsTargetHost)
 				.RunProjections(options.RunProjections, options.ProjectionThreads, options.FaultOutOfOrderProjections)
 				.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
 				.WithTfCachedChunks(options.CachedChunks)

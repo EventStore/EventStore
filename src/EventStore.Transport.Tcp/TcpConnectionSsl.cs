@@ -16,7 +16,6 @@ namespace EventStore.Transport.Tcp {
 
 		public static ITcpConnection CreateConnectingConnection(Guid connectionId,
 			IPEndPoint remoteEndPoint,
-			string targetHost,
 			bool validateServer,
 			X509CertificateCollection clientCertificates,
 			TcpClientConnector connector,
@@ -31,7 +30,7 @@ namespace EventStore.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(targetHost, validateServer, clientCertificates, verbose);
+					connection.InitSslStream(remoteEndPoint.Address.ToString(), validateServer, clientCertificates, verbose);
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},

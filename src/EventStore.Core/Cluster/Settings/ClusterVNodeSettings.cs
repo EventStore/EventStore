@@ -41,7 +41,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DisableInternalTls;
 		public readonly bool DisableExternalTls;
 		public readonly bool EnableExternalTCP;
-		public readonly string TlsTargetHost;
 
 		public readonly TimeSpan StatsPeriod;
 		public readonly StatsStorage StatsStorage;
@@ -112,7 +111,6 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan commitTimeout,
 			bool disableInternalTls,
 			bool disableExternalTls,
-			string tlsTargetHost,
 			TimeSpan statsPeriod,
 			StatsStorage statsStorage,
 			int nodePriority,
@@ -187,9 +185,6 @@ namespace EventStore.Core.Cluster.Settings {
 				throw new ArgumentException(
 					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
 
-			if (!disableInternalTls)
-				Ensure.NotNull(tlsTargetHost, "tlsTargetHost");
-
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
@@ -223,7 +218,6 @@ namespace EventStore.Core.Cluster.Settings {
 			DisableInternalTls = disableInternalTls;
 			DisableExternalTls = disableExternalTls;
 			EnableExternalTCP = enableExternalTCP;
-			TlsTargetHost = tlsTargetHost;
 
 			StatsPeriod = statsPeriod;
 			StatsStorage = statsStorage;
@@ -289,7 +283,6 @@ namespace EventStore.Core.Cluster.Settings {
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
 			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
-			$"TlsTargetHost: {TlsTargetHost}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +

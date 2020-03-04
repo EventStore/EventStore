@@ -100,7 +100,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				serverEndPoint,
-				"es-test-server",
 				validateServerCertificate,
 				new X509CertificateCollection{clientCertificate},
 				new TcpClientConnector(),

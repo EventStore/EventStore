@@ -336,9 +336,6 @@ namespace EventStore.Core.Util {
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
 		public const bool EnableExternalTCPDefault = false;
 
-		public const string TlsTargetHostDescr = "Target host of this node's TLS certificate.";
-		public static readonly string TlsTargetHostDefault = "n/a";
-
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;
 
