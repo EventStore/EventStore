@@ -186,7 +186,7 @@ namespace EventStore.Core {
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.Address.ToString(), endpoint.Port).Uri, publisher, _vNodeSettings.TlsTargetHost,
+							endpoint.Address.ToString(), endpoint.Port).Uri, publisher,
 							() => _httpMessageHandler));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
@@ -645,7 +645,7 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_internalAuthenticationProvider,
-					gossipInfo, !vNodeSettings.DisableInternalTls, vNodeSettings.TlsTargetHost, true,
+					gossipInfo, !vNodeSettings.DisableInternalTls, true,
 					Certificate == null ? null : new X509Certificate2Collection(Certificate),
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);

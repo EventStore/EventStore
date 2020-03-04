@@ -20,7 +20,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.WithTlsTargetHost("Host")
 				.WithServerCertificateFromFile(certPath, "1111");
 		}
 
@@ -43,11 +42,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_external_secure_tcp_endpoint() {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_tls_target_host() {
-			Assert.AreEqual("Host", _settings.TlsTargetHost);
 		}
 
 		private string GetCertificatePath() {
@@ -75,7 +69,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.WithTlsTargetHost("Host")
 				.WithServerCertificate(_certificate);
 		}
 
@@ -98,11 +91,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_external_secure_tcp_endpoint() {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_tls_target_host() {
-			Assert.AreEqual("Host", _settings.TlsTargetHost);
 		}
 	}
 

@@ -98,7 +98,6 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 						Guid.NewGuid(),
 						(IPEndPoint)listeningSocket.LocalEndPoint,
-						"localhost",
 						false,
 						null,
 						new TcpClientConnector(),

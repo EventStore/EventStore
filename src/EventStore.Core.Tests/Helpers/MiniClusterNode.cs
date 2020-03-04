@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Helpers {
 					null, null, 0, 0), enableTrustedAuth,
 				certificate, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
-				disableInternalTls, false, "es-test-server",TimeSpan.FromHours(1), StatsStorage.None, 0,
+				disableInternalTls, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),

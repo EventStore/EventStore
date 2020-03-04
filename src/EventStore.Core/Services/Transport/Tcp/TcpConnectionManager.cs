@@ -126,7 +126,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			TcpClientConnector connector,
 			bool useSsl,
-			string tlsTargetHost,
 			bool sslValidateServer,
 			X509CertificateCollection sslClientCertificates,
 			IPublisher networkSendQueue,
@@ -141,7 +140,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Ensure.NotNull(authProvider, "authProvider");
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotNull(connector, "connector");
-			if (useSsl) Ensure.NotNull(tlsTargetHost, "tlsTargetHost");
 
 			ConnectionId = connectionId;
 			ConnectionName = connectionName;
@@ -166,7 +164,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			RemoteEndPoint = remoteEndPoint;
 			_connection = useSsl
 				? connector.ConnectSslTo(ConnectionId, remoteEndPoint, ConnectionTimeout,
-					tlsTargetHost, sslValidateServer, sslClientCertificates, OnConnectionEstablished, OnConnectionFailed)
+					sslValidateServer, sslClientCertificates, OnConnectionEstablished, OnConnectionFailed)
 				: connector.ConnectTo(ConnectionId, remoteEndPoint, ConnectionTimeout, OnConnectionEstablished,
 					OnConnectionFailed);
 			_connection.ConnectionClosed += OnConnectionClosed;

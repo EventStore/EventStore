@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -17,26 +18,15 @@ namespace EventStore.Core.Cluster {
 		private readonly IPublisher _bus;
 		internal bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(Uri address, IPublisher bus, string tlsTargetHost = null,
+		public EventStoreClusterClient(Uri address, IPublisher bus,
 			Func<HttpMessageHandler> httpMessageHandlerFactory = null) {
-			if(tlsTargetHost == null && address.Scheme == Uri.UriSchemeHttps)
-				throw new Exception("Address scheme is https but TLS target host not specified.");
 
 			HttpMessageHandler httpMessageHandler = httpMessageHandlerFactory?.Invoke() ?? new HttpClientHandler {
 				ServerCertificateCustomValidationCallback = (message, certificate, chain, errors) => {
-					bool isValid = true;
-					chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-					if (!chain.Build(certificate)) {
-						Log.Error("Certificate chain validation failed for certificate: {certificate}.", certificate);
-						isValid = false;
+					if (errors != SslPolicyErrors.None) {
+						Log.Error("Certificate validation failed for certificate: {certificate} due to reason {reason}.", certificate, errors);
 					}
-
-					if (certificate.GetNameInfo(X509NameType.SimpleName, false) != tlsTargetHost) {
-						Log.Error("Certificate Common Name does not match TLS target host {tlsTargetHost} for certificate: {certificate}.", tlsTargetHost, certificate);
-						isValid = false;
-					}
-
-					return isValid;
+					return errors == SslPolicyErrors.None;
 				}
 			};
 
