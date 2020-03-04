@@ -559,7 +559,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 
 			_builder
-				.WithServerCertificate(ssl_connections.GetCertificate())
+				.WithServerCertificate(ssl_connections.GetServerCertificate())
 				.WithInternalTcpOn(intTcpEndpoint)
 				.WithInternalSecureTcpOn(intSecTcpEndpoint)
 				.WithExternalTcpOn(extTcpEndpoint)

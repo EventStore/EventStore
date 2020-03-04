@@ -110,15 +110,6 @@ jobs:
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)
         echo "::set-env name=VERSION::${version}"
-    - name: Install Test CA Root Certificate (Windows)
-      if: startsWith(matrix.os, 'windows')
-      run: |
-        certutil -addstore root src\EventStore.Core.Tests\Services\Transport\Tcp\test_certificates\ca\ca.crt
-    - name: Install Test CA Root Certificate (Linux)
-      if: startsWith(matrix.os, 'windows') != true
-      run: |
-        sudo cp src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
-        sudo update-ca-certificates
     - name: Compile
       shell: bash
       run: |

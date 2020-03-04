@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
-					false,
+					delegate { return (true, null); },
 					null,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
@@ -49,7 +49,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
+					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, ssl_connections.GetServerCertificate(),
+					delegate { return (true, null); }, false);
 
 				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
@@ -99,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 						Guid.NewGuid(),
 						(IPEndPoint)listeningSocket.LocalEndPoint,
-						false,
+						delegate { return (true, null); },
 						null,
 						new TcpClientConnector(),
 						TimeSpan.FromSeconds(5),
@@ -114,7 +115,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					serverSocket = listeningSocket.Accept();
 					clientTcpConnection.Close("Intentional close");
 					serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), false, false);
+						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, ssl_connections.GetServerCertificate(),delegate { return (true, null); }, false);
 
 					mre.Wait(TimeSpan.FromSeconds(10));
 					SpinWait.SpinUntil(() => serverTcpConnection.IsClosed, TimeSpan.FromSeconds(10));
@@ -134,13 +135,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					serverSocket?.Dispose();
 				}
 			}
-		}
-
-		private X509Certificate GetCertificate() {
-			using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("EventStore.Core.Tests.server.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
 		}
 	}
 }

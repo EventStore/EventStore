@@ -193,6 +193,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
 		public bool EnableTrustedAuth { get; set; }
 
+		[ArgDescription(Opts.TrustedRootCertificatesPathDescr, Opts.CertificateGroup)]
+		public string TrustedRootCertificatesPath { get; set; }
+
 		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificateFile { get; set; }
 
@@ -383,6 +386,7 @@ namespace EventStore.ClusterNode {
 			CertificateSubjectName = Opts.CertificateSubjectNameDefault;
 			CertificateThumbprint = Opts.CertificateThumbprintDefault;
 
+			TrustedRootCertificatesPath = Opts.TrustedRootCertificatesPathDefault;
 			CertificateFile = Opts.CertificateFileDefault;
 			CertificatePrivateKeyFile = Opts.CertificatePrivateKeyFileDefault;
 			CertificatePassword = Opts.CertificatePasswordDefault;

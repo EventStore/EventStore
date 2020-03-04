@@ -17,7 +17,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		private HttpClient CreateHttpClient(string username, string password) {
 			var client = new HttpClient(new HttpClientHandler {
-				AllowAutoRedirect = false
+				AllowAutoRedirect = false,
+				ServerCertificateCustomValidationCallback = delegate { return true; }
 			}) {
 				Timeout = _timeout
 			};
@@ -91,7 +92,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 					content.Headers.Add("Content-Type", "application/json");
 
 					var res = await _httpClients["Admin"].PostAsync(
-						string.Format("http://{0}/users/", _nodes[_leaderId].ExternalHttpEndPoint),
+						string.Format("https://{0}/users/", _nodes[_leaderId].ExternalHttpEndPoint),
 						content
 					);
 					res.EnsureSuccessStatusCode();
@@ -224,7 +225,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				return;
 			}
 
-			var url = $"http://{nodeEndpoint}{endpointUrl}";
+			var url = $"https://{nodeEndpoint}{endpointUrl}";
 			var body = GetData(httpMethod, endpointUrl);
 			var contentType = httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put || httpMethod == HttpMethod.Delete ? "application/json" : null;
 			var statusCode = await SendRequest(_httpClients[userAuthorizationLevel], httpMethod, url, body, contentType);

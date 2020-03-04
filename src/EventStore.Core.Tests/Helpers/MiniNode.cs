@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.WithExternalHttpOn(ExtHttpEndPoint)
 				.WithTfChunkSize(chunkSize ?? ChunkSize)
 				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
-				.WithServerCertificate(ssl_connections.GetCertificate())
+				.WithServerCertificate(ssl_connections.GetServerCertificate())
 				.WithWorkerThreads(1)
 				.DisableDnsDiscovery()
 				.WithPrepareTimeout(TimeSpan.FromSeconds(10))
@@ -112,7 +112,6 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
 				.WithIndexBitnessVersion(indexBitnessVersion)
-				.WithHttpMessageHandlerFactory(() => HttpMessageHandler)
 				.EnableExternalTCP();
 
 			if (enableTrustedAuth)

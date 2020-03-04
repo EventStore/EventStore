@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -46,13 +47,13 @@ namespace EventStore.Transport.Tcp {
 		public ITcpConnection ConnectSslTo(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			TimeSpan connectionTimeout,
-			bool validateServer,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
 			X509CertificateCollection clientCertificates,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
 			bool verbose = true) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
-			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint, validateServer, clientCertificates,
+			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint,sslServerCertValidator, clientCertificates,
 				this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
 		}
 

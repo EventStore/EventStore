@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.BufferManagement;
@@ -177,7 +178,7 @@ namespace EventStore.TestClient {
 					Guid.NewGuid(),
 					tcpEndPoint ?? TcpEndpoint,
 					TcpConnectionManager.ConnectionTimeout,
-					ValidateServer,
+					(cert,chain,err) => (err == SslPolicyErrors.None, err.ToString()),
 					null,
 					onConnectionEstablished,
 					onConnectionFailed,

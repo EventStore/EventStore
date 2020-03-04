@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
@@ -129,7 +130,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			TcpClientConnector connector,
 			bool useSsl,
-			bool sslValidateServer,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
 			X509CertificateCollection sslClientCertificates,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
@@ -170,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			RemoteEndPoint = remoteEndPoint;
 			_connection = useSsl
 				? connector.ConnectSslTo(ConnectionId, remoteEndPoint, ConnectionTimeout,
-					sslValidateServer, sslClientCertificates, OnConnectionEstablished, OnConnectionFailed)
+					sslServerCertValidator, sslClientCertificates, OnConnectionEstablished, OnConnectionFailed)
 				: connector.ConnectTo(ConnectionId, remoteEndPoint, ConnectionTimeout, OnConnectionEstablished,
 					OnConnectionFailed);
 			_connection.ConnectionClosed += OnConnectionClosed;

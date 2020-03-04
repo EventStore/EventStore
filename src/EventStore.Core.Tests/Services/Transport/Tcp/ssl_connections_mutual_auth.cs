@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -17,14 +19,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ssl_connections_mutual_auth>();
 		private IPAddress _ip;
 		private int _port;
-		private bool _CACertificateInstalled;
-
-		[OneTimeSetUp]
-		public void Init() {
-			var validServerCertificate = GetServerCertificate(true);
-			var validClientCertificate = GetClientCertificate(true);
-			_CACertificateInstalled = ssl_connections.IsValidCertificate(validServerCertificate) && ssl_connections.IsValidCertificate(validClientCertificate);
-		}
 
 		[SetUp]
 		public void SetUp() {
@@ -55,13 +49,15 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		    bool validateClientCertificate,
 		    bool shouldConnectSuccessfully
 		) {
-			if (!_CACertificateInstalled && (useValidClientCertificate || useValidServerCertificate)) {
-				Assert.Ignore("Test CA Certificate not installed. Skipping test.");
-			}
-
 			var serverEndPoint = new IPEndPoint(_ip, _port);
-			X509Certificate serverCertificate = GetServerCertificate(useValidServerCertificate);
-			X509Certificate clientCertificate = GetClientCertificate(useValidClientCertificate);
+			var serverCertificate = useValidServerCertificate
+				? ssl_connections.GetServerCertificate()
+				: ssl_connections.GetUntrustedCertificate();
+			var clientCertificate = useValidClientCertificate
+				? ssl_connections.GetClientCertificate()
+				: ssl_connections.GetUntrustedCertificate();
+			var rootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
+
 
 			var sent = new byte[1000];
 			new Random().NextBytes(sent);
@@ -72,7 +68,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, serverCertificate, validateClientCertificate,
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, serverCertificate,
+					(cert, chain, err) => validateClientCertificate ? ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(cert, chain, err, rootCertificates) : (true, null),
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)
@@ -100,7 +97,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				serverEndPoint,
-				validateServerCertificate,
+				(cert, chain, err) => validateServerCertificate ? ClusterVNode.ValidateServerCertificateWithTrustedRootCerts(cert, chain, err, rootCertificates) : (true, null),
 				new X509CertificateCollection{clientCertificate},
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
@@ -126,34 +123,6 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Assert.AreEqual(sent, received.ToArray());
 			else
 				Assert.AreEqual(new byte[0], received.ToArray());
-		}
-
-		private static X509Certificate2 GetServerCertificate(bool useValidCertificate) {
-			if (!useValidCertificate)
-				return GetUntrustedCertificate();
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node1.node1.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
-		}
-
-		private static X509Certificate2 GetClientCertificate(bool useValidCertificate) {
-			if (!useValidCertificate)
-				return GetUntrustedCertificate();
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node2.node2.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
-		}
-
-		private static X509Certificate2 GetUntrustedCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.server.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "1111");
 		}
 	}
 }

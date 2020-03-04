@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -108,11 +109,13 @@ namespace EventStore.Core {
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
-		private readonly HttpMessageHandler _httpMessageHandler;
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly X509Certificate2 _certificate;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -124,6 +127,7 @@ namespace EventStore.Core {
 		}
 
 		public X509Certificate2 Certificate => _certificate;
+		public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -154,8 +158,10 @@ namespace EventStore.Core {
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_certificate = vNodeSettings.Certificate;
 			_mainBus = new InMemoryBus("MainBus");
-			_httpMessageHandler = vNodeSettings.CreateHttpMessageHandler?.Invoke();
 			_queueStatsManager = new QueueStatsManager();
+			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_externalClientCertificateValidator = delegate { return (true, null); };
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -190,8 +196,7 @@ namespace EventStore.Core {
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.Address.ToString(), endpoint.Port).Uri, publisher,
-							() => _httpMessageHandler));
+							endpoint.Address.ToString(), endpoint.Port).Uri, publisher, _internalServerCertificateValidator, _certificate));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -391,7 +396,7 @@ namespace EventStore.Core {
 						TcpServiceType.External, TcpSecurityType.Normal,
 						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_authenticationProvider, AuthorizationGateway, null, false,
+						_authenticationProvider, AuthorizationGateway, null, null,
 						vNodeSettings.ConnectionPendingSendBytesThreshold,
 					vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
@@ -404,7 +409,7 @@ namespace EventStore.Core {
 						TcpServiceType.External, TcpSecurityType.Secure,
 						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, false,
+						_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _externalClientCertificateValidator,
 						vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -418,7 +423,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Normal,
 							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_authenticationProvider, AuthorizationGateway, null, false, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, AuthorizationGateway, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -430,7 +435,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, true,
+							_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -463,7 +468,7 @@ namespace EventStore.Core {
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching, vNodeSettings.WriteTimeout);
 			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout,
-				_httpMessageHandler);
+				_internalServerCertificateValidator, _certificate);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
@@ -662,8 +667,8 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_authenticationProvider, AuthorizationGateway,
-					gossipInfo, !vNodeSettings.DisableInternalTls, true,
-					Certificate == null ? null : new X509Certificate2Collection(Certificate),
+					gossipInfo, !vNodeSettings.DisableInternalTls, _internalServerCertificateValidator,
+					_certificate,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
 					vNodeSettings.WriteTimeout);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
@@ -768,7 +773,6 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
-			_httpMessageHandler?.Dispose();
 			_shutdownSource.TrySetResult(true);
 		}
 
@@ -814,6 +818,72 @@ namespace EventStore.Core {
 			Start();
 
 			return await tcs.Task.ConfigureAwait(false);
+		}
+
+
+		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"server");
+		}
+
+		public static ValueTuple<bool, string> ValidateClientCertificateWithTrustedRootCerts(X509Certificate certificate,
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"client");
+		}
+
+		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts, string certificateOrigin) {
+			if (certificate == null)
+				return (false, $"No certificate was provided by the {certificateOrigin}");
+
+			var newChain = new X509Chain {
+				ChainPolicy = {
+					RevocationMode = X509RevocationMode.NoCheck
+				}
+			};
+
+			if (trustedRootCerts != null) {
+				foreach (var cert in trustedRootCerts)
+					newChain.ChainPolicy.ExtraStore.Add(cert);
+			}
+
+			newChain.Build(new X509Certificate2(certificate));
+			var chainStatus = X509ChainStatusFlags.NoError;
+			foreach (var status in newChain.ChainStatus) {
+				chainStatus |= status.Status;
+			}
+
+			chainStatus &= ~X509ChainStatusFlags.UntrustedRoot; //clear the UntrustedRoot flag which indicates that the certificate is present in the extra store
+
+			if (chainStatus == X509ChainStatusFlags.NoError)
+				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
+			else
+				sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors; //set the RemoteCertificateChainErrors flag
+
+			if (sslPolicyErrors != SslPolicyErrors.None) {
+				return (false, $"The certificate provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
+			}
+
+			//client certificates need to be strictly validated against the set of trusted root certificates
+			//but this is not required for server certificates since the client is already validating the CN/SAN against the IP address/hostname it's connecting to
+			if (certificateOrigin == "client") {
+				var chainRoot = newChain.ChainElements[^1].Certificate;
+				var chainRootIsTrusted = false;
+				if (trustedRootCerts != null) {
+					foreach (var rootCert in trustedRootCerts) {
+						if (chainRoot.RawData.SequenceEqual(rootCert.RawData)) {
+							chainRootIsTrusted = true;
+							break;
+						}
+					}
+				}
+
+				if (!chainRootIsTrusted) {
+					return (false,
+						$"The certificate provided by the {certificateOrigin} does not have a root certificate present in the list of trusted root certificates");
+				}
+			}
+
+			return (true, null);
 		}
 
 		public override string ToString() {

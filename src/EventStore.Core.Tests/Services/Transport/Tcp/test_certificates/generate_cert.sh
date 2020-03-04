@@ -30,7 +30,7 @@ openssl x509 \
     -sha256 \
     -days 10000 \
     -in "$certificate_name".csr \
-    -CA ../ca/ca.crt -CAkey ../ca/ca.key \
+    -CA ../ca/ca.pem -CAkey ../ca/ca.key \
     -passin pass:password \
     -CAcreateserial \
     -extfile <(\

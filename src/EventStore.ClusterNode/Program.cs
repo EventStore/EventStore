@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,7 +47,18 @@ namespace EventStore.ClusterNode {
 				.ConfigureWebHostDefaults(builder =>
 					builder.UseKestrel(server => {
 							server.Listen(hostedService.Options.IntIp, hostedService.Options.IntHttpPort,
-								listenOptions => listenOptions.UseHttps(hostedService.Node.Certificate));
+								listenOptions => listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
+									ServerCertificate = hostedService.Node.Certificate,
+									ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+									ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+										var (isValid, error) = hostedService.Node.InternalClientCertificateValidator(certificate, chain,
+											sslPolicyErrors);
+										if (!isValid && error != null) {
+											Log.Error("Client certificate validation error: {e}", error);
+										}
+										return isValid;
+									}
+								}));
 							server.Listen(hostedService.Options.ExtIp, hostedService.Options.ExtHttpPort,
 								listenOptions => listenOptions.UseHttps(hostedService.Node.Certificate));
 						})
