@@ -100,8 +100,9 @@ namespace EventStore.Client {
 
 		public static readonly EventTypeFilter None = default;
 
-		public static readonly EventTypeFilter ExcludeSystemEvents =
-			new EventTypeFilter(RegularFilterExpression.ExcludeSystemEvents);
+		public static EventTypeFilter ExcludeSystemEvents(uint? maxSearchWindow = null) =>
+			new EventTypeFilter(maxSearchWindow, RegularFilterExpression.ExcludeSystemEvents);
+
 
 		public static IEventFilter Prefix(string prefix)
 			=> new EventTypeFilter(new PrefixFilterExpression(prefix));
