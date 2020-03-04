@@ -38,7 +38,6 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					new NoopLogger(),
 					Guid.NewGuid(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
-					"localhost",
 					false,
 					new ClientAPI.Transport.Tcp.TcpClientConnector(),
 					TimeSpan.FromSeconds(5),

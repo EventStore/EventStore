@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
 				.FailOnNoServerResponse();
 			if (_tcpType == TcpType.Ssl)
-				settings.UseSslConnection("ES", false);
+				settings.UseSslConnection(false);
 
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					.SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0))
 					.FailOnNoServerResponse();
 			if (_tcpType == TcpType.Ssl)
-				settings.UseSslConnection("ES", false);
+				settings.UseSslConnection(false);
 
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
@@ -113,7 +113,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 					.WithConnectionTimeoutOf(TimeSpan.FromMilliseconds(1000));
 
 			if (_tcpType == TcpType.Ssl)
-				settings.UseSslConnection("ES", false);
+				settings.UseSslConnection(false);
 
 			var ip = new IPAddress(new byte[]
 				{8, 8, 8, 8}); //NOTE: This relies on Google DNS server being configured to swallow nonsense traffic

@@ -5,6 +5,7 @@
 		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 		<UseLinkBase>true</UseLinkBase>
 		<Platforms>x64</Platforms>
+		<DefineConstants>CLIENT_API_V5</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="5.0.5" />

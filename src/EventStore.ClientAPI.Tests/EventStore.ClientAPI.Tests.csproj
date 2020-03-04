@@ -5,6 +5,7 @@
 		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 		<UseLinkBase>true</UseLinkBase>
 		<Platforms>x64</Platforms>
+		<DefineConstants>CLIENT_API</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
