@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -12,8 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Serilog;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 
-namespace EventStore.Core.Services.Transport.Http
-{
+namespace EventStore.Core.Services.Transport.Http {
 	public class KestrelToInternalBridgeMiddleware : IMiddleware {
 		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelToInternalBridgeMiddleware>();
 		private readonly IUriRouter _uriRouter;
@@ -29,10 +27,8 @@ namespace EventStore.Core.Services.Transport.Http
 		}
 		private static bool TryMatch(HttpContext context, IUriRouter uriRouter, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort) {
 			var tcs = new TaskCompletionSource<bool>();
-			var httpEntity = new HttpEntity(new CoreHttpRequestAdapter(context.Request),
-				new CoreHttpResponseAdapter(context.Response), context.User, logHttpRequests,
-				advertiseAsAddress, advertiseAsPort, () => tcs.TrySetResult(true));
-			httpEntity.SetUser(context.User);
+			var httpEntity = new HttpEntity(context, logHttpRequests, advertiseAsAddress, advertiseAsPort,
+				() => tcs.TrySetResult(true));
 
 			var request = httpEntity.Request;
 			try {
@@ -202,6 +198,5 @@ namespace EventStore.Core.Services.Transport.Http
 				return next(context);
 			return Task.CompletedTask;
 		}
-
 	}
 }

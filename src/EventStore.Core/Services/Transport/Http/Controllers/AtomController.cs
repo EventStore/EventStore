@@ -12,8 +12,10 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
+using EventStore.Core.Messaging;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Primitives;
 using ILogger = Serilog.ILogger;
@@ -91,10 +93,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		};
 
 		private readonly IPublisher _networkSendQueue;
+		private readonly TimeSpan _writeTimeout;
 
 		public AtomController(IPublisher publisher, IPublisher networkSendQueue,
-			bool disableHTTPCaching = false) : base(publisher) {
+			bool disableHTTPCaching, TimeSpan writeTimeout) : base(publisher) {
 			_networkSendQueue = networkSendQueue;
+			_writeTimeout = writeTimeout;
 
 			if (disableHTTPCaching) {
 				// ReSharper disable once RedundantNameQualifier
@@ -379,11 +383,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return;
 			}
 
+			var cts = CancellationTokenSource.CreateLinkedTokenSource(manager.HttpEntity.Context.RequestAborted);
 			var envelope = new SendToHttpEnvelope(_networkSendQueue, manager, Format.DeleteStreamCompleted,
-				Configure.DeleteStreamCompleted);
+				ConfigureResponse);
 			var corrId = Guid.NewGuid();
+			cts.CancelAfter(_writeTimeout);
 			Publish(new ClientMessage.DeleteStream(corrId, corrId, envelope, requireLeader, stream, expectedVersion,
-				hardDelete, manager.User));
+				hardDelete, manager.User, cancellationToken: manager.HttpEntity.Context.RequestAborted));
+
+			ResponseConfiguration ConfigureResponse(HttpResponseConfiguratorArgs args, Message message) {
+				cts.Dispose();
+				return Configure.DeleteStreamCompleted(args, message);
+			}
 		}
 
 		private void GetStreamEvent(HttpEntityManager manager, UriTemplateMatch match) {
@@ -943,16 +954,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						}
 					}
 
+					var cts = CancellationTokenSource.CreateLinkedTokenSource(manager.HttpEntity.Context.RequestAborted);
 					var envelope = new SendToHttpEnvelope(_networkSendQueue,
 						manager,
 						Format.WriteEventsCompleted,
-						(a, m) => Configure.WriteEventsCompleted(a, m, stream));
+						ConfigureResponse);
 					var corrId = Guid.NewGuid();
-					var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, requireLeader,
-						stream, expectedVersion, events, manager.User);
+					var msg = new ClientMessage.WriteEvents(corrId, corrId, envelope, requireLeader, stream,
+						expectedVersion, events, manager.User,
+						cancellationToken: manager.HttpEntity.Context.RequestAborted);
+					cts.CancelAfter(_writeTimeout);
 					Publish(msg);
+
+					ResponseConfiguration ConfigureResponse(HttpResponseConfiguratorArgs a, Message m) {
+						cts.Dispose();
+						return Configure.WriteEventsCompleted(a, m, stream);
+					}
+
 				},
 				e => Log.Debug("Error while reading request (POST entry): {e}.", e.Message));
+
 		}
 
 		private void GetStreamEvent(HttpEntityManager manager, string stream, long eventNumber,

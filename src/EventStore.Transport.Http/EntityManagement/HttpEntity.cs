@@ -4,10 +4,12 @@ using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
 namespace EventStore.Transport.Http.EntityManagement {
 	public class HttpEntity {
+		public readonly HttpContext Context;
 		private readonly bool _logHttpRequests;
 		public readonly Action OnComplete;
 		public readonly Uri RequestedUrl;
@@ -15,21 +17,23 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public readonly IHttpRequest Request;
 		internal readonly IHttpResponse Response;
-		public readonly ClaimsPrincipal User;
+		public ClaimsPrincipal User => Context.User;
 
-		public HttpEntity(IHttpRequest request, IHttpResponse response, ClaimsPrincipal user,
-			bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort, Action onComplete) {
-			Ensure.NotNull(request, "request");
-			Ensure.NotNull(response, "response");
+		public HttpEntity(HttpContext context, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort,
+			Action onComplete) {
+			Context = context;
+			Ensure.NotNull(context, nameof(context));
 			Ensure.NotNull(onComplete, nameof(onComplete));
 
+			var request = new CoreHttpRequestAdapter(context.Request);
+			var response = new CoreHttpResponseAdapter(context.Response);
 			_logHttpRequests = logHttpRequests;
 			OnComplete = onComplete;
 			RequestedUrl = BuildRequestedUrl(request, advertiseAsAddress, advertiseAsPort);
 			ResponseUrl = BuildRequestedUrl(request, advertiseAsAddress, advertiseAsPort, true);
 			Request = request;
 			Response = response;
-			User = user;
+			Context = context;
 		}
 
 		public static Uri BuildRequestedUrl(IHttpRequest request,
@@ -81,28 +85,6 @@ namespace EventStore.Transport.Http.EntityManagement {
 			return uriBuilder.Uri;
 		}
 
-		private HttpEntity(ClaimsPrincipal user, bool logHttpRequests) {
-			RequestedUrl = null;
-			ResponseUrl = null;
-
-			Request = null;
-			Response = null;
-			User = user;
-			_logHttpRequests = logHttpRequests;
-			OnComplete = () => { };
-		}
-
-		private HttpEntity(HttpEntity httpEntity, ClaimsPrincipal user, bool logHttpRequests) {
-			RequestedUrl = httpEntity.RequestedUrl;
-			ResponseUrl = httpEntity.ResponseUrl;
-
-			Request = httpEntity.Request;
-			Response = httpEntity.Response;
-			User = user;
-			_logHttpRequests = logHttpRequests;
-			OnComplete = httpEntity.OnComplete;
-		}
-
 		public HttpEntityManager CreateManager(
 			ICodec requestCodec, ICodec responseCodec, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied) {
 			return new HttpEntityManager(this, allowedMethods, onRequestSatisfied, requestCodec, responseCodec,
@@ -111,9 +93,5 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public HttpEntityManager CreateManager()
 			=> CreateManager(Codec.NoCodec, Codec.NoCodec, Array.Empty<string>(), _ => { });
-
-		public HttpEntity SetUser(ClaimsPrincipal user) {
-			return new HttpEntity(this, user, _logHttpRequests);
-		}
 	}
 }
