@@ -358,7 +358,10 @@ namespace EventStore.ClusterNode {
 				builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
 					options.CertificateThumbprint);
 			} else if (options.CertificateFile.IsNotEmptyString()) {
-				builder.WithServerCertificateFromFile(options.CertificateFile, options.CertificatePassword);
+				builder.WithServerCertificateFromFile(
+					options.CertificateFile,
+					options.CertificatePrivateKeyFile,
+					options.CertificatePassword);
 			} else if (!options.Dev)
 				throw new Exception("An SSL Certificate is required unless development mode (--dev) is set.");
 

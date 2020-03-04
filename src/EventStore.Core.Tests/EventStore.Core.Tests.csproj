@@ -29,6 +29,9 @@
 		<None Include="TestConfigs\*.yaml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Include="TestCertificates\*.*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="Resources\es-tile.png">

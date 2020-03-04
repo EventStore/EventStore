@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.EnableSsl()
 				.WithSslTargetHost("Host")
 				.ValidateSslServer()
-				.WithServerCertificateFromFile(certPath, "1111");
+				.WithServerCertificateFromFile(certPath, string.Empty, "1111");
 		}
 
 		[Test]
