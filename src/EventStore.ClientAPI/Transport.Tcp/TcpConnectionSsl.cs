@@ -18,7 +18,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public static ITcpConnection CreateConnectingConnection(ILogger log,
 			Guid connectionId,
 			IPEndPoint remoteEndPoint,
-			string targetHost,
 			bool validateServer,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
@@ -32,7 +31,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(targetHost, validateServer);
+					connection.InitSslStream(remoteEndPoint.Address.ToString(), validateServer);
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},

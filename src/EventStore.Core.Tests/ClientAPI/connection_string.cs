@@ -5,12 +5,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI")]
 	public class connection_string {
 		[Test]
-		public void can_set_string_value() {
-			var settings = ConnectionString.GetConnectionSettings("targethost=testtest");
-			Assert.AreEqual("testtest", settings.TargetHost);
-		}
-
-		[Test]
 		public void can_set_bool_value_with_string() {
 			var settings = ConnectionString.GetConnectionSettings("verboselogging=true");
 			Assert.AreEqual(true, settings.VerboseLogging);

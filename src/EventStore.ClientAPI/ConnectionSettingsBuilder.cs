@@ -28,7 +28,6 @@ namespace EventStore.ClientAPI {
 
 		private UserCredentials _defaultUserCredentials;
 		private bool _useSslConnection;
-		private string _targetHost;
 		private bool _validateServer;
 
 		private bool _failOnNoServerResponse;
@@ -253,13 +252,10 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Uses a SSL connection over TCP. This should generally be used with authentication.
 		/// </summary>
-		/// <param name="targetHost">HostName of server certificate.</param>
 		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer) {
-			Ensure.NotNullOrEmpty(targetHost, "targetHost");
+		public ConnectionSettingsBuilder UseSslConnection(bool validateServer) {
 			_useSslConnection = true;
-			_targetHost = targetHost;
 			_validateServer = validateServer;
 			return this;
 		}
@@ -472,7 +468,6 @@ namespace EventStore.ClientAPI {
 				_operationTimeoutCheckPeriod,
 				_defaultUserCredentials,
 				_useSslConnection,
-				_targetHost,
 				_validateServer,
 				_failOnNoServerResponse,
 				_heartbeatInterval,

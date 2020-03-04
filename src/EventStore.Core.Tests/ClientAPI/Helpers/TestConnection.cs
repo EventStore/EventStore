@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				//.SetOperationTimeoutTo(TimeSpan.FromDays(1))
 				;
 			if (tcpType == TcpType.Ssl)
-				settings.UseSslConnection("ES", false);
+				settings.UseSslConnection(false);
 			return settings;
 		}
 	}
