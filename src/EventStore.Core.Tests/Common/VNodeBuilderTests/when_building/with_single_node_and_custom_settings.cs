@@ -641,7 +641,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public override void Given() {
 			var certificateWithPassword =
 				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates",
-					"public_and_private_with_password.pfx"));
+					"public_and_private_with_password.p12"));
 			_builder.WithServerCertificateFromFile(certificateWithPassword, string.Empty, "changeit");
 		}
 

@@ -694,8 +694,8 @@ namespace EventStore.Core {
 			}
 			
 			var privateKey = Convert.FromBase64String(string.Join(string.Empty, File.ReadAllLines(privateKeyPath)
-			.Skip(1)
-			.SkipLast(1)));
+				.Skip(1)
+				.SkipLast(1)));
 			
 			using var rsa = RSA.Create();
 			rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
