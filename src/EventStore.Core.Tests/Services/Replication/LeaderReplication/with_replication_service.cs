@@ -18,6 +18,7 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
@@ -88,7 +89,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
 			manager = new TcpConnectionManager(
-				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(),
+				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),

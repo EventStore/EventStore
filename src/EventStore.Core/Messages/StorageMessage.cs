@@ -37,24 +37,20 @@ namespace EventStore.Core.Messages {
 			public CancellationToken CancellationToken { get; }
 			public readonly Event[] Events;
 
-			public readonly DateTime LiveUntil;
-
 			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				Event[] events, DateTime liveUntil, CancellationToken cancellationToken) {
+				Event[] events, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
 				CancellationToken = cancellationToken;
 				Events = events;
-
-				LiveUntil = liveUntil;
 			}
 
 			public override string ToString() {
 				return string.Format(
-					"WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}, LiveUntil: {3}",
-					CorrelationId, EventStreamId, ExpectedVersion, LiveUntil);
+					"WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}",
+					CorrelationId, EventStreamId, ExpectedVersion);
 			}
 		}
 
@@ -72,10 +68,8 @@ namespace EventStore.Core.Messages {
 			public CancellationToken CancellationToken { get; }
 			public readonly bool HardDelete;
 
-			public readonly DateTime LiveUntil;
-
 			public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				bool hardDelete, DateTime liveUntil, CancellationToken cancellationToken = default) {
+				bool hardDelete, CancellationToken cancellationToken = default) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
 				Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -86,8 +80,6 @@ namespace EventStore.Core.Messages {
 				ExpectedVersion = expectedVersion;
 				CancellationToken = cancellationToken;
 				HardDelete = hardDelete;
-
-				LiveUntil = liveUntil;
 			}
 		}
 

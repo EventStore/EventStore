@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -17,7 +18,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	}
 
 	public class ClientWriteTcpDispatcher : TcpDispatcher {
-		public ClientWriteTcpDispatcher() {
+		private readonly TimeSpan _writeTimeout;
+
+		protected ClientWriteTcpDispatcher(TimeSpan writeTimeout) {
+			_writeTimeout = writeTimeout;
 			AddUnwrapper(TcpCommand.WriteEvents, UnwrapWriteEvents, ClientVersion.V2);
 			AddWrapper<ClientMessage.WriteEvents>(WrapWriteEvents, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.WriteEventsCompleted, UnwrapWriteEventsCompleted, ClientVersion.V2);
@@ -43,12 +47,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddUnwrapper(TcpCommand.DeleteStreamCompleted, UnwrapDeleteStreamCompleted, ClientVersion.V2);
 			AddWrapper<ClientMessage.DeleteStreamCompleted>(WrapDeleteStreamCompleted, ClientVersion.V2);
 		}
-		private static ClientMessage.WriteEvents UnwrapWriteEvents(TcpPackage package, IEnvelope envelope,
+		private ClientMessage.WriteEvents UnwrapWriteEvents(TcpPackage package, IEnvelope envelope,
 			ClaimsPrincipal user, string login, string password) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.WriteEvents>();
 			if (dto == null) return null;
 
-			var events = new Event[dto.Events == null ? 0 : dto.Events.Length];
+			var events = new Event[dto.Events?.Length ?? 0];
 			for (int i = 0; i < events.Length; ++i) {
 				// ReSharper disable PossibleNullReferenceException
 				var e = dto.Events[i];
@@ -56,8 +60,17 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				events[i] = new Event(new Guid(e.EventId), e.EventType, e.DataContentType == 1, e.Data, e.Metadata);
 			}
 
-			return new ClientMessage.WriteEvents(Guid.NewGuid(), package.CorrelationId, envelope, dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, events, user, login, password);
+			var cts = new CancellationTokenSource();
+			var envelopeWrapper = new CallbackEnvelope(OnMessage);
+			cts.CancelAfter(_writeTimeout);
+
+			return new ClientMessage.WriteEvents(Guid.NewGuid(), package.CorrelationId, envelopeWrapper, dto.RequireLeader,
+				dto.EventStreamId, dto.ExpectedVersion, events, user, login, password, cts.Token);
+
+			void OnMessage(Message m) {
+				cts.Dispose();
+				envelope.ReplyWith(m);
+			}
 		}
 
 		private static TcpPackage WrapWriteEvents(ClientMessage.WriteEvents msg) {
@@ -221,12 +234,22 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return new TcpPackage(TcpCommand.TransactionCommitCompleted, msg.CorrelationId, dto.Serialize());
 		}
 
-		private static ClientMessage.DeleteStream UnwrapDeleteStream(TcpPackage package, IEnvelope envelope,
+		private ClientMessage.DeleteStream UnwrapDeleteStream(TcpPackage package, IEnvelope envelope,
 			ClaimsPrincipal user, string login, string password) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.DeleteStream>();
 			if (dto == null) return null;
-			return new ClientMessage.DeleteStream(Guid.NewGuid(), package.CorrelationId, envelope, dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, dto.HardDelete ?? false, user, login, password);
+
+			var cts = new CancellationTokenSource();
+			var envelopeWrapper = new CallbackEnvelope(OnMessage);
+			cts.CancelAfter(_writeTimeout);
+
+			return new ClientMessage.DeleteStream(Guid.NewGuid(), package.CorrelationId, envelopeWrapper, dto.RequireLeader,
+				dto.EventStreamId, dto.ExpectedVersion, dto.HardDelete ?? false, user, login, password, cts.Token);
+
+			void OnMessage(Message m) {
+				cts.Dispose();
+				envelope.ReplyWith(m);
+			}
 		}
 
 		private static TcpPackage WrapDeleteStream(ClientMessage.DeleteStream msg) {

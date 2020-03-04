@@ -43,7 +43,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					_streamId,
 					ExpectedVersion,
 					_hardDelete,
-					LiveUntil,
 					_cancellationToken);
 
 		protected override Message ClientSuccessMsg =>

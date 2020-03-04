@@ -37,14 +37,12 @@ namespace EventStore.Core.Services.RequestManager {
 		private const string _requestManagerHistogram = "request-manager";
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
-		private readonly TimeSpan _writeTimeout;
 		private readonly CommitSource _commitSource;
 		private VNodeState _nodeState;		
 
 		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout,
-			TimeSpan writeTimeout) {
+			TimeSpan commitTimeout) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -53,14 +51,13 @@ namespace EventStore.Core.Services.RequestManager {
 
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
-			_writeTimeout = writeTimeout;
 			_commitSource = new CommitSource();
 		}
 		
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
 								_bus,
-								_writeTimeout,
+								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,
@@ -77,7 +74,7 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ClientMessage.DeleteStream message) {
 			var manager = new DeleteStream(
 								_bus,
-								_writeTimeout,
+								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
 								message.CorrelationId,

@@ -42,7 +42,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					_streamId,
 					ExpectedVersion,
 					_events,
-					LiveUntil,
 					_cancellationToken);
 
 

@@ -44,7 +44,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Service = new RequestManagementService(
 				Dispatcher,
 				TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2));
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
