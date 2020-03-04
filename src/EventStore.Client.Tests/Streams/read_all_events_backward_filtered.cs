@@ -90,11 +90,10 @@ namespace EventStore.Client.Streams {
 			Assert.Equal(events.Select(x => x.EventId), result.Reverse().Select(x => x.OriginalEvent.EventId));
 		}
 
-		[Fact]
-		public async Task max_count_is_respected() {
-			var streamName = _fixture.GetStreamName();
-			const int count = 20;
-			const ulong maxCount = (ulong)count / 2;
+		[Theory, InlineData(20), InlineData(2)]
+		public async Task max_count_is_respected(int count) {
+			var streamName = $"{_fixture.GetStreamName()}_{count}";
+			var maxCount = (ulong)count / 2;
 
 			await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.NoStream,
 				_fixture.CreateTestEvents(count));
