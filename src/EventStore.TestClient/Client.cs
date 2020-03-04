@@ -23,7 +23,6 @@ namespace EventStore.TestClient {
 		public readonly IPEndPoint TcpEndpoint;
 		public readonly IPEndPoint HttpEndpoint;
 		public readonly bool UseSsl;
-		public readonly string TargetHost;
 		public readonly bool ValidateServer;
 
 		private readonly BufferManager _bufferManager =
@@ -40,7 +39,6 @@ namespace EventStore.TestClient {
 			HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
 
 			UseSsl = options.UseTls;
-			TargetHost = options.TlsTargetHost;
 			ValidateServer = options.TlsValidateServer;
 
 			InteractiveMode = options.Command.IsEmpty();
@@ -175,15 +173,10 @@ namespace EventStore.TestClient {
 
 			ITcpConnection connection;
 			if (UseSsl) {
-				if (string.IsNullOrEmpty(TargetHost)) {
-					context.Fail(reason: "TargetHost is required if using SSL");
-				}
-
 				connection = _connector.ConnectSslTo(
 					Guid.NewGuid(),
 					tcpEndPoint ?? TcpEndpoint,
 					TcpConnectionManager.ConnectionTimeout,
-					TargetHost,
 					ValidateServer,
 					null,
 					onConnectionEstablished,

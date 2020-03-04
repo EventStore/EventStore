@@ -34,7 +34,6 @@ namespace EventStore.TestClient {
 		public bool Reconnect { get; set; }
 
 		public bool UseTls { get; set; }
-		public string TlsTargetHost { get; set; }
 		public bool TlsValidateServer { get; set; }
 
 		public ClientOptions() {
@@ -55,7 +54,6 @@ namespace EventStore.TestClient {
 			Force = false;
 			Reconnect = true;
 			UseTls = false;
-			TlsTargetHost = "";
 			TlsValidateServer = false;
 		}
 	}
