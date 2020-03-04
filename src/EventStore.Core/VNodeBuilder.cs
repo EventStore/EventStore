@@ -690,6 +690,11 @@ namespace EventStore.Core {
 
 			if (string.IsNullOrEmpty(privateKeyPath)) {
 				_certificate = new X509Certificate2(certificatePath, password);
+				if (!_certificate.HasPrivateKey) {
+					throw new Exception("Expect certificate to contain a private key. " +
+					                    "Please either provide a certificate that contains one or set the private key" +
+					                    " via the `CertificatePrivateKeyFile` option.");
+				}
 				return this;
 			}
 			
