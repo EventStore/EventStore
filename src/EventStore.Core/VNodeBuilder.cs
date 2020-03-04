@@ -1246,22 +1246,21 @@ namespace EventStore.Core {
 			if (_gossipAdvertiseInfo == null) {
 				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
 
-				IPAddress intTcpAddress = _internalTcp?.Address ?? _internalSecureTcp.Address;
-				IPAddress extTcpAddress = _externalTcp?.Address ?? _externalSecureTcp?.Address;
+				IPAddress intIpAddress = _internalHttp.Address; //this value is just opts.IntIP
+				IPAddress extIpAddress = _externalHttp.Address; //this value is just opts.ExtIP
 
-				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intTcpAddress;
-				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extTcpAddress;
+				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intIpAddress;
+				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extIpAddress;
 
-				if ((intTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     (extTcpAddress == null || extTcpAddress.Equals(IPAddress.Parse("0.0.0.0"))))) {
+				if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) || extIpAddress.Equals(IPAddress.Parse("0.0.0.0"))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (intTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
+					if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
 						intIpAddressToAdvertise = addressToAdvertise;
 					}
 
-					if (extTcpAddress == null || (extTcpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null)) {
+					if (extIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
 						extIpAddressToAdvertise = addressToAdvertise;
 					}
 				}
