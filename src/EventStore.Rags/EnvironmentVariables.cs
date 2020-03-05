@@ -16,7 +16,7 @@ namespace EventStore.Rags {
 					where !String.IsNullOrEmpty(environmentVariableValue)
 					select ParseReferenceEnvironmentVariable(
 						OptionSource.String("Environment Variable", property.Name, environmentVariableValue,
-							_regex.IsMatch(environmentVariableValue)
+							isReference: _regex.IsMatch(environmentVariableValue)
 						)));
 		}
 

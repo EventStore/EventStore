@@ -20,6 +20,7 @@ namespace EventStore.Common.Options {
 				.EnsureExistence<TOptions>()
 				.EnsureCorrectType<TOptions>()
 				.FixNames<TOptions>()
+				.ApplyMask<TOptions>()
 				.Mutate<TOptions>(mutateEffectiveOptions);
 			
 			return _effectiveOptions.ApplyTo<TOptions>();
@@ -94,7 +95,7 @@ namespace EventStore.Common.Options {
 				}
 
 				var value = option.Value;
-				if (option.Name == "CertificatePassword" && !string.IsNullOrEmpty((string)option.Value)) {
+				if (option.Mask && displayingModifiedOptions) {
 					value = "****";
 				}
 
@@ -149,6 +150,20 @@ namespace EventStore.Common.Options {
 			}
 
 			return optionSources;
+		}
+		
+		public static IEnumerable<OptionSource> ApplyMask<TOptions>(this IEnumerable<OptionSource> optionSources)
+			where TOptions : class {
+			var properties = typeof(TOptions).GetProperties();
+			var newOptionSources = new List<OptionSource>();
+			foreach (var optionSource in optionSources) {
+				var property =
+					properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+				newOptionSources.Add(new OptionSource(optionSource.Source, property.Name, optionSource.IsTyped,
+					optionSource.Value, mask: property.HasAttr<ArgMask>()));
+			}
+
+			return newOptionSources;
 		}
 
 		public static IEnumerable<OptionSource> EnsureCorrectType<TOptions>(

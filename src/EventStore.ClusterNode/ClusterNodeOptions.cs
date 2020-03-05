@@ -199,7 +199,7 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.CertificatePrivateKeyFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificatePrivateKeyFile { get; set; }
 
-		[ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesFromFileGroup)]
+		[ArgMask, ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificatePassword { get; set; }
 
 		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesFromStoreGroup)]
