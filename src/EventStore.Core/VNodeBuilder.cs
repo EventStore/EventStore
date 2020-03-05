@@ -67,11 +67,9 @@ namespace EventStore.Core {
 
 		protected int _nodePriority;
 
-		protected bool _useSsl;
 		protected bool _enableExternalTCP;
-		protected bool _disableInsecureTCP;
-		protected string _sslTargetHost;
-		protected bool _sslValidateServer;
+		protected bool _disableInternalTls;
+		protected bool _disableExternalTls;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -186,11 +184,9 @@ namespace EventStore.Core {
 
 			_nodePriority = Opts.NodePriorityDefault;
 
-			_useSsl = Opts.UseInternalSslDefault;
+			_disableInternalTls = Opts.DisableInternalTlsDefault;
+			_disableExternalTls = Opts.DisableExternalTlsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
-			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
-			_sslTargetHost = Opts.SslTargetHostDefault;
-			_sslValidateServer = Opts.SslValidateServerDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
 
@@ -522,11 +518,19 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets that SSL should be used on connections
+		/// Sets that TLS should be disabled on internal connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableSsl() {
-			_useSsl = true;
+		public VNodeBuilder DisableInternalTls() {
+			_disableInternalTls = true;
+			return this;
+		}
+
+		/// Sets that TLS should be disabled on external connections
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder DisableExternalTls() {
+			_disableExternalTls = true;
 			return this;
 		}
 
@@ -536,34 +540,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableExternalTCP() {
 			_enableExternalTCP = true;
-			return this;
-		}
-
-		/// <summary>
-		/// Disable Insecure TCP Communication
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableInsecureTCP() {
-			_disableInsecureTCP = true;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets the target host of the server's SSL certificate.
-		/// </summary>
-		/// <param name="targetHost">The target host of the server's SSL certificate</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithSslTargetHost(string targetHost) {
-			_sslTargetHost = targetHost;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets whether to validate that the server's certificate is trusted.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder ValidateSslServer() {
-			_sslValidateServer = true;
 			return this;
 		}
 
@@ -677,7 +653,7 @@ namespace EventStore.Core {
 		}
 		
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a file
+		/// Sets the Server TLS Certificate to be loaded from a file
 		/// </summary>
 		/// <param name="certificatePath">The path to the certificate file</param>
 		/// <param name="privateKeyPath">The path to the private key file</param>
@@ -1101,9 +1077,9 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate
+		/// Sets the Server TLS Certificate
 		/// </summary>
-		/// <param name="sslCertificate">The server SSL certificate to use</param>
+		/// <param name="sslCertificate">The server TLS certificate to use</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithServerCertificate(X509Certificate2 sslCertificate) {
 			_certificate = sslCertificate;
@@ -1111,7 +1087,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeLocation">The location of the certificate store</param>
 		/// <param name="storeName">The name of the certificate store</param>
@@ -1126,7 +1102,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeName">The name of the certificate store</param>
 		/// <param name="certificateSubjectName">The subject name of the certificate</param>
@@ -1281,34 +1257,50 @@ namespace EventStore.Core {
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
-				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? _internalTcp.Address;
-				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
+				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
 
-				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")))) {
+				IPAddress intIpAddress = _internalHttp.Address; //this value is just opts.IntIP
+				IPAddress extIpAddress = _externalHttp.Address; //this value is just opts.ExtIP
+
+				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intIpAddress;
+				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extIpAddress;
+
+				if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) || extIpAddress.Equals(IPAddress.Parse("0.0.0.0"))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
+					if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
 						intIpAddressToAdvertise = addressToAdvertise;
 					}
 
-					if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
+					if (extIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
 						extIpAddressToAdvertise = addressToAdvertise;
 					}
 				}
 
-				var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
-				var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
-				var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs :
-					_internalSecureTcp == null ? 0 : _internalSecureTcp.Port;
-				var intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				IPEndPoint intTcpEndPoint = null;
+				if (_internalTcp != null) {
+					var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
+					intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+				}
 
-				var extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
-				var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
-				var extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs :
-					_externalSecureTcp == null ? 0 : _externalSecureTcp.Port;
-				var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				IPEndPoint intSecureTcpEndPoint = null;
+				if (_internalSecureTcp != null) {
+					var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp.Port;
+					intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				}
+
+				IPEndPoint extTcpEndPoint = null;
+				if (_externalTcp != null) {
+					int extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
+					extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+				}
+
+				IPEndPoint extSecureTcpEndPoint = null;
+				if (_externalSecureTcp != null) {
+					int extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp.Port;
+					extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				}
 
 				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
 				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
@@ -1385,10 +1377,8 @@ namespace EventStore.Core {
 				_commitAckCount,
 				_prepareTimeout,
 				_commitTimeout,
-				_useSsl,
-				_disableInsecureTCP,
-				_sslTargetHost,
-				_sslValidateServer,
+				_disableInternalTls,
+				_disableExternalTls,
 				_statsPeriod,
 				_statsStorage,
 				_nodePriority,

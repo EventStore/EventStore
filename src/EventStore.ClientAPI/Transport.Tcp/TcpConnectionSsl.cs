@@ -18,7 +18,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public static ITcpConnection CreateConnectingConnection(ILogger log,
 			Guid connectionId,
 			IPEndPoint remoteEndPoint,
-			string targetHost,
 			bool validateServer,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
@@ -32,7 +31,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(targetHost, validateServer);
+					connection.InitSslStream(remoteEndPoint.Address.ToString(), validateServer);
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},
@@ -120,7 +119,13 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				}
 
 				try {
-					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
+					#if NETCOREAPP3_1
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+					#else
+					var enabledSslProtocols = SslProtocols.Tls12;
+					#endif
+
+					_sslStream.BeginAuthenticateAsClient(targetHost, null, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					_log.Info(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.",
 						RemoteEndPoint, LocalEndPoint);

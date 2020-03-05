@@ -7,6 +7,7 @@ using EventStore.Core.Services.Monitoring;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
@@ -569,7 +570,15 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint, internalIPToAdvertise, externalIPToAdvertise,
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 
-			_builder.AdvertiseInternalIPAs(internalIPToAdvertise)
+			_builder
+				.WithServerCertificate(ssl_connections.GetCertificate())
+				.WithInternalTcpOn(intTcpEndpoint)
+				.WithInternalSecureTcpOn(intSecTcpEndpoint)
+				.WithExternalTcpOn(extTcpEndpoint)
+				.WithExternalSecureTcpOn(extSecTcpEndpoint)
+				.WithInternalHttpOn(intHttpEndpoint)
+				.WithExternalHttpOn(extHttpEndpoint)
+				.AdvertiseInternalIPAs(internalIPToAdvertise)
 				.AdvertiseExternalIPAs(externalIPToAdvertise)
 				.AdvertiseInternalTCPPortAs(intTcpEndpoint.Port)
 				.AdvertiseExternalTCPPortAs(extTcpEndpoint.Port)

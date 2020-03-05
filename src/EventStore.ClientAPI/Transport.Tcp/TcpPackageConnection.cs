@@ -39,7 +39,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			Guid connectionId,
 			bool ssl,
-			string targetHost,
 			bool validateServer,
 			TimeSpan timeout,
 			Action<TcpPackageConnection, TcpPackage> handlePackage,
@@ -50,8 +49,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotEmptyGuid(connectionId, "connectionId");
 			Ensure.NotNull(handlePackage, "handlePackage");
-			if (ssl)
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
 			ConnectionId = connectionId;
 			_log = log;
@@ -69,7 +66,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				connectionId,
 				remoteEndPoint,
 				ssl,
-				targetHost,
 				validateServer,
 				timeout,
 				tcpConnection => {

@@ -1342,7 +1342,7 @@ namespace EventStore.Core.Messages
     public readonly string ExternalTcpAddress;
   
     [ProtoMember(2, IsRequired = true, Name=@"external_tcp_port", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExternalTcpPort;
+    public readonly int? ExternalTcpPort;
   
     [ProtoMember(3, IsRequired = true, Name=@"external_http_address", DataFormat = DataFormat.Default)]
     public readonly string ExternalHttpAddress;

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
@@ -31,11 +32,10 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IEpochManager _epochManager;
 		private readonly IPublisher _networkSendQueue;
 		private readonly IAuthenticationProvider _authProvider;
-
 		private readonly VNodeInfo _nodeInfo;
 		private readonly bool _useSsl;
-		private readonly string _sslTargetHost;
 		private readonly bool _sslValidateServer;
+		private readonly X509CertificateCollection _sslClientCertificates;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
 
@@ -51,8 +51,8 @@ namespace EventStore.Core.Services.Replication {
 			IAuthenticationProvider authProvider,
 			VNodeInfo nodeInfo,
 			bool useSsl,
-			string sslTargetHost,
 			bool sslValidateServer,
+			X509CertificateCollection sslClientCertificates,
 			TimeSpan heartbeatTimeout,
 			TimeSpan heartbeatInterval) {
 			Ensure.NotNull(publisher, "publisher");
@@ -61,7 +61,6 @@ namespace EventStore.Core.Services.Replication {
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
-			if (useSsl) Ensure.NotNull(sslTargetHost, "sslTargetHost");
 
 			_publisher = publisher;
 			_db = db;
@@ -71,8 +70,8 @@ namespace EventStore.Core.Services.Replication {
 
 			_nodeInfo = nodeInfo;
 			_useSsl = useSsl;
-			_sslTargetHost = sslTargetHost;
 			_sslValidateServer = sslValidateServer;
+			_sslClientCertificates = sslClientCertificates;
 			_heartbeatTimeout = heartbeatTimeout;
 			_heartbeatInterval = heartbeatInterval;
 
@@ -140,6 +139,10 @@ namespace EventStore.Core.Services.Replication {
 			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
 			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
+			if (leaderEndPoint == null) {
+				Log.Error("No valid endpoint found to connect to the Leader. Aborting connection operation to Leader.");
+				return;
+			}
 
 			if (_connection != null)
 				_connection.Stop(string.Format("Reconnecting from old leader [{0}] to new leader: [{1}].",
@@ -152,8 +155,8 @@ namespace EventStore.Core.Services.Replication {
 				leaderEndPoint,
 				_connector,
 				_useSsl,
-				_sslTargetHost,
 				_sslValidateServer,
+				_sslClientCertificates,
 				_networkSendQueue,
 				_authProvider,
 				_heartbeatInterval,
@@ -169,7 +172,11 @@ namespace EventStore.Core.Services.Replication {
 				Log.Error(
 					"Internal secure connections are required, but no internal secure TCP end point is specified for leader [{leader}]!",
 					leader);
-			return useSsl ? leader.InternalSecureTcp ?? leader.InternalTcp : leader.InternalTcp;
+			if (!useSsl && leader.InternalTcp == null)
+				Log.Error(
+					"Internal connections are required, but no internal TCP end point is specified for leader [{leader}]!",
+					leader);
+			return useSsl ? leader.InternalSecureTcp : leader.InternalTcp;
 		}
 
 		public void Handle(ReplicationMessage.SubscribeToLeader message) {
@@ -192,7 +199,7 @@ namespace EventStore.Core.Services.Replication {
 				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
-					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
+					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp ?? _nodeInfo.InternalSecureTcp ?? _connection.LocalEndPoint,
 					message.LeaderId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
 		}
 

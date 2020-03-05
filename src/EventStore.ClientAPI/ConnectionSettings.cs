@@ -100,11 +100,6 @@ namespace EventStore.ClientAPI {
 		public readonly bool UseSslConnection;
 
 		/// <summary>
-		/// The host name of the server expected on the SSL certificate.
-		/// </summary>
-		public readonly string TargetHost;
-
-		/// <summary>
 		/// Whether to validate the server SSL certificate.
 		/// </summary>
 		public readonly bool ValidateServer;
@@ -172,7 +167,6 @@ namespace EventStore.ClientAPI {
 			TimeSpan operationTimeoutCheckPeriod,
 			UserCredentials defaultUserCredentials,
 			bool useSslConnection,
-			string targetHost,
 			bool validateServer,
 			bool failOnNoServerResponse,
 			TimeSpan heartbeatInterval,
@@ -196,8 +190,6 @@ namespace EventStore.ClientAPI {
 				throw new ArgumentOutOfRangeException("maxReconnections",
 					string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].",
 						maxRetries));
-			if (useSslConnection)
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 
 			if (nodePreference == NodePreference.ReadOnlyReplica && requireLeader) {
 				throw new ArgumentException($"Having the Node Preference set to {nodePreference} and Requires Leader" +
@@ -219,7 +211,6 @@ namespace EventStore.ClientAPI {
 			ClientConnectionTimeout = clientConnectionTimeout;
 			DefaultUserCredentials = defaultUserCredentials;
 			UseSslConnection = useSslConnection;
-			TargetHost = targetHost;
 			ValidateServer = validateServer;
 
 			FailOnNoServerResponse = failOnNoServerResponse;

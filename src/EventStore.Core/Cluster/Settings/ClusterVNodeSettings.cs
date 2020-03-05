@@ -14,7 +14,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly VNodeInfo NodeInfo;
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
 		public readonly bool EnableTrustedAuth;
-		public readonly X509Certificate2 Certificate;
+		public X509Certificate2 Certificate;
 		public readonly int WorkerThreads;
 		public readonly bool StartStandardProjections;
 		public readonly bool EnableAtomPubOverHTTP;
@@ -38,11 +38,9 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly int NodePriority;
 
-		public readonly bool UseSsl;
+		public readonly bool DisableInternalTls;
+		public readonly bool DisableExternalTls;
 		public readonly bool EnableExternalTCP;
-		public readonly bool DisableInsecureTCP;
-		public readonly string SslTargetHost;
-		public readonly bool SslValidateServer;
 
 		public readonly TimeSpan StatsPeriod;
 		public readonly StatsStorage StatsStorage;
@@ -111,10 +109,8 @@ namespace EventStore.Core.Cluster.Settings {
 			int commitAckCount,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
-			bool useSsl,
-			bool disableInsecureTCP,
-			string sslTargetHost,
-			bool sslValidateServer,
+			bool disableInternalTls,
+			bool disableExternalTls,
 			TimeSpan statsPeriod,
 			StatsStorage statsStorage,
 			int nodePriority,
@@ -167,8 +163,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool enableAtomPubOverHTTP = true,
 			bool gossipOverHttps = true) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
+
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
 			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
@@ -189,9 +185,6 @@ namespace EventStore.Core.Cluster.Settings {
 				throw new ArgumentException(
 					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
 
-			if (useSsl)
-				Ensure.NotNull(sslTargetHost, "sslTargetHost");
-
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
@@ -200,6 +193,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
+
 			WorkerThreads = workerThreads;
 			StartStandardProjections = startStandardProjections;
 			EnableAtomPubOverHTTP = enableAtomPubOverHTTP;
@@ -221,11 +215,9 @@ namespace EventStore.Core.Cluster.Settings {
 			PrepareTimeout = prepareTimeout;
 			CommitTimeout = commitTimeout;
 
-			UseSsl = useSsl;
+			DisableInternalTls = disableInternalTls;
+			DisableExternalTls = disableExternalTls;
 			EnableExternalTCP = enableExternalTCP;
-			DisableInsecureTCP = disableInsecureTCP;
-			SslTargetHost = sslTargetHost;
-			SslValidateServer = sslValidateServer;
 
 			StatsPeriod = statsPeriod;
 			StatsStorage = statsStorage;
@@ -289,8 +281,8 @@ namespace EventStore.Core.Cluster.Settings {
 			$"GossipSeeds: {string.Join(",", GossipSeeds.Select(x => x.ToString()))}\n" +
 			$"ClusterNodeCount: {ClusterNodeCount}\n" + $"MinFlushDelay: {MinFlushDelay}\n" +
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
-			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" + $"UseSsl: {UseSsl}\n" +
-			$"SslTargetHost: {SslTargetHost}\n" + $"SslValidateServer: {SslValidateServer}\n" +
+			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
+			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +

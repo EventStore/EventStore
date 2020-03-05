@@ -283,20 +283,11 @@ namespace EventStore.Core.Util {
 		public const string InternalTcpPortDescr = "Internal TCP Port.";
 		public const int InternalTcpPortDefault = 1112;
 
-		public const string InternalSecureTcpPortDescr = "Internal Secure TCP Port.";
-		public const int InternalSecureTcpPortDefault = 0;
-
 		public const string ExternalTcpPortDescr = "External TCP Port.";
 		public const int ExternalTcpPortDefault = 1113;
 
-		public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
-		public const int ExternalSecureTcpPortDefault = 0;
-
 		public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
 		public static readonly IPAddress ExternalIpAdvertiseAsDefault = null;
-
-		public const string ExternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure External Tcp Port As.";
-		public static readonly int ExternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
@@ -309,9 +300,6 @@ namespace EventStore.Core.Util {
 
 		public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
 		public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
-
-		public const string InternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure Internal Tcp Port As.";
-		public static readonly int InternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string InternalHttpPortAdvertiseAsDescr = "Advertise Internal Http Port As.";
 		public static readonly int InternalHttpPortAdvertiseAsDefault = 0;
@@ -339,22 +327,14 @@ namespace EventStore.Core.Util {
 		public const string ExternalManagerHttpPortDescr = null;
 		public const int ExternalManagerHttpPortDefault = 30778;
 
-		public const string UseInternalSslDescr = "Whether to use secure internal communication.";
-		public const bool UseInternalSslDefault = false;
-
+		public const string DisableInternalTlsDescr = "Whether to disable secure internal communication.";
+		public const bool DisableInternalTlsDefault = false;
 		
+		public const string DisableExternalTlsDescr = "Whether to disable secure external communication.";
+		public const bool DisableExternalTlsDefault = false;
+
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
 		public const bool EnableExternalTCPDefault = false;
-
-		
-		public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
-		public const bool DisableInsecureTCPDefault = false;
-
-		public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
-		public static readonly string SslTargetHostDefault = "n/a";
-
-		public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
-		public const bool SslValidateServerDefault = true;
 
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;

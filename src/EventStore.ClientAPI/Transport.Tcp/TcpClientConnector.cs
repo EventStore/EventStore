@@ -33,7 +33,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			bool ssl,
-			string targetHost,
 			bool validateServer,
 			TimeSpan timeout,
 			Action<ITcpConnection> onConnectionEstablished = null,
@@ -41,9 +40,8 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Action<ITcpConnection, SocketError> onConnectionClosed = null) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			if (ssl) {
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 				return TcpConnectionSsl.CreateConnectingConnection(
-					log, connectionId, remoteEndPoint, targetHost, validateServer,
+					log, connectionId, remoteEndPoint, validateServer,
 					this, timeout, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 			}
 

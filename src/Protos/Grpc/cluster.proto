@@ -126,15 +126,17 @@ message MemberInfo {
 	EndPoint internal_http = 6;
 	EndPoint internal_tcp = 7;
 	EndPoint external_tcp = 8;
+	bool internal_tcp_uses_tls = 9;
+	bool external_tcp_uses_tls = 10;
 	
-    int64 last_commit_position = 9;
-    int64 writer_checkpoint = 10;
-	int64 chaser_checkpoint = 11;
-    int64 epoch_position = 12;
-    int32 epoch_number = 13;
-    event_store.client.shared.UUID epoch_id = 14;
+    int64 last_commit_position = 11;
+    int64 writer_checkpoint = 12;
+	int64 chaser_checkpoint = 13;
+    int64 epoch_position = 14;
+    int32 epoch_number = 15;
+    event_store.client.shared.UUID epoch_id = 16;
 
-    int32 node_priority = 15;
-    bool is_read_only_replica = 16;
+    int32 node_priority = 17;
+    bool is_read_only_replica = 18;
 }
 

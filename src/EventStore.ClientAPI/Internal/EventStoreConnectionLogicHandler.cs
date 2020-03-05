@@ -163,7 +163,6 @@ namespace EventStore.ClientAPI.Internal {
 				endPoint,
 				Guid.NewGuid(),
 				_settings.UseSslConnection,
-				_settings.TargetHost,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),

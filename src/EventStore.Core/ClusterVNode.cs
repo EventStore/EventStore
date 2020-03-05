@@ -340,23 +340,22 @@ namespace EventStore.Core {
 
 			{
 				// EXTERNAL TCP
-				if (!vNodeSettings.DisableInsecureTCP && vNodeSettings.EnableExternalTCP) {
+				if (_nodeInfo.ExternalTcp != null && vNodeSettings.EnableExternalTCP) {
 					var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_internalAuthenticationProvider, null, vNodeSettings.ConnectionPendingSendBytesThreshold,
+						_internalAuthenticationProvider, null, false, vNodeSettings.ConnectionPendingSendBytesThreshold,
 						vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
 					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
 				}
-
 				// EXTERNAL SECURE TCP
 				if (_nodeInfo.ExternalSecureTcp != null && vNodeSettings.EnableExternalTCP) {
 					var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_internalAuthenticationProvider, vNodeSettings.Certificate,
+						_internalAuthenticationProvider, vNodeSettings.Certificate, false,
 						vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -365,25 +364,24 @@ namespace EventStore.Core {
 
 				if (!isSingleNode) {
 					// INTERNAL TCP
-					if (!vNodeSettings.DisableInsecureTCP) {
+					if (_nodeInfo.InternalTcp != null) {
 						var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Normal,
 							new InternalTcpDispatcher(),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_internalAuthenticationProvider, null, ESConsts.UnrestrictedPendingSendBytes,
+							_internalAuthenticationProvider, null, false, ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
 					}
-
 					// INTERNAL SECURE TCP
 					if (_nodeInfo.InternalSecureTcp != null) {
 						var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_internalAuthenticationProvider, vNodeSettings.Certificate,
+							_internalAuthenticationProvider, vNodeSettings.Certificate, true,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -647,7 +645,8 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_internalAuthenticationProvider,
-					gossipInfo, vNodeSettings.UseSsl, vNodeSettings.SslTargetHost, vNodeSettings.SslValidateServer,
+					gossipInfo, !vNodeSettings.DisableInternalTls, true,
+					Certificate == null ? null : new X509Certificate2Collection(Certificate),
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);

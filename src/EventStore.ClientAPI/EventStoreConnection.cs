@@ -97,7 +97,6 @@ namespace EventStore.ClientAPI {
 						connectionSettings.RequireLeader, connectionSettings.ReconnectionDelay,
 						connectionSettings.QueueTimeout, connectionSettings.OperationTimeout,
 						connectionSettings.OperationTimeoutCheckPeriod, credential, connectionSettings.UseSslConnection,
-						connectionSettings.TargetHost,
 						connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse,
 						connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,

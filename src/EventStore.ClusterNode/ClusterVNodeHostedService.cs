@@ -58,6 +58,20 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
+				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTls)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTls)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
 				return x;
 			});
 		}
@@ -96,6 +110,7 @@ namespace EventStore.ClusterNode {
 					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
 					" - NOT WRITE ANY DATA TO DISK.\n" +
 					" - USE A SELF SIGNED CERTIFICATE.\n" +
+					" - DISABLE TLS FOR INTERNAL AND EXTERNAL TCP CONNECTIONS.\n" +
 					"========================================================================================================\n");
 			}
 
@@ -103,7 +118,7 @@ namespace EventStore.ClusterNode {
 				"\nINTERFACES\n" +
 				"External TCP (Protobuf)\n" +
 				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
-				$"\tPort\t: {(opts.ExtSecureTcpPort > 0 ? opts.ExtSecureTcpPort : opts.ExtTcpPort)}\n" +
+				$"\tPort\t: {(opts.ExtTcpPort)}\n" +
 				"External HTTP (AtomPub)\n" +
 				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
 				$"\tPort\t: {opts.ExtHttpPort}\n");
@@ -169,37 +184,19 @@ namespace EventStore.ClusterNode {
 
 			var intHttp = new IPEndPoint(options.IntIp, options.IntHttpPort);
 			var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
-			var intTcp = new IPEndPoint(options.IntIp, options.IntTcpPort);
-			var intSecTcp = options.IntSecureTcpPort > 0
-				? new IPEndPoint(options.IntIp, options.IntSecureTcpPort)
-				: null;
-			var extTcp = new IPEndPoint(options.ExtIp, options.ExtTcpPort);
-			var extSecTcp = options.ExtSecureTcpPort > 0
-				? new IPEndPoint(options.ExtIp, options.ExtSecureTcpPort)
-				: null;
+			var intTcp = options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var intSecTcp = !options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
+			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
+
+			var intTcpPortAdvertiseAs = options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
 
 			var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
 			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
 			Log.Information("Quorum size set to {quorum}", prepareCount);
-			if (options.DisableInsecureTCP) {
-				if (!options.UseInternalSsl) {
-					throw new Exception(
-						"You have chosen to disable the insecure TCP ports and haven't set 'UseInternalSsl'. The nodes in the cluster will not be able to communicate properly.");
-				}
-
-				if (extSecTcp == null || intSecTcp == null) {
-					throw new Exception(
-						"You have chosen to disable the insecure TCP ports and haven't setup the External or Internal Secure TCP Ports.");
-				}
-			}
-
-			if (options.UseInternalSsl) {
-				if (ReferenceEquals(options.SslTargetHost, Opts.SslTargetHostDefault))
-					throw new Exception("No SSL target host specified.");
-				if (intSecTcp == null)
-					throw new Exception(
-						"Usage of internal secure communication is specified, but no internal secure endpoint is specified!");
-			}
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
 				throw new Exception(
@@ -257,7 +254,6 @@ namespace EventStore.ClusterNode {
 				.WithIndexVerification(options.SkipIndexVerify)
 				.WithIndexCacheDepth(options.IndexCacheDepth)
 				.WithIndexMergeOptimization(options.OptimizeIndexMerge)
-				.WithSslTargetHost(options.SslTargetHost)
 				.RunProjections(options.RunProjections, options.ProjectionThreads, options.FaultOutOfOrderProjections)
 				.WithProjectionQueryExpirationOf(TimeSpan.FromMinutes(options.ProjectionsQueryExpiry))
 				.WithTfCachedChunks(options.CachedChunks)
@@ -266,10 +262,10 @@ namespace EventStore.ClusterNode {
 				.AdvertiseExternalIPAs(options.ExtIpAdvertiseAs)
 				.AdvertiseInternalHttpPortAs(options.IntHttpPortAdvertiseAs)
 				.AdvertiseExternalHttpPortAs(options.ExtHttpPortAdvertiseAs)
-				.AdvertiseInternalTCPPortAs(options.IntTcpPortAdvertiseAs)
-				.AdvertiseExternalTCPPortAs(options.ExtTcpPortAdvertiseAs)
-				.AdvertiseInternalSecureTCPPortAs(options.IntSecureTcpPortAdvertiseAs)
-				.AdvertiseExternalSecureTCPPortAs(options.ExtSecureTcpPortAdvertiseAs)
+				.AdvertiseInternalTCPPortAs(intTcpPortAdvertiseAs)
+				.AdvertiseExternalTCPPortAs(extTcpPortAdvertiseAs)
+				.AdvertiseInternalSecureTCPPortAs(intSecTcpPortAdvertiseAs)
+				.AdvertiseExternalSecureTCPPortAs(extSecTcpPortAdvertiseAs)
 				.HavingReaderThreads(options.ReaderThreadsCount)
 				.WithConnectionPendingSendBytesThreshold(options.ConnectionPendingSendBytesThreshold)
 				.WithConnectionQueueSizeThreshold(options.ConnectionQueueSizeThreshold)
@@ -311,14 +307,12 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeDisableFlushToDisk();
 			if (options.BetterOrdering)
 				builder.WithBetterOrdering();
-			if (options.SslValidateServer)
-				builder.ValidateSslServer();
-			if (options.UseInternalSsl)
-				builder.EnableSsl();
+			if (options.DisableInternalTls)
+				builder.DisableInternalTls();
+			if (options.DisableExternalTls)
+				builder.DisableExternalTls();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
-			if (options.DisableInsecureTCP)
-				builder.DisableInsecureTCP();
 			if (!options.AdminOnExt)
 				builder.NoAdminOnPublicInterface();
 			if (!options.StatsOnExt)
@@ -363,7 +357,7 @@ namespace EventStore.ClusterNode {
 					options.CertificatePrivateKeyFile,
 					options.CertificatePassword);
 			} else if (!options.Dev)
-				throw new Exception("An SSL Certificate is required unless development mode (--dev) is set.");
+				throw new Exception("A TLS Certificate is required unless development mode (--dev) is set.");
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config

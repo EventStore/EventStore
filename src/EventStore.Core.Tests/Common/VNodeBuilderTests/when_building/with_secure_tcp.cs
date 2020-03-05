@@ -20,15 +20,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
-				.WithSslTargetHost("Host")
-				.ValidateSslServer()
 				.WithServerCertificateFromFile(certPath, string.Empty, "1111");
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -44,16 +42,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_external_secure_tcp_endpoint() {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_ssl_target_host() {
-			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
 		}
 
 		private string GetCertificatePath() {
@@ -81,15 +69,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
-				.WithSslTargetHost("Host")
-				.ValidateSslServer()
 				.WithServerCertificate(_certificate);
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -105,16 +91,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_external_secure_tcp_endpoint() {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
-		}
-
-		[Test]
-		public void should_set_ssl_target_host() {
-			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
 		}
 	}
 

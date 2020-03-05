@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
@@ -17,8 +20,18 @@ namespace EventStore.Core.Cluster {
 
 		public EventStoreClusterClient(Uri address, IPublisher bus,
 			Func<HttpMessageHandler> httpMessageHandlerFactory = null) {
+
+			HttpMessageHandler httpMessageHandler = httpMessageHandlerFactory?.Invoke() ?? new HttpClientHandler {
+				ServerCertificateCustomValidationCallback = (message, certificate, chain, errors) => {
+					if (errors != SslPolicyErrors.None) {
+						Log.Error("Certificate validation failed for certificate: {certificate} due to reason {reason}.", certificate, errors);
+					}
+					return errors == SslPolicyErrors.None;
+				}
+			};
+
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
-				HttpClient = new HttpClient(httpMessageHandlerFactory?.Invoke() ?? new HttpClientHandler()) {
+				HttpClient = new HttpClient(httpMessageHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},
