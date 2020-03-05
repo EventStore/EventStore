@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -66,7 +67,8 @@ namespace EventStore.Client {
 			var settings = clientSettings ?? new EventStoreClientSettings {
 				CreateHttpMessageHandler = () => new ResponseVersionHandler {
 					InnerHandler = TestServer.CreateHandler()
-				}
+				},
+				OperationOptions = { TimeoutAfter = Debugger.IsAttached ? null : (TimeSpan?)TimeSpan.FromSeconds(30) }
 			};
 
 			Client = new EventStoreClient(settings);
@@ -157,7 +159,8 @@ namespace EventStore.Client {
 			private readonly ClusterVNode _node;
 
 			public TestClusterVNodeStartup(ClusterVNode node) {
-				if (node == null) throw new ArgumentNullException(nameof(node));
+				if (node == null)
+					throw new ArgumentNullException(nameof(node));
 				_node = node;
 			}
 

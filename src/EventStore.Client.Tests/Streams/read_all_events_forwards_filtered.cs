@@ -100,7 +100,7 @@ namespace EventStore.Client.Streams {
 				_fixture.CreateTestEvents(count));
 
 			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, maxCount,
-					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents))
+					filterOptions: new FilterOptions(EventTypeFilter.ExcludeSystemEvents(40)))
 				.Take(count)
 				.ToArrayAsync();
 
