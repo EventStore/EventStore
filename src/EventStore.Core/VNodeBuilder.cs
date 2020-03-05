@@ -665,7 +665,12 @@ namespace EventStore.Core {
 			string password) {
 
 			if (string.IsNullOrEmpty(privateKeyPath)) {
-				_certificate = new X509Certificate2(certificatePath, password);
+				try {
+					_certificate = new X509Certificate2(certificatePath, password);
+				} catch (CryptographicException exc) {
+					throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
+				}
+
 				if (!_certificate.HasPrivateKey) {
 					throw new Exception("Expect certificate to contain a private key. " +
 					                    "Please either provide a certificate that contains one or set the private key" +
