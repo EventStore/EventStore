@@ -94,6 +94,10 @@ namespace EventStore.Common.Options {
 				}
 
 				var value = option.Value;
+				if (option.Name == "CertificatePassword" && !string.IsNullOrEmpty((string)option.Value)) {
+					value = "****";
+				}
+
 				var optionName = NameTranslators.CombineByPascalCase(option.Name, " ").ToUpper();
 				var valueToDump = value == null ? String.Empty : value.ToString();
 				if (value is Array) {
