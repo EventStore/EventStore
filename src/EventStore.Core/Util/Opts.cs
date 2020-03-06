@@ -14,7 +14,8 @@ namespace EventStore.Core.Util {
 		public const string ProjectionsGroup = "Projections Options";
 		public const string AuthGroup = "Authentication/Authorization Options";
 		public const string InterfacesGroup = "Interface Options";
-		public const string CertificatesGroup = "Certificate Options";
+		public const string CertificatesFromFileGroup = "Certificate Options (from file)";
+		public const string CertificatesFromStoreGroup = "Certificate Options (from store)";
 		public const string ClusterGroup = "Cluster Options";
 		public const string ManagerGroup = "Manager Options";
 
@@ -198,13 +199,13 @@ namespace EventStore.Core.Util {
 		public static readonly int InitializationThreadsDefault = 1;
 
 		//Loading certificates from files
-		public const string CertificateFileDescr = "The path to certificate file.";
+		public const string CertificateFileDescr = "The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file.";
 		public static readonly string CertificateFileDefault = string.Empty;
 		
-		public const string CertificatePrivateKeyFileDescr = "The path to certificate private key file.";
+		public const string CertificatePrivateKeyFileDescr = "The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) certificate file is provided.";
 		public static readonly string CertificatePrivateKeyFileDefault = string.Empty;
 
-		public const string CertificatePasswordDescr = "The password to certificate in file.";
+		public const string CertificatePasswordDescr = "The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided.";
 		public static readonly string CertificatePasswordDefault = string.Empty;
 
 		//Loading certificates from a certificate store

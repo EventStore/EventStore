@@ -193,26 +193,26 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
 		public bool EnableTrustedAuth { get; set; }
 
-		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
-		public string CertificateStoreLocation { get; set; }
-
-		[ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesGroup)]
-		public string CertificateStoreName { get; set; }
-
-		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesGroup)]
-		public string CertificateSubjectName { get; set; }
-
-		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesGroup)]
-		public string CertificateThumbprint { get; set; }
-
-		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesGroup)]
+		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificateFile { get; set; }
-		
-		[ArgDescription(Opts.CertificatePrivateKeyFileDescr, Opts.CertificatesGroup)]
+
+		[ArgDescription(Opts.CertificatePrivateKeyFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificatePrivateKeyFile { get; set; }
 
-		[ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesGroup)]
+		[ArgMask, ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificatePassword { get; set; }
+
+		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateStoreLocation { get; set; }
+
+		[ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateStoreName { get; set; }
+
+		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateSubjectName { get; set; }
+
+		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateThumbprint { get; set; }
 
 		[ArgDescription(Opts.DisableInternalTlsDescr, Opts.InterfacesGroup)]
 		public bool DisableInternalTls { get; set; }
