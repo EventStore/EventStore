@@ -22,6 +22,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly string _streamName;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
+			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
 			private readonly CancellationToken _cancellationToken;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
@@ -38,6 +39,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				StreamRevision? startRevision,
 				bool resolveLinks,
 				ClaimsPrincipal user,
+				bool requiresLeader,
 				IReadIndex readIndex,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -57,6 +59,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_streamName = streamName;
 				_resolveLinks = resolveLinks;
 				_user = user;
+				_requiresLeader = requiresLeader;
 				_readIndex = readIndex;
 				_cancellationToken = cancellationToken;
 				_subscriptionStarted = new TaskCompletionSource<bool>();
@@ -68,10 +71,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_inner = startRevision == StreamRevision.End
 					? (IStreamEnumerator)new LiveStreamSubscription(_subscriptionId, _bus, _streamName,
 						StreamRevision.FromInt64(readIndex.GetStreamLastEventNumber(_streamName) + 1), _resolveLinks,
-						_user, _subscriptionStarted, _cancellationToken)
+						_user, _requiresLeader, _subscriptionStarted, _cancellationToken)
 					: new CatchupStreamSubscription(_subscriptionId, bus, streamName,
-						startRevision + 1 ?? StreamRevision.Start, resolveLinks, user, readIndex, _subscriptionStarted,
-						cancellationToken);
+						startRevision + 1 ?? StreamRevision.Start, resolveLinks, user, _requiresLeader, readIndex,
+						_subscriptionStarted, cancellationToken);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
@@ -94,11 +97,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				if (_inner is LiveStreamSubscription)
 					_inner = new CatchupStreamSubscription(_subscriptionId, _bus, _streamName,
-						currentStreamRevision, _resolveLinks, _user, _readIndex, _subscriptionStarted,
+						currentStreamRevision, _resolveLinks, _user, _requiresLeader, _readIndex, _subscriptionStarted,
 						_cancellationToken);
 				else
 					_inner = new LiveStreamSubscription(_subscriptionId, _bus, _streamName, currentStreamRevision,
-						_resolveLinks, _user, _subscriptionStarted, _cancellationToken);
+						_resolveLinks, _user, _requiresLeader, _subscriptionStarted, _cancellationToken);
 
 				goto ReadLoop;
 			}
@@ -116,6 +119,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly string _streamName;
 				private readonly bool _resolveLinks;
 				private readonly ClaimsPrincipal _user;
+				private readonly bool _requiresLeader;
 				private readonly CancellationTokenSource _disposedTokenSource;
 				private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -134,6 +138,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					StreamRevision startRevision,
 					bool resolveLinks,
 					ClaimsPrincipal user,
+					bool requiresLeader,
 					IReadIndex readIndex,
 					TaskCompletionSource<bool> subscriptionStarted,
 					CancellationToken cancellationToken) {
@@ -162,6 +167,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_startRevision = startRevision == StreamRevision.End ? StreamRevision.Start : startRevision;
 					_resolveLinks = resolveLinks;
 					_user = user;
+					_requiresLeader = requiresLeader;
 					var subscriptionStarted1 = subscriptionStarted;
 					_disposedTokenSource = new CancellationTokenSource();
 					_buffer = new ConcurrentQueue<ResolvedEvent>();
@@ -203,7 +209,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					_bus.Publish(new ClientMessage.ReadStreamEventsForward(
 						correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName,
-						_nextRevision.ToInt64(), ReadBatchSize, _resolveLinks, false, default, _user));
+						_nextRevision.ToInt64(), ReadBatchSize, _resolveLinks, _requiresLeader, default, _user));
 
 					var isEnd = await readNextSource.Task.ConfigureAwait(false);
 
@@ -285,6 +291,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly IPublisher _bus;
 				private readonly string _streamName;
 				private readonly ClaimsPrincipal _user;
+				private readonly bool _requiresLeader;
 				private readonly TaskCompletionSource<StreamRevision> _subscriptionConfirmed;
 				private readonly TaskCompletionSource<bool> _readHistoricalEventsCompleted;
 				private readonly CancellationTokenRegistration _tokenRegistration;
@@ -305,6 +312,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					StreamRevision currentStreamRevision,
 					bool resolveLinks,
 					ClaimsPrincipal user,
+					bool requiresLeader,
 					TaskCompletionSource<bool> subscriptionStarted,
 					CancellationToken cancellationToken) {
 					if (bus == null) {
@@ -329,6 +337,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_bus = bus;
 					_streamName = streamName;
 					_user = user;
+					_requiresLeader = requiresLeader;
 					_subscriptionConfirmed = new TaskCompletionSource<StreamRevision>();
 					_readHistoricalEventsCompleted = new TaskCompletionSource<bool>();
 					_disposedTokenSource = new CancellationTokenSource();
@@ -503,7 +512,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						var correlationId = Guid.NewGuid();
 						bus.Publish(new ClientMessage.ReadStreamEventsForward(correlationId, correlationId,
 							new CallbackEnvelope(OnHistoricalEventsMessage), streamName, fromStreamRevision.ToInt64(),
-							ReadBatchSize, resolveLinks, false, null, user));
+							ReadBatchSize, resolveLinks, _requiresLeader, null, user));
 					}
 				}
 
