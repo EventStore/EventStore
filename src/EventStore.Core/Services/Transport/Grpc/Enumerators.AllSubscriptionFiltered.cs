@@ -24,6 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly bool _resolveLinks;
 			private readonly IEventFilter _eventFilter;
 			private readonly ClaimsPrincipal _user;
+			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
 			private readonly uint? _maxWindowSize;
 			private readonly uint _checkpointIntervalMultiplier;
@@ -41,6 +42,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				bool resolveLinks,
 				IEventFilter eventFilter,
 				ClaimsPrincipal user,
+				bool requiresLeader,
 				IReadIndex readIndex,
 				uint? maxWindowSize,
 				uint checkpointIntervalMultiplier,
@@ -67,6 +69,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_resolveLinks = resolveLinks;
 				_eventFilter = eventFilter;
 				_user = user;
+				_requiresLeader = requiresLeader;
 				_readIndex = readIndex;
 				_maxWindowSize = maxWindowSize;
 				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
@@ -78,10 +81,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_inner = startPosition == Position.End
 					? (IStreamSubscription)new LiveStreamSubscription(_subscriptionId, _bus,
 						Position.FromInt64(_readIndex.LastIndexedPosition, _readIndex.LastIndexedPosition),
-						_resolveLinks, _eventFilter, _user, _maxWindowSize, _checkpointIntervalMultiplier,
-						checkpointReached, _cancellationToken)
+						_resolveLinks, _eventFilter, _user, _requiresLeader, _maxWindowSize,
+						_checkpointIntervalMultiplier, checkpointReached, _cancellationToken)
 					: new CatchupAllSubscription(_subscriptionId, bus, startPosition ?? Position.Start, resolveLinks,
-						_eventFilter, user, readIndex, _maxWindowSize, cancellationToken);
+						_eventFilter, user, _requiresLeader, readIndex, _maxWindowSize, cancellationToken);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
@@ -101,11 +104,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				if (_inner is LiveStreamSubscription)
 					_inner = new CatchupAllSubscription(_subscriptionId, _bus, currentPosition, _resolveLinks,
-						_eventFilter, _user, _readIndex, _maxWindowSize, _cancellationToken);
+						_eventFilter, _user, _requiresLeader, _readIndex, _maxWindowSize, _cancellationToken);
 				else
 					_inner = new LiveStreamSubscription(_subscriptionId, _bus, currentPosition, _resolveLinks,
-						_eventFilter, _user, _maxWindowSize, _checkpointIntervalMultiplier, _checkpointReached,
-						_cancellationToken);
+						_eventFilter, _user, _requiresLeader, _maxWindowSize, _checkpointIntervalMultiplier,
+						_checkpointReached, _cancellationToken);
 
 				goto ReadLoop;
 			}
@@ -122,6 +125,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly bool _resolveLinks;
 				private readonly IEventFilter _eventFilter;
 				private readonly ClaimsPrincipal _user;
+				private readonly bool _requiresLeader;
 				private readonly uint _maxWindowSize;
 				private readonly CancellationTokenSource _disposedTokenSource;
 				private readonly ConcurrentQueueWrapper<ResolvedEvent> _buffer;
@@ -141,6 +145,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					bool resolveLinks,
 					IEventFilter eventFilter,
 					ClaimsPrincipal user,
+					bool requiresLeader,
 					IReadIndex readIndex,
 					uint? maxWindowSize,
 					CancellationToken cancellationToken) {
@@ -165,6 +170,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_resolveLinks = resolveLinks;
 					_eventFilter = eventFilter;
 					_user = user;
+					_requiresLeader = requiresLeader;
 					_maxWindowSize = maxWindowSize ?? ReadBatchSize;
 					_disposedTokenSource = new CancellationTokenSource();
 					_buffer = new ConcurrentQueueWrapper<ResolvedEvent>();
@@ -205,7 +211,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					_bus.Publish(new ClientMessage.FilteredReadAllEventsForward(
 						correlationId, correlationId, new CallbackEnvelope(OnMessage), commitPosition, preparePosition,
-						ReadBatchSize, _resolveLinks, false, (int)_maxWindowSize, default, _eventFilter, _user));
+						ReadBatchSize, _resolveLinks, _requiresLeader, (int)_maxWindowSize, default, _eventFilter, _user));
 
 					var isEnd = await readNextSource.Task.ConfigureAwait(false);
 
@@ -288,6 +294,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly IPublisher _bus;
 				private readonly IEventFilter _eventFilter;
 				private readonly ClaimsPrincipal _user;
+				private readonly bool _requiresLeader;
 				private readonly uint _maxWindowSize;
 				private readonly Func<Position, Task> _checkpointReached;
 				private readonly TaskCompletionSource<Position> _subscriptionConfirmed;
@@ -310,6 +317,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					bool resolveLinks,
 					IEventFilter eventFilter,
 					ClaimsPrincipal user,
+					bool requiresLeader,
 					uint? maxWindowSize,
 					uint checkpointIntervalMultiplier,
 					Func<Position, Task> checkpointReached,
@@ -332,6 +340,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_bus = bus;
 					_eventFilter = eventFilter;
 					_user = user;
+					_requiresLeader = requiresLeader;
 					_maxWindowSize = maxWindowSize ?? ReadBatchSize;
 					_checkpointReached = checkpointReached;
 					_subscriptionConfirmed = new TaskCompletionSource<Position>();
@@ -481,7 +490,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						var (commitPosition, preparePosition) = fromPosition.ToInt64();
 						bus.Publish(new ClientMessage.FilteredReadAllEventsForward(correlationId, correlationId,
 							new CallbackEnvelope(OnHistoricalEventsMessage), commitPosition, preparePosition,
-							ReadBatchSize, resolveLinks, false, (int)_maxWindowSize, null, eventFilter, user));
+							ReadBatchSize, resolveLinks, _requiresLeader, (int)_maxWindowSize, null, eventFilter, user));
 					}
 				}
 

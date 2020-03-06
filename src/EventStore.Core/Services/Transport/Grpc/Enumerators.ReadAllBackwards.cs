@@ -17,6 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
+			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ulong maxCount,
 				bool resolveLinks,
 				ClaimsPrincipal user,
+				bool requiresLeader,
 				DateTime deadline,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -45,6 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
+				_requiresLeader = requiresLeader;
 				_deadline = deadline;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
@@ -82,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus.Publish(new ClientMessage.ReadAllEventsBackward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
 					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
-					_resolveLinks, false, default, _user, _deadline));
+					_resolveLinks, _requiresLeader, default, _user, _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;

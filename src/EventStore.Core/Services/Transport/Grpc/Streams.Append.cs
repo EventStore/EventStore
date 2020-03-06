@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				correlationId,
 				correlationId,
 				envelope,
-				true,
+				requiresLeader,
 				streamName,
 				expectedVersion,
 				events.ToArray(),

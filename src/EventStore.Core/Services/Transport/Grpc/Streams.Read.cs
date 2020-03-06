@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Util;
@@ -29,6 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var uuidOptionsCase = options.UuidOption.ContentCase;
 
 			var user = context.GetHttpContext().User;
+			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			await using var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
@@ -43,6 +43,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
@@ -55,6 +56,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -66,6 +68,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -83,6 +86,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_ => throw new InvalidOperationException()
 						},
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -94,6 +98,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -111,6 +116,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_ => throw new InvalidOperationException()
 						},
 						user,
+						requiresLeader,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
@@ -122,6 +128,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Stream.ToSubscriptionStreamRevision(),
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						_readIndex,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -132,6 +139,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
 						user,
+						requiresLeader,
 						_readIndex,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -143,6 +151,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
 						user,
+						requiresLeader,
 						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
