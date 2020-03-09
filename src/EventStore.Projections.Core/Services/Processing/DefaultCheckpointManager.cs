@@ -109,7 +109,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(
 			ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag requestedStateCheckpointTag,
 			Action<PartitionState> loadCompleted, string partitionStreamName, string stateEventType) {
-			//NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
 			_loadStateRequests.Remove(message.CorrelationId);
 
 			_readRequestsInProgress--;
@@ -124,14 +123,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 						return;
 					} else {
 						var loadedStateCheckpointTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
-						// always recovery mode? skip until state before current event
-						//TODO: skip event processing in case we know i has been already processed
-						if (loadedStateCheckpointTag < requestedStateCheckpointTag) {
-							var state = PartitionState.Deserialize(
-								Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
-							loadCompleted(state);
-							return;
-						}
+						var state = PartitionState.Deserialize(
+							Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
+						loadCompleted(state);
+						return;
 					}
 				}
 			}
