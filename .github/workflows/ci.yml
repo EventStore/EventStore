@@ -5,9 +5,20 @@ on:
   push:
     branches:
     - master
-    - v6-master
 
 jobs:
+  vulnerability-scan:
+    runs-on: ubuntu-latest
+    name: continuous-integration/github/Vulnerability Scan
+    container: mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Scan for Vulnerabilities
+      run: |
+        dotnet tool restore
+        cd src
+        dotnet tool run dotnet-retire
   continuous-integration:
     strategy:
       fail-fast: false
