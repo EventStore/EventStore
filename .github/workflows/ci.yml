@@ -11,7 +11,7 @@ on:
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
-    name: continuous-integration/github/Vulnerability Scan
+    name: continuous-integration/github/scan-vulnerabilities
     container: mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
     steps:
     - name: Checkout
@@ -20,6 +20,7 @@ jobs:
       run: |
         dotnet tool restore
         cd src
+        dotnet restore
         dotnet tool run dotnet-retire
   build-container:
     strategy:
@@ -69,3 +70,99 @@ jobs:
         tag-latest: false
         additional-tags: ${{ env.VERSION }}
         registry: https://docker.pkg.github.com
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, windows-2019]
+        configuration: [Release]
+    runs-on: ${{ matrix.os }}
+    name: continuous-integration/github/build-${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Fetch Tags
+      run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+    - name: Install Dotnet
+      uses: actions/setup-dotnet@v1.4.0
+      with:
+        dotnet-version: '3.1.102'
+    - name: Calculate Version
+      shell: bash
+      run: |
+        dotnet tool restore
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)
+        echo "::set-env name=VERSION::${version}"
+    - name: Install Test CA Root Certificate (Windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        certutil -addstore root src\EventStore.Core.Tests\Services\Transport\Tcp\test_certificates\ca\ca.crt
+    - name: Install Test CA Root Certificate (Linux)
+      if: startsWith(matrix.os, 'windows') != true
+      run: |
+        sudo cp src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt
+        sudo update-ca-certificates
+    - name: Compile
+      shell: bash
+      run: |
+        dotnet build --configuration ${{ matrix.configuration }} src/EventStore.sln
+    - name: Run Tests
+      shell: bash
+      run: |
+        find ./src -maxdepth 1 -type d -name "*.Tests"  -print0 | xargs -I{} -0 -n1 bash -c 'dotnet test --configuration ${{ matrix.configuration }} --blame --settings ./ci/ci.runsettings --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=$(pwd)/test-results/$1 $1' - '{}'
+    - name: Collect Test Results
+      shell: bash
+      if: always()
+      run: |
+        echo $(find ./test-results -name "*.html" | xargs cat) > test-results.html
+    - name: Publish Test Results (HTML)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        path: test-results.html
+        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}.html
+    - name: Publish Test Results (All)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
+        path: test-results
+  notify-slack:
+    needs: [build-container, build, vulnerability-scan]
+    runs-on: ubuntu-latest
+    name: continuous-integration/github/notify-slack
+    if: always()
+    steps:
+    - name: Setup Python 3
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+        architecture: 'x64'
+    - name: Get Workflow Status
+      shell: python
+      if: always()
+      run: |
+        import json
+        import sys
+        import urllib.request
+
+        url = "https://api.github.com/repos/EventStore/EventStore/actions/runs/${{ github.run_id }}/jobs"
+        request = urllib.request.urlopen(url)
+        response = request.read()
+        encoding = request.info().get_content_charset('utf-8')
+        data = json.loads(response.decode(encoding))
+        conclusions = map(lambda job: job["conclusion"], data["jobs"])
+        success = all(conclusion == "success" or conclusion is None for conclusion in conclusions)
+        sys.exit(0 if success else 1)
+    - name: Notify Slack
+      if: always()
+      uses: innocarpe/actions-slack@v1
+      with:
+        status: ${{ job.status }}
+        success_text: 'Run Succeeded :build-succeeded: - https://github.com/EventStore/EventStore/actions/runs/${{ github.run_id }}'
+        failure_text: 'Run Failed :facepalm: - https://github.com/EventStore/EventStore/actions/runs/${{ github.run_id }}'
+        cancelled_text: 'Run Cancelled :build-cancelled: - https://github.com/EventStore/EventStore/actions/runs/${{ github.run_id }}'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
