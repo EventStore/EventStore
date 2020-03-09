@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using Google.Protobuf;
+using Grpc.Core;
 using Microsoft.Extensions.Logging;
 
 namespace EventStore.Client {
@@ -98,25 +99,31 @@ namespace EventStore.Client {
 			using var call = _client.Append(RequestMetadata.Create(userCredentials),
 				deadline: DeadLine.After(operationOptions.TimeoutAfter), cancellationToken: cancellationToken);
 
-			await call.RequestStream.WriteAsync(header).ConfigureAwait(false);
+			try {
+				await call.RequestStream.WriteAsync(header).ConfigureAwait(false);
 
-			foreach (var e in eventData) {
-				_log.LogTrace("Appending event to stream - {streamName}@{eventId} {eventType}.",
-					header.Options.StreamName, e.EventId, e.Type);
-				await call.RequestStream.WriteAsync(new AppendReq {
-					ProposedMessage = new AppendReq.Types.ProposedMessage {
-						Id = e.EventId.ToDto(),
-						Data = ByteString.CopyFrom(e.Data),
-						CustomMetadata = ByteString.CopyFrom(e.Metadata),
-						Metadata = {
-							{Constants.Metadata.Type, e.Type},
-							{Constants.Metadata.ContentType, e.ContentType}
+				foreach (var e in eventData) {
+					_log.LogTrace("Appending event to stream - {streamName}@{eventId} {eventType}.",
+						header.Options.StreamName, e.EventId, e.Type);
+					await call.RequestStream.WriteAsync(new AppendReq {
+						ProposedMessage = new AppendReq.Types.ProposedMessage {
+							Id = e.EventId.ToDto(),
+							Data = ByteString.CopyFrom(e.Data),
+							CustomMetadata = ByteString.CopyFrom(e.Metadata),
+							Metadata = {
+								{Constants.Metadata.Type, e.Type},
+								{Constants.Metadata.ContentType, e.ContentType}
+							}
 						}
-					}
-				}).ConfigureAwait(false);
-			}
+					}).ConfigureAwait(false);
+				}
 
-			await call.RequestStream.CompleteAsync().ConfigureAwait(false);
+				await call.RequestStream.CompleteAsync().ConfigureAwait(false);
+			} catch (InvalidOperationException exc) {
+				_log.LogTrace(exc, "Got InvalidOperationException when appending events to stream - {streamName}. This is perfectly normal if the connection was closed from the server-side.", header.Options.StreamName);
+			} catch (RpcException exc) {
+				_log.LogTrace(exc, "Got RpcException when appending events to stream - {streamName}. This is perfectly normal if the connection was closed from the server-side.", header.Options.StreamName);
+			}
 
 			var response = await call.ResponseAsync.ConfigureAwait(false);
 
