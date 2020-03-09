@@ -5,6 +5,8 @@ on:
   push:
     branches:
     - master
+    tags:
+    - oss-v*
 
 jobs:
   vulnerability-scan:
