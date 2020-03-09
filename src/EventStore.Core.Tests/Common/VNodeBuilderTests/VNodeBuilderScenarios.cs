@@ -25,7 +25,11 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 
 		[OneTimeTearDown]
 		public virtual async Task TestFixtureTearDown() {
-			await _node.StopAsync();
+			try {
+				await _node.StopAsync();
+			} catch (OperationCanceledException) {
+
+			}
 		}
 
 		public abstract void Given();

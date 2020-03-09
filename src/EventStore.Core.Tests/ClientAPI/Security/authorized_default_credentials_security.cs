@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart("write-stream", null, null)).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => ReadMeta("metaread-stream", "badlogin", "badpass"));
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			var transId = (await TransStart("write-stream", null, null)).TransactionId;
 			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await trans.WriteAsync();
+			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("metaread-stream", "user2", "pa$$2"));

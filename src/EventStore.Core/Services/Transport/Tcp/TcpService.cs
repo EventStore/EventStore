@@ -39,6 +39,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly bool _sslValidateClient;
 		private readonly int _connectionPendingSendBytesThreshold;
 		private readonly int _connectionQueueSizeThreshold;
+		private readonly AuthorizationGateway _authorizationGateway;
 
 		public TcpService(IPublisher publisher,
 			IPEndPoint serverEndPoint,
@@ -49,12 +50,13 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			X509Certificate certificate,
 			bool sslValidateClient,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold)
 			: this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher,
-				heartbeatInterval, heartbeatTimeout, authProvider, certificate, sslValidateClient, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
+				heartbeatInterval, heartbeatTimeout, authProvider, authorizationGateway, certificate, sslValidateClient, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
 		}
 
 		public TcpService(IPublisher publisher,
@@ -66,6 +68,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			X509Certificate certificate,
 			bool sslValidateClient,
 			int connectionPendingSendBytesThreshold,
@@ -75,6 +78,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorizationGateway, "authorizationGateway");
 			if (securityType == TcpSecurityType.Secure)
 				Ensure.NotNull(certificate, "certificate");
 
@@ -90,6 +94,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
 			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
 			_authProvider = authProvider;
+			_authorizationGateway = authorizationGateway;
 			_certificate = certificate;
 			_sslValidateClient = sslValidateClient;
 		}
@@ -126,6 +131,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				conn,
 				_networkSendQueue,
 				_authProvider,
+				_authorizationGateway,
 				_heartbeatInterval,
 				_heartbeatTimeout,
 				(m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e)),

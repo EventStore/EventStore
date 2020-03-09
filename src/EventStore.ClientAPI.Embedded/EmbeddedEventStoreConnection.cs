@@ -1,6 +1,7 @@
 using EventStore.Core;
 using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
+using EventStore.Core.Services;
 
 namespace EventStore.ClientAPI.Embedded {
 	/// <summary>
@@ -8,10 +9,10 @@ namespace EventStore.ClientAPI.Embedded {
 	/// </summary>
 	public static class EmbeddedEventStoreConnection {
 		private static IEventStoreConnection Create(IPublisher queue, ISubscriber bus,
-			IAuthenticationProvider authenticationProvider, ConnectionSettings connectionSettings,
+			IAuthenticationProvider authenticationProvider, AuthorizationGateway authorizationGateway, ConnectionSettings connectionSettings,
 			string connectionName = null) {
 			return new EventStoreEmbeddedNodeConnection(connectionSettings, connectionName, queue, bus,
-				authenticationProvider);
+				authenticationProvider, authorizationGateway);
 		}
 
 		/// <summary>
@@ -33,7 +34,7 @@ namespace EventStore.ClientAPI.Embedded {
 		/// <returns></returns>
 		public static IEventStoreConnection Create(ClusterVNode eventStore, ConnectionSettings connectionSettings,
 			string connectionName = null) {
-			return Create(eventStore.MainQueue, eventStore.MainBus, eventStore.InternalAuthenticationProvider,
+			return Create(eventStore.MainQueue, eventStore.MainBus, eventStore.InternalAuthenticationProvider, eventStore.AuthorizationGateway,
 				connectionSettings, connectionName);
 		}
 	}

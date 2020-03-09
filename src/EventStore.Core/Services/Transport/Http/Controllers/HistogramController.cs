@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -15,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
 			service.RegisterAction(
-				new ControllerAction("/histogram/{name}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, AuthorizationLevel.Ops),
+				new ControllerAction("/histogram/{name}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Information.Histogram)),
 				OnGetHistogram);
 		}
 

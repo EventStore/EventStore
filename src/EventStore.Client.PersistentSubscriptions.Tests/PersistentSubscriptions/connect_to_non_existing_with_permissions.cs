@@ -21,7 +21,7 @@ namespace EventStore.Client.PersistentSubscriptions {
 				delegate {
 					return Task.CompletedTask;
 				},
-				(s, r, e) => dropped.TrySetResult((r, e)));
+				(s, r, e) => dropped.TrySetResult((r, e)), userCredentials: TestCredentials.Root);
 
 			var (reason, exception) = await dropped.Task.WithTimeout();
 

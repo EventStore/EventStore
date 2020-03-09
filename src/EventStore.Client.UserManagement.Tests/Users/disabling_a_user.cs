@@ -31,8 +31,11 @@ namespace EventStore.Client.Users {
 			UserCredentials userCredentials) {
 			await _fixture.Client.UsersManager.CreateUserAsync(loginName, "Full Name", new[] {"foo", "bar"},
 				"password", TestCredentials.Root);
-			await Assert.ThrowsAsync<NotAuthenticatedException>(
-				() => _fixture.Client.UsersManager.DisableUserAsync(loginName, userCredentials));
+			if (userCredentials == null)
+				await Assert.ThrowsAsync<AccessDeniedException>(() => _fixture.Client.UsersManager.DisableUserAsync(loginName, userCredentials));
+			else
+				await Assert.ThrowsAsync<NotAuthenticatedException>(
+					() => _fixture.Client.UsersManager.DisableUserAsync(loginName, userCredentials));
 		}
 
 		[Fact]

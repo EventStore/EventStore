@@ -156,12 +156,6 @@ namespace EventStore.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-
-			public readonly ServiceAccessibility Accessibility;
-
-			public PurgeTimedOutRequests(ServiceAccessibility accessibility) {
-				Accessibility = accessibility;
-			}
 		}
 
 		public class TextMessage : Message {

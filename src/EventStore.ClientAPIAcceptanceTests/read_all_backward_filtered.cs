@@ -36,23 +36,22 @@ namespace EventStore.ClientAPI.Tests {
 		}
 
 		[Theory, ClassData(typeof(EventTypeFilterCases))]
-		public async Task event_type_filter_returns_expected_result(bool useSsl, Func<string, Filter> getFilter,
-			string name) {
-			var eventTypePrefix = $"{GetStreamName()}_{useSsl}_{name}";
+		public async Task event_type_filter_returns_expected_result(EventTypeFilterCases.Case @case) {
+			var eventTypePrefix = $"{GetStreamName()}_{@case.UseSsl}_{@case.FilterType}";
 
 			var testEvents = _fixture.CreateTestEvents(10)
 				.Select(e =>
 					new EventData(e.EventId, $"{eventTypePrefix}-{Guid.NewGuid():n}", e.IsJson, e.Data, e.Metadata))
 				.ToArray();
 
-			var connection = _fixture.Connections[useSsl];
+			var connection = _fixture.Connections[@case.UseSsl];
 
 			foreach (var e in testEvents) {
 				await connection.AppendToStreamAsync(Guid.NewGuid().ToString("n"), ExpectedVersion.NoStream, e);
 			}
 
 			var result = await connection.FilteredReadAllEventsBackwardAsync(
-				Position.End, 4096, false, getFilter(eventTypePrefix)).WithTimeout();
+				Position.End, 4096, false, @case.CreateFilter(eventTypePrefix)).WithTimeout();
 
 			//Assert.Equal(ReadDirection.Backward, result.ReadDirection);
 			Assert.Equal(testEvents.Select(x => x.EventId), result.Events

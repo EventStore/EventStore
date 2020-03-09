@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -29,7 +30,7 @@ namespace EventStore.Core.Util {
 			var pattern = _localWebRootPath + "/{*remaining_path}";
 			Logger.Verbose("Binding MiniWeb to {path}", pattern);
 			service.RegisterAction(
-				new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, AuthorizationLevel.None),
+				new ControllerAction(pattern, HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Node.StaticContent)),
 				OnStaticContent);
 		}
 

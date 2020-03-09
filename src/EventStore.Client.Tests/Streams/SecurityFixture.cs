@@ -52,23 +52,23 @@ namespace EventStore.Client.Streams {
 
 			await Task.WhenAll(userCreated.Values.Select(x => x.Task)).WithTimeout(TimeSpan.FromSeconds(10));
 
-			await Client.SetStreamMetadataAsync(NoAclStream, AnyStreamRevision.NoStream, new StreamMetadata());
+			await Client.SetStreamMetadataAsync(NoAclStream, AnyStreamRevision.NoStream, new StreamMetadata(), userCredentials: TestCredentials.TestAdmin);
 			await Client.SetStreamMetadataAsync(
 				ReadStream,
 				AnyStreamRevision.NoStream,
-				new StreamMetadata(acl: new StreamAcl(TestCredentials.TestUser1.Username)));
+				new StreamMetadata(acl: new StreamAcl(TestCredentials.TestUser1.Username)), userCredentials: TestCredentials.TestAdmin );
 			await Client.SetStreamMetadataAsync(
 				WriteStream,
 				AnyStreamRevision.NoStream,
-				new StreamMetadata(acl: new StreamAcl(writeRole: TestCredentials.TestUser1.Username)));
+				new StreamMetadata(acl: new StreamAcl(writeRole: TestCredentials.TestUser1.Username)), userCredentials: TestCredentials.TestAdmin );
 			await Client.SetStreamMetadataAsync(
 				MetaReadStream,
 				AnyStreamRevision.NoStream,
-				new StreamMetadata(acl: new StreamAcl(metaReadRole: TestCredentials.TestUser1.Username)));
+				new StreamMetadata(acl: new StreamAcl(metaReadRole: TestCredentials.TestUser1.Username)), userCredentials: TestCredentials.TestAdmin );
 			await Client.SetStreamMetadataAsync(
 				MetaWriteStream,
 				AnyStreamRevision.NoStream,
-				new StreamMetadata(acl: new StreamAcl(metaWriteRole: TestCredentials.TestUser1.Username)));
+				new StreamMetadata(acl: new StreamAcl(metaWriteRole: TestCredentials.TestUser1.Username)), userCredentials: TestCredentials.TestAdmin );
 
 			await Client.SetStreamMetadataAsync(
 				AllStream,
@@ -103,7 +103,8 @@ namespace EventStore.Client.Streams {
 					writeRole: SystemRoles.All,
 					readRole: SystemRoles.All,
 					metaWriteRole: SystemRoles.All,
-					metaReadRole: SystemRoles.All)));
+					metaReadRole: SystemRoles.All)),
+				userCredentials: TestCredentials.TestAdmin);
 
 			await Client.SetStreamMetadataAsync(
 				SystemAllStream,

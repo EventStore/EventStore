@@ -1,7 +1,5 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,15 +9,11 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.Http.Streams;
-using EventStore.Core.Tests.Http.Users;
-using NUnit.Framework;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using EventStore.ClientAPI.Transport.Http;
@@ -55,17 +49,12 @@ namespace EventStore.Core.Tests.Http {
 			_lastResponseBody = null;
 			_lastResponseBytes = null;
 			_lastJsonException = null;
-			try {
-				await Given().WithTimeout();
-			} catch (Exception ex) {
-				throw new Exception("Given Failed", ex);
-			}
 
-			try {
-				await When().WithTimeout();
-			} catch (Exception ex) {
-				throw new Exception("When Failed", ex);
-			}
+			await Given().WithTimeout();
+
+
+			await When().WithTimeout();
+
 		}
 
 		public string TestStream {

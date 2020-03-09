@@ -5,19 +5,26 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
+using EventStore.Core.Authorization;
 using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionCompleted;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class PersistentSubscriptions {
+		private static readonly Operation CreateOperation = new Operation(Authorization.Operations.Subscriptions.Create);
+
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
 			var createPersistentSubscriptionSource = new TaskCompletionSource<CreateResp>();
 			var settings = request.Options.Settings;
 			var correlationId = Guid.NewGuid();
 
 			var user = context.GetHttpContext().User;
-
-			_queue.Publish(new ClientMessage.CreatePersistentSubscription(
+			
+			if (!await _authorizationProvider.CheckAccessAsync(user,
+				CreateOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+			_publisher.Publish(new ClientMessage.CreatePersistentSubscription(
 				correlationId,
 				correlationId,
 				new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),

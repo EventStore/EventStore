@@ -2,20 +2,24 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
+using EventStore.Core.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
+		private static readonly Operation DisableOperation = new Operation(Authorization.Operations.Users.Disable);
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
 			var options = request.Options;
 
 			var user = context.GetHttpContext().User;
-
+			if (!await _authorizationProvider.CheckAccessAsync(user, DisableOperation, context.CancellationToken).ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
 			var disableSource = new TaskCompletionSource<bool>();
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
-			_queue.Publish(new UserManagementMessage.Disable(envelope, user, options.LoginName));
+			_publisher.Publish(new UserManagementMessage.Disable(envelope, user, options.LoginName));
 
 			await disableSource.Task.ConfigureAwait(false);
 

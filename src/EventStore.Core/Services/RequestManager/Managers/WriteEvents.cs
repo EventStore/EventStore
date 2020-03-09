@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteEvents : RequestManagerBase {
 		private readonly string _streamId;
 		private readonly bool _betterOrdering;
-		private readonly ClaimsPrincipal _user;
 		private readonly Event[] _events;
-		private readonly StreamAccessType _accessType;
+
 		public WriteEvents(
 					IPublisher publisher,
 					TimeSpan timeout,
@@ -22,7 +19,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					string streamId,
 					bool betterOrdering,
 					long expectedVersion,
-					ClaimsPrincipal user,
 					Event[] events,
 					CommitSource commitSource)
 			: base(
@@ -36,24 +32,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 0,
 					 waitForCommit: true) {
 			_streamId = streamId;
-			//this seems like it should work, but really really doesn't
-			//TODO(clc): confirm MetaWrite is implemented
-			//_accessType = SystemStreams.IsMetaStream(streamId) ? StreamAccessType.MetaWrite : StreamAccessType.Write;
-			_accessType = StreamAccessType.Write;
 			_betterOrdering = betterOrdering;
-			_user = user;
 			_events = events;
 		}
-
-		protected override Message AccessRequestMsg =>				
-				new StorageMessage.CheckStreamAccess(
-						WriteReplyEnvelope, 
-						InternalCorrId, 
-						_streamId, 
-						null, 
-						_accessType, 
-						_user, 
-						_betterOrdering);
 
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WritePrepares(

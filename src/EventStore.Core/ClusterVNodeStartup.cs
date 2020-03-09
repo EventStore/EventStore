@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
@@ -15,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
@@ -22,35 +25,34 @@ using MidFunc = System.Func<
 	System.Threading.Tasks.Task
 >;
 using ElectionsService = EventStore.Core.Services.Transport.Grpc.Elections;
+using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly PathString PersistentSegment =
-			"/event_store.client.persistent_subscriptions.PersistentSubscriptions";
-
-		private static readonly PathString StreamsSegment = "/event_store.client.streams.Streams";
-		private static readonly PathString UsersSegment = "/event_store.client.users.Users";
-		private static readonly PathString OperationsSegment = "/event_store.client.operations.Operations";
-		private static readonly PathString GossipSegment = "/event_store.cluster.Gossip";
-		private static readonly PathString ElectionsSegment = "/event_store.cluster.Elections";
 
 		private readonly ISubsystem[] _subsystems;
-		private readonly IQueuedHandler _mainQueue;
+		private readonly IPublisher _mainQueue;
+		private readonly ISubscriber _mainBus;
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
-		private readonly ClusterVNodeSettings _vNodeSettings;
+		private readonly int _maxAppendSize;
 		private readonly KestrelHttpService _externalHttpService;
 		private readonly StatusCheck _statusCheck;
 
 		private bool _ready;
+		private readonly IAuthorizationProvider _authorizationProvider;
+		private readonly MultiQueuedHandler _httpMessageHandler;
 
 		public ClusterVNodeStartup(
 			ISubsystem[] subsystems,
-			IQueuedHandler mainQueue,
+			IPublisher mainQueue,
+			ISubscriber mainBus,
+			MultiQueuedHandler httpMessageHandler,
 			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
+			IAuthorizationProvider authorizationProvider,
 			IReadIndex readIndex,
-			ClusterVNodeSettings vNodeSettings,
+			int maxAppendSize,
 			KestrelHttpService externalHttpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
@@ -64,84 +66,83 @@ namespace EventStore.Core {
 				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			}
 
+			if(authorizationProvider == null)
+				throw new ArgumentNullException(nameof(authorizationProvider));
+
 			if (readIndex == null) {
 				throw new ArgumentNullException(nameof(readIndex));
 			}
 
-			if (vNodeSettings == null) {
-				throw new ArgumentNullException(nameof(vNodeSettings));
-			}
+			Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
 			if (externalHttpService == null) {
 				throw new ArgumentNullException(nameof(externalHttpService));
 			}
 
+			if (mainBus == null) {
+				throw new ArgumentNullException(nameof(mainBus));
+			}
 			_subsystems = subsystems;
 			_mainQueue = mainQueue;
+			_mainBus = mainBus;
+			_httpMessageHandler = httpMessageHandler;
 			_httpAuthenticationProviders = httpAuthenticationProviders;
+			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
-			_vNodeSettings = vNodeSettings;
+			_maxAppendSize = maxAppendSize;
 			_externalHttpService = externalHttpService;
 
 			_statusCheck = new StatusCheck(this);
 		}
 
 		public void Configure(IApplicationBuilder app) {
+			var grpc = new MediaTypeHeaderValue("application/grpc");
+			var internalDispatcher = new InternalDispatcherEndpoint(_mainQueue, _httpMessageHandler);
+			_mainBus.Subscribe(internalDispatcher);
 			app.Map("/health", _statusCheck.Configure)
-				.UseMiddleware<AuthenticationMiddleware>();
-			_subsystems
-				.Aggregate(app
-						.UseWhen(context => context.Request.Path.StartsWithSegments(PersistentSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<PersistentSubscriptions>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(UsersSegment),
-							inner => inner.UseRouting().Use(RequireAuthenticated).UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Users>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(StreamsSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Streams>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(GossipSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Gossip>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(ElectionsSegment),
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Elections>()))
-						.UseWhen(context => context.Request.Path.StartsWithSegments(OperationsSegment),  // TODO JPB figure out how to delete this sadness
-							inner => inner.UseRouting().UseEndpoints(endpoint =>
-								endpoint.MapGrpcService<Operations>())),
-					(b, subsystem) => subsystem.Configure(b));
+				.UseMiddleware<AuthenticationMiddleware>()
+				.UseRouting()
+				.UseWhen(ctx => !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
+					b => b
+						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
+						.UseMiddleware<AuthorizationMiddleware>()
+						.UseLegacyHttp(internalDispatcher.InvokeAsync, _externalHttpService)
+					)
+				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
+				.UseEndpoints(ep => ep.MapGrpcService<Users>())
+				.UseEndpoints(ep => ep.MapGrpcService<Streams>())
+				.UseEndpoints(ep => ep.MapGrpcService<Gossip>())
+				.UseEndpoints(ep => ep.MapGrpcService<Elections>())
+				.UseEndpoints(ep => ep.MapGrpcService<Operations>());
 
-			app.UseLegacyHttp(_externalHttpService);
+			_subsystems
+				.Aggregate(app,(b, subsystem) => subsystem.Configure(b));
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
 			.BuildServiceProvider();
 
-		public IServiceCollection ConfigureServices(IServiceCollection services) =>
-			_subsystems
+		public IServiceCollection ConfigureServices(IServiceCollection services) {
+
+			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsAddress, _externalHttpService.AdvertiseAsPort);
+			return _subsystems
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
+						.AddSingleton(_authorizationProvider)
 						.AddSingleton<AuthenticationMiddleware>()
+						.AddSingleton<AuthorizationMiddleware>()
+						.AddSingleton<KestrelToInternalBridgeMiddleware>(bridge)
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _readIndex,
-							_vNodeSettings.MaxAppendSize))
-						.AddSingleton(new PersistentSubscriptions(_mainQueue))
-						.AddSingleton(new Users(_mainQueue))
-						.AddSingleton(new Operations(_mainQueue))
-						.AddSingleton(new Gossip(_mainQueue))
-						.AddSingleton(new Elections(_mainQueue))
+						.AddSingleton(new Streams(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider))
+						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Gossip(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
 						.AddGrpc().Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
-
-		private static RequestDelegate RequireAuthenticated(RequestDelegate next) =>
-			context => {
-				if (!context.User.HasClaim(x => x.Type == ClaimTypes.Anonymous)) {
-					return next(context);
-				}
-				context.Response.StatusCode = HttpStatusCode.Unauthorized;
-				return Task.CompletedTask;
-			};
+		}
 
 		public void Handle(SystemMessage.SystemReady message) => _ready = true;
 

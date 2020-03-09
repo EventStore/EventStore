@@ -45,7 +45,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Publisher.Messages.Clear();
 
 			Manager = OnManager(Publisher);
-			Dispatcher.Subscribe<StorageMessage.CheckStreamAccessCompleted>(Manager);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Manager);
 			Dispatcher.Subscribe<StorageMessage.CommitAck>(Manager);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Manager);

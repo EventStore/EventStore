@@ -3,17 +3,23 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Transport.Http;
+using EventStore.Core.Tests.Authorization;
+using EventStore.Core.Tests.Common.VNodeBuilderTests;
+using EventStore.Core.Tests.TransactionLog;
 using EventStore.Transport.Http.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using HttpResponse = EventStore.Transport.Http.HttpResponse;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class PortableServer {
@@ -33,6 +39,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private readonly IPEndPoint _serverEndPoint;
 		private TestServer _server;
 		private HttpMessageHandler _httpMessageHandler;
+		private InternalDispatcherEndpoint _internalDispatcher;
 
 		public PortableServer(IPEndPoint serverEndPoint, int timeout = 10000) {
 			Ensure.NotNull(serverEndPoint, "serverEndPoint");
@@ -49,14 +56,20 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 			_service = new KestrelHttpService(ServiceAccessibility.Private, _bus, new NaiveUriRouter(),
 				_multiQueuedHandler, false, null, 0, false, _serverEndPoint);
+			_internalDispatcher = new InternalDispatcherEndpoint(queue, _multiQueuedHandler);
+			_bus.Subscribe(_internalDispatcher);
 			KestrelHttpService.CreateAndSubscribePipeline(pipelineBus);
 			bootstrap?.Invoke(_service);
 			_server = new TestServer(
 				new WebHostBuilder()
-					.UseStartup(new HttpServiceStartup(_service)));
+					.UseStartup(new ClusterVNodeStartup(Array.Empty<ISubsystem>(), queue, _bus, _multiQueuedHandler,
+						new IHttpAuthenticationProvider[] {
+							new BasicHttpAuthenticationProvider(new TestAuthenticationProvider()),
+							new AnonymousHttpAuthenticationProvider(),
+						}, new TestAuthorizationProvider(), new FakeReadIndex(_ => false), 1024 * 1024, _service)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
-
+			
 			HttpBootstrap.Subscribe(_bus, _service);
 		}
 
@@ -98,16 +111,18 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 
 		private class HttpServiceStartup : IStartup {
+			private readonly RequestDelegate _dispatcher;
 			private readonly KestrelHttpService _httpService;
 
-			public HttpServiceStartup(KestrelHttpService httpService) {
+			public HttpServiceStartup(RequestDelegate dispatcher, KestrelHttpService httpService) {
+				_dispatcher = dispatcher;
 				_httpService = httpService;
 			}
 			public IServiceProvider ConfigureServices(IServiceCollection services) => services
 				.AddRouting()
 				.BuildServiceProvider();
 
-			public void Configure(IApplicationBuilder app) => app.UseLegacyHttp(_httpService);
+			public void Configure(IApplicationBuilder app) => app.UseLegacyHttp(_dispatcher ,_httpService);
 		}
 	}
 }

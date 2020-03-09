@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				DefaultData.AdminCredentials);
 			_conn.ConnectToPersistentSubscription(_stream, "groupname123",
 				(s, e) => Task.CompletedTask,
-				(s, r, e) => _called.Set());
+				(s, r, e) => _called.Set(), DefaultData.AdminCredentials);
 		}
 
 		protected override Task When() {

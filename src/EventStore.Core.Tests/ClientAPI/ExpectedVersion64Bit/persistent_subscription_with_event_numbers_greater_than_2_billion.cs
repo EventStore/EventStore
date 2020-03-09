@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				receivedEvents.Add(e);
 				countdown.Signal();
 				return Task.CompletedTask;
-			});
+			}, userCredentials: DefaultData.AdminCredentials);
 
 			await _store.AppendToStreamAsync(_streamId, intMaxValue + 2, evnt);
 

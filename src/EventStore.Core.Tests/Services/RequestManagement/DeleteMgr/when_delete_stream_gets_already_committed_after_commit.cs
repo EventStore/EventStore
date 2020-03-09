@@ -21,7 +21,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 				"test123",
 				true,
 				ExpectedVersion.Any,
-				null,
 				false,
 				CommitSource);
 		}

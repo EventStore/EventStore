@@ -152,23 +152,24 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/stats/replication;GET;None",
 				"/stats/tcp;GET;None",
 				"/stats/{*statPath};GET;None",
-				"/streams/{stream};POST;User",
-				"/streams/{stream};DELETE;User",
-				"/streams/{stream}/incoming/{guid};POST;User",
-				"/streams/{stream}/;POST;User",
-				"/streams/{stream}/;DELETE;User",
-				"/streams/{stream}/;GET;User",
-				"/streams/{stream}?embed={embed};GET;User",
-				"/streams/{stream}/{event}?embed={embed};GET;User",
-				"/streams/{stream}/{event}/{count}?embed={embed};GET;User",
-				"/streams/{stream}/{event}/backward/{count}?embed={embed};GET;User",
-				"/streams/{stream}/metadata;POST;User",
-				"/streams/{stream}/metadata/;POST;User",
-				"/streams/{stream}/metadata?embed={embed};GET;User",
-				"/streams/{stream}/metadata/?embed={embed};GET;User",
-				"/streams/{stream}/metadata/{event}?embed={embed};GET;User",
-				"/streams/{stream}/metadata/{event}/{count}?embed={embed};GET;User",
-				"/streams/{stream}/metadata/{event}/backward/{count}?embed={embed};GET;User",
+				"/streams/{stream};POST;None",
+				"/streams/{stream};DELETE;None",
+				"/streams/{stream}/incoming/{C38FC5D7-C0B6-4F47-A60D-9BF3D1B76BDF};POST;None",
+				"/streams/{stream}/;POST;None",
+				"/streams/{stream}/;DELETE;None",
+				"/streams/{stream}/;GET;None",
+				//These are not valid urls, and by default all users can perform all operations on streams
+				//"/streams/{stream}?embed={embed};GET;User",
+				//"/streams/{stream}/{event}?embed={embed};GET;User",
+				//"/streams/{stream}/{event}/{count}?embed={embed};GET;User",
+				//"/streams/{stream}/{event}/backward/{count}?embed={embed};GET;User",
+				//"/streams/{stream}/metadata;POST;User",
+				//"/streams/{stream}/metadata/;POST;User",
+				//"/streams/{stream}/metadata?embed={embed};GET;User",
+				//"/streams/{stream}/metadata/?embed={embed};GET;User",
+				//"/streams/{stream}/metadata/{event}?embed={embed};GET;User",
+				//"/streams/{stream}/metadata/{event}/{count}?embed={embed};GET;User",
+				//"/streams/{stream}/metadata/{event}/backward/{count}?embed={embed};GET;User",
 				"/streams/$all/;GET;User", /* only redirects, so "User" is allowed */
 				"/streams/%24all/;GET;User", /* only redirects, so "User" is allowed */
 				/* -- with default ACLs, only Admin should be able to read $all -- */
@@ -193,7 +194,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/subscriptions/{stream}/{subscription}/nack/{messageid}?action={action};POST;User",
 				"/subscriptions/{stream}/{subscription}/ack?ids={messageids};POST;User",
 				"/subscriptions/{stream}/{subscription}/nack?ids={messageids}&action={action};POST;User",
-				"/subscriptions/{stream}/{subscription}/replayParked;POST;Ops",
+				"/subscriptions/{stream}/{subscription}/replayParked?stopAt=1;POST;Ops",
 				"/users;GET;Admin",
 				"/users/;GET;Admin",
 				"/users/{login};GET;Admin",
@@ -205,7 +206,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/users/{login}/command/enable;POST;Admin",
 				"/users/{login}/command/disable;POST;Admin",
 				"/users/{login}/command/reset-password;POST;Admin",
-				"/users/{login}/command/change-password;POST;User",
+				//"/users/{login}/command/change-password;POST;User", Users can only change their own password, so this url won't be correct in these tests
 				"/web/{*remaining_path};GET;None",
 				";GET;None",
 				"/web;GET;None"
@@ -231,7 +232,18 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			if (GetAuthLevel(userAuthorizationLevel) >= GetAuthLevel(requiredMinAuthorizationLevel)) {
 				Assert.AreNotEqual(401, statusCode);
 			} else {
-				Assert.AreEqual(401, statusCode);
+				if (statusCode >= 300 && statusCode < 400) {
+					//Redirects are always allowed because authorization is done on the canonical url
+					Assert.GreaterOrEqual(statusCode,300);
+					Assert.LessOrEqual(statusCode, 307);
+				} else {
+					if (userAuthorizationLevel == "None") {
+						Assert.GreaterOrEqual(statusCode, 401);
+						Assert.LessOrEqual(statusCode, 403);
+					} else {
+						Assert.AreEqual(401, statusCode);
+					}
+				}
 			}
 		}
 

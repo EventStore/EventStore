@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
@@ -46,6 +47,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly StatsStorage StatsStorage;
 
 		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
+		public readonly IAuthorizationProviderFactory AuthorizationProviderFactory;
 		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
@@ -115,6 +117,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StatsStorage statsStorage,
 			int nodePriority,
 			IAuthenticationProviderFactory authenticationProviderFactory,
+			IAuthorizationProviderFactory authorizationProviderFactory,
 			bool disableScavengeMerging,
 			int scavengeHistoryMaxAge,
 			bool adminOnPublic,
@@ -223,6 +226,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StatsStorage = statsStorage;
 
 			AuthenticationProviderFactory = authenticationProviderFactory;
+			AuthorizationProviderFactory = authorizationProviderFactory;
 			DisableFirstLevelHttpAuthorization = disableFirstLevelHttpAuthorization;
 
 			NodePriority = nodePriority;
@@ -285,6 +289,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
+			$"AuthorizationProviderFactory  Type: {AuthorizationProviderFactory.GetType()}\n" +
 			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +
 			$"GossipAllowedTimeDifference: {GossipAllowedTimeDifference}\n" +
 			$"GossipTimeout: {GossipTimeout}\n" + $"HistogramEnabled: {EnableHistograms}\n" +

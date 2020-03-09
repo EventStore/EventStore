@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Exceptions;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
@@ -12,26 +13,21 @@ namespace EventStore.ClientAPI.Tests {
 			_fixture = fixture;
 		}
 
-		[Theory(Skip = "busted on 5.x"), MemberData(nameof(UseSslTestCases))]
+		[Theory, MemberData(nameof(UseSslTestCases))]
 		public async Task that_does_not_exist_throws(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			var connection = _fixture.Connections[useSsl];
 
-			await Assert.ThrowsAsync<ArgumentException>(() => connection.ConnectToPersistentSubscriptionAsync(
+			var ex = await Record.ExceptionAsync(() => connection.ConnectToPersistentSubscriptionAsync(
 				streamName, Group,
 				delegate { return Task.CompletedTask; })).WithTimeout();
-		}
+			if (ex is AggregateException agg) {
+				agg = agg.Flatten();
+				ex = Assert.Single(agg.InnerExceptions);
+			}
 
-		[Theory, MemberData(nameof(UseSslTestCases))]
-		public async Task that_does_exist_succeeds(bool useSsl) {
-			var streamName = $"{GetStreamName()}_{useSsl}";
-			var connection = _fixture.Connections[useSsl];
+			Assert.IsType<AccessDeniedException>(ex);
 
-			await connection.CreatePersistentSubscriptionAsync(streamName, Group,
-				PersistentSubscriptionSettings.Create(), DefaultUserCredentials.Admin).WithTimeout();
-
-			await connection.ConnectToPersistentSubscriptionAsync(streamName, Group,
-				delegate { return Task.CompletedTask; }).WithTimeout();
 		}
 	}
 }

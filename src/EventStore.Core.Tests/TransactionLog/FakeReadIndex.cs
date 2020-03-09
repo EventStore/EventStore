@@ -4,6 +4,7 @@ using System.Security.Claims;
 using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
@@ -79,6 +80,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			if (SystemStreams.IsMetastream(streamId))
 				return GetStreamLastEventNumber(SystemStreams.OriginalStreamOf(streamId));
 			return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
+		}
+
+		public StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId) {
+			throw new NotImplementedException();
 		}
 
 		public string GetEventStreamIdByTransactionId(long transactionId) {

@@ -20,7 +20,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 				"test123",
 				true,
 				ExpectedVersion.Any,
-				null,
 				new[] {DummyEvent()},
 				CommitSource);
 		}

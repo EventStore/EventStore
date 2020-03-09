@@ -13,7 +13,7 @@ namespace EventStore.Client.Projections {
 		[Fact]
 		public async Task returns_expected_result() {
 			var name = StandardProjections.Names.First();
-			var result = await _fixture.Client.ProjectionsManager.GetStatusAsync(name);
+			var result = await _fixture.Client.ProjectionsManager.GetStatusAsync(name, userCredentials: TestCredentials.TestUser1);
 
 			Assert.Equal(name, result.Name);
 		}

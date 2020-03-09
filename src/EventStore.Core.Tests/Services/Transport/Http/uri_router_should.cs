@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -36,71 +37,71 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 			var p = new RequestParams(TimeSpan.Zero);
 			_router.RegisterAction(
-				new ControllerAction("/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+				new ControllerAction("/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
-				new ControllerAction("/{placeholder}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/{placeholder}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 			_router.RegisterAction(
-				new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/streams/{stream}/{event}/backward/{count}?embed={embed}", HttpMethod.Get,
-					Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction(
 					"/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}",
-					HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/s/stats/{*statPath}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
-				new ControllerAction("/streams/$all/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/streams/$all/", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 			_router.RegisterAction(
-				new ControllerAction("/streams/$$all", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/streams/$$all", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/streams/$mono?param={param}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 
 			_router.RegisterAction(
-				new ControllerAction("/streams/test", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/streams/test", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 			_router.RegisterAction(
-				new ControllerAction("/streams/test", HttpMethod.Post, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/streams/test", HttpMethod.Post, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => p);
 
 			_router.RegisterAction(
 				new ControllerAction("/t/{placeholder1}/{placholder2}/{placeholder3}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/{placeholder1}/{placholder2}/something", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/{placeholder1}/something/{placeholder3}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/{placeholder1}/something/something", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/something/{placholder2}/{placeholder3}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/something/{placholder2}/something", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/something/something/{placeholder3}", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 			_router.RegisterAction(
 				new ControllerAction("/t/something/something/something", HttpMethod.Get, Codec.NoCodecs,
-					FakeController.SupportedCodecs, AuthorizationLevel.None), (x, y) => p);
+					FakeController.SupportedCodecs, new Operation()), (x, y) => p);
 		}
 
 		[Test]
 		public void detect_duplicate_route() {
 			Assert.That(() =>
 					_router.RegisterAction(
-						new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+						new ControllerAction("/halt", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 						(x, y) => new RequestParams(TimeSpan.Zero)),
 				Throws.Exception.InstanceOf<ArgumentException>().With.Message.EqualTo("Duplicate route."));
 		}
@@ -266,7 +267,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		public void match_greedy_route_in_the_root_to_any_path() {
 			var tmpRouter = _uriRouterFactory();
 			tmpRouter.RegisterAction(
-				new ControllerAction("/{*greedy}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, AuthorizationLevel.None),
+				new ControllerAction("/{*greedy}", HttpMethod.Get, Codec.NoCodecs, FakeController.SupportedCodecs, new Operation()),
 				(x, y) => new RequestParams(TimeSpan.Zero));
 
 			var match = tmpRouter.GetAllUriMatches(Uri("/"));

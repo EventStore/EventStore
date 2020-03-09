@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -119,10 +121,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_started = false;
 		}
 
-		public bool IsUserOpsOrAdmin(ClaimsPrincipal user){
-			return user != null && (user.LegacyRoleCheck(SystemRoles.Admins) || user.LegacyRoleCheck(SystemRoles.Operations));
-		}
-
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
 			if (!_started) return;
 			UnsubscribeFromStream(message.CorrelationId, true);
@@ -132,14 +130,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Creating persistent subscription {subscriptionKey}", key);
-
-			if (!IsUserOpsOrAdmin(message.User)) {
-				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to create streams"));
-				return;
-			}
 
 			if (_subscriptionsById.ContainsKey(key)) {
 				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(
@@ -212,14 +202,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
-
-			if (!IsUserOpsOrAdmin(message.User)) {
-				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to update the subscription"));
-				return;
-			}
 
 			if (!_subscriptionsById.ContainsKey(key)) {
 				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(
@@ -332,14 +314,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
 
-			if (!IsUserOpsOrAdmin(message.User)) {
-				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to create streams"));
-				return;
-			}
-
 			PersistentSubscription subscription;
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
 				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(
@@ -406,15 +380,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.ConnectToPersistentSubscription message) {
 			if (!_started) return;
-			var streamAccess = _readIndex.CheckStreamAccess(
-				message.EventStreamId, StreamAccessType.Read, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId,
-					SubscriptionDropReason.AccessDenied));
-				return;
-			}
-
+			
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers)) {
 				message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId,
@@ -513,18 +479,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.ReadNextNPersistentMessages message) {
 			if (!_started) return;
-			var streamAccess = _readIndex.CheckStreamAccess(
-				message.EventStreamId, StreamAccessType.Read, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(
-					new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
-						ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult
-							.AccessDenied,
-						"Access Denied.",
-						null));
-				return;
-			}
 
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers)) {
@@ -570,13 +524,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					"Cannot stop replaying parked message at a negative version."));
 				return;
 			}
-				
-			if (!IsUserOpsOrAdmin(message.User)) {
-				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
-					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
-					"You do not have permissions to replay messages"));
-				return;
-			}
 
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
@@ -593,13 +540,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessage message) {
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			PersistentSubscription subscription;
-
-			if (!IsUserOpsOrAdmin(message.User)) {
-				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
-					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
-					"You do not have permissions to replay messages"));
-				return;
-			}
 
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,

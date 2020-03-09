@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 					_dropped.Set();
 					_reason = reason;
 					_exception = e;
-				});
+				}, DefaultData.AdminCredentials);
 		}
 
 		protected override async Task When() {

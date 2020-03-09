@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -6,7 +7,10 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionWrite : RequestManagerBase {
+		private static readonly Operation Operation = new Operation(Operations.Streams.Write);
 		private readonly Event[] _events;
+		private long _transactionId;
+
 		public TransactionWrite(
 					IPublisher publisher,
 					TimeSpan timeout,
@@ -27,9 +31,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: events.Length,
 					 transactionId) {
 			_events = events;
+			_transactionId = transactionId;
 		}
-		protected override Message AccessRequestMsg => null; //we don't have a user on the tx write message
-
+		
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionData(
 					InternalCorrId,

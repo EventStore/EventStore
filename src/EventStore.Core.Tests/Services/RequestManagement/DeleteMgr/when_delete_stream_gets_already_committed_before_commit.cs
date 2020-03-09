@@ -23,7 +23,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 				_streamId,
 				true,
 				ExpectedVersion.Any,
-				null,
 				false,
 				CommitSource);
 		}
