@@ -19,7 +19,7 @@ jobs:
         dotnet tool restore
         cd src
         dotnet tool run dotnet-retire
-  continuous-integration:
+  build-container:
     strategy:
       fail-fast: false
       matrix:
@@ -29,12 +29,13 @@ jobs:
           - container-runtime: buster-slim
             runtime: linux-x64
     runs-on: ubuntu-latest
-    name: continuous-integration/github/${{ matrix.env.container-runtime }}
+    name: continuous-integration/github/build-${{ matrix.env.container-runtime }}
     steps:
     - name: Checkout
-      uses: actions/checkout@master
-      with:
-        fetch-depth: 0
+      uses: actions/checkout@v2
+    - name: Fetch Tags
+      run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
     - name: Build
       run: |
         docker build \
@@ -46,19 +47,15 @@ jobs:
         CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
         RUNTIME: ${{ matrix.env.runtime }}
     - name: Install Dotnet
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '2.2.103'
+        dotnet-version: '3.1.102'
     - name: Calculate Version
       env:
         CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
       run: |
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
-        dotnet tool install --global minver-cli --version 2.0.0
-        version=$(~/.dotnet/tools/minver \
-                           --tag-prefix=oss-v \
-                           --default-pre-release-phase=preview1 \
-                           --minimum-major-minor=6.0)-${CONTAINER_RUNTIME}
+        dotnet tool restore
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${CONTAINER_RUNTIME}
         echo "::set-env name=VERSION::${version}"
     - name: Docker Push
       uses: jen20/action-docker-build@v1

@@ -7,6 +7,12 @@
       "commands": [
         "dotnet-retire"
       ]
+    },
+    "minver-cli": {
+      "version": "2.2.0",
+      "commands": [
+        "minver"
+      ]
     }
   }
 }
