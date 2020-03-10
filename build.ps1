@@ -159,7 +159,7 @@ Function Start-Build{
         Write-Info "Patching $versionInfoFile with product information."
         Patch-VersionInfo -versionInfoFilePath $versionInfoFile -version $Version -commitHash $commitHash -timestamp $timestamp -branch $branchName
 
-        Exec { dotnet build -c $configuration --runtime=$Runtime --framework=$NetFramework /p:Version=$Version $eventStoreSolution }
+        Exec { dotnet build -c $configuration --runtime=$Runtime --framework=$NetFramework /p:Version=$Version /p:Platform=x64 $eventStoreSolution }
     } finally {
         Write-Info "Reverting $versionInfoFile to original state."
         & { git checkout --quiet $versionInfoFile }
