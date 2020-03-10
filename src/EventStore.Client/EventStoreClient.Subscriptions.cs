@@ -11,7 +11,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -45,7 +45,7 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
@@ -61,7 +61,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -94,7 +94,7 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,

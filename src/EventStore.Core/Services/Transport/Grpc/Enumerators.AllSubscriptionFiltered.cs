@@ -26,7 +26,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
-			private readonly uint? _maxWindowSize;
+			private readonly uint? _maxSearchWindow;
 			private readonly uint _checkpointIntervalMultiplier;
 			private readonly Func<Position, Task> _checkpointReached;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				IReadIndex readIndex,
-				uint? maxWindowSize,
+				uint? maxSearchWindow,
 				uint checkpointIntervalMultiplier,
 				Func<Position, Task> checkpointReached,
 				CancellationToken cancellationToken) {
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_readIndex = readIndex;
-				_maxWindowSize = maxWindowSize;
+				_maxSearchWindow = maxSearchWindow;
 				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
 				_checkpointReached = checkpointReached;
 				_cancellationToken = cancellationToken;
@@ -81,10 +81,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_inner = startPosition == Position.End
 					? (IStreamSubscription)new LiveStreamSubscription(_subscriptionId, _bus,
 						Position.FromInt64(_readIndex.LastIndexedPosition, _readIndex.LastIndexedPosition),
-						_resolveLinks, _eventFilter, _user, _requiresLeader, _maxWindowSize,
+						_resolveLinks, _eventFilter, _user, _requiresLeader, _maxSearchWindow,
 						_checkpointIntervalMultiplier, checkpointReached, _cancellationToken)
 					: new CatchupAllSubscription(_subscriptionId, bus, startPosition ?? Position.Start, resolveLinks,
-						_eventFilter, user, _requiresLeader, readIndex, _maxWindowSize, cancellationToken);
+						_eventFilter, user, _requiresLeader, readIndex, _maxSearchWindow, cancellationToken);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
@@ -104,10 +104,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				if (_inner is LiveStreamSubscription)
 					_inner = new CatchupAllSubscription(_subscriptionId, _bus, currentPosition, _resolveLinks,
-						_eventFilter, _user, _requiresLeader, _readIndex, _maxWindowSize, _cancellationToken);
+						_eventFilter, _user, _requiresLeader, _readIndex, _maxSearchWindow, _cancellationToken);
 				else
 					_inner = new LiveStreamSubscription(_subscriptionId, _bus, currentPosition, _resolveLinks,
-						_eventFilter, _user, _requiresLeader, _maxWindowSize, _checkpointIntervalMultiplier,
+						_eventFilter, _user, _requiresLeader, _maxSearchWindow, _checkpointIntervalMultiplier,
 						_checkpointReached, _cancellationToken);
 
 				goto ReadLoop;

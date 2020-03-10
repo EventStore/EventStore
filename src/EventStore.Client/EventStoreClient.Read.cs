@@ -10,7 +10,7 @@ using Grpc.Core;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
-		private IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
+		private async IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
 			Direction direction,
 			Position position,
 			ulong maxCount,
@@ -18,24 +18,36 @@ namespace EventStore.Client {
 			bool resolveLinkTos = false,
 			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = direction switch {
-						Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
-						Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
-						_ => throw new InvalidOperationException()
-					},
-					ResolveLinks = resolveLinkTos,
-					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
-					Count = maxCount,
-					Filter = GetFilterOptions(filterOptions)
+			[EnumeratorCancellation] CancellationToken cancellationToken = default) {
+			await foreach (var (confirmation, checkpoint, resolvedEvent) in ReadInternal(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						ReadDirection = direction switch {
+							Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
+							Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
+							_ => throw new InvalidOperationException()
+						},
+						ResolveLinks = resolveLinkTos,
+						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
+						Count = maxCount,
+						Filter = GetFilterOptions(filterOptions)
+					}
+				},
+				operationOptions,
+				userCredentials,
+				cancellationToken)) {
+				if (confirmation != SubscriptionConfirmation.None) {
+					continue;
 				}
-			},
-			operationOptions,
-			userCredentials,
-			cancellationToken)
-			.Where(x => x.Item1 == SubscriptionConfirmation.None && !x.Item2.HasValue)
-			.Select(x => x.Item3);
+
+				if (checkpoint.HasValue && filterOptions?.CheckpointReached != null) {
+					await filterOptions.CheckpointReached.Invoke(checkpoint.Value, cancellationToken)
+						.ConfigureAwait(false);
+					continue;
+				}
+
+				yield return resolvedEvent;
+			}
+		}
 
 		/// <summary>
 		/// Asynchronously reads all events.

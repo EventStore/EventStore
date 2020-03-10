@@ -94,13 +94,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
-						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
-							_ => throw new InvalidOperationException()
-						},
 						user,
 						requiresLeader,
+						request.Options.Filter.Max,
+						FilteredReadCheckpointReached,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
@@ -124,13 +121,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Count,
 						request.Options.ResolveLinks,
 						ConvertToEventFilter(request.Options.Filter),
-						request.Options.Filter.WindowCase switch {
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
-							_ => throw new InvalidOperationException()
-						},
 						user,
 						requiresLeader,
+						request.Options.Filter.Max,
+						FilteredReadCheckpointReached,
 						context.Deadline,
 						context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
@@ -169,10 +163,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
+							_ => throw new InvalidOperationException()
 						},
 						request.Options.Filter.CheckpointIntervalMultiplier,
-						CheckpointReached,
+						FilteredReadCheckpointReached,
 						context.CancellationToken),
 					_ => throw new InvalidOperationException()
 				};
@@ -194,7 +189,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 			}
 
-			Task CheckpointReached(Position checkpoint)
+			Task FilteredReadCheckpointReached(Position checkpoint)
 				=> responseStream.WriteAsync(new ReadResp {
 					Checkpoint = new ReadResp.Types.Checkpoint {
 						CommitPosition = checkpoint.CommitPosition,

@@ -45,7 +45,7 @@ namespace EventStore.Client.Streams {
 				AnyStreamRevision.NoStream, _fixture.CreateTestEvents());
 
 			using var subscription = await _fixture.Client.SubscribeToAllAsync(writeResult.LogPosition, EventAppeared,
-				false, filterOptions: new FilterOptions(filter, 4, CheckpointReached),
+				false, filterOptions: new SubscriptionFilterOptions(filter, 4, CheckpointReached),
 				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in afterEvents) {

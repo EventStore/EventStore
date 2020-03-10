@@ -31,36 +31,40 @@ namespace EventStore.Client {
 		public static IEventFilter Prefix(params string[] prefixes)
 			=> new StreamFilter(Array.ConvertAll(prefixes, prefix => new PrefixFilterExpression(prefix)));
 
-		public static IEventFilter Prefix(uint? maxSearchWindow, params string[] prefixes)
+		public static IEventFilter Prefix(uint maxSearchWindow, params string[] prefixes)
 			=> new StreamFilter(maxSearchWindow,
 				Array.ConvertAll(prefixes, prefix => new PrefixFilterExpression(prefix)));
 
-		public static IEventFilter RegularExpression(string regex)
-			=> new StreamFilter(new RegularFilterExpression(regex));
-
-		public static IEventFilter RegularExpression(Regex regex)
-			=> new StreamFilter(new RegularFilterExpression(regex));
-
-		public static IEventFilter RegularExpression(string regex, uint? maxSearchWindow)
+		public static IEventFilter RegularExpression(string regex, uint maxSearchWindow = 32)
 			=> new StreamFilter(maxSearchWindow, new RegularFilterExpression(regex));
 
-		public static IEventFilter RegularExpression(Regex regex, uint? maxSearchWindow)
+		public static IEventFilter RegularExpression(Regex regex, uint maxSearchWindow = 32)
 			=> new StreamFilter(maxSearchWindow, new RegularFilterExpression(regex));
 
 
 		private StreamFilter(RegularFilterExpression regex) : this(default, regex) { }
 
-		private StreamFilter(uint? maxSearchWindow, RegularFilterExpression regex) {
+		private StreamFilter(uint maxSearchWindow, RegularFilterExpression regex) {
+			if (maxSearchWindow == 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxSearchWindow),
+					maxSearchWindow, $"{nameof(maxSearchWindow)} must be greater than 0.");
+			}
+
 			Regex = regex;
 			Prefixes = Array.Empty<PrefixFilterExpression>();
 			MaxSearchWindow = maxSearchWindow;
 		}
 
-		private StreamFilter(params PrefixFilterExpression[] prefixes) : this(default, prefixes) { }
+		private StreamFilter(params PrefixFilterExpression[] prefixes) : this(32, prefixes) { }
 
-		private StreamFilter(uint? maxSearchWindow, params PrefixFilterExpression[] prefixes) {
+		private StreamFilter(uint maxSearchWindow, params PrefixFilterExpression[] prefixes) {
 			if (prefixes.Length == 0) {
 				throw new ArgumentException();
+			}
+
+			if (maxSearchWindow == 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxSearchWindow),
+					maxSearchWindow, $"{nameof(maxSearchWindow)} must be greater than 0.");
 			}
 
 			Prefixes = prefixes;
@@ -100,7 +104,7 @@ namespace EventStore.Client {
 
 		public static readonly EventTypeFilter None = default;
 
-		public static EventTypeFilter ExcludeSystemEvents(uint? maxSearchWindow = null) =>
+		public static EventTypeFilter ExcludeSystemEvents(uint maxSearchWindow = 32) =>
 			new EventTypeFilter(maxSearchWindow, RegularFilterExpression.ExcludeSystemEvents);
 
 
@@ -110,35 +114,39 @@ namespace EventStore.Client {
 		public static IEventFilter Prefix(params string[] prefixes)
 			=> new EventTypeFilter(Array.ConvertAll(prefixes, prefix => new PrefixFilterExpression(prefix)));
 
-		public static IEventFilter Prefix(uint? maxSearchWindow, params string[] prefixes)
+		public static IEventFilter Prefix(uint maxSearchWindow, params string[] prefixes)
 			=> new EventTypeFilter(maxSearchWindow,
 				Array.ConvertAll(prefixes, prefix => new PrefixFilterExpression(prefix)));
 
-		public static IEventFilter RegularExpression(string regex)
-			=> new EventTypeFilter(new RegularFilterExpression(regex));
-
-		public static IEventFilter RegularExpression(Regex regex)
-			=> new EventTypeFilter(new RegularFilterExpression(regex));
-
-		public static IEventFilter RegularExpression(string regex, uint? maxSearchWindow)
+		public static IEventFilter RegularExpression(string regex, uint maxSearchWindow = 32)
 			=> new EventTypeFilter(maxSearchWindow, new RegularFilterExpression(regex));
 
-		public static IEventFilter RegularExpression(Regex regex, uint? maxSearchWindow)
+		public static IEventFilter RegularExpression(Regex regex, uint maxSearchWindow = 32)
 			=> new EventTypeFilter(maxSearchWindow, new RegularFilterExpression(regex));
 
 		private EventTypeFilter(RegularFilterExpression regex) : this(default, regex) { }
 
-		private EventTypeFilter(uint? maxSearchWindow, RegularFilterExpression regex) {
+		private EventTypeFilter(uint maxSearchWindow, RegularFilterExpression regex) {
+			if (maxSearchWindow == 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxSearchWindow),
+					maxSearchWindow, $"{nameof(maxSearchWindow)} must be greater than 0.");
+			}
+
 			Regex = regex;
 			Prefixes = Array.Empty<PrefixFilterExpression>();
 			MaxSearchWindow = maxSearchWindow;
 		}
 
-		private EventTypeFilter(params PrefixFilterExpression[] prefixes) : this(null, prefixes) { }
+		private EventTypeFilter(params PrefixFilterExpression[] prefixes) : this(32, prefixes) { }
 
-		public EventTypeFilter(uint? maxSearchWindow, params PrefixFilterExpression[] prefixes) {
+		public EventTypeFilter(uint maxSearchWindow, params PrefixFilterExpression[] prefixes) {
 			if (prefixes.Length == 0) {
 				throw new ArgumentException();
+			}
+
+			if (maxSearchWindow == 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxSearchWindow),
+					maxSearchWindow, $"{nameof(maxSearchWindow)} must be greater than 0.");
 			}
 
 			Prefixes = prefixes;

@@ -1,13 +1,15 @@
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
 using Xunit;
 
 namespace EventStore.Client.Streams {
-	public class read_all_events_forwards_filtered
-		: IClassFixture<read_all_events_forwards_filtered.Fixture> {
+	public class read_all_events_forwards_filtered : IClassFixture<read_all_events_forwards_filtered.Fixture> {
+		private const string FilteredOutStream = nameof(FilteredOutStream);
+
 		private readonly Fixture _fixture;
 
 		public read_all_events_forwards_filtered(Fixture fixture) {
@@ -107,14 +109,39 @@ namespace EventStore.Client.Streams {
 			Assert.Equal(maxCount, (ulong)events.Length);
 		}
 
-		public class Fixture : EventStoreGrpcFixture {
-			public const string FilteredOutStream = nameof(FilteredOutStream);
+		[Fact]
+		public async Task checkpoint_reached() {
+			var streamName = _fixture.GetStreamName();
+			var checkpointReached = new TaskCompletionSource<Position>();
 
+			await _fixture.Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.Any,
+				_fixture.CreateTestEvents(100));
+
+			var writeResult = await _fixture.Client.AppendToStreamAsync(streamName, AnyStreamRevision.Any,
+				_fixture.CreateTestEvents());
+
+			var events = await _fixture.Client.ReadAllAsync(Direction.Forwards, Position.Start, int.MaxValue,
+					filterOptions: new FilterOptions(StreamFilter.Prefix(streamName), CheckpointReached))
+				.ToArrayAsync();
+
+			Assert.Single(events);
+
+			var position = await checkpointReached.Task.WithTimeout();
+			Assert.True(position > Position.Start);
+			Assert.True(position < writeResult.LogPosition);
+
+			Task CheckpointReached(Position position, CancellationToken ct) {
+				checkpointReached.TrySetResult(position);
+				return Task.CompletedTask;
+			}
+		}
+
+		public class Fixture : EventStoreGrpcFixture {
 			protected override Task Given() => Client.SetStreamMetadataAsync("$all", AnyStreamRevision.Any,
 				new StreamMetadata(acl: new StreamAcl(SystemRoles.All)), userCredentials: TestCredentials.Root);
 
 			protected override Task When() =>
-				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(10));
+				Client.AppendToStreamAsync(FilteredOutStream, AnyStreamRevision.NoStream, CreateTestEvents(50));
 		}
 	}
 }

@@ -41,7 +41,7 @@ namespace EventStore.Client.Streams {
 			}
 
 			using var subscription = await _fixture.Client.SubscribeToAllAsync(EventAppeared, false,
-				filterOptions: new FilterOptions(filter, 5, CheckpointReached),
+				filterOptions: new SubscriptionFilterOptions(filter, 5, CheckpointReached),
 				subscriptionDropped: SubscriptionDropped);
 
 			foreach (var e in afterEvents) {

@@ -17,10 +17,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly IPublisher _bus;
 			private readonly ulong _maxCount;
 			private readonly uint _maxSearchWindow;
-			private readonly Util.IEventFilter _eventFilter;
+			private readonly IEventFilter _eventFilter;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
+			private readonly Func<Position, Task> _checkpointReached;
 			private readonly DateTime _deadline;
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
@@ -38,9 +39,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ulong maxCount,
 				bool resolveLinks,
 				IEventFilter eventFilter,
-				uint? maxSearchWindow,
 				ClaimsPrincipal user,
 				bool requiresLeader,
+				uint? maxSearchWindow,
+				Func<Position, Task> checkpointReached,
 				DateTime deadline,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
@@ -51,22 +53,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentNullException(nameof(eventFilter));
 				}
 
-				if (maxCount <= 0) {
-					throw new ArgumentOutOfRangeException(nameof(maxCount));
+				if (checkpointReached == null) {
+					throw new ArgumentNullException(nameof(checkpointReached));
 				}
 
-				if (maxSearchWindow.HasValue && maxSearchWindow.Value <= maxCount) {
-					throw new ArgumentOutOfRangeException(nameof(maxSearchWindow));
+				if (maxCount <= 0) {
+					throw new ArgumentOutOfRangeException(nameof(maxCount));
 				}
 
 				_bus = bus;
 				_nextPosition = position;
 				_maxCount = maxCount;
 				_eventFilter = eventFilter;
-				_maxSearchWindow = maxSearchWindow ?? (uint)maxCount;
+				_maxSearchWindow = maxSearchWindow ?? 32;
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
+				_checkpointReached = checkpointReached;
 				_deadline = deadline;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
@@ -96,15 +99,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				var readNextSource = new TaskCompletionSource<bool>();
+				var checkpointReachedSource = new TaskCompletionSource<Position>();
 
 				var correlationId = Guid.NewGuid();
 
 				var (commitPosition, preparePosition) = _nextPosition.ToInt64();
 
 				_bus.Publish(new ClientMessage.FilteredReadAllEventsBackward(
-					correlationId, correlationId, new CallbackEnvelope(OnMessage),
-					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
-					_resolveLinks, _requiresLeader, (int) _maxSearchWindow, default, _eventFilter, _user, expires: _deadline));
+					correlationId, correlationId, new CallbackEnvelope(OnMessage), commitPosition, preparePosition,
+					Math.Min(32, (int)_maxCount), _resolveLinks, _requiresLeader, (int)_maxSearchWindow, default,
+					_eventFilter, _user, expires: _deadline));
+
+				var result = await Task.WhenAny(readNextSource.Task, checkpointReachedSource.Task)
+					.ConfigureAwait(false);
+
+				if (result == checkpointReachedSource.Task) {
+					await _checkpointReached(checkpointReachedSource.Task.Result).ConfigureAwait(false);
+					goto ReadLoop;
+				}
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;
@@ -146,7 +158,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_nextPosition = Position.FromInt64(
 								completed.NextPos.CommitPosition,
 								completed.NextPos.PreparePosition);
-							readNextSource.TrySetResult(true);
+
+							if (!_isEnd && completed.Events.Length == 0) {
+								checkpointReachedSource.TrySetResult(_nextPosition);
+							} else {
+								readNextSource.TrySetResult(true);
+							}
+
+
 							return;
 						case FilteredReadAllResult.AccessDenied:
 							readNextSource.TrySetException(RpcExceptions.AccessDenied());
