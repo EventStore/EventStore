@@ -171,7 +171,7 @@ function buildUI {
 function buildEventStore {
     patchVersionInfo
     rm -rf bin/
-    dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING --runtime=$RUNTIME --framework=$NET_FRAMEWORK src/EventStore.sln || err
+    dotnet build -c $CONFIGURATION /p:Platform=x64 /p:Version=$VERSIONSTRING --runtime=$RUNTIME --framework=$NET_FRAMEWORK src/EventStore.sln || err
     revertVersionInfo
 }
 
