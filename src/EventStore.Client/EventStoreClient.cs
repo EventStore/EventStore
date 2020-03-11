@@ -15,7 +15,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
+
 namespace EventStore.Client {
+	/// <summary>
+	/// Contains factory methods for connecting and interacting with an Event Store server.
+	/// </summary>
 	public partial class EventStoreClient : IDisposable {
 		private static readonly JsonSerializerOptions StreamMetadataJsonSerializerOptions = new JsonSerializerOptions {
 			Converters = {
@@ -23,10 +27,6 @@ namespace EventStore.Client {
 			},
 		};
 
-		/// <summary>
-		/// Creates a new set of <see cref="EventStoreClientSettings"/>.
-		/// </summary>
-		/// <returns>A <see cref="ConnectionSettingsBuilder"/> you can use to build up a <see cref="ConnectionSettings"/></returns>.
 		private readonly EventStoreClientSettings _settings;
 		private readonly GrpcChannel _channel;
 		private readonly Streams.Streams.StreamsClient _client;
@@ -36,9 +36,17 @@ namespace EventStore.Client {
 		public EventStoreProjectionManagerClient ProjectionsManager { get; }
 		public EventStoreUserManagerClient UsersManager { get; }
 
+		/// <summary>
+		/// Creates a new <see cref="EventStore.Client"/> to single node using default <see cref="EventStoreClientSettings"/>
+		/// </summary>
+		/// <param name="EventStoreClientSettings"><see cref="EventStoreClientSettings"/> containing connection details</param>
 		public EventStoreClient(IOptions<EventStoreClientSettings> options) : this(options.Value) {
 		}
 
+		/// <summary>
+		/// Creates a new <see cref="EventStore.Client"/> to single node using default <see cref="EventStoreClientSettings"/>
+		/// </summary>
+		/// <param name="EventStoreClientSettings"><see cref="EventStoreClientSettings"/> containing connection details</param>
 		public EventStoreClient(EventStoreClientSettings settings = null) {
 			_settings = settings ?? new EventStoreClientSettings();
 			var connectionName = _settings.ConnectionName ?? $"ES-{Guid.NewGuid()}";
