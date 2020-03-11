@@ -64,9 +64,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private readonly MemoryStream _memoryStream = new MemoryStream();
 
 		private readonly object _streamLock = new object();
+		private readonly object _closeLock = new object();
 		private bool _isSending;
 		private int _receiveHandling;
-		private int _isClosed;
+		private volatile bool _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 		private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
@@ -376,7 +377,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 						res.Add(piece);
 					}
 
-					callback(this, res);
+					lock (_closeLock) {
+						if(!_isClosed)
+							callback(this, res);
+					}
 
 					int bytes = 0;
 					for (int i = 0, n = res.Count; i < n; ++i) {
@@ -397,8 +401,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void CloseInternal(SocketError socketError, string reason) {
-			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0)
-				return;
+			lock (_closeLock) {
+				if (_isClosed) return;
+				_isClosed = true;
+			}
 
 			NotifyClosed();
 

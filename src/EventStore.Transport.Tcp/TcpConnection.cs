@@ -86,8 +86,9 @@ namespace EventStore.Transport.Tcp {
 
 		private readonly object _receivingLock = new object();
 		private readonly object _sendLock = new object();
+		private readonly object _closeLock = new object();
 		private bool _isSending;
-		private volatile int _closed;
+		private volatile bool _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -185,7 +186,7 @@ namespace EventStore.Transport.Tcp {
 			} else {
 				NotifySendCompleted(socketArgs.Count);
 
-				if (_closed != 0)
+				if (_isClosed)
 					ReturnSendingSocketArgs();
 				else {
 					lock (_sendLock) {
@@ -296,7 +297,10 @@ namespace EventStore.Transport.Tcp {
 				data[i] = new ArraySegment<byte>(d.Buf.Array, d.Buf.Offset, d.DataLen);
 			}
 
-			callback(this, data);
+			lock (_closeLock) {
+				if(!_isClosed)
+					callback(this, data);
+			}
 
 			for (int i = 0, n = res.Count; i < n; ++i) {
 				BufferManager.CheckIn(res[i].Buf); // dispose buffers
@@ -310,10 +314,10 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void CloseInternal(SocketError socketError, string reason) {
-#pragma warning disable 420
-			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
-				return;
-#pragma warning restore 420
+			lock (_closeLock) {
+				if (_isClosed) return;
+				_isClosed = true;
+			}
 
 			NotifyClosed();
 

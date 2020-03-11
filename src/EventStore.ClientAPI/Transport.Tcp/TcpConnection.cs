@@ -67,8 +67,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private readonly object _receivingLock = new object();
 		private readonly object _sendLock = new object();
+		private readonly object _closeLock = new object();
+
 		private bool _isSending;
-		private volatile int _closed;
+		private volatile bool _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 		private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
@@ -171,7 +173,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				CloseInternal(socketArgs.SocketError, "Socket send error.");
 			} else {
 				NotifySendCompleted(socketArgs.Count);
-				if (_closed != 0)
+				if (_isClosed)
 					ReturnSendingSocketArgs();
 				else {
 					lock (_sendLock) {
@@ -260,7 +262,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 				_receiveCallback = null;
 			}
 
-			callback(this, res);
+			lock (_closeLock) {
+				if(!_isClosed)
+					callback(this, res);
+			}
 
 			int bytes = 0;
 			for (int i = 0, n = res.Count; i < n; ++i) {
@@ -275,10 +280,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void CloseInternal(SocketError socketError, string reason) {
-#pragma warning disable 420
-			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
-				return;
-#pragma warning restore 420
+			lock (_closeLock) {
+				if (_isClosed) return;
+				_isClosed = true;
+			}
 
 			NotifyClosed();
 
