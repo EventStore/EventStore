@@ -66,7 +66,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private readonly object _streamLock = new object();
 		private bool _isSending;
-		private int _receiveHandling; //states: 0 - not receiving data, 1 - receiving/dispatching data, 2 - final state, no data received/dispatched after reaching this state
+		private int _receiveHandling;
 		private int _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
@@ -394,10 +394,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private void CloseInternal(SocketError socketError, string reason) {
 			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0)
 				return;
-
-			SpinWait spinWait = new SpinWait();
-			while(Interlocked.CompareExchange(ref _receiveHandling, 2, 0) != 0)
-				spinWait.SpinOnce();
 
 			NotifyClosed();
 
