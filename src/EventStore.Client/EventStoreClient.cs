@@ -15,7 +15,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using ReadReq = EventStore.Client.Streams.ReadReq;
 
-
 namespace EventStore.Client {
 	/// <summary>
 	/// Contains factory methods for connecting and interacting with an Event Store server.
