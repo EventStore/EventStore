@@ -11,7 +11,7 @@ on:
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
-    name: continuous-integration/github/scan-vulnerabilities
+    name: ci/github/scan-vulnerabilities
     container: mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
     steps:
     - name: Checkout
@@ -26,13 +26,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - container-runtime: bionic
-            runtime: linux-x64
-          - container-runtime: buster-slim
-            runtime: linux-x64
+        container-runtime: [bionic, buster-slim]
+        runtime: [linux-x64]
     runs-on: ubuntu-latest
-    name: continuous-integration/github/build-${{ matrix.env.container-runtime }}
+    name: ci/github/build-${{ matrix.container-runtime }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -43,22 +40,17 @@ jobs:
       run: |
         docker build \
           --tag eventstore \
-          --build-arg RUNTIME=${RUNTIME} \
-          --build-arg CONTAINER_RUNTIME=${CONTAINER_RUNTIME} \
+          --build-arg RUNTIME=${{ matrix.runtime }} \
+          --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
           .
-      env:
-        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
-        RUNTIME: ${{ matrix.env.runtime }}
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
         dotnet-version: '3.1.102'
     - name: Calculate Version
-      env:
-        CONTAINER_RUNTIME: ${{ matrix.env.container-runtime }}
       run: |
         dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${CONTAINER_RUNTIME}
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
         echo "::set-env name=VERSION::${version}"
     - name: Docker Push
       uses: jen20/action-docker-build@v1
@@ -75,9 +67,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-18.04, windows-2019]
-        configuration: [Release]
+        configuration: [release]
     runs-on: ${{ matrix.os }}
-    name: continuous-integration/github/build-${{ matrix.os }}
+    name: ci/github/build-${{ matrix.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -131,7 +123,7 @@ jobs:
   notify-slack:
     needs: [build-container, build, vulnerability-scan]
     runs-on: ubuntu-latest
-    name: continuous-integration/github/notify-slack
+    name: ci/github/notify-slack
     if: always()
     steps:
     - name: Setup Python 3
