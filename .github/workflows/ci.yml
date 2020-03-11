@@ -43,6 +43,30 @@ jobs:
           --build-arg RUNTIME=${{ matrix.runtime }} \
           --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
           .
+    - name: Run Tests
+      run: |
+        docker build \
+          --target test \
+          --tag eventstore-test \
+          --build-arg RUNTIME=${{ matrix.runtime }} \
+          --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
+          . && \
+          docker run \
+          --volume $(pwd)/test-results:/build/test-results \
+          --rm \
+          eventstore-test
+    - name: Publish Test Results (HTML)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        path: test-results/test-results.html
+        name: test-results-${{ matrix.container-runtime }}.html
+    - name: Publish Test Results (All)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: test-results-${{ matrix.container-runtime }}
+        path: test-results
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
