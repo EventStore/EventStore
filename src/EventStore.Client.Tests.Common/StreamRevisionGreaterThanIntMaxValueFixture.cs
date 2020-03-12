@@ -74,7 +74,7 @@ namespace EventStore.Client {
 				eventStreamId,
 				eventNumber - 1,
 				eventType,
-				data,
+				data.ToArray(),
 				null,
 				timestamp);
 			Assert.True(writer.Write(prepare, out _));
