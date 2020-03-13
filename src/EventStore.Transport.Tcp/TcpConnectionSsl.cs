@@ -96,9 +96,10 @@ namespace EventStore.Transport.Tcp {
 		private readonly MemoryStream _memoryStream = new MemoryStream();
 
 		private readonly object _streamLock = new object();
+		private readonly object _closeLock = new object();
 		private bool _isSending;
-		private int _receiveHandling; //states: 0 - not receiving data, 1 - receiving/dispatching data, 2 - final state, no data received/dispatched after reaching this state
-		private int _isClosed;
+		private int _receiveHandling;
+		private volatile bool _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -488,7 +489,10 @@ namespace EventStore.Transport.Tcp {
 						data[i] = new ArraySegment<byte>(d.Buf.Array, d.Buf.Offset, d.DataLen);
 					}
 
-					callback(this, data);
+					lock (_closeLock) {
+						if(!_isClosed)
+							callback(this, data);
+					}
 
 					for (int i = 0, n = res.Count; i < n; ++i) {
 						TcpConnection.BufferManager.CheckIn(res[i].Buf); // dispose buffers
@@ -508,12 +512,10 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void CloseInternal(SocketError socketError, string reason) {
-			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0)
-				return;
-
-			SpinWait spinWait = new SpinWait();
-			while(Interlocked.CompareExchange(ref _receiveHandling, 2, 0) != 0)
-				spinWait.SpinOnce();
+			lock (_closeLock) {
+				if (_isClosed) return;
+				_isClosed = true;
+			}
 
 			NotifyClosed();
 
