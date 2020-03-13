@@ -39,15 +39,14 @@ namespace EventStore.Common.Log {
 			};
 		}
 
-		public static void Initialize(string logsDirectory, string componentName,
-			string logConfig = "logconfig.json") {
+		public static void Initialize(string logsDirectory, string componentName, string logConfig = "logconfig.json") {
 			if (Interlocked.Exchange(ref Initialized, 1) == 1) {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
 			}
 
 			var potentialLogConfigurationDirectories = new[] {
 				Locations.ApplicationDirectory,
-				logsDirectory
+				Locations.DefaultConfigurationDirectory
 			}.Distinct();
 			var logConfigurationDirectory =
 				potentialLogConfigurationDirectories.FirstOrDefault(directory =>
