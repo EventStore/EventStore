@@ -132,10 +132,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			return removedList.ToArray();
 		}
 
-		public Message[] RepublishFromPublisher(bool skipScheduledMessages = false) {
-			var httpAndOtherMessages = Publisher.Messages.ToLookup(x => (x is HttpMessage.SendOverHttp));
-			var httpMessages = httpAndOtherMessages[true].ToList();
-			var messages = httpAndOtherMessages[false].ToList();
+		public void RepublishFromPublisher(bool skipScheduledMessages = false) {
+			var messages = new List<Message>();
+			messages.AddRange(Publisher.Messages);
 			Publisher.Messages.Clear();
 
 			messages.Where(x => !(x is TimerMessage.Schedule)).ToList()
@@ -151,9 +150,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						x.Reply();
 					});
 			}
-
-			var notConsumed = (messages.Concat(httpMessages)).ToArray();
-			return notConsumed;
 		}
 
 		public bool IsCurrent(IPEndPoint endPoint) {

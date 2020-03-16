@@ -1,10 +1,7 @@
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Diagnostics;
-using System.Text;
-using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -19,11 +16,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services {
 	public class HttpSendService : IHttpForwarder,
 		IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<HttpMessage.SendOverHttp>,
-		IHandle<HttpMessage.HttpSend>,
-		IHandle<HttpMessage.HttpBeginSend>,
-		IHandle<HttpMessage.HttpSendPart>,
-		IHandle<HttpMessage.HttpEndSend> {
+		IHandle<HttpMessage.HttpSend> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 		private static HttpClient _client = new HttpClient();
 
@@ -62,15 +55,6 @@ namespace EventStore.Core.Services {
 					break;
 				default:
 					throw new Exception(string.Format("Unknown node state: {0}.", message.State));
-			}
-		}
-
-		public void Handle(HttpMessage.SendOverHttp message) {
-			if (message.LiveUntil > DateTime.Now) {
-				_httpPipe.Push(message.Message, message.EndPoint);
-			} else {
-				Log.Debug("Dropping HTTP send message due to TTL being over. {messageType} To : {endPoint}",
-					message.Message.GetType().Name.ToString(), message.EndPoint);
 			}
 		}
 
@@ -123,36 +107,6 @@ namespace EventStore.Core.Services {
 			}
 		}
 
-		public void Handle(HttpMessage.HttpBeginSend message) {
-			var config = message.Configuration;
-
-			message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Encoding,
-				config.Headers);
-			if (message.Envelope != null)
-				message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-					message.HttpEntityManager));
-		}
-
-		public void Handle(HttpMessage.HttpSendPart message) {
-			var response = message.Data;
-			message.HttpEntityManager.ContinueReplyTextContent(
-				response,
-				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message,
-					exc.Message),
-				() => {
-					if (message.Envelope != null)
-						message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-							message.HttpEntityManager));
-				});
-		}
-
-		public void Handle(HttpMessage.HttpEndSend message) {
-			message.HttpEntityManager.EndReply();
-			if (message.Envelope != null)
-				message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-					message.HttpEntityManager));
-		}
-
 		bool IHttpForwarder.ForwardRequest(HttpEntityManager manager) {
 			var leaderInfo = _leaderInfo;
 			if (_forwardRequests && leaderInfo != null) {
@@ -198,7 +152,8 @@ namespace EventStore.Core.Services {
 							request.Headers.Host = $"{forwardUri.Host}:{forwardUri.Port}";
 							break;
 						case "if-modified-since":
-							request.Headers.IfModifiedSince = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
+							request.Headers.IfModifiedSince =
+								DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 						case "proxy-connection":
 							break;
@@ -230,8 +185,8 @@ namespace EventStore.Core.Services {
 
 			// Copy content (if content body is allowed)
 			if (!string.Equals(srcReq.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase)
-				&& !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
-				&& hasContentLength) {
+			    && !string.Equals(srcReq.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
+			    && hasContentLength) {
 				var streamContent = new StreamContent(srcReq.InputStream);
 				streamContent.Headers.ContentLength = srcReq.ContentLength64;
 				request.Content = streamContent;

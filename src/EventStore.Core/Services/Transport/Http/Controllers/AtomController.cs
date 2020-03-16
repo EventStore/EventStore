@@ -90,12 +90,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			HtmlFeedCodec // initialization order matters
 		};
 
-		private readonly IHttpForwarder _httpForwarder;
 		private readonly IPublisher _networkSendQueue;
 
-		public AtomController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue,
+		public AtomController(IPublisher publisher, IPublisher networkSendQueue,
 			bool disableHTTPCaching = false) : base(publisher) {
-			_httpForwarder = httpForwarder;
 			_networkSendQueue = networkSendQueue;
 
 			if (disableHTTPCaching) {

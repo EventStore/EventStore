@@ -16,13 +16,11 @@ using NUnit.Framework;
 using SUT = EventStore.Core.Services.ElectionsService;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
-	public class ElectionsServiceUnitTests :
-		IHandle<HttpMessage.SendOverHttp> {
+	public class ElectionsServiceUnitTests {
 		private Dictionary<IPEndPoint, IPublisher> _nodes;
 		private List<MemberInfo> _members;
 		private FakeTimeProvider _fakeTimeProvider;
 		private FakeScheduler _scheduler;
-
 
 		[SetUp]
 		public void Setup() {
@@ -59,7 +57,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);
 
-				outputBus.Subscribe<HttpMessage.SendOverHttp>(this);
 				var nodeId = i;
 				outputBus.Subscribe(new AdHocHandler<Message>(
 					m => {
@@ -68,9 +65,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 								TestContext.WriteLine(
 									$"Node {nodeId} : Delay {sm.TriggerAfter} : {sm.ReplyMessage.GetType()}");
 								timerService.Handle(sm);
-								break;
-							case HttpMessage.SendOverHttp hm:
-								TestContext.WriteLine($"Node {nodeId} : EP {hm.EndPoint} : {hm.Message.GetType()}");
 								break;
 							default:
 								TestContext.WriteLine($"Node {nodeId} : EP {m.GetType()}");
@@ -98,17 +92,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_members = members;
 		}
-
-		public void Handle(HttpMessage.SendOverHttp message) {
-			if (_nodes.TryGetValue(message.EndPoint, out var node)) {
-				TestContext.WriteLine($"Sending {message.Message} to {message.EndPoint}");
-				node.Publish(message.Message);
-				return;
-			}
-
-			TestContext.WriteLine($"Failed to find endpoint for {message.Message} to {message.EndPoint}");
-		}
-
 
 		class ReallyNotSafeFakeGossipSeedSource : IGossipSeedSource {
 			private readonly List<IPEndPoint> _ipEndPoints;
