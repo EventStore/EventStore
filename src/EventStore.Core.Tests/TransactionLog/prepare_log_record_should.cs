@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			});
 		}
 
-		[Test]
+		[Test, Ignore("ReadOnlyMemory will always convert back to empty array if initialized with null array.")]
 		public void throw_argumentnullexception_when_given_null_data() {
 			Assert.Throws<ArgumentNullException>(() => {
 				new PrepareLogRecord(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "test", 0, DateTime.UtcNow,

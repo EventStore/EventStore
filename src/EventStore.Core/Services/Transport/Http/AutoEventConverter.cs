@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			switch (targetCodec.ContentType) {
 				case ContentType.Raw:
-					return evnt.Event.Data;
+					return evnt.Event.Data.ToArray();
 				case ContentType.Xml:
 				case ContentType.ApplicationXml: {
 					var serializeObject = JsonConvert.SerializeObject(dto.data);
