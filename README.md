@@ -6,19 +6,19 @@ This is the repository for the open source version of Event Store, which include
 
 ## Support
 
-Information on commercial support and options such as LDAP authentication can be found on the Event Store website at https://eventstore.org/support.
+Information on support and commercial tools such as LDAP authentication can be found here: [Event Store Support]https://eventstore.com/support/.
 
 ## CI Status
 [![Build Status](https://dev.azure.com/EventStoreOSS/EventStore/_apis/build/status/EventStore.EventStore?branchName=master)](https://dev.azure.com/EventStoreOSS/EventStore/_build/latest?definitionId=2)
 
 ## Documentation
-Documentation for Event Store can be found [here](https://eventstore.org/docs/)
+Documentation for Event Store can be found here: [Event Store Docs](https://eventstore.com/docs/)
 
 ## Community
 We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) slack community.
 
 ## Release Packages
-The latest release packages are hosted in the downloads section on the [Event Store Website](https://eventstore.org/downloads/)
+The latest release packages are hosted in the downloads section on the Event Store website: [Event Store Downloads](https://eventstore.com/downloads/)
 
 We also host native packages for Linux on [Package Cloud](https://packagecloud.io/EventStore/EventStore-OSS) and Windows packages can be installed via [Chocolatey](https://chocolatey.org/packages/eventstore-oss) (4.0.0 onwards only).
 
