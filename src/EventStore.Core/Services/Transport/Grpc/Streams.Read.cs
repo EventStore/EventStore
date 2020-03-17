@@ -169,7 +169,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						_readIndex,
 						request.Options.Filter.WindowCase switch {
 							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
-							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max
+							ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter.Max,
+							_ => throw new InvalidOperationException()
 						},
 						request.Options.Filter.CheckpointIntervalMultiplier,
 						CheckpointReached,

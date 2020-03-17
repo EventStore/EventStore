@@ -7,7 +7,6 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 	public class when_cluster_receives_multiple_stale_acks :
 		with_clustered_replication_tracking_service {
 		private readonly long _firstLogPosition = 2000;
-		private readonly long _secondLogPosition = 4000;
 		private readonly Guid _replica1 = Guid.NewGuid();
 		private readonly Guid _replica2 = Guid.NewGuid();
 
