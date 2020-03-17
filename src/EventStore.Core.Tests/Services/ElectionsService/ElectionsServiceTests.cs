@@ -83,6 +83,20 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(0)),
+			};
+			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
+		}
+	}
+	
+	public class when_system_init : ElectionsFixture {
+		public when_system_init()
+			: base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			_sut.Handle(new SystemMessage.SystemInit());
+		}
+
+		[Test]
+		public void should_start_view_change_proof_timer() {
+			var expected = new Message[] {
 				TimerMessage.Schedule.Create(
 					Core.Services.ElectionsService.SendViewChangeProofInterval,
 					new PublishEnvelope(_publisher),
@@ -116,10 +130,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(0)),
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.SendViewChangeProofInterval,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.SendViewChangeProof()),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
