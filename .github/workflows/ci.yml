@@ -33,9 +33,18 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Fetch Tags
+      with:
+        fetch-depth: 0
+    - name: Install Dotnet
+      uses: actions/setup-dotnet@v1.4.0
+      with:
+        dotnet-version: '3.1.102'
+    - name: Calculate Version
       run: |
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+        dotnet tool restore
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
+        echo "::set-env name=VERSION::${version}"
     - name: Build
       run: |
         docker build \
@@ -67,15 +76,6 @@ jobs:
       with:
         name: test-results-${{ matrix.container-runtime }}
         path: test-results
-    - name: Install Dotnet
-      uses: actions/setup-dotnet@v1.4.0
-      with:
-        dotnet-version: '3.1.102'
-    - name: Calculate Version
-      run: |
-        dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
-        echo "::set-env name=VERSION::${version}"
     - name: Docker Push
       uses: jen20/action-docker-build@v1
       if: github.event_name == 'push'
@@ -97,9 +97,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Fetch Tags
-      run: |
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      with:
+        fetch-depth: 0
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
@@ -107,6 +106,7 @@ jobs:
     - name: Calculate Version
       shell: bash
       run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)
         echo "::set-env name=VERSION::${version}"
