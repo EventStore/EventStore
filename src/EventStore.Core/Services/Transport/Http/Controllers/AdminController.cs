@@ -46,6 +46,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Resign)),
 				OnResignNode);
+			Register(service, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
+				SupportedCodecs, AuthorizationLevel.Ops);
 			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
 				SupportedCodecs, AuthorizationLevel.Ops);
 		}
@@ -240,10 +242,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var stream = "$scavenges";
 			var evNum = match.BoundVariables["event"];
 			var cnt = match.BoundVariables["count"];
+			var scavengeId = match.BoundVariables["scavengeId"];
 
 			long eventNumber = -1;
 			int count = AtomSpecs.FeedPageSize;
 			var embed = GetEmbedLevel(manager, match);
+			
+			if (scavengeId != null) 
+				stream = stream + "-" + scavengeId;
 
 			if (stream.IsEmptyString()) {
 				SendBadRequest(manager, string.Format("Invalid stream name '{0}'", stream));
