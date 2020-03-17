@@ -81,9 +81,6 @@ namespace EventStore.Client {
 
 		public void Dispose() => _channel.Dispose();
 
-		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(FilterOptions filterOptions) =>
-			filterOptions == null ? null : GetFilterOptions(filterOptions.Filter);
-
 		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(
 			SubscriptionFilterOptions filterOptions) =>
 			filterOptions == null

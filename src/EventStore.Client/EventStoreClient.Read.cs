@@ -16,10 +16,9 @@ namespace EventStore.Client {
 			ulong maxCount,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
-			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			[EnumeratorCancellation] CancellationToken cancellationToken = default) {
-			await foreach (var (confirmation, checkpoint, resolvedEvent) in ReadInternal(new ReadReq {
+			await foreach (var (confirmation, _, resolvedEvent) in ReadInternal(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						ReadDirection = direction switch {
 							Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
@@ -29,19 +28,12 @@ namespace EventStore.Client {
 						ResolveLinks = resolveLinkTos,
 						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
 						Count = maxCount,
-						Filter = GetFilterOptions(filterOptions)
 					}
 				},
 				operationOptions,
 				userCredentials,
 				cancellationToken)) {
 				if (confirmation != SubscriptionConfirmation.None) {
-					continue;
-				}
-
-				if (checkpoint.HasValue && filterOptions?.CheckpointReached != null) {
-					await filterOptions.CheckpointReached.Invoke(checkpoint.Value, cancellationToken)
-						.ConfigureAwait(false);
 					continue;
 				}
 
@@ -57,7 +49,6 @@ namespace EventStore.Client {
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -67,15 +58,14 @@ namespace EventStore.Client {
 			ulong maxCount,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			bool resolveLinkTos = false,
-			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 
-			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filterOptions,
-				userCredentials, cancellationToken);
+			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, userCredentials,
+				cancellationToken);
 		}
 
 		private IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(
