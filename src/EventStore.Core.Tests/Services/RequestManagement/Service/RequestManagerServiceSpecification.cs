@@ -42,10 +42,9 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Dispatcher.Subscribe<StorageMessage.RequestCompleted>(this);
 
 			Service = new RequestManagementService(
-				Dispatcher, 
-				TimeSpan.FromSeconds(2), 
+				Dispatcher,
 				TimeSpan.FromSeconds(2),
-				false);
+				TimeSpan.FromSeconds(2));
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.CommitAck>(Service);

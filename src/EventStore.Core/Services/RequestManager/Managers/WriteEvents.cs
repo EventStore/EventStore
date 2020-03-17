@@ -7,7 +7,6 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteEvents : RequestManagerBase {
 		private readonly string _streamId;
-		private readonly bool _betterOrdering;
 		private readonly Event[] _events;
 
 		public WriteEvents(
@@ -17,7 +16,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid internalCorrId,
 					Guid clientCorrId,
 					string streamId,
-					bool betterOrdering,
 					long expectedVersion,
 					Event[] events,
 					CommitSource commitSource)
@@ -32,7 +30,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 0,
 					 waitForCommit: true) {
 			_streamId = streamId;
-			_betterOrdering = betterOrdering;
 			_events = events;
 		}
 

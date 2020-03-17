@@ -35,7 +35,6 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
 		private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
 		private const string _requestManagerHistogram = "request-manager";
-		private readonly bool _betterOrdering;
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private readonly CommitSource _commitSource;
@@ -44,8 +43,7 @@ namespace EventStore.Core.Services.RequestManager {
 		public RequestManagementService(
 			IPublisher bus,
 			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout,
-			bool betterOrdering) {
+			TimeSpan commitTimeout) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -54,12 +52,9 @@ namespace EventStore.Core.Services.RequestManager {
 
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
-			_betterOrdering = betterOrdering;
 			_commitSource = new CommitSource();
 		}
 		
-		
-
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
 								_bus,
@@ -68,7 +63,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
-								_betterOrdering,
 								message.ExpectedVersion,
 								message.Events,
 								_commitSource);
@@ -85,7 +79,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
-								_betterOrdering,
 								message.ExpectedVersion,
 								message.HardDelete,
 								_commitSource);
@@ -102,7 +95,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
-								_betterOrdering,
 								message.ExpectedVersion,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
@@ -134,7 +126,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.TransactionId,
-								_betterOrdering,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());

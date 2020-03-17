@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"StartStandardProjections");
 			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes,
 				"UnsafeIgnoreHardDeletes");
-			Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
 			Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
 			Assert.AreEqual(1, _settings.PrepareAckCount, "PrepareAckCount");
 			Assert.AreEqual(1, _settings.CommitAckCount, "CommitAckCount");
@@ -141,7 +140,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"StartStandardProjections");
 			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes,
 				"UnsafeIgnoreHardDeletes");
-			Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
 			Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
 			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
 			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");

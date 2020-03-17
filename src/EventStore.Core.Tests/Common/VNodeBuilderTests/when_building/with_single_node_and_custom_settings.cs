@@ -269,18 +269,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	}
 
 	[TestFixture]
-	public class with_better_ordering_enabled : SingleNodeScenario {
-		public override void Given() {
-			_builder.WithBetterOrdering();
-		}
-
-		[Test]
-		public void should_set_better_ordering() {
-			Assert.IsTrue(_settings.BetterOrdering);
-		}
-	}
-
-	[TestFixture]
 	public class with_custom_index_path : SingleNodeScenario {
 		public override void Given() {
 			_builder.WithIndexPath("index");

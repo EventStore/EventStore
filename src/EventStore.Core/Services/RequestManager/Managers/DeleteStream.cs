@@ -7,7 +7,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class DeleteStream : RequestManagerBase {
 		private readonly bool _hardDelete;
 		private readonly string _streamId;
-		private readonly bool _betterOrdering;
 
 		public DeleteStream(
 					IPublisher publisher,
@@ -16,7 +15,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid internalCorrId,
 					Guid clientCorrId,
 					string streamId,
-					bool betterOrdering,
 					long expectedVersion,
 					bool hardDelete,
 					CommitSource commitSource)
@@ -32,7 +30,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 waitForCommit: true) {
 			_hardDelete = hardDelete;
 			_streamId = streamId;
-			_betterOrdering = betterOrdering;
 		}
 
 		protected override Message WriteRequestMsg =>

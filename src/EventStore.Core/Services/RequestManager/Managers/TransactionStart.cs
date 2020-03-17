@@ -6,7 +6,6 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionStart : RequestManagerBase {
 		private readonly string _streamId;
-		private readonly bool _betterOrdering;
 
 		public TransactionStart(
 					IPublisher publisher,
@@ -15,7 +14,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid internalCorrId,
 					Guid clientCorrId,
 					string streamId,
-					bool betterOrdering,
 					long expectedVersion,
 					CommitSource commitSource)
 			: base(
@@ -28,7 +26,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 commitSource,
 					 prepareCount: 1) {
 			_streamId = streamId;
-			_betterOrdering = betterOrdering;
 		}
 		
 		protected override Message WriteRequestMsg =>

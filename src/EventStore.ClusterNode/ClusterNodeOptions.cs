@@ -238,10 +238,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
 		public bool UnsafeDisableFlushToDisk { get; set; }
 
-
-		[ArgDescription(Opts.BetterOrderingDescr, Opts.DbGroup)]
-		public bool BetterOrdering { get; set; }
-
 		[ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
 		public bool UnsafeIgnoreHardDelete { get; set; }
 
@@ -354,7 +350,6 @@ namespace EventStore.ClusterNode {
 			ProjectionsQueryExpiry = Opts.ProjectionsQueryExpiryDefault;
 			FaultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			WorkerThreads = Opts.WorkerThreadsDefault;
-			BetterOrdering = Opts.BetterOrderingDefault;
 
 			EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
 

@@ -20,7 +20,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 				InternalCorrId,
 				ClientCorrId,
 				$"testStream-{nameof(when_transaction_commit_completes_successfully)}",
-				true,				
 				0,
 				CommitSource);
 			}

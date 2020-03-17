@@ -74,7 +74,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
 
-		public readonly bool BetterOrdering;
 		public readonly string Index;
 		public readonly int ReaderThreadsCount;
 		public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
@@ -147,7 +146,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool optimizeIndexMerge = false,
 			IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
 			bool unsafeIgnoreHardDeletes = false,
-			bool betterOrdering = false,
 			int readerThreadsCount = 4,
 			bool alwaysKeepScavenged = false,
 			bool gossipOnSingleNode = false,
@@ -258,7 +256,6 @@ namespace EventStore.Core.Cluster.Settings {
 			OptimizeIndexMerge = optimizeIndexMerge;
 			Index = index;
 			UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
-			BetterOrdering = betterOrdering;
 			ReaderThreadsCount = readerThreadsCount;
 			AlwaysKeepScavenged = alwaysKeepScavenged;
 			SkipIndexScanOnReads = skipIndexScanOnReads;
