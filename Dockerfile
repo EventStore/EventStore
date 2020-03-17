@@ -21,7 +21,10 @@ RUN dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --fra
 FROM build as test
 ARG RUNTIME=linux-x64
 RUN echo '#!/usr/bin/env sh\n\
-find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -0 -n1 dotnet test --no-restore --blame --configuration=Release --results-directory=../testresults --verbosity=normal --logger=trx --runtime=${RUNTIME} --settings ../ci/ci.runsettings' \
+cp /build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.crt /usr/local/share/ca-certificates/ca_eventstore_test.crt\n\
+update-ca-certificates\n\
+find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 bash -c '"'"'dotnet test --configuration Release --blame --settings /build/ci/ci.runsettings --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=/build/test-results/$1 $1'"'"' - '"'"'{}'"'"'\n\
+echo $(find /build/test-results -name "*.html" | xargs cat) > /build/test-results/test-results.html' \
     >> /build/test.sh && \
     chmod +x /build/test.sh
 CMD ["/build/test.sh"]
