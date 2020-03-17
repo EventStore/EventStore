@@ -17,7 +17,7 @@ The changelog below is a summary of the all of the preview releases.
 - The ability to resign master using `{server_address}/admin/node/resign`.
 - Added in the ability to set node priority with `{server_address}/admin/node/priority/{priority}`.
 
-### Changed
+### Changed
 - Change of cluster role names from master/slave to leader/follower.
 - Both client and server have been moved over to .NET Core.
 
