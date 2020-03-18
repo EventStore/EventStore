@@ -491,8 +491,7 @@ namespace EventStore.Core {
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
 				vNodeSettings.PrepareTimeout,
-				vNodeSettings.CommitTimeout,
-				vNodeSettings.BetterOrdering);
+				vNodeSettings.CommitTimeout);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);

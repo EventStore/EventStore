@@ -305,8 +305,6 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeIgnoreHardDelete();
 			if (options.UnsafeDisableFlushToDisk)
 				builder.WithUnsafeDisableFlushToDisk();
-			if (options.BetterOrdering)
-				builder.WithBetterOrdering();
 			if (options.DisableInternalTls)
 				builder.DisableInternalTls();
 			if (options.DisableExternalTls)

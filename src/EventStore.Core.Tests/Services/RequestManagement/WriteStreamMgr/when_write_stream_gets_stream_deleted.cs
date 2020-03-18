@@ -18,7 +18,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 				InternalCorrId,
 				ClientCorrId,
 				"test123",
-				true,
 				ExpectedVersion.Any,
 				new[] {DummyEvent()},
 				CommitSource);

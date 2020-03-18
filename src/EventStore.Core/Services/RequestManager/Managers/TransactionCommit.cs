@@ -7,7 +7,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionCommit : RequestManagerBase,
 		IHandle<StorageMessage.CommitIndexed> {
 		private readonly TimeSpan _commitTimeout;
-		private readonly bool _betterOrdering;
 		private bool _transactionWritten;
 		public TransactionCommit(
 					IPublisher publisher,
@@ -17,7 +16,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					Guid internalCorrId,
 					Guid clientCorrId,
 					long transactionId,
-					bool betterOrdering,
 					CommitSource commitSource)
 			: base(
 					 publisher,
@@ -31,7 +29,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 1,
 					 waitForCommit: true) {
 			_commitTimeout = commitTimeout;
-			_betterOrdering = betterOrdering;
 		}
 
 		protected override Message WriteRequestMsg =>

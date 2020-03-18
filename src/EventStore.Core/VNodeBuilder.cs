@@ -229,7 +229,6 @@ namespace EventStore.Core {
 			_indexBitnessVersion = Opts.IndexBitnessVersionDefault;
 			_optimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
 			_unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
-			_betterOrdering = Opts.BetterOrderingDefault;
 			_unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
 			_alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
 			_skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
@@ -986,15 +985,6 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Enable Queue affinity on reads during write process to try to get better ordering.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithBetterOrdering() {
-			_betterOrdering = true;
-			return this;
-		}
-
-		/// <summary>
 		/// Enable trusted authentication by an intermediary in the HTTP
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -1424,7 +1414,6 @@ namespace EventStore.Core {
 				_optimizeIndexMerge,
 				consumerStrategies,
 				_unsafeIgnoreHardDelete,
-				_betterOrdering,
 				_readerThreadsCount,
 				_alwaysKeepScavenged,
 				_gossipOnSingleNode,

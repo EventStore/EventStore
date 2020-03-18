@@ -21,7 +21,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 				InternalCorrId,
 				ClientCorrId,
 			   	streamId: _streamId,
-				betterOrdering: true,
 				expectedVersion: ExpectedVersion.Any,
 				hardDelete: false,
 				commitSource: CommitSource);
