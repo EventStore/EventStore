@@ -31,7 +31,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[Test]
 		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 
@@ -69,7 +68,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[Test]
 		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 
@@ -118,7 +116,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[Test]
 		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 
@@ -167,7 +164,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[Test]
 		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 }
