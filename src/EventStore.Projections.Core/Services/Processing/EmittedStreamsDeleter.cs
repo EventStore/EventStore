@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 								});
 						});
 				} else {
-					var streamId = Helper.UTF8NoBom.GetString(onReadCompleted.Events[0].Event.Data);
+					var streamId = Helper.UTF8NoBom.GetString(onReadCompleted.Events[0].Event.Data.Span);
 					_ioDispatcher.DeleteStream(streamId, ExpectedVersion.Any, false, SystemAccounts.System,
 						x => DeleteStreamCompleted(x, onEmittedStreamsDeleted, streamId,
 							onReadCompleted.Events[0].OriginalEventNumber));

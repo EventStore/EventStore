@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					} else {
 						var loadedStateCheckpointTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
 						var state = PartitionState.Deserialize(
-							Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
+							Helper.UTF8NoBom.GetString(@event.Data.Span), loadedStateCheckpointTag);
 						loadCompleted(state);
 						return;
 					}

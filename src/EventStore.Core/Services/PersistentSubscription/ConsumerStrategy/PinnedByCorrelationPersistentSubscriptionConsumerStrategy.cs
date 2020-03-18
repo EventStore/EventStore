@@ -1,5 +1,6 @@
 ﻿namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
+	using System;
 	using System.IO;
 	using Data;
 	using Index.Hashes;
@@ -27,8 +28,8 @@
 			return correlation;
 		}
 
-		private string CorrelationFromJsonBytes(byte[] toConvert) {
-			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(toConvert)))) {
+		private string CorrelationFromJsonBytes(ReadOnlyMemory<byte> toConvert) {
+			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(toConvert.ToArray())))) {
 				if (!reader.Read()) {
 					return null;
 				}

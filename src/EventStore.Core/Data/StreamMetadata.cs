@@ -50,8 +50,8 @@ namespace EventStore.Core.Data {
 				MaxCount, MaxAge, TruncateBefore, TempStream, CacheControl, Acl);
 		}
 
-		public static StreamMetadata FromJsonBytes(byte[] json) {
-			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json)))) {
+		public static StreamMetadata FromJsonBytes(ReadOnlyMemory<byte> json) {
+			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json.ToArray())))) {
 				return FromJsonReader(reader);
 			}
 		}

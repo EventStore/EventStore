@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			//NOTE: we do manual link-to resolution as we write links to the position events
 			//      which may in turn be a link.  This is necessary to provide a correct 
 			//       ResolvedEvent when replaying from the -order stream
-			var linkTo = Helper.UTF8NoBom.GetString(@event.Data);
+			var linkTo = Helper.UTF8NoBom.GetString(@event.Data.Span);
 			string[] parts = linkTo.Split(_linkToSeparator, 2);
 			long eventNumber = long.Parse(parts[0]);
 			string streamId = parts[1];

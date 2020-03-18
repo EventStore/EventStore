@@ -619,8 +619,7 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void PersistedStateReadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed) {
 			if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 1) {
-				byte[] state = completed.Events[0].Event.Data;
-				var persistedState = state.ParseJson<PersistedState>();
+				var persistedState = completed.Events[0].Event.Data.ParseJson<PersistedState>();
 
 				_lastWrittenVersion = completed.Events[0].Event.EventNumber;
 				FixUpOldFormat(completed, persistedState);

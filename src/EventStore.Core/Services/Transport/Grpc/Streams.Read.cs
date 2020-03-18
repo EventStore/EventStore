@@ -224,8 +224,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							? Constants.Metadata.ContentTypes.ApplicationJson
 							: Constants.Metadata.ContentTypes.ApplicationOctetStream
 					},
-					Data = ByteString.CopyFrom(e.Data),
-					CustomMetadata = ByteString.CopyFrom(e.Metadata)
+					Data = ByteString.CopyFrom(e.Data.Span),
+					CustomMetadata = ByteString.CopyFrom(e.Metadata.Span)
 				};
 			}
 

@@ -36,12 +36,27 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
 		}
 
+		public static CheckpointTag ParseCheckpointTagJson(this ReadOnlyMemory<byte> source) {
+			if (source.Length == 0)
+				return null;
+			var reader = new JsonTextReader(new StreamReader(new MemoryStream(source.ToArray())));
+			return CheckpointTag.FromJson(reader, default(ProjectionVersion)).Tag;
+		}
+
 		public static CheckpointTagVersion ParseCheckpointTagVersionExtraJson(this byte[] source,
 			ProjectionVersion current) {
 			if (source == null || source.Length == 0)
 				return new CheckpointTagVersion
 					{Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null};
 			var reader = new JsonTextReader(new StreamReader(new MemoryStream(source)));
+			return CheckpointTag.FromJson(reader, current);
+		}
+
+		public static CheckpointTagVersion ParseCheckpointTagVersionExtraJson(this ReadOnlyMemory<byte> source,
+			ProjectionVersion current) {
+			if (source.Length == 0)
+				return new CheckpointTagVersion { Version = new ProjectionVersion(current.ProjectionId, 0, 0), Tag = null };
+			var reader = new JsonTextReader(new StreamReader(new MemoryStream(source.ToArray())));
 			return CheckpointTag.FromJson(reader, current);
 		}
 

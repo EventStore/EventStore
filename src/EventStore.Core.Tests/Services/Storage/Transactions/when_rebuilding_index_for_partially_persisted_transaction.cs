@@ -1,7 +1,4 @@
 using System;
-using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -67,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			for (int i = 0; i < 15; ++i) {
 				var result = ReadIndex.ReadEvent("ES", i);
 				Assert.AreEqual(ReadEventResult.Success, result.Result);
-				Assert.AreEqual(Helper.UTF8NoBom.GetBytes("data" + i), result.Record.Data);
+				Assert.AreEqual(Helper.UTF8NoBom.GetBytes("data" + i), result.Record.Data.ToArray());
 			}
 		}
 	}

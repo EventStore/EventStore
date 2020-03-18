@@ -304,7 +304,7 @@ namespace EventStore.Core.Services {
 		private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
-					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(_linkToSeparator, 2);
+					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(_linkToSeparator, 2);
 					long eventNumber = long.Parse(parts[0]);
 					string streamId = parts[1];
 

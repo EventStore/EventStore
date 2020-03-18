@@ -303,7 +303,7 @@ namespace EventStore.Core.Services.Storage {
 			SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber);
 		}
 
-		private void SoftUndeleteStream(string streamId, long metaLastEventNumber, byte[] rawMeta, long recreateFrom) {
+		private void SoftUndeleteStream(string streamId, long metaLastEventNumber, ReadOnlyMemory<byte> rawMeta, long recreateFrom) {
 			byte[] modifiedMeta;
 			if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
 				return;
@@ -318,9 +318,9 @@ namespace EventStore.Core.Services.Storage {
 			_indexWriter.PreCommit(new[] { res.Prepare });
 		}
 
-		public bool SoftUndeleteRawMeta(byte[] rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
+		public bool SoftUndeleteRawMeta(ReadOnlyMemory<byte> rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
 			try {
-				var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta));
+				var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta.Span));
 				jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
 				using (var memoryStream = new MemoryStream()) {
 					using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream))) {

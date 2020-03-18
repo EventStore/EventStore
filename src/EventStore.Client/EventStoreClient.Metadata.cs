@@ -27,7 +27,7 @@ namespace EventStore.Client {
 			return metadata.Event == null
 				? StreamMetadataResult.None(streamName)
 				: StreamMetadataResult.Create(streamName, metadata.OriginalEventNumber,
-					JsonSerializer.Deserialize<StreamMetadata>(metadata.Event.Data,
+					JsonSerializer.Deserialize<StreamMetadata>(metadata.Event.Data.Span,
 						StreamMetadataJsonSerializerOptions));
 		}
 

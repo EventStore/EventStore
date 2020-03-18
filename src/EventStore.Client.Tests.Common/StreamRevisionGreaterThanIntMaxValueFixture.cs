@@ -64,7 +64,7 @@ namespace EventStore.Client {
 			TFChunkWriter writer,
 			string eventStreamId,
 			long eventNumber,
-			byte[] data,
+			ReadOnlyMemory<byte> data,
 			DateTime? timestamp = null,
 			Uuid eventId = default,
 			string eventType = "some-type") {

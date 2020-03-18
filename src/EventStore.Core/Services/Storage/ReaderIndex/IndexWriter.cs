@@ -34,9 +34,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 	public struct RawMetaInfo {
 		public readonly long MetaLastEventNumber;
-		public readonly byte[] RawMeta;
+		public readonly ReadOnlyMemory<byte> RawMeta;
 
-		public RawMetaInfo(long metaLastEventNumber, byte[] rawMeta) {
+		public RawMetaInfo(long metaLastEventNumber, ReadOnlyMemory<byte> rawMeta) {
 			MetaLastEventNumber = metaLastEventNumber;
 			RawMeta = rawMeta;
 		}
@@ -438,10 +438,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private struct StreamMeta {
-			public readonly byte[] RawMeta;
+			public readonly ReadOnlyMemory<byte> RawMeta;
 			public readonly StreamMetadata Meta;
 
-			public StreamMeta(byte[] rawMeta, StreamMetadata meta) {
+			public StreamMeta(ReadOnlyMemory<byte> rawMeta, StreamMetadata meta) {
 				RawMeta = rawMeta;
 				Meta = meta;
 			}

@@ -89,7 +89,7 @@
 
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) // Unresolved link.
 			{
-				sourceStreamId = Helper.UTF8NoBom.GetString(eventRecord.Data);
+				sourceStreamId = Helper.UTF8NoBom.GetString(eventRecord.Data.Span);
 				int separatorIndex = sourceStreamId.IndexOf(LinkToSeparator);
 				if (separatorIndex != -1)
 				{
