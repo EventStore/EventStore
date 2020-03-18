@@ -57,9 +57,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				DefaultData.AdminCredentials);
 		}
 
-		protected override async Task When() {
-			
-;
+		protected override Task When() {
 			_sub = _conn.ConnectToPersistentSubscription(_stream,
 				"agroupname17",
 				(sub, e) => {
@@ -68,6 +66,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 				},
 				(sub, reason, ex) => { },
 				DefaultData.AdminCredentials);
+
+			return Task.CompletedTask;
 		}
 
 		[Test]

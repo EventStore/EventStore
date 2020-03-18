@@ -1,9 +1,7 @@
-﻿using System.Net;
-using EventStore.Core.Tests.Http.Users.users;
+﻿using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using HttpResponseMessage = System.Net.Http.HttpResponseMessage;
@@ -177,15 +175,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_creating_persistent_subscription_with_message_timeout_0 : with_admin_user {
-		protected List<object> Events;
 		protected string SubscriptionPath;
 		protected string GroupName;
 		protected HttpResponseMessage Response;
 		protected JObject SubsciptionInfo;
 
-		protected override async Task Given() {
-
-		}
+		protected override Task Given() => Task.CompletedTask;
 
 		protected override async Task When() {
 			GroupName = Guid.NewGuid().ToString();
@@ -220,15 +215,12 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[TestFixture, Category("LongRunning")]
 	class when_creating_persistent_subscription_without_message_timeout : with_admin_user {
-		protected List<object> Events;
 		protected string SubscriptionPath;
 		protected string GroupName;
 		protected HttpResponseMessage Response;
 		protected JObject SubsciptionInfo;
 
-		protected override async Task Given() {
-
-		}
+		protected override Task Given() => Task.CompletedTask;
 		protected override async Task When() {
 			GroupName = Guid.NewGuid().ToString();
 			SubscriptionPath = string.Format("/subscriptions/{0}/{1}", TestStream.Substring(9), GroupName);

@@ -46,7 +46,7 @@ namespace EventStore.Client {
 					if (endpoint != null) {
 						return endpoint;
 					}
-				} catch (Exception exc) {
+				} catch (Exception) {
 				}
 
 				await Task.Delay(_discoveryInterval).ConfigureAwait(false);
