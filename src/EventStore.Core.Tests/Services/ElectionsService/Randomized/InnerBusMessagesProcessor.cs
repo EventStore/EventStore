@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 		public void Handle(Message message) {
 			// timer message and SendOverGrpc is handled differently
-			if (message is TimerMessage.Schedule || message is HttpMessage.SendOverHttp)
+			if (message is TimerMessage.Schedule)
 				return;
 
 			_runner.Enqueue(_endPoint, message, _bus); // process with no delay and no reorderings

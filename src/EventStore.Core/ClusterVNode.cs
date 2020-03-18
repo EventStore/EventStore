@@ -416,13 +416,8 @@ namespace EventStore.Core {
 			var httpPipe = new HttpMessagePipe();
 			var httpSendService = new HttpSendService(httpPipe, forwardRequests: true);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
-			_mainBus.Subscribe(new WideningHandler<HttpMessage.SendOverHttp, Message>(_workersHandler));
 			SubscribeWorkers(bus => {
 				bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
-				bus.Subscribe<HttpMessage.HttpSendPart>(httpSendService);
-				bus.Subscribe<HttpMessage.HttpBeginSend>(httpSendService);
-				bus.Subscribe<HttpMessage.HttpEndSend>(httpSendService);
-				bus.Subscribe<HttpMessage.SendOverHttp>(httpSendService);
 			});
 
 			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
@@ -437,7 +432,7 @@ namespace EventStore.Core {
 			var pingController = new PingController();
 			var histogramController = new HistogramController();
 			var statController = new StatController(monitoringQueue, _workersHandler);
-			var atomController = new AtomController(httpSendService, _mainQueue, _workersHandler,
+			var atomController = new AtomController(_mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching);
 			var gossipController = new GossipController(_mainQueue, _workersHandler, vNodeSettings.GossipTimeout,
 				_httpMessageHandler);
