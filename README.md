@@ -9,7 +9,7 @@ This is the repository for the open source version of Event Store, which include
 Information on support and commercial tools such as LDAP authentication can be found here: [Event Store Support](https://eventstore.com/support/).
 
 ## CI Status
-[![Build Status](https://dev.azure.com/EventStoreOSS/EventStore/_apis/build/status/EventStore.EventStore?branchName=master)](https://dev.azure.com/EventStoreOSS/EventStore/_build/latest?definitionId=2)
+![Build](https://github.com/EventStore/EventStore/workflows/Build/badge.svg)
 
 ## Documentation
 Documentation for Event Store can be found here: [Event Store Docs](https://eventstore.com/docs/)
