@@ -22,7 +22,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			{Codec.Text, Codec.Json, Codec.Xml, Codec.ApplicationXml};
 		
 		public static readonly char[] ETagSeparatorArray = { ';' };
-
+		
+		private static readonly Func<UriTemplateMatch, Operation> ReadStreamOperationForScavengeStream =
+			ForScavengeStream(Operations.Streams.Read);
 		public AdminController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher) {
 			_networkSendQueue = networkSendQueue;
 		}
@@ -47,12 +49,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Resign)),
 				OnResignNode);
 			Register(service, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
-				SupportedCodecs, AuthorizationLevel.Ops);
+				SupportedCodecs, ReadStreamOperationForScavengeStream);
 			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
-				SupportedCodecs, AuthorizationLevel.Ops);
+				SupportedCodecs, ReadStreamOperationForScavengeStream);
 		}
 	
+		private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {
+			var operation = new Operation(definition);
+			return match => {
+				var stream = "$scavenges";
+				var scavengeId = match.BoundVariables["scavengeId"];
+				if (scavengeId != null) 
+					stream = stream + "-" + scavengeId;
+				
+				if (!string.IsNullOrEmpty(stream)) {
+					return operation.WithParameter(Operations.Streams.Parameters.StreamId(stream));
+				}
 
+				return operation;
+			};
+		}
+		
 		private void OnPostShutdown(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
