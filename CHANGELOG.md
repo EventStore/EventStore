@@ -2,7 +2,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-_(none)_
+### Changed
+- HTTP read requests to `/streams/$scavenges/` are done via AdminController. [#2310](https://github.com/EventStore/EventStore/pull/2310)
+- `/streams/$scavenges/{scavengeId}/` now maps to `/streams/$scavenges-{scavengeId}/`. [#2310](https://github.com/EventStore/EventStore/pull/2310)
+- Start View Change Proof Timer on System Initialized only. [#2366](https://github.com/EventStore/EventStore/pull/2366)
+- Replace byte[] with ReadOnlyMemory<byte> to reduce allocations. [#2308](https://github.com/EventStore/EventStore/pull/2308)
+
+### Removed
+- Unused HTTP messages. [#2362](https://github.com/EventStore/EventStore/pull/2363)
+- Removed better ordering option. [#2368](https://github.com/EventStore/EventStore/pull/2368)
 
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
