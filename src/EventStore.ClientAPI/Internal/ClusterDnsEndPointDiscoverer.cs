@@ -222,10 +222,13 @@ namespace EventStore.ClientAPI.Internal {
 					RandomShuffle(nodes, 0, nodes.Length - 1);
 					break;
 				case NodePreference.Follower:
-					nodes = nodes.OrderBy(nodeEntry => nodeEntry.State != ClusterMessages.VNodeState.Follower)
+					nodes = nodes.OrderBy(nodeEntry => 
+							nodeEntry.State != ClusterMessages.VNodeState.Follower &&
+							 nodeEntry.State != ClusterMessages.VNodeState.Slave)
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					RandomShuffle(nodes, 0,
-						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Follower) - 1);
+						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Follower ||
+						                          nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
 					break;
 				case NodePreference.ReadOnlyReplica:
 					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))

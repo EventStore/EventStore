@@ -4,17 +4,17 @@
 	/// </summary>
 	public enum NodePreference {
 		/// <summary>
-		/// When attempting connnection, prefers leader node.
+		/// When attempting connection, prefers leader node.
 		/// </summary>
 		Leader,
 
 		/// <summary>
-		/// When attempting connnection, prefers follower node.
+		/// When attempting connection, prefers follower node.
 		/// </summary>
 		Follower,
 
 		/// <summary>
-		/// When attempting connnection, has no node preference.
+		/// When attempting connection, has no node preference.
 		/// </summary>
 		Random,
 
