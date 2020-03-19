@@ -19,8 +19,8 @@ namespace EventStore.Client {
 			StreamRevision eventNumber,
 			Position position,
 			IDictionary<string, string> metadata,
-			byte[] data,
-			byte[] customMetadata) {
+			ReadOnlyMemory<byte> data,
+			ReadOnlyMemory<byte> customMetadata) {
 			EventStreamId = eventStreamId;
 			EventId = eventId;
 			EventNumber = eventNumber;

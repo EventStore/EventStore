@@ -1,7 +1,6 @@
 using EventStore.Common.Utils;
 
-namespace EventStore.Client.Streams
-{
+namespace EventStore.Client.Streams {
 	internal static class EventDataComparer {
 		public static bool Equal(EventData expected, EventRecord actual) {
 			if (expected.EventId != actual.EventId)

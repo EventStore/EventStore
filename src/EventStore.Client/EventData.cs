@@ -9,7 +9,8 @@ namespace EventStore.Client {
 		public readonly string Type;
 		public readonly string ContentType;
 
-		private EventData(Uuid eventId, string type, string contentType) {
+		public EventData(Uuid eventId, string type, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte>? metadata = null,
+			string contentType = Constants.Metadata.ContentTypes.ApplicationJson) {
 			if (eventId == Uuid.Empty) {
 				throw new ArgumentOutOfRangeException(nameof(eventId));
 			}
@@ -32,21 +33,9 @@ namespace EventStore.Client {
 
 			EventId = eventId;
 			Type = type;
-			ContentType = contentType;
-		}
-
-		public EventData(Uuid eventId, string type, byte[] data, byte[] metadata = default,
-			string contentType = Constants.Metadata.ContentTypes.ApplicationJson) : this(eventId, type, contentType) {
-
-			Data = data ?? Array.Empty<byte>();
-			Metadata = metadata ?? Array.Empty<byte>();
-		}
-
-		public EventData(Uuid eventId, string type, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte>? metadata = default,
-			string contentType = Constants.Metadata.ContentTypes.ApplicationJson) : this(eventId, type, contentType) {
-
 			Data = data;
 			Metadata = metadata ?? Array.Empty<byte>();
+			ContentType = contentType;
 		}
 	}
 }
