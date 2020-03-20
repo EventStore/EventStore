@@ -1,13 +1,5 @@
-﻿using EventStore.Core.Bus;
-using EventStore.Core.Services;
-using EventStore.Core.Services.Transport.Http;
-
-namespace EventStore.Core.Authentication {
+﻿namespace EventStore.Core.Authentication {
 	public interface IAuthenticationProviderFactory {
-		IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, ISubscriber mainBus,
-			IPublisher workersQueue, InMemoryBus[] workerBuses, bool logFailedAuthenticationAttempts);
-
-		void RegisterHttpControllers(IHttpService externalHttpService, HttpSendService httpSendService,
-			IPublisher mainQueue, IPublisher networkSendQueue);
+		IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts);
 	}
 }

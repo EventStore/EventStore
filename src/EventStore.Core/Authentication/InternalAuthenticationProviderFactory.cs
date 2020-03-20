@@ -11,56 +11,60 @@ using EventStore.Core.Settings;
 
 namespace EventStore.Core.Authentication {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory {
-		public IAuthenticationProvider BuildAuthenticationProvider(IPublisher mainQueue, ISubscriber mainBus,
-			IPublisher workersQueue, InMemoryBus[] workerBuses, bool logFailedAuthenticationAttempts) {
-			var passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
-			var dispatcher = new IODispatcher(mainQueue, new PublishEnvelope(workersQueue, crossThread: true));
+		private readonly AuthenticationProviderFactoryComponents _components;
+		private readonly IODispatcher _dispatcher;
+		private readonly Rfc2898PasswordHashAlgorithm _passwordHashAlgorithm;
 
-			foreach (var bus in workerBuses) {
-				bus.Subscribe(dispatcher.ForwardReader);
-				bus.Subscribe(dispatcher.BackwardReader);
-				bus.Subscribe(dispatcher.Writer);
-				bus.Subscribe(dispatcher.StreamDeleter);
-				bus.Subscribe(dispatcher.Awaker);
-				bus.Subscribe(dispatcher);
+		public InternalAuthenticationProviderFactory(AuthenticationProviderFactoryComponents components) {
+			_components = components;
+			_passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
+			_dispatcher = new IODispatcher(components.MainQueue, new PublishEnvelope(components.WorkersQueue, crossThread: true));
+
+			foreach (var bus in components.WorkerBuses) {
+				bus.Subscribe(_dispatcher.ForwardReader);
+				bus.Subscribe(_dispatcher.BackwardReader);
+				bus.Subscribe(_dispatcher.Writer);
+				bus.Subscribe(_dispatcher.StreamDeleter);
+				bus.Subscribe(_dispatcher.Awaker);
+				bus.Subscribe(_dispatcher);
 			}
 
 			// USER MANAGEMENT
-			var ioDispatcher = new IODispatcher(mainQueue, new PublishEnvelope(mainQueue));
-			mainBus.Subscribe(ioDispatcher.BackwardReader);
-			mainBus.Subscribe(ioDispatcher.ForwardReader);
-			mainBus.Subscribe(ioDispatcher.Writer);
-			mainBus.Subscribe(ioDispatcher.StreamDeleter);
-			mainBus.Subscribe(ioDispatcher.Awaker);
-			mainBus.Subscribe(ioDispatcher);
+			var ioDispatcher = new IODispatcher(components.MainQueue, new PublishEnvelope(components.MainQueue));
+			components.MainBus.Subscribe(ioDispatcher.BackwardReader);
+			components.MainBus.Subscribe(ioDispatcher.ForwardReader);
+			components.MainBus.Subscribe(ioDispatcher.Writer);
+			components.MainBus.Subscribe(ioDispatcher.StreamDeleter);
+			components.MainBus.Subscribe(ioDispatcher.Awaker);
+			components.MainBus.Subscribe(ioDispatcher);
 
-			var userManagement = new UserManagementService(mainQueue, ioDispatcher, passwordHashAlgorithm,
+			var userManagement = new UserManagementService(components.MainQueue, ioDispatcher, _passwordHashAlgorithm,
 				skipInitializeStandardUsersCheck: false);
-			mainBus.Subscribe<UserManagementMessage.Create>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.Update>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.Get>(userManagement);
-			mainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
-			mainBus.Subscribe<SystemMessage.BecomeLeader>(userManagement);
-			mainBus.Subscribe<SystemMessage.BecomeFollower>(userManagement);
-
-			var provider =
-				new InternalAuthenticationProvider(dispatcher, passwordHashAlgorithm, ESConsts.CachedPrincipalCount, logFailedAuthenticationAttempts);
-			var passwordChangeNotificationReader = new PasswordChangeNotificationReader(mainQueue, dispatcher);
-			mainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
-			mainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
-			mainBus.Subscribe(provider);
-			return provider;
+			components.MainBus.Subscribe<UserManagementMessage.Create>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.Update>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.Get>(userManagement);
+			components.MainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+			components.MainBus.Subscribe<SystemMessage.BecomeLeader>(userManagement);
+			components.MainBus.Subscribe<SystemMessage.BecomeFollower>(userManagement);
+			
+			var usersController = new UsersController(components.HttpSendService, components.MainQueue, components.WorkersQueue);
+			components.ExternalHttpService.SetupController(usersController);
 		}
 
-		public void RegisterHttpControllers(IHttpService externalHttpService, HttpSendService httpSendService,
-			IPublisher mainQueue, IPublisher networkSendQueue) {
-			var usersController = new UsersController(httpSendService, mainQueue, networkSendQueue);
-			externalHttpService.SetupController(usersController);
+		public IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts) {
+			var provider =
+				new InternalAuthenticationProvider(_dispatcher, _passwordHashAlgorithm, ESConsts.CachedPrincipalCount,
+					logFailedAuthenticationAttempts);
+			var passwordChangeNotificationReader = new PasswordChangeNotificationReader(_components.MainQueue, _dispatcher);
+			_components.MainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
+			_components.MainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
+			_components.MainBus.Subscribe(provider);
+			return provider;
 		}
 	}
 }

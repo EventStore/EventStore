@@ -120,7 +120,9 @@ namespace EventStore.Core.Tests.Helpers {
 				certificate, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				disableInternalTls, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
-				new InternalAuthenticationProviderFactory(), new LegacyAuthorizationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
+				new AuthenticationProviderFactory(components => 
+					new InternalAuthenticationProviderFactory(components)),
+				new LegacyAuthorizationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
 				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),

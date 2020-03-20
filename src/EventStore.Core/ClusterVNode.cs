@@ -334,14 +334,43 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
+			
+			var httpPipe = new HttpMessagePipe();
+			var httpSendService = new HttpSendService(httpPipe, forwardRequests: true);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
+			SubscribeWorkers(bus => {
+				bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
+			});
 
+			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
+			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
+			SubscribeWorkers(bus => {
+				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
+			});
+
+			// EXTERNAL HTTP
+			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+				_workersHandler, vNodeSettings.LogHttpRequests,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
+				vNodeSettings.DisableFirstLevelHttpAuthorization,
+				vNodeSettings.NodeInfo.ExternalHttp);
+
+			var components = new AuthenticationProviderFactoryComponents {
+				MainBus = _mainBus,
+				MainQueue = _mainQueue,
+				WorkerBuses = _workerBuses,
+				WorkersQueue = _workersHandler,
+				HttpSendService = httpSendService,
+				ExternalHttpService = _externalHttpService
+			};
+			
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 			_internalAuthenticationProvider =
-				vNodeSettings.AuthenticationProviderFactory.BuildAuthenticationProvider(_mainQueue, _mainBus,
-					_workersHandler, _workerBuses, vNodeSettings.LogFailedAuthenticationAttempts);
+				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).BuildAuthenticationProvider(
+					vNodeSettings.LogFailedAuthenticationAttempts);
 
 			Ensure.NotNull(_internalAuthenticationProvider, "authenticationProvider");
-
 
 			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory.Build(_mainQueue);
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
@@ -413,19 +442,6 @@ namespace EventStore.Core {
 				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
 			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
 
-			var httpPipe = new HttpMessagePipe();
-			var httpSendService = new HttpSendService(httpPipe, forwardRequests: true);
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
-			SubscribeWorkers(bus => {
-				bus.Subscribe<HttpMessage.HttpSend>(httpSendService);
-			});
-
-			var grpcSendService = new GrpcSendService(_eventStoreClusterClientCache);
-			_mainBus.Subscribe(new WideningHandler<GrpcMessage.SendOverGrpc, Message>(_workersHandler));
-			SubscribeWorkers(bus => {
-				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
-			});
-
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			var adminController = new AdminController(_mainQueue, _workersHandler);
@@ -442,13 +458,6 @@ namespace EventStore.Core {
 			// HTTP SENDERS
 			gossipController.SubscribeSenders(httpPipe);
 
-			// EXTERNAL HTTP
-			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-				_workersHandler, vNodeSettings.LogHttpRequests,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
-				vNodeSettings.DisableFirstLevelHttpAuthorization,
-				vNodeSettings.NodeInfo.ExternalHttp);
 			_externalHttpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)
 				_externalHttpService.SetupController(adminController);
@@ -464,10 +473,6 @@ namespace EventStore.Core {
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
-
-			// Authentication plugin HTTP
-			vNodeSettings.AuthenticationProviderFactory.RegisterHttpControllers(_externalHttpService, httpSendService,
-				_mainQueue, _workersHandler);
 
 			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 

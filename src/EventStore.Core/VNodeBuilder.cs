@@ -75,7 +75,7 @@ namespace EventStore.Core {
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
 
-		protected IAuthenticationProviderFactory _authenticationProviderFactory;
+		protected AuthenticationProviderFactory _authenticationProviderFactory;
 		protected bool _disableFirstLevelHttpAuthorization;
 		protected bool _logFailedAuthenticationAttempts;
 		protected bool _disableScavengeMerging;
@@ -191,8 +191,10 @@ namespace EventStore.Core {
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
+			
+			_authenticationProviderFactory = new AuthenticationProviderFactory(components => 
+				new InternalAuthenticationProviderFactory(components));
 
-			_authenticationProviderFactory = new InternalAuthenticationProviderFactory();
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 
 			_authorizationProviderFactory = new LegacyAuthorizationProviderFactory();
@@ -998,7 +1000,7 @@ namespace EventStore.Core {
 		/// </summary>
 		/// <param name="authenticationProviderFactory">The authentication provider factory to use </param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithAuthenticationProvider(IAuthenticationProviderFactory authenticationProviderFactory) {
+		public VNodeBuilder WithAuthenticationProviderFactory(AuthenticationProviderFactory authenticationProviderFactory) {
 			_authenticationProviderFactory = authenticationProviderFactory;
 			return this;
 		}
