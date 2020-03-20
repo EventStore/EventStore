@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Claims;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;

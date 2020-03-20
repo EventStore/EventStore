@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Cluster.Settings;
@@ -102,7 +103,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.StateChangeMessage>()
 				.Do(m => Application.Exit(ExitCode.Error,
 					string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name)))
-				.When<UserManagementMessage.UserManagementServiceInitialized>().Do(Handle)
+				.When<InternalAuthenticationMessage.AuthenticationProviderInitialized>().Do(Handle)
 				.When<SystemMessage.SubSystemInitialized>().Do(Handle)
 				.When<SystemMessage.SystemCoreReady>().Do(Handle)
 				.InState(VNodeState.Initializing)
@@ -532,7 +533,7 @@ namespace EventStore.Core.Services.VNode {
 				_mainQueue.Publish(new SystemMessage.SystemStart());
 		}
 
-		private void Handle(UserManagementMessage.UserManagementServiceInitialized message) {
+		private void Handle(InternalAuthenticationMessage.AuthenticationProviderInitialized message) {
 			if (_subSystems != null) {
 				foreach (var subsystem in _subSystems) {
 					_node.AddTasks(subsystem.Start());

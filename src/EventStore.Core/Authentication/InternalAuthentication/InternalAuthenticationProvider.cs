@@ -11,7 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using ILogger = Serilog.ILogger;
 
-namespace EventStore.Core.Authentication {
+namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class InternalAuthenticationProvider : IAuthenticationProvider,
 		IHandle<InternalAuthenticationProviderMessages.ResetPasswordCache> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<InternalAuthenticationProvider>();

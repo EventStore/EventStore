@@ -8,6 +8,7 @@ using NUnit.Framework;
 using System;
 using System.Net;
 using System.Collections.Generic;
+using EventStore.Core.Authentication.InternalAuthentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]

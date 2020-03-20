@@ -2,15 +2,16 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
+using EventStore.Core.Services.UserManagement;
 using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
-namespace EventStore.Core.Services.UserManagement {
+namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class UserManagementService : IHandle<UserManagementMessage.Get>,
 		IHandle<UserManagementMessage.GetAll>,
 		IHandle<UserManagementMessage.Create>,
@@ -25,9 +26,8 @@ namespace EventStore.Core.Services.UserManagement {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
-		public const string UsersStream = "$Users";
 		public const string UsersStreamType = "$User";
-		private readonly IPublisher _publisher;
+		private readonly IAuthenticationProviderPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _skipInitializeStandardUsersCheck;
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.UserManagement {
 		private readonly ILogger _log;
 
 		public UserManagementService(
-			IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
+			IAuthenticationProviderPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
 			bool skipInitializeStandardUsersCheck) {
 			_log = Serilog.Log.ForContext<UserManagementService>();
 			_publisher = publisher;
@@ -203,18 +203,18 @@ namespace EventStore.Core.Services.UserManagement {
 							NotifyInitialized();
 					});
 			} else {
-				_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+				_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
 			}
 		}
 
 		public void Handle(SystemMessage.BecomeFollower message) {
-			_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+			_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
 		}
 
 		private void NotifyInitialized() {
 			_numberOfStandardUsersToBeCreated -= 1;
 			if (_numberOfStandardUsersToBeCreated == 0) {
-				_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+				_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
 			}
 		}
 

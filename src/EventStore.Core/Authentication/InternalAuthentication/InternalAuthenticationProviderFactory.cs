@@ -1,15 +1,11 @@
-﻿using EventStore.Core.Bus;
-using EventStore.Core.Helpers;
+﻿using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 
-namespace EventStore.Core.Authentication {
+namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory {
 		private readonly AuthenticationProviderFactoryComponents _components;
 		private readonly IODispatcher _dispatcher;
@@ -38,7 +34,7 @@ namespace EventStore.Core.Authentication {
 			components.MainBus.Subscribe(ioDispatcher.Awaker);
 			components.MainBus.Subscribe(ioDispatcher);
 
-			var userManagement = new UserManagementService(components.MainQueue, ioDispatcher, _passwordHashAlgorithm,
+			var userManagement = new UserManagementService(components.Publisher, ioDispatcher, _passwordHashAlgorithm,
 				skipInitializeStandardUsersCheck: false);
 			components.MainBus.Subscribe<UserManagementMessage.Create>(userManagement);
 			components.MainBus.Subscribe<UserManagementMessage.Update>(userManagement);

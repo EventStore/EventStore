@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication.InternalAuthentication;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
@@ -207,7 +208,7 @@ namespace EventStore.Core.Tests.Helpers {
 					}));
 			}
 			Node.MainBus.Subscribe(
-				new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => {
+				new AdHocHandler<InternalAuthenticationMessage.AuthenticationProviderInitialized>(m => {
 					_adminUserCreated.TrySetResult(true);
 				}));
 			_host.Start();

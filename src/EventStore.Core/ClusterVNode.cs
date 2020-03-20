@@ -355,14 +355,15 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
 				vNodeSettings.DisableFirstLevelHttpAuthorization,
 				vNodeSettings.NodeInfo.ExternalHttp);
-
+			
 			var components = new AuthenticationProviderFactoryComponents {
 				MainBus = _mainBus,
 				MainQueue = _mainQueue,
 				WorkerBuses = _workerBuses,
 				WorkersQueue = _workersHandler,
 				HttpSendService = httpSendService,
-				ExternalHttpService = _externalHttpService
+				ExternalHttpService = _externalHttpService,
+				Publisher = new ShimmedPublisher(_mainQueue)
 			};
 			
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins

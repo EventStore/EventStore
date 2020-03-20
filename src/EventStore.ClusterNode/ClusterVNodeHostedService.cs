@@ -18,6 +18,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Rags;

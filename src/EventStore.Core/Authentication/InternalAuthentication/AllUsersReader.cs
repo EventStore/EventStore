@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.UserManagement;
 
-namespace EventStore.Core.Services.UserManagement {
+namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class AllUsersReader {
 		private const string UserEventType = "$User";
 		private const string UserStreamPrefix = "$user-";

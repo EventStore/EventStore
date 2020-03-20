@@ -8,12 +8,13 @@ using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.Core.Authentication;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
 	public static class user_management_service {
 		public class TestFixtureWithUserManagementService : TestFixtureWithExistingEvents {
-			protected Core.Services.UserManagement.UserManagementService _users;
+			protected Core.Authentication.InternalAuthentication.UserManagementService _users;
 			protected readonly ClaimsPrincipal _ordinaryUser = new ClaimsPrincipal(new ClaimsIdentity(
 					new [] {
 						new Claim(ClaimTypes.Name,"user1"),
@@ -29,8 +30,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				NoOtherStreams();
 				AllWritesSucceed();
 
-				_users = new Core.Services.UserManagement.UserManagementService(
-					_bus, _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
+				_users = new Core.Authentication.InternalAuthentication.UserManagementService(
+					new ShimmedPublisher(_bus), _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
 
 				_bus.Subscribe<UserManagementMessage.Get>(_users);
 				_bus.Subscribe<UserManagementMessage.GetAll>(_users);
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 					.Where(
 						v =>
 							v.EventStreamId
-							== Core.Services.UserManagement.UserManagementService
+							== Core.Authentication.InternalAuthentication.UserManagementService
 								.UserPasswordNotificationsStreamId).ToArray();
 			}
 
@@ -76,7 +77,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 							v =>
 								v.EventStreamId
 								== SystemStreams.MetastreamOf(
-									Core.Services.UserManagement.UserManagementService
+									Core.Authentication.InternalAuthentication.UserManagementService
 										.UserPasswordNotificationsStreamId))
 						.ToArray();
 			}
