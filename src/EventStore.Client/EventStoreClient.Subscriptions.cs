@@ -11,7 +11,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -37,7 +37,7 @@ namespace EventStore.Client {
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
+		/// <param name="filterOptions">The optional <see cref="SubscriptionFilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -45,7 +45,7 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
@@ -61,7 +61,7 @@ namespace EventStore.Client {
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
+			SubscriptionFilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 			operationOptions.TimeoutAfter = DeadLine.None;
@@ -86,7 +86,7 @@ namespace EventStore.Client {
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
 		/// <param name="subscriptionDropped">An action invoked if the subscription is dropped.</param>
-		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
+		/// <param name="filterOptions">The optional <see cref="SubscriptionFilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional user credentials to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -94,8 +94,7 @@ namespace EventStore.Client {
 			Func<StreamSubscription, ResolvedEvent, CancellationToken, Task> eventAppeared,
 			bool resolveLinkTos = false,
 			Action<StreamSubscription, SubscriptionDroppedReason, Exception> subscriptionDropped = default,
-			FilterOptions filterOptions = null,
-			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default,
+			SubscriptionFilterOptions filterOptions = null,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {

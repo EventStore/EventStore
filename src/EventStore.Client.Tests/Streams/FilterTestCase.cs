@@ -14,10 +14,10 @@ namespace EventStore.Client.Streams {
 			s_filters =
 				new Dictionary<string, (Func<string, IEventFilter>, Func<string, EventData, EventData>)> {
 					[StreamNamePrefix] = (StreamFilter.Prefix, (_, e) => e),
-					[StreamNameRegex] = (StreamFilter.RegularExpression, (_, e) => e),
+					[StreamNameRegex] = (f => StreamFilter.RegularExpression(f), (_, e) => e),
 					[EventTypePrefix] = (EventTypeFilter.Prefix,
 						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.ContentType)),
-					[EventTypeRegex] = (EventTypeFilter.RegularExpression,
+					[EventTypeRegex] = (f => EventTypeFilter.RegularExpression(f),
 						(term, e) => new EventData(e.EventId, term, e.Data, e.Metadata, e.ContentType))
 				};
 

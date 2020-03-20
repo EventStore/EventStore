@@ -81,13 +81,14 @@ namespace EventStore.Client {
 
 		public void Dispose() => _channel.Dispose();
 
-		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(FilterOptions filterOptions) {
-			if (filterOptions == null) {
-				return null;
-			}
+		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(
+			SubscriptionFilterOptions filterOptions) =>
+			filterOptions == null
+				? null
+				: GetFilterOptions(filterOptions.Filter, filterOptions.CheckpointInterval);
 
-			var filter = filterOptions.Filter;
-
+		private static ReadReq.Types.Options.Types.FilterOptions GetFilterOptions(IEventFilter filter,
+			uint? checkpointIntervalMultiplier = null) {
 			var options = filter switch {
 				StreamFilter _ => new ReadReq.Types.Options.Types.FilterOptions {
 					StreamName = (filter.Prefixes, filter.Regex) switch {
@@ -130,7 +131,7 @@ namespace EventStore.Client {
 				options.Count = new Empty();
 			}
 
-			options.CheckpointIntervalMultiplier = filterOptions.CheckpointInterval;
+			options.CheckpointIntervalMultiplier = checkpointIntervalMultiplier ?? 0;
 
 			return options;
 		}

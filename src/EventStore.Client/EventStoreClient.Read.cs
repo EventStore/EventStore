@@ -10,32 +10,36 @@ using Grpc.Core;
 
 namespace EventStore.Client {
 	public partial class EventStoreClient {
-		private IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
+		private async IAsyncEnumerable<ResolvedEvent> ReadAllAsync(
 			Direction direction,
 			Position position,
 			ulong maxCount,
 			EventStoreClientOperationOptions operationOptions,
 			bool resolveLinkTos = false,
-			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
-			CancellationToken cancellationToken = default) => ReadInternal(new ReadReq {
-				Options = new ReadReq.Types.Options {
-					ReadDirection = direction switch {
-						Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
-						Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
-						_ => throw new InvalidOperationException()
-					},
-					ResolveLinks = resolveLinkTos,
-					All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
-					Count = maxCount,
-					Filter = GetFilterOptions(filterOptions)
+			[EnumeratorCancellation] CancellationToken cancellationToken = default) {
+			await foreach (var (confirmation, _, resolvedEvent) in ReadInternal(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						ReadDirection = direction switch {
+							Direction.Backwards => ReadReq.Types.Options.Types.ReadDirection.Backwards,
+							Direction.Forwards => ReadReq.Types.Options.Types.ReadDirection.Forwards,
+							_ => throw new InvalidOperationException()
+						},
+						ResolveLinks = resolveLinkTos,
+						All = ReadReq.Types.Options.Types.AllOptions.FromPosition(position),
+						Count = maxCount,
+					}
+				},
+				operationOptions,
+				userCredentials,
+				cancellationToken)) {
+				if (confirmation != SubscriptionConfirmation.None) {
+					continue;
 				}
-			},
-			operationOptions,
-			userCredentials,
-			cancellationToken)
-			.Where(x => x.Item1 == SubscriptionConfirmation.None && !x.Item2.HasValue)
-			.Select(x => x.Item3);
+
+				yield return resolvedEvent;
+			}
+		}
 
 		/// <summary>
 		/// Asynchronously reads all events.
@@ -45,7 +49,6 @@ namespace EventStore.Client {
 		/// <param name="maxCount">The maximum count to read.</param>
 		/// <param name="configureOperationOptions">An <see cref="Action{EventStoreClientOperationOptions}"/> to configure the operation's options.</param>
 		/// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically.</param>
-		/// <param name="filterOptions">The optional <see cref="FilterOptions"/> to apply.</param>
 		/// <param name="userCredentials">The optional <see cref="UserCredentials"/> to perform operation with.</param>
 		/// <param name="cancellationToken">The optional <see cref="System.Threading.CancellationToken"/>.</param>
 		/// <returns></returns>
@@ -55,15 +58,14 @@ namespace EventStore.Client {
 			ulong maxCount,
 			Action<EventStoreClientOperationOptions> configureOperationOptions = default,
 			bool resolveLinkTos = false,
-			FilterOptions filterOptions = null,
 			UserCredentials userCredentials = default,
 			CancellationToken cancellationToken = default) {
 
 			var operationOptions = _settings.OperationOptions.Clone();
 			configureOperationOptions?.Invoke(operationOptions);
 
-			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, filterOptions,
-				userCredentials, cancellationToken);
+			return ReadAllAsync(direction, position, maxCount, operationOptions, resolveLinkTos, userCredentials,
+				cancellationToken);
 		}
 
 		private IAsyncEnumerable<ResolvedEvent> ReadStreamAsync(

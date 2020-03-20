@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Client {
-	public class FilterOptions {
+	public class SubscriptionFilterOptions {
 		/// <summary>
 		/// The <see cref="IEventFilter"/> to apply.
 		/// </summary>
@@ -30,7 +30,7 @@ namespace EventStore.Client {
 		/// Set the checkpointInterval to define how often this method is called.
 		/// </param>
 		/// <exception cref="ArgumentNullException"></exception>
-		public FilterOptions(IEventFilter filter, uint checkpointInterval = 1,
+		public SubscriptionFilterOptions(IEventFilter filter, uint checkpointInterval = 1,
 			Func<StreamSubscription, Position, CancellationToken, Task> checkpointReached = default) {
 			if (filter == null) {
 				throw new ArgumentNullException(nameof(filter));
