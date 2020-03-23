@@ -113,7 +113,6 @@ namespace EventStore.Core {
 
 		protected bool _unsafeIgnoreHardDelete;
 		protected bool _unsafeDisableFlushToDisk;
-		protected bool _betterOrdering;
 		protected ProjectionType _projectionType;
 		protected int _projectionsThreads;
 		protected TimeSpan _projectionsQueryExpiry;
