@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
-using Grpc.Core;
 using Xunit;
 
 namespace EventStore.Client.Streams {
@@ -17,22 +14,18 @@ namespace EventStore.Client.Streams {
 		[Fact]
 		public async Task any_stream_revision_fails_when_operation_expired() {
 			var stream = _fixture.GetStreamName();
-			var rpcException = await Assert.ThrowsAsync<RpcException>(() =>
+			await Assert.ThrowsAsync<TimeoutException>(() =>
 				_fixture.Client.AppendToStreamAsync(stream, AnyStreamRevision.NoStream, _fixture.CreateTestEvents(),
 					options => options.TimeoutAfter = TimeSpan.Zero));
-
-			Assert.Equal(StatusCode.DeadlineExceeded, rpcException.StatusCode);
 		}
 
 		[Fact]
 		public async Task stream_revision_fails_when_operation_expired() {
 			var stream = _fixture.GetStreamName();
 
-			var rpcException = await Assert.ThrowsAsync<RpcException>(() =>
+			await Assert.ThrowsAsync<TimeoutException>(() =>
 				_fixture.Client.AppendToStreamAsync(stream, new StreamRevision(0), _fixture.CreateTestEvents(),
 					options => options.TimeoutAfter = TimeSpan.Zero));
-
-			Assert.Equal(StatusCode.DeadlineExceeded, rpcException.StatusCode);
 		}
 
 		public class Fixture : EventStoreGrpcFixture {
