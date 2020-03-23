@@ -10,17 +10,17 @@ namespace EventStore.ClientAPI {
 	/// </summary>
 	public enum NodePreference {
 		/// <summary>
-		/// When attempting connnection, prefers master node.
+		/// When attempting connection, prefers master node.
 		/// </summary>
 		Master,
 
 		/// <summary>
-		/// When attempting connnection, prefers slave node.
+		/// When attempting connection, prefers slave node.
 		/// </summary>
 		Slave,
 
 		/// <summary>
-		/// When attempting connnection, has no node preference.
+		/// When attempting connection, has no node preference.
 		/// </summary>
 		Random
 	}
