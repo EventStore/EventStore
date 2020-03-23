@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Cluster.Settings;

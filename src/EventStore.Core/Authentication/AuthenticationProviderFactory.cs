@@ -11,7 +11,6 @@ namespace EventStore.Core.Authentication {
 		public InMemoryBus[] WorkerBuses { get; set; }
 		public HttpSendService HttpSendService { get; set; }
 		public IHttpService ExternalHttpService { get; set; }
-		public IAuthenticationProviderPublisher Publisher { get; set; }
 	}
 
 	public class AuthenticationProviderFactory {

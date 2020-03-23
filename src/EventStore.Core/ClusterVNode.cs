@@ -363,13 +363,12 @@ namespace EventStore.Core {
 				WorkersQueue = _workersHandler,
 				HttpSendService = httpSendService,
 				ExternalHttpService = _externalHttpService,
-				Publisher = new ShimmedPublisher(_mainQueue)
 			};
 			
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 			_internalAuthenticationProvider =
 				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).BuildAuthenticationProvider(
-					vNodeSettings.LogFailedAuthenticationAttempts);
+					new ShimmedPublisher(_mainQueue), vNodeSettings.LogFailedAuthenticationAttempts);
 
 			Ensure.NotNull(_internalAuthenticationProvider, "authenticationProvider");
 

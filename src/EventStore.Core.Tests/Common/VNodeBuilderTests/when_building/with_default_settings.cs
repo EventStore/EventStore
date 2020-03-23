@@ -1,13 +1,8 @@
-using EventStore.Core.Authentication;
-using EventStore.Common.Options;
-using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using NUnit.Framework;
-using System;
 using System.Net;
-using System.Collections.Generic;
 using EventStore.Core.Authentication.InternalAuthentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {

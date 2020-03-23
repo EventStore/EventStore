@@ -2,7 +2,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Tcp;
 using NUnit.Framework;
 using System;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using System.Linq;

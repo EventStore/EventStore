@@ -6,12 +6,9 @@ using EventStore.Core.Services.Transport.Http;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
-		public IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider BuildAuthenticationProvider(
+			IAuthenticationProviderPublisher publisher, bool logFailedAuthenticationAttempts) {
 			return new TestAuthenticationProvider();
-		}
-
-		public void RegisterHttpControllers(IHttpService externalHttpService, HttpSendService httpSendService,
-			IPublisher mainQueue, IPublisher networkSendQueue) {
 		}
 	}
 

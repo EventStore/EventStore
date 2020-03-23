@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net;
 using EventStore.Transport.Tcp;
 using System.Net.Sockets;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using EventStore.Core.TransactionLog.LogRecords;

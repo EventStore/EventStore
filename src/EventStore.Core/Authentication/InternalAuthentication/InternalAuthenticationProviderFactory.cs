@@ -25,34 +25,12 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				bus.Subscribe(_dispatcher);
 			}
 
-			// USER MANAGEMENT
-			var ioDispatcher = new IODispatcher(components.MainQueue, new PublishEnvelope(components.MainQueue));
-			components.MainBus.Subscribe(ioDispatcher.BackwardReader);
-			components.MainBus.Subscribe(ioDispatcher.ForwardReader);
-			components.MainBus.Subscribe(ioDispatcher.Writer);
-			components.MainBus.Subscribe(ioDispatcher.StreamDeleter);
-			components.MainBus.Subscribe(ioDispatcher.Awaker);
-			components.MainBus.Subscribe(ioDispatcher);
-
-			var userManagement = new UserManagementService(components.Publisher, ioDispatcher, _passwordHashAlgorithm,
-				skipInitializeStandardUsersCheck: false);
-			components.MainBus.Subscribe<UserManagementMessage.Create>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.Update>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.Get>(userManagement);
-			components.MainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
-			components.MainBus.Subscribe<SystemMessage.BecomeLeader>(userManagement);
-			components.MainBus.Subscribe<SystemMessage.BecomeFollower>(userManagement);
-			
 			var usersController = new UsersController(components.HttpSendService, components.MainQueue, components.WorkersQueue);
 			components.ExternalHttpService.SetupController(usersController);
 		}
 
-		public IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider BuildAuthenticationProvider(IAuthenticationProviderPublisher publisher,
+			bool logFailedAuthenticationAttempts) {
 			var provider =
 				new InternalAuthenticationProvider(_dispatcher, _passwordHashAlgorithm, ESConsts.CachedPrincipalCount,
 					logFailedAuthenticationAttempts);
@@ -60,6 +38,31 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_components.MainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);
 			_components.MainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
 			_components.MainBus.Subscribe(provider);
+
+
+			// USER MANAGEMENT
+			var ioDispatcher = new IODispatcher(_components.MainQueue, new PublishEnvelope(_components.MainQueue));
+			_components.MainBus.Subscribe(ioDispatcher.BackwardReader);
+			_components.MainBus.Subscribe(ioDispatcher.ForwardReader);
+			_components.MainBus.Subscribe(ioDispatcher.Writer);
+			_components.MainBus.Subscribe(ioDispatcher.StreamDeleter);
+			_components.MainBus.Subscribe(ioDispatcher.Awaker);
+			_components.MainBus.Subscribe(ioDispatcher);
+
+			var userManagement = new UserManagementService(publisher, ioDispatcher, _passwordHashAlgorithm,
+				skipInitializeStandardUsersCheck: false);
+			_components.MainBus.Subscribe<UserManagementMessage.Create>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.Update>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.Enable>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.Disable>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.Delete>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.Get>(userManagement);
+			_components.MainBus.Subscribe<UserManagementMessage.GetAll>(userManagement);
+			_components.MainBus.Subscribe<SystemMessage.BecomeLeader>(userManagement);
+			_components.MainBus.Subscribe<SystemMessage.BecomeFollower>(userManagement);
+
 			return provider;
 		}
 	}
