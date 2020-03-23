@@ -495,7 +495,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_authentication_provider_factory() {
-			Assert.IsInstanceOf(typeof(TestAuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf(typeof(AuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
 		}
 	}
 

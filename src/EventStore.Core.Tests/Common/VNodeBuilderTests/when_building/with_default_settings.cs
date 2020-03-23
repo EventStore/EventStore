@@ -3,6 +3,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using System.Net;
+using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
 			Assert.AreEqual(1, _settings.ClusterNodeCount, "ClusterNodeCount");
-			Assert.IsInstanceOf<InternalAuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf<AuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
 			Assert.AreEqual(StatsStorage.Stream, _settings.StatsStorage);
 		}
 
@@ -85,7 +86,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
 			Assert.AreEqual(_clusterSize, _settings.ClusterNodeCount, "ClusterNodeCount");
-			Assert.IsInstanceOf<InternalAuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf<AuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
 			Assert.AreEqual(StatsStorage.Stream, _settings.StatsStorage);
 		}
 
