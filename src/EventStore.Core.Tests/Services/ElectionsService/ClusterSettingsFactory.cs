@@ -35,14 +35,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				StatsStorage.StreamAndFile, 0, 
 				new AuthenticationProviderFactory(components => 
 					new InternalAuthenticationProviderFactory(components)),
-				new LegacyAuthorizationProviderFactory(), false, 30, true, true, true,
-				TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+				new AuthorizationProviderFactory(components =>
+					new LegacyAuthorizationProviderFactory(components.MainQueue)), false, 30, true, true,
+				true, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), 
 				TimeSpan.FromSeconds(1800),
-				 true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
+				true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
 				false, false,
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
 				Constants.PTableMaxReaderCountDefault,

@@ -6,6 +6,8 @@ using Serilog;
 
 namespace EventStore.Core.Authorization {
 	public class LegacyAuthorizationProviderFactory : IAuthorizationProviderFactory {
+		private readonly IPublisher _mainQueue;
+
 		private static readonly Claim[] Admins =
 			{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
 
@@ -14,9 +16,13 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public IAuthorizationProvider Build(IPublisher mainQueue) {
+		public LegacyAuthorizationProviderFactory(IPublisher mainQueue) {
+			_mainQueue = mainQueue;
+		}
+
+		public IAuthorizationProvider Build() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
-			var streamAssertion = new LegacyStreamPermissionAssertion(mainQueue);
+			var streamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
 
 			policy.AllowAnonymous(Operations.Node.Redirect);
 			policy.AllowAnonymous(Operations.Node.StaticContent);

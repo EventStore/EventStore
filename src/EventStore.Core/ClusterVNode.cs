@@ -377,11 +377,14 @@ namespace EventStore.Core {
 					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
 				}
 			});
-
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
-			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory.Build(_mainQueue);
+			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory
+				.GetFactory(new AuthorizationProviderFactoryComponents {
+					MainQueue = _mainQueue
+				}).Build();
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
+
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
 				// EXTERNAL TCP

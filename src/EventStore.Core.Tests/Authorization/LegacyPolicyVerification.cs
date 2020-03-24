@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Authorization {
 
 		public LegacyPolicyVerification() {
 			_aclResponder = new AclResponder();
-			_authorizationProvider = new LegacyAuthorizationProviderFactory().Build(_aclResponder);
+			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder).Build();
 		}
 
 		public class PolicyVerificationParameters {

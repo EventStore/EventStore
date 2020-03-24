@@ -219,10 +219,16 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.DisableExternalTlsDescr, Opts.InterfacesGroup)]
 		public bool DisableExternalTls { get; set; }
+		
+		[ArgDescription(Opts.AuthorizationTypeDescr, Opts.AuthGroup)]
+		public string AuthorizationType { get; set; }
 
 		[ArgDescription(Opts.AuthenticationTypeDescr, Opts.AuthGroup)]
 		public string AuthenticationType { get; set; }
 
+		[ArgDescription(Opts.AuthorizationConfigFileDescr, Opts.AuthGroup)]
+		public string AuthorizationConfig { get; set; }
+		
 		[ArgDescription(Opts.AuthenticationConfigFileDescr, Opts.AuthGroup)]
 		public string AuthenticationConfig { get; set; }
 
@@ -381,6 +387,8 @@ namespace EventStore.ClusterNode {
 			DisableInternalTls = Opts.DisableInternalTlsDefault;
 			DisableExternalTls = Opts.DisableExternalTlsDefault;
 
+			AuthorizationType = Opts.AuthorizationTypeDefault;
+			AuthorizationConfig = Opts.AuthorizationConfigFileDefault;
 			AuthenticationType = Opts.AuthenticationTypeDefault;
 			AuthenticationConfig = Opts.AuthenticationConfigFileDefault;
 			DisableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;

@@ -396,8 +396,16 @@ namespace EventStore.Core.Util {
 		/*
 		 * Authentication/Authorization Options
 		 */
+		public const string AuthorizationTypeDescr = "The type of authorization to use.";
+		public static readonly string AuthorizationTypeDefault = "internal";
+		
 		public const string AuthenticationTypeDescr = "The type of authentication to use.";
 		public static readonly string AuthenticationTypeDefault = "internal";
+		
+		public const string AuthorizationConfigFileDescr =
+			"Path to the configuration file for authorization configuration (if applicable).";
+		
+		public static readonly string AuthorizationConfigFileDefault = string.Empty;
 
 		public const string AuthenticationConfigFileDescr =
 			"Path to the configuration file for authentication configuration (if applicable).";
