@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using Grpc.Core;
 using Xunit;
 
 namespace EventStore.Client.Streams {
@@ -16,12 +14,10 @@ namespace EventStore.Client.Streams {
 
 		[Fact]
 		public async Task fails_when_operation_expired() {
-			var rpcException = await Assert.ThrowsAsync<RpcException>(() => _fixture.Client
+			await Assert.ThrowsAsync<TimeoutException>(() => _fixture.Client
 				.ReadAllAsync(Direction.Backwards, Position.Start, 1,
 					options => options.TimeoutAfter = TimeSpan.Zero)
 				.ToArrayAsync().AsTask());
-
-			Assert.Equal(StatusCode.DeadlineExceeded, rpcException.StatusCode);
 		}
 
 		public class Fixture : EventStoreGrpcFixture {

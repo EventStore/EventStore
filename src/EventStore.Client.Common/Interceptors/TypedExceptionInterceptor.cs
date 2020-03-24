@@ -122,7 +122,7 @@ namespace EventStore.Client {
 					_ => (Exception)new InvalidOperationException(ex.Message, ex)
 				},
 				false => ex.StatusCode switch {
-					StatusCode.DeadlineExceeded => ex,
+					StatusCode.DeadlineExceeded => new TimeoutException(ex.Message, ex),
 					StatusCode.Unauthenticated => new NotAuthenticatedException(ex.Message, ex),
 					_ => new InvalidOperationException(ex.Message, ex)
 				}
