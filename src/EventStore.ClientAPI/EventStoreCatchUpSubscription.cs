@@ -167,32 +167,9 @@ namespace EventStore.ClientAPI {
 			if (Verbose)
 				Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName,
 					IsSubscribedToAll ? "<all>" : StreamId);
-			_connection.Connected -= OnReconnect;
 
 			ShouldStop = true;
 			EnqueueSubscriptionDropNotification(SubscriptionDropReason.UserInitiated, null);
-		}
-
-		private void OnReconnect(object sender, ClientConnectionEventArgs clientConnectionEventArgs) {
-			if (Verbose)
-				Log.Debug("Catch-up Subscription {0} to {1}: recovering after reconnection.", SubscriptionName,
-					IsSubscribedToAll ? "<all>" : StreamId);
-			if (Verbose)
-				Log.Debug("Catch-up Subscription {0} to {1}: unhooking from connection.Connected.", SubscriptionName,
-					IsSubscribedToAll ? "<all>" : StreamId);
-
-			DropData dropData;
-			do {
-				dropData = _dropData;
-			} while (Interlocked.CompareExchange(ref _dropData, null, dropData) != dropData);
-
-			int isDropped;
-			do {
-				isDropped = _isDropped;
-			} while (Interlocked.CompareExchange(ref _isDropped, 0, isDropped) != isDropped);
-			
-			_connection.Connected -= OnReconnect;
-			RunSubscriptionAsync();
 		}
 
 		private Task RunSubscriptionAsync() {
@@ -275,7 +252,6 @@ namespace EventStore.ClientAPI {
 			if (Verbose)
 				Log.Debug("Catch-up Subscription {0} to {1}: hooking to connection.Connected", SubscriptionName,
 					IsSubscribedToAll ? "<all>" : StreamId);
-			_connection.Connected += OnReconnect;
 
 			_allowProcessing = true;
 			EnsureProcessingPushQueue();

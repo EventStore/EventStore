@@ -23,6 +23,7 @@ namespace EventStore.Core.Services {
 	}
 
 	public class ElectionsService : IHandle<SystemMessage.BecomeShuttingDown>,
+		IHandle<SystemMessage.SystemInit>,
 		IHandle<GossipMessage.GossipUpdated>,
 		IHandle<ElectionMessage.StartElections>,
 		IHandle<ElectionMessage.ElectionsTimedOut>,
@@ -108,6 +109,7 @@ namespace EventStore.Core.Services {
 
 		public void SubscribeMessages(ISubscriber subscriber) {
 			subscriber.Subscribe<SystemMessage.BecomeShuttingDown>(this);
+			subscriber.Subscribe<SystemMessage.SystemInit>(this);
 			subscriber.Subscribe<GossipMessage.GossipUpdated>(this);
 			subscriber.Subscribe<ElectionMessage.StartElections>(this);
 			subscriber.Subscribe<ElectionMessage.ElectionsTimedOut>(this);
@@ -118,6 +120,12 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ElectionMessage.PrepareOk>(this);
 			subscriber.Subscribe<ElectionMessage.Proposal>(this);
 			subscriber.Subscribe<ElectionMessage.Accept>(this);
+		}
+		
+		public void Handle(SystemMessage.SystemInit _) {
+			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
+				_publisherEnvelope,
+				new ElectionMessage.SendViewChangeProof()));
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
@@ -137,9 +145,6 @@ namespace EventStore.Core.Services {
 
 			Log.Debug("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
-			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
-				_publisherEnvelope,
-				new ElectionMessage.SendViewChangeProof()));
 		}
 
 		public void Handle(ElectionMessage.ElectionsTimedOut message) {
