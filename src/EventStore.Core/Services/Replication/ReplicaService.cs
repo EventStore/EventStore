@@ -89,6 +89,7 @@ namespace EventStore.Core.Services.Replication {
 
 			switch (message.State) {
 				case VNodeState.Initializing:
+				case VNodeState.DiscoverLeader:
 				case VNodeState.Unknown:
 				case VNodeState.ReadOnlyLeaderless:
 				case VNodeState.PreLeader:

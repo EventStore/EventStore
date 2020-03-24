@@ -20,6 +20,7 @@ namespace EventStore.Core.Services.VNode {
 		public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionTimeout = TimeSpan.FromMilliseconds(1000);
+		private static readonly TimeSpan LeaderDiscoveryTimeout = TimeSpan.FromMilliseconds(3000);
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 
@@ -32,6 +33,7 @@ namespace EventStore.Core.Services.VNode {
 		private VNodeInfo _leader;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
+		private readonly int _clusterSize;
 
 		private IQueuedHandler _mainQueue;
 		private IEnvelope _publishEnvelope;
@@ -72,7 +74,8 @@ namespace EventStore.Core.Services.VNode {
 			_db = db;
 			_node = node;
 			_subSystems = subSystems;
-			if (vnodeSettings.ClusterNodeCount == 1) {
+			_clusterSize = vnodeSettings.ClusterNodeCount;
+			if (_clusterSize == 1) {
 				_serviceShutdownsToExpect = 1 /* StorageChaser */
 				                            + 1 /* StorageReader */
 				                            + 1 /* StorageWriter */
@@ -111,15 +114,16 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.SystemStart>().Do(Handle)
 				.When<SystemMessage.ServiceInitialized>().Do(Handle)
 				.When<SystemMessage.BecomeReadOnlyLeaderless>().Do(Handle)
+				.When<SystemMessage.BecomeDiscoverLeader>().Do(Handle)
 				.When<ClientMessage.ScavengeDatabase>().Ignore()
 				.When<ClientMessage.StopDatabaseScavenge>().Ignore()
 				.WhenOther().ForwardTo(_outputBus)
-				.InStates(VNodeState.Unknown, VNodeState.ReadOnlyLeaderless)
+				.InStates(VNodeState.DiscoverLeader, VNodeState.Unknown, VNodeState.ReadOnlyLeaderless)
 				.WhenOther().ForwardTo(_outputBus)
-				.InStates(VNodeState.Initializing, VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.PreLeader,
+				.InStates(VNodeState.Initializing, VNodeState.DiscoverLeader, VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.PreLeader,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower)
 				.When<SystemMessage.BecomeUnknown>().Do(Handle)
-				.InAllStatesExcept(VNodeState.Unknown,
+				.InAllStatesExcept(VNodeState.DiscoverLeader, VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.Leader, VNodeState.ResigningLeader, VNodeState.ReadOnlyLeaderless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
@@ -168,7 +172,7 @@ namespace EventStore.Core.Services.VNode {
 				.InAllStatesExcept(VNodeState.ResigningLeader)
 				.When<SystemMessage.RequestQueueDrained>().Ignore()
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
-					VNodeState.Unknown, VNodeState.ReadOnlyLeaderless,
+					VNodeState.DiscoverLeader, VNodeState.Unknown, VNodeState.ReadOnlyLeaderless,
 					VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.ReadEvent>().Do(HandleAsNonLeader)
 				.When<ClientMessage.ReadStreamEventsForward>().Do(HandleAsNonLeader)
@@ -213,7 +217,7 @@ namespace EventStore.Core.Services.VNode {
 				.InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown,
 				VNodeState.ReadOnlyLeaderless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ElectionMessage.ElectionsDone>().Do(Handle)
-				.InStates(VNodeState.Unknown,
+				.InStates(VNodeState.DiscoverLeader, VNodeState.Unknown,
 					VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone, VNodeState.Follower,
 					VNodeState.PreLeader, VNodeState.Leader)
 				.When<SystemMessage.BecomePreReplica>().Do(Handle)
@@ -305,6 +309,9 @@ namespace EventStore.Core.Services.VNode {
 				.InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
 				.When<SystemMessage.ServiceShutdown>().Do(Handle)
 				.WhenOther().ForwardTo(_outputBus)
+				.InState(VNodeState.DiscoverLeader)
+				.When<GossipMessage.GossipUpdated>().Do(HandleAsDiscoverLeader)
+				.When<LeaderDiscoveryMessage.DiscoveryTimeout>().Do(HandleAsDiscoverLeader)
 				.Build();
 			return stm;
 		}
@@ -324,7 +331,11 @@ namespace EventStore.Core.Services.VNode {
 			if (_nodeInfo.IsReadOnlyReplica) {
 				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(Guid.NewGuid()));
 			} else {
-				_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+				if (_clusterSize > 1) {
+					_fsm.Handle(new SystemMessage.BecomeDiscoverLeader(Guid.NewGuid()));
+				} else {
+					_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
+				}
 			}
 		}
 
@@ -335,6 +346,16 @@ namespace EventStore.Core.Services.VNode {
 			_leader = null;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new ElectionMessage.StartElections());
+		}
+
+		private void Handle(SystemMessage.BecomeDiscoverLeader message) {
+			Log.Information("========== [{internalHttp}] IS ATTEMPTING TO DISCOVER EXISTING LEADER...", _nodeInfo.InternalHttp);
+
+			_state = VNodeState.DiscoverLeader;
+			_outputBus.Publish(message);
+
+			var msg = new LeaderDiscoveryMessage.DiscoveryTimeout();
+			_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderDiscoveryTimeout, _publishEnvelope, msg));
 		}
 		
 		private void Handle(SystemMessage.InitiateLeaderResignation message) {
@@ -882,6 +903,34 @@ namespace EventStore.Core.Services.VNode {
 			}
 
 			_outputBus.Publish(message);
+		}
+
+		private void HandleAsDiscoverLeader(GossipMessage.GossipUpdated message) {
+			if (_leader != null)
+				return;
+
+			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
+			var leaderCount = aliveLeaders.Count();
+			if (leaderCount == 1) {
+				_leader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
+				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
+				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
+				_stateCorrelationId = Guid.NewGuid();
+				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
+			} else {
+				Log.Debug(
+					"{leadersFound} found during LEADER DISCOVERY stage, making further attempts.",
+					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
+			}
+
+			_outputBus.Publish(message);
+		}
+
+		private void HandleAsDiscoverLeader(LeaderDiscoveryMessage.DiscoveryTimeout _) {
+			if (_leader != null)
+				return;
+			Log.Information("LEADER DISCOVERY timed out. Proceeding to UNKNOWN state.");
+			_fsm.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
 		private void Handle(SystemMessage.NoQuorumMessage message) {
