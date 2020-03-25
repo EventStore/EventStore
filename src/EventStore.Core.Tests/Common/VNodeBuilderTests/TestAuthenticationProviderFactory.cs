@@ -4,7 +4,7 @@ using EventStore.Core.Authentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
-		public IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
 			return new TestAuthenticationProvider();
 		}
 	}

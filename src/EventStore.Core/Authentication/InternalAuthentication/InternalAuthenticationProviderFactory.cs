@@ -31,7 +31,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			components.ExternalHttpService.SetupController(usersController);
 		}
 
-		public IAuthenticationProvider BuildAuthenticationProvider(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
 			var provider =
 				new InternalAuthenticationProvider(_components.MainBus, _dispatcher, _passwordHashAlgorithm, ESConsts.CachedPrincipalCount,
 					logFailedAuthenticationAttempts);
@@ -41,7 +41,6 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_components.MainBus.Subscribe<SystemMessage.BecomeShutdown>(passwordChangeNotificationReader);
 			_components.MainBus.Subscribe(provider);
 
-			// USER MANAGEMENT
 			var ioDispatcher = new IODispatcher(_components.MainQueue, new PublishEnvelope(_components.MainQueue));
 			_components.MainBus.Subscribe(ioDispatcher.BackwardReader);
 			_components.MainBus.Subscribe(ioDispatcher.ForwardReader);
