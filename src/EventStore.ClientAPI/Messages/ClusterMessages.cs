@@ -79,7 +79,10 @@ namespace EventStore.ClientAPI.Messages {
 			Leader,
 			Manager,
 			ShuttingDown,
-			Shutdown
+			Shutdown,
+			ReadOnlyLeaderless,
+			PreReadOnlyReplica,
+			ReadOnlyReplica
 		}
 	}
 }

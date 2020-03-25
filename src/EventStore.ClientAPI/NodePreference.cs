@@ -22,6 +22,11 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// When attempting connection, has no node preference.
 		/// </summary>
-		Random
+		Random,
+		
+		/// <summary>
+		/// When attempting connection, prefers read only replicas.
+		/// </summary>
+		ReadOnlyReplica
 	}
 }

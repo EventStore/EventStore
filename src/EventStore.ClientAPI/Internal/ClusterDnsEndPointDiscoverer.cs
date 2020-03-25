@@ -220,7 +220,7 @@ namespace EventStore.ClientAPI.Internal {
 				case NodePreference.Random:
 					RandomShuffle(nodes, 0, nodes.Length - 1);
 					break;
-				case NodePreference.Follower:
+				case NodePreference.Slave:
 					nodes = nodes.OrderBy(nodeEntry => 
 							nodeEntry.State != ClusterMessages.VNodeState.Follower &&
 							 nodeEntry.State != ClusterMessages.VNodeState.Slave)
@@ -251,6 +251,12 @@ namespace EventStore.ClientAPI.Internal {
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
 			return new NodeEndPoints(normTcp, secTcp);
+		}
+		
+		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
+			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
+			       || state == ClusterMessages.VNodeState.PreReadOnlyReplica
+			       || state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}
 	}
 }

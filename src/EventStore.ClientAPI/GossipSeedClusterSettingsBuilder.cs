@@ -116,6 +116,15 @@ namespace EventStore.ClientAPI {
 			_nodePreference = NodePreference.Slave;
 			return this;
 		}
+		
+		/// <summary>
+		/// Whether to prioritize choosing a read only replica that's alive from the known nodes. 
+		/// </summary>
+		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		public GossipSeedClusterSettingsBuilder PreferReadOnlyReplica() {
+			_nodePreference = NodePreference.ReadOnlyReplica;
+			return this;
+		}
 
 		/// <summary>
 		/// Builds a <see cref="ClusterSettings"/> object from a <see cref="GossipSeedClusterSettingsBuilder"/>.

@@ -10,11 +10,11 @@
 			<PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
 		</ItemGroup>
 		<ItemGroup>
-				<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj"/>
-				<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj"/>
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
+				<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
+				<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
+				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		</ItemGroup>
 		<ItemGroup>
-				<EmbeddedResource Include="server.p12"/>
+				<EmbeddedResource Include="server.p12" />
 		</ItemGroup>
 </Project>
