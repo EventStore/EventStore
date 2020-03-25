@@ -27,7 +27,7 @@ namespace EventStore.ClientAPI.Projections {
 		public QueryManager(ILogger log, EndPoint httpEndPoint, TimeSpan projectionOperationTimeout,
 			TimeSpan queryTimeout, IHttpClient client = null) {
 			_queryTimeout = queryTimeout;
-			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, client);
+			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, client: client);
 		}
 
 		/// <summary>
