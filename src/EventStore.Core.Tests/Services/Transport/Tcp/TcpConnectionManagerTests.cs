@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
 				publisher, dummyConnection, publisher,
-				new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
+				new InternalAuthenticationProvider(publisher, new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
@@ -112,7 +112,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(),
+						new NoopEnvelope()), null, 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
@@ -140,7 +141,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
@@ -173,7 +174,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
@@ -206,7 +207,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
@@ -239,7 +240,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var tcpConnectionManager = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },

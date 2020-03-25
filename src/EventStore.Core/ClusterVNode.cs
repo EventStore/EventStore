@@ -80,8 +80,8 @@ namespace EventStore.Core {
 
 		public IStartup Startup => _startup;
 		
-		public IAuthenticationProvider InternalAuthenticationProvider {
-			get { return _internalAuthenticationProvider; }
+		public IAuthenticationProvider AuthenticationProvider {
+			get { return _authenticationProvider; }
 		}
 
 		public AuthorizationGateway AuthorizationGateway { get; }
@@ -102,7 +102,7 @@ namespace EventStore.Core {
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
-		private readonly IAuthenticationProvider _internalAuthenticationProvider;
+		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly IReadIndex _readIndex;
 
@@ -366,11 +366,19 @@ namespace EventStore.Core {
 			};
 			
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
-			_internalAuthenticationProvider =
+			_authenticationProvider =
 				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).BuildAuthenticationProvider(
-					new ShimmedPublisher(_mainQueue), vNodeSettings.LogFailedAuthenticationAttempts);
+					vNodeSettings.LogFailedAuthenticationAttempts);
+			
+			_authenticationProvider.Initialize().ContinueWith(t => {
+				if (t.Exception != null) {
+					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());
+				} else {
+					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
+				}
+			});
 
-			Ensure.NotNull(_internalAuthenticationProvider, "authenticationProvider");
+			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
 			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory.Build(_mainQueue);
 			Ensure.NotNull(_authorizationProvider, "authorizationProvider");
@@ -381,7 +389,7 @@ namespace EventStore.Core {
 					var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Normal, new ClientTcpDispatcher(),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_internalAuthenticationProvider, AuthorizationGateway, null, false, vNodeSettings.ConnectionPendingSendBytesThreshold,
+						_authenticationProvider, AuthorizationGateway, null, false, vNodeSettings.ConnectionPendingSendBytesThreshold,
 					vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
@@ -392,7 +400,7 @@ namespace EventStore.Core {
 					var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Secure, new ClientTcpDispatcher(),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_internalAuthenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, false,
+						_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, false,
 					vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -406,7 +414,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Normal,
 							new InternalTcpDispatcher(),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_internalAuthenticationProvider, AuthorizationGateway, null, false, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, AuthorizationGateway, null, false, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -418,7 +426,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_internalAuthenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, true,
+							_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, true,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -436,7 +444,7 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-				new BasicHttpAuthenticationProvider(_internalAuthenticationProvider),
+				new BasicHttpAuthenticationProvider(_authenticationProvider),
 			};
 			if (vNodeSettings.EnableTrustedAuth)
 				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
@@ -649,7 +657,7 @@ namespace EventStore.Core {
 
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
-					_internalAuthenticationProvider, AuthorizationGateway,
+					_authenticationProvider, AuthorizationGateway,
 					gossipInfo, !vNodeSettings.DisableInternalTls, true,
 					Certificate == null ? null : new X509Certificate2Collection(Certificate),
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval);

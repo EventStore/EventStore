@@ -4,8 +4,6 @@ using System.IO;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
-using System.Collections.Generic;
-using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Tcp;

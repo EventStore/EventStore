@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			manager = new TcpConnectionManager(
 				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 

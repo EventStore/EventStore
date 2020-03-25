@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -27,21 +28,21 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
 		public const string UsersStreamType = "$User";
-		private readonly IAuthenticationProviderPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _skipInitializeStandardUsersCheck;
+		private readonly TaskCompletionSource<bool> _tcs;
 		private int _numberOfStandardUsersToBeCreated = 2;
 		private readonly ILogger _log;
 
-		public UserManagementService(
-			IAuthenticationProviderPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
-			bool skipInitializeStandardUsersCheck) {
+		public UserManagementService(IODispatcher ioDispatcher,
+			PasswordHashAlgorithm passwordHashAlgorithm, bool skipInitializeStandardUsersCheck,
+			TaskCompletionSource<bool> tcs) {
 			_log = Serilog.Log.ForContext<UserManagementService>();
-			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_skipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
+			_tcs = tcs;
 		}
 
 		private bool VerifyPassword(string password, UserData userDetailsToVerify) {
@@ -203,18 +204,18 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 							NotifyInitialized();
 					});
 			} else {
-				_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
+				_tcs.SetResult(true);
 			}
 		}
 
 		public void Handle(SystemMessage.BecomeFollower message) {
-			_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
+			_tcs.SetResult(true);
 		}
 
 		private void NotifyInitialized() {
 			_numberOfStandardUsersToBeCreated -= 1;
 			if (_numberOfStandardUsersToBeCreated == 0) {
-				_publisher.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
+				_tcs.SetResult(true);
 			}
 		}
 

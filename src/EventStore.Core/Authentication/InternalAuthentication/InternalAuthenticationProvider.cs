@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -19,13 +20,29 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _logFailedAuthenticationAttempts;
 		private readonly LRUCache<string, Tuple<string, ClaimsPrincipal>> _userPasswordsCache;
+		private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
 
-		public InternalAuthenticationProvider(IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
+		public InternalAuthenticationProvider(ISubscriber subscriber, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
 			int cacheSize, bool logFailedAuthenticationAttempts) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>(cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
+			
+			var userManagement = new UserManagementService(ioDispatcher, _passwordHashAlgorithm,
+				skipInitializeStandardUsersCheck: false, _tcs);
+			subscriber.Subscribe<UserManagementMessage.Create>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.Update>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.Enable>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.Disable>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.Delete>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.ResetPassword>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.ChangePassword>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.Get>(userManagement);
+			subscriber.Subscribe<UserManagementMessage.GetAll>(userManagement);
+			subscriber.Subscribe<SystemMessage.BecomeLeader>(userManagement);
+			subscriber.Subscribe<SystemMessage.BecomeFollower>(userManagement);
+
 		}
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
@@ -123,6 +140,10 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		public void Handle(InternalAuthenticationProviderMessages.ResetPasswordCache message) {
 			_userPasswordsCache.Remove(message.LoginName);
+		}
+
+		public Task Initialize() {
+			return _tcs.Task;
 		}
 	}
 }

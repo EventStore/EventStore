@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -8,7 +9,6 @@ using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.Core.Authentication;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
@@ -31,7 +31,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				AllWritesSucceed();
 
 				_users = new Core.Authentication.InternalAuthentication.UserManagementService(
-					new ShimmedPublisher(_bus), _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
+					_ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true, 
+					new TaskCompletionSource<bool>());
 
 				_bus.Subscribe<UserManagementMessage.Get>(_users);
 				_bus.Subscribe<UserManagementMessage.GetAll>(_users);
