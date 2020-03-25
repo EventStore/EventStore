@@ -1,0 +1,17 @@
+name: Changelog update
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  updateChangelog:
+    name: Update changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Update changelog
+        uses: EventStore/Automations/changelog-update@master
+        id: changelog-update
+        with:
+          github-token: ${{ secrets.GH_PAT }}
