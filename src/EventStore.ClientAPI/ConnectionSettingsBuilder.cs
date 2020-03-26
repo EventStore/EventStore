@@ -356,7 +356,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Whether to prioritize choosing a read only replica that's alive from the known nodes. 
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferReadOnlyReplica() {
 			_nodePreference = NodePreference.ReadOnlyReplica;
 			return this;
