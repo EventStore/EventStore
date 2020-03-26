@@ -233,7 +233,7 @@ namespace EventStore.ClientAPI.Internal {
 					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					RandomShuffle(nodes, 0,
-						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
+						nodes.Count(nodeEntry => IsReadOnlyReplicaState(nodeEntry.State)) - 1);
 					break;
 			}
 
