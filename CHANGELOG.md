@@ -12,6 +12,9 @@ All notable changes to this project will be documented in this file.
 - Unused HTTP messages. [#2362](https://github.com/EventStore/EventStore/pull/2363)
 - Removed better ordering option. [#2368](https://github.com/EventStore/EventStore/pull/2368)
 
+### Added
+- Supports for pull request linting and automatic changelog update [EventStore#2391](https://github.com/EventStore/EventStore/pull/2391)
+
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
 
