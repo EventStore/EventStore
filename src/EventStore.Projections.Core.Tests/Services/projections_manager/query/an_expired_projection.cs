@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
@@ -52,6 +52,22 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			public void projection_is_not_found() {
 				Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.NotFound>().Count());
 				Assert.IsFalse(_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Any());
+			}
+		}
+
+		[TestFixture]
+		public class when_deleted_on_expiry : Base {
+			protected override IEnumerable<WhenStep> When() {
+				foreach (var s in base.When()) yield return s;
+				_consumer.HandledMessages.Clear();
+			}
+
+			[Test]
+			public void projection_deletion_should_not_be_written() {
+				var registrationEvents = _streams["$projections-$all"];
+				Assert.AreEqual(1, registrationEvents.Count(e => e.EventType == "$ProjectionsInitialized"));
+				Assert.AreEqual(0,
+					registrationEvents.Count(e => Helper.UTF8NoBom.GetString(e.Data.ToArray()) == _projectionName));
 			}
 		}
 	}

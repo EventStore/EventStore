@@ -331,15 +331,14 @@ namespace EventStore.Projections.Core.Services.Management {
 					new ProjectionManagementMessage.OperationFailed(
 						"We currently don't allow for the deletion of System Projections."));
 				return;
-			} else {
-				if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs,
-					message)) return;
-				try {
-					projection.Handle(message);
-				} catch (InvalidOperationException ex) {
-					message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
-					return;
-				}
+			}
+
+			if (!ProjectionManagementMessage.RunAs.ValidateRunAs(projection.Mode, ReadWrite.Write, projection.RunAs,
+				message)) return;
+			try {
+				projection.Handle(message);
+			} catch (InvalidOperationException ex) {
+				message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed(ex.Message));
 			}
 		}
 
@@ -614,7 +613,14 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		public void Handle(ProjectionManagementMessage.Internal.Deleted message) {
-			var deletedEventId = Guid.NewGuid();
+			var projection = GetProjection(message.Name);
+			if (projection.Mode == ProjectionMode.Transient) {
+					// We don't need to write a delete, as transient projections don't write creations
+					_projections.Remove(message.Name);
+					_projectionsMap.Remove(message.Id);
+					_projectionsRegistrationState.Remove(message.Name);
+					return;
+			}
 			DeleteProjection(message,
 				expVer => {
 					_projections.Remove(message.Name);
@@ -1083,15 +1089,9 @@ namespace EventStore.Projections.Core.Services.Management {
 				}
 			}
 
-			if (writeCompleted.Result == OperationResult.WrongExpectedVersion
-				&& (writeCompleted.CurrentVersion < 0
-				|| writeCompleted.CurrentVersion > _projectionsRegistrationExpectedVersion)) {
-				_logger.Information("PROJECTIONS: Got wrong expected version writing projection deletion for {projection}." +
-					"Reading {registrationStream} before retrying", message.Name, ProjectionNamesBuilder.ProjectionsRegistrationStream);
-				ReadProjectionsList(
-					new Dictionary<string, long>(),
-					m => DeleteProjection(message, onCompleted, retryCount: --retryCount),
-					_projectionsRegistrationExpectedVersion + 1);
+			if (writeCompleted.Result == OperationResult.WrongExpectedVersion) {
+				_logger.Error("PROJECTIONS: Got wrong expected version writing projection deletion for {projection}.",
+					message.Name);
 				return;
 			}
 
