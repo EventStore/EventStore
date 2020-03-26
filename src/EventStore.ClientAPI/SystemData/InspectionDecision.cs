@@ -4,6 +4,7 @@ namespace EventStore.ClientAPI.SystemData {
 		EndOperation,
 		Retry,
 		Reconnect,
-		Subscribed
+		Subscribed,
+		NotSupported
 	}
 }

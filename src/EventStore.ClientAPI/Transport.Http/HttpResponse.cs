@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 namespace EventStore.ClientAPI.Transport.Http {
-	internal class HttpResponse {
+	public class HttpResponse {
 		public readonly string CharacterSet;
 
 		public readonly string ContentEncoding;

@@ -12,32 +12,32 @@ using EventStore.ClientAPI.Common.Utils.Threading;
 
 namespace EventStore.ClientAPI.UserManagement {
 	internal class UsersClient {
-		private readonly HttpAsyncClient _client;
+		private readonly IHttpClient _client;
 
 		private readonly TimeSpan _operationTimeout;
 
-		public UsersClient(ILogger log, TimeSpan operationTimeout) {
+		public UsersClient(ILogger log, TimeSpan operationTimeout, IHttpClient client) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout);
+			_client = client ?? new HttpAsyncClient(_operationTimeout);
 		}
 
-		public Task Enable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null) {
-			return SendPost(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}/command/enable", login),
+		public Task Enable(EndPoint endPoint, string login, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendPost(endPoint.ToHttpUrl(httpSchema, "/users/{0}/command/enable", login),
 				string.Empty, userCredentials, HttpStatusCode.OK);
 		}
 
-		public Task Disable(IPEndPoint endPoint, string login, UserCredentials userCredentials = null) {
-			return SendPost(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}/command/disable", login),
+		public Task Disable(EndPoint endPoint, string login, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendPost(endPoint.ToHttpUrl(httpSchema, "/users/{0}/command/disable", login),
 				string.Empty, userCredentials, HttpStatusCode.OK);
 		}
 
-		public Task Delete(IPEndPoint endPoint, string login, UserCredentials userCredentials = null) {
-			return SendDelete(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}", login), userCredentials,
+		public Task Delete(EndPoint endPoint, string login, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendDelete(endPoint.ToHttpUrl(httpSchema, "/users/{0}", login), userCredentials,
 				HttpStatusCode.OK);
 		}
 
-		public Task<List<UserDetails>> ListAll(IPEndPoint endPoint, UserCredentials userCredentials = null) {
-			return SendGet(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/"), userCredentials,
+		public Task<List<UserDetails>> ListAll(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendGet(endPoint.ToHttpUrl(httpSchema, "/users/"), userCredentials,
 					HttpStatusCode.OK)
 				.ContinueWith(x => {
 					if (x.IsFaulted) throw x.Exception;
@@ -46,8 +46,8 @@ namespace EventStore.ClientAPI.UserManagement {
 				});
 		}
 
-		public Task<UserDetails> GetCurrentUser(IPEndPoint endPoint, UserCredentials userCredentials = null) {
-			return SendGet(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/$current"), userCredentials,
+		public Task<UserDetails> GetCurrentUser(EndPoint endPoint, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendGet(endPoint.ToHttpUrl(httpSchema, "/users/$current"), userCredentials,
 					HttpStatusCode.OK)
 				.ContinueWith(x => {
 					if (x.IsFaulted) throw x.Exception;
@@ -56,8 +56,8 @@ namespace EventStore.ClientAPI.UserManagement {
 				});
 		}
 
-		public Task<UserDetails> GetUser(IPEndPoint endPoint, string login, UserCredentials userCredentials = null) {
-			return SendGet(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}", login), userCredentials,
+		public Task<UserDetails> GetUser(EndPoint endPoint, string login, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendGet(endPoint.ToHttpUrl(httpSchema, "/users/{0}", login), userCredentials,
 					HttpStatusCode.OK)
 				.ContinueWith(x => {
 					if (x.IsFaulted) throw x.Exception;
@@ -66,34 +66,34 @@ namespace EventStore.ClientAPI.UserManagement {
 				});
 		}
 
-		public Task CreateUser(IPEndPoint endPoint, UserCreationInformation newUser,
-			UserCredentials userCredentials = null) {
+		public Task CreateUser(EndPoint endPoint, UserCreationInformation newUser,
+			UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			var userJson = newUser.ToJson();
-			return SendPost(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/"), userJson, userCredentials,
+			return SendPost(endPoint.ToHttpUrl(httpSchema, "/users/"), userJson, userCredentials,
 				HttpStatusCode.Created);
 		}
 
-		public Task UpdateUser(IPEndPoint endPoint, string login, UserUpdateInformation updatedUser,
-			UserCredentials userCredentials) {
-			return SendPut(endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}", login),
+		public Task UpdateUser(EndPoint endPoint, string login, UserUpdateInformation updatedUser,
+			UserCredentials userCredentials, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
+			return SendPut(endPoint.ToHttpUrl(httpSchema, "/users/{0}", login),
 				updatedUser.ToJson(), userCredentials, HttpStatusCode.OK);
 		}
 
-		public Task ChangePassword(IPEndPoint endPoint, string login, ChangePasswordDetails changePasswordDetails,
-			UserCredentials userCredentials) {
+		public Task ChangePassword(EndPoint endPoint, string login, ChangePasswordDetails changePasswordDetails,
+			UserCredentials userCredentials, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			return SendPost(
-				endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}/command/change-password", login),
+				endPoint.ToHttpUrl(httpSchema, "/users/{0}/command/change-password", login),
 				changePasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
 		}
 
-		public Task ResetPassword(IPEndPoint endPoint, string login, ResetPasswordDetails resetPasswordDetails,
-			UserCredentials userCredentials = null) {
+		public Task ResetPassword(EndPoint endPoint, string login, ResetPasswordDetails resetPasswordDetails,
+			UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			return SendPost(
-				endPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/users/{0}/command/reset-password", login),
+				endPoint.ToHttpUrl(httpSchema, "/users/{0}/command/reset-password", login),
 				resetPasswordDetails.ToJson(), userCredentials, HttpStatusCode.OK);
 		}
 
-		private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode) {
+		private Task<string> SendGet(string url, UserCredentials userCredentials, int expectedCode, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			var source = TaskCompletionSourceFactory.Create<string>();
 			_client.Get(url,
 				userCredentials,
@@ -113,7 +113,7 @@ namespace EventStore.ClientAPI.UserManagement {
 			return source.Task;
 		}
 
-		private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode) {
+		private Task<string> SendDelete(string url, UserCredentials userCredentials, int expectedCode, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			var source = TaskCompletionSourceFactory.Create<string>();
 			_client.Delete(url,
 				userCredentials,
@@ -133,7 +133,7 @@ namespace EventStore.ClientAPI.UserManagement {
 			return source.Task;
 		}
 
-		private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode) {
+		private Task SendPut(string url, string content, UserCredentials userCredentials, int expectedCode, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			var source = TaskCompletionSourceFactory.Create<object>();
 			_client.Put(url,
 				content,
@@ -155,7 +155,7 @@ namespace EventStore.ClientAPI.UserManagement {
 			return source.Task;
 		}
 
-		private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode) {
+		private Task SendPost(string url, string content, UserCredentials userCredentials, int expectedCode, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {
 			var source = TaskCompletionSourceFactory.Create<object>();
 			_client.Post(url,
 				content,

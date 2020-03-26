@@ -1195,7 +1195,10 @@ namespace EventStore.ClientAPI.Messages
       TooBusy = 1,
             
       [ProtoEnum(Name=@"NotMaster", Value=2)]
-      NotMaster = 2
+      NotMaster = 2,
+      
+      [ProtoEnum(Name=@"IsReadOnly", Value=3)]
+      IsReadOnly = 3
     }
   
     private NotHandled() {}

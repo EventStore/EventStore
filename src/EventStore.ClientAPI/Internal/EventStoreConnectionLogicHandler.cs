@@ -508,6 +508,11 @@ namespace EventStore.ClientAPI.Internal {
 						ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint));
 						_operations.ScheduleOperationRetry(operation);
 						break;
+					case InspectionDecision.NotSupported:
+						operation.Operation.Fail(
+							new OperationNotSupportedException(operation.Operation.GetType().Name, result.Description));
+						_operations.RemoveOperation(operation);
+						break;
 					default: throw new Exception(string.Format("Unknown InspectionDecision: {0}", result.Decision));
 				}
 
