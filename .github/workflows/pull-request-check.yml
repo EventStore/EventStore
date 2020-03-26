@@ -1,0 +1,15 @@
+name: Pull Request check
+on:
+  pull_request:
+    types: [opened, edited]
+jobs:
+  checkPullRequest:
+    name: Pull Request check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check pull requests
+        uses: EventStore/Automations/pr-check@master
+        with:
+          github-token: ${{ secrets.GH_PAT }}
