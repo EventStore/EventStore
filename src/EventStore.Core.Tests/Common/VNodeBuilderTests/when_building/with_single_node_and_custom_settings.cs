@@ -4,8 +4,7 @@ using System.IO;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
-using System.Collections.Generic;
-using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 
@@ -488,12 +487,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
 	public class with_custom_authentication_provider_factory : SingleNodeScenario {
 		public override void Given() {
-			_builder.WithAuthenticationProvider(new TestAuthenticationProviderFactory());
+			_builder.WithAuthenticationProviderFactory(new AuthenticationProviderFactory(
+				_ => new TestAuthenticationProviderFactory()));
 		}
 
 		[Test]
 		public void should_set_authentication_provider_factory() {
-			Assert.IsInstanceOf(typeof(TestAuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf(typeof(AuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
 		}
 	}
 

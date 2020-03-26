@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.Embedded {
 		/// <returns></returns>
 		public static IEventStoreConnection Create(ClusterVNode eventStore, ConnectionSettings connectionSettings,
 			string connectionName = null) {
-			return Create(eventStore.MainQueue, eventStore.MainBus, eventStore.InternalAuthenticationProvider, eventStore.AuthorizationGateway,
+			return Create(eventStore.MainQueue, eventStore.MainBus, eventStore.AuthenticationProvider, eventStore.AuthorizationGateway,
 				connectionSettings, connectionName);
 		}
 	}

@@ -18,6 +18,7 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Rags;
@@ -364,7 +365,7 @@ namespace EventStore.ClusterNode {
 			var authenticationProviderFactory =
 				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
-			builder.WithAuthenticationProvider(authenticationProviderFactory);
+			builder.WithAuthenticationProviderFactory(authenticationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 
 			foreach (var subsystemFactory in subsystemFactories) {
@@ -395,12 +396,13 @@ namespace EventStore.ClusterNode {
 			return strategyFactories.ToArray();
 		}
 
-		private static IAuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType,
+		private static AuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType,
 			string authenticationConfigFile, CompositionContainer plugInContainer) {
 			var potentialPlugins = plugInContainer.GetExports<IAuthenticationPlugin>();
 
-			var authenticationTypeToPlugin = new Dictionary<string, Func<IAuthenticationProviderFactory>> {
-				{"internal", () => new InternalAuthenticationProviderFactory()}
+			var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
+				{"internal", new AuthenticationProviderFactory(components => 
+					new InternalAuthenticationProviderFactory(components)) }
 			};
 
 			foreach (var potentialPlugin in potentialPlugins) {
@@ -411,7 +413,8 @@ namespace EventStore.ClusterNode {
 						"Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
 						plugin.Name, plugin.Version, commandLine);
 					authenticationTypeToPlugin.Add(commandLine,
-						() => plugin.GetAuthenticationProviderFactory(authenticationConfigFile));
+						new AuthenticationProviderFactory(_ =>
+							plugin.GetAuthenticationProviderFactory(authenticationConfigFile)));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
@@ -425,7 +428,7 @@ namespace EventStore.ClusterNode {
 					$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
 			}
 
-			return factory();
+			return factory;
 		}
 
 		private static ISubsystemFactory[] GetPlugInSubsystemFactories(

@@ -337,13 +337,5 @@ namespace EventStore.Core.Messages {
 				Data = null;
 			}
 		}
-
-		public sealed class UserManagementServiceInitialized : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-		}
 	}
 }

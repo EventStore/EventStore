@@ -54,7 +54,6 @@ namespace EventStore.Core.Services.Transport.Http
 				if (match == null) {
 					MethodNotAllowed(httpEntity, allowedMethods);
 					return false;
-					;
 				}
 
 				ICodec requestCodec = null;

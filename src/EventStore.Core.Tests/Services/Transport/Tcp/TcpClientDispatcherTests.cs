@@ -2,13 +2,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Tcp;
 using NUnit.Framework;
 using System;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Text;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			_connection = new TcpConnectionManager(
 				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },

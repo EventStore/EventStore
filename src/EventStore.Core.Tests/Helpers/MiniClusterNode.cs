@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
@@ -120,7 +118,9 @@ namespace EventStore.Core.Tests.Helpers {
 				certificate, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				disableInternalTls, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
-				new InternalAuthenticationProviderFactory(), new LegacyAuthorizationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
+				new AuthenticationProviderFactory(components => 
+					new InternalAuthenticationProviderFactory(components)),
+				new LegacyAuthorizationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
 				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.Helpers {
 					}));
 			}
 			Node.MainBus.Subscribe(
-				new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => {
+				new AdHocHandler<AuthenticationMessage.AuthenticationProviderInitialized>(m => {
 					_adminUserCreated.TrySetResult(true);
 				}));
 			_host.Start();

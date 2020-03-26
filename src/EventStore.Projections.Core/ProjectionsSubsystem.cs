@@ -28,7 +28,6 @@ namespace EventStore.Projections.Core {
 		IHandle<ProjectionSubsystemMessage.ComponentStarted>,
 		IHandle<ProjectionSubsystemMessage.ComponentStopped>,
 		IHandle<ProjectionSubsystemMessage.IODispatcherDrained> {
-		private static readonly PathString ProjectionsSegment = "/event_store.client.projections.Projections";
 
 		public InMemoryBus LeaderMainBus {
 			get { return _leaderMainBus; }

@@ -1,16 +1,18 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.Services;
+using EventStore.Core.Services.UserManagement;
 using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
-namespace EventStore.Core.Services.UserManagement {
+namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class UserManagementService : IHandle<UserManagementMessage.Get>,
 		IHandle<UserManagementMessage.GetAll>,
 		IHandle<UserManagementMessage.Create>,
@@ -25,23 +27,22 @@ namespace EventStore.Core.Services.UserManagement {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
-		public const string UsersStream = "$Users";
 		public const string UsersStreamType = "$User";
-		private readonly IPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly PasswordHashAlgorithm _passwordHashAlgorithm;
 		private readonly bool _skipInitializeStandardUsersCheck;
+		private readonly TaskCompletionSource<bool> _tcs;
 		private int _numberOfStandardUsersToBeCreated = 2;
 		private readonly ILogger _log;
 
-		public UserManagementService(
-			IPublisher publisher, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
-			bool skipInitializeStandardUsersCheck) {
+		public UserManagementService(IODispatcher ioDispatcher,
+			PasswordHashAlgorithm passwordHashAlgorithm, bool skipInitializeStandardUsersCheck,
+			TaskCompletionSource<bool> tcs) {
 			_log = Serilog.Log.ForContext<UserManagementService>();
-			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_skipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
+			_tcs = tcs;
 		}
 
 		private bool VerifyPassword(string password, UserData userDetailsToVerify) {
@@ -203,18 +204,18 @@ namespace EventStore.Core.Services.UserManagement {
 							NotifyInitialized();
 					});
 			} else {
-				_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+				_tcs.SetResult(true);
 			}
 		}
 
 		public void Handle(SystemMessage.BecomeFollower message) {
-			_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+			_tcs.SetResult(true);
 		}
 
 		private void NotifyInitialized() {
 			_numberOfStandardUsersToBeCreated -= 1;
 			if (_numberOfStandardUsersToBeCreated == 0) {
-				_publisher.Publish(new UserManagementMessage.UserManagementServiceInitialized());
+				_tcs.SetResult(true);
 			}
 		}
 
