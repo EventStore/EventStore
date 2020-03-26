@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Supports for pull request linting and automatic changelog update [EventStore#2391](https://github.com/EventStore/EventStore/pull/2391)
 
+### With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https
+- //github.com/EventStore/EventStore/pull/2383)
+
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
 
