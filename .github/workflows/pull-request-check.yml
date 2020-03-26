@@ -13,3 +13,4 @@ jobs:
         uses: EventStore/Automations/pr-check@master
         with:
           github-token: ${{ secrets.GH_PAT }}
+          source-path: 'src'
