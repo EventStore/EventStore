@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Allows infinite nodes discovery attempts.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public DnsClusterSettingsBuilder KeepDiscovering() {
 			_maxDiscoverAttempts = Int32.MaxValue;
 			return this;
