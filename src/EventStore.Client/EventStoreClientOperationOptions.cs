@@ -2,6 +2,9 @@
 
 namespace EventStore.Client {
 	public class EventStoreClientOperationOptions {
+		/// <summary>
+		/// Timeout for Client connections
+		/// </summary>
 		public TimeSpan? TimeoutAfter { get; set; }
 		public static EventStoreClientOperationOptions Default => new EventStoreClientOperationOptions {
 			TimeoutAfter = TimeSpan.FromSeconds(5),
