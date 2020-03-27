@@ -9,10 +9,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
-using EventStore.Client.Streams;
 using Serilog;
-using IEventFilter = EventStore.Core.Util.IEventFilter;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -23,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
-			private readonly IEventFilter _eventFilter;
+			private readonly Util.IEventFilter _eventFilter;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly IReadIndex _readIndex;
@@ -41,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public AllSubscriptionFiltered(IPublisher bus,
 				Position? startPosition,
 				bool resolveLinks,
-				IEventFilter eventFilter,
+				EventStore.Core.Util.IEventFilter eventFilter,
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				IReadIndex readIndex,
@@ -130,7 +127,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
 				private readonly bool _resolveLinks;
-				private readonly IEventFilter _eventFilter;
+				private readonly Util.IEventFilter _eventFilter;
 				private readonly ClaimsPrincipal _user;
 				private readonly bool _requiresLeader;
 				private readonly uint _checkpointIntervalMultiplier;
@@ -153,7 +150,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					IPublisher bus,
 					Position position,
 					bool resolveLinks,
-					IEventFilter eventFilter,
+					Util.IEventFilter eventFilter,
 					ClaimsPrincipal user,
 					bool requiresLeader,
 					IReadIndex readIndex,
@@ -334,7 +331,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				private readonly Guid _subscriptionId;
 				private readonly IPublisher _bus;
-				private readonly IEventFilter _eventFilter;
+				private readonly Util.IEventFilter _eventFilter;
 				private readonly ClaimsPrincipal _user;
 				private readonly bool _requiresLeader;
 				private readonly uint _maxWindowSize;
@@ -357,7 +354,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					IPublisher bus,
 					Position currentPosition,
 					bool resolveLinks,
-					IEventFilter eventFilter,
+					Util.IEventFilter eventFilter,
 					ClaimsPrincipal user,
 					bool requiresLeader,
 					uint? maxWindowSize,

@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.Services.Transport.Grpc;
 
 // ReSharper disable CheckNamespace
 namespace EventStore.Client.Streams {
@@ -25,18 +26,18 @@ namespace EventStore.Client.Streams {
 					}
 
 					public partial class AllOptions {
-						internal Client.Position ToPosition() => AllOptionCase switch {
-							AllOptionOneofCase.End => Client.Position.End,
-							AllOptionOneofCase.Start => Client.Position.Start,
-							AllOptionOneofCase.Position => new Client.Position(Position.CommitPosition,
+						internal Core.Services.Transport.Grpc.Position ToPosition() => AllOptionCase switch {
+							AllOptionOneofCase.End => Core.Services.Transport.Grpc.Position.End,
+							AllOptionOneofCase.Start => Core.Services.Transport.Grpc.Position.Start,
+							AllOptionOneofCase.Position => new Core.Services.Transport.Grpc.Position(Position.CommitPosition,
 								Position.PreparePosition),
 							_ => throw new InvalidOperationException()
 						};
 
-						internal Client.Position? ToSubscriptionPosition() => AllOptionCase switch {
-							AllOptionOneofCase.End => Client.Position.End,
+						internal Core.Services.Transport.Grpc.Position? ToSubscriptionPosition() => AllOptionCase switch {
+							AllOptionOneofCase.End => Core.Services.Transport.Grpc.Position.End,
 							AllOptionOneofCase.Start => null,
-							AllOptionOneofCase.Position => new Client.Position(Position.CommitPosition,
+							AllOptionOneofCase.Position => new Core.Services.Transport.Grpc.Position(Position.CommitPosition,
 								Position.PreparePosition),
 							_ => throw new InvalidOperationException()
 						};

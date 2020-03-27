@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Cluster;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Grpc;
 using EndPoint = EventStore.Cluster.EndPoint;
 
 namespace EventStore.Core.Cluster {

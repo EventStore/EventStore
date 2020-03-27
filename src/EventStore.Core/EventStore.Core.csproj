@@ -40,7 +40,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
-		<Compile Include="../EventStore.Client.Common/*.cs" LinkBase="Services/Transport/Grpc" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
