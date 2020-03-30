@@ -7,7 +7,8 @@ on:
     - master
     tags:
     - oss-v*
-
+env:
+  DOTNET_SDK_VERSION: 3.1.201
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
@@ -38,7 +39,7 @@ jobs:
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '3.1.201'
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Calculate Version
       run: |
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
@@ -102,7 +103,7 @@ jobs:
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '3.1.201'
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Calculate Version
       shell: bash
       run: |
