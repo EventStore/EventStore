@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}).ConfigureAwait(false);
 			}
 
-			Task HandleAckNack(ReadReq request) {
+			ValueTask HandleAckNack(ReadReq request) {
 				_publisher.Publish(request.ContentCase switch {
 					ReadReq.ContentOneofCase.Ack => (Message)
 					new ClientMessage.PersistentSubscriptionAckEvents(
@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_ => throw new InvalidOperationException()
 				});
 
-				return Task.CompletedTask;
+				return new ValueTask(Task.CompletedTask);
 			}
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {
