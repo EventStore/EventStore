@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EmbeddedPersistentSubscription : EmbeddedSubscriptionBase<PersistentEventStoreSubscription>,

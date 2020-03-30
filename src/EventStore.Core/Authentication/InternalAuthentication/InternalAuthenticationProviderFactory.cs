@@ -4,6 +4,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory {

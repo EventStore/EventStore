@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace EventStore.Core.Authentication {
+namespace EventStore.Plugins.Authentication {
 	public abstract class AuthenticationRequest {
 		public readonly string Id;
 		public readonly string Name;

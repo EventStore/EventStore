@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
@@ -15,6 +14,7 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 

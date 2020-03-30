@@ -9,15 +9,16 @@
 				<Platforms>x64</Platforms>
 		</PropertyGroup>
 		<ItemGroup>
-				<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0"/>
-				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+				<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0" />
+				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
 		</ItemGroup>
 		<ItemGroup>
-				<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj"/>
-				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
-				<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj"/>
-				<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj"/>
+				<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
+				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+				<ProjectReference Include="..\EventStore.Plugins\EventStore.Plugins.csproj" />
+				<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+				<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
 		</ItemGroup>
 		<ItemGroup>
 				<None Include="..\EventStore.Common\Log\logconfig.json">
@@ -26,7 +27,7 @@
 				</None>
 		</ItemGroup>
 		<ItemGroup>
-				<Content Include="app2.ico"/>
+				<Content Include="app2.ico" />
 		</ItemGroup>
 		<!-- TODO(jen20): Investigate which of these are correct -->
 		<PropertyGroup>

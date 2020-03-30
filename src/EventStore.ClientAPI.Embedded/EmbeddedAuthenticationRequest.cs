@@ -1,7 +1,7 @@
 using System;
 using System.Security.Claims;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.Core.Authentication;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EmbeddedAuthenticationRequest : AuthenticationRequest {

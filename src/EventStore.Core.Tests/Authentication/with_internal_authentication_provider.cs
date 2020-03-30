@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Security.Claims;
-using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Tests.Authentication {
 	public class with_internal_authentication_provider : TestFixtureWithExistingEvents {

@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Security.Claims;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal static class AuthenticationExtensions {

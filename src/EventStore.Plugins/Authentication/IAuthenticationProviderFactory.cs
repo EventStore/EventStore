@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Authentication {
+﻿namespace EventStore.Plugins.Authentication {
 	public interface IAuthenticationProviderFactory {
 		IAuthenticationProvider Build(bool logFailedAuthenticationAttempts);
 	}

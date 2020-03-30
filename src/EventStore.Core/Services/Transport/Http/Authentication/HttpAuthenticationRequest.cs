@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
+using EventStore.Plugins.Authentication;
 using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Http;
 

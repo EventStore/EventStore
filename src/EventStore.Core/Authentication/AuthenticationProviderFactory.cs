@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Authentication {
 	public class AuthenticationProviderFactory {

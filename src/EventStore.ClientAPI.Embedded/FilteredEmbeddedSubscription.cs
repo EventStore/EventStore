@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Util;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class FilteredEmbeddedSubscription : EmbeddedSubscription {

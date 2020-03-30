@@ -1,6 +1,4 @@
-﻿using EventStore.Core.Authentication;
-
-namespace EventStore.Core.PluginModel {
+﻿namespace EventStore.Plugins.Authentication {
 	public interface IAuthenticationPlugin {
 		string Name { get; }
 		string Version { get; }

@@ -6,7 +6,6 @@ using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -14,6 +13,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Framing;
 using EventStore.Core.Settings;
+using EventStore.Plugins.Authentication;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {

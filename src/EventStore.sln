@@ -69,6 +69,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Operation
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Operations.Tests", "EventStore.Client.Operations.Tests\EventStore.Client.Operations.Tests.csproj", "{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Plugins", "EventStore.Plugins\EventStore.Plugins.csproj", "{F02475B6-6455-41BE-BB5A-C6BFCE64E1FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -187,6 +189,10 @@ Global
 		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Debug|x64.Build.0 = Debug|x64
 		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Release|x64.ActiveCfg = Release|x64
 		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Release|x64.Build.0 = Release|x64
+		{F02475B6-6455-41BE-BB5A-C6BFCE64E1FF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F02475B6-6455-41BE-BB5A-C6BFCE64E1FF}.Debug|x64.Build.0 = Debug|Any CPU
+		{F02475B6-6455-41BE-BB5A-C6BFCE64E1FF}.Release|x64.ActiveCfg = Release|Any CPU
+		{F02475B6-6455-41BE-BB5A-C6BFCE64E1FF}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

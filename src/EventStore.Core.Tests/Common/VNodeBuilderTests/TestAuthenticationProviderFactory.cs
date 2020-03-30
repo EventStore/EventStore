@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
