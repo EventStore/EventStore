@@ -145,3 +145,32 @@ jobs:
       with:
         name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
         path: test-results
+  publish:
+    needs: [vulnerability-scan]
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [release]
+        runtime: [ubuntu.16.04-x64, ubuntu.18.04-x64, win-x64, rhel-x64, centos.7-x64]
+    runs-on: ubuntu-latest
+    name: ci/github/publish-${{ matrix.runtime }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Install Dotnet
+      uses: actions/setup-dotnet@v1.4.0
+      with:
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+    - name: Calculate Version
+      run: |
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+        dotnet tool restore
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
+        echo "::set-env name=VERSION::${version}"
+    - name: Dotnet Publish
+      run: |
+        dotnet publish --configuration=${{ matrix.configuration }} --runtime=${{ matrix.runtime }} --self-contained \
+          --framework=netcoreapp3.1 --output ./output /p:PublishTrimmed=true /p:Version=${{ env.VERSION }} \
+          src/EventStore.ClusterNode
