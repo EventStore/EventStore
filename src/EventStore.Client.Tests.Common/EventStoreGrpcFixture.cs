@@ -88,7 +88,9 @@ namespace EventStore.Client {
 			=> new EventData(Uuid.NewUuid(), type, Encoding.UTF8.GetBytes($@"{{""x"":{index}}}"));
 
 		public virtual async Task InitializeAsync() {
-			await Node.StartAsync(true);
+			await Node.StartAsync(true)
+				.WithTimeout(TimeSpan.FromMinutes(5))
+				.ConfigureAwait(false);
 			var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var envelope  = new CallbackEnvelope(m => {
 				if (m is UserManagementMessage.ResponseMessage rm) {

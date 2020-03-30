@@ -143,7 +143,7 @@ namespace EventStore.Core {
 		private bool _readOnlyReplica;
 		private bool _unsafeAllowSurplusNodes;
 		private Func<HttpMessageHandler> _createHttpMessageHandler;
-		private IAuthorizationProviderFactory _authorizationProviderFactory;
+		private AuthorizationProviderFactory _authorizationProviderFactory;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -197,7 +197,8 @@ namespace EventStore.Core {
 
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 
-			_authorizationProviderFactory = new LegacyAuthorizationProviderFactory();
+			_authorizationProviderFactory = new AuthorizationProviderFactory(components =>
+				new LegacyAuthorizationProviderFactory(components.MainQueue));
 
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
@@ -992,6 +993,16 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableTrustedAuth() {
 			_enableTrustedAuth = true;
+			return this;
+		}
+		
+		/// <summary>
+		/// Sets the authorization provider factory to use
+		/// </summary>
+		/// <param name="authorizationProviderFactory">The authorization provider factory to use </param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithAuthorizationProvider(AuthorizationProviderFactory authorizationProviderFactory) {
+			_authorizationProviderFactory = authorizationProviderFactory;
 			return this;
 		}
 

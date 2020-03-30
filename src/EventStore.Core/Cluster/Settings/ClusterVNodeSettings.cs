@@ -47,7 +47,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly StatsStorage StatsStorage;
 
 		public readonly AuthenticationProviderFactory AuthenticationProviderFactory;
-		public readonly IAuthorizationProviderFactory AuthorizationProviderFactory;
+		public readonly AuthorizationProviderFactory AuthorizationProviderFactory;
+
 		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
@@ -116,7 +117,7 @@ namespace EventStore.Core.Cluster.Settings {
 			StatsStorage statsStorage,
 			int nodePriority,
 			AuthenticationProviderFactory authenticationProviderFactory,
-			IAuthorizationProviderFactory authorizationProviderFactory,
+			AuthorizationProviderFactory authorizationProviderFactory,
 			bool disableScavengeMerging,
 			int scavengeHistoryMaxAge,
 			bool adminOnPublic,
