@@ -93,14 +93,6 @@ public class http_pipeline_should : SpecificationWithDirectory {
 					return Task.CompletedTask;
 				});
 			});
-
-		// // TODO SS: fix visibility on EventStore.Plugins, but we might not even need this method
-		// public new virtual void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
-		// 	base.ConfigureServices(services, configuration);
-		//
-		// // TODO SS: fix visibility on EventStore.Plugins, but we might not even need this method
-		// public new virtual void ConfigureApplication(IApplicationBuilder app, IConfiguration configuration) =>
-		// 	base.ConfigureApplication(app, configuration);
 	}
 }
 

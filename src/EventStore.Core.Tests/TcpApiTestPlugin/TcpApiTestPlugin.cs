@@ -28,7 +28,7 @@ public class TcpApiTestPlugin() : SubsystemsPlugin(name: "TcpTestApi") {
 	}
 
 	public override Task Start() {
-		Logger.Debug($"{Name}-{Version} test plugin is loaded");
+		Logger.Debug("{Name}-{Version} test plugin is loaded", Name, Version);
 		return Task.CompletedTask;
 	}
 }
