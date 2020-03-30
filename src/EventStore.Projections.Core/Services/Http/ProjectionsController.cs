@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -19,7 +17,6 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json.Linq;
-using EventStore.Projections.Core.Services.Management;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Http {

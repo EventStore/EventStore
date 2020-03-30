@@ -7,7 +7,7 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
-		private static readonly Operation ChangePasswordOperation = new Operation(Authorization.Operations.Users.ChangePassword);
+		private static readonly Operation ChangePasswordOperation = new Operation(Plugins.Authorization.Operations.Users.ChangePassword);
 		public override async Task<ChangePasswordResp> ChangePassword(ChangePasswordReq request,
 			ServerCallContext context) {
 			var options = request.Options;
@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (user?.Identity?.Name != null) {
 				changePasswordOperation =
 					changePasswordOperation.WithParameter(
-						Authorization.Operations.Users.Parameters.User(user.Identity.Name));
+						Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
 			}
 			if (!await _authorizationProvider.CheckAccessAsync(user, changePasswordOperation, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();

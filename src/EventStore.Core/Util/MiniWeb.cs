@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;

@@ -8,7 +8,7 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
-		private static readonly Operation ReadOperation = new Operation(Authorization.Operations.Users.Read);
+		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Users.Read);
 		public override async Task Details(DetailsReq request, IServerStreamWriter<DetailsResp> responseStream,
 			ServerCallContext context) {
 			var options = request.Options;
@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (user?.Identity?.Name != null) {
 				readOperation =
 					readOperation.WithParameter(
-						Authorization.Operations.Users.Parameters.User(user.Identity.Name));
+						Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
 			}
 			if (!await _authorizationProvider.CheckAccessAsync(user, readOperation, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();

@@ -26,7 +26,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var user = context.GetHttpContext().User;
-			var op = DeleteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 			
 			var user = context.GetHttpContext().User;
-			var op = DeleteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}

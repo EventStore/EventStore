@@ -20,7 +20,7 @@ using UUID = EventStore.Client.Shared.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
-		private static readonly Operation ProcessMessagesOperation = new Operation(Authorization.Operations.Subscriptions.ProcessMessages);
+		private static readonly Operation ProcessMessagesOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
 			if (!await requestStream.MoveNext().ConfigureAwait(false)) {
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ProcessMessagesOperation.WithParameter(Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamName)), context.CancellationToken).ConfigureAwait(false)) {
+				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamName)), context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
 			var connectionName =

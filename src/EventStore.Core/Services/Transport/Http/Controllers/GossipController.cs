@@ -2,7 +2,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;

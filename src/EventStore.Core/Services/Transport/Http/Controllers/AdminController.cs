@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authorization;

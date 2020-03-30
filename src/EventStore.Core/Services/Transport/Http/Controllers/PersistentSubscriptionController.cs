@@ -9,11 +9,8 @@ using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using ClientMessages = EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
 using EventStore.Core.Services.PersistentSubscription;
-using EventStore.Core.Data;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Plugins.Authorization;
-using EventStore.Transport.Http.Atom;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {

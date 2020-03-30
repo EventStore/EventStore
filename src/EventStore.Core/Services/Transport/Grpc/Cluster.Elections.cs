@@ -14,14 +14,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static readonly Empty EmptyResult = new Empty();
 		private readonly IPublisher _bus;
 		private readonly IAuthorizationProvider _authorizationProvider;
-		private static readonly Operation ViewChangeOperation = new Operation(Authorization.Operations.Node.Elections.ViewChange);
-		private static readonly Operation ViewChangeProofOperation = new Operation(Authorization.Operations.Node.Elections.ViewChangeProof);
-		private static readonly Operation PrepareOperation = new Operation(Authorization.Operations.Node.Elections.Prepare);
-		private static readonly Operation PrepareOkOperation = new Operation(Authorization.Operations.Node.Elections.PrepareOk);
-		private static readonly Operation ProposalOperation = new Operation(Authorization.Operations.Node.Elections.Proposal);
-		private static readonly Operation AcceptOperation = new Operation(Authorization.Operations.Node.Elections.Accept);
-		private static readonly Operation MasterIsResigningOperation = new Operation(Authorization.Operations.Node.Elections.LeaderIsResigning);
-		private static readonly Operation MasterIsResigningOkOperation = new Operation(Authorization.Operations.Node.Elections.LeaderIsResigningOk);
+		private static readonly Operation ViewChangeOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.ViewChange);
+		private static readonly Operation ViewChangeProofOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.ViewChangeProof);
+		private static readonly Operation PrepareOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.Prepare);
+		private static readonly Operation PrepareOkOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.PrepareOk);
+		private static readonly Operation ProposalOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.Proposal);
+		private static readonly Operation AcceptOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.Accept);
+		private static readonly Operation MasterIsResigningOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.LeaderIsResigning);
+		private static readonly Operation MasterIsResigningOkOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.LeaderIsResigningOk);
 
 
 		public Elections(IPublisher bus, IAuthorizationProvider authorizationProvider) {

@@ -10,7 +10,7 @@ using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscription
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class PersistentSubscriptions {
-		private static readonly Operation CreateOperation = new Operation(Authorization.Operations.Subscriptions.Create);
+		private static readonly Operation CreateOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Create);
 
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
 			var createPersistentSubscriptionSource = new TaskCompletionSource<CreateResp>();

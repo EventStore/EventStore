@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authorization;

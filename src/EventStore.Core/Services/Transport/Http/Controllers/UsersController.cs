@@ -1,8 +1,6 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Core.Authorization;
-using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;

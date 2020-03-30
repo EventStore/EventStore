@@ -9,9 +9,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
 		private readonly IAuthorizationProvider _provider;
-		private static readonly Operation ReadOperation = new Operation(Authorization.Operations.Streams.Read);
-		private static readonly Operation WriteOperation = new Operation(Authorization.Operations.Streams.Write);
-		private static readonly Operation DeleteOperation = new Operation(Authorization.Operations.Streams.Delete);
+		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Streams.Read);
+		private static readonly Operation WriteOperation = new Operation(Plugins.Authorization.Operations.Streams.Write);
+		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Streams.Delete);
 		public Streams(IPublisher publisher, IReadIndex readIndex,
 			int maxAppendSize, IAuthorizationProvider provider) {
 			if (publisher == null) throw new ArgumentNullException(nameof(publisher));

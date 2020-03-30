@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Policy;
-using System.Threading.Tasks;
-using EventStore.Core.Authorization;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;

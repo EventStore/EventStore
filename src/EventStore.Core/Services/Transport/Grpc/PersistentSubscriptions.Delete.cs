@@ -9,7 +9,7 @@ using static EventStore.Core.Messages.ClientMessage.DeletePersistentSubscription
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions {
-		private static readonly Operation DeleteOperation = new Operation(Authorization.Operations.Subscriptions.Delete);
+		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Delete);
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			
 			var createPersistentSubscriptionSource = new TaskCompletionSource<DeleteResp>();

@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var user = context.GetHttpContext().User;
-			var op = WriteOperation.WithParameter(Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			var op = WriteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}

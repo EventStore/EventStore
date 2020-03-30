@@ -7,7 +7,7 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
-		private static readonly Operation DisableOperation = new Operation(Authorization.Operations.Users.Disable);
+		private static readonly Operation DisableOperation = new Operation(Plugins.Authorization.Operations.Users.Disable);
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
 			var options = request.Options;
 

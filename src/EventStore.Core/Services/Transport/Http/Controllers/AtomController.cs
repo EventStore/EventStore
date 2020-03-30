@@ -13,7 +13,6 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authorization;
 using Microsoft.Extensions.Primitives;

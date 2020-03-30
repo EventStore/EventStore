@@ -8,8 +8,8 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Operations {
-		private static readonly Operation StartOperation = new Operation(Authorization.Operations.Node.Scavenge.Start);
-		private static readonly Operation StopOperation = new Operation(Authorization.Operations.Node.Scavenge.Stop);
+		private static readonly Operation StartOperation = new Operation(Plugins.Authorization.Operations.Node.Scavenge.Start);
+		private static readonly Operation StopOperation = new Operation(Plugins.Authorization.Operations.Node.Scavenge.Stop);
 		public override async Task<ScavengeResp> StartScavenge(StartScavengeReq request, ServerCallContext context) {
 			var scavengeResultSource = new TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)>();
 

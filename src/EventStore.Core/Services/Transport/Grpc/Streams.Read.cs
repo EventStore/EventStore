@@ -33,9 +33,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var op = streamOptionsCase switch {
 				StreamOptionOneofCase.Stream => ReadOperation.WithParameter(
-					Authorization.Operations.Streams.Parameters.StreamId(request.Options.Stream.StreamName)),
+					Plugins.Authorization.Operations.Streams.Parameters.StreamId(request.Options.Stream.StreamName)),
 				StreamOptionOneofCase.All => ReadOperation.WithParameter(
-					Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
+					Plugins.Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
 				_ => throw new InvalidOperationException()
 			};
 

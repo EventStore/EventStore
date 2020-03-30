@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Rags;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
