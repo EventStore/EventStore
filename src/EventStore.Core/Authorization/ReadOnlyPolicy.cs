@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	public class ReadOnlyPolicy {

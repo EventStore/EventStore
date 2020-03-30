@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authorization;
 using Serilog;
 
 namespace EventStore.Core.Authorization {

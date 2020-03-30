@@ -4,17 +4,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
-using EventStore.Core.Authentication;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
+using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Grpc;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 

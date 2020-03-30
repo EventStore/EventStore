@@ -3,18 +3,18 @@ using System.Net;
 using System.Threading.Tasks;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Gossip {
 		private readonly IPublisher _bus;
 		private readonly IAuthorizationProvider _authorizationProvider;
-		private static readonly Operation ReadOperation = new Operation(Authorization.Operations.Node.Gossip.Read);
-		private static readonly Operation UpdateOperation = new Operation(Authorization.Operations.Node.Gossip.Update);
+		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Node.Gossip.Read);
+		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Node.Gossip.Update);
 		public Gossip(IPublisher bus, IAuthorizationProvider authorizationProvider) {
 			_bus = bus;
 			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));

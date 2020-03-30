@@ -4,9 +4,9 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 

@@ -1,10 +1,11 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
+using EventStore.Plugins.Authentication;
+using Serilog;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
-		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {
 			return new TestAuthenticationProvider();
 		}
 	}

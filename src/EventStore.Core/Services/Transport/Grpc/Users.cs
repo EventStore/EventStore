@@ -1,9 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.Core.Authentication;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using static EventStore.Core.Messages.UserManagementMessage;
 
 namespace EventStore.Core.Services.Transport.Grpc {

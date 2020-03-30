@@ -1,16 +1,15 @@
 using System;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class PersistentSubscriptions {
-		private static readonly Operation UpdateOperation = new Operation(Authorization.Operations.Subscriptions.Update);
+		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var updatePersistentSubscriptionSource = new TaskCompletionSource<UpdateResp>();
 			var settings = request.Options.Settings;

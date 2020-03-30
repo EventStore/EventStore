@@ -10,6 +10,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Plugins.Authentication;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Authentication.InternalAuthentication {

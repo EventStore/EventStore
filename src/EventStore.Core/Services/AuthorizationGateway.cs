@@ -1,14 +1,13 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services {
 	public sealed class AuthorizationGateway {

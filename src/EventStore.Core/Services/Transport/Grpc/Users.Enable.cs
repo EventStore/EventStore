@@ -2,12 +2,12 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
-		private static readonly Operation EnableOperation = new Operation(Authorization.Operations.Users.Enable);
+		private static readonly Operation EnableOperation = new Operation(Plugins.Authorization.Operations.Users.Enable);
 		public override async Task<EnableResp> Enable(EnableReq request, ServerCallContext context) {
 			var options = request.Options;
 

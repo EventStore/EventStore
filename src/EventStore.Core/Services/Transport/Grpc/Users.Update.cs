@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Users {
-		private static readonly Operation UpdateOperation = new Operation(Authorization.Operations.Users.Update);
+		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Users.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var options = request.Options;
 

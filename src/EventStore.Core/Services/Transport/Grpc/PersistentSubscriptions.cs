@@ -1,7 +1,6 @@
 using System;
-using EventStore.Core.Authentication;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class PersistentSubscriptions

@@ -2,12 +2,12 @@ using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Users;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Users {
-		private static readonly Operation DisableOperation = new Operation(Authorization.Operations.Users.Disable);
+		private static readonly Operation DisableOperation = new Operation(Plugins.Authorization.Operations.Users.Disable);
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
 			var options = request.Options;
 

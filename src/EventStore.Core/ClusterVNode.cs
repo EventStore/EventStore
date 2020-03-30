@@ -40,6 +40,8 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
@@ -373,8 +375,7 @@ namespace EventStore.Core {
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 			_authenticationProvider =
 				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).Build(
-					vNodeSettings.LogFailedAuthenticationAttempts);
-
+					vNodeSettings.LogFailedAuthenticationAttempts, Log);
 			_authenticationProvider.Initialize().ContinueWith(t => {
 				if (t.Exception != null) {
 					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());

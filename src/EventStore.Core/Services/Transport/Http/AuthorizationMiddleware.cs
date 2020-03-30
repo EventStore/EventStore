@@ -1,7 +1,5 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using EventStore.Common.Log;
-using EventStore.Core.Authorization;
+﻿using System.Threading.Tasks;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Http;
 using Serilog;
