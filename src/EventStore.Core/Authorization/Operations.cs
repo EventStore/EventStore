@@ -1,4 +1,6 @@
-﻿namespace EventStore.Core.Authorization {
+﻿using EventStore.Plugins.Authorization;
+
+namespace EventStore.Core.Authorization {
 	public static class Operations {
 		public static class Node {
 			private const string Resource = "node";

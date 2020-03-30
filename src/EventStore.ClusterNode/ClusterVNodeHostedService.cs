@@ -22,6 +22,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Rags;
 using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : EventStoreHostedService<ClusterNodeOptions> {

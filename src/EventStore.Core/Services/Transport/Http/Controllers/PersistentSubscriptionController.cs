@@ -12,6 +12,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Data;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http.Atom;
 using ILogger = Serilog.ILogger;
 

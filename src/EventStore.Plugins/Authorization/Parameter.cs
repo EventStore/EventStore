@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EventStore.Core.Authorization {
+namespace EventStore.Plugins.Authorization {
 	public readonly struct Parameter : IEquatable<Parameter> {
 		public Parameter(string name, string value) {
 			Name = name ?? throw new ArgumentNullException(nameof(name));

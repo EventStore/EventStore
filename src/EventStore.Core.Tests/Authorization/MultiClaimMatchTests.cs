@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Authorization {

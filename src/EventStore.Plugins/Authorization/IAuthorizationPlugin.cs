@@ -1,6 +1,4 @@
-using EventStore.Core.Authorization;
-
-namespace EventStore.Core.PluginModel {
+namespace EventStore.Plugins.Authorization {
 	public interface IAuthorizationPlugin {
 		string Name { get; }
 		string Version { get; }

@@ -5,6 +5,7 @@ using System.Security.Policy;
 using System.Threading.Tasks;
 using EventStore.Core.Authorization;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +30,7 @@ namespace EventStore.Core {
 				.Aggregate(app.UseRouting(), RegisterRoute);
 			IApplicationBuilder RegisterRoute(
 				IApplicationBuilder builder,
-				(string route, string method, Func<UriTemplateMatch, Authorization.Operation> operation) action) => builder
+				(string route, string method, Func<UriTemplateMatch, Operation> operation) action) => builder
 				.UseEndpoints(routeBuilder => routeBuilder
 					.MapMethods(
 						action.route,

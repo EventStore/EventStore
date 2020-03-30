@@ -1,7 +1,7 @@
 using System;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Streams : EventStore.Client.Streams.Streams.StreamsBase {

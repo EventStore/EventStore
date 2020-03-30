@@ -15,6 +15,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
 using EventStore.Core.Util;
+using EventStore.Plugins.Authorization;
 using Microsoft.Extensions.Primitives;
 using ILogger = Serilog.ILogger;
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	public class EvaluationContext {

@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {

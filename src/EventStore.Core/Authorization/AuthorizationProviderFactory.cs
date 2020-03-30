@@ -1,4 +1,5 @@
 using System;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization
 {

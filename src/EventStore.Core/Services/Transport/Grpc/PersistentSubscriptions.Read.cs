@@ -8,14 +8,13 @@ using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Client.Shared;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
-using Grpc.Core.Utils;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
 using UUID = EventStore.Client.Shared.UUID;
 

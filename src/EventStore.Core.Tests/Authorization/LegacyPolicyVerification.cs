@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Plugins.Authorization;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Authorization {

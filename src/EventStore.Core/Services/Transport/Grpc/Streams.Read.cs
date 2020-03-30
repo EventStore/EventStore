@@ -7,7 +7,6 @@ using EventStore.Core.Util;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
-using EventStore.Core.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;

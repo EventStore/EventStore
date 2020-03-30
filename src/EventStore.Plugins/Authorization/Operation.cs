@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace EventStore.Core.Authorization {
+namespace EventStore.Plugins.Authorization {
 	public readonly struct Operation {
 		public string Resource { get; }
 		public string Action { get; }

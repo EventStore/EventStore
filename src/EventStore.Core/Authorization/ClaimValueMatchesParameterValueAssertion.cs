@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Authorization {
 	public class ClaimValueMatchesParameterValueAssertion : IAssertion {

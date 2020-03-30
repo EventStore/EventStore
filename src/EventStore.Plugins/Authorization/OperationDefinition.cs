@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EventStore.Core.Authorization {
+namespace EventStore.Plugins.Authorization {
 	public readonly struct OperationDefinition : IEquatable<OperationDefinition> {
 		public string Resource { get; }
 		public string Action { get; }
