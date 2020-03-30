@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
@@ -13,7 +11,6 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
@@ -176,48 +173,6 @@ namespace EventStore.Core.Tests.Helpers {
 			Log.Information("MiniNode successfully started!");
 		}
 
-		private async Task StartMiniNode(Task monitorFailuresTask) {
-			StartingTime.Start();
-
-			var startNodeTask = Node.StartAsync(true); //starts the node
-
-			await Task.WhenAny(
-				monitorFailuresTask,
-				startNodeTask
-			).WithTimeout(TimeSpan.FromSeconds(60)); //startup timeout of 60s
-			StartingTime.Stop();
-			Log.Information("MiniNode successfully started!");
-		}
-
-		public void MonitorFailures(TaskCompletionSource<object> tcs) {
-			if (tcs.Task.IsCompleted)
-				return;
-			if (!Node.Tasks.Any())
-				return;
-
-			Task.WhenAny(Node.Tasks)
-				.ContinueWith((t) => {
-					if (tcs.Task.IsCompleted)
-						return;
-
-					if (t.Result.Exception != null)
-						tcs.TrySetException(t.Result.Exception);
-					else
-						MonitorFailures(tcs);
-				});
-		}
-
-		public void ContinueMonitoringFailures(TaskCompletionSource<object> tcs) {
-			if (tcs.Task.IsCompleted)
-				return;
-			tcs.Task.ContinueWith((t) => {
-				if (t.Exception != null)
-					throw t.Exception;
-				else
-					throw new ApplicationException("Node Monitor task completed but no exceptions were thrown.");
-			});
-		}
-
 		public async Task Shutdown(bool keepDb = false) {
 
 			StoppingTime.Start();
@@ -248,11 +203,6 @@ namespace EventStore.Core.Tests.Helpers {
 				Debug.WriteLine("Failed to remove directory {0}", directory);
 				Debug.WriteLine(e);
 			}
-		}
-
-		private IPAddress GetLocalIp() {
-			var host = Dns.GetHostEntry(Dns.GetHostName());
-			return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
 		}
 	}
 }
