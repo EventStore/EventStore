@@ -1,0 +1,5 @@
+#!/bin/sh
+
+systemctl stop eventstore
+
+exit 0

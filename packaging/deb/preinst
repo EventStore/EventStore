@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -eu
+
+USER="eventstore"
+GROUP="$USER"
+HOME="/var/log/eventstore"
+
+# If we use NIS then errors should be tolerated.
+if which ypwhich >/dev/null 2>&1 && ypwhich >/dev/null 2>&1
+then
+  set +e
+fi
+
+if ! getent group $GROUP >/dev/null
+then
+  addgroup --system $GROUP >/dev/null
+fi
+
+if ! getent passwd $USER >/dev/null
+then
+        adduser \
+          --system \
+          --disabled-login \
+          --ingroup $GROUP \
+          --home $HOME \
+          --gecos "$USER server" \
+          --shell /usr/sbin/nologin \
+          $USER  >/dev/null
+fi
+
+mkdir -p /var/run/eventstore /var/log/eventstore /var/lib/eventstore
+
+chown `id -u $USER`:`id -g $GROUP` /var/run/eventstore /var/log/eventstore /var/lib/eventstore
+
+# end of NIS tolerance zone
+set -e

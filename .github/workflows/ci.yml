@@ -172,5 +172,15 @@ jobs:
     - name: Dotnet Publish
       run: |
         dotnet publish --configuration=${{ matrix.configuration }} --runtime=${{ matrix.runtime }} --self-contained \
-          --framework=netcoreapp3.1 --output ./output /p:PublishTrimmed=true /p:Version=${{ env.VERSION }} \
+          --framework=netcoreapp3.1 --output ./packaging/eventstore /p:PublishTrimmed=true /p:Version=${{ env.VERSION }} \
           src/EventStore.ClusterNode
+    - name: Create Package (Debian)
+      if: contains(matrix.runtime, 'ubuntu')
+      run: |
+        docker run --workdir=/tmp/pkg -e VERSION=20.02.0-preview3.1 --rm --volume $PWD/packaging:/tmp/pkg \
+          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.deb
+    - name: Create Package (Redhat)
+      if: contains(matrix.runtime, 'rhel') || contains(matrix.runtime, 'centos')
+      run: |
+        docker run --workdir=/tmp/pkg -e VERSION=20.02.0-preview3.1 --rm --volume $PWD/packaging:/tmp/pkg \
+          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.rpm

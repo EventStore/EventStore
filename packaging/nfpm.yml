@@ -1,0 +1,37 @@
+name: "EventStore"
+arch: "amd64"
+platform: "linux"
+version: "${VERSION}"
+section: "default"
+priority: "extra"
+depends:
+- libc6
+- libgcc1
+- libgssapi-krb5-2
+- libicu60
+- libssl1.1
+- libstdc++6
+- zlib1g
+provides:
+- eventstored
+maintainer: "Event Store LLP <info@geteventstore.com>"
+description: "Event Store is a domain specific database for Event Sourcing"
+vendor: "Event Store LLP"
+homepage: "https://eventstore.com"
+bindir: "/usr/bin"
+files:
+  ./eventstore/**/*: "/opt/eventstore"
+  ./eventstore.init: "/etc/init.d/eventstore"
+  ./eventstore.systemd: "/usr/lib/systemd/system/eventstore.service"
+config_files:
+  ./eventstore.conf: "/etc/eventstore/eventstore.conf"
+overrides:
+  rpm:
+    scripts:
+  deb:
+    scripts:
+      preinstall: ./deb/preinst
+      postinstall: ./deb/postinst
+      preremove: ./deb/prerm
+      postremove: ./deb/postrm
+
