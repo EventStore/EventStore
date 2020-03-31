@@ -1286,4 +1286,81 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
+
+	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive : ElectionsFixture {
+		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_propose_previously_elected_leader() {
+			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 3));
+			_publisher.Messages.Clear();
+
+			_sut.Handle(new ElectionMessage.PrepareOk(3, _nodeThree.InstanceId, _nodeThree.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
+				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
+			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
+
+			Assert.AreEqual(_nodeTwo.InstanceId, proposalMessage.LeaderId);
+			Assert.AreEqual(_nodeTwo.InternalHttp, proposalMessage.LeaderInternalHttp);
+		}
+	}
+
+	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead : ElectionsFixture {
+		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, false, _epochId),
+				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void should_propose_previously_elected_leader() {
+			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 4));
+			_publisher.Messages.Clear();
+
+			_sut.Handle(new ElectionMessage.PrepareOk(4, _nodeThree.InstanceId, _nodeThree.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+
+			var proposalHttpMessage = _publisher.Messages.OfType<GrpcMessage.SendOverGrpc>()
+				.FirstOrDefault(x => x.Message is ElectionMessage.Proposal);
+			var proposalMessage = (ElectionMessage.Proposal)proposalHttpMessage.Message;
+
+			Assert.AreNotEqual(_nodeTwo.InstanceId, proposalMessage.LeaderId);
+			Assert.AreNotEqual(_nodeTwo.InternalHttp, proposalMessage.LeaderInternalHttp);
+		}
+	}
+
+	public class when_a_leader_is_found_during_leader_discovery : ElectionsFixture {
+		public when_a_leader_is_found_during_leader_discovery() :
+			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
+				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
+		}
+
+		[Test]
+		public void view_change_should_trigger_new_elections() {
+			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 3));
+			_publisher.Messages.Clear();
+
+			_sut.Handle(new ElectionMessage.PrepareOk(3, _nodeThree.InstanceId, _nodeThree.InternalHttp, 0, 0,
+				_epochId, 0, 0, 0, 0));
+
+			Assert.NotNull(_publisher.Messages.OfType<GrpcMessage.SendOverGrpc>().FirstOrDefault());
+		}
+	}
+
 }
