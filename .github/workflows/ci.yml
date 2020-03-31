@@ -177,10 +177,17 @@ jobs:
     - name: Create Package (Debian)
       if: contains(matrix.runtime, 'ubuntu')
       run: |
-        docker run --workdir=/tmp/pkg -e VERSION=20.02.0-preview3.1 --rm --volume $PWD/packaging:/tmp/pkg \
+        docker run --workdir=/tmp/pkg -e VERSION=${{ env.VERSION }} --rm --volume $PWD/packaging:/tmp/pkg \
           goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.deb
     - name: Create Package (Redhat)
       if: contains(matrix.runtime, 'rhel') || contains(matrix.runtime, 'centos')
       run: |
-        docker run --workdir=/tmp/pkg -e VERSION=20.02.0-preview3.1 --rm --volume $PWD/packaging:/tmp/pkg \
+        docker run --workdir=/tmp/pkg -e VERSION=${{ env.VERSION }} --rm --volume $PWD/packaging:/tmp/pkg \
           goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.rpm
+    - name: Create Package (Windows)
+      if: contains(matrix.runtime, 'win')
+      run: |
+        version=${{ env.VERSION }}
+        docker run --workdir=/tmp/pkg  -e ChocolateyInstall=/opt/chocolatey --rm --volume $PWD/packaging:/tmp/pkg \
+          --entrypoint mono thinkco/chocolatey:0.10.15 /opt/chocolatey/choco.exe pack win/eventstore-oss.nuspec \
+          --version=${{ env.VERSION }} --allow-unofficial --output-directory=/tmp/pkg/eventstore --yes --force
