@@ -303,7 +303,7 @@ namespace EventStore.ClientAPI {
 		/// Sets the DNS name under which cluster nodes are listed.
 		/// </summary>
 		/// <param name="clusterDns">The DNS name under which cluster nodes are listed.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
 		public ConnectionSettingsBuilder SetClusterDns(string clusterDns) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -315,7 +315,7 @@ namespace EventStore.ClientAPI {
 		/// Sets the maximum number of attempts for discovery.
 		/// </summary>
 		/// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentOutOfRangeException">If <paramref name="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
 		public ConnectionSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts) {
 			if (maxDiscoverAttempts <= 0)
@@ -330,7 +330,7 @@ namespace EventStore.ClientAPI {
 		/// Sets the period after which gossip times out if none is received.
 		/// </summary>
 		/// <param name="timeout">The period after which gossip times out if none is received.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder SetGossipTimeout(TimeSpan timeout) {
 			_gossipTimeout = timeout;
 			return this;
@@ -339,7 +339,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Whether to randomly choose a node that's alive from the known nodes.
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferRandomNode() {
 			_nodePreference = NodePreference.Random;
 			return this;
@@ -348,7 +348,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Whether to prioritize choosing a follower node that's alive from the known nodes.
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferFollowerNode() {
 			_nodePreference = NodePreference.Follower;
 			return this;
@@ -357,7 +357,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Whether to prioritize choosing a read only replica that's alive from the known nodes. 
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferReadOnlyReplica() {
 			_nodePreference = NodePreference.ReadOnlyReplica;
 			_requireLeader = false;
@@ -377,7 +377,7 @@ namespace EventStore.ClientAPI {
 		/// the <see cref="IPEndPoint" /> of some seed nodes instead.
 		/// </summary>
 		/// <param name="clusterGossipPort">The cluster gossip port.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder SetClusterGossipPort(int clusterGossipPort) {
 			Ensure.Positive(clusterGossipPort, "clusterGossipPort");
 			_gossipExternalHttpPort = clusterGossipPort;
@@ -396,7 +396,7 @@ namespace EventStore.ClientAPI {
 		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
 		/// </summary>
 		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
-		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params EndPoint[] gossipSeeds) {
 			return SetGossipSeedEndPoints(true, gossipSeeds);
@@ -415,7 +415,7 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
 		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
-		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public ConnectionSettingsBuilder SetGossipSeedEndPoints(bool seedOverTls, params EndPoint[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
@@ -430,7 +430,7 @@ namespace EventStore.ClientAPI {
 		/// Sets gossip seed endpoints for the client.
 		/// </summary>
 		/// <param name="gossipSeeds"><see cref="GossipSeed"/>s representing the endpoints of nodes from which to seed gossip.</param>
-		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params GossipSeed[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
