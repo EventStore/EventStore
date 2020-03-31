@@ -167,7 +167,7 @@ jobs:
       run: |
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)
         echo "::set-env name=VERSION::${version}"
     - name: Dotnet Publish
       run: |
@@ -178,16 +178,20 @@ jobs:
       if: contains(matrix.runtime, 'ubuntu')
       run: |
         docker run --workdir=/tmp/pkg -e VERSION=${{ env.VERSION }} --rm --volume $PWD/packaging:/tmp/pkg \
-          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.deb
+          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/output/eventstore-${{ env.VERSION }}.deb
     - name: Create Package (Redhat)
       if: contains(matrix.runtime, 'rhel') || contains(matrix.runtime, 'centos')
       run: |
         docker run --workdir=/tmp/pkg -e VERSION=${{ env.VERSION }} --rm --volume $PWD/packaging:/tmp/pkg \
-          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/eventstore/eventstore.rpm
+          goreleaser/nfpm:v1.2.0 pkg --config /tmp/pkg/nfpm.yml --target /tmp/pkg/output/eventstore-${{ env.VERSION }}.rpm
     - name: Create Package (Windows)
       if: contains(matrix.runtime, 'win')
       run: |
-        version=${{ env.VERSION }}
         docker run --workdir=/tmp/pkg  -e ChocolateyInstall=/opt/chocolatey --rm --volume $PWD/packaging:/tmp/pkg \
           --entrypoint mono thinkco/chocolatey:0.10.15 /opt/chocolatey/choco.exe pack win/eventstore-oss.nuspec \
-          --version=${{ env.VERSION }} --allow-unofficial --output-directory=/tmp/pkg/eventstore --yes --force
+          --version=${{ env.VERSION }} --allow-unofficial --output-directory=/tmp/pkg/output --yes --force
+    - name: Publish Package
+      uses: actions/upload-artifact@v1
+      with:
+        path: packaging/output
+        name: package-${{ matrix.runtime }}
