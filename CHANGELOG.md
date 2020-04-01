@@ -24,6 +24,12 @@ All notable changes to this project will be documented in this file.
 ### With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https
 - //github.com/EventStore/EventStore/pull/2383)
 
+### Fix bug introduced by f87b317b78248638aba18a6173e63b809ece5d66 [EventStore#2406](https
+- //github.com/EventStore/EventStore/pull/2406)
+
+### - Use TrySetResult instead of SetResult so that exceptions are not thrown if setting result twice [EventStore#2406](https
+- //github.com/EventStore/EventStore/pull/2406)
+
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
 
