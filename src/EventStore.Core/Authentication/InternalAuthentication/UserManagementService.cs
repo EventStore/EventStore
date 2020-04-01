@@ -204,18 +204,18 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 							NotifyInitialized();
 					});
 			} else {
-				_tcs.SetResult(true);
+				_tcs.TrySetResult(true);
 			}
 		}
 
 		public void Handle(SystemMessage.BecomeFollower message) {
-			_tcs.SetResult(true);
+			_tcs.TrySetResult(true);
 		}
 
 		private void NotifyInitialized() {
 			_numberOfStandardUsersToBeCreated -= 1;
 			if (_numberOfStandardUsersToBeCreated == 0) {
-				_tcs.SetResult(true);
+				_tcs.TrySetResult(true);
 			}
 		}
 
