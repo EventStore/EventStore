@@ -315,7 +315,6 @@ namespace EventStore.Core.Messages {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
-				Ensure.Positive(logPosition, nameof(logPosition));
 
 				CorrelationId = correlationId;
 				EventStreamId = eventStreamId;
