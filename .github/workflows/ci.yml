@@ -187,9 +187,12 @@ jobs:
     - name: Create Package (Windows)
       if: contains(matrix.runtime, 'win')
       run: |
+        echo $VERSION
+        [[ $VERSION =~ "^([0-9](\.[0-9])+)(\-[a-z]+)(.*)" ]]
+        version=${BASH_REMATCH[1]}${BASH_REMATCH[3]}
         docker run --workdir=/tmp/pkg  -e ChocolateyInstall=/opt/chocolatey --rm --volume $PWD/packaging:/tmp/pkg \
           --entrypoint mono thinkco/chocolatey:0.10.15 /opt/chocolatey/choco.exe pack win/eventstore-oss.nuspec \
-          --version=${{ env.VERSION }} --allow-unofficial --output-directory=/tmp/pkg/output --yes --force
+          --version=${version} --allow-unofficial --output-directory=/tmp/pkg/output --yes --force
     - name: Publish Package
       uses: actions/upload-artifact@v1
       with:
