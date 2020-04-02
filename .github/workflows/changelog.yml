@@ -10,8 +10,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Update changelog
-        uses: EventStore/Automations/changelog-update@master
-        id: changelog-update
+      - name: Check pull requests
+        uses: EventStore/Automations/pr-check@master
+        id: pr_check
         with:
           github-token: ${{ secrets.GH_PAT }}
+          source-path: 'src'
+      - name: Update changelog
+        uses: EventStore/Automations/changelog-update@master
+        id: changelog_update
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          skipped: ${{ steps.pr_check.outputs.skipped }}
