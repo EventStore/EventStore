@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using EventStore.Common.Utils;
@@ -11,7 +10,11 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public class ClientTcpDispatcher : ClientWriteTcpDispatcher {
-		public ClientTcpDispatcher() {
+		public ClientTcpDispatcher(int writeTimeoutMs)
+			: this(TimeSpan.FromMilliseconds(writeTimeoutMs)) {
+		}
+
+		public ClientTcpDispatcher(TimeSpan writeTimeout) : base(writeTimeout) {
 			AddUnwrapper(TcpCommand.Ping, UnwrapPing, ClientVersion.V2);
 			AddWrapper<TcpMessage.PongMessage>(WrapPong, ClientVersion.V2);
 

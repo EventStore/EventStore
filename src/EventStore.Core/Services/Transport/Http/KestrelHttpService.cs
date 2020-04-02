@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -13,9 +9,6 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http.Messages;
 using EventStore.Core.Settings;
 using EventStore.Transport.Http.EntityManagement;
-using EventStore.Core.Services.Transport.Http.Authentication;
-using Microsoft.AspNetCore.Http;
-using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,

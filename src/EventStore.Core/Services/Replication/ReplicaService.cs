@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
 
-		private readonly InternalTcpDispatcher _tcpDispatcher = new InternalTcpDispatcher();
+		private readonly InternalTcpDispatcher _tcpDispatcher;
 
 		private VNodeState _state = VNodeState.Initializing;
 		private TcpConnectionManager _connection;
@@ -56,7 +56,8 @@ namespace EventStore.Core.Services.Replication {
 			bool sslValidateServer,
 			X509CertificateCollection sslClientCertificates,
 			TimeSpan heartbeatTimeout,
-			TimeSpan heartbeatInterval) {
+			TimeSpan heartbeatInterval,
+			TimeSpan writeTimeout) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(epochManager, "epochManager");
@@ -80,6 +81,7 @@ namespace EventStore.Core.Services.Replication {
 			_heartbeatInterval = heartbeatInterval;
 
 			_connector = new TcpClientConnector();
+			_tcpDispatcher = new InternalTcpDispatcher(writeTimeout);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {

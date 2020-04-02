@@ -62,6 +62,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(1, _settings.CommitAckCount, "CommitAckCount");
 			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
 			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");
+			Assert.AreEqual(Opts.WriteTimeoutMsDefault, _settings.WriteTimeout.TotalMilliseconds, "WriteTimeout");
 
 			Assert.AreEqual(Opts.IntTcpHeartbeatIntervalDefault, _settings.IntTcpHeartbeatInterval.TotalMilliseconds,
 				"IntTcpHeartbeatInterval");

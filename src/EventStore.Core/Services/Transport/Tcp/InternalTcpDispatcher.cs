@@ -7,11 +7,10 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public class InternalTcpDispatcher : ClientWriteTcpDispatcher {
-		public InternalTcpDispatcher() {		
+		public InternalTcpDispatcher(TimeSpan writeTimeout) : base(writeTimeout) {
 			AddUnwrapper(TcpCommand.LeaderReplicatedTo, UnwrapReplicatedTo, ClientVersion.V2);
 			AddWrapper<ReplicationTrackingMessage.ReplicatedTo>(WrapReplicatedTo, ClientVersion.V2);
 

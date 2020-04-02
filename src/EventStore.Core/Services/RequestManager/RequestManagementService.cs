@@ -40,8 +40,7 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly CommitSource _commitSource;
 		private VNodeState _nodeState;		
 
-		public RequestManagementService(
-			IPublisher bus,
+		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout) {
 			Ensure.NotNull(bus, "bus");
@@ -65,7 +64,8 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								message.ExpectedVersion,
 								message.Events,
-								_commitSource);
+								_commitSource,
+								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
@@ -81,7 +81,8 @@ namespace EventStore.Core.Services.RequestManager {
 								message.EventStreamId,
 								message.ExpectedVersion,
 								message.HardDelete,
-								_commitSource);
+								_commitSource,
+								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();

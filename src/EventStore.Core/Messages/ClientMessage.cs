@@ -160,10 +160,11 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly Event[] Events;
+			public readonly CancellationToken CancellationToken;
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, Event[] events,
-				ClaimsPrincipal user, string login = null, string password = null)
+				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user, string login = null,
+				string password = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
@@ -174,6 +175,7 @@ namespace EventStore.Core.Messages {
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
 				Events = events;
+				CancellationToken = cancellationToken;
 			}
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
@@ -448,10 +450,11 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly bool HardDelete;
+			public readonly CancellationToken CancellationToken;
 
 			public DeleteStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, bool hardDelete,
-				ClaimsPrincipal user, string login = null, string password = null)
+				string eventStreamId, long expectedVersion, bool hardDelete, ClaimsPrincipal user, string login = null,
+				string password = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.Any)
@@ -460,6 +463,7 @@ namespace EventStore.Core.Messages {
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
 				HardDelete = hardDelete;
+				CancellationToken = cancellationToken;
 			}
 		}
 
@@ -968,7 +972,7 @@ namespace EventStore.Core.Messages {
 				IsEndOfStream = isEndOfStream;
 			}
 		}
-		
+
 		public class FilteredReadAllEventsBackward : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1003,7 +1007,7 @@ namespace EventStore.Core.Messages {
 				EventFilter = eventFilter;
 			}
 		}
-		
+
 		public class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1424,7 +1428,7 @@ namespace EventStore.Core.Messages {
 				SubscriptionId = subscriptionId;
 			}
 		}
-		
+
 		public class ReplayParkedMessages : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1514,7 +1518,7 @@ namespace EventStore.Core.Messages {
 				ResolveLinkTos = resolveLinkTos;
 			}
 		}
-		
+
 		public class FilteredSubscribeToStream : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1540,7 +1544,7 @@ namespace EventStore.Core.Messages {
 				CheckpointInterval = checkpointInterval;
 			}
 		}
-		
+
 		public class CheckpointReached : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

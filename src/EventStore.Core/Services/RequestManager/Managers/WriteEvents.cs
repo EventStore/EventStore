@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -8,17 +9,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteEvents : RequestManagerBase {
 		private readonly string _streamId;
 		private readonly Event[] _events;
-
-		public WriteEvents(
-					IPublisher publisher,
-					TimeSpan timeout,
-					IEnvelope clientResponseEnvelope,
-					Guid internalCorrId,
-					Guid clientCorrId,
-					string streamId,
-					long expectedVersion,
-					Event[] events,
-					CommitSource commitSource)
+		private readonly CancellationToken _cancellationToken;
+		public WriteEvents(IPublisher publisher,
+			TimeSpan timeout,
+			IEnvelope clientResponseEnvelope,
+			Guid internalCorrId,
+			Guid clientCorrId,
+			string streamId,
+			long expectedVersion,
+			Event[] events,
+			CommitSource commitSource,
+			CancellationToken cancellationToken = default)
 			: base(
 					 publisher,
 					 timeout,
@@ -31,6 +32,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 waitForCommit: true) {
 			_streamId = streamId;
 			_events = events;
+			_cancellationToken = cancellationToken;
 		}
 
 		protected override Message WriteRequestMsg =>
@@ -40,7 +42,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					_streamId,
 					ExpectedVersion,
 					_events,
-					LiveUntil);
+					_cancellationToken);
 
 
 		protected override Message ClientSuccessMsg =>

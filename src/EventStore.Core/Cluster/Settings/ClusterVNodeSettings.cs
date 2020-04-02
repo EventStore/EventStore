@@ -36,6 +36,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int CommitAckCount;
 		public readonly TimeSpan PrepareTimeout;
 		public readonly TimeSpan CommitTimeout;
+		public readonly TimeSpan WriteTimeout;
 
 		public readonly int NodePriority;
 
@@ -111,6 +112,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int commitAckCount,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
+			TimeSpan writeTimeout,
 			bool disableInternalTls,
 			bool disableExternalTls,
 			TimeSpan statsPeriod,
@@ -216,6 +218,7 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitAckCount = commitAckCount;
 			PrepareTimeout = prepareTimeout;
 			CommitTimeout = commitTimeout;
+			WriteTimeout = writeTimeout;
 
 			DisableInternalTls = disableInternalTls;
 			DisableExternalTls = disableExternalTls;
@@ -284,6 +287,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ClusterNodeCount: {ClusterNodeCount}\n" + $"MinFlushDelay: {MinFlushDelay}\n" +
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
+			$"WriteTimeout: {WriteTimeout}\n" +
 			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
