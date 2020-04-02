@@ -116,6 +116,7 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -162,6 +163,7 @@ namespace EventStore.Core {
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 			_externalClientCertificateValidator = delegate { return (true, null); };
+			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -341,7 +343,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
 			var httpPipe = new HttpMessagePipe();
-			var httpSendService = new HttpSendService(httpPipe, forwardRequests: true);
+			var httpSendService = new HttpSendService(httpPipe, true, _externalServerCertificateValidator);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(httpSendService);
 			SubscribeWorkers(bus => bus.Subscribe<HttpMessage.HttpSend>(httpSendService));
 

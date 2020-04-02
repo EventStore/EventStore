@@ -2,6 +2,8 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Diagnostics;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -18,18 +20,31 @@ namespace EventStore.Core.Services {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<HttpMessage.HttpSend> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
-		private static HttpClient _client = new HttpClient();
 
 		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private readonly HttpMessagePipe _httpPipe;
 		private readonly bool _forwardRequests;
+		private readonly HttpClient _forwardClient;
 		private const string _httpSendHistogram = "http-send";
 		private VNodeInfo _leaderInfo;
 
-		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests) {
+		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> externServerCertValidator) {
 			Ensure.NotNull(httpPipe, "httpPipe");
 			_httpPipe = httpPipe;
 			_forwardRequests = forwardRequests;
+
+			var socketsHttpHandler = new SocketsHttpHandler {
+				SslOptions = {
+					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
+						var (isValid, error) = externServerCertValidator(certificate, chain, errors);
+						if (!isValid && error != null) {
+							Log.Error("Server certificate validation error: {e}", error);
+						}
+						return isValid;
+					}
+				}
+			};
+			_forwardClient = new HttpClient(socketsHttpHandler);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -123,7 +138,7 @@ namespace EventStore.Core.Services {
 			return false;
 		}
 
-		private static void ForwardRequest(HttpEntityManager manager, Uri forwardUri) {
+		private void ForwardRequest(HttpEntityManager manager, Uri forwardUri) {
 			var srcReq = manager.HttpEntity.Request;
 			var request = new HttpRequestMessage();
 			request.RequestUri = forwardUri;
@@ -201,12 +216,12 @@ namespace EventStore.Core.Services {
 			ForwardResponse(manager, request);
 		}
 
-		private static void ForwardReplyFailed(HttpEntityManager manager) {
+		private void ForwardReplyFailed(HttpEntityManager manager) {
 			manager.ReplyStatus(HttpStatusCode.InternalServerError, "Error while forwarding request", _ => { });
 		}
 
-		private static void ForwardResponse(HttpEntityManager manager, HttpRequestMessage request) {
-			_client.SendAsync(request)
+		private void ForwardResponse(HttpEntityManager manager, HttpRequestMessage request) {
+			_forwardClient.SendAsync(request)
 				.ContinueWith(t => {
 					HttpResponseMessage response;
 					try {
