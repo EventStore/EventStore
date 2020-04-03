@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Client;
 using EventStore.Core.Services.Transport.Grpc;
 using NUnit.Framework;
 

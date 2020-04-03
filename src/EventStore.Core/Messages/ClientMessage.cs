@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
 using static EventStore.Core.Messages.TcpClientMessageDto.FilteredReadAllEventsCompleted;

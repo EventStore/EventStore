@@ -1,5 +1,4 @@
 using System;
-using EventStore.Client;
 using EventStore.Core.Services.Transport.Grpc;
 using NUnit.Framework;
 

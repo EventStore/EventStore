@@ -9,7 +9,9 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Util;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Helpers {
 	

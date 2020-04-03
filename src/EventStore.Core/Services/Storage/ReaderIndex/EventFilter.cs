@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 
-namespace EventStore.Core.Util {
+namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public static class EventFilter {
 		public static IEventFilter None => new AlwaysAllowStrategy();
 
