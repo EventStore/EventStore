@@ -400,6 +400,7 @@ namespace EventStore.ClusterNode {
 			UnsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
 			PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
 			CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
+			WriteTimeoutMs = Opts.WriteTimeoutMsDefault;
 			DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
 			GossipOnExt = Opts.GossipOnExtDefault;
