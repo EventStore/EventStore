@@ -81,6 +81,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool ReduceFileCachePressure;
 		public readonly int InitializationThreads;
 		public readonly int MaxAutoMergeIndexLevel;
+		public readonly long MaxTruncation;
 
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
@@ -155,7 +156,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool structuredLog = false,
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
-			bool logFailedAuthenticationAttempts = false) {
+			bool logFailedAuthenticationAttempts = false,
+			long maxTruncation = -1) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
 			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
@@ -258,6 +260,8 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
+
+			MaxTruncation = maxTruncation;
 		}
 
 		public override string ToString() {
@@ -302,7 +306,8 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "ReduceFileCachePressure: {38}\n"
 			                     + "InitializationThreads: {39}\n"
 			                     + "StructuredLog: {40}\n"
-								 + "DisableFirstLevelHttpAuthorization: {41}\n",
+								 + "DisableFirstLevelHttpAuthorization: {41}\n"
+								 + "MaxTruncation: {42}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -322,7 +327,7 @@ namespace EventStore.Core.Cluster.Settings {
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
 				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
 				ReduceFileCachePressure, InitializationThreads, StructuredLog,
-				DisableFirstLevelHttpAuthorization);
+				DisableFirstLevelHttpAuthorization, MaxTruncation);
 		}
 	}
 }

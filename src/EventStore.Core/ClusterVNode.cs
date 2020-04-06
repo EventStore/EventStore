@@ -105,7 +105,8 @@ namespace EventStore.Core {
 
 		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
 			EventHandler<VNodeStatusChangeArgs> handler = NodeStatusChanged;
-			if (handler != null) handler(this, e);
+			if (handler != null)
+				handler(this, e);
 		}
 
 
@@ -194,6 +195,7 @@ namespace EventStore.Core {
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
+
 				var truncator = new TFChunkDbTruncator(db.Config);
 				truncator.TruncateDb(truncPos);
 			}
@@ -636,8 +638,8 @@ namespace EventStore.Core {
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
 					var http = isSingleNode
-						? new[] {_externalHttpService}
-						: new[] {_internalHttpService, _externalHttpService};
+						? new[] { _externalHttpService }
+						: new[] { _internalHttpService, _externalHttpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler));
 				}
@@ -657,7 +659,8 @@ namespace EventStore.Core {
 		public void StopNonblocking(bool exitProcess, bool shutdownHttp) {
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess, shutdownHttp));
 
-			if (_subsystems == null) return;
+			if (_subsystems == null)
+				return;
 			foreach (var subsystem in _subsystems)
 				subsystem.Stop();
 		}

@@ -15,6 +15,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void TruncateDb(long truncateChk) {
+
+			var epoch = _config.EpochCheckpoint.Read();
+			var requestedTruncation = _config.EpochCheckpoint.Read() - truncateChk;
+			if (_config.MaxTruncation >= 0 && requestedTruncation > _config.MaxTruncation) {
+				Log.Error(
+					"MaxTruncation is set and truncate checkpoint is out of bounds. MaxTruncation {maxTruncation} vs requested truncation {requestedTruncation} [{epochChk} => {truncateChk}].  To proceed, set MaxTruncation to -1 (no max) or greater than {requestedTruncationHint}.",
+					_config.MaxTruncation, requestedTruncation, epoch, truncateChk, requestedTruncation);
+				throw new Exception(
+					string.Format("MaxTruncation is set ({0}) and truncate checkpoint is out of bounds (requested truncation is {1} [{2} => {3}]).", _config.MaxTruncation, requestedTruncation, epoch, truncateChk));
+			}
+
 			var writerChk = _config.WriterCheckpoint.Read();
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);

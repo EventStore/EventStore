@@ -136,6 +136,7 @@ namespace EventStore.Core {
 		private int _maxAutoMergeIndexLevel;
 
 		private bool _gossipOnSingleNode;
+		private long _maxTruncation;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -231,6 +232,7 @@ namespace EventStore.Core {
 			_faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			_reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			_initializationThreads = Opts.InitializationThreadsDefault;
+			_maxTruncation = Opts.MaxTruncationDefault;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1065,6 +1067,16 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// Sets the max truncation length (max difference between epoch.chk and truncate.chk).  -1 to disable.
+		/// </summary>
+		/// <param name="maxTruncation">The max difference between epoch and truncate checkpoints to limit any accidental truncations.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithMaxTruncation(long maxTruncation) {
+			_maxTruncation = maxTruncation;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the Server SSL Certificate
 		/// </summary>
 		/// <param name="sslCertificate">The server SSL certificate to use</param>
@@ -1342,6 +1354,7 @@ namespace EventStore.Core {
 				_chunkInitialReaderCount,
 				_optimizeIndexMerge,
 				_reduceFileCachePressure,
+				_maxTruncation,
 				_log);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1418,7 +1431,8 @@ namespace EventStore.Core {
 				_structuredLog,
 				_maxAutoMergeIndexLevel,
 				_disableFirstLevelHttpAuthorization,
-				_logFailedAuthenticationAttempts);
+				_logFailedAuthenticationAttempts,
+				_maxTruncation);
 
 			var infoController = new InfoController(options, _projectionType);
 
@@ -1470,6 +1484,7 @@ namespace EventStore.Core {
 			int chunkInitialReaderCount,
 			bool optimizeReadSideCache,
 			bool reduceFileCachePressure,
+			long maxTruncation,
 			ILogger log) {
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
@@ -1538,7 +1553,8 @@ namespace EventStore.Core {
 				unbuffered,
 				writethrough,
 				optimizeReadSideCache,
-				reduceFileCachePressure);
+				reduceFileCachePressure,
+				maxTruncation);
 
 			return nodeConfig;
 		}

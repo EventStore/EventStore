@@ -187,6 +187,7 @@ namespace EventStore.ClusterNode {
 				builder = builder.WithStatsStorage(StatsStorage.File);
 			}
 
+			
 			builder.WithInternalTcpOn(intTcp)
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)
@@ -234,7 +235,8 @@ namespace EventStore.ClusterNode {
 				.WithConnectionQueueSizeThreshold(options.ConnectionQueueSizeThreshold)
 				.WithChunkInitialReaderCount(options.ChunkInitialReaderCount)
 				.WithInitializationThreads(options.InitializationThreads)
-				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel);
+				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel)
+				.WithMaxTruncation(options.MaxTruncation);
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);

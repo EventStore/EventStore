@@ -431,5 +431,10 @@ namespace EventStore.Core.Util {
 
 		public const string WriteStatsToDbDescr = "Set this option to write statistics to the database.";
 		public const bool WriteStatsToDbDefault = true;
+
+		public static readonly long MaxTruncationDefault = -1;
+		public const string MaxTruncationDescr =
+			"When truncate.chk is set, the database will be truncated on startup.  This is a safety check to ensure large amounts of data truncation does not happen accidentally.  This value should be set in the low 10,000s for allow for standard cluster recovery operations. -1 is no max (default).";
+
 	}
 }
