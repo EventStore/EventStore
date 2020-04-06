@@ -7,6 +7,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		bool IsReadingOrderRepeatable { get; }
 		EventFilter EventFilter { get; }
 		PositionTagger PositionTagger { get; }
+		Guid SubscriptionId { get; }
 
 		IReaderSubscription CreateReaderSubscription(
 			IPublisher publisher, CheckpointTag fromCheckpointTag, Guid subscriptionId,
@@ -14,6 +15,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		IEventReader CreatePausedEventReader(
 			Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
-			bool stopOnEof, int? stopAfterNEvents);
+			bool stopOnEof, int? stopAfterNEvents, Guid subscriptionId, long? unhandledBytesThreshold);
 	}
 }

@@ -1,3 +1,4 @@
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -13,6 +14,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public abstract CheckpointTag MakeCheckpointTag(
 			CheckpointTag previous, ReaderSubscriptionMessage.CommittedEventDistributed committedEvent);
+
+		public virtual CheckpointTag MakeCheckpointTag(
+			CheckpointTag previous, long eventNumber, TFPos position, string eventStreamId) {
+			return CheckpointTag.Empty;
+		}
 
 		public abstract CheckpointTag MakeCheckpointTag(
 			CheckpointTag previous, ReaderSubscriptionMessage.EventReaderPartitionEof partitionEof);

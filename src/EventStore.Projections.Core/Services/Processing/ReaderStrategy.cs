@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using Superpower.Model;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ReaderStrategy : IReaderStrategy {
@@ -25,7 +26,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly EventFilter _eventFilter;
 		private readonly PositionTagger _positionTagger;
 		private readonly ITimeProvider _timeProvider;
-
 		private readonly string _tag;
 		private readonly int _phase;
 
@@ -35,7 +35,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IQuerySources sources,
 			ITimeProvider timeProvider,
 			bool stopOnEof,
-			ClaimsPrincipal runAs) {
+			ClaimsPrincipal runAs,
+			Guid subscriptionId) {
 			if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams())
 				throw new InvalidOperationException("None of streams and categories are included");
 			if (!sources.AllEvents && !sources.HasEvents())
@@ -81,7 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				sources.ProcessingLagOption,
 				sources.ReorderEventsOption,
 				runAs,
-				timeProvider);
+				timeProvider,
+				subscriptionId);
 			return readerStrategy;
 		}
 
@@ -98,7 +100,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int? processingLag,
 			bool reorderEvents,
 			ClaimsPrincipal runAs,
-			ITimeProvider timeProvider) {
+			ITimeProvider timeProvider,
+			Guid subscriptionId) {
 			_tag = tag;
 			_phase = phase;
 			_allStreams = allStreams;
@@ -115,7 +118,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_eventFilter = CreateEventFilter();
 			_positionTagger = CreatePositionTagger();
 			_timeProvider = timeProvider;
+			SubscriptionId = subscriptionId;
 		}
+
+		public Guid SubscriptionId { get; }
 
 		public bool IsReadingOrderRepeatable {
 			get { return !(_streams != null && _streams.Count > 1); }
@@ -166,17 +172,19 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public IEventReader CreatePausedEventReader(
 			Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
-			bool stopOnEof, int? stopAfterNEvents) {
+			bool stopOnEof, int? stopAfterNEvents, Guid subscriptionId, long? unhandledBytesThreshold) {
 			if (_allStreams && _events != null && _events.Count >= 1) {
 				//IEnumerable<string> streams = GetEventIndexStreams();
 				return CreatePausedEventIndexEventReader(
-					eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _events,
-					_includeStreamDeletedNotification);
+					eventReaderId, ioDispatcher, publisher, checkpointTag, subscriptionId, unhandledBytesThreshold,
+					_positionTagger, stopOnEof, stopAfterNEvents,
+					true, _events, _includeStreamDeletedNotification);
 			}
 
 			if (_allStreams) {
 				var eventReader = new TransactionFileEventReader(publisher, eventReaderId, _runAs,
 					new TFPos(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value), _timeProvider,
+					SubscriptionId, unhandledBytesThreshold, _positionTagger,
 					deliverEndOfTFPosition: true, stopOnEof: stopOnEof, resolveLinkTos: false);
 				return eventReader;
 			}
@@ -185,20 +193,23 @@ namespace EventStore.Projections.Core.Services.Processing {
 				var streamName = checkpointTag.Streams.Keys.First();
 				//TODO: handle if not the same
 				return CreatePausedStreamEventReader(
-					eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
+					eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, SubscriptionId, stopOnEof,
+					resolveLinkTos: true,
 					stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
 			}
 
 			if (_categories != null && _categories.Count == 1) {
 				var streamName = checkpointTag.Streams.Keys.First();
 				return CreatePausedStreamEventReader(
-					eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true,
-					stopAfterNEvents: stopAfterNEvents, produceStreamDeletes: _includeStreamDeletedNotification);
+					eventReaderId, ioDispatcher, publisher, checkpointTag, streamName, SubscriptionId,
+					stopOnEof, resolveLinkTos: true, stopAfterNEvents: stopAfterNEvents,
+					produceStreamDeletes: _includeStreamDeletedNotification);
 			}
 
 			if (_streams != null && _streams.Count > 1) {
 				return CreatePausedMultiStreamEventReader(
-					eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _streams);
+					eventReaderId, ioDispatcher, publisher, checkpointTag, SubscriptionId, stopOnEof, stopAfterNEvents,
+					true, _streams);
 			}
 
 			throw new NotSupportedException();
@@ -249,19 +260,21 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private IEventReader CreatePausedStreamEventReader(
 			Guid eventReaderId, IODispatcher ioDispatcher, IPublisher publisher, CheckpointTag checkpointTag,
-			string streamName, bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, bool produceStreamDeletes) {
+			string streamName, Guid subscriptionId, bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos,
+			bool produceStreamDeletes) {
 			var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
 			var fromSequenceNumber = lastProcessedSequenceNumber + 1;
 			var eventReader = new StreamEventReader(publisher, eventReaderId, _runAs, streamName, fromSequenceNumber,
 				_timeProvider,
-				resolveLinkTos, produceStreamDeletes, stopOnEof);
+				resolveLinkTos, produceStreamDeletes, subscriptionId, stopOnEof);
 			return eventReader;
 		}
 
 		private IEventReader CreatePausedEventIndexEventReader(
 			Guid eventReaderId, IODispatcher ioDispatcher, IPublisher publisher, CheckpointTag checkpointTag,
-			bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, IEnumerable<string> eventTypes,
-			bool includeStreamDeletedNotification) {
+			Guid subscriptionId, long? unhandledBytesThreshold, PositionTagger positionTagger, bool stopOnEof,
+			int? stopAfterNEvents, bool resolveLinkTos,
+			IEnumerable<string> eventTypes, bool includeStreamDeletedNotification) {
 			//NOTE: just optimization - anyway if reading from TF events may reappear
 			long p;
 			var nextPositions = eventTypes.ToDictionary(
@@ -272,17 +285,19 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			return new EventByTypeIndexEventReader(publisher, eventReaderId, _runAs, eventTypes.ToArray(),
 				includeStreamDeletedNotification,
-				checkpointTag.Position, nextPositions, resolveLinkTos, _timeProvider, stopOnEof);
+				checkpointTag, nextPositions, resolveLinkTos, _timeProvider, subscriptionId,
+				unhandledBytesThreshold, positionTagger, stopOnEof);
 		}
 
 		private IEventReader CreatePausedMultiStreamEventReader(
 			Guid eventReaderId, IODispatcher ioDispatcher, IPublisher publisher, CheckpointTag checkpointTag,
-			bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, IEnumerable<string> streams) {
+			Guid subscriptionId, bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos,
+			IEnumerable<string> streams) {
 			var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
 			return new MultiStreamEventReader(
 				ioDispatcher, publisher, eventReaderId, _runAs, Phase, streams.ToArray(), nextPositions, resolveLinkTos,
-				_timeProvider, stopOnEof, stopAfterNEvents);
+				_timeProvider, subscriptionId, stopOnEof, stopAfterNEvents);
 		}
 	}
 }

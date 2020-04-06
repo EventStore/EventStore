@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using Superpower.Model;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventByTypeIndexPositionTagger : PositionTagger {
@@ -53,6 +54,26 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_streamToEventType[committedEvent.Data.PositionStreamId],
 					committedEvent.Data.PositionSequenceNumber)
 				: previous.UpdateEventTypeIndexPosition(committedEvent.Data.EventOrLinkTargetPosition);
+		}
+		
+		public override CheckpointTag MakeCheckpointTag(
+			CheckpointTag previous, long eventNumber, TFPos position, string eventStreamId) {
+			if (previous.Phase != Phase)
+				throw new ArgumentException(
+					string.Format("Invalid checkpoint tag phase.  Expected: {0} Was: {1}", Phase, previous.Phase));
+
+			if (position < previous.Position)
+				throw new InvalidOperationException(
+					string.Format(
+						"Cannot make a checkpoint tag at earlier position. '{0}' < '{1}'",
+						position, previous.Position));
+			var byIndex = _streams.Contains(eventStreamId);
+			return byIndex
+				? previous.UpdateEventTypeIndexPosition(
+					position,
+					_streamToEventType[eventStreamId],
+					eventNumber)
+				: previous.UpdateEventTypeIndexPosition(position);
 		}
 
 		public override CheckpointTag MakeCheckpointTag(CheckpointTag previous,

@@ -255,7 +255,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 				SystemAccounts.System,
 				new TFPos(_writerCheckpoint.Read(), -1),
 				new RealTimeProvider(),
-				deliverEndOfTFPosition: false);
+				deliverEndOfTFPosition: false,
+				subscriptionId: Guid.Empty, unhandledBytesThreshold: null, 
+				positionTagger: null);
 
 			_eventReaders.Add(_defaultEventReaderId, transactionFileReader);
 			if (_runHeadingReader)

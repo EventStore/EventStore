@@ -77,7 +77,8 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				_querySource,
 				_timeProvider,
 				stopOnEof: true,
-				runAs: _user);
+				runAs: _user,
+				Guid.Empty);
 
 			//TODO: make reader mode explicit
 			var readerOptions = new ReaderSubscriptionOptions(
@@ -109,6 +110,7 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 		}
 
 		public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message) {
+			Console.WriteLine("Checkpoint Suggested");
 			throw new NotSupportedException();
 		}
 

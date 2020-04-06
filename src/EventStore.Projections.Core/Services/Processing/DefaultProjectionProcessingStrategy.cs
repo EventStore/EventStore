@@ -101,7 +101,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_sourceDefinition,
 				timeProvider,
 				_projectionConfig.StopOnEof,
-				_projectionConfig.RunAs);
+				_projectionConfig.RunAs,
+				Guid.Empty);
 		}
 
 		protected abstract IResultEventEmitter CreateFirstPhaseResultEmitter(ProjectionNamesBuilder namingBuilder);

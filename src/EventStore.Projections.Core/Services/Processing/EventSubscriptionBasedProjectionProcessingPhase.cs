@@ -209,6 +209,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(EventReaderSubscriptionMessage.CheckpointSuggested message) {
+			Console.WriteLine("Checkpoint Suggested");
 			if (IsOutOfOrderSubscriptionMessage(message))
 				return;
 			RegisterSubscriptionMessage(message);

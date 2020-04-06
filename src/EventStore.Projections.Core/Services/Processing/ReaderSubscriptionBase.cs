@@ -187,7 +187,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException("Onetime projection has already reached the eof position");
 //            _logger.Trace("Creating an event distribution point at '{lastTag}'", _positionTracker.LastTag);
 			return _readerStrategy.CreatePausedEventReader(
-				eventReaderId, publisher, ioDispatcher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents);
+				eventReaderId, publisher, ioDispatcher, _positionTracker.LastTag, _stopOnEof, _stopAfterNEvents,
+				_subscriptionId, _checkpointUnhandledBytesThreshold);
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderEof message) {

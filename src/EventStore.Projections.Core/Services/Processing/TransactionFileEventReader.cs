@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -20,9 +21,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly bool _deliverEndOfTfPosition;
 		private readonly bool _resolveLinkTos;
 		private readonly ITimeProvider _timeProvider;
+		private readonly Guid _subscriptionId;
+		private readonly long? _unhandledBytesThreshold;
 		private long _lastPosition;
 		private bool _eof;
 		private Guid _pendingRequestCorrelationId;
+		private long? _lastPreparePosition;
+		private PositionTagger _positionTagger;
+		private PositionTracker _positionTracker;
+		private long _sequenceNumber;
 
 		public TransactionFileEventReader(
 			IPublisher publisher,
@@ -30,6 +37,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ClaimsPrincipal readAs,
 			TFPos @from,
 			ITimeProvider timeProvider,
+			Guid subscriptionId,
+			long? unhandledBytesThreshold,
+			PositionTagger positionTagger,
 			bool stopOnEof = false,
 			bool deliverEndOfTFPosition = true,
 			bool resolveLinkTos = true)
@@ -39,6 +49,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_deliverEndOfTfPosition = deliverEndOfTFPosition;
 			_resolveLinkTos = resolveLinkTos;
 			_timeProvider = timeProvider;
+			_subscriptionId = subscriptionId;
+			_unhandledBytesThreshold = unhandledBytesThreshold;
+			_positionTagger = positionTagger;
+			_positionTracker = positionTagger != null ? new PositionTracker(_positionTagger) : null ;
 		}
 
 		protected override bool AreEventsRequested() {
@@ -58,6 +72,23 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			_eventsRequested = false;
 			_lastPosition = message.TfLastCommitPosition;
+			if (message.Events.Length > 0) {
+				if (_lastPreparePosition == null) {
+					_lastPreparePosition = message.Events.Last().OriginalPosition?.PreparePosition;
+				}
+
+				if (message.Events.Last().OriginalPosition?.PreparePosition - _lastPreparePosition.Value
+				    > _unhandledBytesThreshold) {
+					_lastPreparePosition = message.Events.Last().OriginalPosition?.PreparePosition;
+					if (_positionTracker != null) {
+						_publisher.Publish(
+							new EventReaderSubscriptionMessage.CheckpointSuggested(
+								_subscriptionId, _positionTracker.LastTag, 22.0f,
+								_sequenceNumber++));
+					}
+				}
+			}
+
 			if (message.Result == ReadAllResult.AccessDenied) {
 				SendNotAuthorized();
 				return;

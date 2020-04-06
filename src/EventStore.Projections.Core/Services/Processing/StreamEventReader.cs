@@ -35,6 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ITimeProvider timeProvider,
 			bool resolveLinkTos,
 			bool produceStreamDeletes,
+			Guid subscriptionId,
 			bool stopOnEof = false)
 			: base(publisher, eventReaderCorrelationId, readAs, stopOnEof) {
 			if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");

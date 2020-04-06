@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			IODispatcher ioDispatcher, IPublisher publisher, Guid eventReaderCorrelationId, ClaimsPrincipal readAs,
 			int phase,
 			string[] streams, Dictionary<string, long> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
-			bool stopOnEof = false, int? stopAfterNEvents = null)
+			Guid subscriptionId, bool stopOnEof = false, int? stopAfterNEvents = null)
 			: base(publisher, eventReaderCorrelationId, readAs, stopOnEof) {
 			if (streams == null) throw new ArgumentNullException("streams");
 			if (timeProvider == null) throw new ArgumentNullException("timeProvider");

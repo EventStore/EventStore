@@ -39,6 +39,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly Dictionary<string, long> _fromPositions;
 		private readonly Dictionary<string, string> _streamToEventType;
 		private long _lastPosition;
+		private static Guid _subscriptionId;
+		private static long? _unhandledBytesThreshold;
+		private static PositionTracker _positionTracker;
+		private static PositionTagger _positionTagger;
 
 		public EventByTypeIndexEventReader(
 			IPublisher publisher,
@@ -46,10 +50,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ClaimsPrincipal readAs,
 			string[] eventTypes,
 			bool includeDeletedStreamNotification,
-			TFPos fromTfPosition,
+			CheckpointTag checkpointTag,
 			Dictionary<string, long> fromPositions,
 			bool resolveLinkTos,
 			ITimeProvider timeProvider,
+			Guid subscriptionId,
+			long? unhandledBytesThreshold,
+			PositionTagger positionTagger,
 			bool stopOnEof = false)
 			: base(publisher, eventReaderCorrelationId, readAs, stopOnEof) {
 			if (eventTypes == null) throw new ArgumentNullException("eventTypes");
@@ -62,13 +69,18 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (includeDeletedStreamNotification)
 				_eventTypes.Add("$deleted");
 			_streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
-			_lastEventPosition = fromTfPosition;
+			_lastEventPosition = checkpointTag.Position;
 			_resolveLinkTos = resolveLinkTos;
 
 			ValidateTag(fromPositions);
 
 			_fromPositions = fromPositions;
-			_state = new IndexBased(_eventTypes, this, readAs);
+			_subscriptionId = subscriptionId;
+			_unhandledBytesThreshold = unhandledBytesThreshold;
+			_positionTagger = positionTagger;
+			_positionTracker = new PositionTracker(_positionTagger);
+			_positionTracker.UpdateByCheckpointTagInitial(checkpointTag);
+			_state = new IndexBased(_eventTypes, this, readAs, unhandledBytesThreshold, _positionTracker, _publisher, subscriptionId);
 		}
 
 		private void ValidateTag(Dictionary<string, long> fromPositions) {
@@ -125,15 +137,30 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			protected readonly EventByTypeIndexEventReader _reader;
 			protected readonly ClaimsPrincipal _readAs;
+			private long? _lastPreparePosition;
+			private long? _unhandledBytesThreshold;
+			private PositionTracker _positionTracker;
+			private IPublisher _publisher;
+			private Guid _subscriptionId;
 
-			protected State(EventByTypeIndexEventReader reader, ClaimsPrincipal readAs) {
+			protected State(EventByTypeIndexEventReader reader, ClaimsPrincipal readAs, long? unhandledBytesThreshold,
+				PositionTracker positionTracker, IPublisher publisher, Guid subscriptionId) {
 				_reader = reader;
 				_readAs = readAs;
+				_unhandledBytesThreshold = unhandledBytesThreshold;
+				_positionTracker = positionTracker;
+				_publisher = publisher;
+				_subscriptionId = subscriptionId;
 			}
 
 			protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position) {
 				if (resolvedEvent.EventOrLinkTargetPosition <= _reader._lastEventPosition)
 					return;
+				
+				if (_lastPreparePosition == null) {
+					_lastPreparePosition = resolvedEvent.EventOrLinkTargetPosition.PreparePosition;
+				}
+
 				_reader._lastEventPosition = resolvedEvent.EventOrLinkTargetPosition;
 				//TODO: this is incomplete.  where reading from TF we need to handle actual deletes
 
@@ -142,7 +169,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 				if (resolvedEvent.IsLinkToDeletedStream && !resolvedEvent.IsLinkToDeletedStreamTombstone)
 					return;
-
+				
 				bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(
 					resolvedEvent, out deletedPartitionStreamId);
 				if (isDeletedStreamEvent) {
@@ -193,8 +220,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			private readonly Dictionary<string, Guid> _pendingRequests;
 			private readonly object _lock = new object();
 
-			public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, ClaimsPrincipal readAs)
-				: base(reader, readAs) {
+			public IndexBased(HashSet<string> eventTypes, EventByTypeIndexEventReader reader, ClaimsPrincipal readAs,
+					long? unhandledBytesThreshold, PositionTracker positionTracker, IPublisher publisher, Guid subscriptionId)
+				: base(reader, readAs, unhandledBytesThreshold, positionTracker, publisher, subscriptionId) {
 				_streamToEventType = eventTypes.ToDictionary(v => "$et-" + v, v => v);
 				_eofs = _streamToEventType.Keys.ToDictionary(v => v, v => false);
 				// whatever the first event returned is (even if we start from the same position as the last processed event
@@ -553,16 +581,21 @@ namespace EventStore.Projections.Core.Services.Processing {
 			private TFPos _fromTfPosition;
 			private bool _eof;
 			private Guid _pendingRequestCorrelationId;
+			private long? _lastPosition;
+			private long _sequenceNumber;
 
 			public TfBased(
 				ITimeProvider timeProvider, EventByTypeIndexEventReader reader, TFPos fromTfPosition,
-				IPublisher publisher, ClaimsPrincipal readAs)
-				: base(reader, readAs) {
+				IPublisher publisher, ClaimsPrincipal readAs, long? unhandledBytesThreshold, PositionTagger positionTagger, PositionTracker positionTracker, Guid subscriptionId)
+				: base(reader, readAs, unhandledBytesThreshold, positionTracker, publisher, subscriptionId) {
 				_timeProvider = timeProvider;
 				_eventTypes = reader._eventTypes;
 				_streamToEventType = _eventTypes.ToDictionary(v => "$et-" + v, v => v);
 				_publisher = publisher;
 				_fromTfPosition = fromTfPosition;
+				_unhandledBytesThreshold = unhandledBytesThreshold;
+				_positionTracker = positionTracker;
+				_subscriptionId = subscriptionId;
 			}
 
 			public void Handle(ClientMessage.ReadAllEventsForwardCompleted message) {
@@ -593,6 +626,25 @@ namespace EventStore.Projections.Core.Services.Processing {
 						if (!willDispose) {
 							_reader.PauseOrContinueProcessing();
 						}
+
+						if (message.Events.Length > 0) {
+							if (_lastPosition == null) {
+								_lastPosition = message.Events.Last().OriginalPosition?.PreparePosition;
+							}
+							if (message.Events.Last().OriginalPosition?.PreparePosition - _lastPosition.Value
+							    > _unhandledBytesThreshold) {
+								_lastPosition = message.Events.Last().OriginalPosition?.PreparePosition;
+								var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message.Events.Last().OriginalEventNumber, message.Events.Last().OriginalPosition.Value, message.Events.Last().OriginalStreamId);
+								_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
+								if (_positionTracker != null) {
+									_publisher.Publish(
+										new EventReaderSubscriptionMessage.CheckpointSuggested(
+											_subscriptionId, _positionTracker.LastTag, 22.0f,
+											_sequenceNumber++));
+								}
+							}
+						}
+
 
 						if (eof) {
 							// the end
@@ -723,7 +775,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (lastKnownIndexCheckpointPosition > _lastEventPosition)
 				_lastEventPosition = lastKnownIndexCheckpointPosition;
 
-			_state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher, ReadAs);
+			_state = new TfBased(_timeProvider, this, _lastEventPosition, this._publisher, ReadAs, _unhandledBytesThreshold, _positionTagger, _positionTracker, _subscriptionId);
 			_state.RequestEvents();
 		}
 	}
