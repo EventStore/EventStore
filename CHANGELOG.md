@@ -31,6 +31,9 @@ All notable changes to this project will be documented in this file.
 ### - Use TrySetResult instead of SetResult so that exceptions are not thrown if setting result twice [EventStore#2406](https
 - //github.com/EventStore/EventStore/pull/2406)
 
+### Fixed
+- Connect to existing master when a node starts up instead of triggering unnecessary elections if a quorum of nodes is already present. [EventStore#2386](https://github.com/EventStore/EventStore/pull/2386)
+
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
 
