@@ -174,6 +174,18 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class BecomeDiscoverLeader : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeDiscoverLeader(Guid correlationId)
+				: base(correlationId, VNodeState.DiscoverLeader) {
+			}
+		}
+
 		public class BecomeResigningLeader : StateChangeMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

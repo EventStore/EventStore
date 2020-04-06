@@ -43,6 +43,7 @@ namespace EventStore.Core.Services {
 					_leaderInfo = ((SystemMessage.ReplicaStateMessage)message).Leader;
 					break;
 				case VNodeState.Initializing:
+				case VNodeState.DiscoverLeader:
 				case VNodeState.Unknown:
 				case VNodeState.PreLeader:
 				case VNodeState.Leader:

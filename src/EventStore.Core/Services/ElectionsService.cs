@@ -24,6 +24,7 @@ namespace EventStore.Core.Services {
 
 	public class ElectionsService : IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.SystemInit>,
+		IHandle<LeaderDiscoveryMessage.LeaderFound>,
 		IHandle<GossipMessage.GossipUpdated>,
 		IHandle<ElectionMessage.StartElections>,
 		IHandle<ElectionMessage.ElectionsTimedOut>,
@@ -121,6 +122,7 @@ namespace EventStore.Core.Services {
 		public void SubscribeMessages(ISubscriber subscriber) {
 			subscriber.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			subscriber.Subscribe<SystemMessage.SystemInit>(this);
+			subscriber.Subscribe<LeaderDiscoveryMessage.LeaderFound>(this);
 			subscriber.Subscribe<GossipMessage.GossipUpdated>(this);
 			subscriber.Subscribe<ElectionMessage.StartElections>(this);
 			subscriber.Subscribe<ElectionMessage.ElectionsTimedOut>(this);
@@ -575,6 +577,17 @@ namespace EventStore.Core.Services {
 					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, leader));
 				}
 			}
+		}
+
+		public void Handle(LeaderDiscoveryMessage.LeaderFound message) {
+			if (_leader != null || _lastElectedLeader != null || _state != ElectionsState.Idle)
+				return;
+			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderInternalHttp},{leaderId:B}])", message.Leader.InternalHttp, message.Leader.InstanceId);
+			_leader = message.Leader.InstanceId;
+			_lastElectedLeader = message.Leader.InstanceId;
+			_lastAttemptedView = 0;
+			_lastInstalledView = 0;
+			_state = ElectionsState.Acceptor;
 		}
 
 		private LeaderCandidate GetOwnInfo() {

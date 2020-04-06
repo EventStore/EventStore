@@ -1,6 +1,7 @@
 namespace EventStore.Core.Data {
 	public enum VNodeState {
 		Initializing,
+		DiscoverLeader,
 		Unknown,
 		PreReplica,
 		CatchingUp,
