@@ -58,17 +58,10 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTls)
+				if (x.Name == nameof(ClusterNodeOptions.TrustedRootCertificatesPath)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
-					x.Value = true;
-					x.Source = "Set by 'Development Mode' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTls)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
+					x.Value = Locations.DevCertificateDirectory;
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
@@ -110,7 +103,6 @@ namespace EventStore.ClusterNode {
 					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
 					" - NOT WRITE ANY DATA TO DISK.\n" +
 					" - USE A SELF SIGNED CERTIFICATE.\n" +
-					" - DISABLE TLS FOR INTERNAL AND EXTERNAL TCP CONNECTIONS.\n" +
 					"========================================================================================================\n");
 			}
 
@@ -334,12 +326,6 @@ namespace EventStore.ClusterNode {
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)
 				builder.WithUnsafeAllowSurplusNodes();
-			if (options.Dev)
-				builder.WithHttpMessageHandlerFactory(() => new SocketsHttpHandler {
-					SslOptions = new SslClientAuthenticationOptions {
-						RemoteCertificateValidationCallback = delegate { return true; }
-					}
-				});
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
@@ -361,6 +347,13 @@ namespace EventStore.ClusterNode {
 			var authorizationConfig = String.IsNullOrEmpty(options.AuthorizationConfig)
 				? options.Config
 				: options.AuthorizationConfig;
+
+			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+				builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
+			} else {
+				throw new Exception($"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
+			}
+
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
 				: options.AuthenticationConfig;

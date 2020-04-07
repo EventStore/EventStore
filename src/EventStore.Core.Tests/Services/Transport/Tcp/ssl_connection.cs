@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[Test]
 		public void should_connect_to_each_other_and_send_data() {
 			var serverEndPoint = new IPEndPoint(_ip, _port);
-			X509Certificate cert = GetCertificate();
+			X509Certificate cert = GetServerCertificate();
 
 			var sent = new byte[1000];
 			new Random().NextBytes(sent);
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert, false,
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, cert,delegate { return (true, null); },
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				serverEndPoint,
-				false,
+				delegate { return (true, null); },
 				null,
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
@@ -90,7 +90,15 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(sent, received.ToArray());
 		}
 
-		public static X509Certificate2 GetCertificate() {
+		public static X509Certificate2 GetRootCertificate() {
+			using var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.ca.ca.pem");
+			using var mem = new MemoryStream();
+			stream.CopyTo(mem);
+			return new X509Certificate2(mem.ToArray());
+		}
+
+		public static X509Certificate2 GetServerCertificate() {
 			using var stream = Assembly.GetExecutingAssembly()
 				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node1.node1.p12");
 			using var mem = new MemoryStream();
@@ -98,12 +106,20 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			return new X509Certificate2(mem.ToArray(), "password");
 		}
 
-		public static bool IsValidCertificate(X509Certificate2 certificate) {
-			using (X509Chain chain = new X509Chain())
-			{
-				chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-				return chain.Build(certificate);
-			}
+		public static X509Certificate2 GetClientCertificate() {
+			using var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node2.node2.p12");
+			using var mem = new MemoryStream();
+			stream.CopyTo(mem);
+			return new X509Certificate2(mem.ToArray(), "password");
+		}
+
+		public static X509Certificate2 GetUntrustedCertificate() {
+			using var stream = Assembly.GetExecutingAssembly()
+				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.untrusted.untrusted.p12");
+			using var mem = new MemoryStream();
+			stream.CopyTo(mem);
+			return new X509Certificate2(mem.ToArray(), "password");
 		}
 	}
 }

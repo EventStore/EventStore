@@ -1,6 +1,8 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
@@ -27,11 +29,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private readonly HttpAsyncClient _client;
 		private readonly TimeSpan _gossipTimeout;
 
-		public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout, HttpMessageHandler httpMessageHandler)
+		public GossipController(IPublisher publisher, IPublisher networkSendQueue, TimeSpan gossipTimeout, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, X509Certificate clientCertificate)
 			: base(publisher) {
 			_networkSendQueue = networkSendQueue;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
+
+			var socketsHttpHandler = new SocketsHttpHandler {
+				SslOptions = {
+					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
+						var (isValid, error) = serverCertValidator(certificate, chain, errors);
+						if (!isValid && error != null) {
+							Log.Error("Server certificate validation error: {e}", error);
+						}
+						return isValid;
+					},
+					ClientCertificates = new X509CertificateCollection()
+				}
+			};
+			if(clientCertificate != null)
+				socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
+
+			_client = new HttpAsyncClient(_gossipTimeout, socketsHttpHandler);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {

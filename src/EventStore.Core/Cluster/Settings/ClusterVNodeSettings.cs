@@ -16,6 +16,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
 		public readonly bool EnableTrustedAuth;
 		public X509Certificate2 Certificate;
+		public X509Certificate2Collection TrustedRootCerts;
 		public readonly int WorkerThreads;
 		public readonly bool StartStandardProjections;
 		public readonly bool EnableAtomPubOverHTTP;
@@ -88,7 +89,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
 		public readonly bool ReadOnlyReplica;
-		public readonly Func<HttpMessageHandler> CreateHttpMessageHandler;
 		public int PTableMaxReaderCount;
 		public readonly bool UnsafeAllowSurplusNodes;
 
@@ -102,6 +102,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipAdvertiseInfo gossipAdvertiseInfo,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
+			X509Certificate2Collection trustedRootCerts,
 			int workerThreads,
 			bool discoverViaDns,
 			string clusterDns,
@@ -161,7 +162,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool logFailedAuthenticationAttempts = false,
 			bool readOnlyReplica = false,
 			int maxAppendSize = 1024 * 1024,
-			Func<HttpMessageHandler> createHttpMessageHandler = null,
 			bool unsafeAllowSurplusNodes = false,
 			bool enableExternalTCP = false,
 			bool enableAtomPubOverHTTP = true,
@@ -197,6 +197,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
+			TrustedRootCerts = trustedRootCerts;
 
 			WorkerThreads = workerThreads;
 			StartStandardProjections = startStandardProjections;
@@ -269,7 +270,6 @@ namespace EventStore.Core.Cluster.Settings {
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			ReadOnlyReplica = readOnlyReplica;
 			MaxAppendSize = maxAppendSize;
-			CreateHttpMessageHandler = createHttpMessageHandler;
 			PTableMaxReaderCount = ptableMaxReaderCount;
 			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 		}
@@ -281,6 +281,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ExternalHttp: {NodeInfo.ExternalHttp}\n" +
 			$"EnableTrustedAuth: {EnableTrustedAuth}\n" +
 			$"Certificate: {(Certificate == null ? "n/a" : Certificate.ToString(true))}\n" +
+			$"Trusted Root Certificates: {(TrustedRootCerts == null ? "n/a" : TrustedRootCerts.ToString())}\n" +
 			$"LogHttpRequests: {LogHttpRequests}\n" + $"WorkerThreads: {WorkerThreads}\n" +
 			$"DiscoverViaDns: {DiscoverViaDns}\n" + $"ClusterDns: {ClusterDns}\n" +
 			$"GossipSeeds: {string.Join(",", GossipSeeds.Select(x => x.ToString()))}\n" +

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
@@ -35,8 +36,8 @@ namespace EventStore.Core.Services.Replication {
 		private readonly AuthorizationGateway _authorizationGateway;
 		private readonly VNodeInfo _nodeInfo;
 		private readonly bool _useSsl;
-		private readonly bool _sslValidateServer;
-		private readonly X509CertificateCollection _sslClientCertificates;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslServerCertValidator;
+		private readonly X509Certificate _sslClientCertificate;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
 
@@ -53,8 +54,8 @@ namespace EventStore.Core.Services.Replication {
 			AuthorizationGateway authorizationGateway,
 			VNodeInfo nodeInfo,
 			bool useSsl,
-			bool sslValidateServer,
-			X509CertificateCollection sslClientCertificates,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			X509Certificate sslClientCertificate,
 			TimeSpan heartbeatTimeout,
 			TimeSpan heartbeatInterval,
 			TimeSpan writeTimeout) {
@@ -75,8 +76,8 @@ namespace EventStore.Core.Services.Replication {
 
 			_nodeInfo = nodeInfo;
 			_useSsl = useSsl;
-			_sslValidateServer = sslValidateServer;
-			_sslClientCertificates = sslClientCertificates;
+			_sslServerCertValidator = sslServerCertValidator;
+			_sslClientCertificate = sslClientCertificate;
 			_heartbeatTimeout = heartbeatTimeout;
 			_heartbeatInterval = heartbeatInterval;
 
@@ -162,8 +163,8 @@ namespace EventStore.Core.Services.Replication {
 				leaderEndPoint,
 				_connector,
 				_useSsl,
-				_sslValidateServer,
-				_sslClientCertificates,
+				_sslServerCertValidator,
+				_sslClientCertificate == null ? null : new X509CertificateCollection {_sslClientCertificate},
 				_networkSendQueue,
 				_authProvider,
 				_authorizationGateway,

@@ -14,6 +14,7 @@ namespace EventStore.Core.Util {
 		public const string ProjectionsGroup = "Projections Options";
 		public const string AuthGroup = "Authentication/Authorization Options";
 		public const string InterfacesGroup = "Interface Options";
+		public const string CertificateGroup = "Certificate Options";
 		public const string CertificatesFromFileGroup = "Certificate Options (from file)";
 		public const string CertificatesFromStoreGroup = "Certificate Options (from store)";
 		public const string ClusterGroup = "Cluster Options";
@@ -195,6 +196,10 @@ namespace EventStore.Core.Util {
 			"Number of threads to be used to initialize the database. Will be capped at host processor count.";
 
 		public static readonly int InitializationThreadsDefault = 1;
+
+		//Common certificate options
+		public const string TrustedRootCertificatesPathDescr = "The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) root certificate files.";
+		public static readonly string TrustedRootCertificatesPathDefault = string.Empty;
 
 		//Loading certificates from files
 		public const string CertificateFileDescr = "The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file.";

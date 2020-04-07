@@ -23,7 +23,6 @@
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="server.p12" />
     <EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.pem" />
     <EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.p12" />
   </ItemGroup>

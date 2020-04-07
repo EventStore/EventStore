@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -26,6 +27,7 @@ using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 
@@ -105,8 +107,8 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpSecEndPoint = externalTcpSec;
 			ExternalHttpEndPoint = externalHttp;
 
-			var certificate = ssl_connections.GetCertificate();
-			var disableInternalTls = !ssl_connections.IsValidCertificate(certificate); //use internal TLS only if CA certificate is installed
+			var certificate = ssl_connections.GetServerCertificate();
+			var trustedRootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
 
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
@@ -115,9 +117,9 @@ namespace EventStore.Core.Tests.Helpers {
 					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
 					InternalHttpEndPoint, ExternalHttpEndPoint,
 					null, null, 0, 0), enableTrustedAuth,
-				certificate, 1, false,
+				certificate, trustedRootCertificates, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
-				TimeSpan.FromSeconds(10), disableInternalTls, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
+				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new AuthenticationProviderFactory(components => 
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
@@ -137,11 +139,6 @@ namespace EventStore.Core.Tests.Helpers {
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
 				enableExternalTCP: true,
-				createHttpMessageHandler: () => new SocketsHttpHandler {
-					SslOptions = new SslClientAuthenticationOptions {
-						RemoteCertificateValidationCallback = delegate { return true; }
-					}
-				},
 				gossipOverHttps: UseHttpsInternally());
 			_isReadOnlyReplica = readOnlyReplica;
 
@@ -168,10 +165,23 @@ namespace EventStore.Core.Tests.Helpers {
 						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 							options.Protocols = HttpProtocols.Http2;
 						} else { 
-							options.UseHttps();
+							options.UseHttps(new HttpsConnectionAdapterOptions {
+								ServerCertificate = certificate,
+								ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+									var (isValid, error) =
+										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertificates);
+									if (!isValid && error != null) {
+										Log.Error("Client certificate validation error: {e}", error);
+									}
+									return isValid;
+								}
+							});
 						}
 					});
-					o.Listen(ExternalHttpEndPoint);
+					o.Listen(ExternalHttpEndPoint, options => {
+						options.UseHttps(certificate);
+					});
 				})
 				.UseStartup(Node.Startup)
 				.Build();
