@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Correct the xml documentation for the TCP Client settings builders. [EventStore#2393](https://github.com/EventStore/EventStore/pull/2393)
 - Removed the constraint in AlreadyCommitted for Log Position to be positive. [EventStore#2404](https://github.com/EventStore/EventStore/pull/2404)
 - Set the default for the write timeout [EventStore#2410](https://github.com/EventStore/EventStore/pull/2410)
+- Replaced `UseCustomHttpClient` in the ConnectionSettingsBuilder for the TCP client with `UseCustomHttpMessageHandler` [EventStore#2419](https://github.com/EventStore/EventStore/pull/2419)
 
 ### Removed
 - Unused HTTP messages. [#2362](https://github.com/EventStore/EventStore/pull/2363)
