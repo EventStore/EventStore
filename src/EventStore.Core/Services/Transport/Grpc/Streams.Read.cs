@@ -8,6 +8,7 @@ using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using EventStore.Core.Authorization;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
@@ -210,7 +211,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return readEvent;
 			}
 
-			Util.IEventFilter ConvertToEventFilter(ReadReq.Types.Options.Types.FilterOptions filter) =>
+			IEventFilter ConvertToEventFilter(ReadReq.Types.Options.Types.FilterOptions filter) =>
 				filter.FilterCase switch {
 					ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.EventType => (
 						string.IsNullOrEmpty(filter.EventType.Regex)

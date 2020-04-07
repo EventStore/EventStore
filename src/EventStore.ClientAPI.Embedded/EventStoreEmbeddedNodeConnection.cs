@@ -11,6 +11,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Util;
 using Message = EventStore.Core.Messaging.Message;
 using SystemEventTypes = EventStore.ClientAPI.Common.SystemEventTypes;

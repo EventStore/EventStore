@@ -8,9 +8,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using System.Linq;
-using System.Security.Claims;
-using System.Threading;
-using EventStore.Core.Authorization;
 using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
 

@@ -6,6 +6,7 @@ using EventStore.Client;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Grpc;
 
 namespace EventStore.Core.Cluster {
 	public class ClusterInfo {

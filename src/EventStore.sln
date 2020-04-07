@@ -49,25 +49,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Utils", "EventStore.Common.Utils\EventStore.Common.Utils.csproj", "{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client", "EventStore.Client\EventStore.Client.csproj", "{ECDCF3EE-6A70-4D3C-B09F-A33DEE75F0E2}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Tests", "EventStore.Client.Tests\EventStore.Client.Tests.csproj", "{57F6DDEE-FA4D-46C8-95CA-5DF3D1398893}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Tests", "EventStore.ClientAPI.Tests\EventStore.ClientAPI.Tests.csproj", "{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Embedded.Tests", "EventStore.ClientAPI.Embedded.Tests\EventStore.ClientAPI.Embedded.Tests.csproj", "{3A5068D9-7510-407D-91F4-D53B32F0C57E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.UserManagement.Tests", "EventStore.Client.UserManagement.Tests\EventStore.Client.UserManagement.Tests.csproj", "{6F30C908-A2D3-4458-A291-42C566568F7D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.PersistentSubscriptions.Tests", "EventStore.Client.PersistentSubscriptions.Tests\EventStore.Client.PersistentSubscriptions.Tests.csproj", "{447D651D-C9F1-476A-8331-2DF23986A397}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Projections.Tests", "EventStore.Client.Projections.Tests\EventStore.Client.Projections.Tests.csproj", "{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.v5.Tests", "EventStore.ClientAPI.v5.Tests\EventStore.ClientAPI.v5.Tests.csproj", "{8B3FDD14-C959-4859-80C4-B157D1D94969}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Operations", "EventStore.Client.Operations\EventStore.Client.Operations.csproj", "{0AD93540-07FB-4D64-A3CE-6B21323ED030}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Client.Operations.Tests", "EventStore.Client.Operations.Tests\EventStore.Client.Operations.Tests.csproj", "{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -147,14 +133,6 @@ Global
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Debug|x64.Build.0 = Debug|x64
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Release|x64.ActiveCfg = Release|x64
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Release|x64.Build.0 = Release|x64
-		{ECDCF3EE-6A70-4D3C-B09F-A33DEE75F0E2}.Debug|x64.ActiveCfg = Debug|x64
-		{ECDCF3EE-6A70-4D3C-B09F-A33DEE75F0E2}.Debug|x64.Build.0 = Debug|x64
-		{ECDCF3EE-6A70-4D3C-B09F-A33DEE75F0E2}.Release|x64.ActiveCfg = Release|x64
-		{ECDCF3EE-6A70-4D3C-B09F-A33DEE75F0E2}.Release|x64.Build.0 = Release|x64
-		{57F6DDEE-FA4D-46C8-95CA-5DF3D1398893}.Debug|x64.ActiveCfg = Debug|x64
-		{57F6DDEE-FA4D-46C8-95CA-5DF3D1398893}.Debug|x64.Build.0 = Debug|x64
-		{57F6DDEE-FA4D-46C8-95CA-5DF3D1398893}.Release|x64.ActiveCfg = Release|x64
-		{57F6DDEE-FA4D-46C8-95CA-5DF3D1398893}.Release|x64.Build.0 = Release|x64
 		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Debug|x64.ActiveCfg = Debug|x64
 		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Debug|x64.Build.0 = Debug|x64
 		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Release|x64.ActiveCfg = Release|x64
@@ -163,30 +141,10 @@ Global
 		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Debug|x64.Build.0 = Debug|x64
 		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Release|x64.ActiveCfg = Release|x64
 		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Release|x64.Build.0 = Release|x64
-		{6F30C908-A2D3-4458-A291-42C566568F7D}.Debug|x64.ActiveCfg = Debug|x64
-		{6F30C908-A2D3-4458-A291-42C566568F7D}.Debug|x64.Build.0 = Debug|x64
-		{6F30C908-A2D3-4458-A291-42C566568F7D}.Release|x64.ActiveCfg = Release|x64
-		{6F30C908-A2D3-4458-A291-42C566568F7D}.Release|x64.Build.0 = Release|x64
-		{447D651D-C9F1-476A-8331-2DF23986A397}.Debug|x64.ActiveCfg = Debug|x64
-		{447D651D-C9F1-476A-8331-2DF23986A397}.Debug|x64.Build.0 = Debug|x64
-		{447D651D-C9F1-476A-8331-2DF23986A397}.Release|x64.ActiveCfg = Release|x64
-		{447D651D-C9F1-476A-8331-2DF23986A397}.Release|x64.Build.0 = Release|x64
-		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Debug|x64.ActiveCfg = Debug|x64
-		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Debug|x64.Build.0 = Debug|x64
-		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Release|x64.ActiveCfg = Release|x64
-		{BFBACE2B-6474-4B8A-B335-3311BB98DDF4}.Release|x64.Build.0 = Release|x64
 		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Debug|x64.ActiveCfg = Debug|x64
 		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Debug|x64.Build.0 = Debug|x64
 		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x64.ActiveCfg = Release|x64
 		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x64.Build.0 = Release|x64
-		{0AD93540-07FB-4D64-A3CE-6B21323ED030}.Debug|x64.ActiveCfg = Debug|x64
-		{0AD93540-07FB-4D64-A3CE-6B21323ED030}.Debug|x64.Build.0 = Debug|x64
-		{0AD93540-07FB-4D64-A3CE-6B21323ED030}.Release|x64.ActiveCfg = Release|x64
-		{0AD93540-07FB-4D64-A3CE-6B21323ED030}.Release|x64.Build.0 = Release|x64
-		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Debug|x64.ActiveCfg = Debug|x64
-		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Debug|x64.Build.0 = Debug|x64
-		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Release|x64.ActiveCfg = Release|x64
-		{5D2ACBDF-8BE4-4B10-83E8-2AB4E78BA299}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

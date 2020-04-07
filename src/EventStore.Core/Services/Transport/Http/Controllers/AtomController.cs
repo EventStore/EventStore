@@ -16,6 +16,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Authorization;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Primitives;
 using ILogger = Serilog.ILogger;
