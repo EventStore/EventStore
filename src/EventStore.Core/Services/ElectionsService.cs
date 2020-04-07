@@ -582,6 +582,9 @@ namespace EventStore.Core.Services {
 		public void Handle(LeaderDiscoveryMessage.LeaderFound message) {
 			if (_leader != null || _lastElectedLeader != null || _state != ElectionsState.Idle)
 				return;
+			if (_nodeInfo.IsReadOnlyReplica)
+				Log.Verbose("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
+
 			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderInternalHttp},{leaderId:B}])", message.Leader.InternalHttp, message.Leader.InstanceId);
 			_leader = message.Leader.InstanceId;
 			_lastElectedLeader = message.Leader.InstanceId;
