@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -40,19 +40,19 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
-		private IHttpClient _customHttpClient = null;
+		private HttpMessageHandler _customHttpMessageHandler;
 
 
 		internal ConnectionSettingsBuilder() {
 		}
 
 		/// <summary>
-		/// Configures the connection to use a custom <see cref="IHttpClient"/>.
+		/// Configures a custom <see cref="HttpMessageHandler"/> to use when issuing Http requests
 		/// </summary>
-		/// <param name="client">The <see cref="IHttpClient"/> to use.</param>
+		/// <param name="httpMessageHandler">The <see cref="HttpMessageHandler"/> to use.</param>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder UseCustomHttpClient(IHttpClient client) {
-			_customHttpClient = client;
+		public ConnectionSettingsBuilder UseCustomHttpMessageHandler(HttpMessageHandler httpMessageHandler) {
+			_customHttpMessageHandler = httpMessageHandler;
 			return this;
 		}
 
@@ -479,7 +479,7 @@ namespace EventStore.ClientAPI {
 				_gossipExternalHttpPort,
 				_gossipTimeout,
 				_nodePreference,
-				_customHttpClient);
+				_customHttpMessageHandler);
 		}
 	}
 }
