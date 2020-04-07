@@ -102,7 +102,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
 						connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
-						connectionSettings.NodePreference, connectionSettings.CustomHttpClient);
+						connectionSettings.NodePreference, connectionSettings.CustomHttpMessageHandler);
 				}
 
 				if (scheme == "discover") {
@@ -208,7 +208,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.ExternalGossipPort,
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
-				clusterSettings.NodePreference);
+				clusterSettings.NodePreference,
+				connectionSettings.CustomHttpMessageHandler);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);

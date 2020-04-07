@@ -1,7 +1,7 @@
-﻿using System;
+using System;
+using System.Net.Http;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -35,9 +35,9 @@ namespace EventStore.ClientAPI {
 		public readonly ILogger Log;
 
 		/// <summary>
-		/// Allows overriding the HTTPClient <see cref="IHttpClient"/>
+		/// Allows overriding the <see cref="HttpMessageHandler"/> used when issuing Http requests
 		/// </summary>
-		public IHttpClient CustomHttpClient { get; set; }
+		public readonly HttpMessageHandler CustomHttpMessageHandler;
 
 		/// <summary>
 		/// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.
@@ -178,7 +178,7 @@ namespace EventStore.ClientAPI {
 			int externalGossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			IHttpClient customHttpClient) {
+			HttpMessageHandler customHttpMessageHandler) {
 
 			Ensure.NotNull(log, "log");
 			Ensure.Positive(maxQueueSize, "maxQueueSize");
@@ -222,7 +222,7 @@ namespace EventStore.ClientAPI {
 			ExternalGossipPort = externalGossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
-			CustomHttpClient = customHttpClient;
+			CustomHttpMessageHandler = customHttpMessageHandler;
 		}
 	}
 }
