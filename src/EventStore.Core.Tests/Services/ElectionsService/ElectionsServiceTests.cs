@@ -1258,4 +1258,27 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
+	public class when_the_elections_service_is_initialized_as_read_only_replica {
+		[Test]
+		public void should_throw_argument_exception() {
+			var endpoint = new IPEndPoint(IPAddress.Loopback, 1234);
+			var nodeInfo = new VNodeInfo(Guid.NewGuid(),
+				0,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				true);
+
+			Assert.Throws<ArgumentException>(() => {
+				new Core.Services.ElectionsService(new FakePublisher(), nodeInfo, 3,
+					new InMemoryCheckpoint(0),
+					new InMemoryCheckpoint(0),
+					new FakeEpochManager(), () => 0L, 0, new FakeTimeProvider());
+			});
+		}
+	}
+
 }
