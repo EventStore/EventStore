@@ -192,7 +192,6 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.TransactionCommit>().Do(HandleAsReadOnlyReplica)
 				.When<ClientMessage.DeleteStream>().Do(HandleAsReadOnlyReplica)
 				.When<SystemMessage.VNodeConnectionLost>().Do(HandleAsReadOnlyReplica)
-				.When<ElectionMessage.ElectionsDone>().Do(HandleAsReadOnlyReplica)
 				.When<SystemMessage.BecomePreReadOnlyReplica>().Do(Handle)
 				.InStates(VNodeState.PreReplica, VNodeState.CatchingUp, VNodeState.Clone,VNodeState.Follower)
 				.When<ClientMessage.WriteEvents>().Do(HandleAsNonLeader)
@@ -394,9 +393,9 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.BecomePreReadOnlyReplica message) {
-			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
+			if (_leader == null) throw new Exception("_leader == null");
 
 			Log.Information(
 				"========== [{internalHttp}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
@@ -534,16 +533,6 @@ namespace EventStore.Core.Services.VNode {
 				_fsm.Handle(new SystemMessage.BecomePreLeader(_stateCorrelationId));
 			else
 				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
-		}
-
-		private void HandleAsReadOnlyReplica(ElectionMessage.ElectionsDone message) {
-			_leader = VNodeInfoHelper.FromMemberInfo(message.Leader);
-			_subscriptionId = Guid.NewGuid();
-			_stateCorrelationId = Guid.NewGuid();
-			_outputBus.Publish(message);
-			if (_leader != null) {
-				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
-			}
 		}
 
 		private void Handle(SystemMessage.ServiceInitialized message) {
@@ -890,6 +879,26 @@ namespace EventStore.Core.Services.VNode {
 
 		private void HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message) {
 			if (_leader == null) throw new Exception("_leader == null");
+
+			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
+			var leaderCount = aliveLeaders.Count();
+
+			if (leaderCount == 0) {
+				Log.Debug(
+					"NO LEADER found in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]", _leader);
+				_stateCorrelationId = Guid.NewGuid();
+				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
+			}
+			else if (leaderCount == 1) {
+				var newLeader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
+				if (_leader.InstanceId != newLeader.InstanceId) {
+					Log.Information("LEADER CHANGE detected in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]. NEW LEADER: [{newLeader}].", _leader, newLeader);
+					_stateCorrelationId = Guid.NewGuid();
+					_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
+				}
+			}
+			//if multiple leaders are found we just wait for the cluster to stabilize with a single leader during the next gossip updates
+
 			_outputBus.Publish(message);
 		}
 
@@ -901,9 +910,8 @@ namespace EventStore.Core.Services.VNode {
 			var leaderCount = aliveLeaders.Count();
 			if (leaderCount == 1) {
 				_leader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
-				Log.Information("Existing LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to PRE READ ONLY REPLICA state.", _leader);
+				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
-				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
 			} else {
 				Log.Debug(

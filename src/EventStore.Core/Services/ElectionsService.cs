@@ -92,6 +92,9 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(epochManager, nameof(epochManager));
 			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 			Ensure.NotNull(timeProvider, nameof(timeProvider));
+			if (nodeInfo.IsReadOnlyReplica) {
+				throw new ArgumentException("Read-only replicas are not allowed to run the Elections service.");
+			}
 
 			_publisher = publisher;
 			_nodeInfo = nodeInfo;
@@ -169,12 +172,6 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigning message) {
-			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Information(
-					"ELECTIONS: THIS NODE IS A READ ONLY REPLICA. IT IS NOT ALLOWED TO VOTE AND THEREFORE NOT ALLOWED TO ACKNOWLEDGE LEADER RESIGNATION.");
-				return;
-			}
-
 			Log.Information("ELECTIONS: LEADER IS RESIGNING [{leaderInternalHttp}, {leaderId:B}].",
 				message.LeaderInternalHttp, message.LeaderId);
 			var leaderIsResigningMessageOk = new ElectionMessage.LeaderIsResigningOk(
@@ -218,9 +215,6 @@ namespace EventStore.Core.Services {
 		public void Handle(ElectionMessage.StartElections message) {
 			if (_state == ElectionsState.Shutdown) return;
 			if (_state == ElectionsState.ElectingLeader) return;
-
-			if (_nodeInfo.IsReadOnlyReplica)
-				Log.Verbose("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
 			Log.Information("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -350,12 +344,6 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.ElectingLeader) // install the view
 				ShiftToAcceptor();
 
-			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Information("ELECTIONS: READ ONLY REPLICA, NOT ACCEPTING PREPARE, NOT ELIGIBLE TO VOTE [{0}]",
-					_nodeInfo.InternalHttp);
-				return;
-			}
-
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerInternalHttp, prepareOk,
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
@@ -394,12 +382,6 @@ namespace EventStore.Core.Services {
 		}
 
 		private void ShiftToLeader() {
-			if (_nodeInfo.IsReadOnlyReplica) {
-				Log.Information("ELECTIONS: (V={lastAttemptedView}) NOT SHIFTING TO REG_LEADER AS I'M READONLY.",
-					_lastAttemptedView);
-				return;
-			}
-
 			Log.Information("ELECTIONS: (V={lastAttemptedView}) SHIFT TO REG_LEADER.", _lastAttemptedView);
 
 			_state = ElectionsState.Leader;
@@ -582,8 +564,6 @@ namespace EventStore.Core.Services {
 		public void Handle(LeaderDiscoveryMessage.LeaderFound message) {
 			if (_leader != null || _lastElectedLeader != null || _state != ElectionsState.Idle)
 				return;
-			if (_nodeInfo.IsReadOnlyReplica)
-				Log.Verbose("ELECTIONS: THIS NODE IS A READ ONLY REPLICA.");
 
 			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderInternalHttp},{leaderId:B}])", message.Leader.InternalHttp, message.Leader.InstanceId);
 			_leader = message.Leader.InstanceId;
