@@ -268,6 +268,8 @@ namespace EventStore.Core.Services.VNode {
 				.InStates(VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsReadOnlyReplica)
 				.When<SystemMessage.BecomeReadOnlyLeaderless>().Do(Handle)
+				.InStates(VNodeState.ReadOnlyLeaderless)
+				.When<GossipMessage.GossipUpdated>().Do(HandleAsReadOnlyLeaderLess)
 				.InState(VNodeState.PreReadOnlyReplica)
 				.When<SystemMessage.BecomeReadOnlyReplica>().Do(Handle)
 				.InStates(VNodeState.PreLeader, VNodeState.Leader, VNodeState.ResigningLeader)
@@ -442,7 +444,6 @@ namespace EventStore.Core.Services.VNode {
 			_state = VNodeState.ReadOnlyLeaderless;
 			_leader = null;
 			_outputBus.Publish(message);
-			_mainQueue.Publish(new ElectionMessage.StartElections());
 		}
 
 		private void Handle(SystemMessage.BecomeReadOnlyReplica message) {
@@ -889,6 +890,27 @@ namespace EventStore.Core.Services.VNode {
 
 		private void HandleAsReadOnlyReplica(GossipMessage.GossipUpdated message) {
 			if (_leader == null) throw new Exception("_leader == null");
+			_outputBus.Publish(message);
+		}
+
+		private void HandleAsReadOnlyLeaderLess(GossipMessage.GossipUpdated message) {
+			if (_leader != null)
+				return;
+
+			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
+			var leaderCount = aliveLeaders.Count();
+			if (leaderCount == 1) {
+				_leader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
+				Log.Information("Existing LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to PRE READ ONLY REPLICA state.", _leader);
+				_stateCorrelationId = Guid.NewGuid();
+				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
+				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
+			} else {
+				Log.Debug(
+					"{leadersFound} found in READ ONLY LEADERLESS state, making further attempts.",
+					(leaderCount == 0 ? "NO LEADER" : "MULTIPLE LEADERS"));
+			}
+
 			_outputBus.Publish(message);
 		}
 
