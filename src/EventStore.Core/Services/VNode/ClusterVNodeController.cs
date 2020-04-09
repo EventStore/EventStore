@@ -900,8 +900,12 @@ namespace EventStore.Core.Services.VNode {
 					"There is NO LEADER or LEADER is DEAD according to GOSSIP. Starting new elections. LEADER: [{leader}].",
 					_leader);
 				_mainQueue.Publish(new ElectionMessage.StartElections());
+			} else if (leader.State != VNodeState.PreLeader && leader.State != VNodeState.Leader && leader.State != VNodeState.ResigningLeader) {
+				Log.Debug(
+					"LEADER node is still alive but is no longer in a LEADER state according to GOSSIP. Starting new elections. LEADER: [{leader}].",
+					_leader);
+				_mainQueue.Publish(new ElectionMessage.StartElections());
 			}
-
 			_outputBus.Publish(message);
 		}
 
