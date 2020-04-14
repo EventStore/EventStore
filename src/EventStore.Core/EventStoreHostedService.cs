@@ -92,9 +92,6 @@ namespace EventStore.Core {
 			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 
 			Log.Information(EventStoreOptions.DumpOptions());
-
-			if (options.WhatIf)
-				Application.Exit(ExitCode.Success, "WhatIf option specified");
 		}
 
 		private string FormatExceptionMessage(Exception ex) {

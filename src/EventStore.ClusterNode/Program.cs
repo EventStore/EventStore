@@ -25,6 +25,11 @@ namespace EventStore.ClusterNode {
 					Application.Exit(0, "Cancelled.");
 				};
 
+				if (hostedService.Options.WhatIf) {
+					Log.Information("Exiting with exit code: 0.\nExit reason: WhatIf option specified");
+					return (int)ExitCode.Success;
+				}
+
 				await CreateHostBuilder(hostedService, args)
 					.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
 				return await exitCodeSource.Task;
