@@ -44,35 +44,33 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				"<unknown>";
 			var correlationId = Guid.NewGuid();
 			var uuidOptionsCase = options.UuidOption.ContentCase;
-			var source = new TaskCompletionSource<bool>();
-			string subscriptionId = default;
-			await using var _ = context.CancellationToken.Register(source.SetCanceled).ConfigureAwait(false);
-
-#pragma warning disable 4014
-			requestStream.ForEachAsync(HandleAckNack);
-#pragma warning restore 4014
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
 				_publisher, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
-			subscriptionId = await enumerator.Started.ConfigureAwait(false);
+			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
-			await responseStream.WriteAsync(new ReadResp {
-				SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
-					SubscriptionId = subscriptionId
-				}
-			}).ConfigureAwait(false);
+			var read = requestStream.ForEachAsync(HandleAckNack);
 
-			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+			try {
 				await responseStream.WriteAsync(new ReadResp {
-					Event = ConvertToReadEvent(enumerator.Current)
+					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
+						SubscriptionId = subscriptionId
+					}
 				}).ConfigureAwait(false);
+
+				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+					await responseStream.WriteAsync(new ReadResp {
+						Event = ConvertToReadEvent(enumerator.Current)
+					}).ConfigureAwait(false);
+				}
+			} finally {
+				await read.ConfigureAwait(false);
 			}
 
 			ValueTask HandleAckNack(ReadReq request) {
 				_publisher.Publish(request.ContentCase switch {
-					ReadReq.ContentOneofCase.Ack => (Message)
-					new ClientMessage.PersistentSubscriptionAckEvents(
+					ReadReq.ContentOneofCase.Ack => new ClientMessage.PersistentSubscriptionAckEvents(
 						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
 						request.Ack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
 					ReadReq.ContentOneofCase.Nack =>
@@ -149,20 +147,25 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public Task<string> Started => _subscriptionIdSource.Task;
 
 			private (ResolvedEvent, int) _current;
+			private readonly IPublisher _publisher;
+			private readonly Guid _correlationId;
+			private readonly ClaimsPrincipal _user;
 
 			public (ResolvedEvent, int) Current => _current;
 
 			public PersistentStreamSubscriptionEnumerator(Guid correlationId,
 				string connectionName,
-				IPublisher queue,
+				IPublisher publisher,
 				string streamName,
 				string groupName,
 				int bufferSize,
 				ClaimsPrincipal user,
 				CancellationToken cancellationToken) {
-				if (connectionName == null) throw new ArgumentNullException(nameof(connectionName));
-				if (queue == null) {
-					throw new ArgumentNullException(nameof(queue));
+				if (connectionName == null) {
+					throw new ArgumentNullException(nameof(connectionName));
+				}
+				if (publisher == null) {
+					throw new ArgumentNullException(nameof(publisher));
 				}
 
 				if (streamName == null) {
@@ -177,12 +180,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentException($"{nameof(correlationId)} should be non empty.", nameof(correlationId));
 				}
 
+				_correlationId = correlationId;
+				_publisher = publisher;
 				_disposedTokenSource = new CancellationTokenSource();
 				_sendQueue = new ConcurrentQueue<(ResolvedEvent, int, Exception)>();
 				_subscriptionIdSource = new TaskCompletionSource<string>();
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
+				_user = user;
 
-				queue.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
+				publisher.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
 					new CallbackEnvelope(OnMessage), correlationId, connectionName, groupName, streamName,
 					bufferSize,
 					string.Empty, user));
@@ -232,9 +238,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public ValueTask DisposeAsync() {
+				_publisher.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _correlationId,
+					new NoopEnvelope(), _user));
 				_disposedTokenSource.Dispose();
-				_tokenRegistration.Dispose();
-				return default;
+				return _tokenRegistration.DisposeAsync();
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
