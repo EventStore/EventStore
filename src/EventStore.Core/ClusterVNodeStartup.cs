@@ -120,7 +120,6 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-
 			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsAddress, _externalHttpService.AdvertiseAsPort);
 			return _subsystems
 				.Aggregate(services
@@ -137,7 +136,9 @@ namespace EventStore.Core {
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Gossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
-						.AddGrpc().Services,
+						.AddGrpc()
+						.AddServiceOptions<Streams>(options => options.MaxReceiveMessageSize = 1024 * 1024 * 16 + 2048)
+						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 		}
 
