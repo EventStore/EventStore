@@ -606,15 +606,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 								var link = @event.Link;
 								var data = @event.Event;
 								var byStream = link != null && _streamToEventType.ContainsKey(link.EventStreamId);
-								string adjustedPositionStreamId;
-								var isDeleteStreamEvent =
-									StreamDeletedHelper.IsStreamDeletedEvent(
-										@event.OriginalStreamId, @event.OriginalEvent.EventType,
-										@event.OriginalEvent.Data, out adjustedPositionStreamId);
 								if (data == null)
 									continue;
-								var eventType = isDeleteStreamEvent ? "$deleted" : data.EventType;
-								var byEvent = link == null && _eventTypes.Contains(eventType);
 								var originalTfPosition = @event.OriginalPosition.Value;
 								if (byStream) {
 									// ignore data just update positions
@@ -626,7 +619,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 									DeliverEventRetrievedFromTf(
 										unresolvedLinkEvent, 100.0f * link.LogPosition / message.TfLastCommitPosition,
 										originalTfPosition);
-								} else if (byEvent) {
+								} else {
 									DeliverEventRetrievedFromTf(
 										@event, 100.0f * data.LogPosition / message.TfLastCommitPosition,
 										originalTfPosition);

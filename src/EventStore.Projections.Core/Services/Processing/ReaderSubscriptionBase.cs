@@ -79,14 +79,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var roundedProgress = (float)Math.Round(message.Progress, 1);
 			bool progressChanged = _progress != roundedProgress;
 
-			if (
-				!_eventFilter.PassesSource(
-					message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType)) {
-				if (progressChanged)
-					PublishProgress(roundedProgress);
-				return;
-			}
-
 			// NOTE: after joining heading distribution point it delivers all cached events to the subscription
 			// some of this events we may have already received. The delivered events may have different order 
 			// (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not 
