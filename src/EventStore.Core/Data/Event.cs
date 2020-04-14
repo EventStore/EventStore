@@ -7,7 +7,6 @@ namespace EventStore.Core.Data {
 		public readonly Guid EventId;
 		public readonly string EventType;
 		public readonly bool IsJson;
-
 		public readonly byte[] Data;
 		public readonly byte[] Metadata;
 
@@ -17,24 +16,22 @@ namespace EventStore.Core.Data {
 				metadata != null ? Helper.UTF8NoBom.GetBytes(metadata) : null) {
 		}
 
+		public static bool ExceedsMaximumSizeOnDisk(string eventType, byte[] data, byte[] metadata) =>
+			(data?.Length ?? 0 + metadata?.Length ?? 0 + eventType.Length * 2) > TFConsts.MaxLogRecordSize - 10000;
+
 		public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata) {
-			if (Guid.Empty == eventId)
-				throw new ArgumentException("Empty eventId provided.");
+			if (eventId == Guid.Empty)
+				throw new ArgumentException("Empty eventId provided.", nameof(eventId));
 			if (string.IsNullOrEmpty(eventType))
-				throw new ArgumentException("Empty eventType provided.");
+				throw new ArgumentException("Empty eventType provided.", nameof(eventType));
+			if (ExceedsMaximumSizeOnDisk(eventType, data, metadata))
+				throw new ArgumentException("Record is too big.", nameof(data));
 
 			EventId = eventId;
 			EventType = eventType;
 			IsJson = isJson;
-			Data = data ?? Empty.ByteArray;
-			Metadata = metadata ?? Empty.ByteArray;
-
-			var size = Data == null ? 0 : Data.Length;
-			size += Metadata == null ? 0 : Metadata.Length;
-			size += eventType.Length * 2;
-
-			if (size > TFConsts.MaxLogRecordSize - 10000)
-				throw new ArgumentException("Record is too big", "data");
+			Data = data ?? Array.Empty<byte>();
+			Metadata = metadata ?? Array.Empty<byte>();
 		}
 	}
 }
