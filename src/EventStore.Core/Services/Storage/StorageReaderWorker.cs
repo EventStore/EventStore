@@ -468,18 +468,23 @@ namespace EventStore.Core.Services.Storage {
 		private ResolvedEvent? ResolveLinkToEvent(EventRecord eventRecord, IPrincipal user, long? commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
-					var parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split(LinkToSeparator, 2);
-					long eventNumber = long.Parse(parts[0]);
-					var streamId = parts[1];
+					var linkPayload = Helper.UTF8NoBom.GetString(eventRecord.Data);
+					var parts = linkPayload.Split(LinkToSeparator, 2);
+					if (long.TryParse(parts[0], out long eventNumber)) {
+						var streamId = parts[1];
 
-					if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)
-						return null;
+						if (!_readIndex.CheckStreamAccess(streamId, StreamAccessType.Read, user).Granted)
+							return null;
+						
+						var res = _readIndex.ReadEvent(streamId, eventNumber);
+						if (res.Result == ReadEventResult.Success)
+							return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
+						
+						return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
+					}
 
-					var res = _readIndex.ReadEvent(streamId, eventNumber);
-					if (res.Result == ReadEventResult.Success)
-						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
-
-					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
+					Log.Warn($"Invalid link event payload [{linkPayload}]: {eventRecord}");
+					return ResolvedEvent.ForUnresolvedEvent(eventRecord, commitPosition);
 				} catch (Exception exc) {
 					Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}",
 						eventRecord.ToString());
