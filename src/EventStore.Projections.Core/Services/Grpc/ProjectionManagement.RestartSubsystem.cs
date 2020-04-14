@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Shared;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
-using Operations = EventStore.Core.Authorization.Operations;
 
 namespace EventStore.Projections.Core.Services.Grpc {
 	public partial class ProjectionManagement {

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Grpc.Core;
@@ -51,11 +50,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var proposedMessage = requestStream.Current.ProposedMessage;
 				var data = proposedMessage.Data.ToByteArray();
-				size += data.Length;
-
-				if (size > _maxAppendSize) {
-					throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
-				}
+				var metadata = proposedMessage.CustomMetadata.ToByteArray();
 
 				if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.Type, out var eventType)) {
 					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.Type);
@@ -65,12 +60,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.ContentType);
 				}
 
+				size += Event.SizeOnDisk(eventType, data, metadata);
+
+				if (size > _maxAppendSize) {
+					throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
+				}
+
 				events.Add(new Event(
 					Uuid.FromDto(proposedMessage.Id).ToGuid(),
 					eventType,
 					contentType == Constants.Metadata.ContentTypes.ApplicationJson,
 					data,
-					proposedMessage.CustomMetadata.ToByteArray()));
+					metadata));
 			}
 
 			var appendResponseSource = new TaskCompletionSource<AppendResp>();

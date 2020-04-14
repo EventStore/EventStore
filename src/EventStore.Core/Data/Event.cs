@@ -16,8 +16,11 @@ namespace EventStore.Core.Data {
 				metadata != null ? Helper.UTF8NoBom.GetBytes(metadata) : null) {
 		}
 
-		public static bool ExceedsMaximumSizeOnDisk(string eventType, byte[] data, byte[] metadata) =>
-			(data?.Length ?? 0 + metadata?.Length ?? 0 + eventType.Length * 2) > TFConsts.MaxLogRecordSize - 10000;
+		public static int SizeOnDisk(string eventType, byte[] data, byte[] metadata) =>
+			data?.Length ?? 0 + metadata?.Length ?? 0 + eventType.Length * 2;
+
+		private static bool ExceedsMaximumSizeOnDisk(string eventType, byte[] data, byte[] metadata) =>
+			SizeOnDisk(eventType, data, metadata) > TFConsts.EffectiveMaxLogRecordSize;
 
 		public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata) {
 			if (eventId == Guid.Empty)
