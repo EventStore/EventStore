@@ -2,9 +2,15 @@ syntax = "proto3";
 package event_store.client.operations;
 option java_package = "com.eventstore.client.operations";
 
+import "shared.proto";
+
 service Operations {
 	rpc StartScavenge (StartScavengeReq) returns (ScavengeResp);
 	rpc StopScavenge (StopScavengeReq) returns (ScavengeResp);
+	rpc Shutdown (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
+	rpc MergeIndexes (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
+	rpc ResignNode (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
+	rpc SetNodePriority (SetNodePriorityReq) returns (event_store.client.shared.Empty);
 }
 
 message StartScavengeReq {
@@ -31,4 +37,8 @@ message ScavengeResp {
 		InProgress = 1;
 		Stopped = 2;
 	}
+}
+
+message SetNodePriorityReq {
+	int32 priority = 1;
 }

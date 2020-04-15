@@ -31,6 +31,10 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			new RpcException(
 				new Status(StatusCode.Unknown,
 					$"Envelope callback expected {typeof(T).Name}, received {message.GetType().Name} instead"));
+		private static Exception InvalidSubsystemRestart(string state) =>
+			new RpcException(
+				new Status(StatusCode.FailedPrecondition,
+					$"Projection Subsystem cannot be restarted as it is in the wrong state: {state}"));
 
 		private static Value GetProtoValue(JsonElement element) =>
 			element.ValueKind switch {
