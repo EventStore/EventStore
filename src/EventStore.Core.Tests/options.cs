@@ -1,0 +1,166 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Net;
+using EventStore.Common.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
+using NUnit.Framework;
+using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
+
+namespace EventStore.Core.Tests {
+	[TestFixture]
+	public class options {
+		[TestCaseSource(typeof(ParseCaseData), nameof(ParseCaseData.TestCases))]
+		public object are_parsed_correctly_when_well_formed(string option, string[] args) {
+			var sut = new TestOptions(args);
+			return typeof(TestOptions).GetProperty(option)
+				.GetValue(sut);
+		}
+
+		class FakeConfigurationRoot : IConfigurationRoot {
+			private readonly IConfigurationRoot _inner;
+			private readonly Action<string> _onKeyRead;
+
+			public FakeConfigurationRoot(IConfigurationRoot inner, Action<string> onKeyRead) {
+				_inner = inner;
+				_onKeyRead = onKeyRead;
+			}
+
+			public IEnumerable<IConfigurationSection> GetChildren() => _inner.GetChildren();
+
+			public IChangeToken GetReloadToken() => _inner.GetReloadToken();
+
+			public IConfigurationSection GetSection(string key) {
+				_onKeyRead(key);
+				return _inner.GetSection(key);
+			}
+
+			public string this[string key] {
+				get => _inner[key];
+				set => _inner[key] = value;
+			}
+
+			public void Reload() {
+				_inner.Reload();
+			}
+
+			public IEnumerable<IConfigurationProvider> Providers => _inner.Providers;
+		}
+
+		[Test]
+		public void all_keys_are_read_from_configuration() {
+			var actual = new List<string>();
+			ClusterVNodeOptions.FromConfiguration(new FakeConfigurationRoot(
+				new ConfigurationBuilder().Add(new DefaultSource(ClusterVNodeOptions.DefaultValues)).Build(),
+				actual.Add));
+
+			var expected = typeof(ClusterVNodeOptions).GetProperties()
+				.SelectMany(property => property.PropertyType.GetProperties())
+				.Select(property => property.Name);
+
+			CollectionAssert.AreEquivalent(expected, actual);
+		}
+
+		[Test]
+		public void print_help_text() {
+			var helpText = ClusterVNodeOptions.HelpText;
+			Console.WriteLine(helpText);
+		}
+
+		[Test]
+		public void dump() {
+			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] {"--force+", "--dev"}, new Hashtable {
+				["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
+			}).DumpOptions();
+			Console.WriteLine(dumpedOptions);
+		}
+
+		[Test]
+		public void do_not_reveal_sensitive_information_when_dumped() {
+			var optionsDumper = new OptionsDumper(new[] {typeof(TestOptions)});
+			var dumpedOptions = optionsDumper
+				.Dump(new ConfigurationBuilder()
+					.Add(new CommandLineSource(new[] {"--sensitive=123"}))
+					.Build());
+			var certificatePasswordLine = dumpedOptions
+				.Split(Environment.NewLine)
+				.FirstOrDefault(x => x.Contains("SENSITIVE"));
+
+			Assert.NotNull(certificatePasswordLine);
+			Assert.False(certificatePasswordLine.Contains("123"));
+			Assert.True(certificatePasswordLine.Contains("****"));
+		}
+
+		private class ParseCaseData {
+			public static IEnumerable TestCases() {
+				const string array = nameof(TestOptions.ArrayOfStrings);
+
+				yield return new TestCaseData(array, new[] {"--array-of-strings", "a,b,c"})
+					.Returns(new[] {"a", "b", "c"});
+				yield return new TestCaseData(array, new[] {"-ArrayOfStrings", "a,b,c"})
+					.Returns(new[] {"a", "b", "c"});
+
+				const string flag = nameof(TestOptions.Flag);
+
+				yield return new TestCaseData(flag, new[] {"--flag"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"--flag=true"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"--flag", "true"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"-flag"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"-flag=true"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"-flag", "true"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"-flag+"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"--flag+"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"--flag-"}).Returns(false);
+				yield return new TestCaseData(flag, new[] {"-flag-"}).Returns(false);
+				yield return new TestCaseData(flag, new[] {"--flag", "--extra-flag"}).Returns(true);
+				yield return new TestCaseData(flag, new[] {"--extra-flag", "--flag"}).Returns(true);
+
+				const string ipAddresses = nameof(TestOptions.IPEndPoints);
+
+				yield return new TestCaseData(ipAddresses,
+					new[] {"--ip-endpoints=127.0.0.1:2122,127.0.0.1:2132"}).Returns(new[] {
+					new IPEndPoint(IPAddress.Loopback, 2122),
+					new IPEndPoint(IPAddress.Loopback, 2132),
+				});
+				yield return new TestCaseData(ipAddresses,
+					new[] {"--ip-endpoints", "127.0.0.1:2122,127.0.0.1:2132"}).Returns(new[] {
+					new IPEndPoint(IPAddress.Loopback, 2122),
+					new IPEndPoint(IPAddress.Loopback, 2132),
+				});
+			}
+		}
+
+		private class TestOptions {
+			private readonly IConfigurationRoot _configurationRoot;
+
+			[Description("A flag."), DefaultValue(false)]
+			public bool Flag => _configurationRoot.GetValue<bool>(nameof(Flag));
+
+			[Description("An array of strings.")]
+			public string[] ArrayOfStrings =>
+				_configurationRoot.GetValue<string>(nameof(ArrayOfStrings))?.Split(',') ?? Array.Empty<string>();
+
+			[Description("An array of IP Endpoints.")]
+			public IPEndPoint[] IPEndPoints => _configurationRoot.GetValue<string>(nameof(IPEndPoints))?.Split(',')
+				.Select(IPEndPoint.Parse).ToArray() ?? Array.Empty<IPEndPoint>();
+
+			[Description("A sensitive value like a password."), Sensitive]
+			public string Sensitive => _configurationRoot.GetValue<string>(nameof(Sensitive));
+
+			public TestOptions(string[] args) {
+				_configurationRoot = new ConfigurationBuilder()
+					.Add(new DefaultSource(new Dictionary<string, object> {
+						[nameof(Flag)] = false,
+						[nameof(ArrayOfStrings)] = null,
+						[nameof(IPEndPoints)] = null,
+						[nameof(Sensitive)] = null
+					}))
+					.Add(new CommandLineSource(args))
+					.Build();
+			}
+		}
+	}
+}

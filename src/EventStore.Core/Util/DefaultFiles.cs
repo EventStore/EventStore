@@ -2,7 +2,7 @@ using System.Reflection;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Util {
-	public class DefaultFiles {
+	public static class DefaultFiles {
 		public static readonly string DefaultConfigFile;
 
 		static DefaultFiles() {
