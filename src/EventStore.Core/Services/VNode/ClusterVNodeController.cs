@@ -881,23 +881,15 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader == null) throw new Exception("_leader == null");
 
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
-			var leaderCount = aliveLeaders.Count();
+			var leaderIsStillLeader = aliveLeaders.FirstOrDefault(x => x.InstanceId == _leader.InstanceId) != null;
 
-			if (leaderCount == 0) {
+			if (!leaderIsStillLeader) {
+				var noLeader = !aliveLeaders.Any();
 				Log.Debug(
-					"NO LEADER found in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]", _leader);
+					(noLeader ? "NO LEADER found" : "LEADER CHANGE detected") + " in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]",_leader);
 				_stateCorrelationId = Guid.NewGuid();
 				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
 			}
-			else if (leaderCount == 1) {
-				var newLeader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
-				if (_leader.InstanceId != newLeader.InstanceId) {
-					Log.Information("LEADER CHANGE detected in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]. NEW LEADER: [{newLeader}].", _leader, newLeader);
-					_stateCorrelationId = Guid.NewGuid();
-					_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
-				}
-			}
-			//if multiple leaders are found we just wait for the cluster to stabilize with a single leader during the next gossip updates
 
 			_outputBus.Publish(message);
 		}
