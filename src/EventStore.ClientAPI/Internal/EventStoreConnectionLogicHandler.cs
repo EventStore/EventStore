@@ -49,6 +49,12 @@ namespace EventStore.ClientAPI.Internal {
 
 			_esConnection = esConnection;
 			_settings = settings;
+			
+			// NOTE: It can happen the user submitted operations before the connection was available and got postponed
+			// by the operation or subscription manager. This leads the first operation to take time before being
+			// executed. By initializing _lastTimeoutsTimeStamp like this we prevent the first operation from taking a
+			// huge amount of time to complete.
+			_lastTimeoutsTimeStamp = _settings.OperationTimeoutCheckPeriod.Negate();
 
 			_operations = new OperationsManager(_esConnection.ConnectionName, settings);
 			_subscriptions = new SubscriptionsManager(_esConnection.ConnectionName, settings);
