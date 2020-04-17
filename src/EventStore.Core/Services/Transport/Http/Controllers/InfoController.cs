@@ -20,12 +20,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
 
 		private readonly IOptions _options;
-		private readonly ProjectionType _projectionType;
+		private readonly IDictionary<string, bool> _features;
 		private VNodeState _currentState;
 
-		public InfoController(IOptions options, ProjectionType projectionType) {
+		public InfoController(IOptions options, IDictionary<string, bool> features) {
 			_options = options;
-			_projectionType = projectionType;
+			_features = features;
 		}
 
 		public void Subscribe(IHttpService service) {
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			entity.ReplyTextContent(Codec.Json.To(new {
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
-					ProjectionsMode = _projectionType
+					Features = _features,
 				}),
 				HttpStatusCode.OK,
 				"OK",

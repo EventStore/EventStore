@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -155,7 +156,7 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalHttpEndPoint);
 
 			Node = new ClusterVNode(Db, singleVNodeSettings,
-				infoController: new InfoController(null, ProjectionType.None), subsystems: subsystems,
+				infoController: new InfoController(null, new Dictionary<string, bool>()), subsystems: subsystems,
 				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
 

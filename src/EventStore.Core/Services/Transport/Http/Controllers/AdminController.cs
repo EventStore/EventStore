@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -47,6 +49,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(
 				new ControllerAction("/admin/node/resign", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Resign)),
 				OnResignNode);
+			service.RegisterAction(
+				new ControllerAction("/admin/login", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Login)),
+				OnGetLogin);
 			Register(service, "/streams/$scavenges/{scavengeId}/{event}/{count}?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
 				SupportedCodecs, ReadStreamOperationForScavengeStream);
 			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
@@ -209,7 +214,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}
 		}
-
+		
+		private void OnGetLogin(HttpEntityManager entity, UriTemplateMatch match) {
+			var message = new UserManagementMessage.UserDetailsResult(
+				new UserManagementMessage.UserData(
+					entity.User.Identity.Name,
+					entity.User.Identity.Name,
+					entity.User.Claims.Where(x => x.Type == ClaimTypes.Role).Select(x => x.Value).ToArray(),
+					false,
+					new DateTimeOffset(DateTime.UtcNow)));
+			
+			entity.ReplyTextContent(
+				message.ToJson(),
+				HttpStatusCode.OK,
+				"",
+				ContentType.Json,
+				new List<KeyValuePair<string, string>>(),
+				e => Log.Error(e, "Error while writing HTTP response"));
+		}
+		
 		private void LogReplyError(Exception exc) {
 			Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
 		}

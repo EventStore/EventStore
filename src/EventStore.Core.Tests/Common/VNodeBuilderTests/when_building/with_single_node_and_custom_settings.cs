@@ -488,7 +488,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	public class with_custom_authentication_provider_factory : SingleNodeScenario {
 		public override void Given() {
 			_builder.WithAuthenticationProviderFactory(new AuthenticationProviderFactory(
-				_ => new TestAuthenticationProviderFactory()));
+				_ => new TestAuthenticationProviderFactory()), false);
 		}
 
 		[Test]
