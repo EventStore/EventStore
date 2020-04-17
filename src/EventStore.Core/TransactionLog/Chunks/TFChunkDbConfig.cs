@@ -40,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			bool writethrough = false,
 			bool optimizeReadSideCache = false,
 			bool reduceFileCachePressure = false,
-			long maxTruncation = -1) {
+			long maxTruncation = 256 * 1024 * 1024) {
 			Ensure.NotNullOrEmpty(path, "path");
 			Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
 			Ensure.Positive(chunkSize, "chunkSize");

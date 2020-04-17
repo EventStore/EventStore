@@ -9,6 +9,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
@@ -161,7 +162,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
 			bool logFailedAuthenticationAttempts = false,
-			long maxTruncation = -1,
+			long maxTruncation = 256 * 1024 * 1024,
 			bool readOnlyReplica = false,
 			int maxAppendSize = 1024 * 1024,
 			bool unsafeAllowSurplusNodes = false,
