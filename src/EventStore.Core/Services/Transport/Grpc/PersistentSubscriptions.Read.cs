@@ -52,21 +52,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var read = requestStream.ForEachAsync(HandleAckNack);
 
-			try {
-				await responseStream.WriteAsync(new ReadResp {
-					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
-						SubscriptionId = subscriptionId
-					}
-				}).ConfigureAwait(false);
-
-				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
-					await responseStream.WriteAsync(new ReadResp {
-						Event = ConvertToReadEvent(enumerator.Current)
-					}).ConfigureAwait(false);
+			await responseStream.WriteAsync(new ReadResp {
+				SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
+					SubscriptionId = subscriptionId
 				}
-			} finally {
-				await read.ConfigureAwait(false);
+			}).ConfigureAwait(false);
+
+			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+				await responseStream.WriteAsync(new ReadResp {
+					Event = ConvertToReadEvent(enumerator.Current)
+				}).ConfigureAwait(false);
 			}
+
+			await read.ConfigureAwait(false);
 
 			ValueTask HandleAckNack(ReadReq request) {
 				_publisher.Publish(request.ContentCase switch {
