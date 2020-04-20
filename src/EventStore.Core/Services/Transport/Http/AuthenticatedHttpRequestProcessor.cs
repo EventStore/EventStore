@@ -20,15 +20,11 @@ namespace EventStore.Core.Services.Transport.Http {
 		private readonly PairingHeap<Tuple<DateTime, HttpEntityManager>> _pending =
 			new PairingHeap<Tuple<DateTime, HttpEntityManager>>((x, y) => x.Item1 < y.Item1);
 
-		private readonly bool _doNotTimeout = Application.IsDefined(Application.DoNotTimeoutRequests);
-
 		public void Handle(HttpMessage.PurgeTimedOutRequests message) {
 			PurgeTimedOutRequests();
 		}
 
 		private void PurgeTimedOutRequests() {
-			if (_doNotTimeout)
-				return;
 			try {
 				while (_pending.Count > 0) {
 					var req = _pending.FindMin();

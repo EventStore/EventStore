@@ -68,8 +68,6 @@ namespace EventStore.Core {
 		}
 
 		private void Init(TOptions options) {
-			Application.AddDefines(options.Defines);
-
 			var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
 			var componentName = GetComponentName(options);
 

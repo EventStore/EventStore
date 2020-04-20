@@ -74,20 +74,6 @@ namespace EventStore.Transport.Tcp {
 				_pendingReceivedOnLastRun,
 				measurePeriod);
 
-
-			if (Application.IsDefined(Application.DumpStatistics)) {
-				Log.Verbose(
-					"\n# Total connections: {connections,3}. Out: {sendingSpeed:0.00}b/s  In: {receivingSpeed:0.00}b/s  Pending Send: {pendingSend}  " +
-					"In Send: {inSend}  Pending Received: {pendingReceived} Measure Time: {measureTime}",
-					stats.Connections,
-					stats.SendingSpeed,
-					stats.ReceivingSpeed,
-					stats.PendingSend,
-					stats.InSend,
-					stats.PendingReceived,
-					stats.MeasureTime);
-			}
-
 			return stats;
 		}
 
