@@ -1,12 +1,6 @@
 using System;
-using System.Threading.Tasks;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Client.Operations;
-using EventStore.Core.Authorization;
-using Grpc.Core;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public partial class Operations

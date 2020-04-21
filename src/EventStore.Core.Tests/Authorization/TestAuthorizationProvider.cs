@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Text;
+﻿using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Tests.Authorization {
 	class TestAuthorizationProvider : IAuthorizationProvider {

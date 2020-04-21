@@ -79,6 +79,7 @@ namespace EventStore.Core {
 		protected StatsStorage _statsStorage;
 
 		protected AuthenticationProviderFactory _authenticationProviderFactory;
+		protected bool _authenticationProviderIsInternal;
 		protected bool _disableFirstLevelHttpAuthorization;
 		protected bool _logFailedAuthenticationAttempts;
 		protected bool _disableScavengeMerging;
@@ -1055,9 +1056,12 @@ namespace EventStore.Core {
 		/// Sets the authentication provider factory to use
 		/// </summary>
 		/// <param name="authenticationProviderFactory">The authentication provider factory to use </param>
+		/// <param name="isInternal">Is true when the internal authentication provider is being used</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithAuthenticationProviderFactory(AuthenticationProviderFactory authenticationProviderFactory) {
+		public VNodeBuilder WithAuthenticationProviderFactory(AuthenticationProviderFactory authenticationProviderFactory,
+			bool isInternal) {
 			_authenticationProviderFactory = authenticationProviderFactory;
+			_authenticationProviderIsInternal = isInternal;
 			return this;
 		}
 
@@ -1479,7 +1483,10 @@ namespace EventStore.Core {
 				_enableExternalTCP,
 				_enableAtomPubOverHTTP);
 
-			var infoController = new InfoController(options, _projectionType);
+			var infoController = new InfoController(options, new Dictionary<string, bool> {
+				{"projections", _projectionType != ProjectionType.None},
+				{"userManagement", _authenticationProviderIsInternal},
+			});
 
 			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = _db.Config.ChaserCheckpoint.Read();

@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
+using EventStore.Plugins.Authorization;
 using Serilog;
 
 namespace EventStore.Core.Authorization {
@@ -55,6 +56,7 @@ namespace EventStore.Core.Authorization {
 			policy.AddMatchAnyAssertion(Operations.Node.MergeIndexes, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.SetPriority, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Resign, Grant.Allow, OperationsOrAdmins);
+			policy.RequireAuthenticated(Operations.Node.Login);
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Start, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Stop, Grant.Allow, OperationsOrAdmins);
 

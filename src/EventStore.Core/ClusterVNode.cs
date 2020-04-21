@@ -40,6 +40,8 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
@@ -52,7 +54,8 @@ namespace EventStore.Core {
 	public class ClusterVNode :
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
-		IHandle<SystemMessage.BecomeShutdown> {
+		IHandle<SystemMessage.BecomeShutdown>,
+		IHandle<SystemMessage.SystemStart> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
@@ -207,6 +210,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -373,15 +377,7 @@ namespace EventStore.Core {
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
 			_authenticationProvider =
 				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).Build(
-					vNodeSettings.LogFailedAuthenticationAttempts);
-
-			_authenticationProvider.Initialize().ContinueWith(t => {
-				if (t.Exception != null) {
-					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());
-				} else {
-					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
-				}
-			});
+					vNodeSettings.LogFailedAuthenticationAttempts, Log);
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
 			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory
@@ -776,6 +772,16 @@ namespace EventStore.Core {
 
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
+		}
+		
+		public void Handle(SystemMessage.SystemStart message) {
+			_authenticationProvider.Initialize().ContinueWith(t => {
+				if (t.Exception != null) {
+					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitializationFailed());
+				} else {
+					_mainQueue.Publish(new AuthenticationMessage.AuthenticationProviderInitialized());
+				}
+			});
 		}
 
 		public void AddTasks(IEnumerable<Task> tasks) {

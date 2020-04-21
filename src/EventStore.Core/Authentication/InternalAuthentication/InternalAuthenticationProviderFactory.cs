@@ -4,6 +4,8 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Settings;
+using EventStore.Plugins.Authentication;
+using Serilog;
 
 namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class InternalAuthenticationProviderFactory : IAuthenticationProviderFactory {
@@ -31,7 +33,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			components.ExternalHttpService.SetupController(usersController);
 		}
 
-		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts) {
+		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {
 			var provider =
 				new InternalAuthenticationProvider(_components.MainBus, _dispatcher, _passwordHashAlgorithm, ESConsts.CachedPrincipalCount,
 					logFailedAuthenticationAttempts);

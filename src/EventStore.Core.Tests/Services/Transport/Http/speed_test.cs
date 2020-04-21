@@ -1,23 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Tests.Fakes;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class FakeController : IHttpController {

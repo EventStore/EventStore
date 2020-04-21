@@ -1,7 +1,7 @@
 using EventStore.Core;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	/// <summary>

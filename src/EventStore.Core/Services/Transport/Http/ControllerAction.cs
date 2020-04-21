@@ -1,6 +1,6 @@
 using System;
 using EventStore.Common.Utils;
-using EventStore.Core.Authorization;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http {

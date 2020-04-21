@@ -3,8 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
-using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;

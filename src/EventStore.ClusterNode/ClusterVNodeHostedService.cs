@@ -20,7 +20,10 @@ using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Util;
 using EventStore.Rags;
+using EventStore.Plugins.Authentication;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : EventStoreHostedService<ClusterNodeOptions> {
@@ -366,7 +369,8 @@ namespace EventStore.ClusterNode {
 				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
 			
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
-			builder.WithAuthenticationProviderFactory(authenticationProviderFactory);
+			builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
+				options.AuthenticationType == Opts.AuthenticationTypeDefault);
 			builder.WithAuthorizationProvider(authorizationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 
