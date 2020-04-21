@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -8,11 +9,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Core;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
 			try {
+				Serilog.Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 				var cts = new CancellationTokenSource();
 				var hostedService = new ClusterVNodeHostedService(args);
 
