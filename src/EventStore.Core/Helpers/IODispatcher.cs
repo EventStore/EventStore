@@ -46,6 +46,8 @@ namespace EventStore.Core.Helpers {
 		public readonly RequestResponseDispatcher<AwakeServiceMessage.SubscribeAwake, IODispatcherDelayedMessage>
 			Awaker;
 
+		public readonly RequestResponseDispatcher<ClientMessage.ReadEvent, ClientMessage.ReadEventCompleted> EventReader;
+		
 		public readonly
 			RequestResponseDispatcher
 			<ClientMessage.ReadAllEventsForward, ClientMessage.ReadAllEventsForwardCompleted> AllForwardReader;
@@ -102,6 +104,13 @@ namespace EventStore.Core.Helpers {
 					envelope,
 					cancelMessageFactory: requestId => new AwakeServiceMessage.UnsubscribeAwake(requestId));
 
+			EventReader =
+				new RequestResponseDispatcher<ClientMessage.ReadEvent, ClientMessage.ReadEventCompleted>(
+					publisher,
+					v => v.CorrelationId,
+					v => v.CorrelationId,
+					envelope);
+			
 			AllForwardReader =
 				new RequestResponseDispatcher
 					<ClientMessage.ReadAllEventsForward, ClientMessage.ReadAllEventsForwardCompleted>(
@@ -298,6 +307,30 @@ namespace EventStore.Core.Helpers {
 				timeoutAction();
 			}, corrId);
 			return corrId;
+		}
+		
+		public Guid ReadEvent(
+			string streamId,
+			long fromEventNumber,
+			ClaimsPrincipal principal,
+			Action<ClientMessage.ReadEventCompleted> action,
+			Guid? corrId = null) {
+			corrId ??= Guid.NewGuid();
+			AddPendingRequest(corrId.Value);
+			return
+				EventReader.Publish(
+					new ClientMessage.ReadEvent(
+						corrId.Value,
+						corrId.Value,
+						EventReader.Envelope,
+						streamId,
+						fromEventNumber,
+						false,
+						false,
+						principal), res => {
+						RemovePendingRequest(res.CorrelationId);
+						action(res);
+					});
 		}
 
 		public Guid ReadAllForward(

@@ -37,6 +37,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly CheckpointTag _zeroPosition;
 		private readonly CheckpointTag _fromCheckpointPosition;
 		private readonly IEmittedStreamContainer _readyHandler;
+		private static readonly string LinkEventType = "$>";
+		private static readonly char[] LinkToSeparator = new[] {'@'};
 
 		private readonly Stack<Tuple<CheckpointTag, string, long>> _alreadyCommittedEvents =
 			new Stack<Tuple<CheckpointTag, string, long>>();
@@ -326,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (stop)
 				try {
 					SubmitWriteEventsInRecovery();
-				} catch (InvalidEmittedEventSequenceExceptioin ex) {
+				} catch (InvalidEmittedEventSequenceException ex) {
 					Failed(ex.Message);
 				}
 			else
@@ -665,7 +667,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void SubmitWriteEventsInRecovery() {
-			bool anyFound = false;
+			SubmitWriteEventsInRecoveryLoop(false);
+		}
+
+		private void SubmitWriteEventsInRecoveryLoop(bool anyFound) {
 			while (_pendingWrites.Count > 0) {
 				var eventToWrite = _pendingWrites.Peek();
 				if (eventToWrite.CausedByTag > _lastCommittedOrSubmittedEventPosition ||
@@ -677,31 +682,82 @@ namespace EventStore.Projections.Core.Services.Processing {
 					SubmitWriteEvents();
 					return;
 				}
+				
+				var report = ValidateEmittedEventInRecoveryMode(eventToWrite);
 
-				var topAlreadyCommitted = ValidateEmittedEventInRecoveryMode(eventToWrite);
-				if (topAlreadyCommitted == null)
-					continue; // means skipped one already comitted item due to deleted stream handling
-				anyFound = true;
-				NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3);
-				_pendingWrites.Dequeue(); // drop already committed event
+				if (report is IgnoredEmittedEvent) {
+					Log.Verbose($"Emitted event ignored because it links to an event that no longer exists: eventId: {eventToWrite.EventId}, eventType: {eventToWrite.EventId}, checkpoint: {eventToWrite.CorrelationId}, causedBy: {eventToWrite.CausedBy}");
+					continue;
+				}
+
+				if (report is ErroredEmittedEvent error)
+					throw error.Exception;
+
+				if (report is ValidEmittedEvent valid) {
+					anyFound = true;
+					NotifyEventCommitted(eventToWrite, valid.Revision);
+					_pendingWrites.Dequeue();
+				}
+
+				if (report is EmittedEventResolutionNeeded resolution) {
+					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
+						OnEmittedLinkEventResolved(anyFound, eventToWrite, resp);
+					});
+					
+					break;
+				}
 			}
 
-			OnWriteCompleted();
+			if (_pendingWrites.Count == 0)
+				OnWriteCompleted();
 		}
 
-		private Tuple<CheckpointTag, string, long> ValidateEmittedEventInRecoveryMode(EmittedEvent eventsToWrite) {
+		private IValidatedEmittedEvent ValidateEmittedEventInRecoveryMode(EmittedEvent eventToWrite) {
 			var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
-			if (topAlreadyCommitted.Item1 < eventsToWrite.CausedByTag)
-				return null;
-			var failed = topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag ||
-			             topAlreadyCommitted.Item2 != eventsToWrite.EventType;
-			if (failed)
-				throw new InvalidEmittedEventSequenceExceptioin(
-					string.Format(
-						"An event emitted in recovery for stream {0} differs from the originally emitted event. Existing('{1}', '{2}'). New('{3}', '{4}')",
-						_streamId, topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType,
-						eventsToWrite.CausedByTag));
-			return topAlreadyCommitted;
+			
+			if (topAlreadyCommitted.Item1 < eventToWrite.CausedByTag)
+				return new IgnoredEmittedEvent();
+			
+			var failed = topAlreadyCommitted.Item1 != eventToWrite.CausedByTag ||
+			             topAlreadyCommitted.Item2 != eventToWrite.EventType;
+			
+			if (failed && eventToWrite.EventType.Equals(LinkEventType)) {
+				// We check if the linked event still exists. If not, we skip that emitted event.
+				var parts = eventToWrite.Data.Split(LinkToSeparator, 2);
+				var streamId = parts[1];
+				if (!long.TryParse(parts[0], out long eventNumber))
+					throw new Exception($"Unexpected exception: Emitted event is an invalid link event: Body ({eventToWrite.Data}) CausedByTag ({eventToWrite.CausedByTag}) StreamId ({eventToWrite.StreamId})");
+				
+				_alreadyCommittedEvents.Push(topAlreadyCommitted);
+				return new EmittedEventResolutionNeeded(streamId, eventNumber);
+			}
+
+			if (failed) {
+				var error = CreateSequenceException(topAlreadyCommitted, eventToWrite);
+				return new ErroredEmittedEvent(error);
+			}
+
+			return new ValidEmittedEvent(topAlreadyCommitted.Item1, topAlreadyCommitted.Item2, topAlreadyCommitted.Item3);
+		}
+
+		// Used when we need to resolve a link event to see if it points to an event that no longer exists. If that
+		// event no longer exists, we skip it and resume the recovery process.
+		private void OnEmittedLinkEventResolved(bool anyFound, EmittedEvent eventToWrite, ClientMessage.ReadEventCompleted resp) {
+			var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
+			if (resp.Result != ReadEventResult.StreamDeleted && resp.Result != ReadEventResult.NotFound) {
+				throw CreateSequenceException(topAlreadyCommitted, eventToWrite);
+			}
+
+			Log.Verbose($"Emitted event ignored after resolution because it links to an event that no longer exists: eventId: {eventToWrite.EventId}, eventType: {eventToWrite.EventId}, checkpoint: {eventToWrite.CorrelationId}, causedBy: {eventToWrite.CausedBy}");
+			_pendingWrites.Dequeue();
+			SubmitWriteEventsInRecoveryLoop(anyFound);
+		}
+
+		private InvalidEmittedEventSequenceException CreateSequenceException(
+			Tuple<CheckpointTag, string, long> committed, EmittedEvent eventToWrite) {
+			return new InvalidEmittedEventSequenceException(
+				$"An event emitted in recovery for stream {_streamId} differs from the originally emitted event. Existing('{committed.Item2}', '{committed.Item1}'). New('{eventToWrite.EventType}', '{eventToWrite.CausedByTag}')"
+			);
 		}
 
 		private void RecoveryCompleted() {
@@ -730,9 +786,44 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 	}
 
-	class InvalidEmittedEventSequenceExceptioin : Exception {
-		public InvalidEmittedEventSequenceExceptioin(string message)
+	class InvalidEmittedEventSequenceException : Exception {
+		public InvalidEmittedEventSequenceException(string message)
 			: base(message) {
+		}
+	}
+
+	interface IValidatedEmittedEvent {}
+
+	sealed class ValidEmittedEvent : IValidatedEmittedEvent {
+		public CheckpointTag Checkpoint { get; private set; }
+		public string EventType { get; private set; }
+		public long Revision { get; private set; }
+
+		public ValidEmittedEvent(CheckpointTag checkpoint, string eventType, long revision) {
+			Checkpoint = checkpoint;
+			EventType = eventType;
+			Revision = revision;
+		}
+	}
+
+	sealed class IgnoredEmittedEvent : IValidatedEmittedEvent {
+	}
+
+	sealed class ErroredEmittedEvent : IValidatedEmittedEvent {
+		public Exception Exception { get; private set; }
+
+		public ErroredEmittedEvent(InvalidEmittedEventSequenceException exception) {
+			Exception = exception;
+		}
+	}
+
+	sealed class EmittedEventResolutionNeeded : IValidatedEmittedEvent {
+		public string StreamId { get; private set; }
+		public long Revision { get; private set; }
+
+		public EmittedEventResolutionNeeded(string streamId, long revision) {
+			StreamId = streamId;
+			Revision = revision;
 		}
 	}
 }
