@@ -42,9 +42,6 @@ namespace EventStore.Core.Util {
 		public const string ConfigsDescr = "Configuration files.";
 		public static readonly string[] ConfigsDefault = new string[0];
 
-		public const string DefinesDescr = "Run-time conditionals.";
-		public static readonly string[] DefinesDefault = new string[0];
-
 		public const string ShowHelpDescr = "Show help.";
 		public const bool ShowHelpDefault = false;
 

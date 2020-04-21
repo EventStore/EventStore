@@ -17,7 +17,6 @@ namespace EventStore.TestClient {
 
 		[ArgDescription(Opts.LogsDescr)] public string Log { get; set; }
 		[ArgDescription(Opts.ConfigsDescr)] public string Config { get; set; }
-		[ArgDescription(Opts.DefinesDescr)] public string[] Defines { get; set; }
 
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
@@ -42,7 +41,6 @@ namespace EventStore.TestClient {
 			Help = Opts.ShowHelpDefault;
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultTestClientLogDirectory;
-			Defines = Opts.DefinesDefault;
 			WhatIf = Opts.WhatIfDefault;
 			Ip = IPAddress.Loopback;
 			TcpPort = 1113;

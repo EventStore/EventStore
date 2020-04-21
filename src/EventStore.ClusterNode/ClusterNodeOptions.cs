@@ -18,9 +18,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
 		public string Config { get; set; }
 
-		[ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
-		public string[] Defines { get; set; }
-
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
 
@@ -321,7 +318,6 @@ namespace EventStore.ClusterNode {
 			Help = Opts.ShowHelpDefault;
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultLogDirectory;
-			Defines = Opts.DefinesDefault;
 			WhatIf = Opts.WhatIfDefault;
 
 			IntIp = Opts.InternalIpDefault;

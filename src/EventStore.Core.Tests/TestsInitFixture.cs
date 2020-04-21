@@ -11,7 +11,6 @@ namespace EventStore.Core.Tests {
 		[OneTimeSetUp]
 		public void SetUp() {
 			ServicePointManager.DefaultConnectionLimit = 1000;
-			Application.AddDefines(new[] { Application.AdditionalCommitChecks });
 			LogEnvironmentInfo();
 		}
 
