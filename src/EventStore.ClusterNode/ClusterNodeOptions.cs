@@ -87,9 +87,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ConnectionQueueSizeThresholdDescr, Opts.InterfacesGroup)]
 		public int ConnectionQueueSizeThreshold { get; set; }
 
-		[ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
-		public bool Force { get; set; }
-
 		[ArgDescription(Opts.ClusterSizeDescr, Opts.ClusterGroup)]
 		public int ClusterSize { get; set; }
 
@@ -327,7 +324,6 @@ namespace EventStore.ClusterNode {
 			EnableExternalTCP = Opts.EnableExternalTCPDefault;
 			IntTcpPort = Opts.InternalTcpPortDefault;
 			ExtTcpPort = Opts.ExternalTcpPortDefault;
-			Force = Opts.ForceDefault;
 			ClusterSize = Opts.ClusterSizeDefault;
 			MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
 			NodePriority = Opts.NodePriorityDefault;

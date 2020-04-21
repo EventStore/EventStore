@@ -4,7 +4,6 @@
 		bool Version { get; }
 		string Config { get; }
 		string Log { get; }
-		bool Force { get; }
 		bool WhatIf { get; }
 	}
 }

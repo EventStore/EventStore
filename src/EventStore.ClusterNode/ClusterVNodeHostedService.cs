@@ -80,14 +80,14 @@ namespace EventStore.ClusterNode {
 		protected override void PreInit(ClusterNodeOptions options) {
 			base.PreInit(options);
 
-			if (options.Db.StartsWith("~") && !options.Force) {
+			if (options.Db.StartsWith("~")) {
 				throw new ApplicationInitializationException(
-					"The given database path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
+					"The given database path starts with a '~'. Event Store does not expand '~'.");
 			}
 
-			if (options.Log.StartsWith("~") && !options.Force) {
+			if (options.Log.StartsWith("~")) {
 				throw new ApplicationInitializationException(
-					"The given log path starts with a '~'. We don't expand '~'. You can use --force to override this error.");
+					"The given log path starts with a '~'. Event Store does not expand '~'.");
 			}
 
 			if (options.GossipSeed.Length > 1 && options.ClusterSize == 1) {

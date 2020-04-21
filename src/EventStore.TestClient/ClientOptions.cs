@@ -28,7 +28,6 @@ namespace EventStore.TestClient {
 		public int ReadWindow { get; set; }
 		public int WriteWindow { get; set; }
 		public int PingWindow { get; set; }
-		[ArgDescription(Opts.ForceDescr)] public bool Force { get; set; }
 		public string[] Command { get; set; }
 		public bool Reconnect { get; set; }
 
@@ -49,7 +48,6 @@ namespace EventStore.TestClient {
 			ReadWindow = 2000;
 			WriteWindow = 2000;
 			PingWindow = 2000;
-			Force = false;
 			Reconnect = true;
 			UseTls = false;
 			TlsValidateServer = false;
