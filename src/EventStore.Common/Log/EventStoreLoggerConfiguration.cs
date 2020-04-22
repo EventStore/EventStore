@@ -17,7 +17,7 @@ namespace EventStore.Common.Log {
 		private const string ConsoleOutputTemplate =
 			"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
 
-		private static readonly Logger ConsoleLog = StandardLoggerConfiguration
+		public static readonly Logger ConsoleLog = StandardLoggerConfiguration
 			.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
 			.CreateLogger();
 
