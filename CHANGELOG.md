@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Login endpoint (admin/login) [EventStore#2409](https://github.com/EventStore/EventStore/pull/2409)
 - Features collection on the info endpoint [EventStore#2409](https://github.com/EventStore/EventStore/pull/2409)
 - Operations proto contract and implementation [EventStore#2446](https://github.com/EventStore/EventStore/pull/2446)
+- Max Truncation Safety Feature to avoid large unexpected truncations due to misconfiguration [EventStore#2436](https://github.com/EventStore/EventStore/pull/2436)
 
 ### With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https
 - //github.com/EventStore/EventStore/pull/2383)
