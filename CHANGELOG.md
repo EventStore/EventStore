@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - Discover an existing leader through gossip updates when a read-only replica starts up instead of triggering elections. [EventStore#2417](https://github.com/EventStore/EventStore/pull/2417)
 - Login endpoint (admin/login) [EventStore#2409](https://github.com/EventStore/EventStore/pull/2409)
 - Features collection on the info endpoint [EventStore#2409](https://github.com/EventStore/EventStore/pull/2409)
+- Operations proto contract and implementation [EventStore#2446](https://github.com/EventStore/EventStore/pull/2446)
 
 ### With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https
 - //github.com/EventStore/EventStore/pull/2383)
