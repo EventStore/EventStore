@@ -4,7 +4,8 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM;ARM64</Platforms>
+		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 	<ItemGroup>
 			<FrameworkReference Include="Microsoft.AspNetCore.App" />

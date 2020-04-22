@@ -5,18 +5,19 @@
 				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 				<OutputType>Exe</OutputType>
 				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-				<Platforms>x64</Platforms>
+				<Platforms>x64;ARM;ARM64</Platforms>
+				<Configurations>Debug;Release</Configurations>
 		</PropertyGroup>
 		<ItemGroup>
-				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
 		</ItemGroup>
 		<ItemGroup>
-				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj"/>
-				<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj"/>
-				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
-				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj"/>
-				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj"/>
+				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
+				<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
+				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 		</ItemGroup>
 		<ItemGroup>
 				<None Include="..\EventStore.Common\Log\logconfig.json">

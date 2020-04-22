@@ -4,8 +4,9 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<RootNamespace>EventStore.ClientAPI.Tests</RootNamespace>
 		<UseLinkBase>true</UseLinkBase>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM;ARM64</Platforms>
 		<DefineConstants>CLIENT_API_V5</DefineConstants>
+		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="5.0.5" />

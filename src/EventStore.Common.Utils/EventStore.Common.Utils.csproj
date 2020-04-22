@@ -2,7 +2,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM;ARM64</Platforms>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 	<ItemGroup>
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">

@@ -3,7 +3,8 @@
 	<PropertyGroup>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM;ARM64</Platforms>
+		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 	<ItemGroup>
 		<Compile Remove="Playground\Launchpad.cs" />

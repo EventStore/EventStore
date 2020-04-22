@@ -4,7 +4,8 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM;ARM64</Platforms>
+		<Configurations>Debug;Release</Configurations>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
