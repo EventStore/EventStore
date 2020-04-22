@@ -150,6 +150,9 @@ namespace EventStore.Core.Services.Replication {
 						"There is already a subscription with SubscriptionID {0:B}: {1}.\nSubscription we tried to add: {2}",
 						subscription.SubscriptionId, existingSubscr, subscription));
 					subscription.Dispose();
+				} else {
+					var replicationCheckpoint = _db.Config.ReplicationCheckpoint.Read();
+					subscription.SendMessage(new ReplicationTrackingMessage.ReplicatedTo(replicationCheckpoint));
 				}
 			}
 		}
