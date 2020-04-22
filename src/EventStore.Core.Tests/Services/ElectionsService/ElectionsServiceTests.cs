@@ -23,14 +23,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		protected FakePublisher _publisher;
 		protected Guid _epochId;
 
-		protected static Func<int, bool, VNodeInfo> NodeFactory = (id, isReadOnlyReplica) => new VNodeInfo(
+		protected static Func<int, VNodeInfo> NodeFactory = (id) => new VNodeInfo(
 			Guid.Parse($"00000000-0000-0000-0000-00000000000{id}"), id,
 			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id),
 			new IPEndPoint(IPAddress.Loopback, id),
-			new IPEndPoint(IPAddress.Loopback, id), isReadOnlyReplica);
+			new IPEndPoint(IPAddress.Loopback, id), false);
 
 		protected static readonly Func<VNodeInfo, DateTime, VNodeState, bool, Guid, MemberInfo> MemberInfoFromVNode =
 			(nodeInfo, timestamp, state, isAlive, epochId) => MemberInfo.ForVNode(
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_starting_elections : ElectionsFixture {
 		public when_starting_elections()
-			: base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			: base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_system_init : ElectionsFixture {
 		public when_system_init()
-			: base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			: base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new SystemMessage.SystemInit());
 		}
 
@@ -106,38 +106,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_starting_elections_for_readonly_replica : ElectionsFixture {
-		public when_starting_elections_for_readonly_replica()
-			: base(NodeFactory(3, true), NodeFactory(2, false), NodeFactory(1, false)) {
-			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
-				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
-		}
-
-		[Test]
-		public void should_send_view_change_to_other_members() {
-			_sut.Handle(new ElectionMessage.StartElections());
-
-			var expected = new Message[] {
-				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp,
-					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				new GrpcMessage.SendOverGrpc(_nodeThree.InternalHttp,
-					new ElectionMessage.ViewChange(_node.InstanceId, _node.InternalHttp, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
-				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
-					new PublishEnvelope(_publisher),
-					new ElectionMessage.ElectionsTimedOut(0)),
-			};
-			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
-		}
-	}
-
 	public class when_starting_elections_after_elections_have_started : ElectionsFixture {
 		public when_starting_elections_after_elections_have_started()
-			: base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			: base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -156,7 +127,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_node_is_shutting_down_and_starting_elections : ElectionsFixture {
 		public when_node_is_shutting_down_and_starting_elections()
-			: base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			: base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -174,7 +145,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_node_is_shutting_down_and_elections_timed_out : ElectionsFixture {
 		public when_node_is_shutting_down_and_elections_timed_out() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -194,7 +165,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_elections_timeout_for_a_different_view_than_last_attempted_view : ElectionsFixture {
 		public when_elections_timeout_for_a_different_view_than_last_attempted_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -213,7 +184,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_elections_timeout : ElectionsFixture {
 		public when_elections_timeout() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -246,7 +217,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_node_is_shutting_down_and_view_change_proof_is_triggered : ElectionsFixture {
 		public when_node_is_shutting_down_and_view_change_proof_is_triggered() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -264,7 +235,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_view_change_proof_is_triggered_and_the_first_election_has_not_completed : ElectionsFixture {
 		public when_view_change_proof_is_triggered_and_the_first_election_has_not_completed() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -289,7 +260,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_view_change_proof_is_triggered_and_the_first_election_has_completed : ElectionsFixture {
 		public when_view_change_proof_is_triggered_and_the_first_election_has_completed() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -329,7 +300,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_view_change_and_shutting_down : ElectionsFixture {
 		public when_receiving_view_change_and_shutting_down() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -349,7 +320,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_view_change_and_idle : ElectionsFixture {
 		public when_receiving_view_change_and_idle() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -368,7 +339,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_view_change_for_an_earlier_view_than_installed : ElectionsFixture {
 		public when_receiving_view_change_for_an_earlier_view_than_installed() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -388,7 +359,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_view_change_for_a_later_view_than_last_attempted_view : ElectionsFixture {
 		public when_receiving_a_view_change_for_a_later_view_than_last_attempted_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -421,7 +392,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_view_change_from_majority_and_acceptor_of_the_current_view : ElectionsFixture {
 		public when_receiving_view_change_from_majority_and_acceptor_of_the_current_view() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -439,29 +410,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_receiving_view_change_from_majority_for_readonly_replica : ElectionsFixture {
-		public when_receiving_view_change_from_majority_for_readonly_replica() :
-			base(NodeFactory(3, true), NodeFactory(2, false), NodeFactory(1, false)) {
-			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
-				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
-		}
-
-		[Test]
-		public void should_ignore_view_change() {
-			_sut.Handle(new ElectionMessage.StartElections());
-			_publisher.Messages.Clear();
-
-			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
-
-			Assert.IsEmpty(_publisher.Messages);
-		}
-	}
-
 	public class when_receiving_view_change_from_majority : ElectionsFixture {
 		public when_receiving_view_change_from_majority() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -489,7 +440,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_prepare_when_node_is_shutting_down : ElectionsFixture {
 		public when_receiving_a_prepare_when_node_is_shutting_down() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -507,7 +458,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_prepare_for_the_same_node : ElectionsFixture {
 		public when_receiving_a_prepare_for_the_same_node() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -526,7 +477,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_prepare_not_for_the_last_attempted_view : ElectionsFixture {
 		public when_receiving_a_prepare_not_for_the_last_attempted_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -545,7 +496,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_prepare_from_an_unknown_node : ElectionsFixture {
 		public when_receiving_a_prepare_from_an_unknown_node() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -562,28 +513,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_receiving_a_prepare_for_a_readonly_replica : ElectionsFixture {
-		public when_receiving_a_prepare_for_a_readonly_replica() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
-			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
-				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
-		}
-
-		[Test]
-		public void should_ignore_the_prepare() {
-			_sut.Handle(new ElectionMessage.StartElections());
-			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
-			_publisher.Messages.Clear();
-			_sut.Handle(new ElectionMessage.Prepare(_node.InstanceId, _node.InternalHttp, 0));
-			Assert.IsEmpty(_publisher.Messages);
-		}
-	}
-
 	public class when_receiving_a_prepare : ElectionsFixture {
 		public when_receiving_a_prepare() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -606,30 +538,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
-	
-	public class when_receiving_a_prepare_and_readonly_replica : ElectionsFixture {
-		public when_receiving_a_prepare_and_readonly_replica() :
-			base(NodeFactory(3, true), NodeFactory(2, false), NodeFactory(1, false)) {
-			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
-				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
-		}
-
-		[Test]
-		public void should_ignore_prepare() {
-			_sut.Handle(new ElectionMessage.StartElections());
-			_sut.Handle(new ElectionMessage.ViewChange(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
-			_publisher.Messages.Clear();
-			_sut.Handle(new ElectionMessage.Prepare(_nodeTwo.InstanceId, _nodeTwo.InternalHttp, 0));
-
-			Assert.IsEmpty(_publisher.Messages);
-		}
-	}
 
 	public class when_receiving_prepare_ok_and_node_is_shutting_down : ElectionsFixture {
 		public when_receiving_prepare_ok_and_node_is_shutting_down() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -652,7 +564,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_prepare_ok_and_elections_have_not_started : ElectionsFixture {
 		public when_receiving_prepare_ok_and_elections_have_not_started() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -670,7 +582,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_prepare_ok_for_not_the_current_attempted_view : ElectionsFixture {
 		public when_receiving_prepare_ok_for_not_the_current_attempted_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -690,7 +602,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_duplicate_prepare_ok : ElectionsFixture {
 		public when_receiving_a_duplicate_prepare_ok() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -712,7 +624,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_majority_prepare_ok : ElectionsFixture {
 		public when_receiving_majority_prepare_ok() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -750,7 +662,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_node_is_shutting_down_and_receive_a_proposal : ElectionsFixture {
 		public when_node_is_shutting_down_and_receive_a_proposal() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -770,7 +682,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_from_the_same_node : ElectionsFixture {
 		public when_receiving_a_proposal_from_the_same_node() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -790,7 +702,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_as_the_acceptor_of_the_current_view : ElectionsFixture {
 		public when_receiving_a_proposal_as_the_acceptor_of_the_current_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -814,7 +726,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_not_for_the_current_installed_view : ElectionsFixture {
 		public when_receiving_a_proposal_not_for_the_current_installed_view() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -837,7 +749,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_from_an_unknown_node : ElectionsFixture {
 		public when_receiving_a_proposal_from_an_unknown_node() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -860,7 +772,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_for_an_unknown_node : ElectionsFixture {
 		public when_receiving_a_proposal_for_an_unknown_node() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -883,7 +795,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_receiving_a_proposal_as_acceptor : ElectionsFixture {
 		public when_receiving_a_proposal_as_acceptor() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -926,7 +838,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_node_is_shutting_down_and_receiving_accept : ElectionsFixture {
 		public when_node_is_shutting_down_and_receiving_accept() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -945,7 +857,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_receiving_accept_for_not_the_current_installed_view : ElectionsFixture {
 		public when_receiving_accept_for_not_the_current_installed_view() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -969,7 +881,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_receiving_accept_without_a_leader_having_been_proposed : ElectionsFixture {
 		public when_receiving_accept_without_a_leader_having_been_proposed() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -992,7 +904,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_receiving_accept_and_leader_proposal_does_not_match_accept_leader : ElectionsFixture {
 		public when_receiving_accept_and_leader_proposal_does_not_match_accept_leader() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1018,7 +930,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	
 	public class when_receiving_majority_accept : ElectionsFixture {
 		public when_receiving_majority_accept() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1055,7 +967,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_elections_timeout_and_not_electing_leader : ElectionsFixture {
 		public when_elections_timeout_and_not_electing_leader() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1082,7 +994,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_updating_node_priority : ElectionsFixture {
 		public when_updating_node_priority() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1103,7 +1015,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_resigning_node_and_node_is_not_the_current_leader : ElectionsFixture {
 		public when_resigning_node_and_node_is_not_the_current_leader() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1130,7 +1042,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_resigning_node_and_is_the_current_leader : ElectionsFixture {
 		public when_resigning_node_and_is_the_current_leader() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1160,27 +1072,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
-	
-	public class when_receiving_leader_is_resigning_and_readonly_replica : ElectionsFixture {
-		public when_receiving_leader_is_resigning_and_readonly_replica() :
-			base(NodeFactory(1, true), NodeFactory(2, false), NodeFactory(3, false)) {
-			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
-				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
-		}
 
-		[Test]
-		public void should_ignore_leader_is_resigning() {
-			_sut.Handle(new ElectionMessage.LeaderIsResigning(_nodeTwo.InstanceId, _nodeTwo.InternalHttp));
-
-			Assert.IsEmpty(_publisher.Messages);
-		}
-	}
-	
 	public class when_receiving_leader_is_resigning : ElectionsFixture {
 		public when_receiving_leader_is_resigning() :
-			base(NodeFactory(1, false), NodeFactory(2, false), NodeFactory(3, false)) {
+			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1204,7 +1099,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_resigning_node_and_majority_resigning_ok_received : ElectionsFixture {
 		public when_resigning_node_and_majority_resigning_ok_received() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1237,7 +1132,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_electing_a_leader_and_leader_node_resigned : ElectionsFixture {
 		public when_electing_a_leader_and_leader_node_resigned() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
 				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1289,7 +1184,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive : ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1316,7 +1211,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead : ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1343,7 +1238,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 	public class when_a_leader_is_found_during_leader_discovery : ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery() :
-			base(NodeFactory(3, false), NodeFactory(2, false), NodeFactory(1, false)) {
+			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
 			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
@@ -1360,6 +1255,29 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				_epochId, 0, 0, 0, 0));
 
 			Assert.NotNull(_publisher.Messages.OfType<GrpcMessage.SendOverGrpc>().FirstOrDefault());
+		}
+	}
+
+	public class when_the_elections_service_is_initialized_as_read_only_replica {
+		[Test]
+		public void should_throw_argument_exception() {
+			var endpoint = new IPEndPoint(IPAddress.Loopback, 1234);
+			var nodeInfo = new VNodeInfo(Guid.NewGuid(),
+				0,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				true);
+
+			Assert.Throws<ArgumentException>(() => {
+				new Core.Services.ElectionsService(new FakePublisher(), nodeInfo, 3,
+					new InMemoryCheckpoint(0),
+					new InMemoryCheckpoint(0),
+					new FakeEpochManager(), () => 0L, 0, new FakeTimeProvider());
+			});
 		}
 	}
 
