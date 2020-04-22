@@ -15,6 +15,7 @@ service Projections {
 	rpc Reset (ResetReq) returns (ResetResp);
 	rpc State (StateReq) returns (StateResp);
 	rpc Result (ResultReq) returns (ResultResp);
+	rpc RestartSubsystem (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
 }
 
 message CreateReq {
