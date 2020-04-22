@@ -9,6 +9,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
@@ -85,6 +86,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool ReduceFileCachePressure;
 		public readonly int InitializationThreads;
 		public readonly int MaxAutoMergeIndexLevel;
+		public readonly long MaxTruncation;
 
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
@@ -160,6 +162,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int maxAutoMergeIndexLevel = 1000,
 			bool disableFirstLevelHttpAuthorization = false,
 			bool logFailedAuthenticationAttempts = false,
+			long maxTruncation = 256 * 1024 * 1024,
 			bool readOnlyReplica = false,
 			int maxAppendSize = 1024 * 1024,
 			bool unsafeAllowSurplusNodes = false,
@@ -272,6 +275,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAppendSize = maxAppendSize;
 			PTableMaxReaderCount = ptableMaxReaderCount;
 			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
+			MaxTruncation = maxTruncation;
 		}
 
 		public override string ToString() =>
@@ -303,7 +307,8 @@ namespace EventStore.Core.Cluster.Settings {
 			$"InitializationThreads: {InitializationThreads}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
-			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" + 
-			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n";
+			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" +
+			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
+			$"MaxTruncation: {MaxTruncation}\n";
 	}
 }

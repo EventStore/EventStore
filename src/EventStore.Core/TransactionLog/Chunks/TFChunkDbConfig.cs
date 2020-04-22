@@ -21,6 +21,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly int MaxReaderCount;
 		public readonly bool OptimizeReadSideCache;
 		public readonly bool ReduceFileCachePressure;
+		public readonly long MaxTruncation;
 
 		public TFChunkDbConfig(string path,
 			IFileNamingStrategy fileNamingStrategy,
@@ -38,7 +39,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			bool unbuffered = false,
 			bool writethrough = false,
 			bool optimizeReadSideCache = false,
-			bool reduceFileCachePressure = false) {
+			bool reduceFileCachePressure = false,
+			long maxTruncation = 256 * 1024 * 1024) {
 			Ensure.NotNullOrEmpty(path, "path");
 			Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
 			Ensure.Positive(chunkSize, "chunkSize");
@@ -69,6 +71,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			MaxReaderCount = maxReaderCount;
 			OptimizeReadSideCache = optimizeReadSideCache;
 			ReduceFileCachePressure = reduceFileCachePressure;
+			MaxTruncation = maxTruncation;
 		}
 	}
 }

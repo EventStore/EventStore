@@ -268,6 +268,7 @@ namespace EventStore.ClusterNode {
 				.WithChunkInitialReaderCount(options.ChunkInitialReaderCount)
 				.WithInitializationThreads(options.InitializationThreads)
 				.WithMaxAutoMergeIndexLevel(options.MaxAutoMergeIndexLevel)
+				.WithMaxTruncation(options.MaxTruncation)
 				.WithMaxAppendSize(options.MaxAppendSize)
 				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP);
 
