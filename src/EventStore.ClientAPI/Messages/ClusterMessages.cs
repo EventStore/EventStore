@@ -65,24 +65,26 @@ namespace EventStore.ClientAPI.Messages {
 			}
 		}
 
+		//The order specified in this enum is important.
+		//It defines the default sorting order (descending, ignoring a few specific states) used in ClusterDnsEndPointDiscoverer when choosing which node the client should connect to.
 		public enum VNodeState {
-			Initializing,
-			Unknown,
-			PreReplica,
-			CatchingUp,
-			Clone,
-			Slave,
-			Follower,
-			PreMaster,
-			PreLeader,
-			Master,
-			Leader,
-			Manager,
-			ShuttingDown,
-			Shutdown,
-			ReadOnlyLeaderless,
-			PreReadOnlyReplica,
-			ReadOnlyReplica
+			Initializing = 1,
+			ReadOnlyLeaderless = 2,
+			Unknown = 3,
+			PreReadOnlyReplica = 4,
+			PreReplica = 5,
+			CatchingUp = 6,
+			Clone = 7,
+			ReadOnlyReplica = 8,
+			Slave = 9,
+			Follower = 10,
+			PreMaster = 11,
+			PreLeader = 12,
+			Master = 13,
+			Leader = 14,
+			Manager = 15,
+			ShuttingDown = 16,
+			Shutdown = 17
 		}
 	}
 }
