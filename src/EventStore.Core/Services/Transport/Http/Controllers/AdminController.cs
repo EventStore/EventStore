@@ -383,7 +383,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
-			       string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase);
+			       string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase);
 		}
 		private long? GetETagStreamVersion(HttpEntityManager manager) {
 			var etag = manager.HttpEntity.Request.GetHeaderValues("If-None-Match");

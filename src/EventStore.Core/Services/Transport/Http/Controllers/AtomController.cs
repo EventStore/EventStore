@@ -882,7 +882,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			return string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase) ||
-			       string.Equals(onlyLeader, "False", StringComparison.OrdinalIgnoreCase);
+			       string.Equals(onlyMaster, "False", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private bool GetLongPoll(HttpEntityManager manager, out TimeSpan? longPollTimeout) {
