@@ -3,7 +3,8 @@ using System;
 namespace EventStore.Core.TransactionLog.Chunks {
 	public static class TFConsts {
 		public const int MaxLogRecordSize = 16 * 1024 * 1024; // 16Mb ought to be enough for everything?.. ;)
-
+		public const int LogRecordOverheadSize = 10000;
+		public const int EffectiveMaxLogRecordSize = MaxLogRecordSize - LogRecordOverheadSize;
 		public const int MidpointsDepth = 10;
 
 		public const int ChunkSize = 256 * 1024 * 1024;

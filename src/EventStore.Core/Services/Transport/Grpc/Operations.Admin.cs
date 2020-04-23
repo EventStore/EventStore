@@ -2,22 +2,22 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Client.Operations;
 using EventStore.Client.Shared;
-using EventStore.Core.Authorization;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Operations {
-		private static readonly Operation ShutdownOperation = new Operation(Authorization.Operations.Node.Shutdown);
+		private static readonly Operation ShutdownOperation = new Operation(Plugins.Authorization.Operations.Node.Shutdown);
 
 		private static readonly Operation MergeIndexesOperation =
-			new Operation(Authorization.Operations.Node.MergeIndexes);
+			new Operation(Plugins.Authorization.Operations.Node.MergeIndexes);
 
-		private static readonly Operation ResignOperation = new Operation(Authorization.Operations.Node.Resign);
+		private static readonly Operation ResignOperation = new Operation(Plugins.Authorization.Operations.Node.Resign);
 
 		private static readonly Operation SetNodePriorityOperation =
-			new Operation(Authorization.Operations.Node.SetPriority);
+			new Operation(Plugins.Authorization.Operations.Node.SetPriority);
 
 		private static readonly Empty EmptyResult = new Empty();
 

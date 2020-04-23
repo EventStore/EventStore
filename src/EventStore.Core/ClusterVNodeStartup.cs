@@ -9,6 +9,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -120,7 +121,6 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-
 			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsAddress, _externalHttpService.AdvertiseAsPort);
 			return _subsystems
 				.Aggregate(services
@@ -137,7 +137,10 @@ namespace EventStore.Core {
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Gossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
-						.AddGrpc().Services,
+						.AddGrpc()
+						.AddServiceOptions<Streams>(options =>
+							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
+						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 		}
 

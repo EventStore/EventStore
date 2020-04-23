@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -9,7 +8,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using EventStore.Core.Util;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
@@ -184,8 +183,8 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(commitAckCount, "commitAckCount");
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
-			if (maxAppendSize > 1024 * 1024 * 16) {
-				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), $"{nameof(maxAppendSize)} exceeded 16MB.");
+			if (maxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), $"{nameof(maxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
 			}
 
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
