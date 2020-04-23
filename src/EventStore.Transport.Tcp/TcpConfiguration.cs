@@ -1,8 +1,8 @@
 ﻿namespace EventStore.Transport.Tcp {
 	public static class TcpConfiguration {
-		public const int SocketCloseTimeoutMs = 500;
+		public const int SocketCloseTimeoutSecs = 1;
 
-		public const int AcceptBacklogCount = 1000;
+		public const int AcceptBacklogCount = 128;
 		public const int ConcurrentAccepts = 1;
 		public const int AcceptPoolSize = ConcurrentAccepts * 2;
 

@@ -1,31 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-// 
-// Redistributions of source code must retain the above copyright notice,
-// this list of conditions and the following disclaimer.
-// Redistributions in binary form must reproduce the above copyright
-// notice, this list of conditions and the following disclaimer in the
-// documentation and/or other materials provided with the distribution.
-// Neither the name of the Event Store LLP nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-"use strict";
+﻿"use strict";
 
 var $projections = {
 	createEventProcessor: function(_log, _notify) {
@@ -40,7 +13,6 @@ var $projections = {
 		var getStatePartitionHandler = function() {
 			throw "GetStatePartition is not defined";
 		};
-		var catalogEventTransformer = null;
 
 		var sources = {
 			/* TODO: comment out default falses to reduce message size */
@@ -50,19 +22,16 @@ var $projections = {
 			byCustomPartitions: false,
 			categories: [],
 			streams: [],
-			catalogStream: null,
 			events: [],
 
 			options: {
 				definesStateTransform: false,
-				definesCatalogTransform: false,
 				handlesDeletedNotifications: false,
 				producesResults: false,
 				definesFold: false,
 				resultStreamName: null,
 				partitionResultStreamNamePattern: null,
 				$includeLinks: false,
-				disableParallelism: false,
 				reorderEvents: false,
 				processingLag: 0,
 				biState: false,
@@ -114,37 +83,6 @@ var $projections = {
 					sequenceNumber,
 					metadata,
 					linkMetadata);
-			},
-
-			transform_catalog_event: function(event,
-				isJson,
-				streamId,
-				eventType,
-				category,
-				sequenceNumber,
-				metadata,
-				linkMetadata,
-				partition,
-				streamMetadataRaw) {
-				if (!catalogEventTransformer)
-					throw "catalogEventTransformer is not set";
-				var eventEnvelope = new envelope(null,
-					event,
-					eventType,
-					streamId,
-					sequenceNumber,
-					metadata,
-					linkMetadata,
-					partition,
-					streamMetadataRaw);
-
-				if (isJson) {
-					tryDeserializeBody(eventEnvelope);
-				}
-
-				var result = catalogEventTransformer(partition, eventEnvelope);
-
-				return result;
 			},
 
 			process_event: function(event,
@@ -334,8 +272,7 @@ var $projections = {
 			sequenceNumber,
 			metadataRaw,
 			linkMetadataRaw,
-			partition,
-			streamMetadataRaw) {
+			partition) {
 			this.isJson = false;
 			this.data = body;
 			this.body = body;
@@ -344,7 +281,6 @@ var $projections = {
 			this.streamId = streamId;
 			this.sequenceNumber = sequenceNumber;
 			this.metadataRaw = metadataRaw;
-			this.streamMetadataRaw = streamMetadataRaw;
 			this.linkMetadataRaw = linkMetadataRaw;
 			this.partition = partition;
 			this.metadata_ = null;
@@ -358,21 +294,6 @@ var $projections = {
 						this.metadata_ = JSON.parse(this.metadataRaw);
 					}
 					return this.metadata_;
-				}
-			});
-
-		Object.defineProperty(envelope.prototype,
-			"streamMetadata",
-			{
-				get: function() {
-					if (!this.streamMetadata_) {
-						if (this.streamMetadataRaw) {
-							this.streamMetadata_ = JSON.parse(this.streamMetadataRaw);
-						} else {
-							this.streamMetadata_ = {};
-						}
-					}
-					return this.streamMetadata_;
 				}
 			});
 
@@ -439,8 +360,7 @@ var $projections = {
 			sequenceNumber,
 			metadataRaw,
 			linkMetadataRaw,
-			partition,
-			streamMetadataRaw) {
+			partition) {
 
 			var eventName = eventType;
 
@@ -456,8 +376,7 @@ var $projections = {
 				sequenceNumber,
 				metadataRaw,
 				linkMetadataRaw,
-				partition,
-				streamMetadataRaw);
+				partition);
 			// debug only
 			for (index = 0; index < rawEventHandlers.length; index++) {
 				eventHandler = rawEventHandlers[index];
@@ -517,8 +436,7 @@ var $projections = {
 			sequenceNumber,
 			metadataRaw,
 			linkMetadataRaw,
-			partition,
-			streamMetadataRaw) {
+			partition) {
 
 			var eventHandler;
 			var state = !sources.options.biState ? projectionState : [projectionState, projectionSharedState];
@@ -532,8 +450,7 @@ var $projections = {
 				sequenceNumber,
 				metadataRaw,
 				linkMetadataRaw,
-				partition,
-				streamMetadataRaw);
+				partition);
 
 			if (isJson) {
 				tryDeserializeBody(eventEnvelope);
@@ -558,23 +475,6 @@ var $projections = {
 
 		function fromCategory(sourceCategory) {
 			sources.categories.push(sourceCategory);
-		}
-
-		function fromStreamCatalog(streamCatalog, transformer) {
-			sources.catalogStream = streamCatalog;
-			sources.options.definesCatalogTransform = transformer != null;
-			catalogEventTransformer = function(streamId, ev) {
-				return transformer(ev);
-			};
-		}
-
-		function fromStreamsMatching(filter) {
-			sources.catalogStream = "$all";
-			sources.options.definesCatalogTransform = true;
-			catalogEventTransformer = function(streamId, ev) {
-				return filter(streamId, ev) ? streamId : null;
-			};
-			byStream();
 		}
 
 		function byStream() {
@@ -629,8 +529,6 @@ var $projections = {
 			fromAll: fromAll,
 			fromCategory: fromCategory,
 			fromStream: fromStream,
-			fromStreamCatalog: fromStreamCatalog,
-			fromStreamsMatching: fromStreamsMatching,
 
 			byStream: byStream,
 			partitionBy: partitionBy,

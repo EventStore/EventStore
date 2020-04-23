@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring.Stats {
 	public class EsDriveInfo {
@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 		///</summary>
 		public readonly string Usage;
 
-		public static EsDriveInfo FromDirectory(string path, ILogger log) {
+		public static EsDriveInfo FromDirectory(string path, Serilog.ILogger log) {
 			try {
 				if (OS.IsUnix) {
 					return GetEsDriveInfoUnix(path, log);
@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 
 				return new EsDriveInfo(mountPoint, totalBytes, availableBytes);
 			} catch (Exception ex) {
-				log.DebugException(ex, "Could not get drive name for directory '{directory}' on Unix.", directory);
+				log.Debug(ex, "Could not get drive name for directory '{directory}' on Unix.", directory);
 				return null;
 			}
 		}

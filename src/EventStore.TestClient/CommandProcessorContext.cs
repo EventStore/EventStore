@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	/// <summary>
@@ -16,7 +16,7 @@ namespace EventStore.TestClient {
 		/// <summary>
 		/// Current logger of the test client
 		/// </summary>
-		public readonly ILogger Log;
+		public readonly Serilog.ILogger Log;
 
 		public readonly Client Client;
 

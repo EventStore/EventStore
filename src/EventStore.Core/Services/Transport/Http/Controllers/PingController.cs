@@ -1,21 +1,22 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class PingController : IHttpController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PingController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PingController>();
 
 		private static readonly ICodec[] SupportedCodecs = new ICodec[]
 			{Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
 
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
-			service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+			service.RegisterAction(new ControllerAction("/ping", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Ping)),
 				OnGetPing);
 		}
 
@@ -26,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				"OK",
 				entity.ResponseCodec.ContentType,
 				null,
-				e => Log.ErrorException(e, "Error while writing HTTP response (ping)"));
+				e => Log.Error(e, "Error while writing HTTP response (ping)"));
 		}
 	}
 }

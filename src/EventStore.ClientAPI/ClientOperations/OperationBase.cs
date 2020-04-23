@@ -17,7 +17,6 @@ namespace EventStore.ClientAPI.ClientOperations {
 		protected readonly ILogger Log;
 		private readonly TaskCompletionSource<TResult> _source;
 		private TResponse _response;
-		private int _completed;
 
 		protected abstract object CreateRequestDto();
 		protected abstract InspectionResult InspectResponse(TResponse response);
@@ -53,10 +52,14 @@ namespace EventStore.ClientAPI.ClientOperations {
 				}
 
 				switch (package.Command) {
-					case TcpCommand.NotAuthenticated: return InspectNotAuthenticated(package);
-					case TcpCommand.BadRequest: return InspectBadRequest(package);
-					case TcpCommand.NotHandled: return InspectNotHandled(package);
-					default: return InspectUnexpectedCommand(package, _responseCommand);
+					case TcpCommand.NotAuthenticated:
+						return InspectNotAuthenticated(package);
+					case TcpCommand.BadRequest:
+						return InspectBadRequest(package);
+					case TcpCommand.NotHandled:
+						return InspectNotHandled(package);
+					default:
+						return InspectUnexpectedCommand(package, _responseCommand);
 				}
 			} catch (Exception e) {
 				Fail(e);
@@ -66,18 +69,20 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected void Succeed() {
-			if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0) {
-				if (_response != null)
-					_source.SetResult(TransformResponse(_response));
-				else
-					_source.SetException(new NoResultException());
+			var response = _response;
+			if (response != null) {
+				try {
+					_source.TrySetResult(TransformResponse(response));
+				} catch (Exception ex) {
+					_source.TrySetException(ex);
+				}
+			} else {
+				_source.TrySetException(new NoResultException());
 			}
 		}
 
 		public void Fail(Exception exception) {
-			if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0) {
-				_source.SetException(exception);
-			}
+			_source.TrySetException(exception);
 		}
 
 		public InspectionResult InspectNotAuthenticated(TcpPackage package) {
@@ -103,10 +108,14 @@ namespace EventStore.ClientAPI.ClientOperations {
 				case ClientMessage.NotHandled.NotHandledReason.TooBusy:
 					return new InspectionResult(InspectionDecision.Retry, "NotHandled - TooBusy");
 
-				case ClientMessage.NotHandled.NotHandledReason.NotMaster:
-					var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-					return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotMaster",
-						masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
+				case ClientMessage.NotHandled.NotHandledReason.NotLeader:
+					var leaderInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.LeaderInfo>();
+					return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotLeader",
+						leaderInfo.ExternalTcpEndPoint, leaderInfo.ExternalSecureTcpEndPoint);
+
+				case ClientMessage.NotHandled.NotHandledReason.IsReadOnly:
+					Log.Error("Cannot perform operation as this node is Read Only");
+					return new InspectionResult(InspectionDecision.NotSupported, "This node is Read Only");
 
 				default:
 					Log.Error("Unknown NotHandledReason: {0}.", message.Reason);

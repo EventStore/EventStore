@@ -1,8 +1,8 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ContinuousProjectionProcessingStrategy : DefaultProjectionProcessingStrategy {
@@ -25,14 +25,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public override bool GetProducesRunningResults() {
 			return _sourceDefinition.ProducesResults;
-		}
-
-		public override bool GetIsSlaveProjection() {
-			return false;
-		}
-
-		public override SlaveProjectionDefinitions GetSlaveProjections() {
-			return null;
 		}
 
 		protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(

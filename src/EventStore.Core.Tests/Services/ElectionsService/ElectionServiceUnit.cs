@@ -9,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new InMemoryCheckpoint(WriterCheckpoint),
 				new InMemoryCheckpoint(ChaserCheckpoint),
 				new FakeEpochManager(),
-				() => -1, 0);
+				() => -1, 0, new FakeTimeProvider());
 			ElectionsService.SubscribeMessages(_bus);
 
 			InputMessages = new List<Message>();
@@ -74,7 +75,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
-						Guid.Empty, 0)
+						Guid.Empty, 0, false)
 				})
 				.Union(clusterSettings.GroupMembers
 					.Select(x => MemberInfo.ForVNode(x.NodeInfo.InstanceId,
@@ -90,7 +91,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
-						Guid.Empty, 0)));
+						Guid.Empty, 0, false)));
 
 			var ordered = members.OrderBy(x =>
 				string.Format("{0}:{1}", x.InternalHttpEndPoint.ToString(), x.InternalHttpEndPoint.Port));
@@ -131,10 +132,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			return removedList.ToArray();
 		}
 
-		public Message[] RepublishFromPublisher(bool skipScheduledMessages = false) {
-			var httpAndOtherMessages = Publisher.Messages.ToLookup(x => (x is HttpMessage.SendOverHttp));
-			var httpMessages = httpAndOtherMessages[true].ToList();
-			var messages = httpAndOtherMessages[false].ToList();
+		public void RepublishFromPublisher(bool skipScheduledMessages = false) {
+			var messages = new List<Message>();
+			messages.AddRange(Publisher.Messages);
 			Publisher.Messages.Clear();
 
 			messages.Where(x => !(x is TimerMessage.Schedule)).ToList()
@@ -150,9 +150,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						x.Reply();
 					});
 			}
-
-			var notConsumed = (messages.Concat(httpMessages)).ToArray();
-			return notConsumed;
 		}
 
 		public bool IsCurrent(IPEndPoint endPoint) {
@@ -174,7 +171,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						x.ExternalTcpEndPoint, x.ExternalSecureTcpEndPoint,
 						x.InternalHttpEndPoint, x.ExternalHttpEndPoint,
 						x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
-						x.EpochPosition, x.EpochNumber, x.EpochId, x.NodePriority));
+						x.EpochPosition, x.EpochNumber, x.EpochId, x.NodePriority, x.IsReadOnlyReplica));
 		}
 
 		public IEnumerable<MemberInfo> ListAliveMembers(Func<MemberInfo, bool> predicate = null) {
@@ -186,7 +183,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			bool? isAlive = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null) {
-			ClusterInfo.Members[nodeIndex] = ClusterInfo.Members[nodeIndex].Updated(state: role,
+			ClusterInfo.Members[nodeIndex] = ClusterInfo.Members[nodeIndex].Updated(
+				DateTime.UtcNow,
+				state: role,
 				isAlive: isAlive,
 				writerCheckpoint: writerCheckpoint,
 				chaserCheckpoint: chaserCheckpoint);

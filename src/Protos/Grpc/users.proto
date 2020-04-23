@@ -1,0 +1,119 @@
+syntax = "proto3";
+package event_store.client.users;
+option java_package = "com.eventstore.client.users";
+
+service Users {
+	rpc Create (CreateReq) returns (CreateResp);
+	rpc Update (UpdateReq) returns (UpdateResp);
+	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Disable (DisableReq) returns (DisableResp);
+	rpc Enable (EnableReq) returns (EnableResp);
+	rpc Details (DetailsReq) returns (stream DetailsResp);
+	rpc ChangePassword (ChangePasswordReq) returns (ChangePasswordResp);
+	rpc ResetPassword (ResetPasswordReq) returns (ResetPasswordResp);
+}
+
+message CreateReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+		string password = 2;
+		string full_name = 3;
+		repeated string groups = 4;
+	}
+}
+
+message CreateResp {
+
+}
+
+message UpdateReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+		string password = 2;
+		string full_name = 3;
+		repeated string groups = 4;
+	}
+}
+
+message UpdateResp {
+
+}
+
+message DeleteReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+	}
+}
+
+message DeleteResp {
+
+}
+
+message EnableReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+	}
+}
+
+message EnableResp {
+
+}
+
+message DisableReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+	}
+}
+
+message DisableResp {
+}
+
+message DetailsReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+	}
+}
+
+message DetailsResp {
+	UserDetails user_details = 1;
+	message UserDetails {
+		string login_name = 1;
+		string full_name = 2;
+		repeated string groups = 3;
+		DateTime last_updated = 4;
+		bool disabled = 5;
+
+		message DateTime {
+			int64 ticks_since_epoch = 1;
+		}
+	}
+}
+
+message ChangePasswordReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+		string current_password = 2;
+		string new_password = 3;
+	}
+}
+
+message ChangePasswordResp {
+}
+
+message ResetPasswordReq {
+	Options options = 1;
+	message Options {
+		string login_name = 1;
+		string new_password = 2;
+	}
+}
+
+message ResetPasswordResp {
+}

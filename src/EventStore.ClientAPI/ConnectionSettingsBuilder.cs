@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -18,7 +19,7 @@ namespace EventStore.ClientAPI {
 		private int _maxRetries = Consts.DefaultMaxOperationRetries;
 		private int _maxReconnections = Consts.DefaultMaxReconnections;
 
-		private bool _requireMaster = Consts.DefaultRequireMaster;
+		private bool _requireLeader = Consts.DefaultRequireLeader;
 
 		private TimeSpan _reconnectionDelay = Consts.DefaultReconnectionDelay;
 		private TimeSpan _queueTimeout = Consts.DefaultQueueTimeout;
@@ -27,7 +28,6 @@ namespace EventStore.ClientAPI {
 
 		private UserCredentials _defaultUserCredentials;
 		private bool _useSslConnection;
-		private string _targetHost;
 		private bool _validateServer;
 
 		private bool _failOnNoServerResponse;
@@ -39,14 +39,25 @@ namespace EventStore.ClientAPI {
 		private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
-		private NodePreference _nodePreference = NodePreference.Master;
+		private NodePreference _nodePreference = NodePreference.Leader;
+		private HttpMessageHandler _customHttpMessageHandler;
 
 
 		internal ConnectionSettingsBuilder() {
 		}
 
 		/// <summary>
-		/// Configures the connection to output log messages to the given <see cref="ILogger" />. You should implement this interface using another library such as NLog or log4net.
+		/// Configures a custom <see cref="HttpMessageHandler"/> to use when issuing Http requests
+		/// </summary>
+		/// <param name="httpMessageHandler">The <see cref="HttpMessageHandler"/> to use.</param>
+		/// <returns></returns>
+		public ConnectionSettingsBuilder UseCustomHttpMessageHandler(HttpMessageHandler httpMessageHandler) {
+			_customHttpMessageHandler = httpMessageHandler;
+			return this;
+		}
+
+		/// <summary>
+		/// Configures the connection to output log messages to the given <see cref="ILogger" />. You should implement this interface using another library such as Serilog.
 		/// </summary>
 		/// <param name="logger">The <see cref="ILogger"/> to use.</param>
 		/// <returns></returns>
@@ -170,20 +181,20 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Requires all write and read requests to be served only by master (cluster version only).
+		/// Requires all write and read requests to be served only by leader, when running in a cluster.
 		/// </summary>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder PerformOnMasterOnly() {
-			_requireMaster = true;
+		public ConnectionSettingsBuilder PerformOnLeaderOnly() {
+			_requireLeader = true;
 			return this;
 		}
 
 		/// <summary>
-		/// Allow for writes to be forwarded and read requests served locally if node is not master (cluster version only).
+		/// Allow for writes to be forwarded and read requests served locally if node is not leader, when running in a cluster.
 		/// </summary>
 		/// <returns></returns>
 		public ConnectionSettingsBuilder PerformOnAnyNode() {
-			_requireMaster = false;
+			_requireLeader = false;
 			return this;
 		}
 
@@ -241,13 +252,10 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Uses a SSL connection over TCP. This should generally be used with authentication.
 		/// </summary>
-		/// <param name="targetHost">HostName of server certificate.</param>
 		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer) {
-			Ensure.NotNullOrEmpty(targetHost, "targetHost");
+		public ConnectionSettingsBuilder UseSslConnection(bool validateServer) {
 			_useSslConnection = true;
-			_targetHost = targetHost;
 			_validateServer = validateServer;
 			return this;
 		}
@@ -295,7 +303,7 @@ namespace EventStore.ClientAPI {
 		/// Sets the DNS name under which cluster nodes are listed.
 		/// </summary>
 		/// <param name="clusterDns">The DNS name under which cluster nodes are listed.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
 		public ConnectionSettingsBuilder SetClusterDns(string clusterDns) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -307,7 +315,7 @@ namespace EventStore.ClientAPI {
 		/// Sets the maximum number of attempts for discovery.
 		/// </summary>
 		/// <param name="maxDiscoverAttempts">The maximum number of attempts for DNS discovery.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentOutOfRangeException">If <paramref name="maxDiscoverAttempts" /> is less than or equal to 0.</exception>
 		public ConnectionSettingsBuilder SetMaxDiscoverAttempts(int maxDiscoverAttempts) {
 			if (maxDiscoverAttempts <= 0)
@@ -322,44 +330,54 @@ namespace EventStore.ClientAPI {
 		/// Sets the period after which gossip times out if none is received.
 		/// </summary>
 		/// <param name="timeout">The period after which gossip times out if none is received.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder SetGossipTimeout(TimeSpan timeout) {
 			_gossipTimeout = timeout;
 			return this;
 		}
 
 		/// <summary>
-		/// Whether to randomly choose a node that's alive from the known nodes. 
+		/// Whether to randomly choose a node that's alive from the known nodes.
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferRandomNode() {
 			_nodePreference = NodePreference.Random;
 			return this;
 		}
 
 		/// <summary>
-		/// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+		/// Whether to prioritize choosing a follower node that's alive from the known nodes.
 		/// </summary>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder PreferSlaveNode() {
-			_nodePreference = NodePreference.Slave;
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder PreferFollowerNode() {
+			_nodePreference = NodePreference.Follower;
+			return this;
+		}
+
+		/// <summary>
+		/// Whether to prioritize choosing a read only replica that's alive from the known nodes. 
+		/// </summary>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder PreferReadOnlyReplica() {
+			_nodePreference = NodePreference.ReadOnlyReplica;
+			_requireLeader = false;
 			return this;
 		}
 
 		/// <summary>
 		/// Sets the well-known port on which the cluster gossip is taking place.
-		/// 
+		///
 		/// If you are using the commercial edition of Event Store HA, with Manager nodes in
 		/// place, this should be the port number of the External HTTP port on which the
 		/// managers are running.
-		/// 
+		///
 		/// If you are using the open source edition of Event Store HA, this should be the
 		/// External HTTP port that the nodes are running on. If you cannot use a well-known
 		/// port for this across all nodes, you can instead use gossip seed discovery and set
 		/// the <see cref="IPEndPoint" /> of some seed nodes instead.
 		/// </summary>
 		/// <param name="clusterGossipPort">The cluster gossip port.</param>
-		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder SetClusterGossipPort(int clusterGossipPort) {
 			Ensure.Positive(clusterGossipPort, "clusterGossipPort");
 			_gossipExternalHttpPort = clusterGossipPort;
@@ -368,7 +386,7 @@ namespace EventStore.ClientAPI {
 
 		/// <summary>
 		/// Sets gossip seed endpoints for the client.
-		/// 
+		///
 		/// <note>
 		/// This should be the external HTTP endpoint of the server, as it is required
 		/// for the client to exchange gossip with the server. The standard port is 2113.
@@ -377,14 +395,33 @@ namespace EventStore.ClientAPI {
 		/// If the server requires a specific Host header to be sent as part of the gossip
 		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
 		/// </summary>
-		/// <param name="gossipSeeds"><see cref="IPEndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
-		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
-		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params IPEndPoint[] gossipSeeds) {
+		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params EndPoint[] gossipSeeds) {
+			return SetGossipSeedEndPoints(true, gossipSeeds);
+		}
+
+		/// <summary>
+		/// Sets gossip seed endpoints for the client.
+		///
+		/// <note>
+		/// This should be the external HTTP endpoint of the server, as it is required
+		/// for the client to exchange gossip with the server. The standard port is 2113.
+		/// </note>
+		///
+		/// If the server requires a specific Host header to be sent as part of the gossip
+		/// request, use the overload of this method taking <see cref="GossipSeed" /> instead.
+		/// </summary>
+		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
+		/// <param name="gossipSeeds"><see cref="EndPoint" />s representing the endpoints of nodes from which to seed gossip.</param>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
+		public ConnectionSettingsBuilder SetGossipSeedEndPoints(bool seedOverTls, params EndPoint[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
 				throw new ArgumentException("Empty FakeDnsEntries collection.");
 
-			_gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x)).ToArray();
+			_gossipSeeds = gossipSeeds.Select(x => new GossipSeed(x, seedOverTls: seedOverTls)).ToArray();
 
 			return this;
 		}
@@ -393,7 +430,7 @@ namespace EventStore.ClientAPI {
 		/// Sets gossip seed endpoints for the client.
 		/// </summary>
 		/// <param name="gossipSeeds"><see cref="GossipSeed"/>s representing the endpoints of nodes from which to seed gossip.</param>
-		/// <returns>A <see cref="ClusterSettingsBuilder"/> for further configuration.</returns>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentException">If no gossip seeds are specified.</exception>
 		public ConnectionSettingsBuilder SetGossipSeedEndPoints(params GossipSeed[] gossipSeeds) {
 			if (gossipSeeds == null || gossipSeeds.Length == 0)
@@ -424,14 +461,13 @@ namespace EventStore.ClientAPI {
 				_maxConcurrentItems,
 				_maxRetries,
 				_maxReconnections,
-				_requireMaster,
+				_requireLeader,
 				_reconnectionDelay,
 				_queueTimeout,
 				_operationTimeout,
 				_operationTimeoutCheckPeriod,
 				_defaultUserCredentials,
 				_useSslConnection,
-				_targetHost,
 				_validateServer,
 				_failOnNoServerResponse,
 				_heartbeatInterval,
@@ -442,7 +478,8 @@ namespace EventStore.ClientAPI {
 				_maxDiscoverAttempts,
 				_gossipExternalHttpPort,
 				_gossipTimeout,
-				_nodePreference);
+				_nodePreference,
+				_customHttpMessageHandler);
 		}
 	}
 }

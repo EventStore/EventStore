@@ -24,8 +24,8 @@ namespace EventStore.Core.Data {
 			return string.Format("UserStreamAcl: ({0}), SystemStreamAcl: ({1})", UserStreamAcl, SystemStreamAcl);
 		}
 
-		public static SystemSettings FromJsonBytes(byte[] json) {
-			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json)))) {
+		public static SystemSettings FromJsonBytes(ReadOnlyMemory<byte> json) {
+			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json.ToArray())))) {
 				Check(reader.Read(), reader);
 				Check(JsonToken.StartObject, reader);
 

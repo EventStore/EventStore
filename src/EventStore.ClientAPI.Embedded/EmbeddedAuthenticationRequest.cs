@@ -1,16 +1,16 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.Core.Authentication;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EmbeddedAuthenticationRequest : AuthenticationRequest {
-		private readonly Action<IPrincipal> _onAuthenticated;
+		private readonly Action<ClaimsPrincipal> _onAuthenticated;
 		private readonly Action<Exception> _setException;
 
 		internal EmbeddedAuthenticationRequest(
-			string name, string suppliedPassword, Action<Exception> setException, Action<IPrincipal> onAuthenticated)
-			: base(name, suppliedPassword) {
+			string name, string suppliedPassword, Action<Exception> setException, Action<ClaimsPrincipal> onAuthenticated)
+			: base("embedded", name, suppliedPassword) {
 			_onAuthenticated = onAuthenticated;
 			_setException = setException;
 		}
@@ -19,7 +19,7 @@ namespace EventStore.ClientAPI.Embedded {
 			_setException(new NotAuthenticatedException());
 		}
 
-		public override void Authenticated(IPrincipal principal) {
+		public override void Authenticated(ClaimsPrincipal principal) {
 			_onAuthenticated(principal);
 		}
 

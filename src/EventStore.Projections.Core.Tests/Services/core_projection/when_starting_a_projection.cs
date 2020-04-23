@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus = new InMemoryBus("bus");
 			_listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
 			_bus.Subscribe(_listEventsHandler);
-			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
+			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus), true);
 			_subscriptionDispatcher =
 				new ReaderSubscriptionDispatcher
 					(_bus);
@@ -41,8 +41,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.EofReached>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionEofReached>());
-			_bus.Subscribe(_subscriptionDispatcher
-				.CreateSubscriber<EventReaderSubscriptionMessage.PartitionMeasured>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.PartitionDeleted>());
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ProgressChanged>());
 			_bus.Subscribe(
@@ -56,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_ioDispatcher);
 			IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 			_projectionConfig =
-				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, false, true, 10000, 1);
+				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, true, 10000, 1);
 			var version = new ProjectionVersion(1, 0, 0);
 			var projectionProcessingStrategy = new ContinuousProjectionProcessingStrategy(
 				"projection", version, projectionStateHandler, _projectionConfig,
@@ -65,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				Guid.NewGuid(),
 				_bus,
 				Guid.NewGuid(),
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				_bus,
 				_ioDispatcher,
 				_subscriptionDispatcher,

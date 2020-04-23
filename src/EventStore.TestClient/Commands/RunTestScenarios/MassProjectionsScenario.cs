@@ -35,7 +35,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 				countProjections.Add(CreateCountItem());
 				bankProjections.Add(CreateSumCheckForBankAccount0());
 
-				Log.Info("Created {bankProjections} and {countProjections}", bankProjections[bankProjections.Count - 1],
+				Log.Information("Created {bankProjections} and {countProjections}", bankProjections[bankProjections.Count - 1],
 					countProjections[countProjections.Count - 1]);
 			}
 
@@ -44,14 +44,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 
 			writeTasks.Add(WriteData());
 
-			var writeTask = Task.Factory.ContinueWhenAll(writeTasks.ToArray(), tsks => Log.Info("All Data written"));
+			var writeTask = Task.Factory.ContinueWhenAll(writeTasks.ToArray(), tsks => Log.Information("All Data written"));
 
 			KillNode(nodeProcessId);
 			nodeProcessId = StartNode();
 
 			int count = 10;
 			while (count > 0) {
-				Log.Info("Stop and start projection, remaining iterations {count}, waiting for data to be written.",
+				Log.Information("Stop and start projection, remaining iterations {count}, waiting for data to be written.",
 					count);
 
 				StartOrStopProjection(countProjections, false);
@@ -75,7 +75,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					break;
 
 				var sleepTimeSeconds = 10 + Streams * EventsPerStream / 1000.0;
-				Log.Info("Sleep 1 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
+				Log.Information("Sleep 1 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
 				Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
 			}
 
@@ -84,7 +84,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			count = 20;
 			success = false;
 			while (!success && count > 0) {
-				Log.Info("Wait until projections are computed, remaining iterations {count}", count);
+				Log.Information("Wait until projections are computed, remaining iterations {count}", count);
 				KillNode(nodeProcessId);
 				nodeProcessId = StartNode();
 
@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					break;
 
 				var sleepTimeSeconds = 10 + (Streams * EventsPerStream) / 500;
-				Log.Info("Sleep 2 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
+				Log.Information("Sleep 2 for {sleepTime} seconds, remaining count {count}", sleepTimeSeconds, count);
 				Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
 
 				count -= 1;
@@ -135,13 +135,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 							if (!isRunning)
 								manager.EnableAsync(projection, AdminCredentials).Wait();
 							else
-								Log.Info("Projection '{projection}' is already running and will not be enabled.",
+								Log.Information("Projection '{projection}' is already running and will not be enabled.",
 									projection);
 						} else {
 							if (isRunning)
 								manager.DisableAsync(projection, AdminCredentials).Wait();
 							else
-								Log.Info(
+								Log.Information(
 									"Projection '{projection}' is already not running and will not be disabled again.",
 									projection);
 						}
@@ -150,7 +150,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					} catch (Exception ex) {
 						var waitForMs = 5000 + (retry * (3000 + _random.Next(2000)));
 
-						Log.InfoException(ex,
+						Log.Information(ex,
 							"Failed to StartOrStopProjection (enable:{enable}; isRunning:{isRunning}) projection {projection}, retry #{retry}, wait {waitTime}ms",
 							enable,
 							isRunning,

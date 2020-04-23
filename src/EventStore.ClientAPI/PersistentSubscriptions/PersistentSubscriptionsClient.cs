@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.Exceptions;
@@ -15,9 +16,9 @@ namespace EventStore.ClientAPI.PersistentSubscriptions {
 		private readonly HttpAsyncClient _client;
 		private readonly TimeSpan _operationTimeout;
 
-		public PersistentSubscriptionsClient(ILogger log, TimeSpan operationTimeout) {
+		public PersistentSubscriptionsClient(ILogger log, TimeSpan operationTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		public Task<PersistentSubscriptionDetails> Describe(EndPoint endPoint, string stream, string subscriptionName,

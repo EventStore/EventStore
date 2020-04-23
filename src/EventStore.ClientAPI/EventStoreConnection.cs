@@ -94,16 +94,15 @@ namespace EventStore.ClientAPI {
 						connectionSettings.VerboseLogging,
 						connectionSettings.MaxQueueSize, connectionSettings.MaxConcurrentItems,
 						connectionSettings.MaxRetries, connectionSettings.MaxReconnections,
-						connectionSettings.RequireMaster, connectionSettings.ReconnectionDelay,
+						connectionSettings.RequireLeader, connectionSettings.ReconnectionDelay,
 						connectionSettings.QueueTimeout, connectionSettings.OperationTimeout,
 						connectionSettings.OperationTimeoutCheckPeriod, credential, connectionSettings.UseSslConnection,
-						connectionSettings.TargetHost,
 						connectionSettings.ValidateServer, connectionSettings.FailOnNoServerResponse,
 						connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
 						connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
-						connectionSettings.NodePreference);
+						connectionSettings.NodePreference, connectionSettings.CustomHttpMessageHandler);
 				}
 
 				if (scheme == "discover") {
@@ -191,7 +190,7 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Creates a new <see cref="IEventStoreConnection"/> to EventStore cluster 
+		/// Creates a new <see cref="IEventStoreConnection"/> to EventStore cluster
 		/// using specific <see cref="ConnectionSettings"/> and <see cref="ClusterSettings"/>
 		/// </summary>
 		/// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
@@ -209,7 +208,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.ExternalGossipPort,
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
-				clusterSettings.NodePreference);
+				clusterSettings.NodePreference,
+				connectionSettings.CustomHttpMessageHandler);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);

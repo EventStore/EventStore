@@ -1,4 +1,5 @@
-﻿using EventStore.ClientAPI;
+﻿using System.Threading.Tasks;
+using EventStore.ClientAPI;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers {
@@ -13,11 +14,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			_version = version;
 		}
 
-		public TailWriter Append(params EventData[] events) {
+		public async Task<TailWriter> Append(params EventData[] events) {
 			for (var i = 0; i < events.Length; i++) {
 				var expVer = _version == ExpectedVersion.Any ? ExpectedVersion.Any : _version + i;
-				var nextExpVer = _store.AppendToStreamAsync(_stream, expVer, new[] {events[i]}).Result
-					.NextExpectedVersion;
+				var nextExpVer = (await _store.AppendToStreamAsync(_stream, expVer, new[] { events[i] })).NextExpectedVersion;
 				if (_version != ExpectedVersion.Any)
 					Assert.AreEqual(expVer + 1, nextExpVer);
 			}
@@ -35,8 +35,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			_stream = stream;
 		}
 
-		public TailWriter Then(EventData @event, long expectedVersion) {
-			_store.AppendToStreamAsync(_stream, expectedVersion, new[] {@event}).Wait();
+		public async Task<TailWriter> Then(EventData @event, long expectedVersion) {
+			await _store.AppendToStreamAsync(_stream, expectedVersion, new[] { @event });
 			return this;
 		}
 	}
@@ -50,8 +50,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			_stream = stream;
 		}
 
-		public OngoingTransaction StartTransaction(long expectedVersion) {
-			return new OngoingTransaction(_store.StartTransactionAsync(_stream, expectedVersion).Result);
+		public async Task<OngoingTransaction> StartTransaction(long expectedVersion) {
+			return new OngoingTransaction(await _store.StartTransactionAsync(_stream, expectedVersion));
 		}
 	}
 
@@ -63,13 +63,13 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			_transaction = transaction;
 		}
 
-		public OngoingTransaction Write(params EventData[] events) {
-			_transaction.WriteAsync(events).Wait();
+		public async Task<OngoingTransaction> Write(params EventData[] events) {
+			await _transaction.WriteAsync(events);
 			return this;
 		}
 
-		public WriteResult Commit() {
-			return _transaction.CommitAsync().Result;
+		public Task<WriteResult> Commit() {
+			return _transaction.CommitAsync();
 		}
 	}
 }

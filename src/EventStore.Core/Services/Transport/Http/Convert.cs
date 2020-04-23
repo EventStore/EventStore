@@ -18,6 +18,7 @@ using System.Xml.Serialization;
 namespace EventStore.Core.Services.Transport.Http {
 	public static class Convert {
 		private static readonly string AllEscaped = Uri.EscapeDataString("$all");
+		private static readonly string AllFilteredEscaped = "%24all/filtered";
 
 		public static FeedElement ToStreamEventForwardFeed(ClientMessage.ReadStreamEventsForwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
@@ -144,6 +145,40 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			return feed;
 		}
+		
+		public static FeedElement ToAllEventsForwardFilteredFeed(ClientMessage.FilteredReadAllEventsForwardCompleted msg,
+			Uri requestedUrl, EmbedLevel embedContent) {
+			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
+			var feed = new FeedElement();
+			feed.SetTitle("All events");
+			feed.SetId(self);
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
+				? msg.Events[msg.Events.Length - 1].Event.TimeStamp
+				: DateTime.MinValue.ToUniversalTime());
+			feed.SetAuthor(AtomSpecs.Author);
+
+			feed.AddLink("self", self);
+			feed.AddLink("first",
+				HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+			if (msg.CurrentPos.CommitPosition != 0) {
+				feed.AddLink("last",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
+						new TFPos(0, 0).AsString(), msg.MaxCount));
+				feed.AddLink("next",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
+						msg.MaxCount));
+			}
+
+			if (!msg.IsEndOfStream || msg.Events.Length > 0)
+				feed.AddLink("previous",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
+						msg.MaxCount));
+			for (int i = msg.Events.Length - 1; i >= 0; --i) {
+				feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
+			}
+
+			return feed;
+		}
 
 		public static FeedElement ToAllEventsBackwardFeed(ClientMessage.ReadAllEventsBackwardCompleted msg,
 			Uri requestedUrl, EmbedLevel embedContent) {
@@ -178,6 +213,39 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			return feed;
 		}
+		
+		public static FeedElement ToFilteredAllEventsBackwardFeed(ClientMessage.FilteredReadAllEventsBackwardCompleted msg,
+			Uri requestedUrl, EmbedLevel embedContent) {
+			var self = HostName.Combine(requestedUrl, "/streams/{0}", AllFilteredEscaped);
+			var feed = new FeedElement();
+			feed.SetTitle(string.Format("All events"));
+			feed.SetId(self);
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
+				? msg.Events[0].Event.TimeStamp
+				: DateTime.MinValue.ToUniversalTime());
+			feed.SetAuthor(AtomSpecs.Author);
+
+			feed.AddLink("self", self);
+			feed.AddLink("first",
+				HostName.Combine(requestedUrl, "/streams/{0}/head/backward/{1}", AllFilteredEscaped, msg.MaxCount));
+			if (!msg.IsEndOfStream) {
+				feed.AddLink("last",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped,
+						new TFPos(0, 0).AsString(), msg.MaxCount));
+				feed.AddLink("next",
+					HostName.Combine(requestedUrl, "/streams/{0}/{1}/backward/{2}", AllFilteredEscaped, msg.NextPos.AsString(),
+						msg.MaxCount));
+			}
+
+			feed.AddLink("previous",
+				HostName.Combine(requestedUrl, "/streams/{0}/{1}/forward/{2}", AllFilteredEscaped, msg.PrevPos.AsString(),
+					msg.MaxCount));
+			for (int i = 0; i < msg.Events.Length; ++i) {
+				feed.AddEntry(ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent));
+			}
+
+			return feed;
+		}
 
 		public static FeedElement ToNextNPersistentMessagesFeed(ClientMessage.ReadNextNPersistentMessagesCompleted msg,
 			Uri requestedUrl, string streamId, string groupName, int count, EmbedLevel embedContent) {
@@ -187,21 +255,21 @@ namespace EventStore.Core.Services.Transport.Http {
 			var feed = new FeedElement();
 			feed.SetTitle(string.Format("Messages for '{0}/{1}'", streamId, groupName));
 			feed.SetId(self);
-			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].Event != null
-				? msg.Events[msg.Events.Length - 1].Event.TimeStamp
+			feed.SetUpdated(msg.Events.Length > 0 && msg.Events[0].ResolvedEvent.Event != null
+				? msg.Events[msg.Events.Length - 1].ResolvedEvent.Event.TimeStamp
 				: DateTime.MinValue.ToUniversalTime());
 			feed.SetAuthor(AtomSpecs.Author);
 
 			if (msg.Events != null && msg.Events.Length > 0) {
 				var ackAllQueryString = String.Format("?ids={0}",
-					String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+					String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
 				var ackAll =
 					HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack", escapedStreamId, escapedGroupName) +
 					ackAllQueryString;
 				feed.AddLink("ackAll", ackAll);
 
 				var nackAllQueryString = String.Format("?ids={0}",
-					String.Join(",", msg.Events.Select(x => x.OriginalEvent.EventId)));
+					String.Join(",", msg.Events.Select(x => x.ResolvedEvent.OriginalEvent.EventId)));
 				var nackAll =
 					HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack", escapedStreamId, escapedGroupName) +
 					nackAllQueryString;
@@ -214,13 +282,14 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			feed.AddLink("self", self);
 			for (int i = msg.Events.Length - 1; i >= 0; --i) {
-				var entry = ToEntry(msg.Events[i].WithoutPosition(), requestedUrl, embedContent);
+				var entry = ToEntry(msg.Events[i].ResolvedEvent.WithoutPosition(), requestedUrl, embedContent);
 				var ack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/ack/{2}", escapedStreamId,
-					escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+					escapedGroupName, msg.Events[i].ResolvedEvent.OriginalEvent.EventId);
 				var nack = HostName.Combine(requestedUrl, "/subscriptions/{0}/{1}/nack/{2}", escapedStreamId,
-					escapedGroupName, msg.Events[i].OriginalEvent.EventId);
+					escapedGroupName, msg.Events[i].ResolvedEvent.OriginalEvent.EventId);
 				entry.AddLink("ack", ack);
 				entry.AddLink("nack", nack);
+				entry.AddRetryCount(msg.Events[i].RetryCount);
 				feed.AddEntry(entry);
 			}
 
@@ -273,21 +342,24 @@ namespace EventStore.Core.Services.Transport.Http {
 				richEntry.PositionEventNumber = eventLinkPair.OriginalEvent.EventNumber;
 				richEntry.PositionStreamId = eventLinkPair.OriginalEvent.EventStreamId;
 				richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
+
+				var data = evnt.Data.Span;
+
 				if (embedContent >= EmbedLevel.Body && eventLinkPair.Event != null) {
 					if (richEntry.IsJson) {
 						if (embedContent >= EmbedLevel.PrettyBody) {
 							try {
-								richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+								richEntry.Data = Helper.UTF8NoBom.GetString(data);
 								// next step may fail, so we have already assigned body
-								richEntry.Data = FormatJson(Helper.UTF8NoBom.GetString(evnt.Data));
+								richEntry.Data = FormatJson(Helper.UTF8NoBom.GetString(data));
 							} catch {
 								// ignore - we tried
 							}
 						} else
-							richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+							richEntry.Data = Helper.UTF8NoBom.GetString(data);
 					} else if (embedContent >= EmbedLevel.TryHarder) {
 						try {
-							richEntry.Data = Helper.UTF8NoBom.GetString(evnt.Data);
+							richEntry.Data = Helper.UTF8NoBom.GetString(data);
 							// next step may fail, so we have already assigned body
 							richEntry.Data = FormatJson(richEntry.Data);
 							// it is json if successed
@@ -299,8 +371,9 @@ namespace EventStore.Core.Services.Transport.Http {
 
 					// metadata
 					if (embedContent >= EmbedLevel.Body) {
+
 						try {
-							richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata);
+							richEntry.MetaData = Helper.UTF8NoBom.GetString(evnt.Metadata.Span);
 							richEntry.IsMetaData = richEntry.MetaData.IsNotEmptyString();
 							// next step may fail, so we have already assigned body
 							if (embedContent >= EmbedLevel.PrettyBody) {
@@ -317,7 +390,7 @@ namespace EventStore.Core.Services.Transport.Http {
 						var lnk = eventLinkPair.Link;
 						if (lnk != null) {
 							try {
-								richEntry.LinkMetaData = Helper.UTF8NoBom.GetString(lnk.Metadata);
+								richEntry.LinkMetaData = Helper.UTF8NoBom.GetString(lnk.Metadata.Span);
 								richEntry.IsLinkMetaData = richEntry.LinkMetaData.IsNotEmptyString();
 								// next step may fail, so we have already assigned body
 								if (embedContent >= EmbedLevel.PrettyBody) {
@@ -339,7 +412,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				if ((singleEntry || embedContent == EmbedLevel.Content) && ((evnt.Flags & PrepareFlags.IsJson) != 0))
 					entry.SetContent(AutoEventConverter.CreateDataDto(eventLinkPair));
 			} else if (link != null) {
-				var eventLoc = GetLinkData(Encoding.UTF8.GetString(link.Data));
+				var eventLoc = GetLinkData(Encoding.UTF8.GetString(link.Data.Span));
 				SetEntryProperties(eventLoc.Item1, eventLoc.Item2, link.TimeStamp, requestedUrl, entry);
 				entry.SetSummary("$>");
 			}

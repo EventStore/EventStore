@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -7,6 +6,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication.InternalAuthentication;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class PasswordChangeNotificationReader : IHandle<SystemMessage.SystemStart>,
@@ -19,13 +20,13 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		public PasswordChangeNotificationReader(IPublisher publisher, IODispatcher ioDispatcher) {
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
-			_log = LogManager.GetLoggerFor<UserManagementService>();
+			_log = Serilog.Log.ForContext<UserManagementService>();
 		}
 
 		private void Start() {
 			_stopped = false;
 			_ioDispatcher.ReadBackward(
-				UserManagementService.UserPasswordNotificationsStreamId, -1, 1, false, SystemAccount.Principal,
+				UserManagementService.UserPasswordNotificationsStreamId, -1, 1, false, SystemAccounts.System,
 				completed => {
 					switch (completed.Result) {
 						case ReadStreamResult.NoStream:
@@ -50,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			if (_stopped) return;
 			_ioDispatcher.ReadForward(
 				UserManagementService.UserPasswordNotificationsStreamId, fromEventNumber, 100, false,
-				SystemAccount.Principal, completed => {
+				SystemAccounts.System, completed => {
 					if (_stopped) return;
 					switch (completed.Result) {
 						case ReadStreamResult.AccessDenied:
@@ -80,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 					}
 				},
 				() => {
-					_log.Warn("Timeout reading stream: {stream}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
+					_log.Warning("Timeout reading stream: {stream}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
 					_ioDispatcher.Delay(TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
 				},
 				Guid.NewGuid());

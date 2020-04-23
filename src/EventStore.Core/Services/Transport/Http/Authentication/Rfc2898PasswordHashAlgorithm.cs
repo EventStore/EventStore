@@ -1,5 +1,5 @@
 ﻿using System.Security.Cryptography;
-using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class Rfc2898PasswordHashAlgorithm : PasswordHashAlgorithm {

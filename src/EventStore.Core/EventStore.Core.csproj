@@ -1,30 +1,53 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
-    <Platform>x64</Platform>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="protobuf-net" Version="2.4.0" />
-    <PackageReference Include="HdrHistogram" Version="2.5.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.ServiceModel.Web" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-    <ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
-    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
-    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
-    <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
-  </ItemGroup>
-  <ItemGroup />
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+			<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="EventStore.Plugins" Version="6.0.0-preview2" />
+		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.27.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.27.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="HdrHistogram" Version="2.5.0" />
+		<PackageReference Include="SimpleSyndicate.UriTemplate" Version="1.0.3" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
+		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
+		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.49" />
+		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
+		<PackageReference Include="HostStat.NET" Version="1.0.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
+		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>EventStore.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>

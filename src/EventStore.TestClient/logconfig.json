@@ -1,0 +1,10 @@
+{
+  "Logging": {
+	"LogLevel": {
+	  "Default": "Verbose",
+	  "System": "Warning",
+	  "Microsoft": "Warning",
+	  "Grpc": "Warning"
+	}
+  }
+}

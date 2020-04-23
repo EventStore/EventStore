@@ -18,9 +18,6 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
 		public string Config { get; set; }
 
-		[ArgDescription(Opts.DefinesDescr, Opts.AppGroup)]
-		public string[] Defines { get; set; }
-
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
 
@@ -29,9 +26,6 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.DisableHttpCachingDescr, Opts.AppGroup)]
 		public bool DisableHTTPCaching { get; set; }
-
-		[ArgDescription(Opts.MonoMinThreadpoolSizeDescr, Opts.AppGroup)]
-		public int MonoMinThreadpoolSize { get; set; }
 
 		[ArgDescription(Opts.InternalIpDescr, Opts.InterfacesGroup)]
 		public IPAddress IntIp { get; set; }
@@ -45,20 +39,14 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ExternalHttpPortDescr, Opts.InterfacesGroup)]
 		public int ExtHttpPort { get; set; }
 
+		[ArgDescription(Opts.EnableExternalTCPDescr, Opts.InterfacesGroup)]
+		public bool EnableExternalTCP { get; set; }
+		
 		[ArgDescription(Opts.InternalTcpPortDescr, Opts.InterfacesGroup)]
 		public int IntTcpPort { get; set; }
 
-		[ArgDescription(Opts.InternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-		public int IntSecureTcpPort { get; set; }
-
 		[ArgDescription(Opts.ExternalTcpPortDescr, Opts.InterfacesGroup)]
 		public int ExtTcpPort { get; set; }
-
-		[ArgDescription(Opts.ExternalSecureTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int ExtSecureTcpPortAdvertiseAs { get; set; }
-
-		[ArgDescription(Opts.ExternalSecureTcpPortDescr, Opts.InterfacesGroup)]
-		public int ExtSecureTcpPort { get; set; }
 
 		[ArgDescription(Opts.ExternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public IPAddress ExtIpAdvertiseAs { get; set; }
@@ -71,9 +59,6 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.InternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public IPAddress IntIpAdvertiseAs { get; set; }
-
-		[ArgDescription(Opts.InternalSecureTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int IntSecureTcpPortAdvertiseAs { get; set; }
 
 		[ArgDescription(Opts.InternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public int IntTcpPortAdvertiseAs { get; set; }
@@ -98,10 +83,9 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.ConnectionPendingSendBytesThresholdDescr, Opts.InterfacesGroup)]
 		public int ConnectionPendingSendBytesThreshold { get; set; }
-
-
-		[ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
-		public bool Force { get; set; }
+		
+		[ArgDescription(Opts.ConnectionQueueSizeThresholdDescr, Opts.InterfacesGroup)]
+		public int ConnectionQueueSizeThreshold { get; set; }
 
 		[ArgDescription(Opts.ClusterSizeDescr, Opts.ClusterGroup)]
 		public int ClusterSize { get; set; }
@@ -200,53 +184,53 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.FaultOutOfOrderProjectionsDescr, Opts.ProjectionsGroup)]
 		public bool FaultOutOfOrderProjections { get; set; }
 
-		[ArgDescription(Opts.IntHttpPrefixesDescr, Opts.InterfacesGroup)]
-		public string[] IntHttpPrefixes { get; set; }
-
-		[ArgDescription(Opts.ExtHttpPrefixesDescr, Opts.InterfacesGroup)]
-		public string[] ExtHttpPrefixes { get; set; }
-
 		[ArgDescription(Opts.EnableTrustedAuthDescr, Opts.InterfacesGroup)]
 		public bool EnableTrustedAuth { get; set; }
 
-		[ArgDescription(Opts.AddInterfacePrefixesDescr, Opts.InterfacesGroup)]
-		public bool AddInterfacePrefixes { get; set; }
+		[ArgDescription(Opts.TrustedRootCertificatesPathDescr, Opts.CertificateGroup)]
+		public string TrustedRootCertificatesPath { get; set; }
 
-		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesGroup)]
-		public string CertificateStoreLocation { get; set; }
-
-		[ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesGroup)]
-		public string CertificateStoreName { get; set; }
-
-		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesGroup)]
-		public string CertificateSubjectName { get; set; }
-
-		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesGroup)]
-		public string CertificateThumbprint { get; set; }
-
-		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesGroup)]
+		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificateFile { get; set; }
 
-		[ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesGroup)]
+		[ArgDescription(Opts.CertificatePrivateKeyFileDescr, Opts.CertificatesFromFileGroup)]
+		public string CertificatePrivateKeyFile { get; set; }
+
+		[ArgMask, ArgDescription(Opts.CertificatePasswordDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificatePassword { get; set; }
 
-		[ArgDescription(Opts.UseInternalSslDescr, Opts.InterfacesGroup)]
-		public bool UseInternalSsl { get; set; }
+		[ArgDescription(Opts.CertificateStoreLocationDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateStoreLocation { get; set; }
 
-		[ArgDescription(Opts.DisableInsecureTCPDescr, Opts.InterfacesGroup)]
-		public bool DisableInsecureTCP { get; set; }
+		[ArgDescription(Opts.CertificateStoreNameDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateStoreName { get; set; }
 
-		[ArgDescription(Opts.SslTargetHostDescr, Opts.InterfacesGroup)]
-		public string SslTargetHost { get; set; }
+		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateSubjectName { get; set; }
 
-		[ArgDescription(Opts.SslValidateServerDescr, Opts.InterfacesGroup)]
-		public bool SslValidateServer { get; set; }
+		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesFromStoreGroup)]
+		public string CertificateThumbprint { get; set; }
+
+		[ArgDescription(Opts.DisableInternalTlsDescr, Opts.InterfacesGroup)]
+		public bool DisableInternalTls { get; set; }
+
+		[ArgDescription(Opts.DisableExternalTlsDescr, Opts.InterfacesGroup)]
+		public bool DisableExternalTls { get; set; }
+		
+		[ArgDescription(Opts.AuthorizationTypeDescr, Opts.AuthGroup)]
+		public string AuthorizationType { get; set; }
 
 		[ArgDescription(Opts.AuthenticationTypeDescr, Opts.AuthGroup)]
 		public string AuthenticationType { get; set; }
 
+		[ArgDescription(Opts.AuthorizationConfigFileDescr, Opts.AuthGroup)]
+		public string AuthorizationConfig { get; set; }
+		
 		[ArgDescription(Opts.AuthenticationConfigFileDescr, Opts.AuthGroup)]
 		public string AuthenticationConfig { get; set; }
+
+		[ArgDescription(Opts.DisableFirstLevelHttpAuthorizationDescr, Opts.AuthGroup)]
+		public bool DisableFirstLevelHttpAuthorization { get; set; }
 
 		[ArgDescription(Opts.PrepareTimeoutMsDescr, Opts.DbGroup)]
 		public int PrepareTimeoutMs { get; set; }
@@ -254,11 +238,11 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.CommitTimeoutMsDescr, Opts.DbGroup)]
 		public int CommitTimeoutMs { get; set; }
 
+		[ArgDescription(Opts.WriteTimeoutMsDescr, Opts.DbGroup)]
+		public int WriteTimeoutMs { get; set; }
+
 		[ArgDescription(Opts.UnsafeDisableFlushToDiskDescr, Opts.DbGroup)]
 		public bool UnsafeDisableFlushToDisk { get; set; }
-
-		[ArgDescription(Opts.BetterOrderingDescr, Opts.DbGroup)]
-		public bool BetterOrdering { get; set; }
 
 		[ArgDescription(Opts.UnsafeIgnoreHardDeleteDescr, Opts.DbGroup)]
 		public bool UnsafeIgnoreHardDelete { get; set; }
@@ -281,11 +265,20 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
 		public int GossipTimeoutMs { get; set; }
 
+		[ArgDescription(Opts.ReadOnlyReplicaDescr, Opts.ClusterGroup)]
+		public bool ReadOnlyReplica { get; set; }
+
+		[ArgDescription(Opts.UnsafeAllowSurplusNodesDescr, Opts.ClusterGroup)]
+		public bool UnsafeAllowSurplusNodes { get; set; }
+
 		[ArgDescription(Opts.HistogramDescr, Opts.AppGroup)]
 		public bool EnableHistograms { get; set; }
 
 		[ArgDescription(Opts.LogHttpRequestsDescr, Opts.AppGroup)]
 		public bool LogHttpRequests { get; set; }
+		
+		[ArgDescription(Opts.LogFailedAuthenticationAttemptsDescr, Opts.AppGroup)]
+		public bool LogFailedAuthenticationAttempts { get; set; }
 
 		[ArgDescription(Opts.AlwaysKeepScavengedDescr, Opts.DbGroup)]
 		public bool AlwaysKeepScavenged { get; set; }
@@ -299,31 +292,41 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.InitializationThreadsDescr, Opts.DbGroup)]
 		public int InitializationThreads { get; set; }
 
-		[ArgDescription(Opts.StructuredLogDescr, Opts.DbGroup)]
-		public bool StructuredLog { get; set; }
-
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
+		[ArgDescription(Opts.WriteStatsToDbDescr, Opts.DbGroup)]
+		public bool WriteStatsToDb { get; set; }
+		
+		[ArgDescription(Opts.MaxTruncationDescr, Opts.DbGroup)]
+		public long MaxTruncation { get; set; }
+
+		[ArgDescription(Opts.MaxAppendSizeDecr, Opts.AppGroup)]
+		public int MaxAppendSize { get; set; }
+		
+		[ArgDescription(Opts.DevDescr, Opts.AppGroup)]
+		public bool Dev { get; set; }
+		
+		[ArgDescription(Opts.EnableAtomPubOverHTTPDescr, Opts.InterfacesGroup)]
+		public bool EnableAtomPubOverHTTP { get; set; }
+
+		[ArgDescription(Opts.DeadMemberRemovalPeriodDescr, Opts.ClusterGroup)]
+		public int DeadMemberRemovalPeriodSec { get; set; }
+		
 		public ClusterNodeOptions() {
 			Config = "";
 			Help = Opts.ShowHelpDefault;
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultLogDirectory;
-			Defines = Opts.DefinesDefault;
 			WhatIf = Opts.WhatIfDefault;
-
-			MonoMinThreadpoolSize = Opts.MonoMinThreadpoolSizeDefault;
 
 			IntIp = Opts.InternalIpDefault;
 			ExtIp = Opts.ExternalIpDefault;
 			IntHttpPort = Opts.InternalHttpPortDefault;
 			ExtHttpPort = Opts.ExternalHttpPortDefault;
+			EnableExternalTCP = Opts.EnableExternalTCPDefault;
 			IntTcpPort = Opts.InternalTcpPortDefault;
-			IntSecureTcpPort = Opts.InternalSecureTcpPortDefault;
 			ExtTcpPort = Opts.ExternalTcpPortDefault;
-			ExtSecureTcpPort = Opts.ExternalSecureTcpPortDefault;
-			Force = Opts.ForceDefault;
 			ClusterSize = Opts.ClusterSizeDefault;
 			MinFlushDelayMs = Opts.MinFlushDelayMsDefault;
 			NodePriority = Opts.NodePriorityDefault;
@@ -338,9 +341,11 @@ namespace EventStore.ClusterNode {
 			ClusterDns = Opts.ClusterDnsDefault;
 			ClusterGossipPort = Opts.ClusterGossipPortDefault;
 			GossipSeed = Opts.GossipSeedDefault;
+			ReadOnlyReplica = Opts.ReadOnlyReplicaDefault;
+			UnsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
+			DeadMemberRemovalPeriodSec = Opts.DeadMemberRemovalPeriodDefault;
 
 			StatsPeriodSec = Opts.StatsPeriodDefault;
-
 			CachedChunks = Opts.CachedChunksDefault;
 			ChunksCacheSize = Opts.ChunksCacheSizeDefault;
 
@@ -352,12 +357,10 @@ namespace EventStore.ClusterNode {
 			ProjectionsQueryExpiry = Opts.ProjectionsQueryExpiryDefault;
 			FaultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			WorkerThreads = Opts.WorkerThreadsDefault;
-			BetterOrdering = Opts.BetterOrderingDefault;
 
-			IntHttpPrefixes = Opts.IntHttpPrefixesDefault;
-			ExtHttpPrefixes = Opts.ExtHttpPrefixesDefault;
 			EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
-			AddInterfacePrefixes = Opts.AddInterfacePrefixesDefault;
+
+			EnableAtomPubOverHTTP = Opts.EnableAtomPubOverHTTPDefault;
 
 			ExtTcpHeartbeatTimeout = Opts.ExtTcpHeartbeatTimeoutDefault;
 			IntTcpHeartbeatTimeout = Opts.IntTcpHeartbeatTimeoutDefault;
@@ -368,33 +371,35 @@ namespace EventStore.ClusterNode {
 			ExtIpAdvertiseAs = Opts.ExternalIpAdvertiseAsDefault;
 			ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
 			ExtHttpPortAdvertiseAs = Opts.ExternalHttpPortAdvertiseAsDefault;
-			ExtSecureTcpPortAdvertiseAs = Opts.ExternalSecureTcpPortAdvertiseAsDefault;
 
 			IntIpAdvertiseAs = Opts.InternalIpAdvertiseAsDefault;
 			IntTcpPortAdvertiseAs = Opts.InternalTcpPortAdvertiseAsDefault;
 			IntHttpPortAdvertiseAs = Opts.InternalHttpPortAdvertiseAsDefault;
-			IntSecureTcpPortAdvertiseAs = Opts.InternalSecureTcpPortAdvertiseAsDefault;
 
 			CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
 			CertificateStoreName = Opts.CertificateStoreNameDefault;
 			CertificateSubjectName = Opts.CertificateSubjectNameDefault;
 			CertificateThumbprint = Opts.CertificateThumbprintDefault;
 
+			TrustedRootCertificatesPath = Opts.TrustedRootCertificatesPathDefault;
 			CertificateFile = Opts.CertificateFileDefault;
+			CertificatePrivateKeyFile = Opts.CertificatePrivateKeyFileDefault;
 			CertificatePassword = Opts.CertificatePasswordDefault;
 
-			UseInternalSsl = Opts.UseInternalSslDefault;
-			DisableInsecureTCP = Opts.DisableInsecureTCPDefault;
-			SslTargetHost = Opts.SslTargetHostDefault;
-			SslValidateServer = Opts.SslValidateServerDefault;
+			DisableInternalTls = Opts.DisableInternalTlsDefault;
+			DisableExternalTls = Opts.DisableExternalTlsDefault;
 
+			AuthorizationType = Opts.AuthorizationTypeDefault;
+			AuthorizationConfig = Opts.AuthorizationConfigFileDefault;
 			AuthenticationType = Opts.AuthenticationTypeDefault;
 			AuthenticationConfig = Opts.AuthenticationConfigFileDefault;
+			DisableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 
 			UnsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
 			UnsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
 			PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
 			CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
+			WriteTimeoutMs = Opts.WriteTimeoutMsDefault;
 			DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
 			GossipOnExt = Opts.GossipOnExtDefault;
@@ -412,6 +417,7 @@ namespace EventStore.ClusterNode {
 			StartStandardProjections = Opts.StartStandardProjectionsDefault;
 			DisableHTTPCaching = Opts.DisableHttpCachingDefault;
 			LogHttpRequests = Opts.LogHttpRequestsDefault;
+			LogFailedAuthenticationAttempts = Opts.LogFailedAuthenticationAttemptsDefault;
 
 			Unbuffered = Opts.UnbufferedDefault;
 			WriteThrough = Opts.WriteThroughDefault;
@@ -421,12 +427,18 @@ namespace EventStore.ClusterNode {
 			SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
 			ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			InitializationThreads = Opts.InitializationThreadsDefault;
-			StructuredLog = Opts.StructuredLogDefault;
 
 			ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+			ConnectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+
+			WriteStatsToDb = Opts.WriteStatsToDbDefault;
+			MaxTruncation = Opts.MaxTruncationDefault;
+			MaxAppendSize = Opts.MaxAppendSizeDefault;
+
+			Dev = Opts.DevDefault;
 		}
 	}
 }

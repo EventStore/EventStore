@@ -66,7 +66,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					InFlightMessages = conn.InflightMessages,
 					AvailableSlots = conn.AvailableSlots,
 					CountSinceLastMeasurement = connLastItems,
-					ObservedMeasurements = stats
+					ObservedMeasurements = stats,
+					ConnectionName = conn.ConnectionName,
 				});
 			}
 
@@ -90,11 +91,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				ReadBatchSize = _settings.ReadBatchSize,
 				ResolveLinktos = _settings.ResolveLinkTos,
 				StartFrom = _settings.StartFrom,
-				ReadBufferCount = _parent._streamBuffer.ReadBufferCount,
-				RetryBufferCount = _parent._streamBuffer.RetryBufferCount,
-				LiveBufferCount = _parent._streamBuffer.LiveBufferCount,
+				ReadBufferCount = _parent.StreamBuffer.ReadBufferCount,
+				RetryBufferCount = _parent.StreamBuffer.RetryBufferCount,
+				LiveBufferCount = _parent.StreamBuffer.LiveBufferCount,
 				ExtraStatistics = _settings.ExtraStatistics,
-				TotalInFlightMessages = _parent.OutstandingMessageCount,
+				TotalInFlightMessages = totalInflight,
+				OutstandingMessagesCount = _parent.OutstandingMessageCount,
 				NamedConsumerStrategy = _settings.ConsumerStrategy.Name,
 				MaxSubscriberCount = _settings.MaxSubscriberCount
 			};

@@ -1,10 +1,10 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -18,8 +18,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			: base(maxEntriesInMemTable, metastreamMaxCount) {
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			ReOpenDb();
 		}
@@ -37,6 +37,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV3,
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,
@@ -46,8 +48,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
-				replicationCheckpoint: Db.Config.ReplicationCheckpoint);
-			ReadIndex.Init(ChaserCheckpoint.Read());
+				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
+				indexCheckpoint: Db.Config.IndexCheckpoint);
+			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 	}
 }

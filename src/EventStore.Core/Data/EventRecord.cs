@@ -21,8 +21,8 @@ namespace EventStore.Core.Data {
 		public readonly DateTime TimeStamp;
 		public readonly PrepareFlags Flags;
 		public readonly string EventType;
-		public readonly byte[] Data;
-		public readonly byte[] Metadata;
+		public readonly ReadOnlyMemory<byte> Data;
+		public readonly ReadOnlyMemory<byte> Metadata;
 
 		public EventRecord(long eventNumber, PrepareLogRecord prepare) {
 			Ensure.Nonnegative(eventNumber, "eventNumber");
@@ -39,8 +39,8 @@ namespace EventStore.Core.Data {
 
 			Flags = prepare.Flags;
 			EventType = prepare.EventType ?? string.Empty;
-			Data = prepare.Data ?? Empty.ByteArray;
-			Metadata = prepare.Metadata ?? Empty.ByteArray;
+			Data = prepare.Data;
+			Metadata = prepare.Metadata;
 		}
 
 		public EventRecord(long eventNumber,
@@ -94,8 +94,8 @@ namespace EventStore.Core.Data {
 			       && TimeStamp.Equals(other.TimeStamp)
 			       && Flags.Equals(other.Flags)
 			       && string.Equals(EventType, other.EventType)
-			       && Data.SequenceEqual(other.Data)
-			       && Metadata.SequenceEqual(other.Metadata);
+			       && Data.Span.SequenceEqual(other.Data.Span)
+			       && Metadata.Span.SequenceEqual(other.Metadata.Span);
 		}
 
 		public override bool Equals(object obj) {
@@ -159,11 +159,11 @@ namespace EventStore.Core.Data {
 
 #if DEBUG
 		public string DebugDataView {
-			get { return Encoding.UTF8.GetString(Data); }
+			get { return Encoding.UTF8.GetString(Data.Span); }
 		}
 
 		public string DebugMetadataView {
-			get { return Encoding.UTF8.GetString(Metadata); }
+			get { return Encoding.UTF8.GetString(Metadata.Span); }
 		}
 #endif
 	}

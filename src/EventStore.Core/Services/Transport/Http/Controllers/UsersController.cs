@@ -1,18 +1,18 @@
 using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
-using EventStore.Common.Log;
-using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class UsersController : CommunicationController {
 		private readonly IHttpForwarder _httpForwarder;
 		private readonly IPublisher _networkSendQueue;
 		private static readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
-		private static readonly ILogger Log = LogManager.GetLoggerFor<UsersController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<UsersController>();
 
 		public UsersController(IHttpForwarder httpForwarder, IPublisher publisher, IPublisher networkSendQueue)
 			: base(publisher) {
@@ -21,20 +21,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
-			RegisterUrlBased(service, "/users", HttpMethod.Get, GetUsers);
-			RegisterUrlBased(service, "/users/", HttpMethod.Get, GetUsers);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, GetUser);
-			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, GetCurrentUser);
-			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
-			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs);
-			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs);
-			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, DeleteUser);
-			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, PostCommandEnable);
-			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, PostCommandDisable);
+			RegisterUrlBased(service, "/users", HttpMethod.Get, new Operation(Operations.Users.List), GetUsers);
+			RegisterUrlBased(service, "/users/", HttpMethod.Get, new Operation(Operations.Users.List), GetUsers);
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Get, new Operation(Operations.Users.Read), GetUser);
+			RegisterUrlBased(service, "/users/$current", HttpMethod.Get, new Operation(Operations.Users.CurrentUser), GetCurrentUser);
+			Register(service, "/users", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Create));
+			Register(service, "/users/", HttpMethod.Post, PostUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Create));
+			Register(service, "/users/{login}", HttpMethod.Put, PutUser, DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.Update));
+			RegisterUrlBased(service, "/users/{login}", HttpMethod.Delete, new Operation(Operations.Users.Delete), DeleteUser);
+			RegisterUrlBased(service, "/users/{login}/command/enable", HttpMethod.Post, new Operation(Operations.Users.Enable), PostCommandEnable);
+			RegisterUrlBased(service, "/users/{login}/command/disable", HttpMethod.Post, new Operation(Operations.Users.Disable), PostCommandDisable);
 			Register(service, "/users/{login}/command/reset-password", HttpMethod.Post, PostCommandResetPassword,
-				DefaultCodecs, DefaultCodecs);
+				DefaultCodecs, DefaultCodecs, new Operation(Operations.Users.ResetPassword));
 			Register(service, "/users/{login}/command/change-password", HttpMethod.Post, PostCommandChangePassword,
-				DefaultCodecs, DefaultCodecs);
+				DefaultCodecs, DefaultCodecs, ForUser(Operations.Users.ChangePassword));
+		}
+
+		private static Func<UriTemplateMatch, Operation> ForUser(OperationDefinition definition) {
+			var operation = new Operation(definition);
+			return match => operation.WithParameter(Operations.Users.Parameters.User(match.BoundVariables["login"]));
 		}
 
 		private void GetUsers(HttpEntityManager http, UriTemplateMatch match) {
@@ -93,7 +98,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var message = new UserManagementMessage.Create(
 						envelope, http.User, data.LoginName, data.FullName, data.Groups, data.Password);
 					Publish(message);
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private void PutUser(HttpEntityManager http, UriTemplateMatch match) {
@@ -107,7 +112,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var message =
 						new UserManagementMessage.Update(envelope, http.User, login, data.FullName, data.Groups);
 					Publish(message);
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private void DeleteUser(HttpEntityManager http, UriTemplateMatch match) {
@@ -147,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var data = http.RequestCodec.From<ResetPasswordData>(s);
 					var message = new UserManagementMessage.ResetPassword(envelope, http.User, login, data.NewPassword);
 					Publish(message);
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private void PostCommandChangePassword(HttpEntityManager http, UriTemplateMatch match) {
@@ -162,7 +167,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						envelope, http.User, login, data.CurrentPassword, data.NewPassword);
 					Publish(message);
 				},
-				x => Log.DebugException(x, "Reply Text Content Failed."));
+				x => Log.Debug(x, "Reply Text Content Failed."));
 		}
 
 		private SendToHttpEnvelope<T> CreateReplyEnvelope<T>(

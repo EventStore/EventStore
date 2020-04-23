@@ -25,21 +25,21 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		[Test]
 		public void null_file_throws_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
-				PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null,
+				PTable.FromMemtable(new HashListMemTable(_ptableVersion, maxSize: 10), null, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 					skipIndexVerify: _skipIndexVerify));
 		}
 
 		[Test]
 		public void null_memtable_throws_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
-				PTable.FromMemtable(null, "C:\\foo.txt", skipIndexVerify: _skipIndexVerify));
+				PTable.FromMemtable(null, "C:\\foo.txt", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
 		}
 
 		[Test]
 		public void wait_for_destroy_will_timeout() {
 			var table = new HashListMemTable(_ptableVersion, maxSize: 10);
 			table.Add(0x010100000000, 0x0001, 0x0001);
-			var ptable = PTable.FromMemtable(table, Filename, skipIndexVerify: _skipIndexVerify);
+			var ptable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 			Assert.Throws<TimeoutException>(() => ptable.WaitForDisposal(1));
 
 			// tear down
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010500000000, 0x0001, 0x0002);
 			table.Add(0x010200000000, 0x0001, 0x0003);
 			table.Add(0x010200000000, 0x0002, 0x0003);
-			using (var sstable = PTable.FromMemtable(table, Filename, skipIndexVerify: _skipIndexVerify)) {
+			using (var sstable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
 				var fileinfo = new FileInfo(Filename);
 				var midpointsCached = PTable.GetRequiredMidpointCountCached(4, _ptableVersion);
 				Assert.AreEqual(
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010200000000, 0x0001, 0x0003);
 			table.Add(0x010200000000, 0x0002, 0x0003);
 			Assert.DoesNotThrow(() => {
-				using (var sstable = PTable.FromMemtable(table, Filename, skipIndexVerify: false)) {
+				using (var sstable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: false)) {
 				}
 			});
 		}

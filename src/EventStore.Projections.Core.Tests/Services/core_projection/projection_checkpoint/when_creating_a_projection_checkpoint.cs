@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 		public void setup() {
 			_readyHandler = new TestCheckpointManagerMessageHandler();
 			_fakePublisher = new FakePublisher();
-			_ioDispatcher = new IODispatcher(_fakePublisher, new PublishEnvelope(_fakePublisher));
+			_ioDispatcher = new IODispatcher(_fakePublisher, new PublishEnvelope(_fakePublisher), true);
 		}
 
 		[Test]

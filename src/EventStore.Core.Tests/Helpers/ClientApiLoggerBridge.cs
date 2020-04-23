@@ -1,13 +1,14 @@
 ﻿using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class ClientApiLoggerBridge : EventStore.ClientAPI.ILogger {
 		public static readonly ClientApiLoggerBridge Default =
-			new ClientApiLoggerBridge(LogManager.GetLogger("client-api"));
+			new ClientApiLoggerBridge(Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName,
+				"client-api"));
 
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 
 		public ClientApiLoggerBridge(ILogger log) {
 			Ensure.NotNull(log, "log");
@@ -23,23 +24,23 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public void Error(Exception ex, string format, params object[] args) {
 			if (args.Length == 0)
-				_log.ErrorException(ex, format);
+				_log.Error(ex, format);
 			else
-				_log.ErrorException(ex, format, args);
+				_log.Error(ex, format, args);
 		}
 
 		public void Info(string format, params object[] args) {
 			if (args.Length == 0)
-				_log.Info(format);
+				_log.Information(format);
 			else
-				_log.Info(format, args);
+				_log.Information(format, args);
 		}
 
 		public void Info(Exception ex, string format, params object[] args) {
 			if (args.Length == 0)
-				_log.InfoException(ex, format);
+				_log.Information(ex, format);
 			else
-				_log.InfoException(ex, format, args);
+				_log.Information(ex, format, args);
 		}
 
 		public void Debug(string format, params object[] args) {
@@ -51,9 +52,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public void Debug(Exception ex, string format, params object[] args) {
 			if (args.Length == 0)
-				_log.DebugException(ex, format);
+				_log.Debug(ex, format);
 			else
-				_log.DebugException(ex, format, args);
+				_log.Debug(ex, format, args);
 		}
 	}
 }

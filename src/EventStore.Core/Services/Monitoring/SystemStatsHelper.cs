@@ -3,32 +3,40 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring {
 	public class SystemStatsHelper : IDisposable {
 		internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
 
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
 		private PerfCounterHelper _perfCounter;
+		private readonly EventCountersHelper _eventCountersHelper;
+		private readonly HostStat.HostStat _hostStat;
 		private bool _giveup;
 
-		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath) {
+		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
 			_log = log;
 			_writerCheckpoint = writerCheckpoint;
 			_perfCounter = new PerfCounterHelper(_log);
+			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
+			_hostStat = new HostStat.HostStat();
 			_dbPath = dbPath;
+		}
+
+		public void Start() {
+			_eventCountersHelper.Start();
 		}
 
 		public IDictionary<string, object> GetSystemStats() {
@@ -105,24 +113,33 @@ namespace EventStore.Core.Services.Monitoring {
 				return;
 			var process = Process.GetCurrentProcess();
 			try {
-				_perfCounter.RefreshInstanceName();
-
-				var procCpuUsage = _perfCounter.GetProcCpuUsage();
-
 				stats["proc-startTime"] = process.StartTime.ToUniversalTime().ToString("O");
 				stats["proc-id"] = process.Id;
 				stats["proc-mem"] = new StatMetadata(process.WorkingSet64, "Process", "Process Virtual Memory");
-				stats["proc-cpu"] = new StatMetadata(procCpuUsage, "Process", "Process Cpu Usage");
-				stats["proc-cpuScaled"] = new StatMetadata(procCpuUsage / Environment.ProcessorCount, "Process",
-					"Process Cpu Usage Scaled by Logical Processor Count");
-				stats["proc-threadsCount"] = _perfCounter.GetProcThreadsCount();
-				stats["proc-contentionsRate"] = _perfCounter.GetContentionsRateCount();
-				stats["proc-thrownExceptionsRate"] = _perfCounter.GetThrownExceptionsRate();
+				stats["proc-cpu"] = new StatMetadata(_eventCountersHelper.GetProcCpuUsage(), "Process", "Process Cpu Usage");
+				stats["proc-threadsCount"] = _eventCountersHelper.GetProcThreadsCount();
+				stats["proc-contentionsRate"] = _eventCountersHelper.GetContentionsRateCount();
+				stats["proc-thrownExceptionsRate"] = _eventCountersHelper.GetThrownExceptionsRate();
 
-				stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+				switch (OS.OsFlavor) {
+					case OsFlavor.Windows:
+						stats["sys-cpu"] = _perfCounter.GetTotalCpuUsage();
+						break;
+					case OsFlavor.Linux:
+					case OsFlavor.MacOS:
+						var loadAverages = _hostStat.GetLoadAverages();
+						stats["sys-loadavg-1m"] = loadAverages.Average1m;
+						stats["sys-loadavg-5m"] = loadAverages.Average5m;
+						stats["sys-loadavg-15m"] = loadAverages.Average15m;
+						break;
+					default:
+						stats["sys-cpu"] = -1;
+						break;
+				}
+
 				stats["sys-freeMem"] = GetFreeMem();
 
-				var gcStats = _perfCounter.GetGcStats();
+				var gcStats = _eventCountersHelper.GetGcStats();
 				stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
 				stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
 				stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
@@ -134,7 +151,7 @@ namespace EventStore.Core.Services.Monitoring {
 				stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
 				stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 			} catch (InvalidOperationException) {
-				_log.Info("Received error reading counters. Attempting to rebuild.");
+				_log.Information("Received error reading counters. Attempting to rebuild.");
 				_perfCounter = new PerfCounterHelper(_log);
 				_giveup = count > 10;
 				if (_giveup)
@@ -147,79 +164,20 @@ namespace EventStore.Core.Services.Monitoring {
 		///<summary>
 		///Free system memory in bytes
 		///</summary>
-		private long GetFreeMem() {
+		private ulong GetFreeMem() {
 			switch (OS.OsFlavor) {
 				case OsFlavor.Windows:
-					return _perfCounter.GetFreeMemory();
+					return (ulong)_perfCounter.GetFreeMemory();
 				case OsFlavor.Linux:
-					return GetFreeMemOnLinux();
 				case OsFlavor.MacOS:
-					return GetFreeMemOnOSX();
-				case OsFlavor.BSD:
-					return GetFreeMemOnBSD();
+					return _hostStat.GetFreeMemory();
 				default:
-					return -1;
-			}
-		}
-
-		private long GetFreeMemOnLinux() {
-			string meminfo = null;
-			try {
-				meminfo = ShellExecutor.GetOutput("free", "-b");
-				var meminfolines = meminfo.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				var ourline = meminfolines[1];
-				var trimmedLine = SpacesRegex.Replace(ourline, " ");
-				var freeRamStr = trimmedLine.Split(' ')[3];
-				return long.Parse(freeRamStr);
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free mem on linux, received memory info raw string: [{meminfo}]",
-					meminfo);
-				return -1;
-			}
-		}
-
-		// http://www.cyberciti.biz/files/scripts/freebsd-memory.pl.txt
-		private long GetFreeMemOnBSD() {
-			try {
-				var sysctl = ShellExecutor.GetOutput("sysctl",
-					"-n hw.physmem hw.pagesize vm.stats.vm.v_free_count vm.stats.vm.v_cache_count vm.stats.vm.v_inactive_count");
-				var sysctlStats = sysctl.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				long pageSize = long.Parse(sysctlStats[1]);
-				long freePages = long.Parse(sysctlStats[2]);
-				long cachePages = long.Parse(sysctlStats[3]);
-				long inactivePages = long.Parse(sysctlStats[4]);
-				return pageSize * (freePages + cachePages + inactivePages);
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free memory on BSD.");
-				return -1;
-			}
-		}
-
-
-		private long GetFreeMemOnOSX() {
-			int freePages = 0;
-			try {
-				var vmstat = ShellExecutor.GetOutput("vm_stat");
-				var sysctlStats = vmstat.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
-				foreach (var line in sysctlStats) {
-					var l = line.Substring(0, line.Length - 1);
-					var pieces = l.Split(':');
-					if (pieces.Length == 2) {
-						if (pieces[0].Trim().ToLower() == "pages free") {
-							freePages = int.Parse(pieces[1]);
-							break;
-						}
-					}
-				}
-
-				return 4096 * freePages;
-			} catch (Exception ex) {
-				_log.DebugException(ex, "Could not get free memory on OSX.");
-				return -1;
+					return 0;
 			}
 		}
 
 		public void Dispose() {
+			_eventCountersHelper.Dispose();
 			_perfCounter.Dispose();
 		}
 	}

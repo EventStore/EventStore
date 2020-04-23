@@ -65,20 +65,6 @@ fromCategory(""user"")
         }
     });
 ");
-			yield return CreateQueryMessage("query3", @"
-options({disableParallelism: true});
-fromCategory(""user"")
-    .foreachStream()
-    .when({
-        $init: function() {
-            return { count: 0 }
-        },
-        ChatMessage: function(state, event) {
-            state.count += 1;
-            return state;
-        }
-    });
-");
 		}
 
 		protected override bool GivenInitializeSystemProjections() {
@@ -128,13 +114,6 @@ fromCategory(""user"")
 		public void query2_returns_correct_result() {
 			AssertStreamTailWithLinks(
 				"$projections-query2-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
-				@"Result:{""count"":1}", "$Eof:");
-		}
-
-		[Test]
-		public void query3_returns_correct_result() {
-			AssertStreamTailWithLinks(
-				"$projections-query3-result", @"Result:{""count"":1}", @"Result:{""count"":2}", @"Result:{""count"":1}",
 				@"Result:{""count"":1}", "$Eof:");
 		}
 

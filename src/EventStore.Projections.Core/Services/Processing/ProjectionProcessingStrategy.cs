@@ -1,10 +1,10 @@
 using System;
-using System.Security.Principal;
-using EventStore.Common.Log;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class ProjectionProcessingStrategy {
@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Guid projectionCorrelationId,
 			IPublisher inputQueue,
 			Guid workerId,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			IPublisher publisher,
 			IODispatcher ioDispatcher,
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
@@ -68,7 +68,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public abstract bool GetUseCheckpoints();
 		public abstract bool GetRequiresRootPartition();
 		public abstract bool GetProducesRunningResults();
-		public abstract bool GetIsSlaveProjection();
 		public abstract void EnrichStatistics(ProjectionStatistics info);
 
 		public abstract IProjectionProcessingPhase[] CreateProcessingPhases(
@@ -82,7 +81,5 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ITimeProvider timeProvider,
 			IODispatcher ioDispatcher,
 			CoreProjectionCheckpointWriter coreProjectionCheckpointWriter);
-
-		public abstract SlaveProjectionDefinitions GetSlaveProjections();
 	}
 }

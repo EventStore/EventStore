@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Http.EntityManagement {
 	public sealed class HttpEntityManager {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<HttpEntityManager>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<HttpEntityManager>();
 
 		public object AsyncState { get; set; }
 		public readonly HttpEntity HttpEntity;
@@ -27,8 +27,6 @@ namespace EventStore.Transport.Http.EntityManagement {
 		private int _processing;
 		private readonly string[] _allowedMethods;
 		private readonly Action<HttpEntity> _onRequestSatisfied;
-		private Stream _currentOutputStream;
-		private AsyncQueuedBufferWriter _asyncWriter;
 		private readonly ICodec _requestCodec;
 		private readonly ICodec _responseCodec;
 		private readonly Uri _responseUrl;
@@ -42,16 +40,18 @@ namespace EventStore.Transport.Http.EntityManagement {
 			_compressionBufferManager = new BufferManager(20, 50 * 1024); //create 20 50KB buffers (1MB total)
 
 		private readonly bool _logHttpRequests;
+		private readonly Action _onComplete;
 
 		public readonly DateTime TimeStamp;
 
 
-		internal HttpEntityManager(
-			HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
-			ICodec responseCodec, bool logHttpRequests) {
+		internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods,
+			Action<HttpEntity> onRequestSatisfied, ICodec requestCodec,
+			ICodec responseCodec, bool logHttpRequests, Action onComplete) {
 			Ensure.NotNull(httpEntity, "httpEntity");
 			Ensure.NotNull(allowedMethods, "allowedMethods");
 			Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
+			Ensure.NotNull(onComplete, nameof(onComplete));
 
 			HttpEntity = httpEntity;
 			TimeStamp = DateTime.UtcNow;
@@ -64,6 +64,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			_requestedUrl = httpEntity.RequestedUrl;
 			_responseContentEncoding = GetRequestedContentEncoding(httpEntity);
 			_logHttpRequests = logHttpRequests;
+			_onComplete = onComplete;
 
 			if (HttpEntity.Request != null && HttpEntity.Request.ContentLength64 == 0) {
 				LogRequest(new byte[0]);
@@ -86,7 +87,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			get { return _requestedUrl; }
 		}
 
-		public IPrincipal User {
+		public ClaimsPrincipal User {
 			get { return HttpEntity.User; }
 		}
 
@@ -96,7 +97,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (ObjectDisposedException) {
 				// ignore
 			} catch (ProtocolViolationException e) {
-				Log.ErrorException(e, "Attempt to set invalid HTTP status code occurred.");
+				Log.Error(e, "Attempt to set invalid HTTP status code occurred.");
 			}
 		}
 
@@ -106,14 +107,14 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (ObjectDisposedException) {
 				// ignore
 			} catch (ArgumentException e) {
-				Log.ErrorException(e,
+				Log.Error(e,
 					"Description string '{description}' did not pass validation. Status description was not set.",
 					desc);
 			}
 		}
 
 		private void SetContentType(string contentType, Encoding encoding) {
-			if(contentType == null)
+			if (contentType == null)
 				return;
 			try {
 				HttpEntity.Response.ContentType =
@@ -123,7 +124,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (InvalidOperationException e) {
 				Log.Debug("Error during setting content type on HTTP response: {e}.", e.Message);
 			} catch (ArgumentOutOfRangeException e) {
-				Log.ErrorException(e, "Invalid response type.");
+				Log.Error(e, "Invalid response type.");
 			}
 		}
 
@@ -135,7 +136,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			} catch (InvalidOperationException e) {
 				Log.Debug("Error during setting content length on HTTP response: {e}.", e.Message);
 			} catch (ArgumentOutOfRangeException e) {
-				Log.ErrorException(e, "Attempt to set invalid value '{length}' as content length.", length);
+				Log.Error(e, "Attempt to set invalid value '{length}' as content length.", length);
 			}
 		}
 
@@ -143,7 +144,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 			try {
 				HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
 				HttpEntity.Response.AddHeader("Access-Control-Allow-Headers",
-					"Content-Type, X-Requested-With, X-Forwarded-Host, X-Forwarded-Prefix, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequiresMaster, ES-HardDelete, ES-ResolveLinkTos");
+					"Content-Type, X-Requested-With, X-Forwarded-Host, X-Forwarded-Prefix, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequireMaster, ES-RequireLeader, ES-HardDelete, ES-ResolveLinkTos");
 				HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
 				HttpEntity.Response.AddHeader("Access-Control-Expose-Headers",
 					"Location, ES-Position, ES-CurrentVersion");
@@ -213,18 +214,17 @@ namespace EventStore.Transport.Http.EntityManagement {
 			Ensure.NotNull(onError, "onError");
 			Ensure.NotNull(onCompleted, "onCompleted");
 
-			_currentOutputStream = HttpEntity.Response.OutputStream;
-			ContinueWriteResponseAsync(response, () => { }, onError, onCompleted);
-		}
-
-		private void DisposeStreamAndCloseConnection(string message) {
-			IOStreams.SafelyDispose(_currentOutputStream);
-			_currentOutputStream = null;
-			CloseConnection(e => Log.Debug(message + "\nException: {e}", e.Message));
+			Task.Run(async () => {
+				try {
+					await HttpEntity.Response.OutputStream.WriteAsync(response);
+					onCompleted();
+				} catch (Exception ex) {
+					onError(ex);
+				}
+			});
 		}
 
 		public void EndReply() {
-			EndWriteResponse();
 		}
 
 		public void Reply(
@@ -236,18 +236,16 @@ namespace EventStore.Transport.Http.EntityManagement {
 				return;
 
 			if (response == null || response.Length == 0) {
-				LogResponse(new byte[0]);
+				LogResponse(Array.Empty<byte>());
 				SetResponseLength(0);
-				HttpEntity.Response.OutputStream.Close();
+				_onComplete();
 				CloseConnection(onError);
 			} else {
 				LogResponse(response);
 				if (!string.IsNullOrEmpty(_responseContentEncoding))
 					response = CompressResponse(response, _responseContentEncoding);
 				SetResponseLength(response.Length);
-				BeginWriteResponse();
-				ContinueWriteResponseAsync(response, () => { }, onError, () => { });
-				EndWriteResponse();
+				ContinueReply(response, onError, _onComplete);
 			}
 		}
 
@@ -268,7 +266,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 					IEnumerable<string> values;
 					if (response.Content.Headers.TryGetValues("Content-Encoding", out values)) {
-						HttpEntity.Response.Headers.Add("Content-Encoding", values.FirstOrDefault());
+						HttpEntity.Response.AddHeader("Content-Encoding", values.FirstOrDefault());
 					}
 
 					HttpEntity.Response.ContentLength64 = response.Content.Headers.ContentLength.GetValueOrDefault();
@@ -277,9 +275,12 @@ namespace EventStore.Transport.Http.EntityManagement {
 				foreach (var header in response.Headers) {
 					string headerValue;
 					switch (header.Key) {
-						case "Content-Length": break;
-						case "Keep-Alive": break;
-						case "Transfer-Encoding": break;
+						case "Content-Length":
+							break;
+						case "Keep-Alive":
+							break;
+						case "Transfer-Encoding":
+							break;
 						case "WWW-Authenticate":
 							headerValue = header.Value.FirstOrDefault();
 							HttpEntity.Response.AddHeader(header.Key, headerValue);
@@ -287,7 +288,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 						default:
 							headerValue = header.Value.FirstOrDefault();
-							HttpEntity.Response.Headers.Add(header.Key, headerValue);
+							HttpEntity.Response.AddHeader(header.Key, headerValue);
 							break;
 					}
 				}
@@ -295,44 +296,19 @@ namespace EventStore.Transport.Http.EntityManagement {
 				if (HttpEntity.Response.ContentLength64 > 0) {
 					response.Content.ReadAsStreamAsync()
 						.ContinueWith(task => {
-							new AsyncStreamCopier<HttpListenerResponse>(
+							new AsyncStreamCopier<IHttpResponse>(
 								task.Result,
 								HttpEntity.Response.OutputStream,
 								HttpEntity.Response,
-								copier => { Helper.EatException(HttpEntity.Response.Close); }).Start();
+								copier => { Helper.EatException(_onComplete); }).Start();
 						});
 				} else {
-					Helper.EatException(HttpEntity.Response.OutputStream.Close);
-					Helper.EatException(HttpEntity.Response.Close);
+					Helper.EatException(_onComplete);
 				}
 			} catch (Exception e) {
-				Log.ErrorException(e, "Failed to set up forwarded response parameters for '{requestedUrl}'.",
+				Log.Error(e, "Failed to set up forwarded response parameters for '{requestedUrl}'.",
 					RequestedUrl);
 			}
-		}
-
-		private void EndWriteResponse() {
-			_asyncWriter.AppendDispose(exception => { });
-		}
-
-		private void BeginWriteResponse() {
-			_currentOutputStream = HttpEntity.Response.OutputStream;
-		}
-
-		private void ContinueWriteResponseAsync(
-			byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted) {
-			if (_asyncWriter == null)
-				_asyncWriter = new AsyncQueuedBufferWriter(
-					_currentOutputStream, () => DisposeStreamAndCloseConnection("Close connection error"));
-
-			_asyncWriter.Append(
-				response, errorIfAny => {
-					if (errorIfAny == null)
-						onSuccess();
-					else
-						onError(errorIfAny);
-					onCompleted();
-				});
 		}
 
 		private void RequestRead(AsyncStreamCopier<ManagerOperationState> copier) {
@@ -363,25 +339,25 @@ namespace EventStore.Transport.Http.EntityManagement {
 		private void CloseConnection(Action<Exception> onError) {
 			try {
 				_onRequestSatisfied(HttpEntity);
-				HttpEntity.Response.Close();
+				_onComplete();
 			} catch (Exception e) {
 				onError(e);
 			}
 		}
 
-		private string CreateHeaderLog(NameValueCollection headers) {
+		private string CreateHeaderLog() {
 			var logBuilder = new StringBuilder();
-			foreach (var header in HttpEntity.Request.Headers) {
-				logBuilder.AppendFormat("{0}: {1}\n", header.ToString(), HttpEntity.Request.Headers[header.ToString()]);
+			foreach (var header in HttpEntity.Request.GetHeaderKeys()) {
+				logBuilder.AppendFormat("{0}: {1}\n", header, HttpEntity.Request.GetHeaderValues(header));
 			}
 
 			return logBuilder.ToString();
 		}
 
-		private Dictionary<string, object> CreateHeaderLogStructured(NameValueCollection headers) {
+		private Dictionary<string, object> CreateHeaderLogStructured() {
 			var dict = new Dictionary<string, object>();
-			foreach (var header in HttpEntity.Request.Headers) {
-				dict.Add(header.ToString(), HttpEntity.Request.Headers[header.ToString()]);
+			foreach (var header in HttpEntity.Request.GetHeaderKeys()) {
+				dict.Add(header, HttpEntity.Request.GetHeaderValues(header));
 			}
 
 			return dict;
@@ -391,18 +367,15 @@ namespace EventStore.Transport.Http.EntityManagement {
 			if (_logHttpRequests) {
 				var bodyStr = "";
 				if (body != null && body.Length > 0) {
-					bodyStr = System.Text.Encoding.Default.GetString(body);
+					bodyStr = Encoding.Default.GetString(body);
 				}
 
-				Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n" +
-				          (LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}"
+				Log.Debug("HTTP Request Received\n{dateTime}\nFrom: {remoteEndPoint}\n{httpMethod} {requestUrl}\n{headers}" + "\n{body}"
 					, DateTime.Now
 					, HttpEntity.Request.RemoteEndPoint.ToString()
 					, HttpEntity.Request.HttpMethod
 					, HttpEntity.Request.Url
-					, LogManager.StructuredLog
-						? (object)CreateHeaderLogStructured(HttpEntity.Request.Headers)
-						: (object)CreateHeaderLog(HttpEntity.Request.Headers)
+					, CreateHeaderLogStructured()
 					, bodyStr
 				);
 			}
@@ -412,18 +385,15 @@ namespace EventStore.Transport.Http.EntityManagement {
 			if (_logHttpRequests) {
 				var bodyStr = "";
 				if (body != null && body.Length > 0) {
-					bodyStr = System.Text.Encoding.Default.GetString(body);
+					bodyStr = Encoding.Default.GetString(body);
 				}
 
 				Log.Debug(
-					"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n" +
-					(LogManager.StructuredLog ? "{@headers}" : "{headers}") + "\n{body}",
+					"HTTP Response\n{dateTime}\n{statusCode} {statusDescription}\n{headers}\n{body}",
 					DateTime.Now,
 					HttpEntity.Response.StatusCode,
 					HttpEntity.Response.StatusDescription,
-					LogManager.StructuredLog
-						? (object)CreateHeaderLogStructured(HttpEntity.Request.Headers)
-						: (object)CreateHeaderLog(HttpEntity.Response.Headers),
+					CreateHeaderLogStructured(),
 					bodyStr
 				);
 			}
@@ -431,7 +401,8 @@ namespace EventStore.Transport.Http.EntityManagement {
 
 		public static byte[] CompressResponse(byte[] response, string compressionAlgorithm) {
 			if (string.IsNullOrEmpty(compressionAlgorithm) ||
-			    !SupportedCompressionAlgorithms.Contains(compressionAlgorithm)) return response;
+			    !SupportedCompressionAlgorithms.Contains(compressionAlgorithm))
+				return response;
 
 			MemoryStream outputStream;
 			var useBufferManager =
@@ -465,23 +436,23 @@ namespace EventStore.Transport.Http.EntityManagement {
 				}
 
 				var result = outputStream.ToArray();
-				if (useBufferManager) _compressionBufferManager.CheckIn(bufferManagerArraySegment);
+				if (useBufferManager)
+					_compressionBufferManager.CheckIn(bufferManagerArraySegment);
 				return result;
 			}
 		}
 
 		private string GetRequestedContentEncoding(HttpEntity httpEntity) {
-			if (httpEntity == null || httpEntity.Request == null) return null;
+			if (httpEntity == null || httpEntity.Request == null)
+				return null;
 
 			var httpEntityRequest = httpEntity.Request;
 			string contentEncoding = null;
-			var values = httpEntityRequest.Headers.GetValues("Accept-Encoding");
-			if (values != null) {
-				foreach (string value in values) {
-					if (SupportedCompressionAlgorithms.Contains(value)) {
-						contentEncoding = value;
-						break;
-					}
+			var values = httpEntityRequest.GetHeaderValues("Accept-Encoding");
+			foreach (string value in values) {
+				if (SupportedCompressionAlgorithms.Contains(value)) {
+					contentEncoding = value;
+					break;
 				}
 			}
 

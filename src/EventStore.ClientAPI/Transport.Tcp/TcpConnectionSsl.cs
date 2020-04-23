@@ -18,7 +18,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		public static ITcpConnection CreateConnectingConnection(ILogger log,
 			Guid connectionId,
 			IPEndPoint remoteEndPoint,
-			string targetHost,
 			bool validateServer,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
@@ -28,8 +27,11 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			var connection = new TcpConnectionSsl(log, connectionId, remoteEndPoint, onConnectionClosed);
 			// ReSharper disable ImplicitlyCapturedClosure
 			connector.InitConnect(remoteEndPoint,
+				(socket) => {
+					connection.InitClientSocket(socket);
+				},
 				(_, socket) => {
-					connection.InitClientSocket(socket, targetHost, validateServer);
+					connection.InitSslStream(remoteEndPoint.Address.ToString(), validateServer);
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},
@@ -51,6 +53,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		private readonly Guid _connectionId;
 		private readonly ILogger _log;
+		private Socket _socket;
 
 		private readonly ConcurrentQueueWrapper<ArraySegment<byte>> _sendQueue =
 			new ConcurrentQueueWrapper<ArraySegment<byte>>();
@@ -61,9 +64,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private readonly MemoryStream _memoryStream = new MemoryStream();
 
 		private readonly object _streamLock = new object();
+		private readonly object _closeLock = new object();
 		private bool _isSending;
 		private int _receiveHandling;
-		private int _isClosed;
+		private volatile bool _isClosed;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 		private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
@@ -84,25 +88,45 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			_onConnectionClosed = onConnectionClosed;
 		}
 
-		private void InitClientSocket(Socket socket, string targetHost, bool validateServer) {
-			Ensure.NotNull(targetHost, "targetHost");
+		private void InitClientSocket(Socket socket) {
+			_socket = socket;
+		}
 
-			InitConnectionBase(socket);
-			//_log.Info("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
+		private void InitSslStream(string targetHost, bool validateServer) {
+			Ensure.NotNull(targetHost, "targetHost");
+			InitConnectionBase(_socket);
+			//_log.Info("TcpConnectionSsl::InitSslStream({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
 			_validateServer = validateServer;
 
 			lock (_streamLock) {
 				try {
-					socket.NoDelay = true;
+					_socket.NoDelay = true;
 				} catch (ObjectDisposedException) {
+					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
+					return;
+				} catch (SocketException) {
 					CloseInternal(SocketError.Shutdown, "Socket is disposed.");
 					return;
 				}
 
-				_sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateServerCertificate, null);
 				try {
-					_sslStream.BeginAuthenticateAsClient(targetHost, OnEndAuthenticateAsClient, _sslStream);
+					_sslStream = new SslStream(new NetworkStream(_socket, true), false, ValidateServerCertificate,
+						null);
+				} catch (IOException exc) {
+					_log.Debug(exc, "[S{0}, L{1}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
+						LocalEndPoint);
+					return;
+				}
+
+				try {
+					#if NETCOREAPP3_1
+					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+					#else
+					var enabledSslProtocols = SslProtocols.Tls12;
+					#endif
+
+					_sslStream.BeginAuthenticateAsClient(targetHost, null, enabledSslProtocols, false, OnEndAuthenticateAsClient, _sslStream);
 				} catch (AuthenticationException exc) {
 					_log.Info(exc, "[S{0}, L{1}]: Authentication exception on BeginAuthenticateAsClient.",
 						RemoteEndPoint, LocalEndPoint);
@@ -353,7 +377,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 						res.Add(piece);
 					}
 
-					callback(this, res);
+					lock (_closeLock) {
+						if(!_isClosed)
+							callback(this, res);
+					}
 
 					int bytes = 0;
 					for (int i = 0, n = res.Count; i < n; ++i) {
@@ -374,8 +401,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void CloseInternal(SocketError socketError, string reason) {
-			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0)
-				return;
+			lock (_closeLock) {
+				if (_isClosed) return;
+				_isClosed = true;
+			}
 
 			NotifyClosed();
 
@@ -388,6 +417,9 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 			if (_sslStream != null)
 				Helper.EatException(() => _sslStream.Close());
+
+			if (_socket != null)
+				Helper.EatException(() => _socket.Dispose());
 
 			if (_onConnectionClosed != null)
 				_onConnectionClosed(this, socketError);

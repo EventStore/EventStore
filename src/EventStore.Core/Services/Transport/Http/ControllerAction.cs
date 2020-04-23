@@ -1,12 +1,13 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public class ControllerAction {
 		public readonly string UriTemplate;
 		public readonly string HttpMethod;
-
+		public readonly Func<UriTemplateMatch, Operation> Operation;
 		public readonly ICodec[] SupportedRequestCodecs;
 		public readonly ICodec[] SupportedResponseCodecs;
 		public readonly ICodec DefaultResponseCodec;
@@ -14,7 +15,16 @@ namespace EventStore.Core.Services.Transport.Http {
 		public ControllerAction(string uriTemplate,
 			string httpMethod,
 			ICodec[] requestCodecs,
-			ICodec[] responseCodecs) {
+			ICodec[] responseCodecs,
+			Operation operation) :this(uriTemplate,httpMethod, requestCodecs, responseCodecs, _=>operation){
+
+		}
+
+		public ControllerAction(string uriTemplate,
+			string httpMethod,
+			ICodec[] requestCodecs,
+			ICodec[] responseCodecs,
+			Func<UriTemplateMatch, Operation> operation) {
 			Ensure.NotNull(uriTemplate, "uriTemplate");
 			Ensure.NotNull(httpMethod, "httpMethod");
 			Ensure.NotNull(requestCodecs, "requestCodecs");
@@ -26,6 +36,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			SupportedRequestCodecs = requestCodecs;
 			SupportedResponseCodecs = responseCodecs;
 			DefaultResponseCodec = responseCodecs.Length > 0 ? responseCodecs[0] : null;
+			Operation = operation;
 		}
 
 		public bool Equals(ControllerAction other) {

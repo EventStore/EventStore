@@ -159,7 +159,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 				readNotification.Wait();
 			}
 
-			context.Log.Info("dvub finished execution : ");
+			context.Log.Information("dvub finished execution : ");
 
 			var writersTable = new ConsoleTable("WRITER ID", "Status");
 
@@ -172,8 +172,8 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 				readersTable.AppendRow(rs.ThreadId.ToString(), rs.Success ? "Success" : "Fail");
 			}
 
-			context.Log.Info(writersTable.CreateIndentedTable());
-			context.Log.Info(readersTable.CreateIndentedTable());
+			context.Log.Information(writersTable.CreateIndentedTable());
+			context.Log.Information(readersTable.CreateIndentedTable());
 
 			var success = writeStatuses.All(s => s.Success) && readStatuses.All(s => s.Success);
 			if (success)
@@ -348,7 +348,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 					var stream = _streams[streamIdx];
 					var corrid = Guid.NewGuid();
 					var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false,
-						requireMaster: false);
+						requireLeader: false);
 					var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
 					connection.EnqueueSend(package.AsByteArray());

@@ -1,9 +1,9 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class QueryProcessingStrategy : DefaultProjectionProcessingStrategy {
@@ -28,14 +28,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return !_sourceDefinition.DefinesFold;
 		}
 
-		public override bool GetIsSlaveProjection() {
-			return false;
-		}
-
-		public override SlaveProjectionDefinitions GetSlaveProjections() {
-			return null;
-		}
-
 		protected override IProjectionProcessingPhase[] CreateProjectionProcessingPhases(
 			IPublisher publisher, IPublisher inputQueue, Guid projectionCorrelationId,
 			ProjectionNamesBuilder namingBuilder,
@@ -45,13 +37,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 				new CoreProjectionCheckpointWriter(
 					namingBuilder.MakeCheckpointStreamName(), ioDispatcher, _projectionVersion, _name);
 			var checkpointManager2 = new DefaultCheckpointManager(
-				publisher, projectionCorrelationId, _projectionVersion, SystemAccount.Principal, ioDispatcher,
+				publisher, projectionCorrelationId, _projectionVersion, SystemAccounts.System, ioDispatcher,
 				_projectionConfig, _name, new PhasePositionTagger(1), namingBuilder, GetUseCheckpoints(), false,
 				_sourceDefinition.DefinesFold, coreProjectionCheckpointWriter);
 
 			IProjectionProcessingPhase writeResultsPhase;
-			if (GetProducesRunningResults()
-			    || !string.IsNullOrEmpty(_sourceDefinition.CatalogStream) && _sourceDefinition.ByStreams)
+			if (GetProducesRunningResults())
 				writeResultsPhase = new WriteQueryEofProjectionProcessingPhase(
 					publisher,
 					1,

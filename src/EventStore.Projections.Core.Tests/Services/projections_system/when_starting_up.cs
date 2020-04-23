@@ -4,7 +4,6 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Helpers;
 using System;
 using System.Net;
 
@@ -34,28 +33,27 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			}
 
 			[Test]
-			public void core_readers_should_use_the_unique_id_provided_by_the_state_change_message() {
-				var epochWrittenMessages = _consumer.HandledMessages.OfType<SystemMessage.EpochWritten>().First();
+			public void core_readers_should_use_the_unique_id_provided_by_the_component_start_message() {
+				var startComponentMessages = _consumer.HandledMessages.OfType<ProjectionSubsystemMessage.StartComponents>().First();
 				var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
-				var startingMessage = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Starting>().First();
 
-				Assert.AreEqual(1, startCoreMessages.Select(x => x.EpochId).Distinct().Count());
-				Assert.AreEqual(epochWrittenMessages.Epoch.EpochId, startCoreMessages.First().EpochId);
-				Assert.AreEqual(epochWrittenMessages.Epoch.EpochId, startingMessage.EpochId);
+				Assert.AreEqual(1, startCoreMessages.Select(x => x.InstanceCorrelationId).Distinct().Count());
+				Assert.AreEqual(startComponentMessages.InstanceCorrelationId, startCoreMessages.First().InstanceCorrelationId);
 			}
 		}
 
 		[TestFixture]
-		public class when_starting_as_slave : with_projections_subsystem {
+		public class when_starting_as_follower : with_projections_subsystem {
 			protected override IEnumerable<WhenStep> PreWhen() {
-				yield return (new SystemMessage.BecomeSlave(Guid.NewGuid(),
+				yield return (new SystemMessage.BecomeFollower(Guid.NewGuid(),
 					new EventStore.Core.Data.VNodeInfo(Guid.NewGuid(), 1,
 						new IPEndPoint(IPAddress.Loopback, 1111),
 						new IPEndPoint(IPAddress.Loopback, 1112),
 						new IPEndPoint(IPAddress.Loopback, 1113),
 						new IPEndPoint(IPAddress.Loopback, 1114),
 						new IPEndPoint(IPAddress.Loopback, 1115),
-						new IPEndPoint(IPAddress.Loopback, 1116)
+						new IPEndPoint(IPAddress.Loopback, 1116),
+						false
 					)));
 				yield return (new SystemMessage.SystemCoreReady());
 				yield return Yield;
@@ -76,9 +74,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 
 			[Test]
 			public void projections_core_coordinator_should_not_publish_start_core_message() {
-				//projections are not allowed (yet) to run on slaves
+				//projections are not allowed (yet) to run on followers
 				var startCoreMessages = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.StartCore>();
-				Assert.AreEqual(0, startCoreMessages.Select(x => x.EpochId).Distinct().Count());
+				Assert.AreEqual(0, startCoreMessages.Select(x => x.InstanceCorrelationId).Distinct().Count());
 			}
 		}
 	}

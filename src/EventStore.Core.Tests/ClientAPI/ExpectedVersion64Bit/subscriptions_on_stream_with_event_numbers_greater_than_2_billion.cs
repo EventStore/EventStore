@@ -29,53 +29,53 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			_c2 = WriteSingleEvent(_catchupStreamOne, intMaxValue + 2, new string('.', 3000));
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
-			_store.SetStreamMetadataAsync(_volatileStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
-			_store.SetStreamMetadataAsync(_volatileStreamTwo, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
-			_store.SetStreamMetadataAsync(_catchupStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
-				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1)).Wait();
+			await _store.ConnectAsync();
+			await _store.SetStreamMetadataAsync(_volatileStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+			await _store.SetStreamMetadataAsync(_volatileStreamTwo, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
+			await _store.SetStreamMetadataAsync(_catchupStreamOne, EventStore.ClientAPI.ExpectedVersion.Any,
+				EventStore.ClientAPI.StreamMetadata.Create(truncateBefore: intMaxValue + 1));
 		}
 
 		[Test]
-		public void should_be_able_to_subscribe_to_stream_with_volatile_subscription() {
+		public async Task should_be_able_to_subscribe_to_stream_with_volatile_subscription() {
 			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
 			EventStore.ClientAPI.ResolvedEvent receivedEvent = new EventStore.ClientAPI.ResolvedEvent();
 			var mre = new ManualResetEvent(false);
-			_store.SubscribeToStreamAsync(_volatileStreamOne, true, (s, e) => {
+			await _store.SubscribeToStreamAsync(_volatileStreamOne, true, (s, e) => {
 				receivedEvent = e;
 				mre.Set();
 				return Task.CompletedTask;
-			}).Wait();
+			});
 
-			_store.AppendToStreamAsync(_volatileStreamOne, intMaxValue + 2, evnt).Wait();
+			await _store.AppendToStreamAsync(_volatileStreamOne, intMaxValue + 2, evnt);
 			Assert.That(mre.WaitOne(TimeSpan.FromSeconds(5)), "Timed out waiting for events to appear");
 
 			Assert.AreEqual(evnt.EventId, receivedEvent.Event.EventId);
 		}
 
 		[Test]
-		public void should_be_able_to_subscribe_to_all_with_volatile_subscription() {
+		public async Task should_be_able_to_subscribe_to_all_with_volatile_subscription() {
 			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
 			EventStore.ClientAPI.ResolvedEvent receivedEvent = new EventStore.ClientAPI.ResolvedEvent();
 			var mre = new ManualResetEvent(false);
-			_store.SubscribeToAllAsync(true, (s, e) => {
+			await _store.SubscribeToAllAsync(true, (s, e) => {
 				receivedEvent = e;
 				mre.Set();
 				return Task.CompletedTask;
-			}, userCredentials: DefaultData.AdminCredentials).Wait();
+			}, userCredentials: DefaultData.AdminCredentials);
 
-			_store.AppendToStreamAsync(_volatileStreamTwo, intMaxValue + 2, evnt).Wait();
+			await _store.AppendToStreamAsync(_volatileStreamTwo, intMaxValue + 2, evnt);
 			Assert.That(mre.WaitOne(TimeSpan.FromSeconds(5)), "Timed out waiting for events to appear");
 
 			Assert.AreEqual(evnt.EventId, receivedEvent.Event.EventId);
 		}
 
 		[Test]
-		public void should_be_able_to_subscribe_to_stream_with_catchup_subscription() {
+		public async Task should_be_able_to_subscribe_to_stream_with_catchup_subscription() {
 			var evnt = new EventData(Guid.NewGuid(), "EventType", false, new byte[10], new byte[15]);
 			List<EventStore.ClientAPI.ResolvedEvent> receivedEvents = new List<EventStore.ClientAPI.ResolvedEvent>();
 
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				return Task.CompletedTask;
 			});
 
-			_store.AppendToStreamAsync(_catchupStreamOne, intMaxValue + 2, evnt).Wait();
+			await _store.AppendToStreamAsync(_catchupStreamOne, intMaxValue + 2, evnt);
 
 			Assert.That(countdown.Wait(TimeSpan.FromSeconds(5)), "Timed out waiting for events to appear");
 

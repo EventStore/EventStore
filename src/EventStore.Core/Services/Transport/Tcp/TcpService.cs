@@ -1,13 +1,14 @@
 using System;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public enum TcpServiceType {
@@ -23,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	public class TcpService : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpService>();
 
 		private readonly IPublisher _publisher;
 		private readonly IPEndPoint _serverEndPoint;
@@ -36,7 +37,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly IAuthenticationProvider _authProvider;
 		private readonly X509Certificate _certificate;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslClientCertValidator;
 		private readonly int _connectionPendingSendBytesThreshold;
+		private readonly int _connectionQueueSizeThreshold;
+		private readonly AuthorizationGateway _authorizationGateway;
 
 		public TcpService(IPublisher publisher,
 			IPEndPoint serverEndPoint,
@@ -47,10 +51,13 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			X509Certificate certificate,
-			int connectionPendingSendBytesThreshold)
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
+			int connectionPendingSendBytesThreshold,
+			int connectionQueueSizeThreshold)
 			: this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher,
-				heartbeatInterval, heartbeatTimeout, authProvider, certificate, connectionPendingSendBytesThreshold) {
+				heartbeatInterval, heartbeatTimeout, authProvider, authorizationGateway, certificate, sslClientCertValidator, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
 		}
 
 		public TcpService(IPublisher publisher,
@@ -62,13 +69,17 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			X509Certificate certificate,
-			int connectionPendingSendBytesThreshold) {
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
+			int connectionPendingSendBytesThreshold,
+			int connectionQueueSizeThreshold) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(serverEndPoint, "serverEndPoint");
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorizationGateway, "authorizationGateway");
 			if (securityType == TcpSecurityType.Secure)
 				Ensure.NotNull(certificate, "certificate");
 
@@ -82,8 +93,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_heartbeatInterval = heartbeatInterval;
 			_heartbeatTimeout = heartbeatTimeout;
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
 			_authProvider = authProvider;
+			_authorizationGateway = authorizationGateway;
 			_certificate = certificate;
+			_sslClientCertValidator = sslClientCertValidator;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
@@ -103,9 +117,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket) {
 			var conn = _securityType == TcpSecurityType.Secure
-				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, verbose: true)
+				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificate, _sslClientCertValidator, verbose: true)
 				: TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
-			Log.Info(
+			Log.Information(
 				"{serviceType} TCP connection accepted: [{securityType}, {remoteEndPoint}, L{localEndPoint}, {connectionId:B}].",
 				_serviceType, _securityType, conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 
@@ -118,10 +132,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				conn,
 				_networkSendQueue,
 				_authProvider,
+				_authorizationGateway,
 				_heartbeatInterval,
 				_heartbeatTimeout,
 				(m, e) => _publisher.Publish(new TcpMessage.ConnectionClosed(m, e)),
-				_connectionPendingSendBytesThreshold); // TODO AN: race condition
+				_connectionPendingSendBytesThreshold,
+				_connectionQueueSizeThreshold); // TODO AN: race condition
 			_publisher.Publish(new TcpMessage.ConnectionEstablished(manager));
 			manager.StartReceiving();
 		}

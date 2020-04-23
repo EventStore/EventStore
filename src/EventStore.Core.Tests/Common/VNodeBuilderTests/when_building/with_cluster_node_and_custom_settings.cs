@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private IPEndPoint[] _gossipSeeds;
 
 		public override void Given() {
-			var baseAddress = IPAddress.Parse("192.168.1.10");
+			var baseAddress = IPAddress.Parse("127.0.1.10");
 			_gossipSeeds = new IPEndPoint[] {
 				new IPEndPoint(baseAddress, 1111),
 				new IPEndPoint(baseAddress, 1112)
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private IPEndPoint[] _gossipSeeds;
 
 		public override void Given() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
-			_gossipSeeds = new IPEndPoint[] {new IPEndPoint(baseIpAddress, 2112), new IPEndPoint(baseIpAddress, 3112)};
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
+			_gossipSeeds = new IPEndPoint[] { new IPEndPoint(baseIpAddress, 2112), new IPEndPoint(baseIpAddress, 3112) };
 			_builder.WithGossipSeeds(_gossipSeeds);
 		}
 
@@ -236,8 +236,11 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
 	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set : ClusterMemberScenario {
 		public override void Given() {
-			_builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
-				.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112));
+			_builder
+				.WithInternalHttpOn(new IPEndPoint(IPAddress.Loopback, 2112))
+				.WithExternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
+				.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112))
+				.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113));
 		}
 
 		[Test]
@@ -259,8 +262,11 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	public class
 		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external : ClusterMemberScenario {
 		public override void Given() {
-			_builder.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
+			_builder
+				.WithInternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2112))
+				.WithExternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1112))
+				.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
 				.AdvertiseExternalIPAs(IPAddress.Parse("10.0.0.1"));
 		}
 

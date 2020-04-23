@@ -8,15 +8,15 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted> {
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly long _transactionId;
 		private readonly IEnumerable<EventData> _events;
 
 		public TransactionalWriteOperation(ILogger log, TaskCompletionSource<object> source,
-			bool requireMaster, long transactionId, IEnumerable<EventData> events,
+			bool requireLeader, long transactionId, IEnumerable<EventData> events,
 			UserCredentials userCredentials)
 			: base(log, source, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted, userCredentials) {
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_transactionId = transactionId;
 			_events = events;
 		}
@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 					new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson ? 1 : 0, 0, x.Data,
 						x.Metadata))
 				.ToArray();
-			return new ClientMessage.TransactionWrite(_transactionId, dtos, _requireMaster);
+			return new ClientMessage.TransactionWrite(_transactionId, dtos, _requireLeader);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.TransactionWriteCompleted response) {

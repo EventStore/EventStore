@@ -1,38 +1,38 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
-using EventStore.Core.Messages;
+using System.Security.Claims;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 	namespace when_posting_a_transient_projection {
 		[TestFixture]
 		public class authenticated : TestFixtureWithProjectionCoreAndManagementServices {
 			private string _projectionName;
-			private OpenGenericPrincipal _testUserPrincipal;
+			private ClaimsPrincipal _testUserPrincipal;
 
 			private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
 
 			protected override void Given() {
 				_projectionName = "test-projection";
 				_projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
-				_testUserPrincipal = new OpenGenericPrincipal(
-					new GenericIdentity("test-user"), new[] {"test-role1", "test-role2"});
+				_testUserPrincipal = new ClaimsPrincipal(new ClaimsIdentity(
+					new [] {
+						new Claim(ClaimTypes.Name,"test-user"),
+						new Claim(ClaimTypes.Role,"test-role1"), 
+						new Claim(ClaimTypes.Role,"test-role2")
+					}
+					, "ES-Test"));
 
 				AllWritesSucceed();
 				NoOtherStreams();
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-				yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-				yield return new SystemMessage.SystemCoreReady();
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(GetInputQueue()), ProjectionMode.Transient, _projectionName,
@@ -80,9 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new SystemMessage.BecomeMaster(Guid.NewGuid());
-				yield return new SystemMessage.EpochWritten(new EpochRecord(0L, 0, Guid.NewGuid(), 0L, DateTime.Now));
-				yield return new SystemMessage.SystemCoreReady();
+				yield return new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid());
 				yield return
 					new ProjectionManagementMessage.Command.Post(
 						new PublishEnvelope(GetInputQueue()), ProjectionMode.Continuous, _projectionName,

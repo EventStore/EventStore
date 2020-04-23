@@ -155,76 +155,6 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class CreateAndPrepareSlave : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			private readonly Guid _masterCoreProjectionId;
-			private readonly ProjectionConfig _config;
-			private readonly Guid _masterWorkerId;
-			private readonly string _handlerType;
-			private readonly string _query;
-			private readonly string _name;
-			private readonly ProjectionVersion _version;
-
-			public CreateAndPrepareSlave(
-				Guid projectionId,
-				Guid workerId,
-				string name,
-				ProjectionVersion version,
-				ProjectionConfig config,
-				Guid masterMasterWorkerId,
-				Guid masterCoreProjectionId,
-				string handlerType,
-				string query)
-				: base(projectionId, workerId) {
-				if (name == null) throw new ArgumentNullException("name");
-				if (config == null) throw new ArgumentNullException("config");
-				if (handlerType == null) throw new ArgumentNullException("handlerType");
-				if (query == null) throw new ArgumentNullException("query");
-				if (masterMasterWorkerId == Guid.Empty)
-					throw new ArgumentException("Must not be empty", "masterMasterWorkerId");
-				_name = name;
-				_version = version;
-				_config = config;
-				_masterWorkerId = masterMasterWorkerId;
-				_masterCoreProjectionId = masterCoreProjectionId;
-				_handlerType = handlerType;
-				_query = query;
-			}
-
-			public ProjectionConfig Config {
-				get { return _config; }
-			}
-
-			public string Name {
-				get { return _name; }
-			}
-
-			public ProjectionVersion Version {
-				get { return _version; }
-			}
-
-			public Guid MasterCoreProjectionId {
-				get { return _masterCoreProjectionId; }
-			}
-
-			public string HandlerType {
-				get { return _handlerType; }
-			}
-
-			public string Query {
-				get { return _query; }
-			}
-
-			public Guid MasterWorkerId {
-				get { return _masterWorkerId; }
-			}
-		}
-
 		public class CreatePrepared : CoreProjectionManagementControlMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -296,25 +226,6 @@ namespace EventStore.Projections.Core.Messages {
 
 			public Dispose(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
-			}
-		}
-
-		public sealed class
-			SlaveProjectionReaderAssigned : CoreProjectionStatusMessage.CoreProjectionStatusMessageBase {
-			private readonly Guid _subscriptionId;
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public SlaveProjectionReaderAssigned(Guid projectionId, Guid subscriptionId)
-				: base(projectionId) {
-				_subscriptionId = subscriptionId;
-			}
-
-			public Guid SubscriptionId {
-				get { return _subscriptionId; }
 			}
 		}
 	}

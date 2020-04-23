@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 	public class vnode_fsm_should {
 		[Test]
 		public void allow_ignoring_messages_by_common_ancestor() {
-			var fsm = new VNodeFSMBuilder(() => VNodeState.Master)
+			var fsm = new VNodeFSMBuilder(() => VNodeState.Leader)
 				.InAnyState()
 				.When<P>().Ignore()
 				.WhenOther().Do(x => Assert.Fail("{0} slipped through", x.GetType().Name))
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.VNode {
 		[Test]
 		public void handle_specific_message_even_if_base_message_is_ignored() {
 			bool aHandled = false;
-			var fsm = new VNodeFSMBuilder(() => VNodeState.Master)
+			var fsm = new VNodeFSMBuilder(() => VNodeState.Leader)
 				.InAnyState()
 				.When<P>().Ignore()
 				.When<A>().Do(x => aHandled = true)

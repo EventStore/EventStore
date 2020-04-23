@@ -25,9 +25,9 @@ namespace EventStore.Core.Messages {
 				EventNumber = eventRecord.EventNumber;
 				EventId = eventRecord.EventId.ToByteArray();
 				EventType = eventRecord.EventType;
-				Data = eventRecord.Data;
+				Data = eventRecord.Data.ToArray();
 				Created = eventRecord.TimeStamp.ToBinary();
-				Metadata = eventRecord.Metadata;
+				Metadata = eventRecord.Metadata.ToArray();
 				var isJson = eventRecord.IsJson;
 				DataContentType = isJson ? 1 : 0;
 				MetadataContentType = isJson ? 1 : 0;
@@ -39,9 +39,9 @@ namespace EventStore.Core.Messages {
 				EventNumber = eventNumber;
 				EventId = eventRecord.EventId.ToByteArray();
 				EventType = eventRecord.EventType;
-				Data = eventRecord.Data;
+				Data = eventRecord.Data.ToArray();
 				Created = eventRecord.TimeStamp.ToBinary();
-				Metadata = eventRecord.Metadata;
+				Metadata = eventRecord.Metadata.ToArray();
 				var isJson = eventRecord.IsJson;
 				DataContentType = isJson ? 1 : 0;
 				MetadataContentType = isJson ? 1 : 0;
@@ -50,11 +50,11 @@ namespace EventStore.Core.Messages {
 		}
 
 		public partial class NotHandled {
-			public partial class MasterInfo {
-				public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
+			public partial class LeaderInfo {
+				public LeaderInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 					IPEndPoint externalHttpEndPoint) {
-					ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
-					ExternalTcpPort = externalTcpEndPoint.Port;
+					ExternalTcpAddress = externalTcpEndPoint == null ? null : externalTcpEndPoint.Address.ToString();
+					ExternalTcpPort = externalTcpEndPoint == null ? (int?) null : externalTcpEndPoint.Port;
 					ExternalSecureTcpAddress = externalSecureTcpEndPoint == null
 						? null
 						: externalSecureTcpEndPoint.Address.ToString();

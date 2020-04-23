@@ -1,9 +1,10 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace EventStore.Common.Utils {
 	public static class EndpointExtensions {
-		public const string HTTP_SCHEMA = "http";
-		public const string HTTPS_SCHEMA = "https";
+		public static string HTTP_SCHEMA => Uri.UriSchemeHttp;
+		public static string HTTPS_SCHEMA => Uri.UriSchemeHttps;
 
 		public static string ToHttpUrl(this EndPoint endPoint, string schema, string rawUrl = null) {
 			if (endPoint is IPEndPoint) {

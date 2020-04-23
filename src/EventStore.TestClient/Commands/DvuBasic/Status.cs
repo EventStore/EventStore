@@ -1,9 +1,9 @@
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
 	public class Status {
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 
 		public int ThreadId { get; private set; }
 		public bool Success { get; private set; }
@@ -38,7 +38,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			if (failsP > 50d)
 				_log.Fatal(table.CreateIndentedTable());
 			else
-				_log.Info(table.CreateIndentedTable());
+				_log.Information(table.CreateIndentedTable());
 		}
 
 		public void ReportReadsProgress(int threadId, int successes, int fails) {
@@ -50,7 +50,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			if (fails != 0)
 				_log.Fatal(table.CreateIndentedTable());
 			else
-				_log.Info(table.CreateIndentedTable());
+				_log.Information(table.CreateIndentedTable());
 		}
 
 		public void ReportReadError(int threadId, string stream, int indx) {

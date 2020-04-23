@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -11,6 +9,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
+using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services.Processing;
@@ -18,11 +17,11 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json.Linq;
-using EventStore.Projections.Core.Services.Management;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Http {
 	public class ProjectionsController : CommunicationController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ProjectionsController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ProjectionsController>();
 
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json};
 
@@ -49,54 +48,56 @@ namespace EventStore.Projections.Core.Services.Http {
 			HttpHelpers.RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
 
 			Register(service, "/projections",
-				HttpMethod.Get, OnProjections, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+				HttpMethod.Get, OnProjections, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Projections.List));
+			Register(service, "/projections/restart",
+				HttpMethod.Post, OnProjectionsRestart, new ICodec[] { Codec.ManualEncoding}, SupportedCodecs, new Operation(Operations.Projections.Restart));
 			Register(service, "/projections/any",
-				HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionsGetAny, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.List));
 			Register(service, "/projections/all-non-transient",
-				HttpMethod.Get, OnProjectionsGetAllNonTransient, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionsGetAllNonTransient, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.List));
 			Register(service, "/projections/transient",
-				HttpMethod.Get, OnProjectionsGetTransient, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionsGetTransient, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.List));
 			Register(service, "/projections/onetime",
-				HttpMethod.Get, OnProjectionsGetOneTime, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionsGetOneTime, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.List));
 			Register(service, "/projections/continuous",
-				HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionsGetContinuous, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.List));
 			Register(service, "/projections/transient?name={name}&type={type}&enabled={enabled}",
-				HttpMethod.Post, OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+				HttpMethod.Post, OnProjectionsPostTransient, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, new Operation(Operations.Projections.Create).WithParameter(Operations.Projections.Parameters.Query));
 			Register(service,
 				"/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}&trackemittedstreams={trackemittedstreams}",
-				HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+				HttpMethod.Post, OnProjectionsPostOneTime, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, new Operation(Operations.Projections.Create).WithParameter(Operations.Projections.Parameters.OneTime));
 			Register(service,
 				"/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}&trackemittedstreams={trackemittedstreams}",
-				HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+				HttpMethod.Post, OnProjectionsPostContinuous, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, new Operation(Operations.Projections.Create).WithParameter(Operations.Projections.Parameters.Continuous));
 			Register(service, "/projection/{name}/query?config={config}",
-				HttpMethod.Get, OnProjectionQueryGet, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+				HttpMethod.Get, OnProjectionQueryGet, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Projections.Read));
 			Register(service, "/projection/{name}/query?type={type}&emit={emit}",
-				HttpMethod.Put, OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs);
+				HttpMethod.Put, OnProjectionQueryPut, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, new Operation(Operations.Projections.Update)); /* source of transient projections can be set by a normal user. Authorization checks are done internally for non-transient projections. */
 			Register(service, "/projection/{name}",
-				HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionStatusGet, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Status));
 			Register(service,
 				"/projection/{name}?deleteStateStream={deleteStateStream}&deleteCheckpointStream={deleteCheckpointStream}&deleteEmittedStreams={deleteEmittedStreams}",
-				HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Delete, OnProjectionDelete, Codec.NoCodecs, SupportedCodecs,new Operation(Operations.Projections.Delete));
 			Register(service, "/projection/{name}/statistics",
-				HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionStatisticsGet, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Statistics));
 			Register(service, "/projections/read-events",
-				HttpMethod.Post, OnProjectionsReadEvents, SupportedCodecs, SupportedCodecs);
+				HttpMethod.Post, OnProjectionsReadEvents, SupportedCodecs, SupportedCodecs, new Operation(Operations.Projections.DebugProjection));
 			Register(service, "/projection/{name}/state?partition={partition}",
-				HttpMethod.Get, OnProjectionStateGet, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionStateGet, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.State));
 			Register(service, "/projection/{name}/result?partition={partition}",
-				HttpMethod.Get, OnProjectionResultGet, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionResultGet, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Result));
 			Register(service, "/projection/{name}/command/disable?enableRunAs={enableRunAs}",
-				HttpMethod.Post, OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Post, OnProjectionCommandDisable, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Disable)); /* transient projections can be stopped by a normal user. Authorization checks are done internally for non-transient projections.*/
 			Register(service, "/projection/{name}/command/enable?enableRunAs={enableRunAs}",
-				HttpMethod.Post, OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Post, OnProjectionCommandEnable, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Enable)); /* transient projections can be enabled by a normal user. Authorization checks are done internally for non-transient projections.*/
 			Register(service, "/projection/{name}/command/reset?enableRunAs={enableRunAs}",
-				HttpMethod.Post, OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Post, OnProjectionCommandReset, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Reset)); /* transient projections can be reset by a normal user (when debugging). Authorization checks are done internally for non-transient projections.*/
 			Register(service, "/projection/{name}/command/abort?enableRunAs={enableRunAs}",
-				HttpMethod.Post, OnProjectionCommandAbort, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Post, OnProjectionCommandAbort, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.Abort)); /* transient projections can be aborted by a normal user. Authorization checks are done internally for non-transient projections.*/
 			Register(service, "/projection/{name}/config",
-				HttpMethod.Get, OnProjectionConfigGet, Codec.NoCodecs, SupportedCodecs);
+				HttpMethod.Get, OnProjectionConfigGet, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Projections.ReadConfiguration));
 			Register(service, "/projection/{name}/config",
-				HttpMethod.Put, OnProjectionConfigPut, SupportedCodecs, SupportedCodecs);
+				HttpMethod.Put, OnProjectionConfigPut, SupportedCodecs, SupportedCodecs, new Operation(Operations.Projections.UpdateConfiguration));
 		}
 
 		private void OnProjections(HttpEntityManager http, UriTemplateMatch match) {
@@ -108,7 +109,28 @@ namespace EventStore.Projections.Core.Services.Http {
 				new[] {
 					new KeyValuePair<string, string>(
 						"Location", new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
-				}, x => Log.DebugException(x, "Reply Text Content Failed."));
+				}, x => Log.Debug(x, "Reply Text Content Failed."));
+		}
+
+		private void OnProjectionsRestart(HttpEntityManager http, UriTemplateMatch match) {
+			if (_httpForwarder.ForwardRequest(http))
+				return;
+
+			var envelope = new SendToHttpEnvelope(_networkSendQueue, http,
+				(e, message) => e.ResponseCodec.To("Restarting"),
+				(e, message) => {
+					switch (message) {
+						case ProjectionSubsystemMessage.SubsystemRestarting _:
+							return Configure.Ok(e.ResponseCodec.ContentType);
+						case ProjectionSubsystemMessage.InvalidSubsystemRestart fail:
+							return Configure.BadRequest
+								($"Projection Subsystem cannot be restarted as it is in the wrong state: {fail.SubsystemState}");
+						default:
+							return Configure.InternalServerError();
+					}
+				}
+			);
+			Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 		}
 
 		private void OnProjectionsGetAny(HttpEntityManager http, UriTemplateMatch match) {
@@ -341,7 +363,7 @@ namespace EventStore.Projections.Core.Services.Http {
 							fromPosition.Tag,
 							bodyParsed.MaxEvents ?? 10));
 				},
-				x => Log.DebugException(x, "Read Request Body Failed."));
+				x => Log.Debug(x, "Read Request Body Failed."));
 		}
 
 		private void ProjectionsGet(HttpEntityManager http, UriTemplateMatch match, ProjectionMode? mode) {
@@ -393,7 +415,7 @@ namespace EventStore.Projections.Core.Services.Http {
 							checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled,
 							trackEmittedStreams: trackEmittedStreams, enableRunAs: true);
 					Publish(postMessage);
-				}, x => Log.DebugException(x, "Reply Text Body Failed."));
+				}, x => Log.Debug(x, "Reply Text Body Failed."));
 		}
 
 		private ResponseConfiguration

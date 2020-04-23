@@ -45,13 +45,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 					(int)(DateTime.Now - started).TotalMinutes,
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
-				Log.Info(
+				Log.Information(
 					"=================== Start run #{iteration}, elapsed {elapsed} of {executionPeriod} minutes, {type} =================== ",
 					GetIterationCode(),
 					(int)(DateTime.Now - started).TotalMinutes,
 					_executionPeriod.TotalMinutes,
 					GetType().Name);
-				Log.Info("##teamcity[message '{message}']", msg);
+				Log.Information("##teamcity[message '{message}']", msg);
 
 
 				InnerRun();
@@ -168,7 +168,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
 
 			var task = Task.Factory.ContinueWhenAll(new[] {w1, w2, w3}, Task.WaitAll);
-			return task.ContinueWith(x => Log.Info("Data written for iteration {iteration}.", GetIterationCode()));
+			return task.ContinueWith(x => Log.Information("Data written for iteration {iteration}.", GetIterationCode()));
 		}
 
 		protected string CreateSumCheckForBankAccounts(string projectionName, string suffix = "") {

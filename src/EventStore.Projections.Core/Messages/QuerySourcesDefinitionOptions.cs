@@ -13,9 +13,6 @@ namespace EventStore.Projections.Core.Messages {
 		[DataMember(Name = "definesStateTransform")]
 		public bool DefinesStateTransform { get; set; }
 
-		[DataMember(Name = "definesCatalogTransform")]
-		public bool DefinesCatalogTransform { get; set; }
-
 		[DataMember(Name = "resultStreamName")]
 		public string ResultStreamName { get; set; }
 
@@ -23,9 +20,6 @@ namespace EventStore.Projections.Core.Messages {
 		public string PartitionResultStreamNamePattern { get; set; }
 
 		[DataMember(Name = "$includeLinks")] public bool IncludeLinks { get; set; }
-
-		[DataMember(Name = "disableParallelism")]
-		public bool DisableParallelism { get; set; }
 
 		[DataMember(Name = "reorderEvents")] public bool ReorderEvents { get; set; }
 

@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return this.ToJsonBytes();
 		}
 
-		public static PersistentSubscriptionConfig FromSerializedForm(byte[] data) {
+		public static PersistentSubscriptionConfig FromSerializedForm(ReadOnlyMemory<byte> data) {
 			try {
 				var ret = data.ParseJson<PersistentSubscriptionConfig>();
 				if (ret.Version == null)

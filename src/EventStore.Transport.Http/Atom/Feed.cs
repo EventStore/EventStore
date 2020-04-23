@@ -112,6 +112,7 @@ namespace EventStore.Transport.Http.Atom {
 		public string Updated { get; set; }
 		public PersonElement Author { get; set; }
 		public string Summary { get; set; }
+		public int? RetryCount { get; set; }
 
 		public object Content {
 			get { return _content; }
@@ -151,6 +152,10 @@ namespace EventStore.Transport.Http.Atom {
 		public void AddLink(string relation, string uri, string type = null) {
 			Ensure.NotNull(uri, "uri");
 			Links.Add(new LinkElement(uri, relation, type));
+		}
+
+		public void AddRetryCount(int value) {
+			RetryCount = value;
 		}
 
 		public XmlSchema GetSchema() {
@@ -200,6 +205,11 @@ namespace EventStore.Transport.Http.Atom {
 			writer.WriteElementString("updated", AtomSpecs.AtomV1Namespace, Updated);
 			Author.WriteXml(writer);
 			writer.WriteElementString("summary", AtomSpecs.AtomV1Namespace, Summary);
+
+			if (RetryCount != null) {
+				writer.WriteElementString("retryCount", RetryCount.Value.ToString());
+			}
+
 			Links.ForEach(link => link.WriteXml(writer));
 			if (Content != null) {
 				var serializeObject = JsonConvert.SerializeObject(Content);

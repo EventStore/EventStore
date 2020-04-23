@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
 
 namespace EventStore.Core.Tests.Authentication {
 	public class StubPasswordHashAlgorithm : PasswordHashAlgorithm {

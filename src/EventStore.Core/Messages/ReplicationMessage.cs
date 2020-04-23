@@ -21,16 +21,16 @@ namespace EventStore.Core.Messages {
 			public readonly Guid ChunkId;
 			public readonly EpochRecord[] LastEpochs;
 			public readonly IPEndPoint ReplicaEndPoint;
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 			public readonly bool IsPromotable;
 
 			public SubscribeReplica(long logPosition, Guid chunkId, EpochRecord[] lastEpochs,
 				IPEndPoint replicaEndPoint,
-				Guid masterId, Guid subscriptionId, bool isPromotable) {
+				Guid leaderId, Guid subscriptionId, bool isPromotable) {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.NotNull(lastEpochs, "lastEpochs");
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(replicaEndPoint, "replicaEndPoint");
 
@@ -38,7 +38,7 @@ namespace EventStore.Core.Messages {
 				ChunkId = chunkId;
 				LastEpochs = lastEpochs;
 				ReplicaEndPoint = replicaEndPoint;
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				IsPromotable = isPromotable;
 			}
@@ -94,7 +94,7 @@ namespace EventStore.Core.Messages {
 			public readonly Guid ChunkId;
 			public readonly Epoch[] LastEpochs;
 			public readonly IPEndPoint ReplicaEndPoint;
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 			public readonly bool IsPromotable;
 
@@ -105,7 +105,7 @@ namespace EventStore.Core.Messages {
 				Guid chunkId,
 				Epoch[] lastEpochs,
 				IPEndPoint replicaEndPoint,
-				Guid masterId,
+				Guid leaderId,
 				Guid subscriptionId,
 				bool isPromotable) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
@@ -114,7 +114,7 @@ namespace EventStore.Core.Messages {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.NotNull(lastEpochs, "lastEpochs");
 				Ensure.NotNull(replicaEndPoint, "ReplicaEndPoint");
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 
 				CorrelationId = correlationId;
@@ -124,44 +124,44 @@ namespace EventStore.Core.Messages {
 				ChunkId = chunkId;
 				LastEpochs = lastEpochs;
 				ReplicaEndPoint = replicaEndPoint;
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				IsPromotable = isPromotable;
 			}
 		}
 
-		public class ReconnectToMaster : Message {
+		public class ReconnectToLeader : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public readonly VNodeInfo Master;
+			public readonly VNodeInfo Leader;
 			public readonly Guid StateCorrelationId;
 
-			public ReconnectToMaster(Guid stateCorrelationId, VNodeInfo master) {
+			public ReconnectToLeader(Guid stateCorrelationId, VNodeInfo leader) {
 				Ensure.NotEmptyGuid(stateCorrelationId, "stateCorrelationId");
-				Ensure.NotNull(master, "master");
+				Ensure.NotNull(leader, "leader");
 				StateCorrelationId = stateCorrelationId;
-				Master = master;
+				Leader = leader;
 			}
 		}
 
 		public interface IReplicationMessage {
-			Guid MasterId { get; }
+			Guid LeaderId { get; }
 			Guid SubscriptionId { get; }
 		}
 
-		public class SubscribeToMaster : Message, IReplicationMessage {
+		public class SubscribeToLeader : Message, IReplicationMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
@@ -169,16 +169,16 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid StateCorrelationId;
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
-			public SubscribeToMaster(Guid stateCorrelationId, Guid masterId, Guid subscriptionId) {
+			public SubscribeToLeader(Guid stateCorrelationId, Guid leaderId, Guid subscriptionId) {
 				Ensure.NotEmptyGuid(stateCorrelationId, "stateCorrelationId");
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 
 				StateCorrelationId = stateCorrelationId;
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
@@ -190,21 +190,21 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
-			public ReplicaSubscriptionRetry(Guid masterId, Guid subscriptionId) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+			public ReplicaSubscriptionRetry(Guid leaderId, Guid subscriptionId) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
@@ -216,66 +216,66 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 			public readonly long SubscriptionPosition;
 
-			public readonly IPEndPoint MasterEndPoint;
+			public readonly IPEndPoint LeaderEndPoint;
 
-			public ReplicaSubscribed(Guid masterId, Guid subscriptionId, long subscriptionPosition) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+			public ReplicaSubscribed(Guid leaderId, Guid subscriptionId, long subscriptionPosition) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.Nonnegative(subscriptionPosition, "subscriptionPosition");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				SubscriptionPosition = subscriptionPosition;
 			}
 
-			public ReplicaSubscribed(Guid masterId, Guid subscriptionId, long subscriptionPosition,
-				IPEndPoint masterEndPoint) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+			public ReplicaSubscribed(Guid leaderId, Guid subscriptionId, long subscriptionPosition,
+				IPEndPoint leaderEndPoint) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.Nonnegative(subscriptionPosition, "subscriptionPosition");
-				Ensure.NotNull(masterEndPoint, "masterEndPoint");
+				Ensure.NotNull(leaderEndPoint, "leaderEndPoint");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				SubscriptionPosition = subscriptionPosition;
-				MasterEndPoint = masterEndPoint;
+				LeaderEndPoint = leaderEndPoint;
 			}
 		}
 
-		public class SlaveAssignment : Message, IReplicationMessage {
+		public class FollowerAssignment : Message, IReplicationMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
-			public SlaveAssignment(Guid masterId, Guid subscriptionId) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+			public FollowerAssignment(Guid leaderId, Guid subscriptionId) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
@@ -287,21 +287,21 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
-			public CloneAssignment(Guid masterId, Guid subscriptionId) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+			public CloneAssignment(Guid leaderId, Guid subscriptionId) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 			}
 		}
@@ -313,28 +313,28 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
 			public readonly ChunkHeader ChunkHeader;
 			public readonly int FileSize;
 			public bool IsCompletedChunk;
 
-			public CreateChunk(Guid masterId, Guid subscriptionId, ChunkHeader chunkHeader, int fileSize,
+			public CreateChunk(Guid leaderId, Guid subscriptionId, ChunkHeader chunkHeader, int fileSize,
 				bool isCompletedChunk) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(chunkHeader, "chunkHeader");
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkHeader = chunkHeader;
 				FileSize = fileSize;
@@ -343,8 +343,8 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return string.Format(
-					"CreateChunk message: MasterId: {0}, SubscriptionId: {1}, ChunkHeader: {2}, FileSize: {3}, IsCompletedChunk: {4}",
-					MasterId, SubscriptionId, ChunkHeader, FileSize, IsCompletedChunk);
+					"CreateChunk message: LeaderId: {0}, SubscriptionId: {1}, ChunkHeader: {2}, FileSize: {3}, IsCompletedChunk: {4}",
+					LeaderId, SubscriptionId, ChunkHeader, FileSize, IsCompletedChunk);
 			}
 		}
 
@@ -355,15 +355,15 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
 			public readonly int ChunkStartNumber;
@@ -372,17 +372,17 @@ namespace EventStore.Core.Messages {
 			public readonly byte[] RawBytes;
 			public readonly bool CompleteChunk;
 
-			public RawChunkBulk(Guid masterId,
+			public RawChunkBulk(Guid leaderId,
 				Guid subscriptionId,
 				int chunkStartNumber, int chunkEndNumber,
 				int rawPosition, byte[] rawBytes,
 				bool completeChunk) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(rawBytes, "rawBytes");
 				Ensure.Positive(rawBytes.Length, "rawBytes.Length"); // we should never send empty array, NEVER
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkStartNumber = chunkStartNumber;
 				ChunkEndNumber = chunkEndNumber;
@@ -393,8 +393,8 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return string.Format(
-					"RawChunkBulk message: MasterId: {0}, SubscriptionId: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, RawPosition: {4}, RawBytes length: {5}, CompleteChunk: {6}",
-					MasterId, SubscriptionId,
+					"RawChunkBulk message: LeaderId: {0}, SubscriptionId: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, RawPosition: {4}, RawBytes length: {5}, CompleteChunk: {6}",
+					LeaderId, SubscriptionId,
 					ChunkStartNumber, ChunkEndNumber, RawPosition, RawBytes.Length, CompleteChunk);
 			}
 		}
@@ -406,15 +406,15 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			Guid IReplicationMessage.MasterId {
-				get { return MasterId; }
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
 			}
 
 			Guid IReplicationMessage.SubscriptionId {
 				get { return SubscriptionId; }
 			}
 
-			public readonly Guid MasterId;
+			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 
 			public readonly int ChunkStartNumber;
@@ -423,20 +423,20 @@ namespace EventStore.Core.Messages {
 			public readonly byte[] DataBytes;
 			public readonly bool CompleteChunk;
 
-			public DataChunkBulk(Guid masterId,
+			public DataChunkBulk(Guid leaderId,
 				Guid subscriptionId,
 				int chunkStartNumber,
 				int chunkEndNumber,
 				long subscriptionPosition,
 				byte[] dataBytes,
 				bool completeChunk) {
-				Ensure.NotEmptyGuid(masterId, "masterId");
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(dataBytes, "rawBytes");
 				Ensure.Nonnegative(dataBytes.Length,
 					"dataBytes.Length"); // we CAN send empty dataBytes array here, unlike as with completed chunks
 
-				MasterId = masterId;
+				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				ChunkStartNumber = chunkStartNumber;
 				ChunkEndNumber = chunkEndNumber;
@@ -447,9 +447,35 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return string.Format(
-					"DataChunkBulk message: MasterId: {0}, SubscriptionId: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, SubscriptionPosition: {4}, DataBytes length: {5}, CompleteChunk: {6}",
-					MasterId, SubscriptionId, ChunkStartNumber, ChunkEndNumber,
+					"DataChunkBulk message: LeaderId: {0}, SubscriptionId: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, SubscriptionPosition: {4}, DataBytes length: {5}, CompleteChunk: {6}",
+					LeaderId, SubscriptionId, ChunkStartNumber, ChunkEndNumber,
 					SubscriptionPosition, DataBytes.Length, CompleteChunk);
+			}
+		}
+
+		public class DropSubscription : Message, IReplicationMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			Guid IReplicationMessage.LeaderId {
+				get { return LeaderId; }
+			}
+
+			Guid IReplicationMessage.SubscriptionId {
+				get { return SubscriptionId; }
+			}
+
+			public readonly Guid LeaderId;
+			public readonly Guid SubscriptionId;
+
+			public DropSubscription(Guid leaderId, Guid subscriptionId) {
+				Ensure.NotEmptyGuid(leaderId, "leaderId");
+				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
+				LeaderId = leaderId;
+				SubscriptionId = subscriptionId;
 			}
 		}
 

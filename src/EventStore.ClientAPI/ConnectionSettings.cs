@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Net.Http;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 
@@ -34,6 +35,11 @@ namespace EventStore.ClientAPI {
 		public readonly ILogger Log;
 
 		/// <summary>
+		/// Allows overriding the <see cref="HttpMessageHandler"/> used when issuing Http requests
+		/// </summary>
+		public readonly HttpMessageHandler CustomHttpMessageHandler;
+
+		/// <summary>
 		/// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.
 		/// </summary>
 		public readonly bool VerboseLogging;
@@ -59,9 +65,9 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxReconnections;
 
 		/// <summary>
-		/// Whether to require EventStore to refuse serving read or write request if it is not master.
+		/// Whether to require EventStore to refuse serving read or write request if it is not leader.
 		/// </summary>
-		public readonly bool RequireMaster;
+		public readonly bool RequireLeader;
 
 		/// <summary>
 		/// The amount of time to delay before attempting to reconnect.
@@ -92,11 +98,6 @@ namespace EventStore.ClientAPI {
 		/// Whether the connection is encrypted using SSL.
 		/// </summary>
 		public readonly bool UseSslConnection;
-
-		/// <summary>
-		/// The host name of the server expected on the SSL certificate.
-		/// </summary>
-		public readonly string TargetHost;
 
 		/// <summary>
 		/// Whether to validate the server SSL certificate.
@@ -144,7 +145,7 @@ namespace EventStore.ClientAPI {
 		public readonly TimeSpan GossipTimeout;
 
 		/// <summary>
-		/// Whether to randomly choose a node that's alive from the known nodes. 
+		/// Whether to randomly choose a node that's alive from the known nodes.
 		/// </summary>
 		public readonly NodePreference NodePreference;
 
@@ -159,14 +160,13 @@ namespace EventStore.ClientAPI {
 			int maxConcurrentItems,
 			int maxRetries,
 			int maxReconnections,
-			bool requireMaster,
+			bool requireLeader,
 			TimeSpan reconnectionDelay,
 			TimeSpan queueTimeout,
 			TimeSpan operationTimeout,
 			TimeSpan operationTimeoutCheckPeriod,
 			UserCredentials defaultUserCredentials,
 			bool useSslConnection,
-			string targetHost,
 			bool validateServer,
 			bool failOnNoServerResponse,
 			TimeSpan heartbeatInterval,
@@ -177,7 +177,9 @@ namespace EventStore.ClientAPI {
 			int maxDiscoverAttempts,
 			int externalGossipPort,
 			TimeSpan gossipTimeout,
-			NodePreference nodePreference) {
+			NodePreference nodePreference,
+			HttpMessageHandler customHttpMessageHandler) {
+
 			Ensure.NotNull(log, "log");
 			Ensure.Positive(maxQueueSize, "maxQueueSize");
 			Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
@@ -188,15 +190,20 @@ namespace EventStore.ClientAPI {
 				throw new ArgumentOutOfRangeException("maxReconnections",
 					string.Format("maxReconnections value is out of range: {0}. Allowed range: [-1, infinity].",
 						maxRetries));
-			if (useSslConnection)
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
+
+			if (nodePreference == NodePreference.ReadOnlyReplica && requireLeader) {
+				throw new ArgumentException($"Having the Node Preference set to {nodePreference} and Requires Leader" +
+				                            $" to {requireLeader} will reconnect the client to a leader node once" +
+				                            " an operation is performed.");
+			}
+
 			Log = log;
 			VerboseLogging = verboseLogging;
 			MaxQueueSize = maxQueueSize;
 			MaxConcurrentItems = maxConcurrentItems;
 			MaxRetries = maxRetries;
 			MaxReconnections = maxReconnections;
-			RequireMaster = requireMaster;
+			RequireLeader = requireLeader;
 			ReconnectionDelay = reconnectionDelay;
 			QueueTimeout = queueTimeout;
 			OperationTimeout = operationTimeout;
@@ -204,7 +211,6 @@ namespace EventStore.ClientAPI {
 			ClientConnectionTimeout = clientConnectionTimeout;
 			DefaultUserCredentials = defaultUserCredentials;
 			UseSslConnection = useSslConnection;
-			TargetHost = targetHost;
 			ValidateServer = validateServer;
 
 			FailOnNoServerResponse = failOnNoServerResponse;
@@ -216,6 +222,7 @@ namespace EventStore.ClientAPI {
 			ExternalGossipPort = externalGossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
+			CustomHttpMessageHandler = customHttpMessageHandler;
 		}
 	}
 }

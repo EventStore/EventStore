@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 
@@ -7,23 +5,23 @@ namespace EventStore.Projections.Core {
 	public class ProjectionsStandardComponents {
 		private readonly int _projectionWorkerThreadCount;
 		private readonly ProjectionType _runProjections;
-		private readonly InMemoryBus _masterOutputBus;
-		private readonly IQueuedHandler _masterInputQueue;
-		private readonly InMemoryBus _masterMainBus;
+		private readonly InMemoryBus _leaderOutputBus;
+		private readonly IQueuedHandler _leaderInputQueue;
+		private readonly InMemoryBus _leaderMainBus;
 		private readonly bool _faultOutOfOrderProjections;
 
 		public ProjectionsStandardComponents(
 			int projectionWorkerThreadCount,
 			ProjectionType runProjections,
-			InMemoryBus masterOutputBus,
-			IQueuedHandler masterInputQueue,
-			InMemoryBus masterMainBus,
+			InMemoryBus leaderOutputBus,
+			IQueuedHandler leaderInputQueue,
+			InMemoryBus leaderMainBus,
 			bool faultOutOfOrderProjections) {
 			_projectionWorkerThreadCount = projectionWorkerThreadCount;
 			_runProjections = runProjections;
-			_masterOutputBus = masterOutputBus;
-			_masterInputQueue = masterInputQueue;
-			_masterMainBus = masterMainBus;
+			_leaderOutputBus = leaderOutputBus;
+			_leaderInputQueue = leaderInputQueue;
+			_leaderMainBus = leaderMainBus;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
 		}
 
@@ -35,16 +33,16 @@ namespace EventStore.Projections.Core {
 			get { return _runProjections; }
 		}
 
-		public InMemoryBus MasterOutputBus {
-			get { return _masterOutputBus; }
+		public InMemoryBus LeaderOutputBus {
+			get { return _leaderOutputBus; }
 		}
 
-		public IQueuedHandler MasterInputQueue {
-			get { return _masterInputQueue; }
+		public IQueuedHandler LeaderInputQueue {
+			get { return _leaderInputQueue; }
 		}
 
-		public InMemoryBus MasterMainBus {
-			get { return _masterMainBus; }
+		public InMemoryBus LeaderMainBus {
+			get { return _leaderMainBus; }
 		}
 
 		public bool FaultOutOfOrderProjections {

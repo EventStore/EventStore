@@ -24,8 +24,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 1));
@@ -64,8 +64,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0));
 
@@ -103,8 +103,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildLinkEvent(Guid.NewGuid(), subsctiptionStream, 0,
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0)));
@@ -146,8 +146,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildLinkEvent(Guid.NewGuid(), subsctiptionStream, 0,
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0), false));
@@ -189,9 +189,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
 			var client2Id = Guid.NewGuid();
-			sub.AddClient(client2Id, Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(client2Id, Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildLinkEvent(Guid.NewGuid(), subsctiptionStream, 0,
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0), false));
@@ -224,8 +224,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new ByLengthHasher()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "1", 0));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "11", 1));
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(3, client1Envelope.Replies.Count);
 			Assert.AreEqual(3, client2Envelope.Replies.Count);
 
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client3Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-3", client3Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "1", 6));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "11", 7));
@@ -267,7 +267,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromCurrent());
 			reader.Load(null);
 			var conn1Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), conn1Id, client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), conn1Id, "connection-1", client1Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "1", 0));
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(Guid.NewGuid(), "type", "11", 1));
@@ -276,7 +276,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(3, client1Envelope.Replies.Count);
 
 			var conn2Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), conn2Id, client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), conn2Id, "connection-2", client2Envelope, 10, "foo", "bar");
 
 			Assert.AreEqual(3, client1Envelope.Replies.Count);
 			Assert.AreEqual(0, client2Envelope.Replies.Count);
@@ -302,9 +302,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.CustomConsumerStrategy(new PinnedPersistentSubscriptionConsumerStrategy(new XXHashUnsafe()))
 					.StartFromCurrent());
 			reader.Load(null);
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client1Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", client1Envelope, 10, "foo", "bar");
 			var client2Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), client2Id, client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), client2Id, "connection-2", client2Envelope, 10, "foo", "bar");
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildLinkEvent(Guid.NewGuid(), subsctiptionStream, 0,
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-1", 0), false));
@@ -339,12 +339,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(settings);
 			reader.Load(null);
 			var client1Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), client1Id, client1Envelope, 14, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), client1Id, "connection-1", client1Envelope, 14, "foo", "bar");
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(14));
 
 			var client2Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), client2Id, client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), client2Id, "connection-2", client2Envelope, 10, "foo", "bar");
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(24));
 
@@ -375,11 +375,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(settings);
 			reader.Load(null);
 			var client1Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), client1Id, client1Envelope, 14, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), client1Id, "connection-1", client1Envelope, 14, "foo", "bar");
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(14));
 
 			var client2Id = Guid.NewGuid();
-			sub.AddClient(Guid.NewGuid(), client2Id, client2Envelope, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), client2Id, "connection-2", client2Envelope, 10, "foo", "bar");
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(24));
 
@@ -420,11 +420,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(settings);
 			reader.Load(null);
 			var correlationId1 = Guid.NewGuid();
-			sub.AddClient(correlationId1, Guid.NewGuid(), client1Envelope, 14, "foo", "bar");
+			sub.AddClient(correlationId1, Guid.NewGuid(), "connection-1", client1Envelope, 14, "foo", "bar");
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(14));
 
 			var correlationId2 = Guid.NewGuid();
-			sub.AddClient(correlationId2, Guid.NewGuid(), client2Envelope, 10, "foo", "bar");
+			sub.AddClient(correlationId2, Guid.NewGuid(), "connection-2", client2Envelope, 10, "foo", "bar");
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(24));
 
@@ -440,11 +440,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(22));
 
-			sub.AcknowledgeMessagesProcessed(correlationId1, new[] {message1});
+			sub.AcknowledgeMessagesProcessed(correlationId1, new[] { message1 });
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(23));
 
-			sub.AcknowledgeMessagesProcessed(correlationId2, new[] {message2});
+			sub.AcknowledgeMessagesProcessed(correlationId2, new[] { message2 });
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(24));
 		}
@@ -466,9 +466,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			reader.Load(null);
 
 			var correlationId = Guid.NewGuid();
-			sub.AddClient(correlationId, Guid.NewGuid(), client1Envelope, 1, "foo", "bar");
+			sub.AddClient(correlationId, Guid.NewGuid(), "connection-1", client1Envelope, 1, "foo", "bar");
 
-			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), client2Envelope, 1, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", client2Envelope, 1, "foo", "bar");
 
 
 			var message1 = Guid.NewGuid();
@@ -483,7 +483,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			Assert.That(client1Envelope.Replies.Count, Is.EqualTo(1));
 			Assert.That(client2Envelope.Replies.Count, Is.EqualTo(0));
-			Assert.That(sub._streamBuffer.BufferCount, Is.EqualTo(1));
+			Assert.That(sub.StreamBuffer.BufferCount, Is.EqualTo(1));
 
 			sub.NotifyLiveSubscriptionMessage(Helper.BuildLinkEvent(Guid.NewGuid(), subsctiptionStream, 2,
 				Helper.BuildFakeEvent(Guid.NewGuid(), "type", "streamName-2", 0), false));
@@ -491,14 +491,14 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.That(client1Envelope.Replies.Count, Is.EqualTo(1));
 			Assert.That(client2Envelope.Replies.Count, Is.EqualTo(1));
 
-			Assert.That(sub._streamBuffer.BufferCount, Is.EqualTo(1));
+			Assert.That(sub.StreamBuffer.BufferCount, Is.EqualTo(1));
 
-			sub.AcknowledgeMessagesProcessed(correlationId, new[] {message1});
+			sub.AcknowledgeMessagesProcessed(correlationId, new[] { message1 });
 
 			Assert.That(client1Envelope.Replies.Count, Is.EqualTo(2));
 			Assert.That(client2Envelope.Replies.Count, Is.EqualTo(1));
 
-			Assert.That(sub._streamBuffer.BufferCount, Is.EqualTo(0));
+			Assert.That(sub.StreamBuffer.BufferCount, Is.EqualTo(0));
 		}
 	}
 }

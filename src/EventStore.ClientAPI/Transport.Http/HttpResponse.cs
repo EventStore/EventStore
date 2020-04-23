@@ -3,31 +3,65 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 namespace EventStore.ClientAPI.Transport.Http {
-	internal class HttpResponse {
+	/// <summary>
+	/// An Http response
+	/// </summary>
+	public class HttpResponse {
+		/// <summary>
+		/// The character set of the response.
+		/// </summary>
 		public readonly string CharacterSet;
 
+		/// <summary>
+		/// The character encoding of the response.
+		/// </summary>
 		public readonly string ContentEncoding;
+		/// <summary>
+		/// The Content-Length header.
+		/// </summary>
 		public readonly long ContentLength;
+		/// <summary>
+		/// The Content-Type header.
+		/// </summary>
 		public readonly string ContentType;
 
 		//public readonly CookieCollection Cookies;
+		/// <summary>
+		/// A Collection of Http response headers.
+		/// </summary>
 		public readonly HttpResponseHeaders Headers;
 
 		//public readonly bool IsFromCache;
 		//public readonly bool IsMutuallyAuthenticated;//TODO TR: not implemented in mono
 		//public readonly DateTime LastModified;
 
+		/// <summary>
+		/// The Http method used.
+		/// </summary>
 		public readonly string Method;
 		//public readonly Version ProtocolVersion;
 
 		//public readonly Uri ResponseUri;
 		//public readonly string Server;
 
+		/// <summary>
+		/// The Http response's status code.
+		/// </summary>
 		public readonly int HttpStatusCode;
+		/// <summary>
+		/// The Http response's status description.
+		/// </summary>
 		public readonly string StatusDescription;
 
+		/// <summary>
+		/// The Http response body.
+		/// </summary>
 		public string Body { get; internal set; }
 
+		/// <summary>
+		/// Constructs a new <see cref="HttpResponse"/>.
+		/// </summary>
+		/// <param name="responseMessage"></param>
 		public HttpResponse(HttpResponseMessage responseMessage) {
 			ContentEncoding = responseMessage.Content.Headers.ContentEncoding.FirstOrDefault();
 			ContentLength = responseMessage.Content.Headers.ContentLength.Value;

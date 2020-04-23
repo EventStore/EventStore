@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	public class CommandsProcessor {
@@ -11,7 +11,7 @@ namespace EventStore.TestClient {
 			get { return _processors.Values; }
 		}
 
-		private readonly ILogger _log;
+		private readonly Serilog.ILogger _log;
 		private readonly IDictionary<string, ICmdProcessor> _processors = new Dictionary<string, ICmdProcessor>();
 		private ICmdProcessor _regCommandsProcessor;
 
@@ -42,7 +42,7 @@ namespace EventStore.TestClient {
 
 			ICmdProcessor commandProcessor;
 			if (!_processors.TryGetValue(commandName, out commandProcessor)) {
-				_log.Info("Unknown command: {command}.", commandName);
+				_log.Information("Unknown command: {command}.", commandName);
 				if (_regCommandsProcessor != null)
 					_regCommandsProcessor.Execute(context, new string[0]);
 				exitCode = 1;
@@ -59,13 +59,13 @@ namespace EventStore.TestClient {
 						exitC = context.ExitCode;
 					} else {
 						exitC = 1;
-						_log.Info("Usage of {command}:{newLine}{usage}", commandName, Environment.NewLine,
+						_log.Information("Usage of {command}:{newLine}{usage}", commandName, Environment.NewLine,
 							commandProcessor.Usage);
 					}
 
 					executedEvent.Set();
 				} catch (Exception exc) {
-					_log.ErrorException(exc, "Error while executing command {command}.", commandName);
+					_log.Error(exc, "Error while executing command {command}.", commandName);
 					exitC = -1;
 					executedEvent.Set();
 				}
@@ -77,7 +77,7 @@ namespace EventStore.TestClient {
 			if (!string.IsNullOrWhiteSpace(context.Reason))
 				_log.Error("Error during execution of command: {e}.", context.Reason);
 			if (context.Error != null) {
-				_log.ErrorException(context.Error, "Error during execution of command");
+				_log.Error(context.Error, "Error during execution of command");
 
 				var details = new StringBuilder();
 				BuildFullException(context.Error, details);

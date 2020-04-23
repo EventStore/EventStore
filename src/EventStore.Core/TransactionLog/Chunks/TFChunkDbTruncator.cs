@@ -1,11 +1,11 @@
 using System;
 using System.IO;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkDbTruncator {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkDbTruncator>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkDbTruncator>();
 
 		private readonly TFChunkDbConfig _config;
 
@@ -16,6 +16,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public void TruncateDb(long truncateChk) {
 			var writerChk = _config.WriterCheckpoint.Read();
+			var requestedTruncation = writerChk - truncateChk;
+			if (_config.MaxTruncation >= 0 && requestedTruncation > _config.MaxTruncation) {
+				Log.Error(
+					"MaxTruncation is set and truncate checkpoint is out of bounds. MaxTruncation {maxTruncation} vs requested truncation {requestedTruncation} [{writerChk} => {truncateChk}].  To proceed, set MaxTruncation to -1 (no max) or greater than {requestedTruncationHint}.",
+					_config.MaxTruncation, requestedTruncation, writerChk, truncateChk, requestedTruncation);
+				throw new Exception(
+					string.Format("MaxTruncation is set ({0}) and truncate checkpoint is out of bounds (requested truncation is {1} [{2} => {3}]).", _config.MaxTruncation, requestedTruncation, writerChk, truncateChk));
+			}
+			
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
 
@@ -50,7 +59,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			// mid-process, we don't end up with broken non-sequential chunks sequence.
 			for (int i = oldLastChunkNum; i > newLastChunkNum; i -= 1) {
 				foreach (var chunkFile in _config.FileNamingStrategy.GetAllVersionsFor(i)) {
-					Log.Info("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
+					Log.Information("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
 					File.SetAttributes(chunkFile, FileAttributes.Normal);
 					File.Delete(chunkFile);
 				}
@@ -64,14 +73,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					truncateChk = newLastChunkHeader.ChunkStartPosition;
 
 					// we need to delete EVERYTHING from ChunkStartNumber up to newLastChunkNum, inclusive
-					Log.Info(
+					Log.Information(
 						"Setting TruncateCheckpoint to {truncateCheckpoint} and deleting ALL chunks from #{chunkStartNumber} inclusively "
 						+ "as truncation position is in the middle of scavenged chunk.",
 						truncateChk, newLastChunkHeader.ChunkStartNumber);
 					for (int i = newLastChunkNum; i >= newLastChunkHeader.ChunkStartNumber; --i) {
 						var chunksToDelete = _config.FileNamingStrategy.GetAllVersionsFor(i);
 						foreach (var chunkFile in chunksToDelete) {
-							Log.Info("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
+							Log.Information("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
 							File.SetAttributes(chunkFile, FileAttributes.Normal);
 							File.Delete(chunkFile);
 						}
@@ -83,7 +92,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (_config.EpochCheckpoint.Read() >= truncateChk) {
 				var epochChk = _config.EpochCheckpoint.Read();
-				Log.Info("Truncating epoch from {epochFrom} (0x{epochFrom:X}) to {epochTo} (0x{epochTo:X}).", epochChk,
+				Log.Information("Truncating epoch from {epochFrom} (0x{epochFrom:X}) to {epochTo} (0x{epochTo:X}).", epochChk,
 					epochChk, -1, -1);
 				_config.EpochCheckpoint.Write(-1);
 				_config.EpochCheckpoint.Flush();
@@ -91,7 +100,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (_config.ChaserCheckpoint.Read() > truncateChk) {
 				var chaserChk = _config.ChaserCheckpoint.Read();
-				Log.Info(
+				Log.Information(
 					"Truncating chaser from {chaserCheckpoint} (0x{chaserCheckpoint:X}) to {truncateCheckpoint} (0x{truncateCheckpoint:X}).",
 					chaserChk, chaserChk, truncateChk, truncateChk);
 				_config.ChaserCheckpoint.Write(truncateChk);
@@ -100,14 +109,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (_config.WriterCheckpoint.Read() > truncateChk) {
 				var writerCheckpoint = _config.WriterCheckpoint.Read();
-				Log.Info(
+				Log.Information(
 					"Truncating writer from {writerCheckpoint} (0x{writerCheckpoint:X}) to {truncateCheckpoint} (0x{truncateCheckpoint:X}).",
 					writerCheckpoint, writerCheckpoint, truncateChk, truncateChk);
 				_config.WriterCheckpoint.Write(truncateChk);
 				_config.WriterCheckpoint.Flush();
 			}
 
-			Log.Info("Resetting TruncateCheckpoint to {epoch} (0x{epoch:X}).", -1, -1);
+			Log.Information("Resetting TruncateCheckpoint to {epoch} (0x{epoch:X}).", -1, -1);
 			_config.TruncateCheckpoint.Write(-1);
 			_config.TruncateCheckpoint.Flush();
 		}

@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Settings;
@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public TransactionFileEventReader(
 			IPublisher publisher,
 			Guid eventReaderCorrelationId,
-			IPrincipal readAs,
+			ClaimsPrincipal readAs,
 			TFPos @from,
 			ITimeProvider timeProvider,
 			bool stopOnEof = false,
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SendIdle() {
 			_publisher.Publish(
-				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.UtcNow));
 		}
 
 		protected override void RequestEvents() {

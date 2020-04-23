@@ -1,31 +1,34 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
 		public readonly VNodeInfo NodeInfo;
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
-		public readonly string[] IntHttpPrefixes;
-		public readonly string[] ExtHttpPrefixes;
 		public readonly bool EnableTrustedAuth;
-		public readonly X509Certificate2 Certificate;
+		public X509Certificate2 Certificate;
+		public X509Certificate2Collection TrustedRootCerts;
 		public readonly int WorkerThreads;
 		public readonly bool StartStandardProjections;
+		public readonly bool EnableAtomPubOverHTTP;
 		public readonly bool DisableHTTPCaching;
 		public readonly bool LogHttpRequests;
+		public readonly bool LogFailedAuthenticationAttempts;
+		public readonly int MaxAppendSize;
 
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
 		public readonly IPEndPoint[] GossipSeeds;
+		public readonly bool GossipOverHttps;
 		public readonly bool EnableHistograms;
 		public readonly TimeSpan MinFlushDelay;
 
@@ -34,18 +37,21 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int CommitAckCount;
 		public readonly TimeSpan PrepareTimeout;
 		public readonly TimeSpan CommitTimeout;
+		public readonly TimeSpan WriteTimeout;
 
 		public readonly int NodePriority;
 
-		public readonly bool UseSsl;
-		public readonly bool DisableInsecureTCP;
-		public readonly string SslTargetHost;
-		public readonly bool SslValidateServer;
+		public readonly bool DisableInternalTls;
+		public readonly bool DisableExternalTls;
+		public readonly bool EnableExternalTCP;
 
 		public readonly TimeSpan StatsPeriod;
 		public readonly StatsStorage StatsStorage;
 
-		public readonly IAuthenticationProviderFactory AuthenticationProviderFactory;
+		public readonly AuthenticationProviderFactory AuthenticationProviderFactory;
+		public readonly AuthorizationProviderFactory AuthorizationProviderFactory;
+
+		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
 		public bool AdminOnPublic;
@@ -58,7 +64,10 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly TimeSpan IntTcpHeartbeatInterval;
 		public readonly TimeSpan ExtTcpHeartbeatTimeout;
 		public readonly TimeSpan ExtTcpHeartbeatInterval;
+		public readonly TimeSpan DeadMemberRemovalPeriod;
+
 		public readonly int ConnectionPendingSendBytesThreshold;
+		public readonly int ConnectionQueueSizeThreshold;
 		public readonly bool UnsafeIgnoreHardDeletes;
 		public readonly bool VerifyDbHash;
 		public readonly int MaxMemtableEntryCount;
@@ -67,9 +76,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int IndexCacheDepth;
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
-		public readonly int ChunkInitialReaderCount;
 
-		public readonly bool BetterOrdering;
 		public readonly string Index;
 		public readonly int ReaderThreadsCount;
 		public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
@@ -78,10 +85,13 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool ReduceFileCachePressure;
 		public readonly int InitializationThreads;
 		public readonly int MaxAutoMergeIndexLevel;
+		public readonly long MaxTruncation;
 
 		public readonly bool GossipOnSingleNode;
 		public readonly bool FaultOutOfOrderProjections;
-		public readonly bool StructuredLog;
+		public readonly bool ReadOnlyReplica;
+		public int PTableMaxReaderCount;
+		public readonly bool UnsafeAllowSurplusNodes;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcpEndPoint,
@@ -91,10 +101,9 @@ namespace EventStore.Core.Cluster.Settings {
 			IPEndPoint internalHttpEndPoint,
 			IPEndPoint externalHttpEndPoint,
 			GossipAdvertiseInfo gossipAdvertiseInfo,
-			string[] intHttpPrefixes,
-			string[] extHttpPrefixes,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
+			X509Certificate2Collection trustedRootCerts,
 			int workerThreads,
 			bool discoverViaDns,
 			string clusterDns,
@@ -105,14 +114,14 @@ namespace EventStore.Core.Cluster.Settings {
 			int commitAckCount,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
-			bool useSsl,
-			bool disableInsecureTCP,
-			string sslTargetHost,
-			bool sslValidateServer,
+			TimeSpan writeTimeout,
+			bool disableInternalTls,
+			bool disableExternalTls,
 			TimeSpan statsPeriod,
 			StatsStorage statsStorage,
 			int nodePriority,
-			IAuthenticationProviderFactory authenticationProviderFactory,
+			AuthenticationProviderFactory authenticationProviderFactory,
+			AuthorizationProviderFactory authorizationProviderFactory,
 			bool disableScavengeMerging,
 			int scavengeHistoryMaxAge,
 			bool adminOnPublic,
@@ -125,6 +134,7 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan intTcpHeartbeatInterval,
 			TimeSpan extTcpHeartbeatTimeout,
 			TimeSpan extTcpHeartbeatInterval,
+			TimeSpan deadMemberRemovalPeriod,
 			bool verifyDbHash,
 			int maxMemtableEntryCount,
 			int hashCollisionReadLimit,
@@ -132,7 +142,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool disableHTTPCaching,
 			bool logHttpRequests,
 			int connectionPendingSendBytesThreshold,
-			int chunkInitialReaderCount,
+			int connectionQueueSizeThreshold,
+			int ptableMaxReaderCount,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -140,7 +151,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool optimizeIndexMerge = false,
 			IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies = null,
 			bool unsafeIgnoreHardDeletes = false,
-			bool betterOrdering = false,
 			int readerThreadsCount = 4,
 			bool alwaysKeepScavenged = false,
 			bool gossipOnSingleNode = false,
@@ -148,15 +158,21 @@ namespace EventStore.Core.Cluster.Settings {
 			bool reduceFileCachePressure = false,
 			int initializationThreads = 1,
 			bool faultOutOfOrderProjections = false,
-			bool structuredLog = false,
-			int maxAutoMergeIndexLevel = 1000) {
+			int maxAutoMergeIndexLevel = 1000,
+			bool disableFirstLevelHttpAuthorization = false,
+			bool logFailedAuthenticationAttempts = false,
+			long maxTruncation = 256 * 1024 * 1024,
+			bool readOnlyReplica = false,
+			int maxAppendSize = 1024 * 1024,
+			bool unsafeAllowSurplusNodes = false,
+			bool enableExternalTCP = false,
+			bool enableAtomPubOverHTTP = true,
+			bool gossipOverHttps = true) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
+
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-			Ensure.NotNull(intHttpPrefixes, "intHttpPrefixes");
-			Ensure.NotNull(extHttpPrefixes, "extHttpPrefixes");
 			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
 				Ensure.NotNull(certificate, "certificate");
 			Ensure.Positive(workerThreads, "workerThreads");
@@ -167,27 +183,30 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(commitAckCount, "commitAckCount");
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
+			if (maxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), $"{nameof(maxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
+			}
 
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
 				throw new ArgumentException(
 					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
 
-			if (useSsl)
-				Ensure.NotNull(sslTargetHost, "sslTargetHost");
-
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
-				internalHttpEndPoint, externalHttpEndPoint);
+				internalHttpEndPoint, externalHttpEndPoint,
+				readOnlyReplica);
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
-			IntHttpPrefixes = intHttpPrefixes;
-			ExtHttpPrefixes = extHttpPrefixes;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
+			TrustedRootCerts = trustedRootCerts;
+
 			WorkerThreads = workerThreads;
 			StartStandardProjections = startStandardProjections;
+			EnableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			DisableHTTPCaching = disableHTTPCaching;
 			LogHttpRequests = logHttpRequests;
+			LogFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 			AdditionalConsumerStrategies =
 				additionalConsumerStrategies ?? new IPersistentSubscriptionConsumerStrategyFactory[0];
 
@@ -202,16 +221,18 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitAckCount = commitAckCount;
 			PrepareTimeout = prepareTimeout;
 			CommitTimeout = commitTimeout;
+			WriteTimeout = writeTimeout;
 
-			UseSsl = useSsl;
-			DisableInsecureTCP = disableInsecureTCP;
-			SslTargetHost = sslTargetHost;
-			SslValidateServer = sslValidateServer;
+			DisableInternalTls = disableInternalTls;
+			DisableExternalTls = disableExternalTls;
+			EnableExternalTCP = enableExternalTCP;
 
 			StatsPeriod = statsPeriod;
 			StatsStorage = statsStorage;
 
 			AuthenticationProviderFactory = authenticationProviderFactory;
+			AuthorizationProviderFactory = authorizationProviderFactory;
+			DisableFirstLevelHttpAuthorization = disableFirstLevelHttpAuthorization;
 
 			NodePriority = nodePriority;
 			DisableScavengeMerging = disableScavengeMerging;
@@ -222,12 +243,14 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipInterval = gossipInterval;
 			GossipAllowedTimeDifference = gossipAllowedTimeDifference;
 			GossipTimeout = gossipTimeout;
+			GossipOverHttps = gossipOverHttps;
 			IntTcpHeartbeatTimeout = intTcpHeartbeatTimeout;
 			IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
 			ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
 			ExtTcpHeartbeatInterval = extTcpHeartbeatInterval;
 			ConnectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
-			ChunkInitialReaderCount = chunkInitialReaderCount;
+			ConnectionQueueSizeThreshold = connectionQueueSizeThreshold;
+			DeadMemberRemovalPeriod = deadMemberRemovalPeriod;
 
 			VerifyDbHash = verifyDbHash;
 			MaxMemtableEntryCount = maxMemtableEntryCount;
@@ -240,7 +263,6 @@ namespace EventStore.Core.Cluster.Settings {
 			OptimizeIndexMerge = optimizeIndexMerge;
 			Index = index;
 			UnsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
-			BetterOrdering = betterOrdering;
 			ReaderThreadsCount = readerThreadsCount;
 			AlwaysKeepScavenged = alwaysKeepScavenged;
 			SkipIndexScanOnReads = skipIndexScanOnReads;
@@ -248,71 +270,44 @@ namespace EventStore.Core.Cluster.Settings {
 			InitializationThreads = initializationThreads;
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
-			StructuredLog = structuredLog;
+			ReadOnlyReplica = readOnlyReplica;
+			MaxAppendSize = maxAppendSize;
+			PTableMaxReaderCount = ptableMaxReaderCount;
+			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
+			MaxTruncation = maxTruncation;
 		}
 
-
-		public override string ToString() {
-			return string.Format("InstanceId: {0}\n"
-			                     + "InternalTcp: {1}\n"
-			                     + "InternalSecureTcp: {2}\n"
-			                     + "ExternalTcp: {3}\n"
-			                     + "ExternalSecureTcp: {4}\n"
-			                     + "InternalHttp: {5}\n"
-			                     + "ExternalHttp: {6}\n"
-			                     + "IntHttpPrefixes: {7}\n"
-			                     + "ExtHttpPrefixes: {8}\n"
-			                     + "EnableTrustedAuth: {9}\n"
-			                     + "Certificate: {10}\n"
-			                     + "LogHttpRequests: {11}\n"
-			                     + "WorkerThreads: {12}\n"
-			                     + "DiscoverViaDns: {13}\n"
-			                     + "ClusterDns: {14}\n"
-			                     + "GossipSeeds: {15}\n"
-			                     + "ClusterNodeCount: {16}\n"
-			                     + "MinFlushDelay: {17}\n"
-			                     + "PrepareAckCount: {18}\n"
-			                     + "CommitAckCount: {19}\n"
-			                     + "PrepareTimeout: {20}\n"
-			                     + "CommitTimeout: {21}\n"
-			                     + "UseSsl: {22}\n"
-			                     + "SslTargetHost: {23}\n"
-			                     + "SslValidateServer: {24}\n"
-			                     + "StatsPeriod: {25}\n"
-			                     + "StatsStorage: {26}\n"
-			                     + "AuthenticationProviderFactory Type: {27}\n"
-			                     + "NodePriority: {28}"
-			                     + "GossipInterval: {29}\n"
-			                     + "GossipAllowedTimeDifference: {30}\n"
-			                     + "GossipTimeout: {31}\n"
-			                     + "HistogramEnabled: {32}\n"
-			                     + "HTTPCachingDisabled: {33}\n"
-			                     + "IndexPath: {34}\n"
-			                     + "ScavengeHistoryMaxAge: {35}\n"
-			                     + "ConnectionPendingSendBytesThreshold: {36}\n"
-			                     + "ChunkInitialReaderCount: {37}\n"
-			                     + "ReduceFileCachePressure: {38}\n"
-			                     + "InitializationThreads: {39}\n"
-			                     + "StructuredLog: {40}\n",
-				NodeInfo.InstanceId,
-				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
-				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
-				NodeInfo.InternalHttp, NodeInfo.ExternalHttp,
-				string.Join(", ", IntHttpPrefixes),
-				string.Join(", ", ExtHttpPrefixes),
-				EnableTrustedAuth,
-				Certificate == null ? "n/a" : Certificate.ToString(true),
-				LogHttpRequests,
-				WorkerThreads, DiscoverViaDns, ClusterDns,
-				string.Join(",", GossipSeeds.Select(x => x.ToString())),
-				ClusterNodeCount, MinFlushDelay,
-				PrepareAckCount, CommitAckCount, PrepareTimeout, CommitTimeout,
-				UseSsl, SslTargetHost, SslValidateServer,
-				StatsPeriod, StatsStorage, AuthenticationProviderFactory.GetType(),
-				NodePriority, GossipInterval, GossipAllowedTimeDifference, GossipTimeout,
-				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
-				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
-				ReduceFileCachePressure, InitializationThreads, StructuredLog);
-		}
+		public override string ToString() =>
+			$"InstanceId: {NodeInfo.InstanceId}\n" + $"InternalTcp: {NodeInfo.InternalTcp}\n" +
+			$"InternalSecureTcp: {NodeInfo.InternalSecureTcp}\n" + $"ExternalTcp: {NodeInfo.ExternalTcp}\n" +
+			$"ExternalSecureTcp: {NodeInfo.ExternalSecureTcp}\n" + $"InternalHttp: {NodeInfo.InternalHttp}\n" +
+			$"ExternalHttp: {NodeInfo.ExternalHttp}\n" +
+			$"EnableTrustedAuth: {EnableTrustedAuth}\n" +
+			$"Certificate: {(Certificate == null ? "n/a" : Certificate.ToString(true))}\n" +
+			$"Trusted Root Certificates: {(TrustedRootCerts == null ? "n/a" : TrustedRootCerts.ToString())}\n" +
+			$"LogHttpRequests: {LogHttpRequests}\n" + $"WorkerThreads: {WorkerThreads}\n" +
+			$"DiscoverViaDns: {DiscoverViaDns}\n" + $"ClusterDns: {ClusterDns}\n" +
+			$"GossipSeeds: {string.Join(",", GossipSeeds.Select(x => x.ToString()))}\n" +
+			$"ClusterNodeCount: {ClusterNodeCount}\n" + $"MinFlushDelay: {MinFlushDelay}\n" +
+			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
+			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
+			$"WriteTimeout: {WriteTimeout}\n" +
+			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
+			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
+			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
+			$"AuthorizationProviderFactory  Type: {AuthorizationProviderFactory.GetType()}\n" +
+			$"NodePriority: {NodePriority}" + $"GossipInterval: {GossipInterval}\n" +
+			$"GossipAllowedTimeDifference: {GossipAllowedTimeDifference}\n" +
+			$"GossipTimeout: {GossipTimeout}\n" + $"HistogramEnabled: {EnableHistograms}\n" +
+			$"HTTPCachingDisabled: {DisableHTTPCaching}\n" + $"IndexPath: {Index}\n" +
+			$"ScavengeHistoryMaxAge: {ScavengeHistoryMaxAge}\n" +
+			$"ConnectionPendingSendBytesThreshold: {ConnectionPendingSendBytesThreshold}\n" +
+			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
+			$"InitializationThreads: {InitializationThreads}\n" +
+			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
+			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
+			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" +
+			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
+			$"MaxTruncation: {MaxTruncation}\n";
 	}
 }

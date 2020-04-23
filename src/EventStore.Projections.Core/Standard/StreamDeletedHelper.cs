@@ -1,3 +1,4 @@
+using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Utils;
@@ -54,7 +55,7 @@ namespace EventStore.Projections.Core.Standard {
 		}
 
 		public static bool IsStreamDeletedEvent(
-			string streamOrMetaStreamId, string eventType, byte[] eventData, out string deletedPartitionStreamId) {
+			string streamOrMetaStreamId, string eventType, ReadOnlyMemory<byte> eventData, out string deletedPartitionStreamId) {
 			bool isMetaStream;
 			if (SystemStreams.IsMetastream(streamOrMetaStreamId)) {
 				isMetaStream = true;

@@ -16,14 +16,12 @@ namespace EventStore.TestClient.Commands {
 			get { return "RDFL"; }
 		}
 
-		private RequestMonitor _monitor = new RequestMonitor();
-
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			int clientsCnt = 1;
 			long requestsCnt = 5000;
 			var eventStreamId = "test-stream";
 			bool resolveLinkTos = false;
-			bool requireMaster = false;
+			bool requireLeader = false;
 			if (args.Length > 0) {
 				if (args.Length != 2 && args.Length != 3 && args.Length != 4)
 					return false;
@@ -34,18 +32,19 @@ namespace EventStore.TestClient.Commands {
 					if (args.Length >= 3)
 						eventStreamId = args[2];
 					if (args.Length >= 4)
-						requireMaster = bool.Parse(args[3]);
+						requireLeader = bool.Parse(args[3]);
 				} catch {
 					return false;
 				}
 			}
 
-			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireMaster);
+			RequestMonitor monitor = new RequestMonitor();
+			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireLeader, monitor);
 			return true;
 		}
 
 		private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt,
-			bool resolveLinkTos, bool requireMaster) {
+			bool resolveLinkTos, bool requireLeader, RequestMonitor monitor) {
 			context.IsAsync();
 
 			var clients = new List<TcpTypedConnection<byte[]>>();
@@ -68,7 +67,7 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-						_monitor.EndOperation(pkg.CorrelationId);
+						monitor.EndOperation(pkg.CorrelationId);
 						if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success) {
 							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
 						} else {
@@ -80,7 +79,7 @@ namespace EventStore.TestClient.Commands {
 						if (localAll % 100000 == 0) {
 							var elapsed = sw2.Elapsed;
 							sw2.Restart();
-							context.Log.Trace("\nDONE TOTAL {reads} READS IN {elapsed} ({rate:0.0}/s).", localAll,
+							context.Log.Verbose("\nDONE TOTAL {reads} READS IN {elapsed} ({rate:0.0}/s).", localAll,
 								elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds);
 						}
 
@@ -95,9 +94,9 @@ namespace EventStore.TestClient.Commands {
 				threads.Add(new Thread(() => {
 					for (int j = 0; j < count; ++j) {
 						var corrId = Guid.NewGuid();
-						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireMaster);
+						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireLeader);
 						var package = new TcpPackage(TcpCommand.ReadEvent, corrId, read.Serialize());
-						_monitor.StartOperation(corrId);
+						monitor.StartOperation(corrId);
 						client.EnqueueSend(package.AsByteArray());
 
 						var localSent = Interlocked.Increment(ref sent);
@@ -117,11 +116,11 @@ namespace EventStore.TestClient.Commands {
 			clients.ForEach(client => client.Close());
 
 			var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
-			context.Log.Info("Completed. READS succ: {success}, fail: {failures}.", Interlocked.Read(ref succ),
+			context.Log.Information("Completed. READS succ: {success}, fail: {failures}.", Interlocked.Read(ref succ),
 				Interlocked.Read(ref fail));
-			context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
+			context.Log.Information("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
 				sw.ElapsedMilliseconds, reqPerSec);
-			_monitor.GetMeasurementDetails();
+			monitor.GetMeasurementDetails();
 			PerfUtils.LogData(Keyword,
 				PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
 					PerfUtils.Col("requestsCnt", requestsCnt),

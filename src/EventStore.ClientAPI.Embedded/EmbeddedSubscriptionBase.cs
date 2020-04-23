@@ -87,7 +87,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 				if (reason == SubscriptionDropReason.UserInitiated && Subscription != null)
 					Publisher.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), CorrelationId,
-						new NoopEnvelope(), SystemAccount.Principal));
+						new NoopEnvelope(), SystemAccounts.System));
 
 				if (Subscription != null)
 					ExecuteActionAsync(() => _subscriptionDropped(Subscription, reason, exception));

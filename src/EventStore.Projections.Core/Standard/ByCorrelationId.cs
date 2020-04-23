@@ -11,7 +11,6 @@ using EventStore.Common.Utils;
 namespace EventStore.Projections.Core.Standard {
 	public class ByCorrelationId : IProjectionStateHandler {
 		private readonly string _corrIdStreamPrefix;
-		private readonly string _correlationIdProperty = "$correlationId";
 
 		public ByCorrelationId(string source, Action<string, object[]> logger) {
 			if (!string.IsNullOrWhiteSpace(source)) {
@@ -21,7 +20,7 @@ namespace EventStore.Projections.Core.Standard {
 						"Could not parse projection source. Please make sure the source is a valid JSON string with a property: 'correlationIdProperty' having a string value");
 				}
 
-				_correlationIdProperty = correlationIdProperty;
+				CorrelationIdPropertyContext.CorrelationIdProperty = correlationIdProperty;
 			}
 
 			_corrIdStreamPrefix = "$bc-";
@@ -67,10 +66,6 @@ namespace EventStore.Projections.Core.Standard {
 			throw new NotImplementedException();
 		}
 
-		public string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data) {
-			throw new NotImplementedException();
-		}
-
 		public bool ProcessEvent(
 			string partition, CheckpointTag eventPosition, string category1, ResolvedEvent data,
 			out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
@@ -79,9 +74,13 @@ namespace EventStore.Projections.Core.Standard {
 			newState = null;
 			if (data.EventStreamId != data.PositionStreamId)
 				return false;
+      
 			if (data.EventType == SystemEventTypes.LinkTo)
 				return false;
-			
+      
+			if (data.Metadata == null)
+				return false;
+
 			JObject metadata = null;
 
 			try {
@@ -90,10 +89,10 @@ namespace EventStore.Projections.Core.Standard {
 				return false;
 			}
 
-			if (metadata[_correlationIdProperty] == null)
+			if (metadata[CorrelationIdPropertyContext.CorrelationIdProperty] == null)
 				return false;
 
-			string correlationId = metadata[_correlationIdProperty].Value<string>();
+			string correlationId = metadata[CorrelationIdPropertyContext.CorrelationIdProperty].Value<string>();
 			if (correlationId == null)
 				return false;
 

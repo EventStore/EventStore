@@ -6,23 +6,23 @@ using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class DeleteStreamOperation : OperationBase<DeleteResult, ClientMessage.DeleteStreamCompleted> {
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly string _stream;
 		private readonly long _expectedVersion;
 		private readonly bool _hardDelete;
 
 		public DeleteStreamOperation(ILogger log, TaskCompletionSource<DeleteResult> source,
-			bool requireMaster, string stream, long expectedVersion, bool hardDelete,
+			bool requireLeader, string stream, long expectedVersion, bool hardDelete,
 			UserCredentials userCredentials)
 			: base(log, source, TcpCommand.DeleteStream, TcpCommand.DeleteStreamCompleted, userCredentials) {
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_stream = stream;
 			_expectedVersion = expectedVersion;
 			_hardDelete = hardDelete;
 		}
 
 		protected override object CreateRequestDto() {
-			return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireMaster, _hardDelete);
+			return new ClientMessage.DeleteStream(_stream, _expectedVersion, _requireLeader, _hardDelete);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.DeleteStreamCompleted response) {
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 		}
 
 		protected override DeleteResult TransformResponse(ClientMessage.DeleteStreamCompleted response) {
-			return new DeleteResult(new Position(response.PreparePosition ?? -1, response.CommitPosition ?? -1));
+			return new DeleteResult(new Position(response.CommitPosition ?? -1, response.PreparePosition ?? -1));
 		}
 
 		public override string ToString() {

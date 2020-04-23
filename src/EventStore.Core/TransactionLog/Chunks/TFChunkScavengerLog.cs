@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -9,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	class TFChunkScavengerLog : ITFChunkScavengerLog {
@@ -18,7 +18,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly string _nodeId;
 		private readonly int _retryAttempts;
 		private readonly TimeSpan _scavengeHistoryMaxAge;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageScavenger>();
 		private long _spaceSaved;
 
 		public TFChunkScavengerLog(IODispatcher ioDispatcher, string scavengeId, string nodeId, int retryAttempts,
@@ -39,10 +39,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public void ScavengeStarted() {
 			var metadataEventId = Guid.NewGuid();
 			var metaStreamId = SystemStreams.MetastreamOf(_streamName);
-			var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge);
+			var acl = new StreamAcl(
+				new string[]{"$ops"},
+				new string[]{},
+				new string[]{},
+				new string[]{},
+				new string[]{}
+			);
+			var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
 			var metaStreamEvent = new Event(metadataEventId, SystemEventTypes.StreamMetadata, isJson: true,
 				data: metadata.ToJsonBytes(), metadata: null);
-			_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccount.Principal, m => {
+			_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent, SystemAccounts.System, m => {
 				if (m.Result != OperationResult.Success) {
 					Log.Error(
 						"Failed to write the $maxAge of {days} days metadata for the {stream} stream. Reason: {reason}",
@@ -179,7 +186,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void WriteScavengeChunkCompletedEvent(string streamId, Event eventToWrite, int retryCount) {
-			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccounts.System,
 				m => WriteScavengeChunkCompletedEventCompleted(m, streamId, eventToWrite, retryCount));
 		}
 
@@ -197,13 +204,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void WriteScavengeDetailEvent(string streamId, Event eventToWrite, int retryCount) {
-			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(streamId, ExpectedVersion.Any, eventToWrite, SystemAccounts.System,
 				x => WriteScavengeDetailEventCompleted(x, eventToWrite, streamId, retryCount));
 		}
 
 		private void WriteScavengeIndexEvent(Event linkToEvent, int retryCount) {
 			_ioDispatcher.WriteEvent(SystemStreams.ScavengesStream, ExpectedVersion.Any, linkToEvent,
-				SystemAccount.Principal, m => WriteScavengeIndexEventCompleted(m, linkToEvent, retryCount));
+				SystemAccounts.System, m => WriteScavengeIndexEventCompleted(m, linkToEvent, retryCount));
 		}
 
 		private void WriteScavengeIndexEventCompleted(ClientMessage.WriteEventsCompleted msg, Event linkToEvent,

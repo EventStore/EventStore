@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http.Controllers;
 
@@ -15,9 +15,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly IEnvelope Envelope;
-			public readonly IPrincipal Principal;
+			public readonly ClaimsPrincipal Principal;
 
-			public RequestMessage(IEnvelope envelope, IPrincipal principal) {
+			public RequestMessage(IEnvelope envelope, ClaimsPrincipal principal) {
 				Envelope = envelope;
 				Principal = principal;
 			}
@@ -48,7 +48,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly string LoginName;
 
-			protected UserManagementRequestMessage(IEnvelope envelope, IPrincipal principal, string loginName)
+			protected UserManagementRequestMessage(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal) {
 				LoginName = loginName;
 			}
@@ -66,7 +66,7 @@ namespace EventStore.Core.Messages {
 			public readonly string Password;
 
 			public Create(
-				IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups,
+				IEnvelope envelope, ClaimsPrincipal principal, string loginName, string fullName, string[] groups,
 				string password)
 				: base(envelope, principal, loginName) {
 				FullName = fullName;
@@ -85,7 +85,7 @@ namespace EventStore.Core.Messages {
 			public readonly string FullName;
 			public readonly string[] Groups;
 
-			public Update(IEnvelope envelope, IPrincipal principal, string loginName, string fullName, string[] groups)
+			public Update(IEnvelope envelope, ClaimsPrincipal principal, string loginName, string fullName, string[] groups)
 				: base(envelope, principal, loginName) {
 				FullName = fullName;
 				Groups = groups;
@@ -99,7 +99,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Disable(IEnvelope envelope, IPrincipal principal, string loginName)
+			public Disable(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
@@ -111,7 +111,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Enable(IEnvelope envelope, IPrincipal principal, string loginName)
+			public Enable(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
@@ -123,7 +123,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Delete(IEnvelope envelope, IPrincipal principal, string loginName)
+			public Delete(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
@@ -137,7 +137,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly string NewPassword;
 
-			public ResetPassword(IEnvelope envelope, IPrincipal principal, string loginName, string newPassword)
+			public ResetPassword(IEnvelope envelope, ClaimsPrincipal principal, string loginName, string newPassword)
 				: base(envelope, principal, loginName) {
 				NewPassword = newPassword;
 			}
@@ -154,7 +154,7 @@ namespace EventStore.Core.Messages {
 			public readonly string NewPassword;
 
 			public ChangePassword(
-				IEnvelope envelope, IPrincipal principal, string loginName, string currentPassword, string newPassword)
+				IEnvelope envelope, ClaimsPrincipal principal, string loginName, string currentPassword, string newPassword)
 				: base(envelope, principal, loginName) {
 				CurrentPassword = currentPassword;
 				NewPassword = newPassword;
@@ -168,7 +168,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public GetAll(IEnvelope envelope, IPrincipal principal)
+			public GetAll(IEnvelope envelope, ClaimsPrincipal principal)
 				: base(envelope, principal) {
 			}
 		}
@@ -180,7 +180,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Get(IEnvelope envelope, IPrincipal principal, string loginName)
+			public Get(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
@@ -335,14 +335,6 @@ namespace EventStore.Core.Messages {
 			public AllUserDetailsResult(Error error)
 				: base(false, error) {
 				Data = null;
-			}
-		}
-
-		public sealed class UserManagementServiceInitialized : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
 			}
 		}
 	}

@@ -2,10 +2,10 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
-using EventStore.Common.Log;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
@@ -13,20 +13,19 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
 	public class ReplicaService : IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<ReplicationMessage.ReconnectToMaster>,
-		IHandle<ReplicationMessage.SubscribeToMaster>,
+		IHandle<ReplicationMessage.ReconnectToLeader>,
+		IHandle<ReplicationMessage.SubscribeToLeader>,
 		IHandle<ReplicationMessage.AckLogPosition>,
-		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.TcpForwardMessage> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ReplicaService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ReplicaService>();
 
 		private readonly TcpClientConnector _connector;
 		private readonly IPublisher _publisher;
@@ -34,15 +33,15 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IEpochManager _epochManager;
 		private readonly IPublisher _networkSendQueue;
 		private readonly IAuthenticationProvider _authProvider;
-
+		private readonly AuthorizationGateway _authorizationGateway;
 		private readonly VNodeInfo _nodeInfo;
 		private readonly bool _useSsl;
-		private readonly string _sslTargetHost;
-		private readonly bool _sslValidateServer;
+		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslServerCertValidator;
+		private readonly X509Certificate _sslClientCertificate;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
 
-		private readonly InternalTcpDispatcher _tcpDispatcher = new InternalTcpDispatcher();
+		private readonly InternalTcpDispatcher _tcpDispatcher;
 
 		private VNodeState _state = VNodeState.Initializing;
 		private TcpConnectionManager _connection;
@@ -52,34 +51,38 @@ namespace EventStore.Core.Services.Replication {
 			IEpochManager epochManager,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorizationGateway,
 			VNodeInfo nodeInfo,
 			bool useSsl,
-			string sslTargetHost,
-			bool sslValidateServer,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			X509Certificate sslClientCertificate,
 			TimeSpan heartbeatTimeout,
-			TimeSpan heartbeatInterval) {
+			TimeSpan heartbeatInterval,
+			TimeSpan writeTimeout) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(epochManager, "epochManager");
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorizationGateway, "authorizationGateway");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
-			if (useSsl) Ensure.NotNull(sslTargetHost, "sslTargetHost");
 
 			_publisher = publisher;
 			_db = db;
 			_epochManager = epochManager;
 			_networkSendQueue = networkSendQueue;
 			_authProvider = authProvider;
+			_authorizationGateway = authorizationGateway;
 
 			_nodeInfo = nodeInfo;
 			_useSsl = useSsl;
-			_sslTargetHost = sslTargetHost;
-			_sslValidateServer = sslValidateServer;
+			_sslServerCertValidator = sslServerCertValidator;
+			_sslClientCertificate = sslClientCertificate;
 			_heartbeatTimeout = heartbeatTimeout;
 			_heartbeatInterval = heartbeatInterval;
 
 			_connector = new TcpClientConnector();
+			_tcpDispatcher = new InternalTcpDispatcher(writeTimeout);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -87,9 +90,12 @@ namespace EventStore.Core.Services.Replication {
 
 			switch (message.State) {
 				case VNodeState.Initializing:
+				case VNodeState.DiscoverLeader:
 				case VNodeState.Unknown:
-				case VNodeState.PreMaster:
-				case VNodeState.Master:
+				case VNodeState.ReadOnlyLeaderless:
+				case VNodeState.PreLeader:
+				case VNodeState.Leader:
+				case VNodeState.ResigningLeader:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown: {
 					Disconnect();
@@ -97,12 +103,18 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.PreReplica: {
 					var m = (SystemMessage.BecomePreReplica)message;
-					ConnectToMaster(m.Master);
+					ConnectToLeader(m.Leader);
+					break;
+				}
+				case VNodeState.PreReadOnlyReplica: {
+					var m = (SystemMessage.BecomePreReadOnlyReplica)message;
+					ConnectToLeader(m.Leader);
 					break;
 				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave: {
+				case VNodeState.Follower:
+				case VNodeState.ReadOnlyReplica:  {
 					// nothing changed, essentially
 					break;
 				}
@@ -127,30 +139,35 @@ namespace EventStore.Core.Services.Replication {
 			_publisher.Publish(new SystemMessage.VNodeConnectionLost(manager.RemoteEndPoint, manager.ConnectionId));
 		}
 
-		public void Handle(ReplicationMessage.ReconnectToMaster message) {
-			ConnectToMaster(message.Master);
+		public void Handle(ReplicationMessage.ReconnectToLeader message) {
+			ConnectToLeader(message.Leader);
 		}
 
-		private void ConnectToMaster(VNodeInfo master) {
-			Debug.Assert(_state == VNodeState.PreReplica);
+		private void ConnectToLeader(VNodeInfo leader) {
+			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
-			var masterEndPoint = GetMasterEndPoint(master, _useSsl);
+			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
+			if (leaderEndPoint == null) {
+				Log.Error("No valid endpoint found to connect to the Leader. Aborting connection operation to Leader.");
+				return;
+			}
 
 			if (_connection != null)
-				_connection.Stop(string.Format("Reconnecting from old master [{0}] to new master: [{1}].",
-					_connection.RemoteEndPoint, masterEndPoint));
+				_connection.Stop(string.Format("Reconnecting from old leader [{0}] to new leader: [{1}].",
+					_connection.RemoteEndPoint, leaderEndPoint));
 
-			_connection = new TcpConnectionManager(_useSsl ? "master-secure" : "master-normal",
+			_connection = new TcpConnectionManager(_useSsl ? "leader-secure" : "leader-normal",
 				Guid.NewGuid(),
 				_tcpDispatcher,
 				_publisher,
-				masterEndPoint,
+				leaderEndPoint,
 				_connector,
 				_useSsl,
-				_sslTargetHost,
-				_sslValidateServer,
+				_sslServerCertValidator,
+				_sslClientCertificate == null ? null : new X509CertificateCollection {_sslClientCertificate},
 				_networkSendQueue,
 				_authProvider,
+				_authorizationGateway,
 				_heartbeatInterval,
 				_heartbeatTimeout,
 				OnConnectionEstablished,
@@ -158,27 +175,31 @@ namespace EventStore.Core.Services.Replication {
 			_connection.StartReceiving();
 		}
 
-		private static IPEndPoint GetMasterEndPoint(VNodeInfo master, bool useSsl) {
-			Ensure.NotNull(master, "master");
-			if (useSsl && master.InternalSecureTcp == null)
+		private static IPEndPoint GetLeaderEndPoint(VNodeInfo leader, bool useSsl) {
+			Ensure.NotNull(leader, "leader");
+			if (useSsl && leader.InternalSecureTcp == null)
 				Log.Error(
-					"Internal secure connections are required, but no internal secure TCP end point is specified for master [{master}]!",
-					master);
-			return useSsl ? master.InternalSecureTcp ?? master.InternalTcp : master.InternalTcp;
+					"Internal secure connections are required, but no internal secure TCP end point is specified for leader [{leader}]!",
+					leader);
+			if (!useSsl && leader.InternalTcp == null)
+				Log.Error(
+					"Internal connections are required, but no internal TCP end point is specified for leader [{leader}]!",
+					leader);
+			return useSsl ? leader.InternalSecureTcp : leader.InternalTcp;
 		}
 
-		public void Handle(ReplicationMessage.SubscribeToMaster message) {
-			if (_state != VNodeState.PreReplica)
-				throw new Exception(string.Format("_state is {0}, but is expected to be {1}", _state,
-					VNodeState.PreReplica));
+		public void Handle(ReplicationMessage.SubscribeToLeader message) {
+			if (_state != VNodeState.PreReplica && _state != VNodeState.PreReadOnlyReplica)
+				throw new Exception(string.Format("_state is {0}, but is expected to be {1} or {2}", _state,
+					VNodeState.PreReplica, VNodeState.PreReadOnlyReplica));
 
 			var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
 			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();
 
-			Log.Info(
-				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to MASTER [{remoteEndPoint}, {masterId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
+			Log.Information(
+				"Subscribing at LogPosition: {logPosition} (0x{logPosition:X}) to LEADER [{remoteEndPoint}, {leaderId:B}] as replica with SubscriptionId: {subscriptionId:B}, "
 				+ "ConnectionId: {connectionId:B}, LocalEndPoint: [{localEndPoint}], Epochs:\n{epochs}...\n.",
-				logPosition, logPosition, _connection.RemoteEndPoint, message.MasterId, message.SubscriptionId,
+				logPosition, logPosition, _connection.RemoteEndPoint, message.LeaderId, message.SubscriptionId,
 				_connection.ConnectionId, _connection.LocalEndPoint,
 				string.Join("\n", epochs.Select(x => x.AsString())));
 
@@ -187,28 +208,14 @@ namespace EventStore.Core.Services.Replication {
 				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
-					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp,
-					message.MasterId, message.SubscriptionId, isPromotable: true));
+					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp ?? _nodeInfo.InternalSecureTcp ?? _connection.LocalEndPoint,
+					message.LeaderId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
 		}
 
 		public void Handle(ReplicationMessage.AckLogPosition message) {
 			if (!_state.IsReplica()) throw new Exception("!_state.IsReplica()");
 			if (_connection == null) throw new Exception("_connection == null");
 			SendTcpMessage(_connection, message);
-		}
-
-		public void Handle(StorageMessage.PrepareAck message) {
-			if (_state == VNodeState.Slave) {
-				Debug.Assert(_connection != null, "_connection == null");
-				SendTcpMessage(_connection, message);
-			}
-		}
-
-		public void Handle(StorageMessage.CommitAck message) {
-			if (_state == VNodeState.Slave) {
-				Debug.Assert(_connection != null, "_connection == null");
-				SendTcpMessage(_connection, message);
-			}
 		}
 
 		public void Handle(ClientMessage.TcpForwardMessage message) {
@@ -218,11 +225,16 @@ namespace EventStore.Core.Services.Replication {
 						SendTcpMessage(_connection, message.Message);
 					break;
 				}
-
+				case VNodeState.PreReadOnlyReplica: {
+					if (_connection != null)
+						SendTcpMessage(_connection, message.Message);
+					break;
+				}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave: {
-					Debug.Assert(_connection != null, "Connection manager is null in slave/clone/catching up state");
+				case VNodeState.Follower:
+				case VNodeState.ReadOnlyReplica:  {
+					Debug.Assert(_connection != null, "Connection manager is null in follower/clone/catching up state");
 					SendTcpMessage(_connection, message.Message);
 					break;
 				}

@@ -1,12 +1,12 @@
 using System;
 using System.Diagnostics.Contracts;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using System.Linq;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class EventSubscriptionBasedProjectionProcessingPhase : IProjectionPhaseCompleter,
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected readonly IProgressResultWriter _progressResultWriter;
 		protected readonly ProjectionConfig _projectionConfig;
 		protected readonly string _projectionName;
-		protected readonly ILogger _logger;
+		protected readonly Serilog.ILogger _logger;
 		protected readonly CheckpointTag _zeroCheckpointTag;
 		protected readonly CoreProjectionQueue _processingQueue;
 		protected readonly PartitionStateCache _partitionStateCache;
@@ -122,10 +122,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		protected void EnsureTickPending() {
 			_coreProjection.EnsureTickPending();
-		}
-
-		public virtual void AssignSlaves(SlaveProjectionCommunicationChannels slaveProjections) {
-			throw new NotSupportedException();
 		}
 
 		public void ProcessEvent() {
@@ -334,7 +330,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected void SetFaulting(string faultedReason, Exception ex = null) {
 			if (_logger != null) {
 				if (ex != null)
-					_logger.ErrorException(ex, faultedReason);
+					_logger.Error(ex, faultedReason);
 				else
 					_logger.Error(faultedReason);
 			}
@@ -544,11 +540,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_wasReaderAssigned)
 				return;
 			_wasReaderAssigned = true;
-			if (_projectionConfig.IsSlaveProjection)
-				_publisher.Publish(
-					new CoreProjectionManagementMessage.SlaveProjectionReaderAssigned(
-						_projectionCorrelationId,
-						message.SubscriptionId));
 			_coreProjection.Subscribed();
 		}
 

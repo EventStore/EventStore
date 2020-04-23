@@ -1,28 +1,32 @@
 using System;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageReaderService : IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderService>();
 
 		private readonly IPublisher _bus;
 		private readonly IReadIndex _readIndex;
 		private readonly int _threadCount;
-
 		private readonly MultiQueuedHandler _workersMultiHandler;
 
-		public StorageReaderService(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount,
-			ICheckpoint writerCheckpoint) {
+		public StorageReaderService(
+			IPublisher bus, 
+			ISubscriber subscriber, 
+			IReadIndex readIndex, 
+			int threadCount,
+			ICheckpoint writerCheckpoint, 
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -32,25 +36,28 @@ namespace EventStore.Core.Services.Storage {
 			_bus = bus;
 			_readIndex = readIndex;
 			_threadCount = threadCount;
-
 			StorageReaderWorker[] readerWorkers = new StorageReaderWorker[threadCount];
 			InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 			for (var i = 0; i < threadCount; i++) {
-				readerWorkers[i] = new StorageReaderWorker(bus, readIndex, writerCheckpoint, i);
+				readerWorkers[i] = new StorageReaderWorker(bus, readIndex, writerCheckpoint,i);
 				storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsForward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadAllEventsBackward>(readerWorkers[i]);
-				storageReaderBuses[i].Subscribe<StorageMessage.CheckStreamAccess>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsForward>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<ClientMessage.FilteredReadAllEventsBackward>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<StorageMessage.BatchLogExpiredMessages>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<StorageMessage.EffectiveStreamAclRequest>(readerWorkers[i]);
+				storageReaderBuses[i].Subscribe<StorageMessage.StreamIdFromTransactionIdRequest>(readerWorkers[i]);
 			}
 
 			_workersMultiHandler = new MultiQueuedHandler(
 				_threadCount,
 				queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
 					string.Format("StorageReaderQueue #{0}", queueNum + 1),
+					queueStatsManager,
 					groupName: "StorageReaderQueue",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
@@ -61,8 +68,11 @@ namespace EventStore.Core.Services.Storage {
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
-			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.CheckStreamAccess, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsForward, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.FilteredReadAllEventsBackward, Message>());
 			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.BatchLogExpiredMessages, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.EffectiveStreamAclRequest, Message>());
+			subscriber.Subscribe(_workersMultiHandler.WidenFrom<StorageMessage.StreamIdFromTransactionIdRequest, Message>());
 		}
 
 		void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message) {
@@ -73,7 +83,7 @@ namespace EventStore.Core.Services.Storage {
 			try {
 				_workersMultiHandler.Stop();
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error while stopping readers multi handler.");
+				Log.Error(exc, "Error while stopping readers multi handler.");
 			}
 
 			_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));

@@ -3,6 +3,7 @@ using NUnit.Framework;
 using EventStore.Core.Tests.Helpers;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
@@ -10,23 +11,23 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private MiniNode _node;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName);
-			_node.Start();
+			await _node.Start();
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
-			_node.Shutdown();
-			base.TestFixtureTearDown();
+		public override async Task TestFixtureTearDown() {
+			await _node.Shutdown();
+			await base.TestFixtureTearDown();
 		}
 
 		[Test]
-		public void should_not_throw_when_connect_to_is_set() {
+		public async Task should_not_throw_when_connect_to_is_set() {
 			string connectionString = string.Format("ConnectTo=tcp://{0};", _node.TcpEndPoint);
 			using (var connection = EventStoreConnection.Create(connectionString)) {
-				Assert.DoesNotThrow(connection.ConnectAsync().Wait);
+				await connection.ConnectAsync();
 				connection.Close();
 			}
 		}

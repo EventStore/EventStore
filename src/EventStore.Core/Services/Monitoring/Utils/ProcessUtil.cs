@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 /*Courtesy of Eric Johannsen: https://stackoverflow.com/a/20623311*/
 static public class ProcessUtil {
@@ -144,7 +144,7 @@ static public class ProcessUtil {
 					processes.Select(x => string.Format("[{0}] {1}", x.Id, x.MainModule.FileName)));
 			logger.Error("Processes locking {path}:" + Environment.NewLine + "{processList}", path, processList);
 		} catch (Exception e) {
-			logger.ErrorException(e, "Could not retrieve list of processes using file handle {path}", path);
+			logger.Error(e, "Could not retrieve list of processes using file handle {path}", path);
 		}
 	}
 }

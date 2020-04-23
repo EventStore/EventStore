@@ -12,9 +12,11 @@ namespace EventStore.Core.Util {
 		public const string AppGroup = "Application Options";
 		public const string DbGroup = "Database Options";
 		public const string ProjectionsGroup = "Projections Options";
-		public const string AuthGroup = "Authentication Options";
+		public const string AuthGroup = "Authentication/Authorization Options";
 		public const string InterfacesGroup = "Interface Options";
-		public const string CertificatesGroup = "Certificate Options";
+		public const string CertificateGroup = "Certificate Options";
+		public const string CertificatesFromFileGroup = "Certificate Options (from file)";
+		public const string CertificatesFromStoreGroup = "Certificate Options (from store)";
 		public const string ClusterGroup = "Cluster Options";
 		public const string ManagerGroup = "Manager Options";
 
@@ -36,25 +38,15 @@ namespace EventStore.Core.Util {
 		public const bool DisableHttpCachingDefault = false;
 
 		public const string LogsDescr = "Path where to keep log files.";
-		public const string StructuredLogDescr = "Enable structured logging.";
-		public const bool StructuredLogDefault = true;
 
 		public const string ConfigsDescr = "Configuration files.";
 		public static readonly string[] ConfigsDefault = new string[0];
-
-		public const string DefinesDescr = "Run-time conditionals.";
-		public static readonly string[] DefinesDefault = new string[0];
 
 		public const string ShowHelpDescr = "Show help.";
 		public const bool ShowHelpDefault = false;
 
 		public const string ShowVersionDescr = "Show version.";
 		public const bool ShowVersionDefault = false;
-
-		public const string MonoMinThreadpoolSizeDescr =
-			"Minimum number of worker threads when running under mono. Set to 0 to leave machine defaults.";
-
-		public const int MonoMinThreadpoolSizeDefault = 10;
 
 		public const string ExtTcpHeartbeatTimeoutDescr = "Heartbeat timeout for external TCP sockets";
 		public const int ExtTcpHeartbeatTimeoutDefault = 1000;
@@ -72,6 +64,11 @@ namespace EventStore.Core.Util {
 			"The maximum number of pending send bytes allowed before a connection is closed.";
 
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
+		
+		public const string ConnectionQueueSizeThresholdDescr =
+			"The maximum number of pending connection operations allowed before a connection is closed.";
+
+		public const int ConnectionQueueSizeThresholdDefault = 50000;
 
 		public const string GossipOnSingleNodeDescr =
 			"When enabled tells a single node to run gossip as if it is a cluster";
@@ -90,7 +87,7 @@ namespace EventStore.Core.Util {
 		public const string MinFlushDelayMsDescr = "The minimum flush delay in milliseconds.";
 		public static double MinFlushDelayMsDefault = TFConsts.MinFlushDelayMs.TotalMilliseconds;
 
-		public const string NodePriorityDescr = "The node priority used during master election";
+		public const string NodePriorityDescr = "The node priority used during leader election";
 		public const int NodePriorityDefault = 0;
 
 		public const string DisableScavengeMergeDescr = "Disables the merging of chunks when scavenge is running";
@@ -107,9 +104,6 @@ namespace EventStore.Core.Util {
 
 		public const string EnableTrustedAuthDescr = "Enables trusted authentication by an intermediary in the HTTP";
 		public const bool EnableTrustedAuthDefault = false;
-
-		public const string AddInterfacePrefixesDescr = "Add interface prefixes";
-		public const bool AddInterfacePrefixesDefault = true;
 
 		public const string MaxMemTableSizeDescr = "Adjusts the maximum size of a mem table.";
 		public const int MaxMemtableSizeDefault = 1000000;
@@ -161,12 +155,6 @@ namespace EventStore.Core.Util {
 		public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
 		public const int WorkerThreadsDefault = 5;
 
-		public const string IntHttpPrefixesDescr = "The prefixes that the internal HTTP server should respond to.";
-		public static readonly string[] IntHttpPrefixesDefault = new string[0];
-
-		public const string ExtHttpPrefixesDescr = "The prefixes that the external HTTP server should respond to.";
-		public static readonly string[] ExtHttpPrefixesDefault = new string[0];
-
 		public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
 		public static readonly bool UnsafeIgnoreHardDeleteDefault = false;
 
@@ -182,13 +170,14 @@ namespace EventStore.Core.Util {
 		public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
 		public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
 
-		public const string BetterOrderingDescr =
-			"Enable Queue affinity on reads during write process to try to get better ordering.";
-
-		public static readonly bool BetterOrderingDefault = false;
+		public const string WriteTimeoutMsDescr = "Write timeout (in milliseconds).";
+		public static readonly int WriteTimeoutMsDefault = 2000; // 2 seconds
 
 		public const string LogHttpRequestsDescr = "Log Http Requests and Responses before processing them.";
 		public static readonly bool LogHttpRequestsDefault = false;
+		
+		public const string LogFailedAuthenticationAttemptsDescr = "Log the failed authentication attempts.";
+		public static readonly bool LogFailedAuthenticationAttemptsDefault = false;
 
 		public const string SkipIndexScanOnReadsDescr =
 			"Skip Index Scan on Reads. This skips the index scan which was used to stop reading duplicates.";
@@ -205,11 +194,18 @@ namespace EventStore.Core.Util {
 
 		public static readonly int InitializationThreadsDefault = 1;
 
-		//Loading certificates from files
-		public const string CertificateFileDescr = "The path to certificate file.";
-		public static readonly string CertificateFileDefault = string.Empty;
+		//Common certificate options
+		public const string TrustedRootCertificatesPathDescr = "The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) root certificate files.";
+		public static readonly string TrustedRootCertificatesPathDefault = string.Empty;
 
-		public const string CertificatePasswordDescr = "The password to certificate in file.";
+		//Loading certificates from files
+		public const string CertificateFileDescr = "The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file.";
+		public static readonly string CertificateFileDefault = string.Empty;
+		
+		public const string CertificatePrivateKeyFileDescr = "The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) certificate file is provided.";
+		public static readonly string CertificatePrivateKeyFileDefault = string.Empty;
+
+		public const string CertificatePasswordDescr = "The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided.";
 		public static readonly string CertificatePasswordDefault = string.Empty;
 
 		//Loading certificates from a certificate store
@@ -222,8 +218,16 @@ namespace EventStore.Core.Util {
 		public const string CertificateSubjectNameDescr = "The certificate subject name.";
 		public static readonly string CertificateSubjectNameDefault = string.Empty;
 
+		public const string MaxAppendSizeDecr = "The maximum size of appends, in bytes. May not exceed 16MB.";
+		public const int MaxAppendSizeDefault = 1024 * 1024; // ONE MB
+
 		public const string CertificateThumbprintDescr = "The certificate fingerprint/thumbprint.";
 		public static readonly string CertificateThumbprintDefault = string.Empty;
+		
+		public const string EnableAtomPubOverHTTPDescr =
+			"Enable AtomPub over HTTP Interface.";
+
+		public static readonly bool EnableAtomPubOverHTTPDefault = true;
 
 		/*
 		 *  SINGLE NODE OPTIONS
@@ -249,10 +253,10 @@ namespace EventStore.Core.Util {
 		public const int GossipAllowedDifferenceMsDefault = 60000;
 
 		public const string GossipIntervalMsDescr = "The interval, in ms, nodes should try to gossip with each other.";
-		public const int GossipIntervalMsDefault = 1000;
+		public const int GossipIntervalMsDefault = 2000;
 
 		public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
-		public const int GossipTimeoutMsDefault = 500;
+		public const int GossipTimeoutMsDefault = 2500;
 
 		public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external HTTP endpoint";
 		public const bool AdminOnExtDefault = true;
@@ -280,20 +284,11 @@ namespace EventStore.Core.Util {
 		public const string InternalTcpPortDescr = "Internal TCP Port.";
 		public const int InternalTcpPortDefault = 1112;
 
-		public const string InternalSecureTcpPortDescr = "Internal Secure TCP Port.";
-		public const int InternalSecureTcpPortDefault = 0;
-
 		public const string ExternalTcpPortDescr = "External TCP Port.";
 		public const int ExternalTcpPortDefault = 1113;
 
-		public const string ExternalSecureTcpPortDescr = "External Secure TCP Port.";
-		public const int ExternalSecureTcpPortDefault = 0;
-
 		public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
 		public static readonly IPAddress ExternalIpAdvertiseAsDefault = null;
-
-		public const string ExternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure External Tcp Port As.";
-		public static readonly int ExternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
@@ -306,9 +301,6 @@ namespace EventStore.Core.Util {
 
 		public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
 		public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
-
-		public const string InternalSecureTcpPortAdvertiseAsDescr = "Advertise Secure Internal Tcp Port As.";
-		public static readonly int InternalSecureTcpPortAdvertiseAsDefault = 0;
 
 		public const string InternalHttpPortAdvertiseAsDescr = "Advertise Internal Http Port As.";
 		public static readonly int InternalHttpPortAdvertiseAsDefault = 0;
@@ -336,17 +328,14 @@ namespace EventStore.Core.Util {
 		public const string ExternalManagerHttpPortDescr = null;
 		public const int ExternalManagerHttpPortDefault = 30778;
 
-		public const string UseInternalSslDescr = "Whether to use secure internal communication.";
-		public const bool UseInternalSslDefault = false;
+		public const string DisableInternalTlsDescr = "Whether to disable secure internal communication.";
+		public const bool DisableInternalTlsDefault = false;
+		
+		public const string DisableExternalTlsDescr = "Whether to disable secure external communication.";
+		public const bool DisableExternalTlsDefault = false;
 
-		public const string DisableInsecureTCPDescr = "Whether to disable insecure TCP communication";
-		public const bool DisableInsecureTCPDefault = false;
-
-		public const string SslTargetHostDescr = "Target host of server's SSL certificate.";
-		public static readonly string SslTargetHostDefault = "n/a";
-
-		public const string SslValidateServerDescr = "Whether to validate that server's certificate is trusted.";
-		public const bool SslValidateServerDefault = true;
+		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
+		public const bool EnableExternalTCPDefault = false;
 
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;
@@ -359,6 +348,16 @@ namespace EventStore.Core.Util {
 
 		public const string GossipSeedDescr = "Endpoints for other cluster nodes from which to seed gossip";
 		public static readonly IPEndPoint[] GossipSeedDefault = new IPEndPoint[0];
+
+		public const string ReadOnlyReplicaDescr = 
+			"Sets this node as a read only replica that is not allowed to participate in elections or accept writes from clients.";
+		public static readonly bool ReadOnlyReplicaDefault = false;
+
+		public const string UnsafeAllowSurplusNodesDescr = "Allow more nodes than the cluster size to join the cluster as clones. (UNSAFE: can cause data loss if a clone is promoted as leader)";
+		public static readonly bool UnsafeAllowSurplusNodesDefault = false;
+		
+		public const string DeadMemberRemovalPeriodDescr = "The number of seconds a dead node will remain in the gossip before being pruned";
+		public const int DeadMemberRemovalPeriodDefault = 1800;
 
 		/*
 		 *  MANAGER OPTIONS
@@ -400,15 +399,26 @@ namespace EventStore.Core.Util {
 		public static readonly bool OptimizeIndexMergeDefault = false;
 
 		/*
-		 * Authentication Options
+		 * Authentication/Authorization Options
 		 */
+		public const string AuthorizationTypeDescr = "The type of authorization to use.";
+		public static readonly string AuthorizationTypeDefault = "internal";
+		
 		public const string AuthenticationTypeDescr = "The type of authentication to use.";
 		public static readonly string AuthenticationTypeDefault = "internal";
+		
+		public const string AuthorizationConfigFileDescr =
+			"Path to the configuration file for authorization configuration (if applicable).";
+		
+		public static readonly string AuthorizationConfigFileDefault = string.Empty;
 
 		public const string AuthenticationConfigFileDescr =
 			"Path to the configuration file for authentication configuration (if applicable).";
 
 		public static readonly string AuthenticationConfigFileDefault = string.Empty;
+
+		public const string DisableFirstLevelHttpAuthorizationDescr = "Disables first level authorization checks on all HTTP endpoints. This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.";
+		public static readonly bool DisableFirstLevelHttpAuthorizationDefault = false;
 
 		/*
 		 * Scavenge options
@@ -417,5 +427,15 @@ namespace EventStore.Core.Util {
 			"During large Index Merge operations, writes may be slowed down. Set this to the maximum index file level for which automatic merges should happen.  Merging indexes above this level should be done manually.";
 
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
+
+		public const string WriteStatsToDbDescr = "Set this option to write statistics to the database.";
+		public const bool WriteStatsToDbDefault = false;
+		
+		public const string MaxTruncationDescr =
+			"When truncate.chk is set, the database will be truncated on startup. This is a safety check to ensure large amounts of data truncation does not happen accidentally. This value should be set in the low 10,000s for allow for standard cluster recovery operations. -1 is no max.";
+		public static readonly long MaxTruncationDefault = 256 * 1024 * 1024;
+		
+		public const string DevDescr = "Enable Development Mode for Event Store.";
+		public const bool DevDefault = false;
 	}
 }

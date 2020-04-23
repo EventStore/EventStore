@@ -280,7 +280,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		}
 
 		private LogRecord CreateLogRecordV0(Rec rec, TransactionInfo transInfo, int transOffset, long logPos,
-			long expectedVersion, byte[] data, PrepareFlags flags) {
+			long expectedVersion, ReadOnlyMemory<byte> data, PrepareFlags flags) {
 			return new PrepareLogRecord(logPos,
 				Guid.NewGuid(),
 				rec.Id,

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -9,6 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkScavengerLogManager : ITFChunkScavengerLogManager {
@@ -16,7 +16,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TimeSpan _scavengeHistoryMaxAge;
 		private readonly IODispatcher _ioDispatcher;
 		private const int MaxRetryCount = 5;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageScavenger>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageScavenger>();
 		private int _isInitialised;
 
 		public TFChunkScavengerLogManager(string nodeEndpoint, TimeSpan scavengeHistoryMaxAge,
@@ -31,10 +31,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (Interlocked.Exchange(ref _isInitialised, 1) != 0)
 				return;
 
-			SetMaxAge();
+			SetScavengeStreamMetadata();
 
 			Log.Debug("Searching for incomplete scavenges on node {nodeEndPoint}.", _nodeEndpoint);
-			GatherIncompleteScavenges(-1, new HashSet<string>(), new List<string>());
+			GatherIncompleteScavenges(-1, new HashSet<string>(), new List<string>(), new List<string>());
 		}
 
 		public ITFChunkScavengerLog CreateLog() {
@@ -46,16 +46,19 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_scavengeHistoryMaxAge);
 		}
 
-		private void SetMaxAge() {
+		private void SetScavengeStreamMetadata() {
 			var metaStreamId = SystemStreams.MetastreamOf(SystemStreams.ScavengesStream);
 
-			_ioDispatcher.ReadBackward(metaStreamId, -1, 1, false, SystemAccount.Principal, readResult => {
+			_ioDispatcher.ReadBackward(metaStreamId, -1, 1, false, SystemAccounts.System, readResult => {
 				if (readResult.Result == ReadStreamResult.Success || readResult.Result == ReadStreamResult.NoStream) {
 					if (readResult.Events.Length == 1) {
 						var currentMetadata = StreamMetadata.FromJsonBytes(readResult.Events[0].Event.Data);
+						var hasProperACL = currentMetadata.Acl != null
+										&& currentMetadata.Acl.ReadRoles != null
+										&& currentMetadata.Acl.ReadRoles.Contains(x => x.Equals("$ops"));
 
-						if (currentMetadata.MaxAge == _scavengeHistoryMaxAge) {
-							Log.Debug("Max age already set for the {stream} stream.", SystemStreams.ScavengesStream);
+						if (currentMetadata.MaxAge == _scavengeHistoryMaxAge && hasProperACL) {
+							Log.Debug("Max age and $ops read permission already set for the {stream} stream.", SystemStreams.ScavengesStream);
 							return;
 						}
 					}
@@ -63,14 +66,24 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					Log.Debug("Setting max age for the {stream} stream to {maxAge}.", SystemStreams.ScavengesStream,
 						_scavengeHistoryMaxAge);
 
-					var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge);
+					Log.Debug("Setting $ops read permission for the {stream} stream", SystemStreams.ScavengesStream);
+
+					var acl = new StreamAcl(
+						new string[]{"$ops"},
+						new string[]{},
+						new string[]{},
+						new string[]{},
+						new string[]{}
+					);
+
+					var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
 					var metaStreamEvent = new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, isJson: true,
 						data: metadata.ToJsonBytes(), metadata: null);
 					_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent,
-						SystemAccount.Principal, m => {
+						SystemAccounts.System, m => {
 							if (m.Result != OperationResult.Success) {
 								Log.Error(
-									"Failed to write the $maxAge of {days} days metadata for the {stream} stream. Reason: {reason}",
+									"Failed to write the $maxAge of {days} days and set $ops permission for the {stream} stream. Reason: {reason}",
 									_scavengeHistoryMaxAge.TotalDays, SystemStreams.ScavengesStream, m.Result);
 							}
 						});
@@ -79,8 +92,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void GatherIncompleteScavenges(long from, ISet<string> completedScavenges,
-			IList<string> incompleteScavenges) {
-			_ioDispatcher.ReadBackward(SystemStreams.ScavengesStream, from, 20, true, SystemAccount.Principal,
+			IList<string> incompleteScavenges, IList<string> recentScavenges) {
+			_ioDispatcher.ReadBackward(SystemStreams.ScavengesStream, from, 20, true, SystemAccounts.System,
 				readResult => {
 					if (readResult.Result != ReadStreamResult.Success &&
 					    readResult.Result != ReadStreamResult.NoStream) {
@@ -101,11 +114,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 							object scavengeIdEntry;
 							if (!dictionary.TryGetValue("scavengeId", out scavengeIdEntry)) {
-								Log.Warn("An entry in the scavenge log has no scavengeId");
+								Log.Warning("An entry in the scavenge log has no scavengeId");
 								continue;
 							}
 
 							var scavengeId = scavengeIdEntry.ToString();
+							if(recentScavenges.Count <= 1000) //bound size
+								recentScavenges.Add(scavengeId);
 
 							if (ev.Event.EventType == SystemEventTypes.ScavengeCompleted) {
 								completedScavenges.Add(scavengeId);
@@ -118,18 +133,59 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					}
 
 					if (readResult.IsEndOfStream || readResult.Events.Length == 0) {
+						SetOpsPermissions(recentScavenges);
 						CompleteInterruptedScavenges(incompleteScavenges);
 					} else {
-						GatherIncompleteScavenges(readResult.NextEventNumber, completedScavenges, incompleteScavenges);
+						GatherIncompleteScavenges(readResult.NextEventNumber, completedScavenges, incompleteScavenges, recentScavenges);
 					}
 				});
 		}
 
-		private void CompleteInterruptedScavenges(IList<string> incompletedScavenges) {
+        private void SetOpsPermissions(IList<string> recentScavengeIds)
+        {
+			//sets $ops permissions on last 30 $scavenges-<scavenge id> stream
+			//added for backward compatibility to make UI scavenge history work properly with $ops users
+
+			var last30ScavengeIds = new HashSet<string>();
+			foreach(var scavengeId in recentScavengeIds){
+				if(last30ScavengeIds.Count >= 30)
+					break;
+				last30ScavengeIds.Add(scavengeId);
+			}
+
+			if(last30ScavengeIds.Count > 0)
+				Log.Debug("Setting $ops read permission on last {count} $scavenges-<scavenge id> streams.", last30ScavengeIds.Count);
+
+			foreach(var scavengeId in last30ScavengeIds){
+				var acl = new StreamAcl(
+					new string[]{"$ops"},
+					new string[]{},
+					new string[]{},
+					new string[]{},
+					new string[]{}
+				);
+
+				var scavengeIdStream = SystemStreams.ScavengesStream + "-" + scavengeId;
+				var metaStreamId = SystemStreams.MetastreamOf(scavengeIdStream);
+				var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
+				var metaStreamEvent = new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, isJson: true,
+					data: metadata.ToJsonBytes(), metadata: null);
+				_ioDispatcher.WriteEvent(metaStreamId, ExpectedVersion.Any, metaStreamEvent,
+					SystemAccounts.System, m => {
+						if (m.Result != OperationResult.Success) {
+							Log.Error(
+								"Failed to set $ops read permission for the {stream} stream. Reason: {reason}",
+								_scavengeHistoryMaxAge.TotalDays, scavengeIdStream, m.Result);
+						}
+					});
+			}
+        }
+
+        private void CompleteInterruptedScavenges(IList<string> incompletedScavenges) {
 			if (incompletedScavenges.Count == 0) {
 				Log.Debug("No incomplete scavenges found on node {nodeEndPoint}.", _nodeEndpoint);
 			} else {
-				Log.Info(
+				Log.Information(
 					"Found {incomplete} incomplete scavenge{s} on node {nodeEndPoint}. Marking as failed:{newLine}{incompleteScavenges}",
 					incompletedScavenges.Count, incompletedScavenges.Count == 1 ? "" : "s", _nodeEndpoint,
 					Environment.NewLine, string.Join(Environment.NewLine, incompletedScavenges));

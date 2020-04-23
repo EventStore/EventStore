@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI {
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
 		private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
-		private NodePreference _nodePreference = NodePreference.Master;
+		private NodePreference _nodePreference = NodePreference.Leader;
 
 		/// <summary>
 		/// Sets the DNS name under which cluster nodes are listed.
@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Allows infinite nodes discovery attempts.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public DnsClusterSettingsBuilder KeepDiscovering() {
 			_maxDiscoverAttempts = Int32.MaxValue;
 			return this;
@@ -70,11 +70,20 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Whether to prioritize choosing a slave node that's alive from the known nodes. 
+		/// Whether to prioritize choosing a follower node that's alive from the known nodes. 
 		/// </summary>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
-		public DnsClusterSettingsBuilder PreferSlaveNode() {
-			_nodePreference = NodePreference.Slave;
+		public DnsClusterSettingsBuilder PreferFollowerNode() {
+			_nodePreference = NodePreference.Follower;
+			return this;
+		}
+
+		/// <summary>
+		/// Whether to prioritize choosing a read only replica that's alive from the known nodes. 
+		/// </summary>
+		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
+		public DnsClusterSettingsBuilder PreferReadOnlyReplica() {
+			_nodePreference = NodePreference.ReadOnlyReplica;
 			return this;
 		}
 

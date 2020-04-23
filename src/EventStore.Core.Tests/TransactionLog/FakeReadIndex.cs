@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex : IReadIndex {
-		public long LastCommitPosition {
+		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }
 		}
-
-		public long LastReplicatedPosition {
-			get { throw new NotImplementedException(); }
-		}
-
+		
 		public IIndexWriter IndexWriter {
 			get { throw new NotImplementedException(); }
 		}
@@ -64,6 +62,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
+		public IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter) {
+			throw new NotImplementedException();
+		}
+
 		public bool IsStreamDeleted(string streamId) {
 			return _isStreamDeleted(streamId);
 		}
@@ -74,11 +82,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 			return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
 		}
 
+		public StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId) {
+			throw new NotImplementedException();
+		}
+
 		public string GetEventStreamIdByTransactionId(long transactionId) {
 			throw new NotImplementedException();
 		}
 
-		public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user) {
+		public StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, ClaimsPrincipal user) {
 			throw new NotImplementedException();
 		}
 

@@ -15,20 +15,18 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		public override void Given() {
 			var certPath = GetCertificatePath();
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
-				.WithSslTargetHost("Host")
-				.ValidateSslServer()
-				.WithServerCertificateFromFile(certPath, "1111");
+				.WithServerCertificateFromFile(certPath, string.Empty, "password");
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -46,20 +44,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
 		}
 
-		[Test]
-		public void should_set_ssl_target_host() {
-			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
-		}
-
 		private string GetCertificatePath() {
 			var filePath = Path.Combine(Path.GetTempPath(), string.Format("cert-{0}.p12", Guid.NewGuid()));
 			using (var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.server.p12"))
+				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.untrusted.untrusted.p12"))
 			using (var fileStream = File.Create(filePath)) {
 				stream.Seek(0, SeekOrigin.Begin);
 				stream.CopyTo(fileStream);
@@ -75,21 +63,19 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private X509Certificate2 _certificate;
 
 		public override void Given() {
-			_certificate = ssl_connections.GetCertificate();
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			_certificate = ssl_connections.GetServerCertificate();
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.EnableSsl()
-				.WithSslTargetHost("Host")
-				.ValidateSslServer()
 				.WithServerCertificate(_certificate);
 		}
 
 		[Test]
-		public void should_set_ssl_to_enabled() {
-			Assert.IsTrue(_settings.UseSsl);
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -106,16 +92,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_set_external_secure_tcp_endpoint() {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
 		}
-
-		[Test]
-		public void should_set_ssl_target_host() {
-			Assert.AreEqual("Host", _settings.SslTargetHost);
-		}
-
-		[Test]
-		public void should_enable_validating_ssl_server() {
-			Assert.IsTrue(_settings.SslValidateServer);
-		}
 	}
 
 
@@ -126,7 +102,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[OneTimeSetUp]
 		public void SetUp() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			var internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			var externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
 			_builder = TestVNodeBuilder.AsSingleNode()

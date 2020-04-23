@@ -1,11 +1,9 @@
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Diagnostics;
-using System.Text;
-using System.Threading.Tasks;
-using EventStore.Common.Log;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -15,28 +13,38 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
 	public class HttpSendService : IHttpForwarder,
 		IHandle<SystemMessage.StateChangeMessage>,
-		IHandle<HttpMessage.SendOverHttp>,
-		IHandle<HttpMessage.HttpSend>,
-		IHandle<HttpMessage.HttpBeginSend>,
-		IHandle<HttpMessage.HttpSendPart>,
-		IHandle<HttpMessage.HttpEndSend> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<HttpSendService>();
-		private static HttpClient _client = new HttpClient();
+		IHandle<HttpMessage.HttpSend> {
+		private static readonly ILogger Log = Serilog.Log.ForContext<HttpSendService>();
 
 		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private readonly HttpMessagePipe _httpPipe;
 		private readonly bool _forwardRequests;
+		private readonly HttpClient _forwardClient;
 		private const string _httpSendHistogram = "http-send";
-		private VNodeInfo _masterInfo;
+		private VNodeInfo _leaderInfo;
 
-		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests) {
+		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> externServerCertValidator) {
 			Ensure.NotNull(httpPipe, "httpPipe");
 			_httpPipe = httpPipe;
 			_forwardRequests = forwardRequests;
+
+			var socketsHttpHandler = new SocketsHttpHandler {
+				SslOptions = {
+					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
+						var (isValid, error) = externServerCertValidator(certificate, chain, errors);
+						if (!isValid && error != null) {
+							Log.Error("Server certificate validation error: {e}", error);
+						}
+						return isValid;
+					}
+				}
+			};
+			_forwardClient = new HttpClient(socketsHttpHandler);
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -44,29 +52,25 @@ namespace EventStore.Core.Services {
 				case VNodeState.PreReplica:
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
-				case VNodeState.Slave:
-					_masterInfo = ((SystemMessage.ReplicaStateMessage)message).Master;
+				case VNodeState.Follower:
+				case VNodeState.PreReadOnlyReplica:
+				case VNodeState.ReadOnlyReplica:
+					_leaderInfo = ((SystemMessage.ReplicaStateMessage)message).Leader;
 					break;
 				case VNodeState.Initializing:
+				case VNodeState.DiscoverLeader:
 				case VNodeState.Unknown:
-				case VNodeState.PreMaster:
-				case VNodeState.Master:
+				case VNodeState.PreLeader:
+				case VNodeState.Leader:
+				case VNodeState.ResigningLeader:
 				case VNodeState.Manager:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown:
-					_masterInfo = null;
+				case VNodeState.ReadOnlyLeaderless:
+					_leaderInfo = null;
 					break;
 				default:
 					throw new Exception(string.Format("Unknown node state: {0}.", message.State));
-			}
-		}
-
-		public void Handle(HttpMessage.SendOverHttp message) {
-			if (message.LiveUntil > DateTime.Now) {
-				_httpPipe.Push(message.Message, message.EndPoint);
-			} else {
-				Log.Debug("Dropping HTTP send message due to TTL being over. {messageType} To : {endPoint}",
-					message.Message.GetType().Name.ToString(), message.EndPoint);
 			}
 		}
 
@@ -119,43 +123,13 @@ namespace EventStore.Core.Services {
 			}
 		}
 
-		public void Handle(HttpMessage.HttpBeginSend message) {
-			var config = message.Configuration;
-
-			message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Encoding,
-				config.Headers);
-			if (message.Envelope != null)
-				message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-					message.HttpEntityManager));
-		}
-
-		public void Handle(HttpMessage.HttpSendPart message) {
-			var response = message.Data;
-			message.HttpEntityManager.ContinueReplyTextContent(
-				response,
-				exc => Log.Debug("Error occurred while replying to HTTP with message {message}: {e}.", message,
-					exc.Message),
-				() => {
-					if (message.Envelope != null)
-						message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-							message.HttpEntityManager));
-				});
-		}
-
-		public void Handle(HttpMessage.HttpEndSend message) {
-			message.HttpEntityManager.EndReply();
-			if (message.Envelope != null)
-				message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId,
-					message.HttpEntityManager));
-		}
-
 		bool IHttpForwarder.ForwardRequest(HttpEntityManager manager) {
-			var masterInfo = _masterInfo;
-			if (_forwardRequests && masterInfo != null) {
+			var leaderInfo = _leaderInfo;
+			if (_forwardRequests && leaderInfo != null) {
 				var srcUrl = manager.RequestedUrl;
-				var srcBase = new Uri(string.Format("{0}://{1}:{2}/", srcUrl.Scheme, srcUrl.Host, srcUrl.Port),
+				var srcBase = new Uri($"{srcUrl.Scheme}://{srcUrl.Host}:{srcUrl.Port}/",
 					UriKind.Absolute);
-				var baseUri = new Uri(string.Format("http://{0}/", masterInfo.InternalHttp));
+				var baseUri = new Uri($"{srcUrl.Scheme}://{leaderInfo.ExternalHttp}/");
 				var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
 				ForwardRequest(manager, forwardUri);
 				return true;
@@ -164,7 +138,7 @@ namespace EventStore.Core.Services {
 			return false;
 		}
 
-		private static void ForwardRequest(HttpEntityManager manager, Uri forwardUri) {
+		private void ForwardRequest(HttpEntityManager manager, Uri forwardUri) {
 			var srcReq = manager.HttpEntity.Request;
 			var request = new HttpRequestMessage();
 			request.RequestUri = forwardUri;
@@ -172,45 +146,51 @@ namespace EventStore.Core.Services {
 
 			var hasContentLength = false;
 			// Copy unrestricted headers (including cookies, if any)
-			foreach (var headerKey in srcReq.Headers.AllKeys) {
+			foreach (var headerKey in srcReq.GetHeaderKeys()) {
 				try {
 					switch (headerKey.ToLower()) {
 						case "accept":
-							request.Headers.Accept.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.Accept.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "connection": break;
-						case "content-type": break;
+						case "connection":
+							break;
+						case "content-type":
+							break;
 						case "content-length":
 							hasContentLength = true;
 							break;
 						case "date":
-							request.Headers.Date = DateTime.Parse(srcReq.Headers[headerKey]);
+							request.Headers.Date = DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "expect": break;
+						case "expect":
+							break;
 						case "host":
-							request.Headers.Host = forwardUri.Host;
+							request.Headers.Host = $"{forwardUri.Host}:{forwardUri.Port}";
 							break;
 						case "if-modified-since":
-							request.Headers.IfModifiedSince = DateTime.Parse(srcReq.Headers[headerKey]);
+							request.Headers.IfModifiedSince =
+								DateTime.Parse(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
-						case "proxy-connection": break;
-						case "range": break;
+						case "proxy-connection":
+							break;
+						case "range":
+							break;
 						case "referer":
-							request.Headers.Referrer = new Uri(srcReq.Headers[headerKey]);
+							request.Headers.Referrer = new Uri(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 						case "transfer-encoding":
-							request.Headers.TransferEncoding.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.TransferEncoding.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 						case "user-agent":
-							request.Headers.UserAgent.ParseAdd(srcReq.Headers[headerKey]);
+							request.Headers.UserAgent.ParseAdd(srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 
 						default:
-							request.Headers.Add(headerKey, srcReq.Headers[headerKey]);
+							request.Headers.Add(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 					}
 				} catch (System.FormatException) {
-					request.Headers.TryAddWithoutValidation(headerKey, srcReq.Headers[headerKey]);
+					request.Headers.TryAddWithoutValidation(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 				}
 			}
 
@@ -236,12 +216,12 @@ namespace EventStore.Core.Services {
 			ForwardResponse(manager, request);
 		}
 
-		private static void ForwardReplyFailed(HttpEntityManager manager) {
+		private void ForwardReplyFailed(HttpEntityManager manager) {
 			manager.ReplyStatus(HttpStatusCode.InternalServerError, "Error while forwarding request", _ => { });
 		}
 
-		private static void ForwardResponse(HttpEntityManager manager, HttpRequestMessage request) {
-			_client.SendAsync(request)
+		private void ForwardResponse(HttpEntityManager manager, HttpRequestMessage request) {
+			_forwardClient.SendAsync(request)
 				.ContinueWith(t => {
 					HttpResponseMessage response;
 					try {

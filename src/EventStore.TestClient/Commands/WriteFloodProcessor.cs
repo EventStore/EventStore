@@ -20,8 +20,6 @@ namespace EventStore.TestClient.Commands {
 			get { return "WRFL"; }
 		}
 
-		private RequestMonitor _monitor = new RequestMonitor();
-
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			int clientsCnt = 1;
 			long requestsCnt = 5000;
@@ -46,12 +44,13 @@ namespace EventStore.TestClient.Commands {
 				}
 			}
 
-			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize);
+			var monitor = new RequestMonitor();
+			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, monitor);
 			return true;
 		}
 
 		private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt,
-			int size, int batchSize) {
+			int size, int batchSize, RequestMonitor monitor) {
 			context.IsAsync();
 
 			var doneEvent = new ManualResetEventSlim(false);
@@ -85,7 +84,7 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-						_monitor.EndOperation(pkg.CorrelationId);
+						monitor.EndOperation(pkg.CorrelationId);
 						switch (dto.Result) {
 							case TcpClientMessageDto.OperationResult.Success:
 								Interlocked.Add(ref succ, batchSize);
@@ -122,7 +121,7 @@ namespace EventStore.TestClient.Commands {
 						if (localAll % 100000 == 0) {
 							var elapsed = sw2.Elapsed;
 							sw2.Restart();
-							context.Log.Trace(
+							context.Log.Debug(
 								"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
 								localAll, elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds,
 								succ, fail,
@@ -157,7 +156,7 @@ namespace EventStore.TestClient.Commands {
 							events,
 							false);
 						var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
-						_monitor.StartOperation(corrid);
+						monitor.StartOperation(corrid);
 						client.EnqueueSend(package.AsByteArray());
 
 						var localSent = Interlocked.Increment(ref sent);
@@ -176,13 +175,13 @@ namespace EventStore.TestClient.Commands {
 			sw.Stop();
 			clients.ForEach(client => client.Close());
 
-			context.Log.Info(
+			context.Log.Information(
 				"Completed. Successes: {success}, failures: {failures} (WRONG VERSION: {wrongExpectedVersion}, P: {prepareTimeout}, C: {commitTimeout}, F: {forwardTimeout}, D: {streamDeleted})",
 				succ, fail,
 				wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
 
 			var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
-			context.Log.Info("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
+			context.Log.Information("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
 				sw.ElapsedMilliseconds, reqPerSec);
 
 			PerfUtils.LogData(
@@ -203,7 +202,7 @@ namespace EventStore.TestClient.Commands {
 			PerfUtils.LogTeamCityGraphData(
 				string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt,
 					streamsCnt, size), failuresRate);
-			_monitor.GetMeasurementDetails();
+			monitor.GetMeasurementDetails();
 			if (Interlocked.Read(ref succ) != requestsCnt)
 				context.Fail(reason: "There were errors or not all requests completed.");
 			else

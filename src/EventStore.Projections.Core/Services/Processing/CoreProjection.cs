@@ -1,16 +1,11 @@
 using System;
-using System.Diagnostics;
-using System.Security.Principal;
-using System.Threading;
-using EventStore.Common.Log;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	//TODO: replace Console.WriteLine with logging
@@ -20,12 +15,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		ICoreProjection,
 		ICoreProjectionForProcessingPhase,
 		IHandle<CoreProjectionManagementMessage.GetState>,
-		IHandle<CoreProjectionManagementMessage.GetResult>,
-		IHandle<ProjectionManagementMessage.SlaveProjectionsStarted> {
+		IHandle<CoreProjectionManagementMessage.GetResult> {
 		[Flags]
 		private enum State : uint {
 			Initial = 0x80000000,
-			StartSlaveProjectionsRequested = 0x1,
 			LoadStateRequested = 0x2,
 			StateLoaded = 0x4,
 			Subscribed = 0x8,
@@ -36,6 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Faulted = 0x200,
 			CompletingPhase = 0x400,
 			PhaseCompleted = 0x800,
+			Suspended = 0x900,
 		}
 
 		private readonly string _name;
@@ -48,9 +42,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly Guid _workerId;
 		internal readonly Guid _projectionCorrelationId;
 		private readonly IPublisher _inputQueue;
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 
-		private readonly ILogger _logger;
+		private readonly Serilog.ILogger _logger;
 
 		private State _state;
 
@@ -73,13 +67,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly bool _requiresRootPartition;
 		private readonly Action<ProjectionStatistics> _enrichStatistics;
 
-		private SlaveProjectionCommunicationChannels _slaveProjections;
 		private int _statisticsSequentialNumber;
 		private bool _disposed;
-
-		private MasterCoreProjectionResponseReader _masterProjectionResponseReader;
-		//NOTE: this is only for slave projections (TBD)
-
 
 		public CoreProjection(
 			ProjectionProcessingStrategy projectionProcessingStrategy,
@@ -87,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			Guid projectionCorrelationId,
 			IPublisher inputQueue,
 			Guid workerId,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			IPublisher publisher,
 			IODispatcher ioDispatcher,
 			ReaderSubscriptionDispatcher subscriptionDispatcher,
@@ -109,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_name = effectiveProjectionName;
 			_version = version;
 			_stopOnEof = projectionProcessingStrategy.GetStopOnEof();
-			_logger = logger ?? LogManager.GetLoggerFor<CoreProjection>();
+			_logger = logger ?? Serilog.Log.ForContext<CoreProjection>();
 			_publisher = publisher;
 			_ioDispatcher = ioDispatcher;
 			_partitionStateCache = partitionStateCache;
@@ -166,13 +155,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Start() {
 			EnsureState(State.Initial);
 			_startOnLoad = true;
-
-			var slaveProjectionDefinitions = _projectionProcessingStrategy.GetSlaveProjections();
-			if (slaveProjectionDefinitions != null) {
-				GoToState(State.StartSlaveProjectionsRequested);
-			} else {
-				GoToState(State.LoadStateRequested);
-			}
+			GoToState(State.LoadStateRequested);
 		}
 
 		public void LoadStopped() {
@@ -198,6 +181,19 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Kill() {
 			if (_state != State.Stopped)
 				GoToState(State.Stopped);
+		}
+		
+		public bool Suspend() {
+			if (_state == State.Stopped || _state == State.Suspended)
+				return false;
+			
+			GoToState(State.Suspended);
+			return true;
+		}
+
+		private void EnterSuspended() {
+			EnsureUnsubscribed();
+			_publisher.Publish(new CoreProjectionStatusMessage.Suspended(_projectionCorrelationId));
 		}
 
 		private void GetStatistics(ProjectionStatistics info) {
@@ -292,8 +288,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				BeginPhase(projectionProcessingPhase, checkpointTag, rootPartitionState);
 				GoToState(State.StateLoaded);
 				if (_startOnLoad) {
-					if (_slaveProjections != null)
-						_projectionProcessingPhase.AssignSlaves(_slaveProjections);
 					_projectionProcessingPhase.Subscribe(checkpointTag, fromCheckpoint: true);
 				} else
 					GoToState(State.Stopped);
@@ -312,7 +306,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(CoreProjectionProcessingMessage.RestartRequested message) {
-			_logger.Info(
+			_logger.Information(
 				"Projection '{projection}'({projectionCorrelationId}) restart has been requested due to: '{reason}'",
 				_name, _projectionCorrelationId,
 				message.Reason);
@@ -324,10 +318,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 			}
 
-			//
 			CompleteCheckpointSuggestedWorkItem();
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			GoToState(State.Initial);
 			Start();
 		}
@@ -341,27 +333,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_projectionProcessingPhase.EnsureUnsubscribed();
 		}
 
-
-		private void StopSlaveProjections() {
-			if (_masterProjectionResponseReader != null)
-				_masterProjectionResponseReader.Stop();
-			//TODO: encapsulate into StopSlaveProjections message?
-			var slaveProjections = _slaveProjections;
-			if (slaveProjections != null) {
-				_slaveProjections = null;
-				foreach (var group in slaveProjections.Channels) {
-					foreach (var channel in group.Value) {
-						_publisher.Publish(
-							new ProjectionManagementMessage.Command.Delete(
-								new NoopEnvelope(), channel.ManagedProjectionName,
-								ProjectionManagementMessage.RunAs.System, true, true, false));
-					}
-				}
-			}
-		}
-
-
 		private void GoToState(State state) {
+			if (_state == State.Suspended) {
+				_logger.Debug($"Projection {_name} has been suspended for a subsystem restart. Cannot go to state {state}");
+				return;
+			}
 //            _logger.Trace("CP: {projection} {stateFrom} => {stateTo}", _name, _state, state);
 			var wasStopped = _state == State.Stopped || _state == State.Faulted || _state == State.PhaseCompleted;
 			var wasStopping = _state == State.Stopping || _state == State.FaultedStopping
@@ -421,9 +397,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				case State.Initial:
 					EnterInitial();
 					break;
-				case State.StartSlaveProjectionsRequested:
-					EnterStartSlaveProjectionsRequested();
-					break;
 				case State.LoadStateRequested:
 					EnterLoadStateRequested();
 					break;
@@ -454,6 +427,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 				case State.PhaseCompleted:
 					EnterPhaseCompleted();
 					break;
+				case State.Suspended:
+					EnterSuspended();
+					break;
 				default:
 					throw new Exception();
 			}
@@ -478,23 +454,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			// NOTE: this is to workaround exception in GetState requests submitted by client
 		}
 
-		private void EnterStartSlaveProjectionsRequested() {
-			_masterProjectionResponseReader = new MasterCoreProjectionResponseReader(
-				_publisher,
-				_ioDispatcher,
-				_workerId,
-				_projectionCorrelationId);
-			_masterProjectionResponseReader.Start();
-			_publisher.Publish(
-				new ProjectionManagementMessage.Command.StartSlaveProjections(
-					new PublishEnvelope(_inputQueue),
-					new ProjectionManagementMessage.RunAs(_runAs),
-					_name,
-					_projectionProcessingStrategy.GetSlaveProjections(),
-					_workerId,
-					_projectionCorrelationId));
-		}
-
 		private void EnterLoadStateRequested() {
 			_checkpointReader.BeginLoadState();
 		}
@@ -512,7 +471,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void EnterRunning() {
 			try {
 				_publisher.Publish(
-					new CoreProjectionStatusMessage.Started(_projectionCorrelationId));
+					new CoreProjectionStatusMessage.Started(_projectionCorrelationId, _name));
 				_projectionProcessingPhase.ProcessEvent();
 			} catch (Exception ex) {
 				SetFaulted(ex);
@@ -525,7 +484,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterStopped() {
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			_publisher.Publish(new CoreProjectionStatusMessage.Stopped(_projectionCorrelationId, _name, _completed));
 		}
 
@@ -535,7 +493,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void EnterFaulted() {
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			_publisher.Publish(
 				new CoreProjectionStatusMessage.Faulted(_projectionCorrelationId, _faultedReason));
 		}
@@ -551,8 +508,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				var nextPhase = _projectionProcessingPhases[completedPhaseIndex + 1];
 				var nextPhaseZeroPosition = nextPhase.MakeZeroCheckpointTag();
 				BeginPhase(nextPhase, nextPhaseZeroPosition, null);
-				if (_slaveProjections != null)
-					_projectionProcessingPhase.AssignSlaves(_slaveProjections);
 				_projectionProcessingPhase.Subscribe(nextPhaseZeroPosition, fromCheckpoint: false);
 			}
 		}
@@ -590,7 +545,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public void Dispose() {
 			_disposed = true;
 			EnsureUnsubscribed();
-			StopSlaveProjections();
 			if (_projectionProcessingPhase != null)
 				_projectionProcessingPhase.Dispose();
 		}
@@ -666,11 +620,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void Subscribed() {
 			GoToState(State.Subscribed);
-		}
-
-		public void Handle(ProjectionManagementMessage.SlaveProjectionsStarted message) {
-			_slaveProjections = message.SlaveProjections;
-			GoToState(State.LoadStateRequested);
 		}
 	}
 }

@@ -2,16 +2,17 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Tcp;
 using NUnit.Framework;
 using System;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Text;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
+using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
@@ -25,16 +26,17 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		[OneTimeSetUp]
 		public void Setup() {
-			_dispatcher = new ClientTcpDispatcher();
+			_dispatcher = new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault);
 
 			var dummyConnection = new DummyTcpConnection();
 			_connection = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					new StubPasswordHashAlgorithm(), 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				Opts.ConnectionPendingSendBytesThresholdDefault);
+				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault);
 		}
 
 		[Test]
@@ -42,7 +44,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var dto = new TcpClientMessageDto.DeleteStream("test-stream", ExpectedVersion.Any, true, false);
 			var package = new TcpPackage(TcpCommand.DeleteStream, Guid.NewGuid(), dto.Serialize());
 
-			var msg = _dispatcher.UnwrapPackage(package, _envelope, SystemAccount.Principal, "", "", _connection,
+			var msg = _dispatcher.UnwrapPackage(package, _envelope, SystemAccounts.System, "", "", _connection,
 				_version) as ClientMessage.DeleteStream;
 			Assert.IsNotNull(msg);
 		}
@@ -50,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[Test]
 		public void when_wrapping_message_that_does_not_have_version1_wrapper_should_use_version2_wrapper() {
 			var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), Guid.NewGuid(), _envelope, true, "test-stream",
-				ExpectedVersion.Any, false, SystemAccount.Principal);
+				ExpectedVersion.Any, false, SystemAccounts.System);
 			var package = _dispatcher.WrapMessage(msg, _version);
 			Assert.IsNotNull(package, "Package");
 			Assert.AreEqual(TcpCommand.DeleteStream, package.Value.Command);

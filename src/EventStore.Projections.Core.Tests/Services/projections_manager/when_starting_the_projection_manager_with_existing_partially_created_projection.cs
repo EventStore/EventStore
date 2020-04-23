@@ -46,8 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_manager);
-			_manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
-			_manager.Handle(new ProjectionManagementMessage.ReaderReady());
+			_manager.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 		}
 
 		[TearDown]
@@ -73,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(
 				ManagedProjectionState.Creating,
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
-					v => v.Projections[0].Name == "projection1").Projections[0].MasterStatus);
+					v => v.Projections[0].Name == "projection1").Projections[0].LeaderStatus);
 		}
 	}
 }

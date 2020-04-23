@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			Assert.AreEqual(@"{""data"":""b""", message3.Data.Data);
 
 			Assert.AreEqual(@"dd", message1.Data.Metadata);
-			Assert.AreEqual(@"", message2.Data.Metadata);
+			Assert.IsNull(message2.Data.Metadata);
 			Assert.AreEqual(@"bb", message3.Data.Metadata);
 
 			Assert.AreEqual("{$o:\"org\"}", message1.Data.PositionMetadata);

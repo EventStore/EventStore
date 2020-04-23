@@ -5,12 +5,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		Ping = 0x03,
 		Pong = 0x04,
-
-		PrepareAck = 0x05,
-		CommitAck = 0x06,
-
-		SlaveAssignment = 0x07,
+				
+		FollowerAssignment = 0x07,
 		CloneAssignment = 0x08,
+		DropSubscription = 0x09,
 
 		SubscribeReplica = 0x10,
 		ReplicaLogPositionAck = 0x11,
@@ -19,6 +17,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		DataChunkBulk = 0x14,
 		ReplicaSubscriptionRetry = 0x15,
 		ReplicaSubscribed = 0x16,
+		LeaderReplicatedTo = 0x17,
 
 		// CLIENT COMMANDS
 //        CreateStream = 0x80,
@@ -47,6 +46,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		ReadAllEventsForwardCompleted = 0xB7,
 		ReadAllEventsBackward = 0xB8,
 		ReadAllEventsBackwardCompleted = 0xB9,
+		FilteredReadAllEventsForward = 0xBA,
+		FilteredReadAllEventsForwardCompleted = 0xBB,
+		FilteredReadAllEventsBackward = 0xBC,
+		FilteredReadAllEventsBackwardCompleted = 0xBE,
 
 		SubscribeToStream = 0xC0,
 		SubscriptionConfirmation = 0xC1,
@@ -64,6 +67,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		PersistentSubscriptionNakEvents = 0xCD,
 		UpdatePersistentSubscription = 0xCE,
 		UpdatePersistentSubscriptionCompleted = 0xCF,
+		FilteredSubscribeToStream = 0xD2,
+		CheckpointReached = 0xD3,
 
 		ScavengeDatabase = 0xD0,
 		ScavengeDatabaseResponse = 0xD1,

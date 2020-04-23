@@ -1,35 +1,37 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
-    <Platform>x64</Platform>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <Reference Include="System.ServiceModel" />
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Grpc.Tools" Version="2.27.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />   
   </ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Prelude\Modules\" />
+	</ItemGroup>
   <ItemGroup>
-    <Folder Include="Prelude\Modules\" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Prelude\1Prelude.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Prelude\Modules.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Prelude\ModulesExecuted.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Prelude\Projections.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Prelude\1Prelude.js" />
+    <EmbeddedResource Include="Prelude\Modules.js" />
+    <EmbeddedResource Include="Prelude\ModulesExecuted.js" />
+    <EmbeddedResource Include="Prelude\Projections.js" />
     <!-- TODO(jen20): What is this and why do we need it? -->
-    <Content Include="Services\Management\TODO.txt" />
   </ItemGroup>
 </Project>

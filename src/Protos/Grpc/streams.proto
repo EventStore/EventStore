@@ -1,0 +1,208 @@
+syntax = "proto3";
+package event_store.client.streams;
+option java_package = "com.eventstore.client.streams";
+
+import "shared.proto";
+
+service Streams {
+	rpc Read (ReadReq) returns (stream ReadResp);
+	rpc Append (stream AppendReq) returns (AppendResp);
+	rpc Delete (DeleteReq) returns (DeleteResp);
+	rpc Tombstone (TombstoneReq) returns (TombstoneResp);
+}
+
+message ReadReq {
+	Options options = 1;
+
+	message Options {
+		oneof stream_option {
+			StreamOptions stream = 1;
+			AllOptions all = 2;
+		}
+		ReadDirection read_direction = 3;
+		bool resolve_links = 4;
+		oneof count_option {
+			uint64 count = 5;
+			SubscriptionOptions subscription = 6;
+		}
+		oneof filter_option {
+			FilterOptions filter = 7;
+			event_store.client.shared.Empty no_filter = 8;
+		}
+		UUIDOption uuid_option = 9;
+
+		enum ReadDirection {
+			Forwards = 0;
+			Backwards = 1;
+		}
+		message StreamOptions {
+			string stream_name = 1;
+			oneof revision_option {
+				uint64 revision = 2;
+				event_store.client.shared.Empty start = 3;
+				event_store.client.shared.Empty end = 4;
+			}
+		}
+		message AllOptions {
+			oneof all_option {
+				Position position = 1;
+				event_store.client.shared.Empty start = 2;
+				event_store.client.shared.Empty end = 3;
+			}
+		}
+		message SubscriptionOptions {
+		}
+		message Position {
+			uint64 commit_position = 1;
+			uint64 prepare_position = 2;
+		}
+		message FilterOptions {
+			oneof filter {
+				Expression stream_name = 1;
+				Expression event_type = 2;
+			}
+			oneof window {
+				uint32 max = 3;
+				event_store.client.shared.Empty count = 4;
+			}
+			uint32 checkpointIntervalMultiplier = 5;
+
+			message Expression {
+				string regex = 1;
+				repeated string prefix = 2;
+			}
+		}
+		message UUIDOption {
+			oneof content {
+				event_store.client.shared.Empty structured = 1;
+				event_store.client.shared.Empty string = 2;
+			}
+		}
+	}
+}
+
+message ReadResp {
+	oneof content {
+		ReadEvent event = 1;
+		SubscriptionConfirmation confirmation = 2;
+		Checkpoint checkpoint = 3;
+	}
+
+	message ReadEvent {
+		RecordedEvent event = 1;
+		RecordedEvent link = 2;
+		oneof position {
+			uint64 commit_position = 3;
+			event_store.client.shared.Empty no_position = 4;
+		}
+
+		message RecordedEvent {
+			event_store.client.shared.UUID id = 1;
+			string stream_name = 2;
+			uint64 stream_revision = 3;
+			uint64 prepare_position = 4;
+			uint64 commit_position = 5;
+			map<string, string> metadata = 6;
+			bytes custom_metadata = 7;
+			bytes data = 8;
+		}
+	}
+	message SubscriptionConfirmation {
+		string subscription_id = 1;
+	}
+	message Checkpoint {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+}
+
+message AppendReq {
+	oneof content {
+		Options options = 1;
+		ProposedMessage proposed_message = 2;
+	}
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
+		}
+	}
+	message ProposedMessage {
+		event_store.client.shared.UUID id = 1;
+		map<string, string> metadata = 2;
+		bytes custom_metadata = 3;
+		bytes data = 4;
+	}
+}
+
+message AppendResp {
+	oneof current_revision_option {
+		uint64 current_revision = 1;
+		event_store.client.shared.Empty no_stream = 2;
+	}
+	oneof position_option {
+		Position position = 3;
+		event_store.client.shared.Empty no_position = 4;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+}
+
+message DeleteReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
+		}
+	}
+}
+
+message DeleteResp {
+	oneof position_option {
+		Position position = 1;
+		event_store.client.shared.Empty no_position = 2;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+}
+
+message TombstoneReq {
+	Options options = 1;
+
+	message Options {
+		string stream_name = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
+		}
+	}
+}
+
+message TombstoneResp {
+	oneof position_option {
+		Position position = 1;
+		event_store.client.shared.Empty no_position = 2;
+	}
+
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+}

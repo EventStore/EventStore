@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public StreamEventReader(
 			IPublisher publisher,
 			Guid eventReaderCorrelationId,
-			IPrincipal readAs,
+			ClaimsPrincipal readAs,
 			string streamName,
 			long fromSequenceNumber,
 			ITimeProvider timeProvider,
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SendIdle() {
 			_publisher.Publish(
-				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.Now));
+				new ReaderSubscriptionMessage.EventReaderIdle(EventReaderCorrelationId, _timeProvider.UtcNow));
 		}
 
 		protected override void RequestEvents() {

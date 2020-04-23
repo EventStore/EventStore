@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			protected override WriteResult TransformResponse(ClientMessage.WriteEventsCompleted response) {
 				return new WriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -100,7 +100,7 @@ namespace EventStore.ClientAPI.Embedded {
 				}
 
 				return new ConditionalWriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.Embedded {
 			}
 
 			protected override DeleteResult TransformResponse(ClientMessage.DeleteStreamCompleted response) {
-				return new DeleteResult(new Position(response.PreparePosition, response.CommitPosition));
+				return new DeleteResult(new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 
@@ -214,6 +214,70 @@ namespace EventStore.ClientAPI.Embedded {
 					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
 					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
 					response.Events.ConvertToClientResolvedEvents());
+			}
+		}
+		
+		internal class FilteredReadAllEventsForward :
+			EmbeddedResponderBase<AllEventsSlice, ClientMessage.FilteredReadAllEventsForwardCompleted> {
+			public FilteredReadAllEventsForward(TaskCompletionSource<AllEventsSlice> source) : base(source) {
+			}
+
+			protected override void InspectResponse(ClientMessage.FilteredReadAllEventsForwardCompleted response) {
+				switch (response.Result) {
+					case FilteredReadAllResult.Success:
+						Succeed(response);
+						break;
+					case FilteredReadAllResult.Error:
+						Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error)
+							? "<no message>"
+							: response.Error));
+						break;
+					case FilteredReadAllResult.AccessDenied:
+						Fail(new AccessDeniedException("Read access denied for $all."));
+						break;
+					default:
+						throw new Exception(string.Format("Unexpected ReadAllResult: {0}.", response.Result));
+				}
+			}
+
+			protected override AllEventsSlice TransformResponse(
+				ClientMessage.FilteredReadAllEventsForwardCompleted response) {
+				return new AllEventsSlice(ReadDirection.Forward,
+					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
+					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
+					response.Events.ConvertToClientResolvedEvents(), response.IsEndOfStream);
+			}
+		}
+		
+		internal class FilteredReadAllEventsBackward :
+			EmbeddedResponderBase<AllEventsSlice, ClientMessage.FilteredReadAllEventsBackwardCompleted> {
+			public FilteredReadAllEventsBackward(TaskCompletionSource<AllEventsSlice> source) : base(source) {
+			}
+
+			protected override void InspectResponse(ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
+				switch (response.Result) {
+					case FilteredReadAllResult.Success:
+						Succeed(response);
+						break;
+					case FilteredReadAllResult.Error:
+						Fail(new ServerErrorException(string.IsNullOrEmpty(response.Error)
+							? "<no message>"
+							: response.Error));
+						break;
+					case FilteredReadAllResult.AccessDenied:
+						Fail(new AccessDeniedException("Read access denied for $all."));
+						break;
+					default:
+						throw new Exception(string.Format("Unexpected ReadAllResult: {0}.", response.Result));
+				}
+			}
+
+			protected override AllEventsSlice TransformResponse(
+				ClientMessage.FilteredReadAllEventsBackwardCompleted response) {
+				return new AllEventsSlice(ReadDirection.Backward,
+					new Position(response.CurrentPos.CommitPosition, response.CurrentPos.PreparePosition),
+					new Position(response.NextPos.CommitPosition, response.NextPos.PreparePosition),
+					response.Events.ConvertToClientResolvedEvents(), response.IsEndOfStream);
 			}
 		}
 
@@ -423,7 +487,7 @@ namespace EventStore.ClientAPI.Embedded {
 
 			protected override WriteResult TransformResponse(ClientMessage.TransactionCommitCompleted response) {
 				return new WriteResult(response.LastEventNumber,
-					new Position(response.PreparePosition, response.CommitPosition));
+					new Position(response.CommitPosition, response.PreparePosition));
 			}
 		}
 

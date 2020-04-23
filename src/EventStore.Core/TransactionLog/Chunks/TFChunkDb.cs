@@ -4,22 +4,23 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkDb : IDisposable {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkDb>();
-
 		public readonly TFChunkDbConfig Config;
 		public readonly TFChunkManager Manager;
 
-		public TFChunkDb(TFChunkDbConfig config) {
+		private readonly ILogger _log;
+
+		public TFChunkDb(TFChunkDbConfig config, ILogger log = null) {
 			Ensure.NotNull(config, "config");
 
 			Config = config;
 			Manager = new TFChunkManager(Config);
+			_log = log ?? Serilog.Log.ForContext<TFChunkDb>();
 		}
 
 		struct ChunkInfo {
@@ -75,6 +76,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 								chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 									unbufferedRead: Config.Unbuffered,
 									initialReaderCount: Config.InitialReaderCount,
+									maxReaderCount: Config.MaxReaderCount,
 									optimizeReadSideCache: Config.OptimizeReadSideCache,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
 							else {
@@ -82,6 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 									checkSize: false,
 									unbuffered: Config.Unbuffered,
 									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
+									maxReaderCount: Config.MaxReaderCount,
 									reduceFileCachePressure: Config.ReduceFileCachePressure);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
@@ -91,6 +94,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
 								unbufferedRead: Config.Unbuffered,
 								initialReaderCount: Config.InitialReaderCount,
+								maxReaderCount: Config.MaxReaderCount,
 								optimizeReadSideCache: Config.OptimizeReadSideCache,
 								reduceFileCachePressure: Config.ReduceFileCachePressure);
 						}
@@ -118,6 +122,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
 						unbufferedRead: Config.Unbuffered,
 						initialReaderCount: Config.InitialReaderCount,
+						maxReaderCount: Config.MaxReaderCount,
 						optimizeReadSideCache: Config.OptimizeReadSideCache,
 						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
@@ -131,7 +136,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 					Manager.AddChunk(lastChunk);
 					if (!readOnly) {
-						Log.Info(
+						_log.Information(
 							"Moving WriterCheckpoint from {checkpoint} to {chunkEndPosition}, as it points to the scavenged chunk. "
 							+ "If that was not caused by replication of scavenged chunks, that could be a bug.",
 							checkpoint, lastChunk.ChunkHeader.ChunkEndPosition);
@@ -143,6 +148,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
 						unbuffered: Config.Unbuffered,
 						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
+						maxReaderCount: Config.MaxReaderCount,
 						reduceFileCachePressure: Config.ReduceFileCachePressure);
 					Manager.AddChunk(lastChunk);
 				}
@@ -164,13 +170,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						try {
 							chunk.VerifyFileHash();
 						} catch (FileBeingDeletedException exc) {
-							Log.Trace(
+							_log.Verbose(
 								"{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",
 								exc.GetType().Name, chunk);
-							Log.Trace("That's probably OK, especially if truncation was request at the same time: {e}.",
+							_log.Verbose(
+								"That's probably OK, especially if truncation was request at the same time: {e}.",
 								exc.Message);
 						} catch (Exception exc) {
-							Log.FatalException(exc, "Verification of chunk {chunk} failed, terminating server...",
+							_log.Fatal(exc, "Verification of chunk {chunk} failed, terminating server...",
 								chunk);
 							var msg = string.Format("Verification of chunk {0} failed, terminating server...", chunk);
 							Application.Exit(ExitCode.Error, msg);
@@ -262,14 +269,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				try {
 					RemoveFile("Deleting temporary file {file}...", tempFile);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while trying to delete remaining temp file: '{tempFile}'.",
+					_log.Error(exc, "Error while trying to delete remaining temp file: '{tempFile}'.",
 						tempFile);
 				}
 			}
 		}
 
 		private void RemoveFile(string reason, string file) {
-			Log.Trace(reason, file);
+			_log.Verbose(reason, file);
 			File.SetAttributes(file, FileAttributes.Normal);
 			File.Delete(file);
 		}

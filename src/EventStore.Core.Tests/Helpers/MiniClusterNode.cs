@@ -1,15 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
+using System.Net.Http;
+using System.Net.Security;
 using System.Runtime.InteropServices;
-using System.Threading;
-using EventStore.Common.Log;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
@@ -23,6 +26,11 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.AspNetCore.TestHost;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -34,7 +42,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<MiniClusterNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode>();
 
 		public IPEndPoint InternalTcpEndPoint { get; private set; }
 		public IPEndPoint InternalTcpSecEndPoint { get; private set; }
@@ -48,16 +56,34 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		private readonly string _dbPath;
-		public ManualResetEvent StartedEvent;
+		private readonly bool _isReadOnlyReplica;
+		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<bool> _adminUserCreated = new TaskCompletionSource<bool>();
+
+		public Task Started => _started.Task;
+		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public VNodeState NodeState = VNodeState.Unknown;
+		private readonly IWebHost _host;
+
+		private TestServer _kestrelTestServer;
+
+		public bool UseHttpsInternally() {
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+		}
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false) {
+			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
+			}
+			
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -82,31 +108,42 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpSecEndPoint = externalTcpSec;
 			ExternalHttpEndPoint = externalHttp;
 
+			var certificate = ssl_connections.GetServerCertificate();
+			var trustedRootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
+
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
 				new Data.GossipAdvertiseInfo(InternalTcpEndPoint, InternalTcpSecEndPoint,
 					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
 					InternalHttpEndPoint, ExternalHttpEndPoint,
-					null, null, 0, 0),
-				new[] {InternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)},
-				new[] {ExternalHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)}, enableTrustedAuth,
-				ssl_connections.GetCertificate(), 1, false,
+					null, null, 0, 0), enableTrustedAuth,
+				certificate, trustedRootCertificates, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
-				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
-				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
+				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
+				new AuthenticationProviderFactory(components => 
+					new InternalAuthenticationProviderFactory(components)),
+				new AuthorizationProviderFactory(components =>
+					new LegacyAuthorizationProviderFactory(components.MainQueue)),
+				disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
 				adminOnPublic: true,
-				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
-				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
+				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
+				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
 				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
-				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
+				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2), 
+				 deadMemberRemovalPeriod: TimeSpan.FromSeconds(1800),
 				verifyDbHash: false, maxMemtableEntryCount: memTableSize,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
+				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
+				readOnlyReplica: readOnlyReplica,
+				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
+				enableExternalTCP: true,
+				gossipOverHttps: UseHttpsInternally());
+			_isReadOnlyReplica = readOnlyReplica;
 
-			Log.Info(
+			Log.Information(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n" + "{19,-25} {20}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
@@ -119,50 +156,95 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalHttpEndPoint);
 
 			Node = new ClusterVNode(Db, singleVNodeSettings,
-				infoController: new InfoController(null, ProjectionType.None), subsystems: subsystems,
+				infoController: new InfoController(null, new Dictionary<string, bool>()), subsystems: subsystems,
 				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
 			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
+
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(InternalHttpEndPoint, options => {
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+							options.Protocols = HttpProtocols.Http2;
+						} else { 
+							options.UseHttps(new HttpsConnectionAdapterOptions {
+								ServerCertificate = certificate,
+								ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+									var (isValid, error) =
+										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertificates);
+									if (!isValid && error != null) {
+										Log.Error("Client certificate validation error: {e}", error);
+									}
+									return isValid;
+								}
+							});
+						}
+					});
+					o.Listen(ExternalHttpEndPoint, options => {
+						options.UseHttps(certificate);
+					});
+				})
+				.UseStartup(Node.Startup)
+				.Build();
+
+			_kestrelTestServer = new TestServer(new WebHostBuilder()
+				.UseKestrel()
+				.UseStartup(Node.Startup));
 		}
 
 		public void Start() {
 			StartingTime.Start();
 
-			StartedEvent = new ManualResetEvent(false);
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.StateChangeMessage>(m => { NodeState = VNodeState.Unknown; }));
-			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeMaster>(m => {
-					NodeState = VNodeState.Master;
-					StartedEvent.Set();
+				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+					NodeState = _isReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
 				}));
+			if (!_isReadOnlyReplica) {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeLeader>(m => {
+						NodeState = VNodeState.Leader;
+						_started.TrySetResult(true);
+					}));
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeFollower>(m => {
+						NodeState = VNodeState.Follower;
+						_started.TrySetResult(true);
+					}));
+			} else {
+				Node.MainBus.Subscribe(
+					new AdHocHandler<SystemMessage.BecomeReadOnlyReplica>(m => {
+						NodeState = VNodeState.ReadOnlyReplica;
+						_started.TrySetResult(true);
+					}));
+			}
 			Node.MainBus.Subscribe(
-				new AdHocHandler<SystemMessage.BecomeSlave>(m => {
-					NodeState = VNodeState.Slave;
-					StartedEvent.Set();
+				new AdHocHandler<AuthenticationMessage.AuthenticationProviderInitialized>(m => {
+					_adminUserCreated.TrySetResult(true);
 				}));
-
+			_host.Start();
 			Node.Start();
 		}
 
-		public void Shutdown(bool keepDb = false, bool keepPorts = false) {
+		public HttpClient CreateHttpClient() {
+			return new HttpClient(_kestrelTestServer.CreateHandler());
+		}
+
+		public async Task Shutdown(bool keepDb = false) {
 			StoppingTime.Start();
-			if (!Node.Stop(TimeSpan.FromSeconds(20), false, true))
-				throw new TimeoutException("MiniNode has not shut down in 20 seconds.");
-
-			if (!keepPorts) {
-				PortsHelper.ReturnPort(InternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(InternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(InternalHttpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalTcpSecEndPoint.Port);
-				PortsHelper.ReturnPort(ExternalHttpEndPoint.Port);
-			}
-
+			_kestrelTestServer?.Dispose();
+			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
+			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);
 
 			StoppingTime.Stop();
 			RunningTime.Stop();
+		}
+
+		public void WaitIdle() {
+#if DEBUG
+			Node.QueueStatsManager.WaitIdle();
+#endif
 		}
 
 		private void TryDeleteDirectory(string directory) {
@@ -180,6 +262,7 @@ namespace EventStore.Core.Tests.Helpers {
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
+			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			if (inMemDb) {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
@@ -190,25 +273,17 @@ namespace EventStore.Core.Tests.Helpers {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				if (Runtime.IsMono) {
-					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-					truncateChk = new FileCheckpoint(
-						truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-				} else {
-					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new MemoryMappedFileCheckpoint(
-						epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-					truncateChk = new MemoryMappedFileCheckpoint(
-						truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-				}
+				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+				epochChk = new MemoryMappedFileCheckpoint(
+					epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+				truncateChk = new MemoryMappedFileCheckpoint(
+					truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
 			}
 
 			var nodeConfig = new TFChunkDbConfig(
 				dbPath, new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), chunkSize, chunksCacheSize, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, Opts.ChunkInitialReaderCountDefault, inMemDb);
+				chaserChk, epochChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, inMemDb);
 			return nodeConfig;
 		}
 	}

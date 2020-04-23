@@ -4,7 +4,8 @@ using EventStore.Common.Utils;
 namespace EventStore.Core.Services {
 	public static class SystemHeaders {
 		public const string ExpectedVersion = "ES-ExpectedVersion";
-		public const string RequireMaster = "ES-RequireMaster";
+		public const string RequireLeader = "ES-RequireLeader";
+		public const string RequireMaster = "ES-RequireMaster"; // For backwards compatibility
 		public const string ResolveLinkTos = "ES-ResolveLinkTos";
 		public const string LongPoll = "ES-LongPoll";
 		public const string TrustedAuth = "ES-TrustedAuth";
@@ -77,18 +78,18 @@ namespace EventStore.Core.Services {
 		public const string ScavengeMergeCompleted = "$scavengeMergeCompleted";
 		public const string ScavengeIndexCompleted = "$scavengeIndexCompleted";
 
-		public static string StreamReferenceEventToStreamId(string eventType, byte[] data) {
+		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;
 			switch (eventType) {
 				case LinkTo: {
-					string[] parts = Helper.UTF8NoBom.GetString(data).Split(_linkToSeparator, 2);
+					string[] parts = Helper.UTF8NoBom.GetString(data.Span).Split(_linkToSeparator, 2);
 					streamId = parts[1];
 					break;
 				}
 				case StreamReference:
 				case V1__StreamCreated__:
 				case V2__StreamCreated_InIndex: {
-					streamId = Helper.UTF8NoBom.GetString(data);
+					streamId = Helper.UTF8NoBom.GetString(data.Span);
 					break;
 				}
 				default:
@@ -156,5 +157,10 @@ namespace EventStore.Core.Services {
 		/// Designed to be used with indexes such as the category projection.
 		/// </summary>
 		public const string Pinned = "Pinned";
+
+		/// <summary>
+		/// Distribute events of the same correlationId to the same client until it disconnects on a best efforts basis. 
+		/// </summary>
+		public const string PinnedByCorrelation = "PinnedByCorrelation";
 	}
 }

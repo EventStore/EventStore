@@ -2,10 +2,10 @@ using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.ClientAPI.Embedded {
 	internal class EmbeddedPersistentSubscription : EmbeddedSubscriptionBase<PersistentEventStoreSubscription>,
@@ -15,9 +15,10 @@ namespace EventStore.ClientAPI.Embedded {
 		private readonly int _bufferSize;
 		private readonly Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> _eventAppeared;
 		private string _subscriptionId;
+		private string _connectionName;
 
 		public EmbeddedPersistentSubscription(
-			ILogger log, IPublisher publisher, Guid connectionId,
+			ILogger log, IPublisher publisher, Guid connectionId, string connectionName,
 			TaskCompletionSource<PersistentEventStoreSubscription> source, string subscriptionId, string streamId,
 			UserCredentials userCredentials, IAuthenticationProvider authenticationProvider, int bufferSize,
 			Func<EventStoreSubscription, PersistentSubscriptionResolvedEvent, Task> eventAppeared,
@@ -29,6 +30,7 @@ namespace EventStore.ClientAPI.Embedded {
 			_authenticationProvider = authenticationProvider;
 			_bufferSize = bufferSize;
 			_eventAppeared = eventAppeared;
+			_connectionName = connectionName;
 		}
 
 		protected override PersistentEventStoreSubscription CreateVolatileSubscription(long lastCommitPosition,
@@ -42,7 +44,7 @@ namespace EventStore.ClientAPI.Embedded {
 			Publisher.PublishWithAuthentication(_authenticationProvider, _userCredentials,
 				ex => DropSubscription(EventStore.Core.Services.SubscriptionDropReason.AccessDenied, ex),
 				user => new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
-					new PublishEnvelope(Publisher, true), ConnectionId, _subscriptionId, StreamId, _bufferSize,
+					new PublishEnvelope(Publisher, true), ConnectionId, _connectionName, _subscriptionId, StreamId, _bufferSize,
 					String.Empty,
 					user));
 		}

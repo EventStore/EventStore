@@ -35,8 +35,8 @@ namespace EventStore.ClientAPI.ClientOperations {
 		private readonly int _maxQueueSize = 2000;
 		private readonly ConcurrentQueueWrapper<Func<Task>> _actionQueue = new ConcurrentQueueWrapper<Func<Task>>();
 		private int _actionExecuting;
-		private T _subscription;
-		private int _unsubscribed;
+		protected T _subscription;
+		protected int _unsubscribed;
 		protected Guid _correlationId;
 
 		protected SubscriptionOperation(ILogger log,
@@ -162,11 +162,11 @@ namespace EventStore.ClientAPI.ClientOperations {
 							case ClientMessage.NotHandled.NotHandledReason.TooBusy:
 								return new InspectionResult(InspectionDecision.Retry, "NotHandled - TooBusy");
 
-							case ClientMessage.NotHandled.NotHandledReason.NotMaster:
-								var masterInfo =
-									message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
-								return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotMaster",
-									masterInfo.ExternalTcpEndPoint, masterInfo.ExternalSecureTcpEndPoint);
+							case ClientMessage.NotHandled.NotHandledReason.NotLeader:
+								var leaderInfo =
+									message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.LeaderInfo>();
+								return new InspectionResult(InspectionDecision.Reconnect, "NotHandled - NotLeader",
+									leaderInfo.ExternalTcpEndPoint, leaderInfo.ExternalSecureTcpEndPoint);
 
 							default:
 								_log.Error("Unknown NotHandledReason: {0}.", message.Reason);
@@ -253,7 +253,7 @@ namespace EventStore.ClientAPI.ClientOperations {
 			ExecuteActionAsync(() => _eventAppeared(_subscription, e));
 		}
 
-		private void ExecuteActionAsync(Func<Task> action) {
+		protected void ExecuteActionAsync(Func<Task> action) {
 			_actionQueue.Enqueue(action);
 
 			if (_actionQueue.Count > _maxQueueSize)

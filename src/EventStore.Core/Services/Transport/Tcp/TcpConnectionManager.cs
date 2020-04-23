@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Principal;
+using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Authentication;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -14,6 +14,8 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Framing;
 using EventStore.Core.Settings;
+using EventStore.Plugins.Authentication;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	/// <summary>
@@ -21,11 +23,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 	/// heartbeats, message framing and dispatch to the memory bus.
 	/// </summary>
 	public class TcpConnectionManager : IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout> {
-		public const int ConnectionQueueSizeThreshold = 50000;
 		public static readonly TimeSpan ConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionManager>();
-
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionManager>();
+		private static readonly ClaimsPrincipal Anonymous = new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Anonymous, ""), }));
 		public readonly Guid ConnectionId;
 		public readonly string ConnectionName;
 		public readonly IPEndPoint RemoteEndPoint;
@@ -64,8 +65,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly TimeSpan _heartbeatInterval;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly int _connectionPendingSendBytesThreshold;
+		private readonly int _connectionQueueSizeThreshold;
 
 		private readonly IAuthenticationProvider _authProvider;
+		private readonly AuthorizationGateway _authorization;
 		private UserCredentials _defaultUser;
 		private TcpServiceType _serviceType;
 
@@ -76,16 +79,18 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			ITcpConnection openedConnection,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorization,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			Action<TcpConnectionManager, SocketError> onConnectionClosed,
-			int connectionPendingSendBytesThreshold) {
+			int connectionPendingSendBytesThreshold,
+			int connectionQueueSizeThreshold) {
 			Ensure.NotNull(dispatcher, "dispatcher");
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(openedConnection, "openedConnnection");
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
-
+			Ensure.NotNull(authorization, "authorization");
 			ConnectionId = openedConnection.ConnectionId;
 			ConnectionName = connectionName;
 
@@ -94,6 +99,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_publisher = publisher;
 			_dispatcher = dispatcher;
 			_authProvider = authProvider;
+			_authorization = authorization;
 
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
@@ -102,6 +108,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_heartbeatInterval = heartbeatInterval;
 			_heartbeatTimeout = heartbeatTimeout;
 			_connectionPendingSendBytesThreshold = connectionPendingSendBytesThreshold;
+			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
 
 			_connectionClosed = onConnectionClosed;
 
@@ -123,10 +130,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			TcpClientConnector connector,
 			bool useSsl,
-			string sslTargetHost,
-			bool sslValidateServer,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			X509CertificateCollection sslClientCertificates,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
+			AuthorizationGateway authorization,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
 			Action<TcpConnectionManager> onConnectionEstablished,
@@ -135,9 +143,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Ensure.NotNull(dispatcher, "dispatcher");
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(authProvider, "authProvider");
+			Ensure.NotNull(authorization, "authorization");
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotNull(connector, "connector");
-			if (useSsl) Ensure.NotNull(sslTargetHost, "sslTargetHost");
 
 			ConnectionId = connectionId;
 			ConnectionName = connectionName;
@@ -146,6 +154,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_publisher = publisher;
 			_dispatcher = dispatcher;
 			_authProvider = authProvider;
+			_authorization = authorization;
 
 			_framer = new LengthPrefixMessageFramer();
 			_framer.RegisterMessageArrivedCallback(OnMessageArrived);
@@ -154,6 +163,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_heartbeatInterval = heartbeatInterval;
 			_heartbeatTimeout = heartbeatTimeout;
 			_connectionPendingSendBytesThreshold = ESConsts.UnrestrictedPendingSendBytes;
+			_connectionQueueSizeThreshold = ESConsts.MaxConnectionQueueSize;
 
 			_connectionEstablished = onConnectionEstablished;
 			_connectionClosed = onConnectionClosed;
@@ -161,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			RemoteEndPoint = remoteEndPoint;
 			_connection = useSsl
 				? connector.ConnectSslTo(ConnectionId, remoteEndPoint, ConnectionTimeout,
-					sslTargetHost, sslValidateServer, OnConnectionEstablished, OnConnectionFailed)
+					sslServerCertValidator, sslClientCertificates, OnConnectionEstablished, OnConnectionFailed)
 				: connector.ConnectTo(ConnectionId, remoteEndPoint, ConnectionTimeout, OnConnectionEstablished,
 					OnConnectionFailed);
 			_connection.ConnectionClosed += OnConnectionClosed;
@@ -170,7 +180,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void OnConnectionEstablished(ITcpConnection connection) {
-			Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.",
+			Log.Information("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.",
 				ConnectionName, ConnectionId, connection.RemoteEndPoint);
 
 			ScheduleHeartbeat(0);
@@ -182,7 +192,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionFailed(ITcpConnection connection, SocketError socketError) {
 			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-			Log.Info("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] failed: {e}.",
+			Log.Information("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] failed: {e}.",
 				ConnectionName, ConnectionId, connection.RemoteEndPoint, socketError);
 			if (_connectionClosed != null)
 				_connectionClosed(this, socketError);
@@ -190,7 +200,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionClosed(ITcpConnection connection, SocketError socketError) {
 			if (Interlocked.CompareExchange(ref _isClosed, 1, 0) != 0) return;
-			Log.Info(
+			Log.Information(
 				"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] closed: {e}.",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				connection.RemoteEndPoint, ConnectionId, socketError);
@@ -254,7 +264,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					try {
 						var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope,
 							null, null, null, this, _version);
-						Log.Info(
+						Log.Information(
 							"Connection '{connectionName}' ({connectionId:B}) identified by client. Client connection name: '{clientConnectionName}', Client version: {clientVersion}.",
 							ConnectionName, ConnectionId, message.ConnectionName, (ClientVersion)message.Version);
 						_version = (byte)message.Version;
@@ -295,7 +305,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				default: {
 					var defaultUser = _defaultUser;
 					if ((package.Flags & TcpFlags.TrustedWrite) != 0) {
-						UnwrapAndPublishPackage(package, UserManagement.SystemAccount.Principal, null, null);
+						UnwrapAndPublishPackage(package, UserManagement.SystemAccounts.System, null, null);
 					} else if ((package.Flags & TcpFlags.Authenticated) != 0) {
 						_authProvider.Authenticate(new TcpAuthRequest(this, package, package.Login, package.Password));
 					} else if (defaultUser != null) {
@@ -305,7 +315,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 							_authProvider.Authenticate(new TcpAuthRequest(this, package, defaultUser.Login,
 								defaultUser.Password));
 					} else {
-						UnwrapAndPublishPackage(package, null, null, null);
+						UnwrapAndPublishPackage(package, Anonymous, null, null);
 					}
 
 					break;
@@ -313,7 +323,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		private void UnwrapAndPublishPackage(TcpPackage package, IPrincipal user, string login, string password) {
+		private void UnwrapAndPublishPackage(TcpPackage package, ClaimsPrincipal user, string login, string password) {
 			Message message = null;
 			string error = "";
 			try {
@@ -323,7 +333,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			if (message != null)
-				_publisher.Publish(message);
+				_authorization.Authorize(message, _publisher);
 			else
 				SendBadRequest(package.CorrelationId,
 					string.Format("Could not unwrap network package for command {0}.\n{1}", package.Command, error));
@@ -338,7 +348,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, description));
 		}
 
-		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, IPrincipal user) {
+		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, ClaimsPrincipal user) {
 			var authCredentials = new UserCredentials(userCredentials.Login, userCredentials.Password, user);
 			Interlocked.CompareExchange(ref _defaultUser, authCredentials, userCredentials);
 			_tcpEnvelope.ReplyWith(new TcpMessage.Authenticated(correlationId));
@@ -364,7 +374,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		public void Stop(string reason = null) {
-			Log.Trace(
+			Log.Verbose(
 				"Closing connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}] cleanly.{reason}",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				RemoteEndPoint, LocalEndPoint, ConnectionId,
@@ -385,7 +395,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			int queueSize;
 			int queueSendBytes;
 			if (checkQueueSize) {
-				if ((queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold) {
+				if ((queueSize = _connection.SendQueueSize) > _connectionQueueSizeThreshold) {
 					SendBadRequestAndClose(Guid.Empty,
 						string.Format("Connection queue size is too large: {0}.", queueSize));
 					return;
@@ -452,7 +462,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			private readonly TcpPackage _package;
 
 			public TcpAuthRequest(TcpConnectionManager manager, TcpPackage package, string login, string password)
-				: base(login, password) {
+				: base($"(TCP) {manager.RemoteEndPoint}", login, password) {
 				_manager = manager;
 				_package = package;
 			}
@@ -461,7 +471,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				_manager.ReplyNotAuthenticated(_package.CorrelationId, "Not Authenticated");
 			}
 
-			public override void Authenticated(IPrincipal principal) {
+			public override void Authenticated(ClaimsPrincipal principal) {
 				_manager.UnwrapAndPublishPackage(_package, principal, Name, SuppliedPassword);
 			}
 
@@ -482,7 +492,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			public TcpDefaultAuthRequest(TcpConnectionManager manager, Guid correlationId,
 				UserCredentials userCredentials)
-				: base(userCredentials.Login, userCredentials.Password) {
+				: base($"(TCP) {manager.RemoteEndPoint}", userCredentials.Login, userCredentials.Password) {
 				_manager = manager;
 				_correlationId = correlationId;
 				_userCredentials = userCredentials;
@@ -492,7 +502,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				_manager.ReplyNotAuthenticated(_correlationId, "Unauthorized");
 			}
 
-			public override void Authenticated(IPrincipal principal) {
+			public override void Authenticated(ClaimsPrincipal principal) {
 				_manager.ReplyAuthenticated(_correlationId, _userCredentials, principal);
 			}
 
@@ -508,9 +518,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private class UserCredentials {
 			public readonly string Login;
 			public readonly string Password;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 
-			public UserCredentials(string login, string password, IPrincipal user) {
+			public UserCredentials(string login, string password, ClaimsPrincipal user) {
 				Login = login;
 				Password = password;
 				User = user;

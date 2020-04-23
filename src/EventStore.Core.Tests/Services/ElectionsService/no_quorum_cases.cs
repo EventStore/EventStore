@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[SetUp]
 		public void SetUp() {
 			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3);
+			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
@@ -29,9 +29,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		[Test]
-		public void elect_node_with_biggest_port_ip_for_equal_writerchecksums() {
+		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 
@@ -42,7 +41,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[SetUp]
 		public void SetUp() {
 			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3);
+			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
@@ -59,17 +58,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only SendOverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 		}
 
 		[Test]
-		public void elect_node_with_biggest_port_ip_for_equal_writerchecksums() {
+		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 
@@ -80,7 +78,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[SetUp]
 		public void SetUp() {
 			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3);
+			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 			_electionsUnit.UpdateClusterMemberInfo(0, isAlive: false);
@@ -100,25 +98,24 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 
 			_electionsUnit.RepublishFromPublisher();
 			Assert.That(
-				_electionsUnit.Publisher.Messages.All(x => x is HttpMessage.SendOverHttp || x is TimerMessage.Schedule),
+				_electionsUnit.Publisher.Messages.All(x => x is GrpcMessage.SendOverGrpc || x is TimerMessage.Schedule),
 				Is.True,
-				"Only OverHttp or Schedule messages are expected.");
+				"Only OverGrpc or Schedule messages are expected.");
 
 			_electionsUnit.RepublishFromPublisher();
 		}
 
 		[Test]
-		public void elect_node_with_biggest_port_ip_for_equal_writerchecksums() {
+		public void elections_should_time_out() {
 			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.ElectionsTimedOut>());
-			Assert.That(_electionsUnit.Publisher.Messages.ContainsSingle<ElectionMessage.SendViewChangeProof>());
 		}
 	}
 }

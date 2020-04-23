@@ -33,7 +33,6 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			bool ssl,
-			string targetHost,
 			bool validateServer,
 			TimeSpan timeout,
 			Action<ITcpConnection> onConnectionEstablished = null,
@@ -41,9 +40,8 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Action<ITcpConnection, SocketError> onConnectionClosed = null) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			if (ssl) {
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
 				return TcpConnectionSsl.CreateConnectingConnection(
-					log, connectionId, remoteEndPoint, targetHost, validateServer,
+					log, connectionId, remoteEndPoint, validateServer,
 					this, timeout, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 			}
 
@@ -53,12 +51,15 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		internal void InitConnect(IPEndPoint serverEndPoint,
+			Action<Socket> onSocketAssigned,
 			Action<IPEndPoint, Socket> onConnectionEstablished,
 			Action<IPEndPoint, SocketError> onConnectionFailed,
 			ITcpConnection connection,
 			TimeSpan connectionTimeout) {
 			if (serverEndPoint == null)
 				throw new ArgumentNullException("serverEndPoint");
+			if (onSocketAssigned == null)
+				throw new ArgumentNullException("onSocketAssigned");
 			if (onConnectionEstablished == null)
 				throw new ArgumentNullException("onConnectionEstablished");
 			if (onConnectionFailed == null)
@@ -66,6 +67,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 			var socketArgs = _connectSocketArgsPool.Get();
 			var connectingSocket = new Socket(serverEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+			onSocketAssigned(connectingSocket);
 			socketArgs.RemoteEndPoint = serverEndPoint;
 			socketArgs.AcceptSocket = connectingSocket;
 			var callbacks = (CallbacksStateToken)socketArgs.UserToken;
@@ -104,7 +106,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			var onConnectionFailed = callbacks.OnConnectionFailed;
 			var pendingConnection = callbacks.PendingConnection;
 
-			Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+			Helper.EatException(() => socketArgs.AcceptSocket.Close());
 			socketArgs.AcceptSocket = null;
 			callbacks.Reset();
 			_connectSocketArgsPool.Return(socketArgs);

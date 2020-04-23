@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-using EventStore.Core.Authentication;
+using System.Security.Claims;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -11,7 +11,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 	public class when_handling_an_emit_with_write_as_configured : TestFixtureWithExistingEvents {
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
-		private OpenGenericPrincipal _writeAs;
+		private ClaimsPrincipal _writeAs;
 
 		protected override void Given() {
 			AllWritesQueueUp();
@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 		[SetUp]
 		public void setup() {
 			_readyHandler = new TestCheckpointManagerMessageHandler();
-			_writeAs = new OpenGenericPrincipal("test-user");
+			_writeAs = new ClaimsPrincipal(new ClaimsIdentity(new []{new Claim(ClaimTypes.Role, "test-user") },"ES-Test"));
 			_stream = new EmittedStream(
 				"test_stream",
 				new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),

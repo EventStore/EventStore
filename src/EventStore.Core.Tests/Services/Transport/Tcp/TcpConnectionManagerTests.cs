@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net;
 using EventStore.Transport.Tcp;
 using System.Net.Sockets;
-using EventStore.Core.Authentication;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -14,13 +13,19 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Threading;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Services;
 using EventStore.Core.Settings;
+using EventStore.Core.Tests.Authorization;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
 	public class TcpConnectionManagerTests {
 		private int _connectionPendingSendBytesThreshold = 10 * 1024;
+		private int _connectionQueueSizeThreshold = 50000;
 
+		[Test]
 		public void when_handling_trusted_write_on_external_service() {
 			var package = new TcpPackage(TcpCommand.WriteEvents, TcpFlags.TrustedWrite, Guid.NewGuid(), null, null,
 				new byte[] { });
@@ -28,13 +33,14 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var dummyConnection = new DummyTcpConnection();
 
 			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
+					new StubPasswordHashAlgorithm(), 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				_connectionPendingSendBytesThreshold);
+				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
 			tcpConnectionManager.ProcessPackage(package);
 
@@ -45,6 +51,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				receivedPackage.Command);
 		}
 
+		[Test]
 		public void when_handling_trusted_write_on_internal_service() {
 			ManualResetEvent waiter = new ManualResetEvent(false);
 			ClientMessage.WriteEvents publishedWrite = null;
@@ -68,12 +75,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			}));
 
 			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.Internal, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				publisher, dummyConnection, publisher,
-				new InternalAuthenticationProvider(new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1),
+				new InternalAuthenticationProvider(publisher, new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
+					new StubPasswordHashAlgorithm(), 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				_connectionPendingSendBytesThreshold);
+				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
 			tcpConnectionManager.ProcessPackage(package);
 
@@ -102,12 +110,14 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
 
 			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(),
+						new NoopEnvelope()), null, 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
-				_connectionPendingSendBytesThreshold);
+				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
 			tcpConnectionManager.SendMessage(message);
 
@@ -130,12 +140,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			dummyConnection.PendingSendBytes = 0;
 
 			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
-				_connectionPendingSendBytesThreshold);
+				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
 			tcpConnectionManager.SendMessage(message);
 
@@ -162,12 +173,13 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			dummyConnection.PendingSendBytes = _connectionPendingSendBytesThreshold + 1000;
 
 			var tcpConnectionManager = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
-				new InternalAuthenticationProvider(
-					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1),
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
-				ESConsts.UnrestrictedPendingSendBytes);
+				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
 			tcpConnectionManager.SendMessage(message);
 
@@ -177,13 +189,78 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
 				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
 		}
+		
+		[Test]
+		public void
+			when_send_queue_size_is_smaller_than_threshold_should_not_close_connection() {
+			var mre = new ManualResetEventSlim();
+
+			var messageSize = _connectionPendingSendBytesThreshold;
+			var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now,
+				PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
+			var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
+			var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success,
+				record, StreamMetadata.Empty, false, "");
+
+			var dummyConnection = new DummyTcpConnection();
+			dummyConnection.SendQueueSize = ESConsts.MaxConnectionQueueSize - 1;
+
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
+				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
+
+			tcpConnectionManager.SendMessage(message);
+
+			var data = dummyConnection.ReceivedData.Last();
+			var receivedPackage = TcpPackage.FromArraySegment(data);
+
+			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
+				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
+		}
+		
+		[Test]
+		public void
+			when_send_queue_size_is_larger_than_threshold_should_close_connection() {
+			var mre = new ManualResetEventSlim();
+
+			var messageSize = _connectionPendingSendBytesThreshold;
+			var evnt = new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "testStream", 0, DateTime.Now,
+				PrepareFlags.None, "eventType", new byte[messageSize], new byte[0]);
+			var record = ResolvedEvent.ForUnresolvedEvent(evnt, null);
+			var message = new ClientMessage.ReadEventCompleted(Guid.NewGuid(), "testStream", ReadEventResult.Success,
+				record, StreamMetadata.Empty, false, "");
+
+			var dummyConnection = new DummyTcpConnection();
+			dummyConnection.SendQueueSize = ESConsts.MaxConnectionQueueSize + 1;
+
+			var tcpConnectionManager = new TcpConnectionManager(
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
+				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
+				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
+					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
+				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
+				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
+
+			tcpConnectionManager.SendMessage(message);
+
+			if (!mre.Wait(2000)) {
+				Assert.Fail("Timed out waiting for connection to close");
+			}
+		}
 	}
 
 	internal class DummyTcpConnection : ITcpConnection {
 		public Guid ConnectionId {
-			get { return Guid.NewGuid(); }
+			get { return _connectionId; }
+			set { _connectionId = value; }
 		}
-
+		private Guid _connectionId = Guid.NewGuid();
 		public string ClientConnectionName {
 			get { return _clientConnectionName; }
 		}
@@ -200,8 +277,10 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			get { return new IPEndPoint(IPAddress.Loopback, 1); }
 		}
 
+		private int _sendQueueSize;
 		public int SendQueueSize {
-			get { return 0; }
+			get { return _sendQueueSize; }
+			set { _sendQueueSize = value; }
 		}
 
 		private int _pendingSendBytes;

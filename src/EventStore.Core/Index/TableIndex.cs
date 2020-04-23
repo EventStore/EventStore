@@ -6,21 +6,22 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Index {
 	public class TableIndex : ITableIndex {
 		public const string IndexMapFilename = "indexmap";
 		private const int MaxMemoryTables = 1;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TableIndex>();
 		internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
 		public long CommitCheckpoint {
@@ -60,6 +61,7 @@ namespace EventStore.Core.Index {
 		private bool _initialized;
 		public const string ForceIndexVerifyFilename = ".forceverify";
 		private readonly int _maxAutoMergeIndexLevel;
+		private readonly int _pTableMaxReaderCount;
 
 		public TableIndex(string directory,
 			IHasher lowHasher,
@@ -68,20 +70,21 @@ namespace EventStore.Core.Index {
 			Func<TFReaderLease> tfReaderFactory,
 			byte ptableVersion,
 			int maxAutoMergeIndexLevel,
+			int pTableMaxReaderCount,
 			int maxSizeForMemory = 1000000,
 			int maxTablesPerLevel = 4,
 			bool additionalReclaim = false,
 			bool inMem = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
-			int initializationThreads = 1
-		) {
+			int initializationThreads = 1) {
 			Ensure.NotNullOrEmpty(directory, "directory");
 			Ensure.NotNull(memTableFactory, "memTableFactory");
 			Ensure.NotNull(lowHasher, "lowHasher");
 			Ensure.NotNull(highHasher, "highHasher");
 			Ensure.NotNull(tfReaderFactory, "tfReaderFactory");
 			Ensure.Positive(initializationThreads, "initializationThreads");
+			Ensure.Positive(pTableMaxReaderCount, "pTableMaxReaderCount");
 
 			if (maxTablesPerLevel <= 1)
 				throw new ArgumentOutOfRangeException("maxTablesPerLevel");
@@ -106,6 +109,7 @@ namespace EventStore.Core.Index {
 			_highHasher = highHasher;
 
 			_maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
+			_pTableMaxReaderCount = pTableMaxReaderCount;
 		}
 
 		public void Initialize(long chaserCheckpoint) {
@@ -117,7 +121,7 @@ namespace EventStore.Core.Index {
 			_initialized = true;
 
 			if (_inMem) {
-				_indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel, int.MaxValue);
+				_indexMap = IndexMap.CreateEmpty(_maxTablesPerLevel, int.MaxValue, _pTableMaxReaderCount);
 				_prepareCheckpoint = _indexMap.PrepareCheckpoint;
 				_commitCheckpoint = _indexMap.CommitCheckpoint;
 				return;
@@ -132,10 +136,10 @@ namespace EventStore.Core.Index {
 
 			// if TableIndex's CommitCheckpoint is >= amount of written TFChunk data,
 			// we'll have to remove some of PTables as they point to non-existent data
-			// this can happen (very unlikely, though) on master crash
+			// this can happen (very unlikely, though) on leader crash
 			try {
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
+					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
 				if (_indexMap.CommitCheckpoint >= chaserCheckpoint) {
 					_indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
 					throw new CorruptIndexException(String.Format(
@@ -146,14 +150,14 @@ namespace EventStore.Core.Index {
 				//verification should be completed by now
 				DeleteForceIndexVerifyFile();
 			} catch (CorruptIndexException exc) {
-				Log.ErrorException(exc, "ReadIndex is corrupted...");
+				Log.Error(exc, "ReadIndex is corrupted...");
 				LogIndexMapContent(indexmapFile);
 				DumpAndCopyIndex();
 				File.SetAttributes(indexmapFile, FileAttributes.Normal);
 				File.Delete(indexmapFile);
 				DeleteForceIndexVerifyFile();
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel);
+					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
 			}
 
 			_prepareCheckpoint = _indexMap.PrepareCheckpoint;
@@ -176,7 +180,7 @@ namespace EventStore.Core.Index {
 				Log.Error("IndexMap '{indexMap}' content:\n {content}", indexmapFile,
 					Helper.FormatBinaryDump(File.ReadAllBytes(indexmapFile)));
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Unexpected error while dumping IndexMap '{indexMap}'.", indexmapFile);
+				Log.Error(exc, "Unexpected error while dumping IndexMap '{indexMap}'.", indexmapFile);
 			}
 		}
 
@@ -188,7 +192,7 @@ namespace EventStore.Core.Index {
 				Log.Error("Making backup of index folder for inspection to {dumpPath}...", dumpPath);
 				FileUtils.DirectoryCopy(_directory, dumpPath, copySubDirs: true);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Unexpected error while copying index to backup dir '{dumpPath}'", dumpPath);
+				Log.Error(exc, "Unexpected error while copying index to backup dir '{dumpPath}'", dumpPath);
 			}
 		}
 
@@ -238,7 +242,7 @@ namespace EventStore.Core.Index {
 				newTables.AddRange(_awaitingMemTables.Select(
 					(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
-				Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
+				Log.Verbose("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
 				_awaitingMemTables = newTables;
 				if (_inMem) return;
@@ -283,7 +287,7 @@ namespace EventStore.Core.Index {
 					TableItem tableItem;
 					//ISearchTable table;
 					lock (_awaitingTablesLock) {
-						Log.Trace("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
+						Log.Verbose("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
 						if (_awaitingMemTables.Count == 1) {
 							return;
 						}
@@ -296,6 +300,8 @@ namespace EventStore.Core.Index {
 					if (memtable != null) {
 						memtable.MarkForConversion();
 						ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
+							ESConsts.PTableInitialReaderCount,
+							_pTableMaxReaderCount,
 							_indexCacheDepth, _skipIndexVerify);
 					} else
 						ptable = (PTable)tableItem.Table;
@@ -330,17 +336,17 @@ namespace EventStore.Core.Index {
 						if (!ReferenceEquals(corrTable.Table, ptable) && corrTable.Table is PTable)
 							((PTable)corrTable.Table).MarkForDestruction();
 
-						Log.Trace("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
+						Log.Verbose("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
 						_awaitingMemTables = memTables;
 					}
 
 					mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 				}
 			} catch (FileBeingDeletedException exc) {
-				Log.ErrorException(exc,
+				Log.Error(exc,
 					"Could not acquire chunk in TableIndex.ReadOffQueue. It is OK if node is shutting down.");
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Error in TableIndex.ReadOffQueue");
+				Log.Error(exc, "Error in TableIndex.ReadOffQueue");
 				throw;
 			} finally {
 				lock (_awaitingTablesLock) {
@@ -361,7 +367,7 @@ namespace EventStore.Core.Index {
 			var sw = Stopwatch.StartNew();
 
 			try {
-				Log.Info("Starting scavenge of TableIndex.");
+				Log.Information("Starting scavenge of TableIndex.");
 				ScavengeInternal(log, ct);
 			} finally {
 				// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
@@ -374,7 +380,7 @@ namespace EventStore.Core.Index {
 					TryProcessAwaitingTables();
 				}
 
-				Log.Info("Completed scavenge of TableIndex.  Elapsed: {elapsed}", sw.Elapsed);
+				Log.Information("Completed scavenge of TableIndex.  Elapsed: {elapsed}", sw.Elapsed);
 			}
 		}
 
@@ -430,7 +436,7 @@ namespace EventStore.Core.Index {
 					}
 				}
 
-				Log.Info("Waiting for TableIndex background task to complete before starting scavenge.");
+				Log.Information("Waiting for TableIndex background task to complete before starting scavenge.");
 				_backgroundRunningEvent.Wait(ct);
 			}
 		}
@@ -453,9 +459,12 @@ namespace EventStore.Core.Index {
 				if (memtable == null || !memtable.MarkForConversion())
 					continue;
 
-				Log.Trace("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
+				Log.Verbose("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
 
-				var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(), _indexCacheDepth,
+				var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
+					ESConsts.PTableInitialReaderCount,
+					_pTableMaxReaderCount,
+					_indexCacheDepth,
 					_skipIndexVerify);
 				var swapped = false;
 				lock (_awaitingTablesLock) {
@@ -485,7 +494,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetOneValueInternal(stream, version, out position);
 				} catch (FileBeingDeletedException) {
-					Log.Trace("File being deleted.");
+					Log.Verbose("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -523,7 +532,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetLatestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
-					Log.Trace("File being deleted.");
+					Log.Verbose("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -558,7 +567,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetOldestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
-					Log.Trace("File being deleted.");
+					Log.Verbose("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -594,7 +603,7 @@ namespace EventStore.Core.Index {
 				try {
 					return GetRangeInternal(hash, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
-					Log.Trace("File being deleted.");
+					Log.Verbose("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;

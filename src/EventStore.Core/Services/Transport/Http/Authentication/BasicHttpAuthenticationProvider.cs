@@ -1,59 +1,42 @@
-﻿using System.Net;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
-using EventStore.Core.Services.Transport.Http.Messages;
+﻿using System.Net.Http.Headers;
+using System.Text;
+using EventStore.Plugins.Authentication;
+using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
-	public class BasicHttpAuthenticationProvider : HttpAuthenticationProvider {
+	public class BasicHttpAuthenticationProvider : IHttpAuthenticationProvider {
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
 
 		public BasicHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
 			_internalAuthenticationProvider = internalAuthenticationProvider;
 		}
 
-		public override bool Authenticate(IncomingHttpRequestMessage message) {
-			//NOTE: this method can be invoked on multiple threads - needs to be thread safe
-			var entity = message.Entity;
-			var basicIdentity = entity.User != null ? entity.User.Identity as HttpListenerBasicIdentity : null;
-			if (basicIdentity != null) {
-				string name = basicIdentity.Name;
-				string suppliedPassword = basicIdentity.Password;
-
-				var authenticationRequest = new HttpBasicAuthenticationRequest(this, message, name, suppliedPassword);
-				_internalAuthenticationProvider.Authenticate(authenticationRequest);
+		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
+			if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 && AuthenticationHeaderValue.TryParse(
+				    values[0], out var authenticationHeader) && 
+			    authenticationHeader.Scheme == "Basic"
+			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
+				request = new HttpAuthenticationRequest(context, username, password);
+				_internalAuthenticationProvider.Authenticate(request);
 				return true;
 			}
 
+			request = null;
 			return false;
 		}
 
-		private class HttpBasicAuthenticationRequest : AuthenticationRequest {
-			private readonly BasicHttpAuthenticationProvider _basicHttpAuthenticationProvider;
-			private readonly IncomingHttpRequestMessage _message;
+		private static bool TryDecodeCredential(string value, out string username, out string password) {
+			username = password = default;
 
-			public HttpBasicAuthenticationRequest(
-				BasicHttpAuthenticationProvider basicHttpAuthenticationProvider, IncomingHttpRequestMessage message,
-				string name, string suppliedPassword)
-				: base(name, suppliedPassword) {
-				_basicHttpAuthenticationProvider = basicHttpAuthenticationProvider;
-				_message = message;
+			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':');
+			if (parts.Length != 2) {
+				return false;
 			}
 
-			public override void Unauthorized() {
-				ReplyUnauthorized(_message.Entity);
-			}
+			username = parts[0];
+			password = parts[1];
 
-			public override void Authenticated(IPrincipal principal) {
-				_basicHttpAuthenticationProvider.Authenticated(_message, principal);
-			}
-
-			public override void Error() {
-				ReplyInternalServerError(_message.Entity);
-			}
-
-			public override void NotReady() {
-				ReplyNotYetAvailable(_message.Entity);
-			}
+			return true;
 		}
 	}
 }

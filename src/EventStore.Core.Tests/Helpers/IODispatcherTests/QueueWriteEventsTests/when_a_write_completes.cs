@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests 
 
 			_ioDispatcher.QueueWriteEvents(Guid.NewGuid(), $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
-				SystemAccount.Principal, (msg) => { _completed = true; });
+				SystemAccounts.System, (msg) => { _completed = true; });
 			OneWriteCompletes();
 		}
 

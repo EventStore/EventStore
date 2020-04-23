@@ -1,9 +1,10 @@
+using System;
 using System.Text;
-using EventStore.Common.Log;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	public static class PerfUtils {
-		private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(PerfUtils));
+		private static readonly ILogger Log = Serilog.Log.ForContext(typeof(PerfUtils));
 
 		private const string ColumnSplitter = ";";
 		private const string PairSplitter = ":";

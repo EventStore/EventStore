@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -12,15 +11,16 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionService :
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
-		IHandle<SystemMessage.BecomeMaster>,
+		IHandle<SystemMessage.BecomeLeader>,
 		IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
-		IHandle<ClientMessage.ReplayAllParkedMessages>,
+		IHandle<ClientMessage.ReplayParkedMessages>,
 		IHandle<ClientMessage.ReplayParkedMessage>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<ClientMessage.ConnectToPersistentSubscription>,
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionService>();
 
 		private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
 		private Dictionary<string, PersistentSubscription> _subscriptionsById;
@@ -82,14 +82,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
 
-			if (message.State == VNodeState.Master) return;
+			if (message.State == VNodeState.Leader) return;
 			Log.Debug("Persistent subscriptions received state change to {state}. Stopping listening", _state);
 			ShutdownSubscriptions();
 			Stop();
 		}
 
-		public void Handle(SystemMessage.BecomeMaster message) {
-			Log.Debug("Persistent subscriptions Became Master so now handling subscriptions");
+		public void Handle(SystemMessage.BecomeLeader message) {
+			Log.Debug("Persistent subscriptions Became Leader so now handling subscriptions");
 			InitToEmpty();
 			_handleTick = true;
 			_bus.Publish(_tickRequestMessage);
@@ -127,17 +127,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Creating persistent subscription {subscriptionKey}", key);
-			//TODO revisit for permissions. maybe make admin only?
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to create streams"));
-				return;
-			}
 
 			if (_subscriptionsById.ContainsKey(key)) {
 				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionCompleted(
@@ -173,12 +162,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.LiveBufferSize,
 				message.BufferSize,
 				message.ReadBatchSize,
-				ToTimeout(message.CheckPointAfterMilliseconds),
+				ToCheckPointAfterTimeout(message.CheckPointAfterMilliseconds),
 				message.MinCheckPointCount,
 				message.MaxCheckPointCount,
 				message.MaxSubscriberCount,
 				message.NamedConsumerStrategy,
-				ToTimeout(message.MessageTimeoutMilliseconds)
+				ToMessageTimeout(message.MessageTimeoutMilliseconds)
 			);
 
 			Log.Debug("New persistent subscription {subscriptionKey}", key);
@@ -210,16 +199,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to update the subscription"));
-				return;
-			}
 
 			if (!_subscriptionsById.ContainsKey(key)) {
 				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionCompleted(
@@ -248,12 +227,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.LiveBufferSize,
 				message.BufferSize,
 				message.ReadBatchSize,
-				ToTimeout(message.CheckPointAfterMilliseconds),
+				ToCheckPointAfterTimeout(message.CheckPointAfterMilliseconds),
 				message.MinCheckPointCount,
 				message.MaxCheckPointCount,
 				message.MaxSubscriberCount,
 				message.NamedConsumerStrategy,
-				ToTimeout(message.MessageTimeoutMilliseconds)
+				ToMessageTimeout(message.MessageTimeoutMilliseconds)
 			);
 			_config.Updated = DateTime.Now;
 			_config.UpdatedBy = message.User.Identity.Name;
@@ -331,16 +310,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (!_started) return;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionCompleted(
-					message.CorrelationId,
-					ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult.AccessDenied,
-					"You do not have permissions to create streams"));
-				return;
-			}
 
 			PersistentSubscription subscription;
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
@@ -408,15 +377,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.ConnectToPersistentSubscription message) {
 			if (!_started) return;
-			var streamAccess = _readIndex.CheckStreamAccess(
-				message.EventStreamId, StreamAccessType.Read, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId,
-					SubscriptionDropReason.AccessDenied));
-				return;
-			}
-
+			
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers)) {
 				message.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(message.CorrelationId,
@@ -441,13 +402,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Log.Debug("New connection to persistent subscription {subscriptionKey} by {connectionId}", key,
 				message.ConnectionId);
 			var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
-			var lastCommitPos = _readIndex.LastCommitPosition;
+			var lastCommitPos = _readIndex.LastIndexedPosition;
 			var subscribedMessage =
 				new ClientMessage.PersistentSubscriptionConfirmation(key, message.CorrelationId, lastCommitPos,
 					lastEventNumber);
 			message.Envelope.ReplyWith(subscribedMessage);
 			var name = message.User == null ? "anonymous" : message.User.Identity.Name;
-			subscription.AddClient(message.CorrelationId, message.ConnectionId, message.Envelope,
+			subscription.AddClient(message.CorrelationId, message.ConnectionId, message.ConnectionName, message.Envelope,
 				message.AllowedInFlightMessages, name, message.From);
 		}
 
@@ -476,7 +437,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
-					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data).Split('@');
+					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split('@');
 					long eventNumber = long.Parse(parts[0]);
 					string streamId = parts[1];
 
@@ -486,7 +447,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 					return ResolvedEvent.ForFailedResolvedLink(eventRecord, res.Result, commitPosition);
 				} catch (Exception exc) {
-					Log.ErrorException(exc, "Error while resolving link for event record: {eventRecord}",
+					Log.Error(exc, "Error while resolving link for event record: {eventRecord}",
 						eventRecord.ToString());
 				}
 
@@ -515,18 +476,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.ReadNextNPersistentMessages message) {
 			if (!_started) return;
-			var streamAccess = _readIndex.CheckStreamAccess(
-				message.EventStreamId, StreamAccessType.Read, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(
-					new ClientMessage.ReadNextNPersistentMessagesCompleted(message.CorrelationId,
-						ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult
-							.AccessDenied,
-						"Access Denied.",
-						null));
-				return;
-			}
 
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(message.EventStreamId, out subscribers)) {
@@ -559,17 +508,17 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					messages));
 		}
 
-		public void Handle(ClientMessage.ReplayAllParkedMessages message) {
+		public void Handle(ClientMessage.ReplayParkedMessages message) {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey}", key);
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
+			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}", 
+				key,
+				message.StopAt.HasValue ? $" (To: '{message.StopAt.ToString()}')" : " (All)");
 
-			if (!streamAccess.Granted) {
+			if (message.StopAt.HasValue && message.StopAt.Value < 0) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
-					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
-					"You do not have permissions to replay messages"));
+					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Fail,
+					"Cannot stop replaying parked message at a negative version."));
 				return;
 			}
 
@@ -580,7 +529,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			subscription.RetryAllParkedMessages();
+			subscription.RetryParkedMessages(message.StopAt);
 			message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 				ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
 		}
@@ -588,15 +537,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessage message) {
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
 			PersistentSubscription subscription;
-			var streamAccess =
-				_readIndex.CheckStreamAccess(SystemStreams.SettingsStream, StreamAccessType.Write, message.User);
-
-			if (!streamAccess.Granted) {
-				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
-					ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.AccessDenied,
-					"You do not have permissions to replay messages"));
-				return;
-			}
 
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
@@ -612,7 +552,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void LoadConfiguration(Action continueWith) {
 			_ioDispatcher.ReadBackward(SystemStreams.PersistentSubscriptionConfig, -1, 1, false,
-				SystemAccount.Principal, x => HandleLoadCompleted(continueWith, x));
+				SystemAccounts.System, x => HandleLoadCompleted(continueWith, x));
 		}
 
 		private void HandleLoadCompleted(Action continueWith,
@@ -640,17 +580,17 @@ namespace EventStore.Core.Services.PersistentSubscription {
 								entry.LiveBufferSize,
 								entry.HistoryBufferSize,
 								entry.ReadBatchSize,
-								ToTimeout(entry.CheckPointAfter),
+								ToCheckPointAfterTimeout(entry.CheckPointAfter),
 								entry.MinCheckPointCount,
 								entry.MaxCheckPointCount,
 								entry.MaxSubscriberCount,
 								entry.NamedConsumerStrategy,
-								ToTimeout(entry.MessageTimeout));
+								ToMessageTimeout(entry.MessageTimeout));
 						}
 
 						continueWith();
 					} catch (Exception ex) {
-						Log.ErrorException(ex, "There was an error loading configuration from storage.");
+						Log.Error(ex, "There was an error loading configuration from storage.");
 					}
 
 					break;
@@ -672,7 +612,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(() => metadata);
 			Event[] events = new Event[] {ev};
 			_ioDispatcher.ConfigureStreamAndWriteEvents(SystemStreams.PersistentSubscriptionConfig,
-				ExpectedVersion.Any, streamMetadata, events, SystemAccount.Principal,
+				ExpectedVersion.Any, streamMetadata, events, SystemAccounts.System,
 				x => HandleSaveConfigurationCompleted(continueWith, x));
 		}
 
@@ -683,7 +623,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					break;
 				case OperationResult.CommitTimeout:
 				case OperationResult.PrepareTimeout:
-					Log.Info("Timeout while trying to save persistent subscription configuration. Retrying");
+					Log.Information("Timeout while trying to save persistent subscription configuration. Retrying");
 					SaveConfiguration(continueWith);
 					break;
 				default:
@@ -779,8 +719,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		private TimeSpan ToTimeout(int milliseconds) {
+		
+		private TimeSpan ToCheckPointAfterTimeout(int milliseconds) {
 			return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+		}
+
+		private TimeSpan ToMessageTimeout(int milliseconds) {
+			return milliseconds == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(milliseconds);
 		}
 	}
 }

@@ -8,7 +8,7 @@ using EventStore.Core.Services.Transport.Tcp;
 namespace EventStore.TestClient.Commands {
 	internal class ReadAllProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "RDALL [[F|B] [<commit pos> <prepare pos> [<only-if-master>]]]"; }
+			get { return "RDALL [[F|B] [<commit pos> <prepare pos> [<only-if-leader>]]]"; }
 		}
 
 		public string Keyword {
@@ -21,7 +21,7 @@ namespace EventStore.TestClient.Commands {
 			long preparePos = 0;
 			bool posOverriden = false;
 			bool resolveLinkTos = false;
-			bool requireMaster = false;
+			bool requireLeader = false;
 
 			if (args.Length > 0) {
 				if (args.Length != 1 && args.Length != 3 && args.Length != 4)
@@ -41,7 +41,7 @@ namespace EventStore.TestClient.Commands {
 				}
 
 				if (args.Length >= 4)
-					requireMaster = bool.Parse(args[3]);
+					requireLeader = bool.Parse(args[3]);
 			}
 
 			if (!posOverriden) {
@@ -58,11 +58,11 @@ namespace EventStore.TestClient.Commands {
 			context.Client.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
-					context.Log.Info("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
+					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
 						conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
 					var readDto =
-						new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireMaster);
+						new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					sw.Start();
 					conn.EnqueueSend(package);
@@ -76,7 +76,7 @@ namespace EventStore.TestClient.Commands {
 					var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
 					if (dto.Events.IsEmpty()) {
 						sw.Stop();
-						context.Log.Info("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}",
+						context.Log.Information("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}",
 							forward ? "FORWARD" : "BACKWARD", sw.Elapsed, total);
 						context.Success();
 						conn.Close();
@@ -96,10 +96,10 @@ namespace EventStore.TestClient.Commands {
 						total += 1;
 					}
 
-					context.Log.Info("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
+					context.Log.Information("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
 
 					var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
-						10, resolveLinkTos, requireMaster);
+						10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					conn.EnqueueSend(package);
 				},

@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Messaging;
+﻿using System;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages {
@@ -9,12 +10,12 @@ namespace EventStore.Core.Services.Transport.Http.Messages {
 			get { return TypeId; }
 		}
 
-		public readonly HttpService HttpService;
-		public readonly HttpEntity Entity;
+		public readonly HttpEntityManager Manager;
+		public readonly UriToActionMatch Match;
 
-		public AuthenticatedHttpRequestMessage(HttpService httpService, HttpEntity entity) {
-			HttpService = httpService;
-			Entity = entity;
+		public AuthenticatedHttpRequestMessage(HttpEntityManager manager,  UriToActionMatch match) {
+			Manager = manager;
+			Match = match;
 		}
 	}
 }

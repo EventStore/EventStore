@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Security.Cryptography;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Unbuffered;
+using ILogger = Serilog.ILogger;
+using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.Index {
 	public enum FileType : byte {
@@ -39,7 +39,7 @@ namespace EventStore.Core.Index {
 		public const int DefaultBufferSize = 8192;
 		public const int DefaultSequentialBufferSize = 65536;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PTable>();
 
 		public Guid Id {
 			get { return _id; }
@@ -80,8 +80,8 @@ namespace EventStore.Core.Index {
 
 		private PTable(string filename,
 			Guid id,
-			int initialReaders = ESConsts.PTableInitialReaderCount,
-			int maxReaders = ESConsts.PTableMaxReaderCount,
+			int initialReaders,
+			int maxReaders,
 			int depth = 16,
 			bool skipIndexVerify = false) {
 			Ensure.NotNullOrEmpty(filename, "filename");
@@ -95,7 +95,7 @@ namespace EventStore.Core.Index {
 			_id = id;
 			_filename = filename;
 
-			Log.Trace("Loading " + (skipIndexVerify ? "" : "and Verification ") + "of PTable '{pTable}' started...",
+			Log.Verbose("Loading " + (skipIndexVerify ? "" : "and Verification ") + "of PTable '{pTable}' started...",
 				Path.GetFileName(Filename));
 			var sw = Stopwatch.StartNew();
 			_size = new FileInfo(_filename).Length;
@@ -114,9 +114,9 @@ namespace EventStore.Core.Index {
 				readerWorkItem.Stream.Seek(0, SeekOrigin.Begin);
 				var header = PTableHeader.FromStream(readerWorkItem.Stream);
 				if ((header.Version != PTableVersions.IndexV1) &&
-				    (header.Version != PTableVersions.IndexV2) &&
-				    (header.Version != PTableVersions.IndexV3) &&
-				    (header.Version != PTableVersions.IndexV4))
+					(header.Version != PTableVersions.IndexV2) &&
+					(header.Version != PTableVersions.IndexV3) &&
+					(header.Version != PTableVersions.IndexV4))
 					throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
 				_version = header.Version;
 
@@ -158,7 +158,7 @@ namespace EventStore.Core.Index {
 				}
 
 				long indexEntriesTotalSize = (_size - PTableHeader.Size - _midpointsCacheSize -
-				                              PTableFooter.GetSize(_version) - MD5Size);
+											  PTableFooter.GetSize(_version) - MD5Size);
 
 				if (indexEntriesTotalSize < 0) {
 					throw new CorruptIndexException(String.Format(
@@ -211,7 +211,7 @@ namespace EventStore.Core.Index {
 					+ "Performance hit will occur. OOM Exception.", Path.GetFileName(Filename), Count, depth);
 			}
 
-			Log.Trace(
+			Log.Verbose(
 				"Loading PTable (Version: {version}) '{pTable}' ({count} entries, cache depth {depth}) done in {elapsed}.",
 				_version, Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
 		}
@@ -256,7 +256,7 @@ namespace EventStore.Core.Index {
 							//so, we can load them directly from the PTable file
 							Log.Debug("Loading {midpointsCached} cached midpoints from PTable", _midpointsCached);
 							long startOffset = stream.Length - MD5Size - PTableFooter.GetSize(_version) -
-							                   _midpointsCacheSize;
+											   _midpointsCacheSize;
 							stream.Seek(startOffset, SeekOrigin.Begin);
 							for (uint k = 0; k < _midpointsCached; k++) {
 								stream.Read(buffer, 0, _indexEntrySize);
@@ -375,7 +375,8 @@ namespace EventStore.Core.Index {
 
 		private void ReadUntilWithMd5(long nextPos, Stream fileStream, MD5 md5) {
 			long toRead = nextPos - fileStream.Position;
-			if (toRead < 0) throw new Exception("should not do negative reads.");
+			if (toRead < 0)
+				throw new Exception("should not do negative reads.");
 			while (toRead > 0) {
 				var localReadCount = Math.Min(toRead, TmpReadBuf.Length);
 				int read = fileStream.Read(TmpReadBuf, 0, (int)localReadCount);
@@ -615,7 +616,8 @@ namespace EventStore.Core.Index {
 					if (candidateKey.SmallerThan(startKey))
 						return result;
 					result.Add(entry);
-					if (result.Count == limit) break;
+					if (result.Count == limit)
+						break;
 				}
 
 				return result;

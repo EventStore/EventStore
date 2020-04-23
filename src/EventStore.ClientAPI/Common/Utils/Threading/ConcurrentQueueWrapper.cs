@@ -10,11 +10,14 @@ namespace EventStore.ClientAPI.Common.Utils.Threading {
 		private volatile int _queueCount = 0;
 
 		public new bool IsEmpty {
-			get { return _queueCount == 0; }
+			get { return _queueCount <= 0; }
 		}
 
 		public new int Count {
-			get { return _queueCount; }
+			get {
+				int curCount = _queueCount;
+				return curCount < 0 ? 0 : curCount;
+			}
 		}
 
 		//Note: The count is not updated atomically together with dequeueing.

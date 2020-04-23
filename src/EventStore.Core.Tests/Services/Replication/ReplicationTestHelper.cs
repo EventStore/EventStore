@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 					writeResult = (ClientMessage.WriteEventsCompleted)msg;
 					resetEvent.Set();
 				}), false, streamId, -1, events,
-				SystemAccount.Principal, SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+				SystemAccounts.System, SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
 			if (!resetEvent.Wait(_timeout)) {
 				Assert.Fail("Timed out waiting for event to be written");
 				return null;
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 							readResult = (ClientMessage.ReadAllEventsForwardCompleted)msg;
 							readEvent.Set();
 						}),
-					0, 0, 100, false, false, null, SystemAccount.Principal);
+					0, 0, 100, false, false, null, SystemAccounts.System);
 				node.Node.MainQueue.Publish(read);
 
 				if (!readEvent.Wait(_timeout)) {
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 							readResult = (ClientMessage.ReadAllEventsBackwardCompleted)msg;
 							resetEvent.Set();
 						}),
-					-1, -1, 100, false, false, null, SystemAccount.Principal);
+					-1, -1, 100, false, false, null, SystemAccounts.System);
 				node.Node.MainQueue.Publish(read);
 
 				if (!resetEvent.Wait(_timeout)) {
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 						readResult = (ClientMessage.ReadStreamEventsForwardCompleted)msg;
 						resetEvent.Set();
 					}), streamId, 0, 10,
-				false, false, null, SystemAccount.Principal);
+				false, false, null, SystemAccounts.System);
 			node.Node.MainQueue.Publish(read);
 
 			if (!resetEvent.Wait(_timeout)) {
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 						readResult = (ClientMessage.ReadStreamEventsBackwardCompleted)msg;
 						resetEvent.Set();
 					}), streamId, 9, 10,
-				false, false, null, SystemAccount.Principal);
+				false, false, null, SystemAccounts.System);
 			node.Node.MainQueue.Publish(read);
 
 			if (!resetEvent.Wait(_timeout)) {
@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 					readResult = (ClientMessage.ReadEventCompleted)msg;
 					resetEvent.Set();
 				}), streamId, eventNumber,
-				false, false, SystemAccount.Principal);
+				false, false, SystemAccounts.System);
 			node.Node.MainQueue.Publish(read);
 
 			if (!resetEvent.Wait(_timeout)) {

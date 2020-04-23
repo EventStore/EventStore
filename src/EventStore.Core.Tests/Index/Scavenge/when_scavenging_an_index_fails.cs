@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -10,15 +11,15 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		private string _expectedOutputFile;
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var table = new HashListMemTable(PTableVersions.IndexV4, maxSize: 20);
 			table.Add(0x010100000000, 0, 1);
 			table.Add(0x010200000000, 0, 2);
 			table.Add(0x010300000000, 0, 3);
 			table.Add(0x010300000000, 1, 4);
-			_oldTable = PTable.FromMemtable(table, GetTempFilePath());
+			_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
 			long spaceSaved;
 			Func<IndexEntry, bool> existsAt = x => { throw new Exception("Expected exception"); };
@@ -30,15 +31,15 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
 				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
-					PTableVersions.IndexV4, out spaceSaved),
+					PTableVersions.IndexV4, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault),
 				Throws.Exception.With.Message.EqualTo("Expected exception"));
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_oldTable.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]

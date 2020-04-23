@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
@@ -6,6 +7,7 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Common.Utils;
+using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Tests.Http {
 	public class TestController : CommunicationController {
@@ -36,18 +38,18 @@ namespace EventStore.Core.Tests.Http {
 		private void Register(
 			IHttpService service, string uriTemplate, Action<HttpEntityManager, UriTemplateMatch> handler,
 			string httpMethod = HttpMethod.Get) {
-			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding});
+			Register(service, uriTemplate, httpMethod, handler, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, new Operation(Operations.Node.StaticContent));
 		}
 
 		private void Test1Handler(HttpEntityManager http, UriTemplateMatch match) {
-			if (http.User != null)
+			if (http.User != null && !http.User.HasClaim(ClaimTypes.Anonymous, ""))
 				http.Reply("OK", 200, "OK", "text/plain");
 			else
 				http.Reply("Please authenticate yourself", 401, "Unauthorized", "text/plain");
 		}
 
 		private void TestAnonymousHandler(HttpEntityManager http, UriTemplateMatch match) {
-			if (http.User != null)
+			if (!http.User.HasClaim(ClaimTypes.Anonymous, ""))
 				http.Reply("ERROR", 500, "ERROR", "text/plain");
 			else
 				http.Reply("OK", 200, "OK", "text/plain");

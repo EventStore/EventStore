@@ -111,6 +111,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			return Helper.UTF8NoBom.GetString(bytes ?? new byte[0]);
 		}
 
+		public static string AsString(ReadOnlyMemory<byte> bytes) {
+			return Helper.UTF8NoBom.GetString(bytes.Span);
+		}
+
 		private static string WrapIntoQuotes(string s) {
 			return string.Format("\"{0}\"", s);
 		}

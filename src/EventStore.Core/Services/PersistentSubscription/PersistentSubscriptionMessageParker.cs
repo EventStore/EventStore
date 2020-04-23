@@ -1,17 +1,17 @@
 using System;
 using System.Text;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionMessageParker : IPersistentSubscriptionMessageParker {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly string _parkedStreamId;
-		private static readonly ILogger Log = LogManager.GetLoggerFor<PersistentSubscriptionMessageParker>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionMessageParker>();
 
 		public PersistentSubscriptionMessageParker(string subscriptionId, IODispatcher ioDispatcher) {
 			_parkedStreamId = "$persistentsubscription-" + subscriptionId + "-parked";
@@ -46,14 +46,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			var parkedEvent = new Event(Guid.NewGuid(), SystemEventTypes.LinkTo, false, data, metadata.ToJson());
 
-			_ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccount.Principal,
+			_ioDispatcher.WriteEvent(_parkedStreamId, ExpectedVersion.Any, parkedEvent, SystemAccounts.System,
 				x => WriteStateCompleted(completed, ev, x));
 		}
 
 		private string GetLinkToFor(ResolvedEvent ev) {
 			if (ev.Event == null) // Unresolved link so just use the bad/deleted link data.
 			{
-				return Encoding.UTF8.GetString(ev.Link.Data);
+				return Encoding.UTF8.GetString(ev.Link.Data.Span);
 			}
 
 			return string.Format("{0}@{1}", ev.Event.EventNumber, ev.Event.EventStreamId);
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 
 		public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed) {
-			_ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccount.Principal,
+			_ioDispatcher.DeleteStream(_parkedStreamId, ExpectedVersion.Any, false, SystemAccounts.System,
 				x => completed(this));
 		}
 
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				long.MaxValue,
 				1,
 				false,
-				SystemAccount.Principal, comp => {
+				SystemAccounts.System, comp => {
 					switch (comp.Result) {
 						case ReadStreamResult.Success:
 							completed(comp.LastEventNumber);
@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void BeginMarkParkedMessagesReprocessed(long sequence) {
 			var metaStreamId = SystemStreams.MetastreamOf(_parkedStreamId);
 			_ioDispatcher.WriteEvent(
-				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(sequence), SystemAccount.Principal,
+				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(sequence), SystemAccounts.System,
 				msg => {
 					switch (msg.Result) {
 						case OperationResult.Success:

@@ -10,7 +10,6 @@ using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
-using EventStore.Projections.Core.Messages.ParallelQueryProcessingMessages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -28,6 +27,7 @@ namespace EventStore.Projections.Core {
 				var coreInputBus = new InMemoryBus("bus");
 				var coreQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
 					"Projection Core #" + coreQueues.Count,
+					standardComponents.QueueStatsManager,
 					groupName: "Projection Core");
 				var workerId = Guid.NewGuid();
 				var projectionNode = new ProjectionWorkerNode(
@@ -37,7 +37,8 @@ namespace EventStore.Projections.Core {
 					standardComponents.TimeProvider,
 					coreTimeoutSchedulers[coreQueues.Count],
 					projectionsStandardComponents.RunProjections,
-					projectionsStandardComponents.FaultOutOfOrderProjections);
+					projectionsStandardComponents.FaultOutOfOrderProjections,
+					projectionsStandardComponents.LeaderOutputBus);
 				projectionNode.SetupMessaging(coreInputBus);
 
 				var forwarder = new RequestResponseQueueForwarder(
@@ -55,18 +56,13 @@ namespace EventStore.Projections.Core {
 				coreOutput.Subscribe<ProjectionCoreServiceMessage.SubComponentStopped>(forwarder);
 
 				if (projectionsStandardComponents.RunProjections >= ProjectionType.System) {
-					var slaveProjectionResponseWriter = projectionNode.SlaveProjectionResponseWriter;
-					coreOutput.Subscribe<PartitionMeasuredOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingProgressOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<PartitionProcessingResultOutput>(slaveProjectionResponseWriter);
-					coreOutput.Subscribe<ReaderSubscriptionManagement.SpoolStreamReading>(
-						slaveProjectionResponseWriter);
-
-
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
 					coreOutput.Subscribe(
 						Forwarder.Create<AwakeServiceMessage.UnsubscribeAwake>(standardComponents.MainQueue));
+					coreOutput.Subscribe(
+						Forwarder.Create<ProjectionSubsystemMessage.IODispatcherDrained>(projectionsStandardComponents
+							.LeaderOutputBus));
 				}
 
 				coreOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
@@ -84,11 +80,11 @@ namespace EventStore.Projections.Core {
 				projectionsStandardComponents.RunProjections,
 				coreTimeoutSchedulers,
 				queues,
-				projectionsStandardComponents.MasterOutputBus,
-				new PublishEnvelope(projectionsStandardComponents.MasterInputQueue, crossThread: true));
+				projectionsStandardComponents.LeaderOutputBus,
+				new PublishEnvelope(projectionsStandardComponents.LeaderInputQueue, crossThread: true));
 
-			coordinator.SetupMessaging(projectionsStandardComponents.MasterMainBus);
-			projectionsStandardComponents.MasterMainBus.Subscribe(
+			coordinator.SetupMessaging(projectionsStandardComponents.LeaderMainBus);
+			projectionsStandardComponents.LeaderMainBus.Subscribe(
 				Forwarder.CreateBalancing<FeedReaderMessage.ReadPage>(coreQueues.Values.Cast<IPublisher>().ToArray()));
 			return coreQueues;
 		}

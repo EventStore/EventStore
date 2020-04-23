@@ -4,8 +4,9 @@ using System.IO;
 using System.Net;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
-using System.Collections.Generic;
-using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
+using EventStore.Core.Tests.Helpers;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
@@ -267,18 +268,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	}
 
 	[TestFixture]
-	public class with_better_ordering_enabled : SingleNodeScenario {
-		public override void Given() {
-			_builder.WithBetterOrdering();
-		}
-
-		[Test]
-		public void should_set_better_ordering() {
-			Assert.IsTrue(_settings.BetterOrdering);
-		}
-	}
-
-	[TestFixture]
 	public class with_custom_index_path : SingleNodeScenario {
 		public override void Given() {
 			_builder.WithIndexPath("index");
@@ -406,7 +395,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private IPEndPoint _externalTcp;
 
 		public override void Given() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalHttp = new IPEndPoint(baseIpAddress, 1112);
 			_externalHttp = new IPEndPoint(baseIpAddress, 1113);
 			_internalTcp = new IPEndPoint(baseIpAddress, 1114);
@@ -436,18 +425,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_set_external_tcp_endpoint() {
 			Assert.AreEqual(_externalTcp, _settings.NodeInfo.ExternalTcp);
 		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			var internalHttpPrefix = string.Format("http://{0}/", _internalHttp);
-			CollectionAssert.AreEqual(new string[] {internalHttpPrefix}, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			var externalHttpPrefix = string.Format("http://{0}/", _externalHttp);
-			CollectionAssert.AreEqual(new string[] {externalHttpPrefix}, _settings.ExtHttpPrefixes);
-		}
 	}
 
 	[TestFixture]
@@ -458,7 +435,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private string _extLoopbackPrefix;
 
 		public override void Given() {
-			var baseIpAddress = IPAddress.Parse("192.168.1.15");
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			int intPort = 1112;
 			int extPort = 1113;
 
@@ -471,21 +448,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_extLoopbackPrefix = string.Format("http://{0}/", new IPEndPoint(IPAddress.Loopback, extPort));
 
 			_builder.WithInternalHttpOn(internalHttp)
-				.WithExternalHttpOn(externalHttp)
-				.AddInternalHttpPrefix(_intPrefix)
-				.AddInternalHttpPrefix(_intLoopbackPrefix)
-				.AddExternalHttpPrefix(_extPrefix)
-				.AddExternalHttpPrefix(_extLoopbackPrefix);
-		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			CollectionAssert.AreEqual(new string[] {_intPrefix, _intLoopbackPrefix}, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			CollectionAssert.AreEqual(new string[] {_extPrefix, _extLoopbackPrefix}, _settings.ExtHttpPrefixes);
+				.WithExternalHttpOn(externalHttp);
 		}
 	}
 
@@ -507,53 +470,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalTcpOn(_externalTcp)
 				.WithInternalTcpOn(_internalTcp);
 		}
-
-		[Test]
-		public void should_set_internal_http_prefixes() {
-			var internalHttpPrefixes = new List<string> {
-				string.Format("http://{0}/", _internalHttp), string.Format("http://localhost:{0}/", _internalHttp.Port)
-			};
-			CollectionAssert.AreEqual(internalHttpPrefixes, _settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_external_http_prefixes() {
-			var externalHttpPrefixes = new List<string> {
-				string.Format("http://{0}/", _externalHttp), string.Format("http://localhost:{0}/", _externalHttp.Port)
-			};
-			CollectionAssert.AreEqual(externalHttpPrefixes, _settings.ExtHttpPrefixes);
-		}
-	}
-
-	[TestFixture]
-	public class with_dont_add_interface_prefixes : SingleNodeScenario {
-		private IPEndPoint _internalHttp;
-		private IPEndPoint _externalHttp;
-		private IPEndPoint _internalTcp;
-		private IPEndPoint _externalTcp;
-
-		public override void Given() {
-			var baseIpAddress = IPAddress.Loopback;
-			_internalHttp = new IPEndPoint(baseIpAddress, 1112);
-			_externalHttp = new IPEndPoint(baseIpAddress, 1113);
-			_internalTcp = new IPEndPoint(baseIpAddress, 1114);
-			_externalTcp = new IPEndPoint(baseIpAddress, 1115);
-			_builder.WithInternalHttpOn(_internalHttp)
-				.WithExternalHttpOn(_externalHttp)
-				.WithExternalTcpOn(_externalTcp)
-				.WithInternalTcpOn(_internalTcp)
-				.DontAddInterfacePrefixes();
-		}
-
-		[Test]
-		public void should_set_no_internal_http_prefixes() {
-			CollectionAssert.IsEmpty(_settings.IntHttpPrefixes);
-		}
-
-		[Test]
-		public void should_set_no_external_http_prefixes() {
-			CollectionAssert.IsEmpty(_settings.ExtHttpPrefixes);
-		}
 	}
 
 	[TestFixture]
@@ -571,12 +487,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
 	public class with_custom_authentication_provider_factory : SingleNodeScenario {
 		public override void Given() {
-			_builder.WithAuthenticationProvider(new TestAuthenticationProviderFactory());
+			_builder.WithAuthenticationProviderFactory(new AuthenticationProviderFactory(
+				_ => new TestAuthenticationProviderFactory()), false);
 		}
 
 		[Test]
 		public void should_set_authentication_provider_factory() {
-			Assert.IsInstanceOf(typeof(TestAuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf(typeof(AuthenticationProviderFactory), _settings.AuthenticationProviderFactory);
 		}
 	}
 
@@ -628,8 +545,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private Data.GossipAdvertiseInfo _advertiseInfo;
 
 		public override void Given() {
-			var internalIPToAdvertise = IPAddress.Parse("192.168.1.1");
-			var externalIPToAdvertise = IPAddress.Parse("192.168.1.2");
+			var internalIPToAdvertise = IPAddress.Parse("127.0.1.1");
+			var externalIPToAdvertise = IPAddress.Parse("127.0.1.2");
 			var intTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1111);
 			var intSecTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1112);
 			var extTcpEndpoint = new IPEndPoint(externalIPToAdvertise, 1113);
@@ -641,7 +558,15 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint, internalIPToAdvertise, externalIPToAdvertise,
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 
-			_builder.AdvertiseInternalIPAs(internalIPToAdvertise)
+			_builder
+				.WithServerCertificate(ssl_connections.GetServerCertificate())
+				.WithInternalTcpOn(intTcpEndpoint)
+				.WithInternalSecureTcpOn(intSecTcpEndpoint)
+				.WithExternalTcpOn(extTcpEndpoint)
+				.WithExternalSecureTcpOn(extSecTcpEndpoint)
+				.WithInternalHttpOn(intHttpEndpoint)
+				.WithExternalHttpOn(extHttpEndpoint)
+				.AdvertiseInternalIPAs(internalIPToAdvertise)
 				.AdvertiseExternalIPAs(externalIPToAdvertise)
 				.AdvertiseInternalTCPPortAs(intTcpEndpoint.Port)
 				.AdvertiseExternalTCPPortAs(extTcpEndpoint.Port)
@@ -691,6 +616,50 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_connection_pending_send_bytes_threshold() {
 			Assert.AreEqual(_threshold, _settings.ConnectionPendingSendBytesThreshold);
+		}
+	}
+
+	[TestFixture]
+	public class with_connection_queue_size_threshold : SingleNodeScenario {
+		private int _threshold = 2000;
+
+		public override void Given() {
+			_builder.WithConnectionQueueSizeThreshold(_threshold);
+		}
+
+		[Test]
+		public void should_set_connection_queue_size_threshold() {
+			Assert.AreEqual(_threshold, _settings.ConnectionQueueSizeThreshold);
+		}
+	}
+	
+	[TestFixture]
+	public class with_certificate_with_password_from_file : SingleNodeScenario {
+		public override void Given() {
+			var certificateWithPassword =
+				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates",
+					"public_and_private_with_password.p12"));
+			_builder.WithServerCertificateFromFile(certificateWithPassword, string.Empty, "changeit");
+		}
+
+		[Test]
+		public void should_not_be_null() {
+			Assert.IsNotNull(_settings.Certificate);
+		}
+	}
+	
+	[TestFixture]
+	public class with_certificate_and_private_key_from_file : SingleNodeScenario {
+		public override void Given() {
+			var certificate =
+				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "certificate.pem"));
+			var privateKey = HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "private.key"));
+			_builder.WithServerCertificateFromFile(certificate, privateKey, string.Empty);
+		}
+
+		[Test]
+		public void should_not_be_null() {
+			Assert.IsNotNull(_settings.Certificate);
 		}
 	}
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Rags;
@@ -11,28 +10,30 @@ using EventStore.Transport.Http.EntityManagement;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authorization;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,
 		IHandle<SystemMessage.StateChangeMessage> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<InfoController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<InfoController>();
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
 
 		private readonly IOptions _options;
-		private readonly ProjectionType _projectionType;
+		private readonly IDictionary<string, bool> _features;
 		private VNodeState _currentState;
 
-		public InfoController(IOptions options, ProjectionType projectionType) {
+		public InfoController(IOptions options, IDictionary<string, bool> features) {
 			_options = options;
-			_projectionType = projectionType;
+			_features = features;
 		}
 
 		public void Subscribe(IHttpService service) {
 			Ensure.NotNull(service, "service");
-			service.RegisterAction(new ControllerAction("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs),
+			service.RegisterAction(new ControllerAction("/info", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Information.Read)),
 				OnGetInfo);
 			service.RegisterAction(
-				new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs), OnGetOptions);
+				new ControllerAction("/info/options", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Information.Options)), OnGetOptions);
 		}
 
 
@@ -44,23 +45,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			entity.ReplyTextContent(Codec.Json.To(new {
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
-					ProjectionsMode = _projectionType
+					Features = _features,
 				}),
 				HttpStatusCode.OK,
 				"OK",
 				entity.ResponseCodec.ContentType,
 				null,
-				e => Log.ErrorException(e, "Error while writing HTTP response (info)"));
+				e => Log.Error(e, "Error while writing HTTP response (info)"));
 		}
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
-			if (entity.User != null && entity.User.IsInRole(SystemRoles.Admins)) {
+			if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
 				entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] {"CertificatePassword"})),
 					HttpStatusCode.OK,
 					"OK",
 					entity.ResponseCodec.ContentType,
 					null,
-					e => Log.ErrorException(e, "error while writing HTTP response (options)"));
+					e => Log.Error(e, "error while writing HTTP response (options)"));
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
 			}

@@ -1,10 +1,9 @@
 using System;
-using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.BufferManagement;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Commands;
@@ -13,10 +12,11 @@ using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Formatting;
 using EventStore.Transport.Tcp.Framing;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	public class Client {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<Client>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<Client>();
 
 		public readonly bool InteractiveMode;
 
@@ -24,7 +24,6 @@ namespace EventStore.TestClient {
 		public readonly IPEndPoint TcpEndpoint;
 		public readonly IPEndPoint HttpEndpoint;
 		public readonly bool UseSsl;
-		public readonly string TargetHost;
 		public readonly bool ValidateServer;
 
 		private readonly BufferManager _bufferManager =
@@ -40,13 +39,13 @@ namespace EventStore.TestClient {
 			TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
 			HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
 
-			UseSsl = options.UseSsl;
-			TargetHost = options.TargetHost;
-			ValidateServer = options.ValidateServer;
+			UseSsl = options.UseTls;
+			ValidateServer = options.TlsValidateServer;
 
 			InteractiveMode = options.Command.IsEmpty();
 
 			RegisterProcessors();
+
 		}
 
 		private void RegisterProcessors() {
@@ -108,7 +107,7 @@ namespace EventStore.TestClient {
 							var args = ParseCommandLine(line);
 							Execute(args);
 						} catch (Exception exc) {
-							Log.ErrorException(exc, "Error during executing command.");
+							Log.Error(exc, "Error during executing command.");
 						}
 					} finally {
 						Thread.Sleep(100);
@@ -124,13 +123,13 @@ namespace EventStore.TestClient {
 		}
 
 		private int Execute(string[] args) {
-			Log.Info("Processing command: {command}.", string.Join(" ", args));
+			Log.Information("Processing command: {command}.", string.Join(" ", args));
 
 			var context = new CommandProcessorContext(this, Log, new ManualResetEventSlim(true));
 
 			int exitCode;
 			if (_commands.TryProcess(context, args, out exitCode)) {
-				Log.Info("Command exited with code {exitCode}.", exitCode);
+				Log.Information("Command exited with code {exitCode}.", exitCode);
 				return exitCode;
 			}
 
@@ -151,7 +150,7 @@ namespace EventStore.TestClient {
 				// causing deadlock
 				ThreadPool.QueueUserWorkItem(_ => {
 					if (!InteractiveMode)
-						Log.Info(
+						Log.Information(
 							"TcpTypedConnection: connected to [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}].",
 							conn.RemoteEndPoint, conn.LocalEndPoint, conn.ConnectionId);
 					if (connectionEstablished != null) {
@@ -175,16 +174,12 @@ namespace EventStore.TestClient {
 
 			ITcpConnection connection;
 			if (UseSsl) {
-				if (string.IsNullOrEmpty(TargetHost)) {
-					context.Fail(reason: "TargetHost is required if using SSL");
-				}
-
 				connection = _connector.ConnectSslTo(
 					Guid.NewGuid(),
 					tcpEndPoint ?? TcpEndpoint,
 					TcpConnectionManager.ConnectionTimeout,
-					TargetHost,
-					ValidateServer,
+					(cert,chain,err) => (err == SslPolicyErrors.None, err.ToString()),
+					null,
 					onConnectionEstablished,
 					onConnectionFailed,
 					verbose: !InteractiveMode);
@@ -203,7 +198,7 @@ namespace EventStore.TestClient {
 			typedConnection.ConnectionClosed +=
 				(conn, error) => {
 					if (!InteractiveMode || error != SocketError.Success) {
-						Log.Info(
+						Log.Information(
 							"TcpTypedConnection: connection [{remoteEndPoint}, L{localEndPoint}] was closed {status}",
 							conn.RemoteEndPoint, conn.LocalEndPoint,
 							error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
@@ -212,7 +207,7 @@ namespace EventStore.TestClient {
 					if (connectionClosed != null)
 						connectionClosed(conn, error);
 					else
-						Log.Info("connectionClosed callback was null");
+						Log.Information("connectionClosed callback was null");
 				};
 			connectionCreatedEvent.Set();
 
@@ -232,7 +227,7 @@ namespace EventStore.TestClient {
 
 						handlePackage(conn, package);
 					} catch (Exception ex) {
-						Log.InfoException(ex,
+						Log.Information(ex,
 							"TcpTypedConnection: [{remoteEndPoint}, L{localEndPoint}] ERROR for {package}. Connection will be closed.",
 							conn.RemoteEndPoint, conn.LocalEndPoint,
 							validPackage ? package.Command as object : "<invalid package>");

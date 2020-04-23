@@ -1,23 +1,29 @@
 namespace EventStore.Core.Data {
 	public enum VNodeState {
 		Initializing,
+		DiscoverLeader,
 		Unknown,
 		PreReplica,
 		CatchingUp,
 		Clone,
-		Slave,
-		PreMaster,
-		Master,
+		Follower,
+		PreLeader,
+		Leader,
 		Manager,
 		ShuttingDown,
-		Shutdown
+		Shutdown,
+		ReadOnlyLeaderless,
+		PreReadOnlyReplica,
+		ReadOnlyReplica,
+		ResigningLeader
 	}
 
 	public static class VNodeStateExtensions {
 		public static bool IsReplica(this VNodeState state) {
 			return state == VNodeState.CatchingUp
 			       || state == VNodeState.Clone
-			       || state == VNodeState.Slave;
+			       || state == VNodeState.Follower
+				   || state == VNodeState.ReadOnlyReplica;
 		}
 	}
 }

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Settings;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
@@ -35,8 +35,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_metastreamMaxCount = metastreamMaxCount;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			var indexPath = Path.Combine(PathName, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
-				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
+				"ReadIndex readers pool", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				() => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
@@ -57,24 +57,24 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
 				() => new TFReaderLease(readerPool),
 				PTableVersions.IndexV3,
-				5,
+				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
 			ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
-				_dbResult.Db.Config.ReplicationCheckpoint);
-			ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
+			((ReadIndex)ReadIndex).IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
 			var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
-			scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
+			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}
 
-		public override void TestFixtureTearDown() {
+		public override async Task TestFixtureTearDown() {
 			ReadIndex.Close();
 			_dbResult.Db.Close();
 
-			base.TestFixtureTearDown();
+			await base.TestFixtureTearDown();
 
 			if (!_checked)
 				throw new Exception("Records were not checked. Probably you forgot to call CheckRecords() method.");

@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
@@ -18,6 +22,8 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
+using EventStore.Core.Settings;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -37,7 +43,7 @@ namespace EventStore.Core {
 		protected bool _disableHTTPCaching;
 		protected bool _logHttpRequests;
 		protected bool _enableHistograms;
-		protected bool _structuredLog;
+		protected bool _enableAtomPubOverHTTP;
 		protected IPEndPoint _internalTcp;
 		protected IPEndPoint _internalSecureTcp;
 		protected IPEndPoint _externalTcp;
@@ -45,11 +51,9 @@ namespace EventStore.Core {
 		protected IPEndPoint _internalHttp;
 		protected IPEndPoint _externalHttp;
 
-		protected List<string> _intHttpPrefixes;
-		protected List<string> _extHttpPrefixes;
-		protected bool _addInterfacePrefixes;
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
+		protected X509Certificate2Collection _trustedRootCerts;
 		protected int _workerThreads;
 
 		protected bool _discoverViaDns;
@@ -63,18 +67,21 @@ namespace EventStore.Core {
 		protected int _commitAckCount;
 		protected TimeSpan _prepareTimeout;
 		protected TimeSpan _commitTimeout;
+		protected TimeSpan _writeTimeout;
 
 		protected int _nodePriority;
 
-		protected bool _useSsl;
-		protected bool _disableInsecureTCP;
-		protected string _sslTargetHost;
-		protected bool _sslValidateServer;
+		protected bool _enableExternalTCP;
+		protected bool _disableInternalTls;
+		protected bool _disableExternalTls;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
 
-		protected IAuthenticationProviderFactory _authenticationProviderFactory;
+		protected AuthenticationProviderFactory _authenticationProviderFactory;
+		protected bool _authenticationProviderIsInternal;
+		protected bool _disableFirstLevelHttpAuthorization;
+		protected bool _logFailedAuthenticationAttempts;
 		protected bool _disableScavengeMerging;
 		protected int _scavengeHistoryMaxAge;
 		protected bool _adminOnPublic;
@@ -82,6 +89,7 @@ namespace EventStore.Core {
 		protected bool _gossipOnPublic;
 		protected TimeSpan _gossipInterval;
 		protected TimeSpan _gossipAllowedTimeDifference;
+		protected TimeSpan _deadMemberRemovalPeriod;
 		protected TimeSpan _gossipTimeout;
 		protected GossipAdvertiseInfo _gossipAdvertiseInfo;
 
@@ -90,6 +98,7 @@ namespace EventStore.Core {
 		protected TimeSpan _extTcpHeartbeatTimeout;
 		protected TimeSpan _extTcpHeartbeatInterval;
 		protected int _connectionPendingSendBytesThreshold;
+		protected int _connectionQueueSizeThreshold;
 
 		protected bool _skipVerifyDbHashes;
 		protected int _maxMemtableSize;
@@ -108,7 +117,6 @@ namespace EventStore.Core {
 
 		protected bool _unsafeIgnoreHardDelete;
 		protected bool _unsafeDisableFlushToDisk;
-		protected bool _betterOrdering;
 		protected ProjectionType _projectionType;
 		protected int _projectionsThreads;
 		protected TimeSpan _projectionsQueryExpiry;
@@ -131,13 +139,19 @@ namespace EventStore.Core {
 		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
+		private int _maxAppendSize;
 
 		private bool _gossipOnSingleNode;
+		private long _maxTruncation;
+
+		private bool _readOnlyReplica;
+		private bool _unsafeAllowSurplusNodes;
+		private AuthorizationProviderFactory _authorizationProviderFactory;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
 		protected VNodeBuilder() {
-			_log = LogManager.GetLoggerFor<VNodeBuilder>();
+			_log = Serilog.Log.ForContext<VNodeBuilder>();
 			_statsStorage = StatsStorage.Stream;
 
 			_chunkSize = TFConsts.ChunkSize;
@@ -147,8 +161,8 @@ namespace EventStore.Core {
 			_cachedChunks = Opts.CachedChunksDefault;
 			_inMemoryDb = true;
 			_projectionType = ProjectionType.None;
-			_structuredLog = Opts.StructuredLogDefault;
 
+			_enableAtomPubOverHTTP = Opts.EnableAtomPubOverHTTPDefault;
 			_externalTcp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalTcpPortDefault);
 			_externalSecureTcp = null;
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalTcpPortDefault);
@@ -156,9 +170,6 @@ namespace EventStore.Core {
 			_externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
 			_internalHttp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalHttpPortDefault);
 
-			_intHttpPrefixes = new List<string>();
-			_extHttpPrefixes = new List<string>();
-			_addInterfacePrefixes = true;
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
 			_certificate = null;
@@ -175,17 +186,24 @@ namespace EventStore.Core {
 			_commitAckCount = 1;
 			_prepareTimeout = TimeSpan.FromMilliseconds(Opts.PrepareTimeoutMsDefault);
 			_commitTimeout = TimeSpan.FromMilliseconds(Opts.CommitTimeoutMsDefault);
+			_writeTimeout = TimeSpan.FromMilliseconds(Opts.WriteTimeoutMsDefault);
 
 			_nodePriority = Opts.NodePriorityDefault;
 
-			_useSsl = Opts.UseInternalSslDefault;
-			_disableInsecureTCP = Opts.DisableInsecureTCPDefault;
-			_sslTargetHost = Opts.SslTargetHostDefault;
-			_sslValidateServer = Opts.SslValidateServerDefault;
+			_disableInternalTls = Opts.DisableInternalTlsDefault;
+			_disableExternalTls = Opts.DisableExternalTlsDefault;
+			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
+			
+			_authenticationProviderFactory = new AuthenticationProviderFactory(components => 
+				new InternalAuthenticationProviderFactory(components));
 
-			_authenticationProviderFactory = new InternalAuthenticationProviderFactory();
+			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
+
+			_authorizationProviderFactory = new AuthorizationProviderFactory(components =>
+				new LegacyAuthorizationProviderFactory(components.MainQueue));
+
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
 			_adminOnPublic = Opts.AdminOnExtDefault;
@@ -200,6 +218,7 @@ namespace EventStore.Core {
 			_extTcpHeartbeatInterval = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatIntervalDefault);
 			_extTcpHeartbeatTimeout = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatTimeoutDefault);
 			_connectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
+			_connectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
 
 			_skipVerifyDbHashes = Opts.SkipDbVerifyDefault;
 			_maxMemtableSize = Opts.MaxMemtableSizeDefault;
@@ -209,6 +228,7 @@ namespace EventStore.Core {
 			_startStandardProjections = Opts.StartStandardProjectionsDefault;
 			_disableHTTPCaching = Opts.DisableHttpCachingDefault;
 			_logHttpRequests = Opts.LogHttpRequestsDefault;
+			_logFailedAuthenticationAttempts = Opts.LogFailedAuthenticationAttemptsDefault;
 			_enableHistograms = Opts.LogHttpRequestsDefault;
 			_index = null;
 			_skipIndexVerify = Opts.SkipIndexVerifyDefault;
@@ -216,7 +236,6 @@ namespace EventStore.Core {
 			_indexBitnessVersion = Opts.IndexBitnessVersionDefault;
 			_optimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
 			_unsafeIgnoreHardDelete = Opts.UnsafeIgnoreHardDeleteDefault;
-			_betterOrdering = Opts.BetterOrderingDefault;
 			_unsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
 			_alwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
 			_skipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
@@ -225,6 +244,12 @@ namespace EventStore.Core {
 			_faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			_reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			_initializationThreads = Opts.InitializationThreadsDefault;
+
+			_readOnlyReplica = Opts.ReadOnlyReplicaDefault;
+			_unsafeAllowSurplusNodes = Opts.UnsafeAllowSurplusNodesDefault;
+			_maxAppendSize = Opts.MaxAppendSizeDefault;
+			_deadMemberRemovalPeriod = TimeSpan.FromSeconds(Opts.DeadMemberRemovalPeriodDefault);
+			_maxTruncation = Opts.MaxTruncationDefault;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -243,12 +268,12 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Enable structured logging
+		/// Enable HTTP API Interface
 		/// </summary>
-		/// <param name="structuredLog">Enable structured logging</param>
+		/// <param name="WithEnableAtomPubOverHTTP">Enable AtomPub over HTTP</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithStructuredLogging(bool structuredLog) {
-			_structuredLog = structuredLog;
+		public VNodeBuilder WithEnableAtomPubOverHTTP(bool enableAtomPubOverHTTP) {
+			_enableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			return this;
 		}
 
@@ -505,39 +530,28 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets that SSL should be used on connections
+		/// Sets that TLS should be disabled on internal connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableSsl() {
-			_useSsl = true;
+		public VNodeBuilder DisableInternalTls() {
+			_disableInternalTls = true;
+			return this;
+		}
+
+		/// Sets that TLS should be disabled on external connections
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder DisableExternalTls() {
+			_disableExternalTls = true;
 			return this;
 		}
 
 		/// <summary>
-		/// Disable Insecure TCP Communication
+		/// Enable External TCP Communication
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableInsecureTCP() {
-			_disableInsecureTCP = true;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets the target host of the server's SSL certificate.
-		/// </summary>
-		/// <param name="targetHost">The target host of the server's SSL certificate</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithSslTargetHost(string targetHost) {
-			_sslTargetHost = targetHost;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets whether to validate that the server's certificate is trusted.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder ValidateSslServer() {
-			_sslValidateServer = true;
+		public VNodeBuilder EnableExternalTCP() {
+			_enableExternalTCP = true;
 			return this;
 		}
 
@@ -649,46 +663,78 @@ namespace EventStore.Core {
 			_workerThreads = count;
 			return this;
 		}
-
+		
 		/// <summary>
-		/// Adds a http prefix for the internal http endpoint
+		/// Sets the Server TLS Certificate to be loaded from a file
 		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddInternalHttpPrefix(string prefix) {
-			_intHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Adds a http prefix for the external http endpoint
-		/// </summary>
-		/// <param name="prefix">The prefix to add</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AddExternalHttpPrefix(string prefix) {
-			_extHttpPrefixes.Add(prefix);
-			return this;
-		}
-
-		/// <summary>
-		/// Don't add the interface prefixes (e.g. If the External IP is set to the Loopback address, we'll add http://localhost:2113/ as a prefix)
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DontAddInterfacePrefixes() {
-			_addInterfacePrefixes = false;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a file
-		/// </summary>
-		/// <param name="path">The path to the certificate file</param>
+		/// <param name="certificatePath">The path to the certificate file</param>
+		/// <param name="privateKeyPath">The path to the private key file</param>
 		/// <param name="password">The password for the certificate</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithServerCertificateFromFile(string path, string password) {
-			var cert = new X509Certificate2(path, password);
+		public VNodeBuilder WithServerCertificateFromFile(
+			string certificatePath,
+			string privateKeyPath,
+			string password) {
 
-			_certificate = cert;
+			if (string.IsNullOrEmpty(privateKeyPath)) {
+				try {
+					_certificate = new X509Certificate2(certificatePath, password);
+				} catch (CryptographicException exc) {
+					throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
+				}
+
+				if (!_certificate.HasPrivateKey) {
+					throw new Exception("Expect certificate to contain a private key. " +
+					                    "Please either provide a certificate that contains one or set the private key" +
+					                    " via the `CertificatePrivateKeyFile` option.");
+				}
+				return this;
+			}
+			
+			var privateKey = Convert.FromBase64String(string.Join(string.Empty, File.ReadAllLines(privateKeyPath)
+				.Skip(1)
+				.SkipLast(1)));
+			
+			using var rsa = RSA.Create();
+			rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+			
+			using var publicCertificate = new X509Certificate2(certificatePath, password);
+			using var publicWithPrivate = publicCertificate.CopyWithPrivateKey(rsa);
+			
+			_certificate = new X509Certificate2(publicWithPrivate.Export(X509ContentType.Pfx));
+			return this;
+		}
+
+		/// <summary>
+		/// Restricts trust to the root certificates in the specified path
+		/// </summary>
+		/// <param name="trustedRootCertificatesPath">The path to the trusted root certificates</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithTrustedRootCertificatesPath(
+			string trustedRootCertificatesPath) {
+			Ensure.NotNullOrEmpty(trustedRootCertificatesPath, "trustedRootCertificatesPath");
+
+			var certCollection = new X509Certificate2Collection();
+			var files = Directory.GetFiles(trustedRootCertificatesPath);
+			var acceptedExtensions = new[] { ".crt", ".cert", ".cer", ".pem", ".der" };
+			foreach (var file in files) {
+				var fileInfo = new FileInfo(file);
+				var extension = fileInfo.Extension;
+				if (acceptedExtensions.Contains(extension)) {
+					try {
+						var cert = new X509Certificate2(File.ReadAllBytes(file));
+						certCollection.Add(cert);
+						_log.Information("Trusted root certificate file loaded: {file}", fileInfo.Name);
+					} catch (Exception exc) {
+						throw new AggregateException($"Error loading trusted root certificate file: {file}", exc);
+					}
+				}
+			}
+
+			if(certCollection.Count == 0)
+				throw new Exception($"No trusted root certificates were loaded from: {trustedRootCertificatesPath}");
+
+			_trustedRootCerts = certCollection;
 			return this;
 		}
 
@@ -743,6 +789,16 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// Sets the maximum number of connection operations allowed before a connection is closed.
+		/// </summary>
+		/// <param name="connectionQueueSizeThreshold">The number of connection operations allowed</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithConnectionQueueSizeThreshold(int connectionQueueSizeThreshold) {
+			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the gossip interval
 		/// </summary>
 		/// <param name="gossipInterval">The gossip interval</param>
@@ -761,7 +817,18 @@ namespace EventStore.Core {
 			_gossipAllowedTimeDifference = gossipAllowedDifference;
 			return this;
 		}
+		
 
+		/// <summary>
+		/// Sets the period a dead node will remain in the gossip before being pruned
+		/// </summary>
+		/// <param name="deadMemberRemovalPeriod">The period a dead node will remain in the gossip before being pruned</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithDeadMemberRemovalPeriod(TimeSpan deadMemberRemovalPeriod) {
+			_deadMemberRemovalPeriod = deadMemberRemovalPeriod;
+			return this;
+		}
+		
 		/// <summary>
 		/// Sets the gossip timeout
 		/// </summary>
@@ -799,6 +866,16 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithCommitTimeout(TimeSpan commitTimeout) {
 			_commitTimeout = commitTimeout;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the write timeout
+		/// </summary>
+		/// <param name="writeTimeout">The write timeout</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithWriteTimeout(TimeSpan writeTimeout) {
+			_writeTimeout = writeTimeout;
 			return this;
 		}
 
@@ -845,9 +922,9 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the node priority used during master election
+		/// Sets the node priority used during leader election
 		/// </summary>
-		/// <param name="nodePriority">The node priority used during master election</param>
+		/// <param name="nodePriority">The node priority used during leader election</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithNodePriority(int nodePriority) {
 			_nodePriority = nodePriority;
@@ -889,6 +966,15 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableLoggingOfHttpRequests() {
 			_logHttpRequests = true;
+			return this;
+		}
+		
+		/// <summary>
+		/// Enable logging of Failed Authentication Attempts
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder EnableLoggingOfFailedAuthenticationAttempts() {
+			_logFailedAuthenticationAttempts = true;
 			return this;
 		}
 
@@ -950,15 +1036,6 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Enable Queue affinity on reads during write process to try to get better ordering.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithBetterOrdering() {
-			_betterOrdering = true;
-			return this;
-		}
-
-		/// <summary>
 		/// Enable trusted authentication by an intermediary in the HTTP
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -966,14 +1043,36 @@ namespace EventStore.Core {
 			_enableTrustedAuth = true;
 			return this;
 		}
+		
+		/// <summary>
+		/// Sets the authorization provider factory to use
+		/// </summary>
+		/// <param name="authorizationProviderFactory">The authorization provider factory to use </param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithAuthorizationProvider(AuthorizationProviderFactory authorizationProviderFactory) {
+			_authorizationProviderFactory = authorizationProviderFactory;
+			return this;
+		}
 
 		/// <summary>
 		/// Sets the authentication provider factory to use
 		/// </summary>
 		/// <param name="authenticationProviderFactory">The authentication provider factory to use </param>
+		/// <param name="isInternal">Is true when the internal authentication provider is being used</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithAuthenticationProvider(IAuthenticationProviderFactory authenticationProviderFactory) {
+		public VNodeBuilder WithAuthenticationProviderFactory(AuthenticationProviderFactory authenticationProviderFactory,
+			bool isInternal) {
 			_authenticationProviderFactory = authenticationProviderFactory;
+			_authenticationProviderIsInternal = isInternal;
+			return this;
+		}
+
+		/// <summary>
+		/// Disables first level authorization checks on all HTTP endpoints.
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder DisableFirstLevelHttpAuthorization() {
+			_disableFirstLevelHttpAuthorization = true;
 			return this;
 		}
 
@@ -1028,11 +1127,33 @@ namespace EventStore.Core {
 			_maxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			return this;
 		}
+		
+		/// <summary>
+		/// Sets the max truncation length (max difference between epoch.chk and truncate.chk).  -1 to disable.
+		/// </summary>
+		/// <param name="maxTruncation">The max difference between epoch and truncate checkpoints to limit any accidental truncations.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithMaxTruncation(long maxTruncation) {
+			_maxTruncation = maxTruncation;
+			return this;
+		}
+
+		public VNodeBuilder WithMaxAppendSize(int maxAppendSize) {
+			if (maxAppendSize <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), maxAppendSize, $"{nameof(maxAppendSize)} must be a positive number.");
+			}
+			if (maxAppendSize > 1024 * 1024 * 16) {
+				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), maxAppendSize, $"{nameof(maxAppendSize)} may not exceed 16MB.");
+			}
+
+			_maxAppendSize = maxAppendSize;
+			return this;
+		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate
+		/// Sets the Server TLS Certificate
 		/// </summary>
-		/// <param name="sslCertificate">The server SSL certificate to use</param>
+		/// <param name="sslCertificate">The server TLS certificate to use</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithServerCertificate(X509Certificate2 sslCertificate) {
 			_certificate = sslCertificate;
@@ -1040,7 +1161,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeLocation">The location of the certificate store</param>
 		/// <param name="storeName">The name of the certificate store</param>
@@ -1055,7 +1176,7 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server SSL Certificate to be loaded from a certificate store
+		/// Sets the Server TLS Certificate to be loaded from a certificate store
 		/// </summary>
 		/// <param name="storeName">The name of the certificate store</param>
 		/// <param name="certificateSubjectName">The subject name of the certificate</param>
@@ -1187,76 +1308,62 @@ namespace EventStore.Core {
 			return this;
 		}
 
-		private void EnsureHttpPrefixes() {
-			if (_intHttpPrefixes == null || _intHttpPrefixes.IsEmpty())
-				_intHttpPrefixes = new List<string>();
-			if (_extHttpPrefixes == null || _extHttpPrefixes.IsEmpty())
-				_extHttpPrefixes = new List<string>();
+		/// <summary>
+		/// Sets this node as a read only replica that is not allowed to participate in elections.
+		/// </summary>
+		/// <returns></returns>
+		public VNodeBuilder EnableReadOnlyReplica() {
+			_readOnlyReplica = true;
 
-			if ((_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-			     _externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
-				if (_internalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_intHttpPrefixes.Add(String.Format("http://*:{0}/", _internalHttp.Port));
-				}
-
-				if (_externalHttp.Address.Equals(IPAddress.Parse("0.0.0.0"))) {
-					_extHttpPrefixes.Add(String.Format("http://*:{0}/", _externalHttp.Port));
-				}
-			} else if (_addInterfacePrefixes) {
-				var intHttpPrefixToAdd = String.Format("http://{0}:{1}/", _internalHttp.Address, _internalHttp.Port);
-				if (!_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
-				intHttpPrefixToAdd = String.Format("http://localhost:{0}/", _internalHttp.Port);
-				if (_internalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_intHttpPrefixes.Contains(intHttpPrefixToAdd)) {
-					_intHttpPrefixes.Add(intHttpPrefixToAdd);
-				}
-
-				var extHttpPrefixToAdd = String.Format("http://{0}:{1}/", _externalHttp.Address, _externalHttp.Port);
-				if (!_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-
-				extHttpPrefixToAdd = String.Format("http://localhost:{0}/", _externalHttp.Port);
-				if (_externalHttp.Address.Equals(IPAddress.Loopback) &&
-				    !_extHttpPrefixes.Contains(extHttpPrefixToAdd)) {
-					_extHttpPrefixes.Add(extHttpPrefixToAdd);
-				}
-			}
+			return this;
 		}
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
-				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? _internalTcp.Address;
-				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? _externalTcp.Address;
+				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
 
-				if ((_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) ||
-				     _externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0"))) && _addInterfacePrefixes) {
+				IPAddress intIpAddress = _internalHttp.Address; //this value is just opts.IntIP
+				IPAddress extIpAddress = _externalHttp.Address; //this value is just opts.ExtIP
+
+				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intIpAddress;
+				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extIpAddress;
+
+				if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) || extIpAddress.Equals(IPAddress.Parse("0.0.0.0"))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (_internalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
+					if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
 						intIpAddressToAdvertise = addressToAdvertise;
 					}
 
-					if (_externalTcp.Address.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
+					if (extIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
 						extIpAddressToAdvertise = addressToAdvertise;
 					}
 				}
 
-				var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
-				var intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
-				var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs :
-					_internalSecureTcp == null ? 0 : _internalSecureTcp.Port;
-				var intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				IPEndPoint intTcpEndPoint = null;
+				if (_internalTcp != null) {
+					var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
+					intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+				}
 
-				var extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
-				var extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
-				var extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs :
-					_externalSecureTcp == null ? 0 : _externalSecureTcp.Port;
-				var extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				IPEndPoint intSecureTcpEndPoint = null;
+				if (_internalSecureTcp != null) {
+					var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp.Port;
+					intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+				}
+
+				IPEndPoint extTcpEndPoint = null;
+				if (_externalTcp != null) {
+					int extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
+					extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+				}
+
+				IPEndPoint extSecureTcpEndPoint = null;
+				if (_externalSecureTcp != null) {
+					int extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp.Port;
+					extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+				}
 
 				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
 				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
@@ -1293,7 +1400,6 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="ClusterVNode"/> built with the options that were set on the <see cref="VNodeBuilder"/></returns>
 		public ClusterVNode Build(IOptions options = null,
 			IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null) {
-			EnsureHttpPrefixes();
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
@@ -1305,8 +1411,10 @@ namespace EventStore.Core {
 				_unbuffered,
 				_writethrough,
 				_chunkInitialReaderCount,
+				ComputeTFChunkMaxReaderCount(_chunkInitialReaderCount, _readerThreadsCount),
 				_optimizeIndexMerge,
 				_reduceFileCachePressure,
+				_maxTruncation,
 				_log);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1321,10 +1429,9 @@ namespace EventStore.Core {
 				_internalHttp,
 				_externalHttp,
 				_gossipAdvertiseInfo,
-				_intHttpPrefixes.ToArray(),
-				_extHttpPrefixes.ToArray(),
 				_enableTrustedAuth,
 				_certificate,
+				_trustedRootCerts,
 				_workerThreads,
 				_discoverViaDns,
 				_clusterDns,
@@ -1335,14 +1442,14 @@ namespace EventStore.Core {
 				_commitAckCount,
 				_prepareTimeout,
 				_commitTimeout,
-				_useSsl,
-				_disableInsecureTCP,
-				_sslTargetHost,
-				_sslValidateServer,
+				_writeTimeout,
+				_disableInternalTls,
+				_disableExternalTls,
 				_statsPeriod,
 				_statsStorage,
 				_nodePriority,
 				_authenticationProviderFactory,
+				_authorizationProviderFactory,
 				_disableScavengeMerging,
 				_scavengeHistoryMaxAge,
 				_adminOnPublic,
@@ -1355,6 +1462,7 @@ namespace EventStore.Core {
 				_intTcpHeartbeatInterval,
 				_extTcpHeartbeatTimeout,
 				_extTcpHeartbeatInterval,
+				_deadMemberRemovalPeriod,
 				!_skipVerifyDbHashes,
 				_maxMemtableSize,
 				_hashCollisionReadLimit,
@@ -1362,7 +1470,8 @@ namespace EventStore.Core {
 				_disableHTTPCaching,
 				_logHttpRequests,
 				_connectionPendingSendBytesThreshold,
-				_chunkInitialReaderCount,
+				_connectionQueueSizeThreshold,
+				ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, _readerThreadsCount),
 				_index,
 				_enableHistograms,
 				_skipIndexVerify,
@@ -1371,7 +1480,6 @@ namespace EventStore.Core {
 				_optimizeIndexMerge,
 				consumerStrategies,
 				_unsafeIgnoreHardDelete,
-				_betterOrdering,
 				_readerThreadsCount,
 				_alwaysKeepScavenged,
 				_gossipOnSingleNode,
@@ -1379,28 +1487,57 @@ namespace EventStore.Core {
 				_reduceFileCachePressure,
 				_initializationThreads,
 				_faultOutOfOrderProjections,
-				_structuredLog,
-				_maxAutoMergeIndexLevel);
+				_maxAutoMergeIndexLevel,
+				_disableFirstLevelHttpAuthorization,
+				_logFailedAuthenticationAttempts,
+				_maxTruncation,
+				_readOnlyReplica,
+				_maxAppendSize,
+				_unsafeAllowSurplusNodes,
+				_enableExternalTCP,
+				_enableAtomPubOverHTTP);
 
-			var infoController = new InfoController(options, _projectionType);
+			var infoController = new InfoController(options, new Dictionary<string, bool> {
+				{"projections", _projectionType != ProjectionType.None},
+				{"userManagement", _authenticationProviderIsInternal},
+			});
 
 			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = _db.Config.ChaserCheckpoint.Read();
 			var epochCheckpoint = _db.Config.EpochCheckpoint.Read();
 			var truncateCheckpoint = _db.Config.TruncateCheckpoint.Read();
 
-			_log.Info("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
-			_log.Info("{description,-25} {path}", "DATABASE:", _db.Config.Path);
-			_log.Info("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
+			_log.Information("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
+			_log.Information("{description,-25} {path}", "DATABASE:", _db.Config.Path);
+			_log.Information("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
 				writerCheckpoint, writerCheckpoint);
-			_log.Info("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
+			_log.Information("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
 				chaserCheckpoint, chaserCheckpoint);
-			_log.Info("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
+			_log.Information("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
 				epochCheckpoint, epochCheckpoint);
-			_log.Info("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
+			_log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
 				truncateCheckpoint, truncateCheckpoint);
 
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
+		}
+
+		private int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {
+			var ptableMaxReaderCount = 1 /* StorageWriter */
+			                           + 1 /* StorageChaser */
+			                           + 1 /* Projections */
+			                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+			                           + 1 /* Subscription LinkTos resolving */
+			                           + readerThreadsCount
+			                           + 5 /* just in case reserve :) */;
+			return Math.Max(ptableMaxReaderCount, ptableInitialReaderCount);
+		}
+
+		private int ComputeTFChunkMaxReaderCount(int tfChunkInitialReaderCount, int readerThreadsCount) {
+			var tfChunkMaxReaderCount = ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, readerThreadsCount)
+                                            + 2 /* for caching/uncaching, populating midpoints */
+                                            + 1 /* for epoch manager usage of elections/replica service */
+                                            + 1 /* for epoch manager usage of leader replication service */;
+			return Math.Max(tfChunkMaxReaderCount, tfChunkInitialReaderCount);
 		}
 
 
@@ -1411,7 +1548,7 @@ namespace EventStore.Core {
 			} else {
 				if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1) {
 					throw new Exception("DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-					                    + "Specify gossip seeds using the `GossipSeed` option.");
+										+ "Specify gossip seeds using the `GossipSeed` option.");
 				}
 
 				if (_gossipSeeds == null)
@@ -1430,14 +1567,18 @@ namespace EventStore.Core {
 			bool unbuffered,
 			bool writethrough,
 			int chunkInitialReaderCount,
+			int chunkMaxReaderCount,
 			bool optimizeReadSideCache,
 			bool reduceFileCachePressure,
+			long maxTruncation,
 			ILogger log) {
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
+			//todo(clc) : promote these to file backed checkpoints re:project-io
 			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+			ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
 			if (inMemDb) {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
@@ -1449,11 +1590,11 @@ namespace EventStore.Core {
 						Directory.CreateDirectory(dbPath);
 				} catch (UnauthorizedAccessException) {
 					if (dbPath == Locations.DefaultDataDirectory) {
-						log.Info(
+						log.Information(
 							"Access to path {dbPath} denied. The Event Store database will be created in {fallbackDefaultDataDirectory}",
 							dbPath, Locations.FallbackDefaultDataDirectory);
 						dbPath = Locations.FallbackDefaultDataDirectory;
-						log.Info("Defaulting DB Path to {dbPath}", dbPath);
+						log.Information("Defaulting DB Path to {dbPath}", dbPath);
 
 						if (!Directory.Exists(dbPath)) // mono crashes without this check
 							Directory.CreateDirectory(dbPath);
@@ -1466,20 +1607,12 @@ namespace EventStore.Core {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				if (Runtime.IsMono) {
-					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true,
-						initValue: -1);
-				} else {
-					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
-						initValue: -1);
-					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-						cached: true, initValue: -1);
-				}
+				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+					initValue: -1);
+				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+					cached: true, initValue: -1);
 			}
 
 			var cache = cachedChunks >= 0
@@ -1495,14 +1628,21 @@ namespace EventStore.Core {
 				epochChk,
 				truncateChk,
 				replicationChk,
+				indexChk,
 				chunkInitialReaderCount,
+				chunkMaxReaderCount,
 				inMemDb,
 				unbuffered,
 				writethrough,
 				optimizeReadSideCache,
-				reduceFileCachePressure);
+				reduceFileCachePressure,
+				maxTruncation);
 
 			return nodeConfig;
+		}
+
+		public void WithUnsafeAllowSurplusNodes() {
+			_unsafeAllowSurplusNodes = true;
 		}
 	}
 }

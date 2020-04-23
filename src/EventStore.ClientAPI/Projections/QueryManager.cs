@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Common.Utils.Threading;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.ClientAPI.Projections {
@@ -22,10 +24,11 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="httpEndPoint">HTTP endpoint of an Event Store server.</param>
 		/// <param name="projectionOperationTimeout">Timeout of projection API operations</param>
 		/// <param name="queryTimeout">Timeout of query execution</param>
+		/// <param name="httpMessageHandler">An <see cref="HttpMessageHandler"/> to use in the <see cref="HttpClient"/>.</param>
 		public QueryManager(ILogger log, EndPoint httpEndPoint, TimeSpan projectionOperationTimeout,
-			TimeSpan queryTimeout) {
+			TimeSpan queryTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_queryTimeout = queryTimeout;
-			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout);
+			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, httpMessageHandler);
 		}
 
 		/// <summary>
@@ -42,12 +45,14 @@ namespace EventStore.ClientAPI.Projections {
 		/// <returns>String of JSON containing query result.</returns>
 		public async Task<string> ExecuteAsync(string name, string query, TimeSpan initialPollingDelay,
 			TimeSpan maximumPollingDelay, UserCredentials userCredentials = null) {
-			return await Task.Run(async () => {
+			return await ExecuteAsyncInternal().WithTimeout(_queryTimeout).ConfigureAwait(false);
+
+			async Task<string> ExecuteAsyncInternal() {
 				await _projectionsManager.CreateTransientAsync(name, query, userCredentials).ConfigureAwait(false);
 				await WaitForCompletedAsync(name, initialPollingDelay, maximumPollingDelay, userCredentials)
 					.ConfigureAwait(false);
 				return await _projectionsManager.GetStateAsync(name, userCredentials).ConfigureAwait(false);
-			}).WithTimeout(_queryTimeout).ConfigureAwait(false);
+			}
 		}
 
 		private async Task WaitForCompletedAsync(string name, TimeSpan initialPollingDelay,

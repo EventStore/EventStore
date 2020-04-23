@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -20,6 +19,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
@@ -30,10 +30,10 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WriteDelete>,
 		IHandle<StorageMessage.WriteTransactionStart>,
 		IHandle<StorageMessage.WriteTransactionData>,
-		IHandle<StorageMessage.WriteTransactionPrepare>,
+		IHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 
 		protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
@@ -80,7 +80,8 @@ namespace EventStore.Core.Services.Storage {
 			TFChunkDb db,
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
-			IEpochManager epochManager) {
+			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -104,6 +105,7 @@ namespace EventStore.Core.Services.Storage {
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
+				queueStatsManager,
 				true,
 				TimeSpan.FromMilliseconds(500));
 			_tasks.Add(StorageWriterQueue.Start());
@@ -116,7 +118,7 @@ namespace EventStore.Core.Services.Storage {
 			SubscribeToMessage<StorageMessage.WriteDelete>();
 			SubscribeToMessage<StorageMessage.WriteTransactionStart>();
 			SubscribeToMessage<StorageMessage.WriteTransactionData>();
-			SubscribeToMessage<StorageMessage.WriteTransactionPrepare>();
+			SubscribeToMessage<StorageMessage.WriteTransactionEnd>();
 			SubscribeToMessage<StorageMessage.WriteCommit>();
 		}
 
@@ -132,7 +134,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageWriterQueue.Publish(message);
 
 			if (message is SystemMessage.BecomeShuttingDown)
-				// we need to handle this message on main thread to stop StorageWriterQueue
+			// we need to handle this message on main thread to stop StorageWriterQueue
 			{
 				StorageWriterQueue.Stop();
 				BlockWriter = true;
@@ -142,12 +144,12 @@ namespace EventStore.Core.Services.Storage {
 
 		private void CommonHandle(Message message) {
 			if (BlockWriter && !(message is SystemMessage.StateChangeMessage)) {
-				Log.Trace("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
-				Log.Trace("{message}", message);
+				Log.Verbose("Blocking message {message} in StorageWriterService. Message:", message.GetType().Name);
+				Log.Verbose("{message}", message);
 				return;
 			}
 
-			if (_vnodeState != VNodeState.Master && message is StorageMessage.IMasterWriteMessage) {
+			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.ResigningLeader && message is StorageMessage.ILeaderWriteMessage) {
 				Log.Fatal("{message} appeared in StorageWriter during state {vnodeStrate}.", message.GetType().Name,
 					_vnodeState);
 				var msg = String.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name,
@@ -160,7 +162,7 @@ namespace EventStore.Core.Services.Storage {
 				_writerBus.Handle(message);
 			} catch (Exception exc) {
 				BlockWriter = true;
-				Log.FatalException(exc, "Unexpected error in StorageWriterService. Terminating the process...");
+				Log.Fatal(exc, "Unexpected error in StorageWriterService. Terminating the process...");
 				Application.Exit(ExitCode.Error,
 					string.Format("Unexpected error in StorageWriterService: {0}", exc.Message));
 			}
@@ -174,30 +176,32 @@ namespace EventStore.Core.Services.Storage {
 			_vnodeState = message.State;
 
 			switch (message.State) {
-				case VNodeState.Master: {
-					_indexWriter.Reset();
-					EpochManager.WriteNewEpoch(); // forces flush
-					break;
-				}
+				case VNodeState.Leader: {
+						_indexWriter.Reset();
+						EpochManager.WriteNewEpoch(); // forces flush
+						break;
+					}
 				case VNodeState.ShuttingDown: {
-					Writer.Close();
-					break;
-				}
+						Writer.Close();
+						break;
+					}
 			}
 		}
 
 		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
-			if (_vnodeState == VNodeState.PreMaster)
+			if (_vnodeState == VNodeState.PreLeader)
 				return;
-			if (_vnodeState != VNodeState.Master)
-				throw new Exception(string.Format("New Epoch request not in master state. State: {0}.", _vnodeState));
+			if (_vnodeState != VNodeState.Leader)
+				throw new Exception(string.Format("New Epoch request not in leader state. State: {0}.", _vnodeState));
 			EpochManager.WriteNewEpoch();
 			PurgeNotProcessedInfo();
 		}
 
 		void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message) {
 			// if we are in states, that doesn't need to wait for chaser, ignore
-			if (_vnodeState != VNodeState.PreMaster && _vnodeState != VNodeState.PreReplica)
+			if (_vnodeState != VNodeState.PreLeader &&
+				_vnodeState != VNodeState.PreReplica &&
+				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
 			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed())
@@ -205,7 +209,7 @@ namespace EventStore.Core.Services.Storage {
 
 			var sw = Stopwatch.StartNew();
 			while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() &&
-			       sw.Elapsed < WaitForChaserSingleIterationTimeout) {
+				   sw.Elapsed < WaitForChaserSingleIterationTimeout) {
 				Thread.Sleep(1);
 			}
 
@@ -224,7 +228,7 @@ namespace EventStore.Core.Services.Storage {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 
 			try {
-				if (msg.LiveUntil < DateTime.UtcNow)
+				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
 				string streamId = msg.EventStreamId;
@@ -270,7 +274,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				bool softUndeleteMetastream = SystemStreams.IsMetastream(streamId)
-				                              && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(streamId));
+											  && _indexWriter.IsSoftDeleted(SystemStreams.OriginalStreamOf(streamId));
 
 				_indexWriter.PreCommit(prepares);
 
@@ -279,7 +283,7 @@ namespace EventStore.Core.Services.Storage {
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(streamId);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -299,7 +303,7 @@ namespace EventStore.Core.Services.Storage {
 			SoftUndeleteStream(streamId, rawInfo.MetaLastEventNumber, rawInfo.RawMeta, recreateFromEventNumber);
 		}
 
-		private void SoftUndeleteStream(string streamId, long metaLastEventNumber, byte[] rawMeta, long recreateFrom) {
+		private void SoftUndeleteStream(string streamId, long metaLastEventNumber, ReadOnlyMemory<byte> rawMeta, long recreateFrom) {
 			byte[] modifiedMeta;
 			if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
 				return;
@@ -311,12 +315,12 @@ namespace EventStore.Core.Services.Storage {
 					PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
 					SystemEventTypes.StreamMetadata, modifiedMeta, Empty.ByteArray));
 
-			_indexWriter.PreCommit(new[] {res.Prepare});
+			_indexWriter.PreCommit(new[] { res.Prepare });
 		}
 
-		public bool SoftUndeleteRawMeta(byte[] rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
+		public bool SoftUndeleteRawMeta(ReadOnlyMemory<byte> rawMeta, long recreateFromEventNumber, out byte[] modifiedMeta) {
 			try {
-				var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta));
+				var jobj = JObject.Parse(Encoding.UTF8.GetString(rawMeta.Span));
 				jobj[SystemMetadata.TruncateBefore] = recreateFromEventNumber;
 				using (var memoryStream = new MemoryStream()) {
 					using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream))) {
@@ -335,13 +339,13 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteDelete>.Handle(StorageMessage.WriteDelete message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				if (message.LiveUntil < DateTime.UtcNow)
+				if (message.CancellationToken.IsCancellationRequested)
 					return;
 
 				var eventId = Guid.NewGuid();
 
 				var commitCheck = _indexWriter.CheckCommit(message.EventStreamId, message.ExpectedVersion,
-					new[] {eventId});
+					new[] { eventId });
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;
@@ -353,23 +357,23 @@ namespace EventStore.Core.Services.Storage {
 					var record = LogRecord.DeleteTombstone(Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
 						eventId, message.EventStreamId, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
-					_indexWriter.PreCommit(new[] {res.Prepare});
+					_indexWriter.PreCommit(new[] { res.Prepare });
 				} else {
 					// SOFT DELETE
 					var metastreamId = SystemStreams.MetastreamOf(message.EventStreamId);
 					var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
 					var logPosition = Writer.Checkpoint.ReadNonFlushed();
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
-					                           PrepareFlags.IsJson;
+											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(logPosition, message.CorrelationId, eventId, logPosition, 0,
 							metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
 							data, null));
-					_indexWriter.PreCommit(new[] {res.Prepare});
+					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -392,7 +396,7 @@ namespace EventStore.Core.Services.Storage {
 				_indexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos,
 					new TransactionInfo(-1, message.EventStreamId));
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -431,14 +435,14 @@ namespace EventStore.Core.Services.Storage {
 					_indexWriter.UpdateTransactionInfo(message.TransactionId, lastLogPosition, info);
 				}
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
 			}
 		}
 
-		void IHandle<StorageMessage.WriteTransactionPrepare>.Handle(StorageMessage.WriteTransactionPrepare message) {
+		void IHandle<StorageMessage.WriteTransactionEnd>.Handle(StorageMessage.WriteTransactionEnd message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
 				if (message.LiveUntil < DateTime.UtcNow)
@@ -455,7 +459,7 @@ namespace EventStore.Core.Services.Storage {
 					transactionInfo.EventStreamId);
 				WritePrepareWithRetry(record);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -493,9 +497,9 @@ namespace EventStore.Core.Services.Storage {
 					commitCheck.CurrentVersion + 1));
 
 				bool softUndeleteMetastream = SystemStreams.IsMetastream(commitCheck.EventStreamId)
-				                              &&
-				                              _indexWriter.IsSoftDeleted(
-					                              SystemStreams.OriginalStreamOf(commitCheck.EventStreamId));
+											  &&
+											  _indexWriter.IsSoftDeleted(
+												  SystemStreams.OriginalStreamOf(commitCheck.EventStreamId));
 
 				_indexWriter.PreCommit(commit);
 
@@ -504,7 +508,7 @@ namespace EventStore.Core.Services.Storage {
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(commitCheck.EventStreamId);
 			} catch (Exception exc) {
-				Log.ErrorException(exc, "Exception in writer.");
+				Log.Error(exc, "Exception in writer.");
 				throw;
 			} finally {
 				Flush();
@@ -523,7 +527,8 @@ namespace EventStore.Core.Services.Storage {
 					envelope.ReplyWith(new StorageMessage.AlreadyCommitted(correlationId,
 						result.EventStreamId,
 						result.StartEventNumber,
-						result.EndEventNumber));
+						result.EndEventNumber,
+						result.IdempotentLogPosition));
 					break;
 				case CommitDecision.CorruptedIdempotency:
 					// in case of corrupted idempotency (part of transaction is ok, other is different)
@@ -534,6 +539,7 @@ namespace EventStore.Core.Services.Storage {
 					envelope.ReplyWith(new StorageMessage.InvalidTransaction(correlationId));
 					break;
 				case CommitDecision.IdempotentNotReady:
+					//TODO(clc): when we have the pre-index we should be able to get the logPosition from the pre-index and allow the transaction to wait for the cluster commit
 					//just drop the write and wait for the client to retry
 					Log.Debug("Dropping idempotent write to stream {@stream}, startEventNumber: {@startEventNumber}, endEventNumber: {@endEventNumber} since the original write has not yet been replicated.", result.EventStreamId, result.StartEventNumber, result.EndEventNumber);
 					break;
@@ -629,7 +635,7 @@ namespace EventStore.Core.Services.Storage {
 				_statIndex = (_statIndex + 1) & (LastStatsCount - 1);
 
 				PurgeNotProcessedInfo();
-
+				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 				return true;
 			}
 

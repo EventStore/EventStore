@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -22,9 +21,9 @@ namespace EventStore.Projections.Core {
 			ProjectionsStandardComponents projectionsStandardComponents,
 			IDictionary<Guid, IPublisher> queues,
 			TimeSpan projectionQueryExpiry) {
-			IQueuedHandler inputQueue = projectionsStandardComponents.MasterInputQueue;
-			InMemoryBus outputBus = projectionsStandardComponents.MasterOutputBus;
-			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue));
+			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
+			InMemoryBus outputBus = projectionsStandardComponents.LeaderOutputBus;
+			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
 
 			var projectionsController = new ProjectionsController(
 				standardComponents.HttpForwarder,
@@ -32,7 +31,7 @@ namespace EventStore.Projections.Core {
 				standardComponents.NetworkSendService);
 
 			var forwarder = new RequestResponseQueueForwarder(
-				inputQueue: projectionsStandardComponents.MasterInputQueue,
+				inputQueue: projectionsStandardComponents.LeaderInputQueue,
 				externalRequestQueue: standardComponents.MainQueue);
 
 			if (projectionsStandardComponents.RunProjections != ProjectionType.None) {
@@ -41,10 +40,7 @@ namespace EventStore.Projections.Core {
 				}
 			}
 
-			var commandWriter = new MultiStreamMessageWriter(ioDispatcher);
-			var projectionManagerCommandWriter = new ProjectionManagerCommandWriter(commandWriter);
-			var projectionManagerResponseReader = new ProjectionManagerResponseReader(outputBus, ioDispatcher,
-				queues.Count);
+			var projectionManagerMessageDispatcher = new ProjectionManagerMessageDispatcher(queues);
 
 			var projectionManager = new ProjectionManager(
 				inputQueue,
@@ -56,12 +52,11 @@ namespace EventStore.Projections.Core {
 				projectionQueryExpiry);
 
 			SubscribeMainBus(
-				projectionsStandardComponents.MasterMainBus,
+				projectionsStandardComponents.LeaderMainBus,
 				projectionManager,
 				projectionsStandardComponents.RunProjections,
-				projectionManagerResponseReader,
 				ioDispatcher,
-				projectionManagerCommandWriter);
+				projectionManagerMessageDispatcher);
 
 
 			SubscribeOutputBus(standardComponents, projectionsStandardComponents, forwarder);
@@ -71,14 +66,11 @@ namespace EventStore.Projections.Core {
 			ISubscriber mainBus,
 			ProjectionManager projectionManager,
 			ProjectionType runProjections,
-			ProjectionManagerResponseReader projectionManagerResponseReader,
 			IODispatcher ioDispatcher,
-			ProjectionManagerCommandWriter projectionManagerCommandWriter) {
-			mainBus.Subscribe<SystemMessage.StateChangeMessage>(projectionManager);
-			mainBus.Subscribe<SystemMessage.SystemCoreReady>(projectionManager);
-			mainBus.Subscribe<SystemMessage.EpochWritten>(projectionManager);
+			ProjectionManagerMessageDispatcher projectionManagerMessageDispatcher) {
 			if (runProjections >= ProjectionType.System) {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Post>(projectionManager);
+				mainBus.Subscribe<ProjectionManagementMessage.Command.PostBatch>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateQuery>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.GetQuery>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Delete>(projectionManager);
@@ -90,13 +82,10 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Abort>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.SetRunAs>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.Reset>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.Command.StartSlaveProjections>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.GetConfig>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Command.UpdateConfig>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(projectionManager);
 				mainBus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.RegisterSystemProjection>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Started>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Stopped>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.Faulted>(projectionManager);
@@ -104,10 +93,8 @@ namespace EventStore.Projections.Core {
 				mainBus.Subscribe<CoreProjectionStatusMessage.StateReport>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.ResultReport>(projectionManager);
 				mainBus.Subscribe<CoreProjectionStatusMessage.StatisticsReport>(projectionManager);
-				mainBus.Subscribe<CoreProjectionManagementMessage.SlaveProjectionReaderAssigned>(projectionManager);
-				mainBus.Subscribe<CoreProjectionStatusMessage.ProjectionWorkerStarted>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.ReaderReady>(projectionManager);
-				mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerResponseReader);
+				mainBus.Subscribe<ProjectionSubsystemMessage.StartComponents>(projectionManager);
+				mainBus.Subscribe<ProjectionSubsystemMessage.StopComponents>(projectionManager);
 			}
 
 			mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(projectionManager);
@@ -122,33 +109,20 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe(ioDispatcher.Writer);
 			mainBus.Subscribe(ioDispatcher);
 
-			mainBus.Subscribe<ProjectionManagementMessage.Starting>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepareSlave>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.Start>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.Stop>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.Kill>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.Dispose>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.GetState>(projectionManagerCommandWriter);
-			mainBus.Subscribe<CoreProjectionManagementMessage.GetResult>(projectionManagerCommandWriter);
-			mainBus.Subscribe<ProjectionManagementMessage.SlaveProjectionsStarted>(projectionManagerCommandWriter);
+			mainBus.Subscribe(projectionManagerMessageDispatcher);
 		}
 
 		private static void SubscribeOutputBus(
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents,
 			RequestResponseQueueForwarder forwarder) {
-			var managerOutput = projectionsStandardComponents.MasterOutputBus;
+			var managerOutput = projectionsStandardComponents.LeaderOutputBus;
 			managerOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
 			managerOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 			managerOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
-			managerOutput.Subscribe(
-				Forwarder.Create<ProjectionManagementMessage.RequestSystemProjections>(standardComponents.MainQueue));
-			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.MasterInputQueue));
+			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.LeaderInputQueue));
 
 			managerOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
 			managerOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));
@@ -158,18 +132,18 @@ namespace EventStore.Projections.Core {
 
 			// self forward all
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.StateChangeMessage>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.SystemCoreReady>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
-				Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.MasterInputQueue));
+				Forwarder.Create<SystemMessage.EpochWritten>(projectionsStandardComponents.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStarted>(projectionsStandardComponents
-					.MasterInputQueue));
+					.LeaderInputQueue));
 			standardComponents.MainBus.Subscribe(
 				Forwarder.Create<ProjectionCoreServiceMessage.SubComponentStopped>(projectionsStandardComponents
-					.MasterInputQueue));
-			projectionsStandardComponents.MasterMainBus.Subscribe(new UnwrapEnvelopeHandler());
+					.LeaderInputQueue));
+			projectionsStandardComponents.LeaderMainBus.Subscribe(new UnwrapEnvelopeHandler());
 		}
 	}
 }

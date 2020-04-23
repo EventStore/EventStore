@@ -1,13 +1,14 @@
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IReadIndex {
-		long LastCommitPosition { get; }
-		long LastReplicatedPosition { get; }
-		IIndexWriter IndexWriter { get; }
-
-		void Init(long buildToPosition);
+		long LastIndexedPosition { get; }
+		
+		IIndexWriter IndexWriter { get; }		
+				
 		ReadIndexStats GetStatistics();
 
 		IndexReadEventResult ReadEvent(string streamId, long eventNumber);
@@ -26,12 +27,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// </summary>
 		IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
+		/// <summary>
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsForwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
+
+		/// <summary>
+		/// Returns event records whose eventType matches the given EventFilter in the sequence they were committed into TF.
+		/// Positions is specified as pre-positions (pointer at the beginning of the record).
+		/// </summary>
+		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
+			IEventFilter eventFilter);
+
 		bool IsStreamDeleted(string streamId);
 		long GetStreamLastEventNumber(string streamId);
 		StreamMetadata GetStreamMetadata(string streamId);
-
+		StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId);
 		string GetEventStreamIdByTransactionId(long transactionId);
-		StreamAccess CheckStreamAccess(string streamId, StreamAccessType streamAccessType, IPrincipal user);
 
 		void Close();
 		void Dispose();

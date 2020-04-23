@@ -8,23 +8,23 @@ using EventStore.ClientAPI.SystemData;
 namespace EventStore.ClientAPI.ClientOperations {
 	internal class
 		StartTransactionOperation : OperationBase<EventStoreTransaction, ClientMessage.TransactionStartCompleted> {
-		private readonly bool _requireMaster;
+		private readonly bool _requireLeader;
 		private readonly string _stream;
 		private readonly long _expectedVersion;
 		private readonly IEventStoreTransactionConnection _parentConnection;
 
 		public StartTransactionOperation(ILogger log, TaskCompletionSource<EventStoreTransaction> source,
-			bool requireMaster, string stream, long expectedVersion, IEventStoreTransactionConnection parentConnection,
+			bool requireLeader, string stream, long expectedVersion, IEventStoreTransactionConnection parentConnection,
 			UserCredentials userCredentials)
 			: base(log, source, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted, userCredentials) {
-			_requireMaster = requireMaster;
+			_requireLeader = requireLeader;
 			_stream = stream;
 			_expectedVersion = expectedVersion;
 			_parentConnection = parentConnection;
 		}
 
 		protected override object CreateRequestDto() {
-			return new ClientMessage.TransactionStart(_stream, _expectedVersion, _requireMaster);
+			return new ClientMessage.TransactionStart(_stream, _expectedVersion, _requireLeader);
 		}
 
 		protected override InspectionResult InspectResponse(ClientMessage.TransactionStartCompleted response) {

@@ -1,10 +1,13 @@
 using System;
 using System.Linq;
 using System.Net;
-using EventStore.Common.Utils;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
@@ -13,11 +16,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private const int ManagerPort = 1001;
 		private const int StartingPort = 1002;
 
-		private static ClusterVNodeSettings CreateVNode(int nodeNumber) {
+		private static ClusterVNodeSettings CreateVNode(int nodeNumber, bool isReadOnlyReplica) {
 			int tcpIntPort = StartingPort + nodeNumber * 2,
 				tcpExtPort = tcpIntPort + 1,
 				httpIntPort = tcpIntPort + 10,
 				httpExtPort = tcpIntPort + 11;
+
+			var certificate = ssl_connections.GetServerCertificate();
+			var trustedRootCertificate = ssl_connections.GetRootCertificate();
 
 			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
 				GetLoopbackForPort(tcpIntPort), null,
@@ -28,19 +34,25 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					GetLoopbackForPort(httpIntPort),
 					GetLoopbackForPort(httpExtPort),
 					null, null, 0, 0),
-				new[] {GetLoopbackForPort(httpIntPort).ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)},
-				new[] {GetLoopbackForPort(httpExtPort).ToHttpUrl(EndpointExtensions.HTTP_SCHEMA)},
-				false, null, 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
+				false, certificate, new X509Certificate2Collection(trustedRootCertificate), 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2), false, false, null, false, TimeSpan.FromHours(1),
-				StatsStorage.StreamAndFile, 0, new InternalAuthenticationProviderFactory(), false, 30, true, true, true,
-				TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+				TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), false, false,TimeSpan.FromHours(1),
+				StatsStorage.StreamAndFile, 0,
+				new AuthenticationProviderFactory(components =>
+					new InternalAuthenticationProviderFactory(components)),
+				new AuthorizationProviderFactory(components =>
+					new LegacyAuthorizationProviderFactory(components.MainQueue)), false, 30, true, true,
+				true, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10),
-				TimeSpan.FromSeconds(10), true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
+				TimeSpan.FromSeconds(10), 
+				TimeSpan.FromSeconds(1800),
+				true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
 				false, false,
-				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ChunkInitialReaderCountDefault);
+				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
+				Constants.PTableMaxReaderCountDefault,
+				readOnlyReplica: isReadOnlyReplica);
 
 			return vnode;
 		}
@@ -49,13 +61,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			return new IPEndPoint(IPAddress.Loopback, port);
 		}
 
-		public ClusterSettings GetClusterSettings(int selfIndex, int nodesCount) {
+		public ClusterSettings GetClusterSettings(int selfIndex, int nodesCount, bool isSelfReadOnlyReplica) {
 			if (selfIndex < 0 || selfIndex >= nodesCount)
 				throw new ArgumentOutOfRangeException("selfIndex", "Index of self should be in range of created nodes");
 
 
 			var clusterManager = GetLoopbackForPort(ManagerPort);
-			var nodes = Enumerable.Range(0, nodesCount).Select(CreateVNode).ToArray();
+			var nodes = Enumerable.Range(0, nodesCount).Select(x =>
+				x == selfIndex ? CreateVNode(x, isSelfReadOnlyReplica) : CreateVNode(x, false)).ToArray();
 
 			var self = nodes[selfIndex];
 			var others = nodes.Where((x, i) => i != selfIndex).ToArray();

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -28,8 +29,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_filename = GetTempFilePath();
 			_copiedfilename = GetTempFilePath();
@@ -51,21 +52,16 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				mtable.Add(streamId, eventNumber, logPosition);
 			}
 
-			_table = PTable.FromMemtable(mtable, _filename, skipIndexVerify: _skipIndexVerify);
+			_table = PTable.FromMemtable(mtable, _filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 			_table.Dispose();
 			File.Copy(_filename, _copiedfilename);
-		}
-
-		[TearDown]
-		public override void TearDown() {
-			base.TearDown();
 		}
 
 		[Test]
 		public void same_midpoints_are_loaded_when_enabling_or_disabling_index_verification() {
 			for (int depth = 2; depth <= 20; depth++) {
-				var ptableWithMD5Verification = PTable.FromFile(_copiedfilename, depth, false);
-				var ptableWithoutVerification = PTable.FromFile(_copiedfilename, depth, true);
+				var ptableWithMD5Verification = PTable.FromFile(_copiedfilename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, false);
+				var ptableWithoutVerification = PTable.FromFile(_copiedfilename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, true);
 				var midPoints1 = ptableWithMD5Verification.GetMidPoints();
 				var midPoints2 = ptableWithoutVerification.GetMidPoints();
 

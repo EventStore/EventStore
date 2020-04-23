@@ -1,6 +1,5 @@
 using System;
 using System.Xml.Linq;
-using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -11,17 +10,19 @@ using Newtonsoft.Json.Linq;
 using Formatting = Newtonsoft.Json.Formatting;
 using System.Linq;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public static class AutoEventConverter {
-		private static readonly ILogger Log = LogManager.GetLogger("AutoEventConverter");
+		private static readonly ILogger Log =
+			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "AutoEventConverter");
 
 		public static object SmartFormat(ResolvedEvent evnt, ICodec targetCodec) {
 			var dto = CreateDataDto(evnt);
 
 			switch (targetCodec.ContentType) {
 				case ContentType.Raw:
-					return evnt.Event.Data;
+					return evnt.Event.Data.ToArray();
 				case ContentType.Xml:
 				case ContentType.ApplicationXml: {
 					var serializeObject = JsonConvert.SerializeObject(dto.data);
@@ -137,7 +138,7 @@ namespace EventStore.Core.Services.Transport.Http {
 //                var dynamicEvents = root.ToObject<HttpClientMessageDto.WriteEventsDynamic>();
 //                return dynamicEvents.events;
 			} catch (Exception e) {
-				Log.InfoException(e, "Failed to load xml. Invalid format");
+				Log.Information(e, "Failed to load xml. Invalid format");
 				return null;
 			}
 		}

@@ -7,7 +7,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
@@ -15,6 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.Collections.Concurrent;
 using EventStore.Core.TransactionLog.Unbuffered;
+using ILogger = Serilog.ILogger;
 
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
@@ -29,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		public const int WriteBufferSize = 8192;
 		public const int ReadBufferSize = 8192;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunk>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunk>();
 
 		public bool IsReadOnly {
 			get { return _isReadOnly; }
@@ -138,8 +138,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromCompletedFile(string filename, bool verifyHash, bool unbufferedRead,
-			int initialReaderCount, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
-			var chunk = new TFChunk(filename, initialReaderCount, ESConsts.TFChunkMaxReaderCount,
+			int initialReaderCount, int maxReaderCount, bool optimizeReadSideCache = false, bool reduceFileCachePressure = false) {
+			var chunk = new TFChunk(filename, initialReaderCount, maxReaderCount,
 				TFConsts.MidpointsDepth, false, unbufferedRead, false, reduceFileCachePressure);
 			try {
 				chunk.InitCompleted(verifyHash, optimizeReadSideCache);
@@ -152,10 +152,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize, bool unbuffered,
-			bool writethrough, int initialReaderCount, bool reduceFileCachePressure) {
+			bool writethrough, int initialReaderCount, int maxReaderCount, bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
-				ESConsts.TFChunkMaxReaderCount,
+				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				false,
 				unbuffered,
@@ -179,11 +179,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			int initialReaderCount,
+			int maxReaderCount,
 			bool reduceFileCachePressure) {
 			var size = GetAlignedSize(chunkSize + ChunkHeader.Size + ChunkFooter.Size);
 			var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkStartNumber, chunkEndNumber,
 				isScavenged, Guid.NewGuid());
-			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount,
+			return CreateWithHeader(filename, chunkHeader, size, inMem, unbuffered, writethrough, initialReaderCount, maxReaderCount,
 				reduceFileCachePressure);
 		}
 
@@ -194,10 +195,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			bool unbuffered,
 			bool writethrough,
 			int initialReaderCount,
+			int maxReaderCount,
 			bool reduceFileCachePressure) {
 			var chunk = new TFChunk(filename,
 				initialReaderCount,
-				ESConsts.TFChunkMaxReaderCount,
+				maxReaderCount,
 				TFConsts.MidpointsDepth,
 				inMem,
 				unbuffered,
@@ -304,7 +306,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			SetAttributes(_filename, false);
 			CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
-			Log.Trace("Opened ongoing {chunk} as version {version}", _filename, _chunkHeader.Version);
+			Log.Verbose("Opened ongoing {chunk} as version {version}", _filename, _chunkHeader.Version);
 			if (_chunkHeader.Version != (byte)ChunkVersions.Aligned &&
 			    _chunkHeader.Version != (byte)ChunkVersions.Unaligned)
 				throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version,
@@ -443,7 +445,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					WriteBufferSize,
 					FileOptions.SequentialScan);
 			} else {
-				Log.Trace("Using unbuffered access for TFChunk '{chunk}'...", _filename);
+				Log.Verbose("Using unbuffered access for TFChunk '{chunk}'...", _filename);
 				return UnbufferedFileStream.Create(
 					_filename,
 					FileMode.Open,
@@ -463,7 +465,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			try {
 				chunkHeader = ReadHeader(stream);
 				if (chunkHeader.Version == (byte)ChunkVersions.Unaligned) {
-					Log.Trace("Upgrading ongoing file {chunk} to version 3", _filename);
+					Log.Verbose("Upgrading ongoing file {chunk} to version 3", _filename);
 					var newHeader = new ChunkHeader((byte)ChunkVersions.Aligned,
 						chunkHeader.ChunkSize,
 						chunkHeader.ChunkStartNumber,
@@ -511,7 +513,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (!IsReadOnly)
 				throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
 
-			Log.Trace("Verifying hash for TFChunk '{chunk}'...", _filename);
+			Log.Verbose("Verifying hash for TFChunk '{chunk}'...", _filename);
 			using (var reader = AcquireReader()) {
 				reader.Stream.Seek(0, SeekOrigin.Begin);
 				var stream = reader.Stream;
@@ -603,7 +605,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (_selfdestructin54321) {
 				if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0)
 					FreeCachedData();
-				Log.Trace("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
+				Log.Verbose("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 				return;
 			}
 
@@ -623,7 +625,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			_readSide.Uncache();
 
-			Log.Trace("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
+			Log.Verbose("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
 
 			if (_selfdestructin54321)
 				TryDestructMemStreams();
@@ -682,7 +684,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				TryDestructMemStreams();
 
-				Log.Trace("UNCACHED TFChunk {chunk}.", this);
+				Log.Verbose("UNCACHED TFChunk {chunk}.", this);
 			}
 		}
 
@@ -950,7 +952,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				Helper.EatException(() => File.SetAttributes(_filename, FileAttributes.Normal));
 
 				if (_deleteFile) {
-					Log.Info("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
+					Log.Information("File {chunk} has been marked for delete and will be deleted in TryDestructFileStreams.",
 						Path.GetFileName(_filename));
 					Helper.EatException(() => File.Delete(_filename));
 				}

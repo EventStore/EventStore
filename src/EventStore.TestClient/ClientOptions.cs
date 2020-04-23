@@ -17,7 +17,6 @@ namespace EventStore.TestClient {
 
 		[ArgDescription(Opts.LogsDescr)] public string Log { get; set; }
 		[ArgDescription(Opts.ConfigsDescr)] public string Config { get; set; }
-		[ArgDescription(Opts.DefinesDescr)] public string[] Defines { get; set; }
 
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
@@ -29,13 +28,11 @@ namespace EventStore.TestClient {
 		public int ReadWindow { get; set; }
 		public int WriteWindow { get; set; }
 		public int PingWindow { get; set; }
-		[ArgDescription(Opts.ForceDescr)] public bool Force { get; set; }
 		public string[] Command { get; set; }
 		public bool Reconnect { get; set; }
 
-		public bool UseSsl { get; set; }
-		public string TargetHost { get; set; }
-		public bool ValidateServer { get; set; }
+		public bool UseTls { get; set; }
+		public bool TlsValidateServer { get; set; }
 
 		public ClientOptions() {
 			Config = "";
@@ -43,7 +40,6 @@ namespace EventStore.TestClient {
 			Help = Opts.ShowHelpDefault;
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultTestClientLogDirectory;
-			Defines = Opts.DefinesDefault;
 			WhatIf = Opts.WhatIfDefault;
 			Ip = IPAddress.Loopback;
 			TcpPort = 1113;
@@ -52,11 +48,9 @@ namespace EventStore.TestClient {
 			ReadWindow = 2000;
 			WriteWindow = 2000;
 			PingWindow = 2000;
-			Force = false;
 			Reconnect = true;
-			UseSsl = false;
-			TargetHost = "";
-			ValidateServer = false;
+			UseTls = false;
+			TlsValidateServer = false;
 		}
 	}
 }

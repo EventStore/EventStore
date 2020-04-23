@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<TimerMessage.Schedule> {
 		protected IODispatcher _ioDispatcher;
-		protected readonly IPrincipal _principal = SystemAccount.Principal;
+		protected readonly ClaimsPrincipal _principal = SystemAccounts.System;
 		protected readonly InMemoryBus _bus = InMemoryBus.CreateTest();
 
 		protected readonly IODispatcherAsync.CancellationScope _cancellationScope =
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			var _queue = QueuedHandler.CreateQueuedHandler(_bus, "TestQueuedHandler");
+			var _queue = QueuedHandler.CreateQueuedHandler(_bus,"TestQueuedHandler", new QueueStatsManager());
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_queue));
 			IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);

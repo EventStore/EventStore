@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
+using System.Security.Claims;
+using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Tests.Authentication {
 	public class with_internal_authentication_provider : TestFixtureWithExistingEvents {
@@ -21,20 +22,20 @@ namespace EventStore.Core.Tests.Authentication {
 
 			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
 			_internalAuthenticationProvider =
-				new InternalAuthenticationProvider(_ioDispatcher, passwordHashAlgorithm, 1000);
+				new InternalAuthenticationProvider(_bus, _ioDispatcher, passwordHashAlgorithm, 1000, false);
 			_bus.Subscribe(_internalAuthenticationProvider);
 		}
 	}
 
 	class TestAuthenticationRequest : AuthenticationRequest {
 		private readonly Action _unauthorized;
-		private readonly Action<IPrincipal> _authenticated;
+		private readonly Action<ClaimsPrincipal> _authenticated;
 		private readonly Action _error;
 		private readonly Action _notReady;
 
 		public TestAuthenticationRequest(string name, string suppliedPassword, Action unauthorized,
-			Action<IPrincipal> authenticated, Action error, Action notReady)
-			: base(name, suppliedPassword) {
+			Action<ClaimsPrincipal> authenticated, Action error, Action notReady)
+			: base("test", name, suppliedPassword) {
 			_unauthorized = unauthorized;
 			_authenticated = authenticated;
 			_error = error;
@@ -45,7 +46,7 @@ namespace EventStore.Core.Tests.Authentication {
 			_unauthorized();
 		}
 
-		public override void Authenticated(IPrincipal principal) {
+		public override void Authenticated(ClaimsPrincipal principal) {
 			_authenticated(principal);
 		}
 

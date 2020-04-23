@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private static readonly char[] _linkToSeparator = new[] {'@'};
 
 		public MultiStreamMultiOutputCheckpointManager(
-			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
+			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, ClaimsPrincipal runAs,
 			IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
 			ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults,
 			bool definesFold,
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_namingBuilder.GetOrderStreamName(),
 				new EmittedStream.WriterConfiguration(
 					new EmittedStreamsWriter(_ioDispatcher), new EmittedStream.WriterConfiguration.StreamMetadata(),
-					SystemAccount.Principal, 100, _logger),
+					SystemAccounts.System, 100, _logger),
 				_projectionVersion, _positionTagger, @from, _publisher, _ioDispatcher, this, noCheckpoints: true);
 		}
 
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, long fromEventNumber) {
 			_loadingPrerecordedEventsFrom = checkpointTag;
 			_ioDispatcher.ReadBackward(
-				_namingBuilder.GetOrderStreamName(), fromEventNumber, 100, false, SystemAccount.Principal,
+				_namingBuilder.GetOrderStreamName(), fromEventNumber, 100, false, SystemAccounts.System,
 				completed => {
 					switch (completed.Result) {
 						case ReadStreamResult.NoStream:
@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 							throw new Exception("Cannot read order stream");
 					}
 				}, () => {
-					_logger.Warn("Read backward of stream {stream} timed out. Retrying",
+					_logger.Warning("Read backward of stream {stream} timed out. Retrying",
 						_namingBuilder.GetOrderStreamName());
 					BeginLoadPrerecordedEventsChunk(checkpointTag, fromEventNumber);
 				}, Guid.NewGuid());
@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			//NOTE: we do manual link-to resolution as we write links to the position events
 			//      which may in turn be a link.  This is necessary to provide a correct 
 			//       ResolvedEvent when replaying from the -order stream
-			var linkTo = Helper.UTF8NoBom.GetString(@event.Data);
+			var linkTo = Helper.UTF8NoBom.GetString(@event.Data.Span);
 			string[] parts = linkTo.Split(_linkToSeparator, 2);
 			long eventNumber = long.Parse(parts[0]);
 			string streamId = parts[1];
@@ -177,8 +177,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void ReadPrerecordedEventStream(string streamId, long eventNumber,
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action) {
 			_ioDispatcher.ReadBackward(
-				streamId, eventNumber, 1, true, SystemAccount.Principal, action, () => {
-					_logger.Warn("Read backward of stream {stream} timed out. Retrying", streamId);
+				streamId, eventNumber, 1, true, SystemAccounts.System, action, () => {
+					_logger.Warning("Read backward of stream {stream} timed out. Retrying", streamId);
 					ReadPrerecordedEventStream(streamId, eventNumber, action);
 				}, Guid.NewGuid());
 		}

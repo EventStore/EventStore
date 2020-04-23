@@ -23,14 +23,6 @@ namespace EventStore.Projections.Core.Services {
 		string GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data);
 
 		/// <summary>
-		/// transforms a catalog event to streamId
-		/// </summary>
-		/// <param name="eventPosition"></param>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		string TransformCatalogEvent(CheckpointTag eventPosition, ResolvedEvent data);
-
-		/// <summary>
 		/// Processes event and updates internal state if necessary.  
 		/// </summary>
 		/// <returns>true - if event was processed (new state must be returned) </returns>

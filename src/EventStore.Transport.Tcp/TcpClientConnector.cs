@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpClientConnector {
@@ -14,7 +16,7 @@ namespace EventStore.Transport.Tcp {
 		private readonly ConcurrentDictionary<Guid, PendingConnection> _pendingConections;
 		private readonly Timer _timer;
 
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpClientConnector>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpClientConnector>();
 
 		public TcpClientConnector() {
 			_connectSocketArgsPool = new SocketArgsPool("TcpClientConnector._connectSocketArgsPool",
@@ -45,24 +47,26 @@ namespace EventStore.Transport.Tcp {
 		public ITcpConnection ConnectSslTo(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			TimeSpan connectionTimeout,
-			string targetHost,
-			bool validateServer,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			X509CertificateCollection clientCertificates,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
 			bool verbose = true) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
-			Ensure.NotNullOrEmpty(targetHost, "targetHost");
-			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint, targetHost, validateServer,
+			return TcpConnectionSsl.CreateConnectingConnection(connectionId, remoteEndPoint,sslServerCertValidator, clientCertificates,
 				this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
 		}
 
 		internal void InitConnect(IPEndPoint serverEndPoint,
+			Action<Socket> onSocketAssigned,
 			Action<IPEndPoint, Socket> onConnectionEstablished,
 			Action<IPEndPoint, SocketError> onConnectionFailed,
 			ITcpConnection connection,
 			TimeSpan connectionTimeout) {
 			if (serverEndPoint == null)
 				throw new ArgumentNullException("serverEndPoint");
+			if (onSocketAssigned == null)
+				throw new ArgumentNullException("onSocketAssigned");
 			if (onConnectionEstablished == null)
 				throw new ArgumentNullException("onConnectionEstablished");
 			if (onConnectionFailed == null)
@@ -70,6 +74,7 @@ namespace EventStore.Transport.Tcp {
 
 			var socketArgs = _connectSocketArgsPool.Get();
 			var connectingSocket = new Socket(serverEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+			onSocketAssigned(connectingSocket);
 			socketArgs.RemoteEndPoint = serverEndPoint;
 			socketArgs.AcceptSocket = connectingSocket;
 			var callbacks = (CallbacksStateToken)socketArgs.UserToken;
@@ -106,7 +111,7 @@ namespace EventStore.Transport.Tcp {
 			var onConnectionFailed = callbacks.OnConnectionFailed;
 			var pendingConnection = callbacks.PendingConnection;
 
-			Helper.EatException(() => socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs));
+			Helper.EatException(() => socketArgs.AcceptSocket.Close());
 			socketArgs.AcceptSocket = null;
 			callbacks.Reset();
 			_connectSocketArgsPool.Return(socketArgs);
@@ -146,7 +151,7 @@ namespace EventStore.Transport.Tcp {
 		private bool RemoveFromConnecting(PendingConnection pendingConnection) {
 			PendingConnection conn;
 			if (pendingConnection.Connection == null) {
-				Log.Warn("Network Card disconnected");
+				Log.Warning("Network Card disconnected");
 				return false;
 			}
 

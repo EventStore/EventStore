@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
-using EventStore.Core.Authentication;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -14,8 +14,13 @@ using Newtonsoft.Json.Linq;
 namespace EventStore.Core.Tests.Services.UserManagementService {
 	public static class user_management_service {
 		public class TestFixtureWithUserManagementService : TestFixtureWithExistingEvents {
-			protected Core.Services.UserManagement.UserManagementService _users;
-			protected readonly IPrincipal _ordinaryUser = new OpenGenericPrincipal("user1", "role1");
+			protected Core.Authentication.InternalAuthentication.UserManagementService _users;
+			protected readonly ClaimsPrincipal _ordinaryUser = new ClaimsPrincipal(new ClaimsIdentity(
+					new [] {
+						new Claim(ClaimTypes.Name,"user1"),
+						new Claim(ClaimTypes.Role,"role1")
+					}
+					, "ES-Test"));
 
 			protected override void Given() {
 				base.Given();
@@ -25,8 +30,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				NoOtherStreams();
 				AllWritesSucceed();
 
-				_users = new Core.Services.UserManagement.UserManagementService(
-					_bus, _ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true);
+				_users = new Core.Authentication.InternalAuthentication.UserManagementService(
+					_ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true, 
+					new TaskCompletionSource<bool>());
 
 				_bus.Subscribe<UserManagementMessage.Get>(_users);
 				_bus.Subscribe<UserManagementMessage.GetAll>(_users);
@@ -37,7 +43,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				_bus.Subscribe<UserManagementMessage.ResetPassword>(_users);
 				_bus.Subscribe<UserManagementMessage.ChangePassword>(_users);
 				_bus.Subscribe<UserManagementMessage.Delete>(_users);
-				_bus.Subscribe<SystemMessage.BecomeMaster>(_users);
+				_bus.Subscribe<SystemMessage.BecomeLeader>(_users);
 			}
 
 			protected override ManualQueue GiveInputQueue() {
@@ -61,7 +67,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 					.Where(
 						v =>
 							v.EventStreamId
-							== Core.Services.UserManagement.UserManagementService
+							== Core.Authentication.InternalAuthentication.UserManagementService
 								.UserPasswordNotificationsStreamId).ToArray();
 			}
 
@@ -72,7 +78,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 							v =>
 								v.EventStreamId
 								== SystemStreams.MetastreamOf(
-									Core.Services.UserManagement.UserManagementService
+									Core.Authentication.InternalAuthentication.UserManagementService
 										.UserPasswordNotificationsStreamId))
 						.ToArray();
 			}
@@ -83,7 +89,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			[Test]
@@ -102,7 +108,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void creates_an_enabled_user_account_with_correct_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -119,7 +125,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "new-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -145,7 +151,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_create_a_user_account() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -159,14 +165,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "Existing John", new[] {"admin", "other"},
+						Envelope, SystemAccounts.System, "user1", "Existing John", new[] {"admin", "other"},
 						"existing!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"bad"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"bad"}, "Johny123!");
 			}
 
 			[Test]
@@ -179,7 +185,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_override_user_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -196,7 +202,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "existing!", "new-password"));
+						Envelope, SystemAccounts.System, "user1", "existing!", "new-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -209,13 +215,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.Update(
-						Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"good"});
+						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"good"});
 			}
 
 			[Test]
@@ -234,7 +240,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void updates_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -249,7 +255,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_enabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -261,7 +267,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "new-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -274,7 +280,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
@@ -292,7 +298,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void details_are_not_changed() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -306,7 +312,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_enabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -318,7 +324,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password"));
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "new-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -335,7 +341,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.Update(
-						Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"admin", "other"});
+						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"admin", "other"});
 			}
 
 			[Test]
@@ -355,7 +361,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_create_a_user_account() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -371,14 +377,14 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
-				yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
+						replyTo, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.Update(
-						Envelope, SystemAccount.Principal, "user1", "Doe John", new[] {"good"});
+						Envelope, SystemAccounts.System, "user1", "Doe John", new[] {"good"});
 			}
 
 			[Test]
@@ -390,7 +396,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_enabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -403,11 +409,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.Disable(Envelope, SystemAccount.Principal, "user1");
+				yield return new UserManagementMessage.Disable(Envelope, SystemAccounts.System, "user1");
 			}
 
 			[Test]
@@ -420,7 +426,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void disables_user_account() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -439,7 +445,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
@@ -456,7 +462,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void user_account_is_not_disabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -470,12 +476,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
-				yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
+						replyTo, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.Disable(Envelope, SystemAccount.Principal, "user1");
+				yield return new UserManagementMessage.Disable(Envelope, SystemAccounts.System, "user1");
 			}
 
 			[Test]
@@ -488,7 +494,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void keeps_disabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -502,12 +508,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
-				yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
+						replyTo, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.Enable(Envelope, SystemAccount.Principal, "user1");
+				yield return new UserManagementMessage.Enable(Envelope, SystemAccounts.System, "user1");
 			}
 
 			[Test]
@@ -520,7 +526,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void enables_user_account() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -534,8 +540,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
-				yield return new UserManagementMessage.Disable(replyTo, SystemAccount.Principal, "user1");
+						replyTo, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+				yield return new UserManagementMessage.Disable(replyTo, SystemAccounts.System, "user1");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
@@ -552,7 +558,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void user_account_is_not_enabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -565,11 +571,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.Enable(Envelope, SystemAccount.Principal, "user1");
+				yield return new UserManagementMessage.Enable(Envelope, SystemAccounts.System, "user1");
 			}
 
 			[Test]
@@ -582,7 +588,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void keeps_enabled() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -595,12 +601,12 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
-					new UserManagementMessage.ResetPassword(Envelope, SystemAccount.Principal, "user1", "new-password");
+					new UserManagementMessage.ResetPassword(Envelope, SystemAccounts.System, "user1", "new-password");
 			}
 
 			[Test]
@@ -619,7 +625,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -633,7 +639,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "new-password", "other-password"));
+						Envelope, SystemAccounts.System, "user1", "new-password", "other-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -652,15 +658,15 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				var replyTo = Envelope;
 				yield return
-					new UserManagementMessage.ResetPassword(replyTo, SystemAccount.Principal, "user1", "new-password");
+					new UserManagementMessage.ResetPassword(replyTo, SystemAccounts.System, "user1", "new-password");
 				yield return
-					new UserManagementMessage.ResetPassword(replyTo, SystemAccount.Principal, "user1", "new-password");
+					new UserManagementMessage.ResetPassword(replyTo, SystemAccounts.System, "user1", "new-password");
 			}
 
 			[Test]
@@ -685,7 +691,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
@@ -706,7 +712,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "other-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -719,13 +725,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "new-password");
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "new-password");
 			}
 
 			[Test]
@@ -744,7 +750,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -758,7 +764,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "new-password", "other-password"));
+						Envelope, SystemAccounts.System, "user1", "new-password", "other-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -785,13 +791,13 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "incorrect", "new-password");
+						Envelope, SystemAccounts.System, "user1", "incorrect", "new-password");
 			}
 
 			[Test]
@@ -811,7 +817,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void does_not_update_details() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -825,7 +831,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				HandledMessages.Clear();
 				_users.Handle(
 					new UserManagementMessage.ChangePassword(
-						Envelope, SystemAccount.Principal, "user1", "Johny123!", "other-password"));
+						Envelope, SystemAccounts.System, "user1", "Johny123!", "other-password"));
 				_queue.Process();
 				var updateResult = HandledMessages.OfType<UserManagementMessage.UpdateResult>().Last();
 				Assert.NotNull(updateResult);
@@ -838,11 +844,11 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			protected override IEnumerable<WhenStep> GivenCommands() {
 				yield return
 					new UserManagementMessage.Create(
-						Envelope, SystemAccount.Principal, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
+						Envelope, SystemAccounts.System, "user1", "John Doe", new[] {"admin", "other"}, "Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.Delete(Envelope, SystemAccount.Principal, "user1");
+				yield return new UserManagementMessage.Delete(Envelope, SystemAccounts.System, "user1");
 			}
 
 			[Test]
@@ -861,7 +867,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 			[Test]
 			public void deletes_the_user_account() {
-				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccount.Principal, "user1"));
+				_users.Handle(new UserManagementMessage.Get(Envelope, SystemAccounts.System, "user1"));
 				_queue.Process();
 				var user = HandledMessages.OfType<UserManagementMessage.UserDetailsResult>().SingleOrDefault();
 				Assert.NotNull(user);
@@ -883,24 +889,24 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				var replyTo = Envelope;
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user1", "John Doe 1", new[] {"admin1", "other"},
+						replyTo, SystemAccounts.System, "user1", "John Doe 1", new[] {"admin1", "other"},
 						"Johny123!");
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user2", "John Doe 2", new[] {"admin2", "other"},
+						replyTo, SystemAccounts.System, "user2", "John Doe 2", new[] {"admin2", "other"},
 						"Johny123!");
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "user3", "Another Doe 1", new[] {"admin3", "other"},
+						replyTo, SystemAccounts.System, "user3", "Another Doe 1", new[] {"admin3", "other"},
 						"Johny123!");
 				yield return
 					new UserManagementMessage.Create(
-						replyTo, SystemAccount.Principal, "another_user", "Another Doe 2", new[] {"admin4", "other"},
+						replyTo, SystemAccounts.System, "another_user", "Another Doe 2", new[] {"admin4", "other"},
 						"Johny123!");
 			}
 
 			protected override IEnumerable<WhenStep> When() {
-				yield return new UserManagementMessage.GetAll(Envelope, SystemAccount.Principal);
+				yield return new UserManagementMessage.GetAll(Envelope, SystemAccounts.System);
 			}
 
 			[Test]

@@ -25,8 +25,10 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public Started(Guid projectionId)
+			public string Name { get; }
+			public Started(Guid projectionId, string name)
 				: base(projectionId) {
+				Name = name;
 			}
 		}
 
@@ -172,23 +174,18 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionWorkerStarted : Message {
-			private readonly Guid _workerId;
+		public class Suspended : CoreProjectionStatusMessageBase {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public ProjectionWorkerStarted(Guid workerId) {
-				_workerId = workerId;
-			}
-
-			public Guid WorkerId {
-				get { return _workerId; }
+			public Suspended(Guid projectionId)
+				: base(projectionId) {
 			}
 		}
-
+		
 		public class Stopped : CoreProjectionStatusMessageBase {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

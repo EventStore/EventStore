@@ -33,6 +33,7 @@ namespace EventStore.Core.Messages {
 		public Guid EpochId { get; set; }
 
 		public int NodePriority { get; set; }
+		public bool IsReadOnlyReplica { get; set; }
 
 		public MemberInfoDto() {
 		}
@@ -44,13 +45,13 @@ namespace EventStore.Core.Messages {
 			State = member.State;
 			IsAlive = member.IsAlive;
 
-			InternalTcpIp = member.InternalTcpEndPoint.Address.ToString();
-			InternalTcpPort = member.InternalTcpEndPoint.Port;
+			InternalTcpIp = member.InternalTcpEndPoint?.Address.ToString() ?? member.InternalSecureTcpEndPoint?.Address.ToString();
+			InternalTcpPort = member.InternalTcpEndPoint == null ? 0 : member.InternalTcpEndPoint.Port;
 			InternalSecureTcpPort =
 				member.InternalSecureTcpEndPoint == null ? 0 : member.InternalSecureTcpEndPoint.Port;
 
-			ExternalTcpIp = member.ExternalTcpEndPoint.Address.ToString();
-			ExternalTcpPort = member.ExternalTcpEndPoint.Port;
+			ExternalTcpIp = member.ExternalTcpEndPoint?.Address.ToString() ?? member.ExternalSecureTcpEndPoint?.Address.ToString();
+			ExternalTcpPort = member.ExternalTcpEndPoint == null ? 0 : member.ExternalTcpEndPoint.Port;
 			ExternalSecureTcpPort =
 				member.ExternalSecureTcpEndPoint == null ? 0 : member.ExternalSecureTcpEndPoint.Port;
 
@@ -69,6 +70,7 @@ namespace EventStore.Core.Messages {
 			EpochId = member.EpochId;
 
 			NodePriority = member.NodePriority;
+			IsReadOnlyReplica = member.IsReadOnlyReplica;
 		}
 
 		public override string ToString() {
@@ -77,13 +79,14 @@ namespace EventStore.Core.Messages {
 			                     + "ExternalTcpIp: {7}, ExternalTcpPort: {8}, ExternalSecureTcpPort: {9}, "
 			                     + "InternalHttpIp: {10}, InternalHttpPort: {11}, ExternalHttpIp: {12}, ExternalHttpPort: {13}, "
 			                     + "LastCommitPosition: {14}, WriterCheckpoint: {15}, ChaserCheckpoint: {16}, "
-			                     + "EpochPosition: {17}, EpochNumber: {18}, EpochId: {19:B}, NodePriority: {20}",
+			                     + "EpochPosition: {17}, EpochNumber: {18}, EpochId: {19:B}, NodePriority: {20}, "
+			                     + "IsReadOnlyReplica: {21}",
 				InstanceId, TimeStamp, State, IsAlive,
 				InternalTcpIp, InternalTcpPort, InternalSecureTcpPort,
 				ExternalTcpIp, ExternalTcpPort, ExternalSecureTcpPort,
 				InternalHttpIp, InternalHttpPort, ExternalHttpIp, ExternalHttpPort,
 				LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
-				EpochPosition, EpochNumber, EpochId, NodePriority);
+				EpochPosition, EpochNumber, EpochId, NodePriority, IsReadOnlyReplica);
 		}
 	}
 }

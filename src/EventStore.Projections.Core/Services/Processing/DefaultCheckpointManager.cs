@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 	public class DefaultCheckpointManager : CoreProjectionCheckpointManager,
 		IHandle<CoreProjectionCheckpointWriterMessage.CheckpointWritten>,
 		IHandle<CoreProjectionCheckpointWriterMessage.RestartRequested> {
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly CheckpointTag _zeroTag;
 		private int _readRequestsInProgress;
 		private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private PartitionStateUpdateManager _partitionStateUpdateManager;
 
 		public DefaultCheckpointManager(
-			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, IPrincipal runAs,
+			IPublisher publisher, Guid projectionCorrelationId, ProjectionVersion projectionVersion, ClaimsPrincipal runAs,
 			IODispatcher ioDispatcher, ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
 			ProjectionNamesBuilder namingBuilder, bool usePersistentCheckpoints, bool producesRunningResults,
 			bool definesFold,
@@ -91,12 +91,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_readRequestsInProgress++;
 			var requestId = Guid.NewGuid();
 			_ioDispatcher.ReadBackward(
-				partitionStreamName, eventNumber, 1, false, SystemAccount.Principal,
+				partitionStreamName, eventNumber, 1, false, SystemAccounts.System,
 				m =>
 					OnLoadPartitionStateReadStreamEventsBackwardCompleted(
 						m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType),
 				() => {
-					_logger.Warn("Read backward for stream {stream} timed out. Retrying", partitionStreamName);
+					_logger.Warning("Read backward for stream {stream} timed out. Retrying", partitionStreamName);
 					_loadStateRequests.Remove(requestId);
 					_readRequestsInProgress--;
 					ReadPartitionStream(partitionStreamName, eventNumber, requestedStateCheckpointTag, loadCompleted,
@@ -109,7 +109,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(
 			ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag requestedStateCheckpointTag,
 			Action<PartitionState> loadCompleted, string partitionStreamName, string stateEventType) {
-			//NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
 			_loadStateRequests.Remove(message.CorrelationId);
 
 			_readRequestsInProgress--;
@@ -124,14 +123,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 						return;
 					} else {
 						var loadedStateCheckpointTag = parsed.AdjustBy(_positionTagger, _projectionVersion);
-						// always recovery mode? skip until state before current event
-						//TODO: skip event processing in case we know i has been already processed
-						if (loadedStateCheckpointTag < requestedStateCheckpointTag) {
-							var state = PartitionState.Deserialize(
-								Helper.UTF8NoBom.GetString(@event.Data), loadedStateCheckpointTag);
-							loadCompleted(state);
-							return;
-						}
+						var state = PartitionState.Deserialize(
+							Helper.UTF8NoBom.GetString(@event.Data.Span), loadedStateCheckpointTag);
+						loadCompleted(state);
+						return;
 					}
 				}
 			}

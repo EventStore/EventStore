@@ -77,6 +77,22 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 		}
+		
+		public class InitiateLeaderResignation : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+		
+		public class RequestQueueDrained : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
 
 		public abstract class StateChangeMessage : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -95,25 +111,25 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class BecomePreMaster : StateChangeMessage {
+		public class BecomePreLeader : StateChangeMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public BecomePreMaster(Guid correlationId) : base(correlationId, VNodeState.PreMaster) {
+			public BecomePreLeader(Guid correlationId) : base(correlationId, VNodeState.PreLeader) {
 			}
 		}
 
-		public class BecomeMaster : StateChangeMessage {
+		public class BecomeLeader : StateChangeMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public BecomeMaster(Guid correlationId) : base(correlationId, VNodeState.Master) {
+			public BecomeLeader(Guid correlationId) : base(correlationId, VNodeState.Leader) {
 			}
 		}
 
@@ -158,6 +174,30 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class BecomeDiscoverLeader : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeDiscoverLeader(Guid correlationId)
+				: base(correlationId, VNodeState.DiscoverLeader) {
+			}
+		}
+
+		public class BecomeResigningLeader : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeResigningLeader(Guid correlationId)
+				: base(correlationId, VNodeState.ResigningLeader) {
+			}
+		}
+
 		public abstract class ReplicaStateMessage : StateChangeMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -165,12 +205,12 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly VNodeInfo Master;
+			public readonly VNodeInfo Leader;
 
-			protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo master)
+			protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo leader)
 				: base(correlationId, state) {
-				Ensure.NotNull(master, "master");
-				Master = master;
+				Ensure.NotNull(leader, "leader");
+				Leader = leader;
 			}
 		}
 
@@ -181,8 +221,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReplica(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.PreReplica,
-				master) {
+			public BecomePreReplica(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.PreReplica,
+				leader) {
 			}
 		}
 
@@ -193,8 +233,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeCatchingUp(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.CatchingUp,
-				master) {
+			public BecomeCatchingUp(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.CatchingUp,
+				leader) {
 			}
 		}
 
@@ -205,20 +245,57 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeClone(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.Clone, master) {
+			public BecomeClone(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Clone, leader) {
 			}
 		}
 
-		public class BecomeSlave : ReplicaStateMessage {
+		public class BecomeFollower : ReplicaStateMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public BecomeSlave(Guid correlationId, VNodeInfo master) : base(correlationId, VNodeState.Slave, master) {
+			public BecomeFollower(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Follower, leader) {
 			}
 		}
+
+		public class BecomeReadOnlyLeaderless : StateChangeMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyLeaderless (Guid correlationId)
+				: base(correlationId, VNodeState.ReadOnlyLeaderless) {
+			}
+		}
+
+		public class BecomePreReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomePreReadOnlyReplica(Guid correlationId, VNodeInfo leader)
+				: base(correlationId, VNodeState.PreReadOnlyReplica, leader) {
+			}
+		}
+
+		public class BecomeReadOnlyReplica : ReplicaStateMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public BecomeReadOnlyReplica(Guid correlationId, VNodeInfo leader)
+				: base(correlationId, VNodeState.ReadOnlyReplica, leader) {
+			}
+		}
+
 
 		public class ServiceShutdown : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
@@ -253,13 +330,15 @@ namespace EventStore.Core.Messages {
 
 			public readonly IPEndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
+			public readonly Guid? SubscriptionId;
 
-			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId) {
+			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId, Guid? subscriptionId=null) {
 				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 
 				VNodeEndPoint = vNodeEndPoint;
 				ConnectionId = connectionId;
+				SubscriptionId = subscriptionId;
 			}
 		}
 

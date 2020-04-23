@@ -1,11 +1,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Bus {
 	/// <summary>
@@ -15,7 +15,7 @@ namespace EventStore.Core.Bus {
 	/// </summary>
 	public class QueuedHandlerMresWithMpsc : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
 		IThreadSafePublisher {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerMresWithMpsc>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerMresWithMpsc>();
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -43,6 +43,7 @@ namespace EventStore.Core.Bus {
 
 		public QueuedHandlerMresWithMpsc(IHandle<Message> consumer,
 			string name,
+			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
@@ -57,7 +58,7 @@ namespace EventStore.Core.Bus {
 			_threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
 
 			_queueMonitor = QueueMonitor.Default;
-			_queueStats = new QueueStatsCollector(name, groupName);
+			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
 		}
 
 		public Task Start() {
@@ -123,7 +124,7 @@ namespace EventStore.Core.Bus {
 
 										var elapsed = DateTime.UtcNow - start;
 										if (elapsed > _slowMsgThreshold) {
-											Log.Trace(
+											Log.Verbose(
 												"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevEstimatedQueueCount}/{curEstimatedQueueCount}.",
 												Name, _queueStats.InProgressMessage.Name,
 												(int)elapsed.TotalMilliseconds,
@@ -141,7 +142,7 @@ namespace EventStore.Core.Bus {
 										_consumer.Handle(msg);
 									}
 								} catch (Exception ex) {
-									Log.ErrorException(ex,
+									Log.Error(ex,
 										"Error while processing message {message} in queued handler '{queue}'.", msg,
 										Name);
 #if DEBUG
@@ -154,7 +155,7 @@ namespace EventStore.Core.Bus {
 							}
 						}
 					} catch (Exception ex) {
-						Log.ErrorException(ex, "Error while processing message {message} in queued handler '{queue}'.",
+						Log.Error(ex, "Error while processing message {message} in queued handler '{queue}'.",
 							msg, Name);
 #if DEBUG
 						throw;

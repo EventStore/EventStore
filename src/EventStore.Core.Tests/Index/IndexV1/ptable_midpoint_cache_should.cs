@@ -1,7 +1,7 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Index;
 using NUnit.Framework;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV1, false)]
@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV4, false)]
 	[TestFixture(PTableVersions.IndexV4, true)]
 	public class ptable_midpoint_cache_should : SpecificationWithDirectory {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ptable_midpoint_cache_should>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ptable_midpoint_cache_should>();
 		protected byte _ptableVersion = PTableVersions.IndexV1;
 		private bool _skipIndexVerify;
 
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				for (int depth = 0; depth < 15; ++depth) {
 					PTable ptable = null;
 					try {
-						Log.Trace("Creating PTable with count {0}, depth {1}", count, depth);
+						Log.Verbose("Creating PTable with count {0}, depth {1}", count, depth);
 						ptable = ConstructPTable(
 							GetFilePathFor(string.Format("{0}-{1}-indexv{2}.ptable", count, depth, _ptableVersion)),
 							count, rnd, depth);
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				memTable.Add((uint)rnd.Next(), rnd.Next(0, 1 << 20), Math.Abs(rnd.Next() * rnd.Next()));
 			}
 
-			var ptable = PTable.FromMemtable(memTable, file, depth, skipIndexVerify: _skipIndexVerify);
+			var ptable = PTable.FromMemtable(memTable, file, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify: _skipIndexVerify);
 			return ptable;
 		}
 

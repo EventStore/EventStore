@@ -1,15 +1,15 @@
-﻿using EventStore.Core.Services.Transport.Http.Messages;
+﻿using System.Security.Claims;
+using EventStore.Core.Services.Transport.Http.Messages;
+using EventStore.Core.Services.UserManagement;
+using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
-	public class AnonymousHttpAuthenticationProvider : HttpAuthenticationProvider {
-		public override bool Authenticate(IncomingHttpRequestMessage message) {
-			var entity = message.Entity;
-			if (entity.User == null) {
-				Authenticated(message, user: null);
-				return true;
-			}
+	public class AnonymousHttpAuthenticationProvider : IHttpAuthenticationProvider {
 
-			return false;
+		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
+			request = new HttpAuthenticationRequest(context, null, null);
+			request.Authenticated(SystemAccounts.Anonymous);
+			return true;
 		}
 	}
 }

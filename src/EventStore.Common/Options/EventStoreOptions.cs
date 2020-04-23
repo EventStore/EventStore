@@ -1,5 +1,4 @@
-﻿using EventStore.Common.Utils;
-using EventStore.Rags;
+﻿using EventStore.Rags;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +10,7 @@ namespace EventStore.Common.Options {
 		private static IEnumerable<OptionSource> _effectiveOptions;
 
 		public static TOptions Parse<TOptions>(string[] args, string environmentPrefix,
-			string defaultConfigLocation = null) where TOptions : class, IOptions, new() {
+			string defaultConfigLocation = null, Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutateEffectiveOptions = null) where TOptions : class, IOptions, new() {
 			_effectiveOptions = GetConfig<TOptions>(args, environmentPrefix, defaultConfigLocation)
 				.Flatten()
 				.Cleanup()
@@ -20,7 +19,10 @@ namespace EventStore.Common.Options {
 				.Select(ResolvePrecedence)
 				.EnsureExistence<TOptions>()
 				.EnsureCorrectType<TOptions>()
-				.FixNames<TOptions>();
+				.FixNames<TOptions>()
+				.ApplyMask<TOptions>()
+				.Mutate<TOptions>(mutateEffectiveOptions);
+			
 			return _effectiveOptions.ApplyTo<TOptions>();
 		}
 
@@ -66,31 +68,6 @@ namespace EventStore.Common.Options {
 			return ArgUsage.GetUsage<TOptions>();
 		}
 
-		public static object DumpOptionsStructured() {
-			Dictionary<string, object> opts = new Dictionary<string, object>();
-			if (_effectiveOptions == null) {
-				return opts;
-			}
-
-			Dictionary<string, object> defaults = new Dictionary<string, object>();
-			Dictionary<string, object> modified = new Dictionary<string, object>();
-
-			foreach (var option in _effectiveOptions) {
-				var value = option.Value;
-				if (value != null) value = value.ToString();
-				if (option.Source.ToLower().Contains("default")) {
-					defaults.Add(option.Name, value);
-				} else {
-					modified.Add(option.Name, value);
-				}
-			}
-
-			opts.Add("defaults", defaults);
-			opts.Add("modified", modified);
-
-			return opts;
-		}
-
 		public static string DumpOptions() {
 			if (_effectiveOptions == null) {
 				return "No options have been parsed";
@@ -118,6 +95,10 @@ namespace EventStore.Common.Options {
 				}
 
 				var value = option.Value;
+				if (option.Mask && displayingModifiedOptions) {
+					value = "****";
+				}
+
 				var optionName = NameTranslators.CombineByPascalCase(option.Name, " ").ToUpper();
 				var valueToDump = value == null ? String.Empty : value.ToString();
 				if (value is Array) {
@@ -140,6 +121,9 @@ namespace EventStore.Common.Options {
 		public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources) {
 			return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
 		}
+		
+		public static IEnumerable<OptionSource> Mutate<TOptions>(this IEnumerable<OptionSource> optionSources, Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutator)
+			where TOptions : class => mutator != null ? mutator(optionSources) : optionSources;
 
 		public static IEnumerable<OptionSource> FixNames<TOptions>(this IEnumerable<OptionSource> optionSources)
 			where TOptions : class {
@@ -166,6 +150,20 @@ namespace EventStore.Common.Options {
 			}
 
 			return optionSources;
+		}
+		
+		public static IEnumerable<OptionSource> ApplyMask<TOptions>(this IEnumerable<OptionSource> optionSources)
+			where TOptions : class {
+			var properties = typeof(TOptions).GetProperties();
+			var newOptionSources = new List<OptionSource>();
+			foreach (var optionSource in optionSources) {
+				var property =
+					properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+				newOptionSources.Add(new OptionSource(optionSource.Source, property.Name, optionSource.IsTyped,
+					optionSource.Value, mask: property.HasAttr<ArgMask>()));
+			}
+
+			return newOptionSources;
 		}
 
 		public static IEnumerable<OptionSource> EnsureCorrectType<TOptions>(

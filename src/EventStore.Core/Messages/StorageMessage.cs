@@ -1,9 +1,10 @@
 using System;
-using System.Security.Principal;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages {
@@ -18,10 +19,10 @@ namespace EventStore.Core.Messages {
 		public interface IFlushableMessage {
 		}
 
-		public interface IMasterWriteMessage {
+		public interface ILeaderWriteMessage {
 		}
 
-		public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage {
+		public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -33,29 +34,27 @@ namespace EventStore.Core.Messages {
 
 			public string EventStreamId { get; private set; }
 			public long ExpectedVersion { get; private set; }
+			public CancellationToken CancellationToken { get; }
 			public readonly Event[] Events;
 
-			public readonly DateTime LiveUntil;
-
 			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				Event[] events, DateTime liveUntil) {
+				Event[] events, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
+				CancellationToken = cancellationToken;
 				Events = events;
-
-				LiveUntil = liveUntil;
 			}
 
 			public override string ToString() {
 				return string.Format(
-					"WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}, LiveUntil: {3}",
-					CorrelationId, EventStreamId, ExpectedVersion, LiveUntil);
+					"WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}",
+					CorrelationId, EventStreamId, ExpectedVersion);
 			}
 		}
 
-		public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage {
+		public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -66,12 +65,11 @@ namespace EventStore.Core.Messages {
 			public IEnvelope Envelope { get; private set; }
 			public string EventStreamId { get; private set; }
 			public long ExpectedVersion { get; private set; }
+			public CancellationToken CancellationToken { get; }
 			public readonly bool HardDelete;
 
-			public readonly DateTime LiveUntil;
-
 			public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				bool hardDelete, DateTime liveUntil) {
+				bool hardDelete, CancellationToken cancellationToken = default) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
 				Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -80,13 +78,12 @@ namespace EventStore.Core.Messages {
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
+				CancellationToken = cancellationToken;
 				HardDelete = hardDelete;
-
-				LiveUntil = liveUntil;
 			}
 		}
 
-		public class WriteCommit : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -105,7 +102,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
-			IMasterWriteMessage {
+			ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -134,7 +131,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionData : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -154,7 +151,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionPrepare : Message, IFlushableMessage, IMasterWriteMessage {
+		public class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -167,7 +164,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly DateTime LiveUntil;
 
-			public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId,
+			public WriteTransactionEnd(Guid correlationId, IEnvelope envelope, long transactionId,
 				DateTime liveUntil) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
@@ -210,10 +207,9 @@ namespace EventStore.Core.Messages {
 			public readonly long TransactionPosition;
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
-			public readonly bool IsSelf;
 
 			public CommitAck(Guid correlationId, long logPosition, long transactionPosition, long firstEventNumber,
-				long lastEventNumber, bool isSelf = false) {
+				long lastEventNumber) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.Nonnegative(transactionPosition, "transactionPosition");
@@ -229,11 +225,10 @@ namespace EventStore.Core.Messages {
 				TransactionPosition = transactionPosition;
 				FirstEventNumber = firstEventNumber;
 				LastEventNumber = lastEventNumber;
-				IsSelf = isSelf;
 			}
 		}
 
-		public class CommitReplicated : Message {
+		public class CommitIndexed : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -246,7 +241,7 @@ namespace EventStore.Core.Messages {
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
 
-			public CommitReplicated(Guid correlationId, long logPosition, long transactionPosition,
+			public CommitIndexed(Guid correlationId, long logPosition, long transactionPosition,
 				long firstEventNumber, long lastEventNumber) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.Nonnegative(logPosition, "logPosition");
@@ -306,18 +301,19 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long FirstEventNumber;
 			public readonly long LastEventNumber;
+			public readonly long LogPosition;
 
 			public AlreadyCommitted(Guid correlationId, string eventStreamId, long firstEventNumber,
-				long lastEventNumber) {
+				long lastEventNumber, long logPosition) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
-
 
 				CorrelationId = correlationId;
 				EventStreamId = eventStreamId;
 				FirstEventNumber = firstEventNumber;
 				LastEventNumber = lastEventNumber;
+				LogPosition = logPosition;
 			}
 
 			public override string ToString() {
@@ -413,61 +409,6 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CheckStreamAccess : ClientMessage.ReadRequestMessage, IQueueAffineMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			private readonly int _affinity;
-
-			public int QueueId {
-				get { return _affinity; }
-			}
-
-			public readonly string EventStreamId;
-			public readonly long? TransactionId;
-			public readonly StreamAccessType AccessType;
-
-			public CheckStreamAccess(IEnvelope envelope, Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, IPrincipal user, bool singleAffinity = false)
-				: base(correlationId, correlationId, envelope, user) {
-				if (eventStreamId == null && transactionId == null)
-					throw new ArgumentException("Neither eventStreamId nor transactionId is specified.");
-				EventStreamId = eventStreamId;
-				TransactionId = transactionId;
-				var hash = String.IsNullOrEmpty(EventStreamId)
-					? TransactionId.GetHashCode()
-					: EventStreamId.GetHashCode();
-				_affinity = singleAffinity ? 1 : hash;
-				AccessType = accessType;
-			}
-		}
-
-		public class CheckStreamAccessCompleted : ClientMessage.ReadResponseMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public readonly Guid CorrelationId;
-			public readonly string EventStreamId;
-			public readonly long? TransactionId;
-			public readonly StreamAccessType AccessType;
-			public readonly StreamAccess AccessResult;
-
-			public CheckStreamAccessCompleted(Guid correlationId, string eventStreamId, long? transactionId,
-				StreamAccessType accessType, StreamAccess accessResult) {
-				CorrelationId = correlationId;
-				EventStreamId = eventStreamId;
-				TransactionId = transactionId;
-				AccessType = accessType;
-				AccessResult = accessResult;
-			}
-		}
-
 		public class BatchLogExpiredMessages : Message, IQueueAffineMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -483,6 +424,123 @@ namespace EventStore.Core.Messages {
 				Ensure.Nonnegative(queueId, "queueId");
 				CorrelationId = correlationId;
 				QueueId = queueId;
+			}
+		}
+
+		public class EffectiveStreamAclRequest : Message {
+			public readonly string StreamId;
+			public readonly IEnvelope Envelope;
+			public readonly CancellationToken CancellationToken;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) {
+				StreamId = streamId;
+				Envelope = envelope;
+				CancellationToken = cancellationToken;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class EffectiveStreamAclResponse : Message {
+			public readonly EffectiveAcl Acl;
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public EffectiveStreamAclResponse(EffectiveAcl acl) {
+				Acl = acl;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class EffectiveAcl {
+			public readonly StreamAcl Stream;
+			public readonly StreamAcl System;
+			public readonly StreamAcl Default;
+
+			public EffectiveAcl(StreamAcl stream, StreamAcl system, StreamAcl @default) {
+				Stream = stream;
+				System = system;
+				Default = @default;
+			}
+
+			public static Task<EffectiveAcl> LoadAsync(IPublisher publisher, string streamId, CancellationToken cancellationToken) {
+				var envelope = new RequestEffectiveAclEnvelope();
+				publisher.Publish(new EffectiveStreamAclRequest(streamId, envelope, cancellationToken));
+				return envelope.Task;
+			}
+
+			class RequestEffectiveAclEnvelope : IEnvelope {
+				private readonly TaskCompletionSource<EffectiveAcl> _tcs;
+
+				public RequestEffectiveAclEnvelope() {
+					_tcs = new TaskCompletionSource<EffectiveAcl>(TaskCreationOptions.RunContinuationsAsynchronously);
+				}
+				public void ReplyWith<T>(T message) where T : Message {
+					if (message == null) throw new ArgumentNullException(nameof(message));
+					if (message is EffectiveStreamAclResponse response) {
+						_tcs.TrySetResult(response.Acl);
+						return;
+					} else {
+						if (message is OperationCancelledMessage cancelled) {
+							_tcs.TrySetCanceled(cancelled.CancellationToken);
+						}
+					}
+					throw new ArgumentException($"Unexpected message type {typeof(T)}");
+				}
+
+				public Task<EffectiveAcl> Task => _tcs.Task;
+			}
+		}
+
+		public class OperationCancelledMessage : Message {
+
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public CancellationToken CancellationToken { get; }
+
+			public OperationCancelledMessage(CancellationToken cancellationToken) {
+				CancellationToken = cancellationToken;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class StreamIdFromTransactionIdRequest : Message {
+
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public readonly long TransactionId;
+			public readonly IEnvelope Envelope;
+			public readonly CancellationToken CancellationToken;
+
+			public StreamIdFromTransactionIdRequest(in long transactionId, IEnvelope envelope, CancellationToken cancellationToken) {
+				CancellationToken = cancellationToken;
+				TransactionId = transactionId;
+				Envelope = envelope;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class StreamIdFromTransactionIdResponse : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public readonly string StreamId;
+
+			public StreamIdFromTransactionIdResponse(string streamId){
+				StreamId = streamId;
+			}
+
+			public override int MsgTypeId {
+				get { return TypeId; }
 			}
 		}
 	}

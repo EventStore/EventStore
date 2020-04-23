@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Util;
@@ -25,8 +26,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		}
 
 		[SetUp]
-		public override void SetUp() {
-			base.SetUp();
+		public override async Task SetUp() {
+			await base.SetUp();
 
 			_indexMapFileName = GetFilePathFor("index.map");
 			_ptableFileName = GetFilePathFor("ptable");
@@ -35,13 +36,13 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			var memTable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memTable.Add(0, 1, 2);
-			_ptable = PTable.FromMemtable(memTable, _ptableFileName);
+			_ptable = PTable.FromMemtable(memTable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 		}
 
 		[TearDown]
-		public override void TearDown() {
+		public override Task TearDown() {
 			_ptable.MarkForDestruction();
-			base.TearDown();
+			return base.TearDown();
 		}
 
 		[Test]

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-retire": {
+      "version": "4.0.1",
+      "commands": [
+        "dotnet-retire"
+      ]
+    },
+    "minver-cli": {
+      "version": "2.2.0",
+      "commands": [
+        "minver"
+      ]
+    }
+  }
+}

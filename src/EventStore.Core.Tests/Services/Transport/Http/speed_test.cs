@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.Tests.Fakes;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.Client;
 using EventStore.Transport.Http.Codecs;
-using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	public class FakeController : IHttpController {
@@ -100,15 +94,19 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 
 		private void Register(string route, string verb) {
 			if (_router == null) {
-				_http.RegisterAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs), (x, y) => {
-					x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
-					CountdownEvent.Signal();
-				});
+				_http.RegisterAction(
+					new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, new Operation()),
+					(x, y) => {
+						x.Reply(new byte[0], 200, "", "", Helper.UTF8NoBom, null, e => new Exception());
+						CountdownEvent.Signal();
+					});
 			} else {
-				_router.RegisterAction(new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs), (x, y) => {
-					CountdownEvent.Signal();
-					return new RequestParams(TimeSpan.Zero);
-				});
+				_router.RegisterAction(
+					new ControllerAction(route, verb, Codec.NoCodecs, SupportedCodecs, new Operation()),
+					(x, y) => {
+						CountdownEvent.Signal();
+						return new RequestParams(TimeSpan.Zero);
+					});
 			}
 
 			var uriTemplate = new UriTemplate(route);
@@ -122,84 +120,4 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		}
 	}
 
-	[TestFixture]
-	public class speed_test {
-		[Test, Ignore("speed test")]
-		public void of_http_requests_routing() {
-			const int iterations = 100000;
-
-			IPublisher inputBus = new NoopPublisher();
-			var bus = InMemoryBus.CreateTest();
-			var queue = new QueuedHandlerThreadPool(bus, "Test", true, TimeSpan.FromMilliseconds(50));
-			var multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
-			var providers = new HttpAuthenticationProvider[] {new AnonymousHttpAuthenticationProvider()};
-			var httpService = new HttpService(ServiceAccessibility.Public, inputBus,
-				new TrieUriRouter(), multiQueuedHandler, false, null, 0, "http://localhost:12345/");
-			HttpService.CreateAndSubscribePipeline(bus, providers);
-
-			var fakeController = new FakeController(iterations, null);
-			httpService.SetupController(fakeController);
-
-			httpService.Handle(new SystemMessage.SystemInit());
-
-			var rnd = new Random();
-			var sw = Stopwatch.StartNew();
-
-			var timeout = TimeSpan.FromMilliseconds(10000);
-			var httpClient = new HttpAsyncClient(timeout);
-			for (int i = 0; i < iterations; ++i) {
-				var route = fakeController.BoundRoutes[rnd.Next(0, fakeController.BoundRoutes.Count)];
-
-				switch (route.Item2) {
-					case HttpMethod.Get:
-						httpClient.Get(route.Item1, x => { }, x => { throw new Exception(); });
-						break;
-					case HttpMethod.Post:
-						httpClient.Post(route.Item1, "abracadabra", ContentType.Json, x => { },
-							x => { throw new Exception(); });
-						break;
-					case HttpMethod.Delete:
-						httpClient.Delete(route.Item1, x => { }, x => { throw new Exception(); });
-						break;
-					case HttpMethod.Put:
-						httpClient.Put(route.Item1, "abracadabra", ContentType.Json, x => { },
-							x => { throw new Exception(); });
-						break;
-					default:
-						throw new Exception();
-				}
-			}
-
-			fakeController.CountdownEvent.Wait();
-			sw.Stop();
-
-			Console.WriteLine("{0} request done in {1} ({2:0.00} per sec)", iterations, sw.Elapsed,
-				1000.0 * iterations / sw.ElapsedMilliseconds);
-
-			httpService.Shutdown();
-			multiQueuedHandler.Stop();
-		}
-
-		[Test, Ignore("speed test")]
-		public void of_uri_router() {
-			const int iterations = 100000;
-
-			IUriRouter router = new TrieUriRouter();
-			var fakeController = new FakeController(iterations, router);
-			fakeController.Subscribe(null);
-
-			var rnd = new Random();
-			var sw = Stopwatch.StartNew();
-
-			for (int i = 0; i < iterations; ++i) {
-				var route = fakeController.BoundRoutes[rnd.Next(0, fakeController.BoundRoutes.Count)];
-				router.GetAllUriMatches(new Uri(route.Item1));
-			}
-
-			sw.Stop();
-
-			Console.WriteLine("{0} request done in {1} ({2:0.00} per sec)", iterations, sw.Elapsed,
-				1000.0 * iterations / sw.ElapsedMilliseconds);
-		}
-	}
 }

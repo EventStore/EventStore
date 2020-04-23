@@ -1,14 +1,13 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
 	public class ExclusiveDbLock {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<ExclusiveDbLock>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<ExclusiveDbLock>();
 
 		public readonly string MutexName;
 
@@ -21,10 +20,7 @@ namespace EventStore.Core {
 
 		public ExclusiveDbLock(string dbPath) {
 			Ensure.NotNullOrEmpty(dbPath, "dbPath");
-			MutexName = dbPath.Length <= 250
-				? "ESDB:" + dbPath.Replace('\\', '/')
-				: "ESDB-HASHED:" + GetDbPathHash(dbPath);
-			MutexName += new string('-', 260 - MutexName.Length);
+			MutexName = "ESDB-HASHED:" + GetDbPathHash(dbPath);
 		}
 
 		public bool Acquire() {
@@ -34,7 +30,7 @@ namespace EventStore.Core {
 			try {
 				_dbMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
 			} catch (AbandonedMutexException exc) {
-				Log.InfoException(exc,
+				Log.Information(exc,
 					"DB mutex '{mutex}' is said to be abandoned. "
 					+ "Probably previous instance of server was terminated abruptly.",
 					MutexName);

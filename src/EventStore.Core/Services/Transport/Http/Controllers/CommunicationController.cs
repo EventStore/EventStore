@@ -1,15 +1,16 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public abstract class CommunicationController : IHttpController {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<CommunicationController>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<CommunicationController>();
 		private static readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
 
 		private readonly IPublisher _publisher;
@@ -54,21 +55,39 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected void Register(IHttpService service, string uriTemplate, string httpMethod,
-			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs) {
-			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
+			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs, Operation operation) {
+			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
+				handler);
+		}
+
+		protected void Register(IHttpService service, string uriTemplate, string httpMethod,
+			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch,Operation> operation) {
+			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
 				handler);
 		}
 
 		protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,
-			ICodec[] requestCodecs, ICodec[] responseCodecs) {
-			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs),
+			ICodec[] requestCodecs, ICodec[] responseCodecs, Operation operation) {
+			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
 				handler);
 		}
 
-		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod,
+		protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
+			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,
+			ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch,Operation> operation) {
+			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
+				handler);
+		}
+
+		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod, Operation operation,
 			Action<HttpEntityManager, UriTemplateMatch> action) {
-			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs);
+			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, operation);
+		}
+
+		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod, Func<UriTemplateMatch,Operation> operation,
+			Action<HttpEntityManager, UriTemplateMatch> action) {
+			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, operation);
 		}
 
 		protected static string MakeUrl(HttpEntityManager http, string path) {

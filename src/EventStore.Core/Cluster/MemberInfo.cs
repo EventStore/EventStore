@@ -28,13 +28,14 @@ namespace EventStore.Core.Cluster {
 		public readonly Guid EpochId;
 
 		public readonly int NodePriority;
+		public readonly bool IsReadOnlyReplica;
 
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint) {
-			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, true,
+			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				internalHttpEndPoint, null, externalHttpEndPoint, null,
 				internalHttpEndPoint, externalHttpEndPoint,
-				-1, -1, -1, -1, -1, Guid.Empty, 0);
+				-1, -1, -1, -1, -1, Guid.Empty, 0, false);
 		}
 
 		public static MemberInfo ForVNode(Guid instanceId,
@@ -53,7 +54,8 @@ namespace EventStore.Core.Cluster {
 			long epochPosition,
 			int epochNumber,
 			Guid epochId,
-			int nodePriority) {
+			int nodePriority,
+			bool isReadOnlyReplica) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -61,17 +63,16 @@ namespace EventStore.Core.Cluster {
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				internalHttpEndPoint, externalHttpEndPoint,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochPosition, epochNumber, epochId, nodePriority);
+				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
 		}
 
-		private MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
+		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
 			IPEndPoint internalTcpEndPoint, IPEndPoint internalSecureTcpEndPoint,
 			IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
 			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			long epochPosition, int epochNumber, Guid epochId, int nodePriority) {
-			Ensure.NotNull(internalTcpEndPoint, "internalTcpEndPoint");
-			Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
+			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
 			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
 
@@ -97,6 +98,7 @@ namespace EventStore.Core.Cluster {
 			EpochId = epochId;
 
 			NodePriority = nodePriority;
+			IsReadOnlyReplica = isReadOnlyReplica;
 		}
 
 		internal MemberInfo(MemberInfoDto dto) {
@@ -105,13 +107,13 @@ namespace EventStore.Core.Cluster {
 			State = dto.State;
 			IsAlive = dto.IsAlive;
 			var internalTcpIp = IPAddress.Parse(dto.InternalTcpIp);
-			var externalTcpIp = IPAddress.Parse(dto.ExternalTcpIp);
+			var externalTcpIp = dto.ExternalTcpIp != null ? IPAddress.Parse(dto.ExternalTcpIp) : null;
 			InternalTcpEndPoint = new IPEndPoint(internalTcpIp, dto.InternalTcpPort);
 			InternalSecureTcpEndPoint = dto.InternalSecureTcpPort > 0
 				? new IPEndPoint(internalTcpIp, dto.InternalSecureTcpPort)
 				: null;
-			ExternalTcpEndPoint = new IPEndPoint(externalTcpIp, dto.ExternalTcpPort);
-			ExternalSecureTcpEndPoint = dto.ExternalSecureTcpPort > 0
+			ExternalTcpEndPoint = externalTcpIp != null ? new IPEndPoint(externalTcpIp, dto.ExternalTcpPort) : null;
+			ExternalSecureTcpEndPoint = externalTcpIp != null && dto.ExternalSecureTcpPort > 0
 				? new IPEndPoint(externalTcpIp, dto.ExternalSecureTcpPort)
 				: null;
 			InternalHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.InternalHttpIp), dto.InternalHttpPort);
@@ -123,26 +125,29 @@ namespace EventStore.Core.Cluster {
 			EpochNumber = dto.EpochNumber;
 			EpochId = dto.EpochId;
 			NodePriority = dto.NodePriority;
+			IsReadOnlyReplica = dto.IsReadOnlyReplica;
 		}
 
 		public bool Is(IPEndPoint endPoint) {
 			return endPoint != null
 			       && (InternalHttpEndPoint.Equals(endPoint)
 			           || ExternalHttpEndPoint.Equals(endPoint)
-			           || InternalTcpEndPoint.Equals(endPoint)
+			           || (InternalTcpEndPoint != null && InternalTcpEndPoint.Equals(endPoint))
 			           || (InternalSecureTcpEndPoint != null && InternalSecureTcpEndPoint.Equals(endPoint))
-			           || ExternalTcpEndPoint.Equals(endPoint)
+			           || (ExternalTcpEndPoint != null && ExternalTcpEndPoint.Equals(endPoint))
 			           || (ExternalSecureTcpEndPoint != null && ExternalSecureTcpEndPoint.Equals(endPoint)));
 		}
 
-		public MemberInfo Updated(VNodeState? state = null,
+		public MemberInfo Updated(DateTime utcNow,
+			VNodeState? state = null,
 			bool? isAlive = null,
 			long? lastCommitPosition = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
-			EpochRecord epoch = null) {
+			EpochRecord epoch = null,
+			int? nodePriority = null) {
 			return new MemberInfo(InstanceId,
-				DateTime.UtcNow,
+				utcNow,
 				state ?? State,
 				isAlive ?? IsAlive,
 				InternalTcpEndPoint,
@@ -157,7 +162,8 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochPosition : EpochPosition,
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
-				NodePriority);
+				nodePriority ?? NodePriority,
+				IsReadOnlyReplica);
 		}
 
 		public override string ToString() {
@@ -166,10 +172,11 @@ namespace EventStore.Core.Cluster {
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalHttpEndPoint, ExternalHttpEndPoint, TimeStamp);
 			return string.Format(
+				"Priority: " + NodePriority + " " + 
 				"VND {0:B} <{1}> [{2}, {3}, {4}, {5}, {6}, {7}, {8}] {9}/{10}/{11}/E{12}@{13}:{14:B} | {15:yyyy-MM-dd HH:mm:ss.fff}",
 				InstanceId, IsAlive ? "LIVE" : "DEAD", State,
-				InternalTcpEndPoint, InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
-				ExternalTcpEndPoint, ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
+				InternalTcpEndPoint == null ? "n/a" : InternalTcpEndPoint.ToString(), InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString(),
+				ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString(), ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
 				InternalHttpEndPoint, ExternalHttpEndPoint,
 				LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 				EpochNumber, EpochPosition, EpochId,
@@ -192,7 +199,8 @@ namespace EventStore.Core.Cluster {
 			       && other.EpochPosition == EpochPosition
 			       && other.EpochNumber == EpochNumber
 			       && other.EpochId == EpochId
-			       && other.NodePriority == NodePriority;
+			       && other.NodePriority == NodePriority
+				   && other.IsReadOnlyReplica == IsReadOnlyReplica;
 		}
 
 		public override bool Equals(object obj) {
@@ -207,10 +215,10 @@ namespace EventStore.Core.Cluster {
 				int result = InstanceId.GetHashCode();
 				result = (result * 397) ^ State.GetHashCode();
 				result = (result * 397) ^ IsAlive.GetHashCode();
-				result = (result * 397) ^ InternalTcpEndPoint.GetHashCode();
+				result = (result * 397) ^ (InternalTcpEndPoint != null ? InternalTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^
 				         (InternalSecureTcpEndPoint != null ? InternalSecureTcpEndPoint.GetHashCode() : 0);
-				result = (result * 397) ^ ExternalTcpEndPoint.GetHashCode();
+				result = (result * 397) ^ (ExternalTcpEndPoint != null ? ExternalTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^
 				         (ExternalSecureTcpEndPoint != null ? ExternalSecureTcpEndPoint.GetHashCode() : 0);
 				result = (result * 397) ^ InternalHttpEndPoint.GetHashCode();

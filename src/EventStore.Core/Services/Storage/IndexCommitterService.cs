@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -13,7 +12,8 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Chunks;
+using ILogger = Serilog.ILogger;
+
 
 namespace EventStore.Core.Services.Storage {
 	public interface IIndexCommitterService {
@@ -26,11 +26,11 @@ namespace EventStore.Core.Services.Storage {
 
 	public class IndexCommitterService : IIndexCommitterService,
 		IMonitoredQueue,
-		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
+		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
-		private readonly ILogger Log = LogManager.GetLoggerFor<IndexCommitterService>();
+		private readonly ILogger Log = Serilog.Log.ForContext<IndexCommitterService>();
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
@@ -39,13 +39,12 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ITableIndex _tableIndex;
 		private Thread _thread;
 		private bool _stop;
-		private VNodeState _state;
 
 		public string Name {
 			get { return _queueStats.Name; }
 		}
 
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Index Committer");
+		private readonly QueueStatsCollector _queueStats;
 
 		private readonly ConcurrentQueueWrapper<StorageMessage.CommitAck> _replicatedQueue =
 			new ConcurrentQueueWrapper<StorageMessage.CommitAck>();
@@ -53,7 +52,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ConcurrentDictionary<long, PendingTransaction> _pendingTransactions =
 			new ConcurrentDictionary<long, PendingTransaction>();
 
-		private readonly CommitAckLinkedList _commitAcks = new CommitAckLinkedList();
+		private readonly SortedList<long, StorageMessage.CommitAck> _commitAcks = new SortedList<long, StorageMessage.CommitAck>();
 		private readonly ManualResetEventSlim _addMsgSignal = new ManualResetEventSlim(false, 1);
 		private TimeSpan _waitTimeoutMs = TimeSpan.FromMilliseconds(100);
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
@@ -62,24 +61,32 @@ namespace EventStore.Core.Services.Storage {
 			get { return _tcs.Task; }
 		}
 
-		public IndexCommitterService(IIndexCommitter indexCommitter, IPublisher publisher,
-			ICheckpoint replicationCheckpoint, ICheckpoint writerCheckpoint, int commitCount, ITableIndex tableIndex) {
-			Ensure.NotNull(indexCommitter, "indexCommitter");
-			Ensure.NotNull(publisher, "publisher");
-			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
-			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
-			Ensure.Positive(commitCount, "commitCount");
+		public IndexCommitterService(
+			IIndexCommitter indexCommitter,
+			IPublisher publisher,
+			ICheckpoint writerCheckpoint,
+			ICheckpoint replicationCheckpoint,
+			int commitCount,
+			ITableIndex tableIndex,
+			QueueStatsManager queueStatsManager) {
+			Ensure.NotNull(indexCommitter, nameof(indexCommitter));
+			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
+			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
+			Ensure.Positive(commitCount, nameof(commitCount));
 
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
-			_replicationCheckpoint = replicationCheckpoint;
 			_writerCheckpoint = writerCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_commitCount = commitCount;
 			_tableIndex = tableIndex;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
-		public void Init(long checkpointPosition) {
-			_indexCommitter.Init(checkpointPosition);
+		public void Init(long chaserCheckpoint) {
+			_indexCommitter.Init(chaserCheckpoint);
+			_publisher.Publish(new ReplicationTrackingMessage.IndexedTo(_indexCommitter.LastIndexedPosition));
 			_thread = new Thread(HandleReplicatedQueue);
 			_thread.IsBackground = true;
 			_thread.Name = Name;
@@ -96,6 +103,7 @@ namespace EventStore.Core.Services.Storage {
 				QueueMonitor.Default.Register(this);
 
 				StorageMessage.CommitAck replicatedMessage;
+				var msgType = typeof(StorageMessage.CommitAck);
 				while (!_stop) {
 					_addMsgSignal.Reset();
 					if (_replicatedQueue.TryDequeue(out replicatedMessage)) {
@@ -103,7 +111,7 @@ namespace EventStore.Core.Services.Storage {
 #if DEBUG
 						_queueStats.Dequeued(replicatedMessage);
 #endif
-						_queueStats.ProcessingStarted(replicatedMessage.GetType(), _replicatedQueue.Count);
+						_queueStats.ProcessingStarted(msgType, _replicatedQueue.Count);
 						ProcessCommitReplicated(replicatedMessage);
 						_queueStats.ProcessingEnded(1);
 					} else {
@@ -114,7 +122,7 @@ namespace EventStore.Core.Services.Storage {
 			} catch (Exception exc) {
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
-				Log.FatalException(exc, "Error in IndexCommitterService. Terminating...");
+				Log.Fatal(exc, "Error in IndexCommitterService. Terminating...");
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
@@ -147,8 +155,9 @@ namespace EventStore.Core.Services.Storage {
 
 			lastEventNumber = lastEventNumber == EventNumber.Invalid ? message.LastEventNumber : lastEventNumber;
 
-			_replicationCheckpoint.Write(message.LogPosition);
-			_publisher.Publish(new StorageMessage.CommitReplicated(message.CorrelationId, message.LogPosition,
+			_publisher.Publish(new ReplicationTrackingMessage.IndexedTo(message.LogPosition));
+
+			_publisher.Publish(new StorageMessage.CommitIndexed(message.CorrelationId, message.LogPosition,
 				message.TransactionPosition, message.FirstEventNumber, lastEventNumber));
 		}
 
@@ -194,57 +203,39 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		public void Handle(SystemMessage.StateChangeMessage msg) {
-			if (_state == VNodeState.Master && msg.State != VNodeState.Master) {
-				var commits = _commitAcks.GetAllCommitAcks();
-				foreach (var commit in commits) {
-					CommitReplicated(commit.CommitAcks[0]);
-				}
-
-				_commitAcks.ClearCommitAcks();
-			}
-
-			_state = msg.State;
-		}
-
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
 			_stop = true;
 		}
-
 		public void Handle(StorageMessage.CommitAck message) {
-			if (_state != VNodeState.Master || _commitCount == 1) {
+			lock (_commitAcks) {
+				_commitAcks.TryAdd(message.LogPosition, message);
+			}
+			EnqueueReplicatedCommits();
+		}
+
+		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
+			EnqueueReplicatedCommits();
+		}
+
+		private void EnqueueReplicatedCommits() {
+			var replicated = new List<StorageMessage.CommitAck>();
+			lock (_commitAcks) {
+				if (_commitAcks.Count > 0) {
+					do {
+						var ack = _commitAcks.Values[0];
+						if (ack.LogPosition > _replicationCheckpoint.Read()) { break; }
+						replicated.Add(ack);
+						_commitAcks.RemoveAt(0);
+					} while (_commitAcks.Count > 0);
+				}
+			}
+			foreach (var ack in replicated) {
 #if DEBUG
 				_queueStats.Enqueued();
 #endif
-				_replicatedQueue.Enqueue(message);
+				_replicatedQueue.Enqueue(ack);
 				_addMsgSignal.Set();
-				return;
 			}
-
-			var checkpoint = _replicationCheckpoint.ReadNonFlushed();
-			if (message.LogPosition <= checkpoint) return;
-
-			var res = _commitAcks.AddCommitAck(message);
-			if (res.IsReplicated(_commitCount)) {
-				EnqueueCommitsUpToPosition(message);
-			}
-		}
-
-		private void EnqueueCommitsUpToPosition(StorageMessage.CommitAck message) {
-			var commits = _commitAcks.GetCommitAcksUpTo(message);
-			foreach (var commit in commits) {
-				CommitReplicated(commit.CommitAcks[0]);
-			}
-
-			_commitAcks.RemoveCommitAcks(commits);
-		}
-
-		private void CommitReplicated(StorageMessage.CommitAck message) {
-#if DEBUG
-			_queueStats.Enqueued();
-#endif
-			_replicatedQueue.Enqueue(message);
-			_addMsgSignal.Set();
 		}
 
 		public QueueStats GetStatistics() {
@@ -288,119 +279,9 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		internal class CommitAckLinkedList {
-			private readonly Dictionary<Guid, LinkedListNode<CommitAckNode>> _commitAckNodes =
-				new Dictionary<Guid, LinkedListNode<CommitAckNode>>();
-
-			private readonly LinkedList<CommitAckNode> _commitAcksLinkedList =
-				new LinkedList<CommitAckNode>();
-
-			public CommitAckNode AddCommitAck(StorageMessage.CommitAck message) {
-				LinkedListNode<CommitAckNode> commitAckNode;
-
-				if (_commitAckNodes.TryGetValue(message.CorrelationId, out commitAckNode)) {
-					commitAckNode.Value.AddCommitAck(message);
-				} else {
-					var newCommitAck = new CommitAckNode(message.CorrelationId, message);
-					commitAckNode = _commitAcksLinkedList.AddLast(newCommitAck);
-					_commitAckNodes.Add(message.CorrelationId, commitAckNode);
-				}
-
-				// ensure commit acks are sorted
-				var currentNode = commitAckNode;
-				var previousNode = commitAckNode.Previous;
-
-				while (previousNode != null && previousNode.Value.LogPosition > currentNode.Value.LogPosition) {
-					_commitAcksLinkedList.Remove(previousNode);
-					_commitAcksLinkedList.AddAfter(currentNode, previousNode);
-					previousNode = currentNode.Previous;
-				}
-
-				return commitAckNode.Value;
-			}
-
-			public List<CommitAckNode> GetAllCommitAcks() {
-				var currentNode = _commitAcksLinkedList.First;
-				var result = new List<CommitAckNode>();
-
-				while (currentNode != null) {
-					result.Add(currentNode.Value);
-					currentNode = currentNode.Next;
-				}
-
-				return result;
-			}
-
-			public List<CommitAckNode> GetCommitAcksUpTo(StorageMessage.CommitAck message) {
-				LinkedListNode<CommitAckNode> commitAckNode;
-
-				if (_commitAckNodes.TryGetValue(message.CorrelationId, out commitAckNode)) {
-					var currentNode = commitAckNode;
-					// Ensure that we have all nodes at this position
-					while (currentNode.Next != null &&
-					       currentNode.Next.Value.LogPosition == currentNode.Value.LogPosition) {
-						currentNode = currentNode.Next;
-					}
-
-					var result = new List<CommitAckNode>();
-					do {
-						result.Add(currentNode.Value);
-						currentNode = currentNode.Previous;
-					} while (currentNode != null);
-
-					result.Reverse();
-					return result;
-				} else {
-					throw new InvalidOperationException("Commit ack not present in node list.");
-				}
-			}
-
-			public void ClearCommitAcks() {
-				_commitAckNodes.Clear();
-				_commitAcksLinkedList.Clear();
-			}
-
-			public void RemoveCommitAcks(List<CommitAckNode> commitAcks) {
-				foreach (var commitAck in commitAcks) {
-					LinkedListNode<CommitAckNode> commitAckNode;
-					if (_commitAckNodes.TryGetValue(commitAck.CorrelationId, out commitAckNode)) {
-						_commitAcksLinkedList.Remove(commitAckNode);
-						_commitAckNodes.Remove(commitAck.CorrelationId);
-					} else {
-						throw new InvalidOperationException("Commit ack not present in node list");
-					}
-				}
-			}
-
-			internal class CommitAckNode {
-				public readonly Guid CorrelationId;
-				public readonly long LogPosition;
-				public readonly List<StorageMessage.CommitAck> CommitAcks = new List<StorageMessage.CommitAck>();
-				private bool _hadSelf;
-
-				public CommitAckNode(Guid correlationId, StorageMessage.CommitAck commitAck) {
-					CorrelationId = correlationId;
-					LogPosition = commitAck.LogPosition;
-					AddCommitAck(commitAck);
-				}
-
-				public void AddCommitAck(StorageMessage.CommitAck commitAck) {
-					Ensure.Equal(true, CorrelationId == commitAck.CorrelationId, "correlationId should be equal");
-
-					CommitAcks.Add(commitAck);
-					if (commitAck.IsSelf)
-						_hadSelf = true;
-				}
-
-				public bool IsReplicated(int commitCount) {
-					return CommitAcks.Count >= commitCount && _hadSelf;
-				}
-			}
-		}
-
 		public void Handle(ClientMessage.MergeIndexes message) {
 			if (_tableIndex.IsBackgroundTaskRunning) {
-				Log.Info("A background operation is already running...");
+				Log.Information("A background operation is already running...");
 				MakeReplyForMergeIndexes(message);
 				return;
 			}

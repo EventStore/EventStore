@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -15,6 +15,7 @@ using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Settings;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EmittedStream : IDisposable,
@@ -31,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly string _metadataStreamId;
 		private readonly WriterConfiguration _writerConfiguration;
 		private readonly ProjectionVersion _projectionVersion;
-		private readonly IPrincipal _writeAs;
+		private readonly ClaimsPrincipal _writeAs;
 		private readonly PositionTagger _positionTagger;
 		private readonly CheckpointTag _zeroPosition;
 		private readonly CheckpointTag _fromCheckpointPosition;
@@ -61,11 +62,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private bool _disposed;
 		private bool _recoveryCompleted;
 		private Event _submittedWriteMetaStreamEvent;
-		private const int MaxRetryCount = 5;
+		private const int MaxRetryCount = 12;
+		private const int MinAttemptWarnThreshold = 5;
 		private Guid _pendingRequestCorrelationId;
+		private Random _random = new Random();
 
 		public class WriterConfiguration {
-			private readonly IPrincipal _writeAs;
+			private readonly ClaimsPrincipal _writeAs;
 			private readonly int _maxWriteBatchLength;
 			private readonly ILogger _logger;
 
@@ -93,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			public WriterConfiguration(
-				IEmittedStreamsWriter writer, StreamMetadata streamMetadata, IPrincipal writeAs,
+				IEmittedStreamsWriter writer, StreamMetadata streamMetadata, ClaimsPrincipal writeAs,
 				int maxWriteBatchLength, ILogger logger = null) {
 				_writer = writer;
 				_writeAs = writeAs;
@@ -105,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				}
 			}
 
-			public IPrincipal WriteAs {
+			public ClaimsPrincipal WriteAs {
 				get { return _writeAs; }
 			}
 
@@ -226,7 +229,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			if (_logger != null) {
-				_logger.Info("Failed to write events to stream {stream}. Error: {e}",
+				_logger.Information("Failed to write events to stream {stream}. Error: {e}",
 					_streamId,
 					Enum.GetName(typeof(OperationResult), message.Result));
 			}
@@ -393,7 +396,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_awaitingListEventsCompleted = true;
 			_pendingRequestCorrelationId = Guid.NewGuid();
 			_ioDispatcher.ReadBackward(
-				_streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccount.Principal,
+				_streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccounts.System,
 				action: completed => ReadStreamEventsBackwardCompleted(completed, upTo),
 				corrId: _pendingRequestCorrelationId);
 			ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, _streamId, upTo, fromEventNumber);
@@ -443,7 +446,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void PublishWriteMetaStream(int retryCount) {
-			var delayInSeconds = MaxRetryCount - retryCount;
+			int attempt = MaxRetryCount - retryCount + 1;
+			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
+			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
+				_logger.Warning("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+					attempt,
+					_metadataStreamId,
+					delayInSeconds);
+			}
+
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
 					_metadataStreamId, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
@@ -469,7 +480,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			if (_logger != null) {
-				_logger.Info("Failed to write events to stream {stream}. Error: {e}",
+				_logger.Information("Failed to write events to stream {stream}. Error: {e}",
 					_metadataStreamId,
 					Enum.GetName(typeof(OperationResult), message.Result));
 			}
@@ -578,10 +589,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			//TODO: if the following statement is about event order stream - let write null event into this stream
 			//NOTE: the following condition is only meant to detect concurrency violations when
-			// another instance of the projection (running in the another node etc) has been writing to 
+			// another instance of the projection (running in the another node etc) has been writing to
 			// the same stream.  However, the expected tag sometimes can be greater than last actually written tag
-			// This happens when a projection is restarted from a checkpoint and the checkpoint has been made at 
-			// position not updating the projection state 
+			// This happens when a projection is restarted from a checkpoint and the checkpoint has been made at
+			// position not updating the projection state
 			return expectedTag != _lastCommittedOrSubmittedEventPosition;
 		}
 
@@ -592,7 +603,15 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			_awaitingWriteCompleted = true;
-			var delayInSeconds = MaxRetryCount - retryCount;
+			int attempt = MaxRetryCount - retryCount + 1;
+			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
+			if (attempt >= MinAttemptWarnThreshold && _logger != null) {
+				_logger.Warning("Attempt: {attempt} to write events to stream {stream}. Backing off for {time} second(s).",
+					attempt,
+					_streamId,
+					delayInSeconds);
+			}
+
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
 					_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
@@ -603,6 +622,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 						_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
 						m => HandleWriteEventsCompleted(m, retryCount)));
 			}
+		}
+
+		private int CalculateBackoffTimeSecs(int attempt) {
+			attempt--;
+			if (attempt == 0) return 0;
+			var expBackoff = attempt < 9 ? (1 << attempt) : 256;
+			return _random.Next(1, expBackoff + 1);
 		}
 
 		private void EnsureCheckpointNotRequested() {

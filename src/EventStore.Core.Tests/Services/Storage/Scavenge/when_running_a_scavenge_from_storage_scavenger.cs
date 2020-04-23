@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
@@ -11,38 +10,42 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.ClientAPI;
 using NUnit.Framework;
-using ILogger = EventStore.Common.Log.ILogger;
+using ILogger = Serilog.ILogger;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture]
 	public class when_running_scavenge_from_storage_scavenger : SpecificationWithDirectoryPerTestFixture {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<when_running_scavenge_from_storage_scavenger>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 		private MiniNode _node;
 		private List<ResolvedEvent> _result;
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
-			_node.Start();
+			await _node.Start();
 
 			var scavengeMessage =
-				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccount.Principal, 0, 1);
+				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccounts.System, 0, 1);
 			_node.Node.MainQueue.Publish(scavengeMessage);
 
-			When();
+			try {
+				await When().WithTimeout();
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
+			}
 		}
 
 		[TearDown]
-		public void TearDown() {
-			_node.Shutdown();
+		public async Task TearDown() {
+			await _node.Shutdown();
 		}
 
-		public void When() {
+		public async Task When() {
 			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, DefaultData.AdminCredentials)) {
-				conn.ConnectAsync().Wait();
+				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();
 
@@ -52,8 +55,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 						countdown.Signal();
 						return Task.CompletedTask;
 					},
-					_ => Log.Info("Processing events started."),
-					(x, y, z) => { Log.Info("Subscription dropped: {0}, {1}.", y, z); }
+					_ => Log.Information("Processing events started."),
+					(x, y, z) => { Log.Information("Subscription dropped: {0}, {1}.", y, z); }
 				);
 
 				if (!countdown.Wait(Timeout)) {

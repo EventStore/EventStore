@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 						ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any,
-								_fakeTimeProvider.Now,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								"event_type1", new byte[] {1}, new byte[] {2})),
 					}, null, false, "", 2, 1, true, 200));
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 						ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "b", ExpectedVersion.Any,
-								_fakeTimeProvider.Now,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								"event_type1", new byte[] {1}, new byte[] {2})),
 					}, null, false, "", 3, 2, true, 200));

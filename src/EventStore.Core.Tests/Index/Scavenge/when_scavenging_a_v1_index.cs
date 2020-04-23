@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using NUnit.Framework;
@@ -26,16 +27,16 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		}
 
 		[OneTimeSetUp]
-		public override void TestFixtureSetUp() {
+		public override async Task TestFixtureSetUp() {
 			hasher = new Murmur3AUnsafe();
-			base.TestFixtureSetUp();
+			await base.TestFixtureSetUp();
 
 			var table = new HashListMemTable(PTableVersions.IndexV1, maxSize: 20);
 			table.Add(0x010100000000, 0, 1);
 			table.Add(0x010200000000, 0, 2);
 			table.Add(0x010300000000, 0, 3);
 			table.Add(0x010300000000, 1, 4);
-			_oldTable = PTable.FromMemtable(table, GetTempFilePath());
+			_oldTable = PTable.FromMemtable(table, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault);
 
 			long spaceSaved;
 			_upgradeHash = (streamId, hash) => hash << 32 | hasher.Hash(streamId);
@@ -43,15 +44,15 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			Func<IndexEntry, Tuple<string, bool>> readRecord = x =>
 				new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0);
 			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), _upgradeHash, existsAt, readRecord, _newVersion,
-				out spaceSaved, skipIndexVerify: _skipIndexVerify);
+				out spaceSaved, skipIndexVerify: _skipIndexVerify, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault);
 		}
 
 		[OneTimeTearDown]
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			_oldTable.Dispose();
 			_newtable.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		[Test]
@@ -83,8 +84,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			var last = new IndexEntry(ulong.MaxValue, 0, long.MaxValue);
 			foreach (var item in _newtable.IterateAllInOrder()) {
 				Assert.IsTrue((last.Stream == item.Stream ? last.Version > item.Version : last.Stream > item.Stream) ||
-				              ((last.Stream == item.Stream && last.Version == item.Version) &&
-				               last.Position > item.Position));
+							  ((last.Stream == item.Stream && last.Version == item.Version) &&
+							   last.Position > item.Position));
 				last = item;
 			}
 		}

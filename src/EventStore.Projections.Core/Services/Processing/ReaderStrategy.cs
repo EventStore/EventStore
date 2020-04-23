@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
+using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -17,9 +17,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly bool _includeLinks;
 		private readonly HashSet<string> _events;
 		private readonly bool _includeStreamDeletedNotification;
-		private readonly string _catalogStream;
 		private readonly bool _reorderEvents;
-		private readonly IPrincipal _runAs;
+		private readonly ClaimsPrincipal _runAs;
 		private readonly int _processingLag;
 
 
@@ -30,29 +29,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly string _tag;
 		private readonly int _phase;
 
-		public static IReaderStrategy CreateExternallyFedReaderStrategy(
-			string tag,
-			int phase,
-			ITimeProvider timeProvider,
-			IPrincipal runAs,
-			long limitingCommitPosition) {
-			var readerStrategy = new ExternallyFedReaderStrategy(
-				tag,
-				phase,
-				timeProvider,
-				limitingCommitPosition);
-			return readerStrategy;
-		}
-
 		public static IReaderStrategy Create(
 			string tag,
 			int phase,
 			IQuerySources sources,
 			ITimeProvider timeProvider,
 			bool stopOnEof,
-			IPrincipal runAs) {
-			if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams()
-			    && string.IsNullOrEmpty(sources.CatalogStream))
+			ClaimsPrincipal runAs) {
+			if (!sources.AllStreams && !sources.HasCategories() && !sources.HasStreams())
 				throw new InvalidOperationException("None of streams and categories are included");
 			if (!sources.AllEvents && !sources.HasEvents())
 				throw new InvalidOperationException("None of events are included");
@@ -68,18 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException(
 					"foreachStream projections are not supported on stream based sources");
 
-			if ((sources.HasStreams() || sources.AllStreams) && !string.IsNullOrEmpty(sources.CatalogStream))
-				throw new InvalidOperationException("catalogStream cannot be used with streams or allStreams");
-
-			if (!string.IsNullOrEmpty(sources.CatalogStream) && !sources.ByStreams)
-				throw new InvalidOperationException("catalogStream is only supported in the byStream mode");
-
-			if (!string.IsNullOrEmpty(sources.CatalogStream) && !stopOnEof)
-				throw new InvalidOperationException("catalogStream is not supported in the projections mode");
-
 			if (sources.ReorderEventsOption) {
-				if (!string.IsNullOrEmpty(sources.CatalogStream))
-					throw new InvalidOperationException("Event reordering cannot be used with stream catalogs");
 				if (sources.AllStreams)
 					throw new InvalidOperationException("Event reordering cannot be used with fromAll()");
 				if (!(sources.HasStreams() && sources.Streams.Length > 1)) {
@@ -105,7 +78,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				sources.IncludeLinksOption,
 				sources.Events,
 				sources.HandlesDeletedNotifications,
-				sources.CatalogStream,
 				sources.ProcessingLagOption,
 				sources.ReorderEventsOption,
 				runAs,
@@ -123,10 +95,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			bool includeLinks,
 			string[] events,
 			bool includeStreamDeletedNotification,
-			string catalogStream,
 			int? processingLag,
 			bool reorderEvents,
-			IPrincipal runAs,
+			ClaimsPrincipal runAs,
 			ITimeProvider timeProvider) {
 			_tag = tag;
 			_phase = phase;
@@ -137,7 +108,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_includeLinks = includeLinks;
 			_events = events != null && events.Length > 0 ? new HashSet<string>(events) : null;
 			_includeStreamDeletedNotification = includeStreamDeletedNotification;
-			_catalogStream = catalogStream;
 			_processingLag = processingLag.GetValueOrDefault();
 			_reorderEvents = reorderEvents;
 			_runAs = runAs;
@@ -231,12 +201,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 					eventReaderId, ioDispatcher, publisher, checkpointTag, stopOnEof, stopAfterNEvents, true, _streams);
 			}
 
-			if (!string.IsNullOrEmpty(_catalogStream)) {
-				return CreatePausedCatalogReader(
-					eventReaderId, publisher, ioDispatcher, checkpointTag, stopOnEof, stopAfterNEvents, true,
-					_catalogStream);
-			}
-
 			throw new NotSupportedException();
 		}
 
@@ -259,8 +223,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return new StreamEventFilter(_streams.First(), _allEvents, _events);
 			if (_streams != null && _streams.Count > 1)
 				return new MultiStreamEventFilter(_streams, _allEvents, _events);
-			if (!string.IsNullOrEmpty(_catalogStream))
-				return new BypassingEventFilter();
 			throw new NotSupportedException();
 		}
 
@@ -280,9 +242,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return new StreamPositionTagger(_phase, _streams.First());
 			if (_streams != null && _streams.Count > 1)
 				return new MultiStreamPositionTagger(_phase, _streams.ToArray());
-			if (!string.IsNullOrEmpty(_catalogStream))
-				return new PreTaggedPositionTagger(
-					_phase, CheckpointTag.FromByStreamPosition(0, _catalogStream, -1, null, -1, long.MinValue));
 			//TODO: consider passing projection phase from outside (above)
 			throw new NotSupportedException();
 		}
@@ -324,22 +283,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return new MultiStreamEventReader(
 				ioDispatcher, publisher, eventReaderId, _runAs, Phase, streams.ToArray(), nextPositions, resolveLinkTos,
 				_timeProvider, stopOnEof, stopAfterNEvents);
-		}
-
-		private IEventReader CreatePausedCatalogReader(
-			Guid eventReaderId, IPublisher publisher, IODispatcher ioDispatcher, CheckpointTag checkpointTag,
-			bool stopOnEof, int? stopAfterNEvents, bool resolveLinkTos, string catalogStream) {
-			if (!stopOnEof) throw new ArgumentException("stopOnEof must be true", "stopOnEof");
-
-			var startFromCatalogEventNumber = checkpointTag.CatalogPosition + 1; // read catalog from the next position
-			var startFromDataStreamName = checkpointTag.DataStream;
-			var startFromDataStreamEventNumber = checkpointTag.DataPosition + 1; //as it was the last read event
-			var limitingCommitPosition = checkpointTag.CommitPosition;
-
-			return new ByStreamCatalogEventReader(
-				publisher, eventReaderId, _runAs, ioDispatcher, catalogStream, startFromCatalogEventNumber,
-				startFromDataStreamName, startFromDataStreamEventNumber, limitingCommitPosition,
-				resolveLinkTos);
 		}
 	}
 }

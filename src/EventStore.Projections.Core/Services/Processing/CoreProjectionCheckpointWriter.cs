@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -8,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class CoreProjectionCheckpointWriter {
@@ -23,13 +23,16 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private Event _checkpointEventToBePublished;
 		private CheckpointTag _requestedCheckpointPosition;
 		private IEnvelope _envelope;
-		private const int MaxNumberOfRetries = 5;
+		private const int MaxNumberOfRetries = 12;
+		private const int MinAttemptWarnThreshold = 5;
+		private bool _metaStreamWritten;
+		private Random _random = new Random();
 
 		public CoreProjectionCheckpointWriter(
 			string projectionCheckpointStreamId, IODispatcher ioDispatcher, ProjectionVersion projectionVersion,
 			string name) {
 			_projectionCheckpointStreamId = projectionCheckpointStreamId;
-			_logger = LogManager.GetLoggerFor<CoreProjectionCheckpointWriter>();
+			_logger = Serilog.Log.ForContext<CoreProjectionCheckpointWriter>();
 			_ioDispatcher = ioDispatcher;
 			_projectionVersion = projectionVersion;
 			_name = name;
@@ -45,7 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				Guid.NewGuid(), ProjectionEventTypes.ProjectionCheckpoint, true,
 				requestedCheckpointState == null ? null : Helper.UTF8NoBom.GetBytes(requestedCheckpointState),
 				requestedCheckpointPosition.ToJsonBytes(projectionVersion: _projectionVersion));
-			PublishWriteStreamMetadataAndCheckpointEvent();
+			PublishWriteStreamMetadataAndCheckpointEventDelayed();
 		}
 
 		private void WriteCheckpointEventCompleted(
@@ -54,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException();
 			if (operationResult == OperationResult.Success) {
 				if (_logger != null)
-					_logger.Trace(
+					_logger.Verbose(
 						"Checkpoint has been written for projection {projection} at sequence number {firstWrittenEventNumber} (current)",
 						_name,
 						firstWrittenEventNumber);
@@ -65,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					new CoreProjectionCheckpointWriterMessage.CheckpointWritten(_requestedCheckpointPosition));
 			} else {
 				if (_logger != null) {
-					_logger.Info(
+					_logger.Information(
 						"Failed to write projection checkpoint to stream {stream}. Error: {e}", eventStreamId,
 						Enum.GetName(typeof(OperationResult), operationResult));
 				}
@@ -91,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 						}
 
 						_inCheckpointWriteAttempt++;
-						PublishWriteStreamMetadataAndCheckpointEvent();
+						PublishWriteStreamMetadataAndCheckpointEventDelayed();
 						break;
 					default:
 						throw new NotSupportedException("Unsupported error code received");
@@ -99,12 +102,32 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 		}
 
+		private void PublishWriteStreamMetadataAndCheckpointEventDelayed() {
+			var attempt = _inCheckpointWriteAttempt;
+			var delayInSeconds = CalculateBackoffTimeSecs(attempt);
+			if(delayInSeconds == 0)
+				PublishWriteStreamMetadataAndCheckpointEvent();
+			else {
+				if (attempt >= MinAttemptWarnThreshold && _logger != null) {
+					_logger.Warning("Attempt: {attempt} to write checkpoint for {projection} at {requestedCheckpointPosition} with expected version number {lastWrittenCheckpointEventNumber}. Backing off for {time} second(s).",
+						attempt,
+						_name,
+						_requestedCheckpointPosition,
+						_lastWrittenCheckpointEventNumber,
+						delayInSeconds);
+				}
+				_ioDispatcher.Delay(
+					TimeSpan.FromSeconds(delayInSeconds),
+					PublishWriteStreamMetadataAndCheckpointEvent);
+			}
+		}
+
 		private void PublishWriteStreamMetadataAndCheckpointEvent() {
 			if (_logger != null)
-				_logger.Trace(
+				_logger.Verbose(
 					"Writing checkpoint for {projection} at {requestedCheckpointPosition} with expected version number {lastWrittenCheckpointEventNumber}",
 					_name, _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
-			if (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream)
+			if (!_metaStreamWritten)
 				PublishWriteStreamMetadata();
 			else
 				PublishWriteCheckpointEvent();
@@ -113,9 +136,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void PublishWriteStreamMetadata() {
 			var metaStreamId = SystemStreams.MetastreamOf(_projectionCheckpointStreamId);
 			_writeRequestId = _ioDispatcher.WriteEvent(
-				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccount.Principal, msg => {
+				metaStreamId, ExpectedVersion.Any, CreateStreamMetadataEvent(), SystemAccounts.System, msg => {
 					switch (msg.Result) {
 						case OperationResult.Success:
+							_metaStreamWritten = true;
 							PublishWriteCheckpointEvent();
 							break;
 						default:
@@ -139,7 +163,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void PublishWriteCheckpointEvent() {
 			_writeRequestId = _ioDispatcher.WriteEvent(
 				_projectionCheckpointStreamId, _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished,
-				SystemAccount.Principal,
+				SystemAccounts.System,
 				msg => WriteCheckpointEventCompleted(_projectionCheckpointStreamId, msg.Result, msg.FirstEventNumber));
 		}
 
@@ -148,6 +172,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_inCheckpointWriteAttempt = 0;
 			_ioDispatcher.Writer.Cancel(_writeRequestId);
 			_lastWrittenCheckpointEventNumber = ExpectedVersion.Invalid;
+			_metaStreamWritten = false;
 		}
 
 		public void GetStatistics(ProjectionStatistics info) {
@@ -159,6 +184,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void StartFrom(CheckpointTag checkpointTag, long checkpointEventNumber) {
 			_lastWrittenCheckpointEventNumber = checkpointEventNumber;
+			_metaStreamWritten = checkpointEventNumber != ExpectedVersion.NoStream;
+		}
+
+		private int CalculateBackoffTimeSecs(int attempt) {
+			attempt--;
+			if (attempt == 0) return 0;
+			var expBackoff = attempt < 9 ? (1 << attempt) : 256;
+			return _random.Next(1, expBackoff + 1);
 		}
 	}
 }

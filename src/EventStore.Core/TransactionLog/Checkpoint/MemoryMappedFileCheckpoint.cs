@@ -34,10 +34,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 				FileShare.ReadWrite);
 			_fileStream.SetLength(sizeof(long));
 			_file = MemoryMappedFile.CreateFromFile(_fileStream,
-				Guid.NewGuid().ToString(),
+				null,
 				sizeof(long),
 				MemoryMappedFileAccess.ReadWrite,
-				new MemoryMappedFileSecurity(),
 				HandleInheritability.None,
 				false);
 			_accessor = _file.CreateViewAccessor(0, sizeof(long));
@@ -69,8 +68,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			_accessor.Flush();
 
 			_fileStream.FlushToDisk();
-//            if (!FileStreamExtensions.FlushFileBuffers(_fileHandle))
-//                throw new Exception(string.Format("FlushFileBuffers failed with err: {0}", Marshal.GetLastWin32Error()));
 
 			Interlocked.Exchange(ref _lastFlushed, last);
 

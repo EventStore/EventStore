@@ -30,11 +30,16 @@ namespace EventStore.ClientAPI {
 		/// A boolean representing whether or not this is the end of the $all stream.
 		/// </summary>
 		public bool IsEndOfStream {
-			get { return Events.Length == 0; }
+			get;
 		}
 
 		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,
-			ClientMessage.ResolvedEvent[] events) {
+			ClientMessage.ResolvedEvent[] events) : this(readDirection, fromPosition, nextPosition, events,
+			events == null || events.Length == 0) {
+		}
+
+		internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition,
+			ClientMessage.ResolvedEvent[] events, bool isEndOfStream) {
 			ReadDirection = readDirection;
 			FromPosition = fromPosition;
 			NextPosition = nextPosition;
@@ -46,6 +51,8 @@ namespace EventStore.ClientAPI {
 					Events[i] = new ResolvedEvent(events[i]);
 				}
 			}
+
+			IsEndOfStream = isEndOfStream;
 		}
 	}
 }

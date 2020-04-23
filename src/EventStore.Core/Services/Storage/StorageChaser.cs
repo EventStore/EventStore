@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -15,13 +14,14 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageChaser : IMonitoredQueue,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly ILogger Log = LogManager.GetLoggerFor<StorageChaser>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<StorageChaser>();
 
 		private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly int MinFlushDelay = 2 * TicksPerMs;
@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Storage {
 
 		public string Name => _queueStats.Name;
 
-		private readonly IPublisher _masterBus;
+		private readonly IPublisher _leaderBus;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ITransactionFileChaser _chaser;
 		private readonly IIndexCommitterService _indexCommitterService;
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Storage {
 		private volatile bool _stop;
 		private volatile bool _systemStarted;
 
-		private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
+		private readonly QueueStatsCollector _queueStats;
 
 		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private long _flushDelay;
@@ -56,22 +56,24 @@ namespace EventStore.Core.Services.Storage {
 			get { return _tcs.Task; }
 		}
 
-		public StorageChaser(IPublisher masterBus,
+		public StorageChaser(IPublisher leaderBus,
 			ICheckpoint writerCheckpoint,
 			ITransactionFileChaser chaser,
 			IIndexCommitterService indexCommitterService,
-			IEpochManager epochManager) {
-			Ensure.NotNull(masterBus, "masterBus");
+			IEpochManager epochManager,
+			QueueStatsManager queueStatsManager) {
+			Ensure.NotNull(leaderBus, "leaderBus");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaser, "chaser");
 			Ensure.NotNull(indexCommitterService, "indexCommitterService");
 			Ensure.NotNull(epochManager, "epochManager");
 
-			_masterBus = masterBus;
+			_leaderBus = leaderBus;
 			_writerCheckpoint = writerCheckpoint;
 			_chaser = chaser;
 			_indexCommitterService = indexCommitterService;
 			_epochManager = epochManager;
+			_queueStats = queueStatsManager.CreateQueueStatsCollector("Storage Chaser");
 
 			_flushDelay = 0;
 			_lastFlush = _watch.ElapsedTicks;
@@ -100,9 +102,9 @@ namespace EventStore.Core.Services.Storage {
 				// We rebuild index till the chaser position, because
 				// everything else will be done by chaser as during replication
 				// with no concurrency issues with writer, as writer before jumping
-				// into master-mode and accepting writes will wait till chaser caught up.
+				// into leader mode and accepting writes will wait till chaser caught up.
 				_indexCommitterService.Init(_chaser.Checkpoint.Read());
-				_masterBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
+				_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
 
 				while (!_stop) {
 					if (_systemStarted)
@@ -111,7 +113,7 @@ namespace EventStore.Core.Services.Storage {
 						Thread.Sleep(1);
 				}
 			} catch (Exception exc) {
-				Log.FatalException(exc, "Error in StorageChaser. Terminating...");
+				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedChaserState>(0);
 				_tcs.TrySetException(exc);
@@ -128,7 +130,7 @@ namespace EventStore.Core.Services.Storage {
 
 			_writerCheckpoint.Flushed -= OnWriterFlushed;
 			_chaser.Close();
-			_masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
+			_leaderBus.Publish(new SystemMessage.ServiceShutdown(Name));
 		}
 
 		private void OnWriterFlushed(long obj) {
@@ -195,7 +197,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (result.Eof && result.LogRecord.RecordType != LogRecordType.Commit && _commitsAfterEof) {
 				_commitsAfterEof = false;
-				_masterBus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
+				_leaderBus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 			}
 		}
 
@@ -220,15 +222,14 @@ namespace EventStore.Core.Services.Storage {
 						lastEventNumber = record.ExpectedVersion;
 					}
 
-					_masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
+					_leaderBus.Publish(new StorageMessage.CommitAck(record.CorrelationId,
 						record.LogPosition,
 						record.TransactionPosition,
 						firstEventNumber,
-						lastEventNumber,
-						true));
+						lastEventNumber));
 				}
-			} else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) {
-				_masterBus.Publish(
+			} else if (record.Flags.HasAnyOf(PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.Data)) {
+				_leaderBus.Publish(
 					new StorageMessage.PrepareAck(record.CorrelationId, record.LogPosition, record.Flags));
 			}
 		}
@@ -241,8 +242,8 @@ namespace EventStore.Core.Services.Storage {
 			_indexCommitterService.AddPendingCommit(record, postPosition);
 			if (lastEventNumber == EventNumber.Invalid)
 				lastEventNumber = record.FirstEventNumber - 1;
-			_masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition,
-				record.TransactionPosition, firstEventNumber, lastEventNumber, true));
+			_leaderBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, record.LogPosition,
+				record.TransactionPosition, firstEventNumber, lastEventNumber));
 		}
 
 		private void ProcessSystemRecord(SystemLogRecord record) {
@@ -250,7 +251,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (record.SystemRecordType == SystemRecordType.Epoch) {
 				// Epoch record is written to TF, but possibly is not added to EpochManager
-				// as we could be in Slave\Clone mode. We try to add epoch to EpochManager
+				// as we could be in Follower/Clone mode. We try to add epoch to EpochManager
 				// every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent,
 				// but does integrity checks.
 				var epoch = record.GetEpochRecord();

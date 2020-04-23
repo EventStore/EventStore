@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpConnectionMonitor {
 		public static readonly TcpConnectionMonitor Default = new TcpConnectionMonitor();
-		private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionMonitor>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionMonitor>();
 
 		private readonly object _statsLock = new object();
 
@@ -74,20 +74,6 @@ namespace EventStore.Transport.Tcp {
 				_pendingReceivedOnLastRun,
 				measurePeriod);
 
-
-			if (Application.IsDefined(Application.DumpStatistics)) {
-				Log.Trace(
-					"\n# Total connections: {connections,3}. Out: {sendingSpeed:0.00}b/s  In: {receivingSpeed:0.00}b/s  Pending Send: {pendingSend}  " +
-					"In Send: {inSend}  Pending Received: {pendingReceived} Measure Time: {measureTime}",
-					stats.Connections,
-					stats.SendingSpeed,
-					stats.ReceivingSpeed,
-					stats.PendingSend,
-					stats.InSend,
-					stats.PendingReceived,
-					stats.MeasureTime);
-			}
-
 			return stats;
 		}
 
@@ -97,7 +83,7 @@ namespace EventStore.Transport.Tcp {
 				return;
 
 			if (connection.IsFaulted) {
-				Log.Info("# {connection} is faulted", connection);
+				Log.Information("# {connection} is faulted", connection);
 				return;
 			}
 
@@ -172,14 +158,14 @@ namespace EventStore.Transport.Tcp {
 		private static void CheckPendingSend(IMonitoredTcpConnection connection) {
 			int pendingSendBytes = connection.PendingSendBytes;
 			if (pendingSendBytes > 128 * 1024) {
-				Log.Info("# {connection} {pendingSendKiloBytes}kb pending send", connection, pendingSendBytes / 1024);
+				Log.Information("# {connection} {pendingSendKiloBytes}kb pending send", connection, pendingSendBytes / 1024);
 			}
 		}
 
 		private static void CheckPendingReceived(IMonitoredTcpConnection connection) {
 			int pendingReceivedBytes = connection.PendingReceivedBytes;
 			if (pendingReceivedBytes > 128 * 1024) {
-				Log.Info("# {connection} {pendingReceivedKiloBytes}kb are not dispatched", connection,
+				Log.Information("# {connection} {pendingReceivedKiloBytes}kb are not dispatched", connection,
 					pendingReceivedBytes / 1024);
 			}
 		}

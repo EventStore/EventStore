@@ -1,39 +1,60 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
-    <Platform>x64</Platform>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <OutputType>Exe</OutputType>
-    <ApplicationIcon>app2.ico</ApplicationIcon>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.ComponentModel.Composition" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />   
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\EventStore.Common\Log\log.config">
-      <Link>log.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="app2.ico" />
-  </ItemGroup>
-  <!-- TODO(jen20): Investigate which of these are correct -->
-  <PropertyGroup>
-    <IsMac>false</IsMac>
-    <IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
-  </PropertyGroup>
-  <Target Name="CopyJs1" BeforeTargets="BeforeBuild">
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-    <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-  </Target>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+		<PropertyGroup>
+				<TargetFramework>netcoreapp3.1</TargetFramework>
+				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+				<OutputType>Exe</OutputType>
+				<ApplicationIcon>app2.ico</ApplicationIcon>
+				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+				<Platforms>x64</Platforms>
+		</PropertyGroup>
+		<ItemGroup>
+				<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0"/>
+				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+		</ItemGroup>
+		<ItemGroup>
+				<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj"/>
+				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
+				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
+				<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj"/>
+				<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj"/>
+		</ItemGroup>
+		<ItemGroup>
+				<None Include="..\EventStore.Common\Log\logconfig.json">
+						<Link>logconfig.json</Link>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+		</ItemGroup>
+		<ItemGroup>
+				<Content Include="app2.ico"/>
+		</ItemGroup>
+		<!-- TODO(jen20): Investigate which of these are correct -->
+		<PropertyGroup>
+				<IsMac>false</IsMac>
+				<IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
+		</PropertyGroup>
+		<ItemGroup>
+				<Content Include="..\EventStore.Projections.Core\Prelude\**\*">
+						<PackagePath>Prelude</PackagePath>
+						<Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</Content>
+				<Content Include="..\dev-ca\**\*.pem;..\dev-ca\**\*.key;..\dev-ca\**\*.pfx">
+						<PackagePath>dev-ca</PackagePath>
+						<Link>dev-ca/%(RecursiveDir)%(Filename)%(Extension)</Link>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</Content>
+				<Content Include="..\libs\x64\win\js1.dll;..\libs\x64\win\js1.pdb" Condition=" '$(OS)' == 'Windows_NT' ">
+						<PackagePath>runtimes/win-x64/native/js1.dll</PackagePath>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</Content>
+				<Content Include="..\libs\x64\linux\libjs1.so" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'">
+						<PackagePath>runtimes/linux-x64/native/libjs1.so</PackagePath>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</Content>
+				<Content Include="..\libs\x64\mac\libjs1.dylib" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'">
+						<PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</Content>
+		</ItemGroup>
 </Project>

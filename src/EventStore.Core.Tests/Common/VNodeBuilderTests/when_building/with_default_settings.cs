@@ -1,13 +1,9 @@
-using EventStore.Core.Authentication;
-using EventStore.Common.Options;
-using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using NUnit.Framework;
-using System;
 using System.Net;
-using System.Collections.Generic;
+using EventStore.Core.Authentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	[TestFixture]
@@ -19,7 +15,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
 			Assert.AreEqual(1, _settings.ClusterNodeCount, "ClusterNodeCount");
-			Assert.IsInstanceOf<InternalAuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf<AuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
 			Assert.AreEqual(StatsStorage.Stream, _settings.StatsStorage);
 		}
 
@@ -29,18 +25,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 1113), _settings.NodeInfo.ExternalTcp);
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2112), _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(new IPEndPoint(IPAddress.Loopback, 2113), _settings.NodeInfo.ExternalHttp);
-
-			var intHttpPrefixes = new List<string> {"http://127.0.0.1:2112/", "http://localhost:2112/"};
-			var extHttpPrefixes = new List<string> {"http://127.0.0.1:2113/", "http://localhost:2113/"};
-			CollectionAssert.AreEqual(intHttpPrefixes, _settings.IntHttpPrefixes);
-			CollectionAssert.AreEqual(extHttpPrefixes, _settings.ExtHttpPrefixes);
 		}
 
 		[Test]
-		public void should_not_use_ssl() {
-			Assert.AreEqual("n/a", _settings.Certificate == null ? "n/a" : _settings.Certificate.ToString());
-			Assert.IsFalse(_settings.UseSsl);
-			Assert.AreEqual("n/a", _settings.SslTargetHost == null ? "n/a" : _settings.SslTargetHost);
+		public void should_use_tls() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -66,12 +56,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"StartStandardProjections");
 			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes,
 				"UnsafeIgnoreHardDeletes");
-			Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
 			Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
 			Assert.AreEqual(1, _settings.PrepareAckCount, "PrepareAckCount");
 			Assert.AreEqual(1, _settings.CommitAckCount, "CommitAckCount");
 			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
 			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");
+			Assert.AreEqual(Opts.WriteTimeoutMsDefault, _settings.WriteTimeout.TotalMilliseconds, "WriteTimeout");
 
 			Assert.AreEqual(Opts.IntTcpHeartbeatIntervalDefault, _settings.IntTcpHeartbeatInterval.TotalMilliseconds,
 				"IntTcpHeartbeatInterval");
@@ -96,7 +86,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
 			Assert.AreEqual(_clusterSize, _settings.ClusterNodeCount, "ClusterNodeCount");
-			Assert.IsInstanceOf<InternalAuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
+			Assert.IsInstanceOf<AuthenticationProviderFactory>(_settings.AuthenticationProviderFactory);
 			Assert.AreEqual(StatsStorage.Stream, _settings.StatsStorage);
 		}
 
@@ -112,12 +102,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(internalHttp, _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(externalHttp, _settings.NodeInfo.ExternalHttp);
 
-			var intHttpPrefixes = new List<string> {"http://127.0.0.1:2112/", "http://localhost:2112/"};
-			var extHttpPrefixes = new List<string> {"http://127.0.0.1:2113/", "http://localhost:2113/"};
-
-			CollectionAssert.AreEqual(intHttpPrefixes, _settings.IntHttpPrefixes);
-			CollectionAssert.AreEqual(extHttpPrefixes, _settings.ExtHttpPrefixes);
-
 			Assert.AreEqual(internalTcp, _settings.GossipAdvertiseInfo.InternalTcp);
 			Assert.AreEqual(externalTcp, _settings.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(internalHttp, _settings.GossipAdvertiseInfo.InternalHttp);
@@ -125,10 +109,9 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		}
 
 		[Test]
-		public void should_not_use_ssl() {
-			Assert.AreEqual("n/a", _settings.Certificate == null ? "n/a" : _settings.Certificate.ToString());
-			Assert.IsFalse(_settings.UseSsl);
-			Assert.AreEqual("n/a", _settings.SslTargetHost == null ? "n/a" : _settings.SslTargetHost.ToString());
+		public void should_use_tls() {
+			Assert.IsFalse(_settings.DisableInternalTls);
+			Assert.IsFalse(_settings.DisableExternalTls);
 		}
 
 		[Test]
@@ -154,7 +137,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"StartStandardProjections");
 			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes,
 				"UnsafeIgnoreHardDeletes");
-			Assert.AreEqual(Opts.BetterOrderingDefault, _settings.BetterOrdering, "BetterOrdering");
 			Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
 			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
 			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");

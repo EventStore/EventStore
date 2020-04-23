@@ -27,13 +27,13 @@ namespace EventStore.Core.Services.TimerService {
 
 		public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state) {
 			lock (_queueLock) {
-				_tasks.Add(new ScheduledTask(_timeProvider.Now.Add(after), callback, state));
+				_tasks.Add(new ScheduledTask(_timeProvider.UtcNow.Add(after), callback, state));
 				ResetTimer();
 			}
 		}
 
 		protected void ProcessOperations() {
-			while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.Now) {
+			while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.UtcNow) {
 				var scheduledTask = _tasks.DeleteMin();
 				scheduledTask.Action(this, scheduledTask.State);
 			}
@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.TimerService {
 		private void ResetTimer() {
 			if (_tasks.Count > 0) {
 				var tuple = _tasks.FindMin();
-				_timer.FireIn((int)(tuple.DueTime - _timeProvider.Now).TotalMilliseconds, OnTimerFired);
+				_timer.FireIn((int)(tuple.DueTime - _timeProvider.UtcNow).TotalMilliseconds, OnTimerFired);
 			} else {
 				_timer.FireIn(Timeout.Infinite, OnTimerFired);
 			}

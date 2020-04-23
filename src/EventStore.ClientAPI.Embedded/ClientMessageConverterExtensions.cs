@@ -55,8 +55,8 @@ namespace EventStore.ClientAPI.Embedded {
 				eventRecord.EventStreamId, eventRecord.EventNumber,
 				eventRecord.EventId.ToByteArray(), eventRecord.EventType, eventRecord.IsJson ? 1 : 0,
 				eventRecord.IsJson ? 1 : 0,
-				eventRecord.Data,
-				eventRecord.Metadata,
+				eventRecord.Data.ToArray(),
+				eventRecord.Metadata.ToArray(),
 				eventRecord.TimeStamp.ToBinary(),
 				(long)(eventRecord.TimeStamp - new DateTime(1970, 1, 1)).TotalMilliseconds);
 		}

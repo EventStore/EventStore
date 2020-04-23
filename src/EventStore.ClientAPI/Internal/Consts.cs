@@ -7,7 +7,7 @@ namespace EventStore.ClientAPI {
 		public const int DefaultMaxOperationRetries = 10;
 		public const int DefaultMaxReconnections = 10;
 
-		public const bool DefaultRequireMaster = true;
+		public const bool DefaultRequireLeader = true;
 
 		public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromMilliseconds(100);
 		public static readonly TimeSpan DefaultQueueTimeout = TimeSpan.Zero; // Unlimited

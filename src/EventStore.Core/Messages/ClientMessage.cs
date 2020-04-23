@@ -1,11 +1,16 @@
 using System;
-using System.Security.Principal;
+using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
+using EventStore.Core.Util;
+using static EventStore.Core.Messages.TcpClientMessageDto.FilteredReadAllEventsCompleted;
+using FilteredReadAllResult = EventStore.Core.Data.FilteredReadAllResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages {
@@ -48,15 +53,15 @@ namespace EventStore.Core.Messages {
 			public readonly Guid InternalCorrId;
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 			public readonly string Login;
 			public readonly string Password;
 
 			protected WriteRequestMessage(Guid internalCorrId,
-				Guid correlationId, IEnvelope envelope, bool requireMaster,
-				IPrincipal user, string login, string password) {
+				Guid correlationId, IEnvelope envelope, bool requireLeader,
+				ClaimsPrincipal user, string login, string password) {
 				Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
@@ -64,7 +69,7 @@ namespace EventStore.Core.Messages {
 				InternalCorrId = internalCorrId;
 				CorrelationId = correlationId;
 				Envelope = envelope;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 
 				User = user;
 				Login = login;
@@ -83,11 +88,12 @@ namespace EventStore.Core.Messages {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 
-			public DateTime Expires = DateTime.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout);
+			public readonly DateTime Expires;
 
-			protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user) {
+			protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				ClaimsPrincipal user, DateTime? expires) {
 				Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
@@ -97,6 +103,7 @@ namespace EventStore.Core.Messages {
 				Envelope = envelope;
 
 				User = user;
+				Expires = expires ?? DateTime.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout);
 			}
 		}
 
@@ -154,26 +161,28 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly Event[] Events;
+			public readonly CancellationToken CancellationToken;
 
-			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
-				string eventStreamId, long expectedVersion, Event[] events,
-				IPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireMaster, user, login, password) {
+			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
+				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user, string login = null,
+				string password = null, CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
 				    expectedVersion == Data.ExpectedVersion.Invalid)
-					throw new ArgumentOutOfRangeException("expectedVersion");
+					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 				Ensure.NotNull(events, "events");
 
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
 				Events = events;
+				CancellationToken = cancellationToken;
 			}
 
-			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
+			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
 				string eventStreamId, long expectedVersion, Event @event,
-				IPrincipal user, string login = null, string password = null)
-				: this(internalCorrId, correlationId, envelope, requireMaster, eventStreamId, expectedVersion,
+				ClaimsPrincipal user, string login = null, string password = null)
+				: this(internalCorrId, correlationId, envelope, requireLeader, eventStreamId, expectedVersion,
 					@event == null ? null : new[] {@event}, user, login, password) {
 			}
 
@@ -203,11 +212,11 @@ namespace EventStore.Core.Messages {
 			public WriteEventsCompleted(Guid correlationId, long firstEventNumber, long lastEventNumber,
 				long preparePosition, long commitPosition) {
 				if (firstEventNumber < -1)
-					throw new ArgumentOutOfRangeException("firstEventNumber",
-						String.Format("FirstEventNumber: {0}", firstEventNumber));
+					throw new ArgumentOutOfRangeException(nameof(firstEventNumber),
+						$"FirstEventNumber: {firstEventNumber}");
 				if (lastEventNumber - firstEventNumber + 1 < 0)
-					throw new ArgumentOutOfRangeException("lastEventNumber",
-						String.Format("LastEventNumber {0}, FirstEventNumber {1}.", lastEventNumber, firstEventNumber));
+					throw new ArgumentOutOfRangeException(nameof(lastEventNumber),
+						$"LastEventNumber {lastEventNumber}, FirstEventNumber {firstEventNumber}.");
 
 				CorrelationId = correlationId;
 				Result = OperationResult.Success;
@@ -221,7 +230,7 @@ namespace EventStore.Core.Messages {
 			public WriteEventsCompleted(Guid correlationId, OperationResult result, string message,
 				long currentVersion = -1) {
 				if (result == OperationResult.Success)
-					throw new ArgumentException("Invalid constructor used for successful write.", "result");
+					throw new ArgumentException("Invalid constructor used for successful write.", nameof(result));
 
 				CorrelationId = correlationId;
 				Result = result;
@@ -251,9 +260,8 @@ namespace EventStore.Core.Messages {
 			}
 
 			public override string ToString() {
-				return String.Format(
-					"WRITE COMPLETED: CorrelationId: {0}, Result: {1}, Message: {2}, FirstEventNumber: {3}, LastEventNumber: {4}, CurrentVersion: {5}",
-					CorrelationId, Result, Message, FirstEventNumber, LastEventNumber, CurrentVersion);
+				return
+					$"WRITE COMPLETED: CorrelationId: {CorrelationId}, Result: {Result}, Message: {Message}, FirstEventNumber: {FirstEventNumber}, LastEventNumber: {LastEventNumber}, CurrentVersion: {CurrentVersion}";
 			}
 		}
 
@@ -267,13 +275,13 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 
-			public TransactionStart(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
+			public TransactionStart(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
 				string eventStreamId, long expectedVersion,
-				IPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireMaster, user, login, password) {
+				ClaimsPrincipal user, string login = null, string password = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.Any)
-					throw new ArgumentOutOfRangeException("expectedVersion");
+					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
@@ -315,10 +323,10 @@ namespace EventStore.Core.Messages {
 			public readonly long TransactionId;
 			public readonly Event[] Events;
 
-			public TransactionWrite(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
+			public TransactionWrite(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
 				long transactionId, Event[] events,
-				IPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireMaster, user, login, password) {
+				ClaimsPrincipal user, string login = null, string password = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.Nonnegative(transactionId, "transactionId");
 				Ensure.NotNull(events, "events");
 
@@ -361,9 +369,9 @@ namespace EventStore.Core.Messages {
 
 			public readonly long TransactionId;
 
-			public TransactionCommit(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
-				long transactionId, IPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireMaster, user, login, password) {
+			public TransactionCommit(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
+				long transactionId, ClaimsPrincipal user, string login = null, string password = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.Nonnegative(transactionId, "transactionId");
 				TransactionId = transactionId;
 			}
@@ -443,11 +451,12 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long ExpectedVersion;
 			public readonly bool HardDelete;
+			public readonly CancellationToken CancellationToken;
 
-			public DeleteStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireMaster,
-				string eventStreamId, long expectedVersion, bool hardDelete,
-				IPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireMaster, user, login, password) {
+			public DeleteStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
+				string eventStreamId, long expectedVersion, bool hardDelete, ClaimsPrincipal user, string login = null,
+				string password = null, CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.Any)
 					throw new ArgumentOutOfRangeException("expectedVersion");
@@ -455,6 +464,7 @@ namespace EventStore.Core.Messages {
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
 				HardDelete = hardDelete;
+				CancellationToken = cancellationToken;
 			}
 		}
 
@@ -500,19 +510,19 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 			public readonly long EventNumber;
 			public readonly bool ResolveLinkTos;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
 			public ReadEvent(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string eventStreamId,
 				long eventNumber,
-				bool resolveLinkTos, bool requireMaster, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				bool resolveLinkTos, bool requireLeader, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
+				if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
 
 				EventStreamId = eventStreamId;
 				EventNumber = eventNumber;
 				ResolveLinkTos = resolveLinkTos;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 			}
 		}
 
@@ -558,33 +568,33 @@ namespace EventStore.Core.Messages {
 			public readonly long FromEventNumber;
 			public readonly int MaxCount;
 			public readonly bool ResolveLinkTos;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
 			public readonly long? ValidationStreamVersion;
 			public readonly TimeSpan? LongPollTimeout;
 
 			public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-				bool requireMaster, long? validationStreamVersion, IPrincipal user,
-				TimeSpan? longPollTimeout = null)
-				: base(internalCorrId, correlationId, envelope, user) {
+				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user,
+				TimeSpan? longPollTimeout = null, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
+				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
 				EventStreamId = eventStreamId;
 				FromEventNumber = fromEventNumber;
 				MaxCount = maxCount;
 				ResolveLinkTos = resolveLinkTos;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 				ValidationStreamVersion = validationStreamVersion;
 				LongPollTimeout = longPollTimeout;
 			}
 
 			public override string ToString() {
 				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireMaster: {6}, ValidationStreamVersion: {7}",
+				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
 					InternalCorrId, CorrelationId, EventStreamId,
-					FromEventNumber, MaxCount, ResolveLinkTos, RequireMaster, ValidationStreamVersion);
+					FromEventNumber, MaxCount, ResolveLinkTos, RequireLeader, ValidationStreamVersion);
 			}
 		}
 
@@ -651,30 +661,30 @@ namespace EventStore.Core.Messages {
 			public readonly long FromEventNumber;
 			public readonly int MaxCount;
 			public readonly bool ResolveLinkTos;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
 			public readonly long? ValidationStreamVersion;
 
 			public ReadStreamEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-				bool requireMaster, long? validationStreamVersion, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException("fromEventNumber");
+				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
 				EventStreamId = eventStreamId;
 				FromEventNumber = fromEventNumber;
 				MaxCount = maxCount;
 				ResolveLinkTos = resolveLinkTos;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 				ValidationStreamVersion = validationStreamVersion;
 			}
 
 			public override string ToString() {
 				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireMaster: {6}, ValidationStreamVersion: {7}",
+				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
 					InternalCorrId, CorrelationId, EventStreamId, FromEventNumber, MaxCount,
-					ResolveLinkTos, RequireMaster, ValidationStreamVersion);
+					ResolveLinkTos, RequireLeader, ValidationStreamVersion);
 			}
 		}
 
@@ -748,21 +758,21 @@ namespace EventStore.Core.Messages {
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
 			public readonly bool ResolveLinkTos;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
 
 			public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-				bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user,
-				TimeSpan? longPollTimeout = null)
-				: base(internalCorrId, correlationId, envelope, user) {
+				bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
+				TimeSpan? longPollTimeout = null, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;
 				ResolveLinkTos = resolveLinkTos;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 				LongPollTimeout = longPollTimeout;
 			}
@@ -824,19 +834,20 @@ namespace EventStore.Core.Messages {
 			public readonly long PreparePosition;
 			public readonly int MaxCount;
 			public readonly bool ResolveLinkTos;
-			public readonly bool RequireMaster;
+			public readonly bool RequireLeader;
 
 			public readonly long? ValidationTfLastCommitPosition;
 
 			public ReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
-				bool requireMaster, long? validationTfLastCommitPosition, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
+				DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;
 				ResolveLinkTos = resolveLinkTos;
-				RequireMaster = requireMaster;
+				RequireLeader = requireLeader;
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 			}
 		}
@@ -886,29 +897,184 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		//Persistent subscriptions
-		public class ConnectToPersistentSubscription : ReadRequestMessage {
+		public class FilteredReadAllEventsForward : ReadRequestMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly long CommitPosition;
+			public readonly long PreparePosition;
+			public readonly int MaxCount;
+			public readonly bool ResolveLinkTos;
+			public readonly bool RequireLeader;
+			public readonly int MaxSearchWindow;
+			public readonly IEventFilter EventFilter;
+
+			public readonly long? ValidationTfLastCommitPosition;
+			public readonly TimeSpan? LongPollTimeout;
+
+			public FilteredReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
+				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
+				TimeSpan? longPollTimeout = null, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
+				CommitPosition = commitPosition;
+				PreparePosition = preparePosition;
+				MaxCount = maxCount;
+				ResolveLinkTos = resolveLinkTos;
+				RequireLeader = requireLeader;
+				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+				LongPollTimeout = longPollTimeout;
+				MaxSearchWindow = maxSearchWindow;
+				EventFilter = eventFilter;
+			}
+		}
+
+		public class FilteredReadAllEventsForwardCompleted : ReadResponseMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+
+			public readonly FilteredReadAllResult Result;
+			public readonly string Error;
+
+			public readonly ResolvedEvent[] Events;
+			public readonly StreamMetadata StreamMetadata;
+			public readonly bool IsCachePublic;
+			public readonly int MaxCount;
+			public readonly TFPos CurrentPos;
+			public readonly TFPos NextPos;
+			public readonly TFPos PrevPos;
+			public readonly long TfLastCommitPosition;
+			public readonly bool IsEndOfStream;
+
+			public FilteredReadAllEventsForwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
+				ResolvedEvent[] events,
+				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
+				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
+				bool isEndOfStream) {
+				Ensure.NotNull(events, "events");
+
+				CorrelationId = correlationId;
+				Result = result;
+				Error = error;
+				Events = events;
+				StreamMetadata = streamMetadata;
+				IsCachePublic = isCachePublic;
+				MaxCount = maxCount;
+				CurrentPos = currentPos;
+				NextPos = nextPos;
+				PrevPos = prevPos;
+				TfLastCommitPosition = tfLastCommitPosition;
+				IsEndOfStream = isEndOfStream;
+			}
+		}
+
+		public class FilteredReadAllEventsBackward : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
+			public readonly long CommitPosition;
+			public readonly long PreparePosition;
+			public readonly int MaxCount;
+			public readonly bool ResolveLinkTos;
+			public readonly bool RequireLeader;
+			public readonly int MaxSearchWindow;
+			public readonly IEventFilter EventFilter;
+
+			public readonly long? ValidationTfLastCommitPosition;
+			public readonly TimeSpan? LongPollTimeout;
+
+			public FilteredReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
+				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
+				TimeSpan? longPollTimeout = null, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
+				CommitPosition = commitPosition;
+				PreparePosition = preparePosition;
+				MaxCount = maxCount;
+				ResolveLinkTos = resolveLinkTos;
+				RequireLeader = requireLeader;
+				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
+				LongPollTimeout = longPollTimeout;
+				MaxSearchWindow = maxSearchWindow;
+				EventFilter = eventFilter;
+			}
+		}
+
+		public class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+
+			public readonly FilteredReadAllResult Result;
+			public readonly string Error;
+
+			public readonly ResolvedEvent[] Events;
+			public readonly StreamMetadata StreamMetadata;
+			public readonly bool IsCachePublic;
+			public readonly int MaxCount;
+			public readonly TFPos CurrentPos;
+			public readonly TFPos NextPos;
+			public readonly TFPos PrevPos;
+			public readonly long TfLastCommitPosition;
+			public readonly bool IsEndOfStream;
+
+			public FilteredReadAllEventsBackwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
+				ResolvedEvent[] events,
+				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
+				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
+				bool isEndOfStream) {
+				Ensure.NotNull(events, "events");
+
+				CorrelationId = correlationId;
+				Result = result;
+				Error = error;
+				Events = events;
+				StreamMetadata = streamMetadata;
+				IsCachePublic = isCachePublic;
+				MaxCount = maxCount;
+				CurrentPos = currentPos;
+				NextPos = nextPos;
+				PrevPos = prevPos;
+				TfLastCommitPosition = tfLastCommitPosition;
+				IsEndOfStream = isEndOfStream;
+			}
+		}
+
+		//Persistent subscriptions
+		public class ConnectToPersistentSubscription : ReadRequestMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId { get { return TypeId; } }
+
 			public readonly Guid ConnectionId;
+			public readonly string ConnectionName;
 			public readonly string SubscriptionId;
 			public readonly string EventStreamId;
 			public readonly int AllowedInFlightMessages;
 			public readonly string From;
 
 			public ConnectToPersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				Guid connectionId,
-				string subscriptionId, string eventStreamId, int allowedInFlightMessages, string from, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				Guid connectionId, string connectionName, string subscriptionId, string eventStreamId,
+				int allowedInFlightMessages, string from, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 				Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
 				Ensure.Nonnegative(allowedInFlightMessages, "AllowedInFlightMessages");
 				SubscriptionId = subscriptionId;
 				ConnectionId = connectionId;
+				ConnectionName = connectionName;
 				AllowedInFlightMessages = allowedInFlightMessages;
 				EventStreamId = eventStreamId;
 				From = from;
@@ -934,20 +1100,19 @@ namespace EventStore.Core.Messages {
 
 			public readonly string GroupName;
 			public readonly string EventStreamId;
-			public int MaxSubscriberCount;
-			public string NamedConsumerStrategy;
-			public int MaxCheckPointCount;
-			public int MinCheckPointCount;
-			public int CheckPointAfterMilliseconds;
+			public readonly int MaxSubscriberCount;
+			public readonly string NamedConsumerStrategy;
+			public readonly int MaxCheckPointCount;
+			public readonly int MinCheckPointCount;
+			public readonly int CheckPointAfterMilliseconds;
 
 			public CreatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, string groupName, bool resolveLinkTos, long startFrom,
 				int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
 				int liveBufferSize, int readbatchSize,
 				int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
-				int maxSubscriberCount, string namedConsumerStrategy,
-				IPrincipal user, string username, string password)
-				: base(internalCorrId, correlationId, envelope, user) {
+				int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				ResolveLinkTos = resolveLinkTos;
 				EventStreamId = eventStreamId;
 				GroupName = groupName;
@@ -1012,21 +1177,20 @@ namespace EventStore.Core.Messages {
 
 			public readonly string GroupName;
 			public readonly string EventStreamId;
-			public int MaxSubscriberCount;
+			public readonly int MaxSubscriberCount;
 
-			public int MaxCheckPointCount;
-			public int MinCheckPointCount;
-			public int CheckPointAfterMilliseconds;
-			public string NamedConsumerStrategy;
+			public readonly int MaxCheckPointCount;
+			public readonly int MinCheckPointCount;
+			public readonly int CheckPointAfterMilliseconds;
+			public readonly string NamedConsumerStrategy;
 
 			public UpdatePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, string groupName, bool resolveLinkTos, long startFrom,
 				int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
-				int liveBufferSize, int readbatchSize,
-				int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
-				int maxSubscriberCount, string namedConsumerStrategy,
-				IPrincipal user, string username, string password)
-				: base(internalCorrId, correlationId, envelope, user) {
+				int liveBufferSize, int readbatchSize, int checkPointAfterMilliseconds, int minCheckPointCount,
+				int maxCheckPointCount, int maxSubscriberCount, string namedConsumerStrategy, ClaimsPrincipal user,
+				DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				ResolveLinkTos = resolveLinkTos;
 				EventStreamId = eventStreamId;
 				GroupName = groupName;
@@ -1084,8 +1248,8 @@ namespace EventStore.Core.Messages {
 			public readonly int Count;
 
 			public ReadNextNPersistentMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string eventStreamId, string groupName, int count, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string eventStreamId, string groupName, int count, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				GroupName = groupName;
 				EventStreamId = eventStreamId;
 				Count = count;
@@ -1102,10 +1266,10 @@ namespace EventStore.Core.Messages {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 			public readonly ReadNextNPersistentMessagesResult Result;
-			public readonly ResolvedEvent[] Events;
+			public readonly (ResolvedEvent ResolvedEvent, int RetryCount)[] Events;
 
 			public ReadNextNPersistentMessagesCompleted(Guid correlationId, ReadNextNPersistentMessagesResult result,
-				string reason, ResolvedEvent[] events) {
+				string reason, (ResolvedEvent ResolvedEvent, int RetryCount)[] events) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				CorrelationId = correlationId;
 				Result = result;
@@ -1132,8 +1296,8 @@ namespace EventStore.Core.Messages {
 			public readonly string EventStreamId;
 
 			public DeletePersistentSubscription(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string eventStreamId, string groupName, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string eventStreamId, string groupName, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				GroupName = groupName;
 				EventStreamId = eventStreamId;
 			}
@@ -1177,8 +1341,8 @@ namespace EventStore.Core.Messages {
 			public readonly Guid[] ProcessedEventIds;
 
 			public PersistentSubscriptionAckEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string subscriptionId, Guid[] processedEventIds, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string subscriptionId, Guid[] processedEventIds, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
 				Ensure.NotNull(processedEventIds, "processedEventIds");
 
@@ -1206,8 +1370,9 @@ namespace EventStore.Core.Messages {
 				string message,
 				NakAction action,
 				Guid[] processedEventIds,
-				IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				ClaimsPrincipal user,
+				DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				SubscriptionId = subscriptionId;
 				ProcessedEventIds = processedEventIds;
 				Message = message;
@@ -1234,8 +1399,8 @@ namespace EventStore.Core.Messages {
 			public readonly Guid[] ProcessedEventIds;
 
 			public PersistentSubscriptionNakEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string subscriptionId, Guid[] processedEventIds, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string subscriptionId, Guid[] processedEventIds, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(subscriptionId, "subscriptionId");
 				Ensure.NotNull(processedEventIds, "processedEventIds");
 
@@ -1252,20 +1417,20 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid CorrelationId;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
-			public string SubscriptionId;
+			public readonly string SubscriptionId;
 
 			public PersistentSubscriptionConfirmation(string subscriptionId, Guid correlationId,
-				long lastCommitPosition, long? lastEventNumber) {
+				long lastIndexedPosition, long? lastEventNumber) {
 				CorrelationId = correlationId;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 				SubscriptionId = subscriptionId;
 			}
 		}
 
-		public class ReplayAllParkedMessages : ReadRequestMessage {
+		public class ReplayParkedMessages : ReadRequestMessage {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1274,12 +1439,14 @@ namespace EventStore.Core.Messages {
 
 			public readonly string EventStreamId;
 			public readonly string GroupName;
+			public readonly long? StopAt;
 
-			public ReplayAllParkedMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string eventStreamId, string groupName, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+			public ReplayParkedMessages(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				string eventStreamId, string groupName, long? stopAt, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				EventStreamId = eventStreamId;
 				GroupName = groupName;
+				StopAt = stopAt;
 			}
 		}
 
@@ -1295,8 +1462,8 @@ namespace EventStore.Core.Messages {
 			public readonly ResolvedEvent Event;
 
 			public ReplayParkedMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string streamId,
-				string groupName, ResolvedEvent @event, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string groupName, ResolvedEvent @event, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				EventStreamId = streamId;
 				GroupName = groupName;
 				Event = @event;
@@ -1344,12 +1511,54 @@ namespace EventStore.Core.Messages {
 			public readonly bool ResolveLinkTos;
 
 			public SubscribeToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, Guid connectionId,
-				string eventStreamId, bool resolveLinkTos, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+				string eventStreamId, bool resolveLinkTos, ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 				ConnectionId = connectionId;
 				EventStreamId = eventStreamId;
 				ResolveLinkTos = resolveLinkTos;
+			}
+		}
+
+		public class FilteredSubscribeToStream : ReadRequestMessage {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid ConnectionId;
+			public readonly string EventStreamId; // should be empty to subscribe to all
+			public readonly bool ResolveLinkTos;
+			public readonly IEventFilter EventFilter;
+			public readonly int CheckpointInterval;
+
+			public FilteredSubscribeToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				Guid connectionId, string eventStreamId, bool resolveLinkTos, ClaimsPrincipal user,
+				IEventFilter eventFilter, int checkpointInterval, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
+				Ensure.NotEmptyGuid(connectionId, "connectionId");
+				ConnectionId = connectionId;
+				EventStreamId = eventStreamId;
+				ResolveLinkTos = resolveLinkTos;
+				EventFilter = eventFilter;
+				CheckpointInterval = checkpointInterval;
+			}
+		}
+
+		public class CheckpointReached : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+			public readonly TFPos? Position;
+
+			public CheckpointReached(Guid correlationId, TFPos? position) {
+				CorrelationId = correlationId;
+				Position = position;
 			}
 		}
 
@@ -1360,8 +1569,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public UnsubscribeFromStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, IPrincipal user)
-				: base(internalCorrId, correlationId, envelope, user) {
+			public UnsubscribeFromStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
+				ClaimsPrincipal user, DateTime? expires = null)
+				: base(internalCorrId, correlationId, envelope, user, expires) {
 			}
 		}
 
@@ -1373,12 +1583,12 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid CorrelationId;
-			public readonly long LastCommitPosition;
+			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
 
-			public SubscriptionConfirmation(Guid correlationId, long lastCommitPosition, long? lastEventNumber) {
+			public SubscriptionConfirmation(Guid correlationId, long lastIndexedPosition, long? lastEventNumber) {
 				CorrelationId = correlationId;
-				LastCommitPosition = lastCommitPosition;
+				LastIndexedPosition = lastIndexedPosition;
 				LastEventNumber = lastEventNumber;
 			}
 		}
@@ -1442,9 +1652,9 @@ namespace EventStore.Core.Messages {
 
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 
-			public MergeIndexes(IEnvelope envelope, Guid correlationId, IPrincipal user) {
+			public MergeIndexes(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				CorrelationId = correlationId;
@@ -1476,6 +1686,30 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class SetNodePriority : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly int NodePriority;
+
+			public SetNodePriority(int nodePriority) {
+				NodePriority = nodePriority;
+			}
+		}
+
+		public class ResignNode : Message
+		{
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
 		public class ScavengeDatabase : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -1485,11 +1719,11 @@ namespace EventStore.Core.Messages {
 
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 			public readonly int StartFromChunk;
 			public readonly int Threads;
 
-			public ScavengeDatabase(IEnvelope envelope, Guid correlationId, IPrincipal user, int startFromChunk,
+			public ScavengeDatabase(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user, int startFromChunk,
 				int threads) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
@@ -1509,10 +1743,10 @@ namespace EventStore.Core.Messages {
 
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
-			public readonly IPrincipal User;
+			public readonly ClaimsPrincipal User;
 			public readonly string ScavengeId;
 
-			public StopDatabaseScavenge(IEnvelope envelope, Guid correlationId, IPrincipal user, string scavengeId) {
+			public StopDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user, string scavengeId) {
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				CorrelationId = correlationId;

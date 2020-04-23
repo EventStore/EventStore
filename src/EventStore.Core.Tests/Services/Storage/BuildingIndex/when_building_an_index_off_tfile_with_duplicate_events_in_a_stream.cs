@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using System;
+using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -94,8 +95,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			PerformAdditionalCommitChecks = performAdditionalChecks;
 		}
 
-		public override void TestFixtureSetUp() {
-			base.TestFixtureSetUp();
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
 
 			var writerCheckpoint = new InMemoryCheckpoint(0);
 			var chaserCheckpoint = new InMemoryCheckpoint(0);
@@ -125,6 +126,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
@@ -135,10 +138,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
-				replicationCheckpoint: _db.Config.ReplicationCheckpoint);
+				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
+				indexCheckpoint: _db.Config.IndexCheckpoint);
 
 
-			ReadIndex.Init(chaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
 
 			_tableIndex.Close(false);
 
@@ -156,6 +160,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
+				int.MaxValue,
+				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
 			ReadIndex = new ReadIndex(new NoopPublisher(),
@@ -166,12 +172,13 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
-				replicationCheckpoint: _db.Config.ReplicationCheckpoint);
+				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
+				indexCheckpoint: _db.Config.IndexCheckpoint);
 
-			ReadIndex.Init(chaserCheckpoint.Read());
+			((ReadIndex)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
 		}
 
-		public override void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
 			ReadIndex.Close();
 			ReadIndex.Dispose();
 
@@ -180,7 +187,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_db.Close();
 			_db.Dispose();
 
-			base.TestFixtureTearDown();
+			return base.TestFixtureTearDown();
 		}
 
 		protected abstract void SetupDB();

@@ -12,6 +12,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private readonly Guid _correlationId;
 		private readonly Guid _connectionId;
+		private readonly string _connectionName;
 		private readonly IEnvelope _envelope;
 		private int _allowedMessages;
 		public readonly string Username;
@@ -22,6 +23,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public PersistentSubscriptionClient(Guid correlationId,
 			Guid connectionId,
+			string connectionName,
 			IEnvelope envelope,
 			int inFlightMessages,
 			string username,
@@ -30,6 +32,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			bool extraStatistics) {
 			_correlationId = correlationId;
 			_connectionId = connectionId;
+			_connectionName = connectionName;
 			_envelope = envelope;
 			_allowedMessages = inFlightMessages;
 			Username = username;
@@ -55,6 +58,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public Guid ConnectionId {
 			get { return _connectionId; }
+		}
+
+		public string ConnectionName {
+			get { return _connectionName; }
 		}
 
 		public long TotalItems {

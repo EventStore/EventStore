@@ -3,6 +3,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture]
@@ -25,15 +26,15 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				eventType: SystemEventTypes.LinkTo);
 		}
 
-		public override void Given() {
+		public override async Task Given() {
 			_store = BuildConnection(Node);
-			_store.ConnectAsync().Wait();
+			await _store.ConnectAsync();
 		}
 
 		[Test]
-		public void should_be_able_to_read_link_stream_forward_and_resolve_link_tos() {
-			var readResult = _store
-				.ReadStreamEventsForwardAsync(_linkedStreamName, 0, 100, true, DefaultData.AdminCredentials).Result;
+		public async Task should_be_able_to_read_link_stream_forward_and_resolve_link_tos() {
+			var readResult = await _store
+				.ReadStreamEventsForwardAsync(_linkedStreamName, 0, 100, true, DefaultData.AdminCredentials);
 			Assert.AreEqual(SliceReadStatus.Success, readResult.Status);
 			Assert.AreEqual(2, readResult.Events.Length);
 			Assert.AreEqual(_event1.EventId, readResult.Events[0].Event.EventId);
@@ -43,9 +44,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_link_stream_backward_and_resolve_link_tos() {
-			var readResult = _store
-				.ReadStreamEventsBackwardAsync(_linkedStreamName, 10, 100, true, DefaultData.AdminCredentials).Result;
+		public async Task should_be_able_to_read_link_stream_backward_and_resolve_link_tos() {
+			var readResult = await _store
+				.ReadStreamEventsBackwardAsync(_linkedStreamName, 10, 100, true, DefaultData.AdminCredentials);
 			Assert.AreEqual(SliceReadStatus.Success, readResult.Status);
 			Assert.AreEqual(2, readResult.Events.Length);
 			Assert.AreEqual(_event2.EventId, readResult.Events[0].Event.EventId);
@@ -55,9 +56,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_all_stream_forward_and_resolve_link_tos() {
-			var readResult = _store.ReadAllEventsForwardAsync(Position.Start, 100, true, DefaultData.AdminCredentials)
-				.Result;
+		public async Task should_be_able_to_read_all_stream_forward_and_resolve_link_tos() {
+			var readResult = await _store.ReadAllEventsForwardAsync(Position.Start, 100, true, DefaultData.AdminCredentials)
+;
 			var linkedEvents = readResult.Events.Where(x => x.OriginalStreamId == _linkedStreamName).ToList();
 			Assert.AreEqual(2, linkedEvents.Count());
 			Assert.AreEqual(_event1.EventId, linkedEvents[0].Event.EventId);
@@ -67,9 +68,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		}
 
 		[Test]
-		public void should_be_able_to_read_all_stream_backward_and_resolve_link_tos() {
-			var readResult = _store.ReadAllEventsBackwardAsync(Position.End, 100, true, DefaultData.AdminCredentials)
-				.Result;
+		public async Task should_be_able_to_read_all_stream_backward_and_resolve_link_tos() {
+			var readResult = await _store.ReadAllEventsBackwardAsync(Position.End, 100, true, DefaultData.AdminCredentials)
+;
 			var linkedEvents = readResult.Events.Where(x => x.OriginalStreamId == _linkedStreamName).ToList();
 			Assert.AreEqual(2, linkedEvents.Count());
 			Assert.AreEqual(_event2.EventId, linkedEvents[0].Event.EventId);

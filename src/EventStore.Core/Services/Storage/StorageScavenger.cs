@@ -1,5 +1,5 @@
 using System;
-using System.Security.Principal;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-			if (message.State == VNodeState.Master || message.State == VNodeState.Slave) {
+			if (message.State == VNodeState.Leader || message.State == VNodeState.Follower) {
 				_logManager.Initialise();
 			}
 		}
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private async void HandleCleanupWhenFinished(Task newScavengeTask, TFChunkScavenger newScavenge) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
-			await newScavengeTask;
+			await newScavengeTask.ConfigureAwait(false);
 
 			lock (_lock) {
 				if (newScavenge == _currentScavenge) {
@@ -106,8 +106,8 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private bool IsAllowed(IPrincipal user, Guid correlationId, IEnvelope envelope) {
-			if (user == null || (!user.IsInRole(SystemRoles.Admins) && !user.IsInRole(SystemRoles.Operations))) {
+		private bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
+			if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) && !user.LegacyRoleCheck(SystemRoles.Operations))) {
 				envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId,
 					ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
 				return false;
