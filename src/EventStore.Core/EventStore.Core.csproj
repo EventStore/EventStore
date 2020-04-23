@@ -22,7 +22,6 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
-		<PackageReference Include="SimpleSyndicate.UriTemplate" Version="1.0.3" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
