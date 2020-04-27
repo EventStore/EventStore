@@ -56,12 +56,13 @@ namespace EventStore.Core.Messages {
 			public readonly bool RequireLeader;
 
 			public readonly ClaimsPrincipal User;
-			public readonly string Login;
-			public readonly string Password;
+			public string Login => Tokens?.GetValueOrDefault("uid");
+			public string Password => Tokens?.GetValueOrDefault("pwd");
+			public readonly IReadOnlyDictionary<string, string> Tokens;
 
 			protected WriteRequestMessage(Guid internalCorrId,
 				Guid correlationId, IEnvelope envelope, bool requireLeader,
-				ClaimsPrincipal user, string login, string password) {
+				ClaimsPrincipal user, IReadOnlyDictionary<string, string> tokens) {
 				Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
@@ -72,8 +73,7 @@ namespace EventStore.Core.Messages {
 				RequireLeader = requireLeader;
 
 				User = user;
-				Login = login;
-				Password = password;
+				Tokens = tokens;
 			}
 		}
 
@@ -164,9 +164,9 @@ namespace EventStore.Core.Messages {
 			public readonly CancellationToken CancellationToken;
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user, string login = null,
-				string password = null, CancellationToken cancellationToken = default)
-				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
+				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user,
+				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
 				    expectedVersion == Data.ExpectedVersion.Invalid)
@@ -180,10 +180,10 @@ namespace EventStore.Core.Messages {
 			}
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, Event @event,
-				ClaimsPrincipal user, string login = null, string password = null)
+				string eventStreamId, long expectedVersion, Event @event, ClaimsPrincipal user,
+				IReadOnlyDictionary<string, string> tokens = null)
 				: this(internalCorrId, correlationId, envelope, requireLeader, eventStreamId, expectedVersion,
-					@event == null ? null : new[] {@event}, user, login, password) {
+					@event == null ? null : new[] {@event}, user, tokens) {
 			}
 
 			public override string ToString() {
@@ -276,9 +276,9 @@ namespace EventStore.Core.Messages {
 			public readonly long ExpectedVersion;
 
 			public TransactionStart(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion,
-				ClaimsPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
+				string eventStreamId, long expectedVersion, ClaimsPrincipal user,
+				IReadOnlyDictionary<string, string> tokens = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.Any)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
@@ -324,9 +324,8 @@ namespace EventStore.Core.Messages {
 			public readonly Event[] Events;
 
 			public TransactionWrite(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				long transactionId, Event[] events,
-				ClaimsPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
+				long transactionId, Event[] events, ClaimsPrincipal user, IReadOnlyDictionary<string, string> tokens = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.Nonnegative(transactionId, "transactionId");
 				Ensure.NotNull(events, "events");
 
@@ -370,8 +369,8 @@ namespace EventStore.Core.Messages {
 			public readonly long TransactionId;
 
 			public TransactionCommit(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				long transactionId, ClaimsPrincipal user, string login = null, string password = null)
-				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
+				long transactionId, ClaimsPrincipal user, IReadOnlyDictionary<string, string> tokens = null)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.Nonnegative(transactionId, "transactionId");
 				TransactionId = transactionId;
 			}
@@ -454,12 +453,12 @@ namespace EventStore.Core.Messages {
 			public readonly CancellationToken CancellationToken;
 
 			public DeleteStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, bool hardDelete, ClaimsPrincipal user, string login = null,
-				string password = null, CancellationToken cancellationToken = default)
-				: base(internalCorrId, correlationId, envelope, requireLeader, user, login, password) {
+				string eventStreamId, long expectedVersion, bool hardDelete, ClaimsPrincipal user,
+				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.Any)
-					throw new ArgumentOutOfRangeException("expectedVersion");
+					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 
 				EventStreamId = eventStreamId;
 				ExpectedVersion = expectedVersion;
