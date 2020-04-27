@@ -19,8 +19,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 		private readonly int _instancesCount;
 
-		private readonly Dictionary<IPEndPoint, IPEndPoint>
-			_electionsResults = new Dictionary<IPEndPoint, IPEndPoint>();
+		private readonly Dictionary<EndPoint, EndPoint>
+			_electionsResults = new Dictionary<EndPoint, EndPoint>();
 
 		public ElectionsSafetyCondition(int instancesCount) {
 			_instancesCount = instancesCount;

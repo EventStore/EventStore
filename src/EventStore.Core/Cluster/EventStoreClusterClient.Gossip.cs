@@ -1,18 +1,20 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Common.Utils;
+using Empty = EventStore.Client.Shared.Empty;
 using ILogger = Serilog.ILogger;
-using EndPoint = EventStore.Cluster.EndPoint;
+using EndPoint = System.Net.EndPoint;
+using GossipEndPoint = EventStore.Cluster.EndPoint;
 
 namespace EventStore.Core.Cluster {
 	public partial class EventStoreClusterClient {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EventStoreClusterClient>();
 
-		public void SendGossip(GossipMessage.SendGossip sendGossip, IPEndPoint destinationEndpoint, DateTime deadline) {
+		public void SendGossip(GossipMessage.SendGossip sendGossip, EndPoint destinationEndpoint, DateTime deadline) {
 			SendGossipAsync(sendGossip.ClusterInfo, sendGossip.ServerEndPoint, deadline).ContinueWith(
 				async response => {
 					try {
@@ -24,7 +26,7 @@ namespace EventStore.Core.Cluster {
 				});
 		}
 
-		public void GetGossip(IPEndPoint destinationEndpoint, DateTime deadline) {
+		public void GetGossip(EndPoint destinationEndpoint, DateTime deadline) {
 			GetGossipAsync(deadline).ContinueWith(async response => {
 				try {
 					_bus.Publish(new GossipMessage.GetGossipReceived(await response.ConfigureAwait(false),
@@ -36,10 +38,10 @@ namespace EventStore.Core.Cluster {
 		}
 
 		private async Task<ClusterInfo> SendGossipAsync(ClusterInfo clusterInfo,
-			IPEndPoint server, DateTime deadline) {
+			EndPoint server, DateTime deadline) {
 			var request = new GossipRequest {
 				Info = ClusterInfo.ToGrpcClusterInfo(clusterInfo),
-				Server = new EndPoint(server.Address.ToString(), (uint)server.Port)
+				Server = new GossipEndPoint(server.GetHost(), (uint)server.GetPort())
 			};
 			var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime());
 			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto);

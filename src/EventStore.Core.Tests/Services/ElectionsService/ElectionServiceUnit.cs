@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
@@ -21,7 +22,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		public ClusterInfo ClusterInfo { get; private set; }
 
-		public IPEndPoint OwnEndPoint {
+		public EndPoint OwnEndPoint {
 			get { return InitialClusterSettings.Self.NodeInfo.InternalHttp; }
 		}
 
@@ -39,8 +40,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Publisher = new FakePublisher();
 
 			_bus = new InMemoryBus(GetType().Name);
+			var memberInfo = MemberInfo.Initial(clusterSettings.Self.NodeInfo.InstanceId, InitialDate,
+				VNodeState.Unknown, true,
+				clusterSettings.Self.NodeInfo.InternalTcp,
+				clusterSettings.Self.NodeInfo.InternalSecureTcp,
+				clusterSettings.Self.NodeInfo.ExternalTcp,
+				clusterSettings.Self.NodeInfo.ExternalSecureTcp,
+				clusterSettings.Self.NodeInfo.InternalHttp,
+				clusterSettings.Self.NodeInfo.ExternalHttp,
+				clusterSettings.Self.NodePriority,
+				clusterSettings.Self.ReadOnlyReplica);
 			ElectionsService = new Core.Services.ElectionsService(Publisher,
-				clusterSettings.Self.NodeInfo,
+				memberInfo,
 				clusterSettings.ClusterNodesCount,
 				new InMemoryCheckpoint(WriterCheckpoint),
 				new InMemoryCheckpoint(ChaserCheckpoint),
@@ -94,7 +105,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						Guid.Empty, 0, false)));
 
 			var ordered = members.OrderBy(x =>
-				string.Format("{0}:{1}", x.InternalHttpEndPoint.ToString(), x.InternalHttpEndPoint.Port));
+				string.Format("{0}:{1}", x.InternalHttpEndPoint.ToString(), x.InternalHttpEndPoint.GetPort()));
 
 			return new ClusterInfo(ordered.ToArray());
 		}
@@ -164,8 +175,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			predicate = predicate ?? (x => true);
 			return ClusterInfo.Members.Where(predicate).Select(x =>
 				x.State == VNodeState.Manager
-					? MemberInfo.ForManager(x.InstanceId, x.TimeStamp, x.IsAlive, x.InternalHttpEndPoint,
-						x.ExternalHttpEndPoint)
+					? MemberInfo.ForManager(x.InstanceId, x.TimeStamp, x.IsAlive,
+						x.InternalHttpEndPoint, x.ExternalHttpEndPoint)
 					: MemberInfo.ForVNode(x.InstanceId, x.TimeStamp, x.State, x.IsAlive,
 						x.InternalTcpEndPoint, x.InternalSecureTcpEndPoint,
 						x.ExternalTcpEndPoint, x.ExternalSecureTcpEndPoint,

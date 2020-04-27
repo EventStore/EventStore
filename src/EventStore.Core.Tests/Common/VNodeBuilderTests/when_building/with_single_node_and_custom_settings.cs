@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Authentication;
@@ -545,8 +546,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		private Data.GossipAdvertiseInfo _advertiseInfo;
 
 		public override void Given() {
-			var internalIPToAdvertise = IPAddress.Parse("127.0.1.1");
-			var externalIPToAdvertise = IPAddress.Parse("127.0.1.2");
+			string internalHostAdvertiseAs = "127.0.1.1";
+			string externalHostAdvertiseAs = "127.0.1.2";
+			var internalIPToAdvertise = IPAddress.Parse(internalHostAdvertiseAs);
+			var externalIPToAdvertise = IPAddress.Parse(externalHostAdvertiseAs);
 			var intTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1111);
 			var intSecTcpEndpoint = new IPEndPoint(internalIPToAdvertise, 1112);
 			var extTcpEndpoint = new IPEndPoint(externalIPToAdvertise, 1113);
@@ -554,8 +557,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			var intHttpEndpoint = new IPEndPoint(internalIPToAdvertise, 1115);
 			var extHttpEndpoint = new IPEndPoint(externalIPToAdvertise, 1116);
 
-			_advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint, intSecTcpEndpoint, extTcpEndpoint,
-				extSecTcpEndpoint, intHttpEndpoint, extHttpEndpoint, internalIPToAdvertise, externalIPToAdvertise,
+			_advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint.ToDnsEndPoint(),
+				intSecTcpEndpoint.ToDnsEndPoint(), extTcpEndpoint.ToDnsEndPoint(),
+				extSecTcpEndpoint.ToDnsEndPoint(), intHttpEndpoint.ToDnsEndPoint(), extHttpEndpoint.ToDnsEndPoint(),
+				internalHostAdvertiseAs, externalHostAdvertiseAs,
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 
 			_builder
@@ -566,8 +571,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalSecureTcpOn(extSecTcpEndpoint)
 				.WithInternalHttpOn(intHttpEndpoint)
 				.WithExternalHttpOn(extHttpEndpoint)
-				.AdvertiseInternalIPAs(internalIPToAdvertise)
-				.AdvertiseExternalIPAs(externalIPToAdvertise)
+				.AdvertiseInternalHostAs(internalHostAdvertiseAs)
+				.AdvertiseExternalHostAs(externalHostAdvertiseAs)
 				.AdvertiseInternalTCPPortAs(intTcpEndpoint.Port)
 				.AdvertiseExternalTCPPortAs(extTcpEndpoint.Port)
 				.AdvertiseInternalSecureTCPPortAs(intSecTcpEndpoint.Port)
@@ -584,8 +589,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(_advertiseInfo.ExternalSecureTcp, _settings.GossipAdvertiseInfo.ExternalSecureTcp);
 			Assert.AreEqual(_advertiseInfo.InternalHttp, _settings.GossipAdvertiseInfo.InternalHttp);
 			Assert.AreEqual(_advertiseInfo.ExternalHttp, _settings.GossipAdvertiseInfo.ExternalHttp);
-			Assert.AreEqual(_advertiseInfo.AdvertiseInternalIPAs, _settings.GossipAdvertiseInfo.AdvertiseInternalIPAs);
-			Assert.AreEqual(_advertiseInfo.AdvertiseExternalIPAs, _settings.GossipAdvertiseInfo.AdvertiseExternalIPAs);
+			Assert.AreEqual(_advertiseInfo.AdvertiseInternalHostAs, _settings.GossipAdvertiseInfo.AdvertiseInternalHostAs);
+			Assert.AreEqual(_advertiseInfo.AdvertiseExternalHostAs, _settings.GossipAdvertiseInfo.AdvertiseExternalHostAs);
 			Assert.AreEqual(_advertiseInfo.AdvertiseInternalHttpPortAs,
 				_settings.GossipAdvertiseInfo.AdvertiseInternalHttpPortAs);
 			Assert.AreEqual(_advertiseInfo.AdvertiseExternalHttpPortAs,

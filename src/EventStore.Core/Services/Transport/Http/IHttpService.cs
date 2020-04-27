@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Http {
 	public interface IHttpService {
 		ServiceAccessibility Accessibility { get; }
 		bool IsListening { get; }
-		IEnumerable<IPEndPoint> EndPoints { get; }
+		IEnumerable<EndPoint> EndPoints { get; }
 		IEnumerable<ControllerAction> Actions { get; }
 
 		List<UriToActionMatch> GetAllUriMatches(Uri uri);

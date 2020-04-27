@@ -10,14 +10,14 @@ namespace EventStore.Core.Data {
 		public readonly IPEndPoint InternalSecureTcp;
 		public readonly IPEndPoint ExternalTcp;
 		public readonly IPEndPoint ExternalSecureTcp;
-		public readonly IPEndPoint InternalHttp;
-		public readonly IPEndPoint ExternalHttp;
+		public readonly EndPoint InternalHttp;
+		public readonly EndPoint ExternalHttp;
 		public readonly bool IsReadOnlyReplica;
 
 		public VNodeInfo(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcp, IPEndPoint internalSecureTcp,
 			IPEndPoint externalTcp, IPEndPoint externalSecureTcp,
-			IPEndPoint internalHttp, IPEndPoint externalHttp,
+			EndPoint internalHttp, EndPoint externalHttp,
 			bool isReadOnlyReplica) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcp == null && internalSecureTcp == null, "Both internal TCP endpoints are null");
@@ -35,7 +35,7 @@ namespace EventStore.Core.Data {
 			IsReadOnlyReplica = isReadOnlyReplica;
 		}
 
-		public bool Is(IPEndPoint endPoint) {
+		public bool Is(EndPoint endPoint) {
 			return endPoint != null
 			       && (InternalHttp.Equals(endPoint)
 			           || ExternalHttp.Equals(endPoint)

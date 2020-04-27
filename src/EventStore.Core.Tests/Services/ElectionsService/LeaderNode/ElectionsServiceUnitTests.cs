@@ -35,11 +35,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				var endPoint = new IPEndPoint(address, 1000 + i);
 				seeds.Add(endPoint);
 				var instanceId = Guid.Parse($"101EFD13-F9CD-49BE-9C6D-E6AF9AF5540{i}");
-				members.Add(MemberInfo.ForVNode(instanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-					endPoint, null, endPoint, null, endPoint, endPoint, -1, 0, 0, -1, -1, Guid.Empty, 0, false)
-				);
-				var nodeInfo = new VNodeInfo(instanceId, 0, endPoint, endPoint, endPoint, endPoint, endPoint,
-					endPoint, false);
+				var memberInfo = MemberInfo.ForVNode(instanceId, DateTime.UtcNow, VNodeState.Unknown, true,
+					endPoint, null, endPoint, null, endPoint, endPoint, -1, 0, 0, -1, -1, Guid.Empty, 0, false);
+				members.Add(memberInfo);
 				_fakeTimeProvider = new FakeTimeProvider();
 				_scheduler = new FakeScheduler(new FakeTimer(), _fakeTimeProvider);
 				var timerService = new TimerService(_scheduler);
@@ -49,7 +47,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				var epochManager = new FakeEpochManager();
 				Func<long> lastCommitPosition = () => -1;
 				var electionsService = new Core.Services.ElectionsService(outputBus,
-					nodeInfo,
+					memberInfo,
 					3,
 					writerCheckpoint,
 					readerCheckpoint,
@@ -75,7 +73,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				));
 				_nodes.Add(endPoint, inputBus);
 
-				var gossip = new NodeGossipService(outputBus, seedSource, nodeInfo, writerCheckpoint, readerCheckpoint,
+				var gossip = new NodeGossipService(outputBus, seedSource, memberInfo, writerCheckpoint, readerCheckpoint,
 					epochManager, lastCommitPosition, 0, TimeSpan.FromMilliseconds(500), TimeSpan.FromDays(1),
 					TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1800), _fakeTimeProvider);
 				inputBus.Subscribe<SystemMessage.SystemInit>(gossip);
@@ -105,7 +103,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				return null;
 			}
 
-			public IPEndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
+			public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
 				return _ipEndPoints.ToArray();
 			}
 		}
@@ -259,10 +257,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var ownInfo = CreateLeaderCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
 				nodePriority);
 
-			var localNode = FromMember(0, members);
-
 			var isLegit = SUT.IsLegitimateLeader(1, EndpointForNode(tc.ProposingNode),
-				IdForNode(tc.ProposingNode), mc, members, null, localNode,
+				IdForNode(tc.ProposingNode), mc, members, null, members[0].InstanceId,
 				ownInfo, resigningLeadership);
 
 			Assert.True(isLegit);
@@ -289,13 +285,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var ep = EndpointForNode(i);
 			return new SUT.LeaderCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
 				chaserCheckpoint(i), nodePriority(i));
-		}
-
-		static VNodeInfo FromMember(int index, MemberInfo[] members) {
-			return new VNodeInfo(members[index].InstanceId, 1, members[index].InternalTcpEndPoint,
-				members[index].InternalSecureTcpEndPoint, members[index].ExternalTcpEndPoint,
-				members[index].ExternalSecureTcpEndPoint, members[index].InternalHttpEndPoint,
-				members[index].ExternalHttpEndPoint, false);
 		}
 
 		static MemberInfo CreateMemberInfo(int i, Guid epochId, Func<int, long> lastCommitPosition,

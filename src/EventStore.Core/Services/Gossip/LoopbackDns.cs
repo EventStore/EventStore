@@ -3,9 +3,9 @@ using System.Net;
 
 namespace EventStore.Core.Services.Gossip {
 	public class KnownEndpointGossipSeedSource : IGossipSeedSource {
-		private readonly IPEndPoint[] _ipEndPoints;
+		private readonly EndPoint[] _ipEndPoints;
 
-		public KnownEndpointGossipSeedSource(IPEndPoint[] ipEndPoints) {
+		public KnownEndpointGossipSeedSource(EndPoint[] ipEndPoints) {
 			if (ipEndPoints == null)
 				throw new ArgumentNullException("ipEndPoints");
 			_ipEndPoints = ipEndPoints;
@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Gossip {
 			return null;
 		}
 
-		public IPEndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
+		public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
 			return _ipEndPoints;
 		}
 	}

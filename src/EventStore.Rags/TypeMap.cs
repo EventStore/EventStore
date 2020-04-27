@@ -79,6 +79,7 @@ namespace EventStore.Rags {
 			Register(Rags.Translators.TranslateUri);
 			Register(Rags.Translators.TranlateIPAddress);
 			Register(Rags.Translators.TranslateIPEndPoint);
+			Register(Rags.Translators.TranslateEndPoint);
 		}
 	}
 }

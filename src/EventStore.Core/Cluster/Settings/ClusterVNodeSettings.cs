@@ -27,7 +27,7 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
-		public readonly IPEndPoint[] GossipSeeds;
+		public readonly EndPoint[] GossipSeeds;
 		public readonly bool GossipOverHttps;
 		public readonly bool EnableHistograms;
 		public readonly TimeSpan MinFlushDelay;
@@ -107,7 +107,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int workerThreads,
 			bool discoverViaDns,
 			string clusterDns,
-			IPEndPoint[] gossipSeeds,
+			EndPoint[] gossipSeeds,
 			TimeSpan minFlushDelay,
 			int clusterNodeCount,
 			int prepareAckCount,

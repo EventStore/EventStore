@@ -201,7 +201,7 @@ namespace EventStore.Core {
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.Address.ToString(), endpoint.Port).Uri, publisher, _internalServerCertificateValidator, _certificate));
+							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificate));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -360,7 +360,7 @@ namespace EventStore.Core {
 			// EXTERNAL HTTP
 			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, vNodeSettings.LogHttpRequests,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalIPAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
 				vNodeSettings.DisableFirstLevelHttpAuthorization,
 				vNodeSettings.NodeInfo.ExternalHttp);
@@ -636,17 +636,18 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
 			_mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
-			var gossipInfo = new VNodeInfo(_nodeInfo.InstanceId, _nodeInfo.DebugIndex,
+			var memberInfo = MemberInfo.Initial(_nodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 				vNodeSettings.GossipAdvertiseInfo.InternalTcp,
 				vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalTcp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalSecureTcp,
 				vNodeSettings.GossipAdvertiseInfo.InternalHttp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalHttp,
-				vNodeSettings.ReadOnlyReplica);
+				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
+			
 			if (!isSingleNode) {
 				// LEADER REPLICATION
-				var leaderReplicationService = new LeaderReplicationService(_mainQueue, gossipInfo.InstanceId, db,
+				var leaderReplicationService = new LeaderReplicationService(_mainQueue, _nodeInfo.InstanceId, db,
 					_workersHandler,
 					epochManager, vNodeSettings.ClusterNodeCount,
 					vNodeSettings.UnsafeAllowSurplusNodes,
@@ -662,7 +663,9 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
 					_authenticationProvider, AuthorizationGateway,
-					gossipInfo, !vNodeSettings.DisableInternalTls, _internalServerCertificateValidator,
+					_vNodeSettings.GossipAdvertiseInfo.InternalTcp ?? _vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
+					_vNodeSettings.ReadOnlyReplica,
+					!vNodeSettings.DisableInternalTls, _internalServerCertificateValidator,
 					_certificate,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
 					vNodeSettings.WriteTimeout);
@@ -675,7 +678,7 @@ namespace EventStore.Core {
 
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
-				var electionsService = new ElectionsService(_mainQueue, gossipInfo, vNodeSettings.ClusterNodeCount,
+				var electionsService = new ElectionsService(_mainQueue, memberInfo, vNodeSettings.ClusterNodeCount,
 					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
 					epochManager, () => readIndex.LastIndexedPosition, vNodeSettings.NodePriority, _timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
@@ -684,7 +687,7 @@ namespace EventStore.Core {
 			if (!isSingleNode || vNodeSettings.GossipOnSingleNode) {
 				// GOSSIP
 
-				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
+				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, memberInfo, db.Config.WriterCheckpoint,
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,

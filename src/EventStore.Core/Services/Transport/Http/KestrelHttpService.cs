@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		public ServiceAccessibility Accessibility => _accessibility;
 		public bool IsListening => _isListening;
-		public IEnumerable<IPEndPoint> EndPoints { get; }
+		public IEnumerable<EndPoint> EndPoints { get; }
 
 		public IEnumerable<ControllerAction> Actions => UriRouter.Actions;
 
@@ -34,14 +34,14 @@ namespace EventStore.Core.Services.Transport.Http {
 		public IUriRouter UriRouter { get; }
 		public bool LogHttpRequests { get; }
 
-		public IPAddress AdvertiseAsAddress { get; }
+		public string AdvertiseAsHost { get; }
 		public int AdvertiseAsPort { get; }
 
 		private bool _isListening;
 
 		public KestrelHttpService(ServiceAccessibility accessibility, IPublisher inputBus, IUriRouter uriRouter,
-			MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, IPAddress advertiseAsAddress,
-			int advertiseAsPort, bool disableAuthorization, params IPEndPoint[] endPoints) {
+			MultiQueuedHandler multiQueuedHandler, bool logHttpRequests, string advertiseAsHost,
+			int advertiseAsPort, bool disableAuthorization, params EndPoint[] endPoints) {
 			Ensure.NotNull(inputBus, nameof(inputBus));
 			Ensure.NotNull(uriRouter, nameof(uriRouter));
 			Ensure.NotNull(endPoints, nameof(endPoints));
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Http {
 			UriRouter = uriRouter;
 			LogHttpRequests = logHttpRequests;
 
-			AdvertiseAsAddress = advertiseAsAddress;
+			AdvertiseAsHost = advertiseAsHost;
 			AdvertiseAsPort = advertiseAsPort;
 
 

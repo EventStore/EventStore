@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private ReplicationMessage.ReplicaSubscriptionRequest UnwrapReplicaSubscriptionRequest(TcpPackage package,
 			IEnvelope envelope, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<ReplicationMessageDto.SubscribeReplica>();
-			var vnodeTcpEndPoint = new IPEndPoint(new IPAddress(dto.Ip), dto.Port);
+			var vnodeTcpEndPoint = new DnsEndPoint(Helper.UTF8NoBom.GetString(dto.Ip), dto.Port);
 			var lastEpochs = dto.LastEpochs.Safe()
 				.Select(x => new Epoch(x.EpochPosition, x.EpochNumber, new Guid(x.EpochId))).ToArray();
 			return new ReplicationMessage.ReplicaSubscriptionRequest(package.CorrelationId,
@@ -72,8 +72,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = new ReplicationMessageDto.SubscribeReplica(msg.LogPosition,
 				msg.ChunkId.ToByteArray(),
 				epochs,
-				msg.ReplicaEndPoint.Address.GetAddressBytes(),
-				msg.ReplicaEndPoint.Port,
+				Helper.UTF8NoBom.GetBytes(msg.ReplicaEndPoint.GetHost()),
+				msg.ReplicaEndPoint.GetPort(),
 				msg.LeaderId.ToByteArray(),
 				msg.SubscriptionId.ToByteArray(),
 				msg.IsPromotable);

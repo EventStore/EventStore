@@ -172,11 +172,13 @@ namespace EventStore.TestClient {
 					context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));
 			};
 
+			var endpoint = tcpEndPoint ?? TcpEndpoint;
 			ITcpConnection connection;
 			if (UseSsl) {
 				connection = _connector.ConnectSslTo(
 					Guid.NewGuid(),
-					tcpEndPoint ?? TcpEndpoint,
+					endpoint.Address.ToString(),
+					endpoint,
 					TcpConnectionManager.ConnectionTimeout,
 					(cert,chain,err) => (err == SslPolicyErrors.None, err.ToString()),
 					null,
@@ -186,7 +188,7 @@ namespace EventStore.TestClient {
 			} else {
 				connection = _connector.ConnectTo(
 					Guid.NewGuid(),
-					tcpEndPoint ?? TcpEndpoint,
+					endpoint,
 					TcpConnectionManager.ConnectionTimeout,
 					onConnectionEstablished,
 					onConnectionFailed,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Integration;
 using EventStore.Transport.Tcp;
@@ -37,6 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			} else {
 				connection = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
+					endpoint.GetHost(),
 					endpoint,
 					delegate { return (true, null); },
 					null,

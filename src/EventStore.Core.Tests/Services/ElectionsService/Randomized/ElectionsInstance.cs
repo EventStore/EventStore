@@ -5,12 +5,12 @@ using EventStore.Core.Bus;
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 	internal class ElectionsInstance {
 		public readonly Guid InstanceId;
-		public readonly IPEndPoint EndPoint;
+		public readonly EndPoint EndPoint;
 
 		public readonly IPublisher InputBus;
 		public readonly IPublisher OutputBus;
 
-		public ElectionsInstance(Guid instanceId, IPEndPoint endPoint, IPublisher inputBus, IPublisher outputBus) {
+		public ElectionsInstance(Guid instanceId, EndPoint endPoint, IPublisher inputBus, IPublisher outputBus) {
 			InstanceId = instanceId;
 			EndPoint = endPoint;
 			InputBus = inputBus;

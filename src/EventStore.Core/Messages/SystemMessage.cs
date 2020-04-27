@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Net;
 using System.Threading;
+using EventStore.Core.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
+using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {
 	public static class SystemMessage {
@@ -205,9 +206,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly VNodeInfo Leader;
+			public readonly MemberInfo Leader;
 
-			protected ReplicaStateMessage(Guid correlationId, VNodeState state, VNodeInfo leader)
+			protected ReplicaStateMessage(Guid correlationId, VNodeState state, MemberInfo leader)
 				: base(correlationId, state) {
 				Ensure.NotNull(leader, "leader");
 				Leader = leader;
@@ -221,7 +222,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReplica(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.PreReplica,
+			public BecomePreReplica(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.PreReplica,
 				leader) {
 			}
 		}
@@ -233,7 +234,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeCatchingUp(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.CatchingUp,
+			public BecomeCatchingUp(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.CatchingUp,
 				leader) {
 			}
 		}
@@ -245,7 +246,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeClone(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Clone, leader) {
+			public BecomeClone(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Clone, leader) {
 			}
 		}
 
@@ -256,7 +257,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeFollower(Guid correlationId, VNodeInfo leader) : base(correlationId, VNodeState.Follower, leader) {
+			public BecomeFollower(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Follower,
+				leader) {
 			}
 		}
 
@@ -279,7 +281,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReadOnlyReplica(Guid correlationId, VNodeInfo leader)
+			public BecomePreReadOnlyReplica(Guid correlationId, MemberInfo leader)
 				: base(correlationId, VNodeState.PreReadOnlyReplica, leader) {
 			}
 		}
@@ -291,7 +293,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeReadOnlyReplica(Guid correlationId, VNodeInfo leader)
+			public BecomeReadOnlyReplica(Guid correlationId, MemberInfo leader)
 				: base(correlationId, VNodeState.ReadOnlyReplica, leader) {
 			}
 		}
@@ -328,11 +330,11 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly IPEndPoint VNodeEndPoint;
+			public readonly EndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
 			public readonly Guid? SubscriptionId;
 
-			public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId, Guid? subscriptionId=null) {
+			public VNodeConnectionLost(EndPoint vNodeEndPoint, Guid connectionId, Guid? subscriptionId=null) {
 				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 
@@ -349,10 +351,10 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly IPEndPoint VNodeEndPoint;
+			public readonly EndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
 
-			public VNodeConnectionEstablished(IPEndPoint vNodeEndPoint, Guid connectionId) {
+			public VNodeConnectionEstablished(EndPoint vNodeEndPoint, Guid connectionId) {
 				Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 

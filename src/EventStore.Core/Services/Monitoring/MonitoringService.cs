@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Monitoring {
 			ICheckpoint writerCheckpoint,
 			string dbPath,
 			TimeSpan statsCollectionPeriod,
-			IPEndPoint nodeEndpoint,
+			EndPoint nodeEndpoint,
 			StatsStorage statsStorage,
 			IPEndPoint tcpEndpoint,
 			IPEndPoint tcpSecureEndpoint) {
@@ -288,7 +288,7 @@ namespace EventStore.Core.Services.Monitoring {
 				foreach (var conn in connections) {
 					var tcpConn = conn as TcpConnection;
 					if (tcpConn != null) {
-						var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.Port;
+						var isExternalConnection = _tcpEndpoint != null && _tcpEndpoint.Port == tcpConn.LocalEndPoint.GetPort();
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
 							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConn.RemoteEndPoint.ToString(),
@@ -306,7 +306,7 @@ namespace EventStore.Core.Services.Monitoring {
 					var tcpConnSsl = conn as TcpConnectionSsl;
 					if (tcpConnSsl != null) {
 						var isExternalConnection = _tcpSecureEndpoint != null &&
-						                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.Port;
+						                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
 							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),

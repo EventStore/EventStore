@@ -210,7 +210,7 @@ namespace EventStore.Core.Services.Replication {
 			}
 		}
 
-		private long GetValidLogPosition(long logPosition, Epoch[] epochs, IPEndPoint replicaEndPoint,
+		private long GetValidLogPosition(long logPosition, Epoch[] epochs, EndPoint replicaEndPoint,
 			Guid subscriptionId) {
 			if (epochs.Length == 0) {
 				if (logPosition > 0) {
@@ -680,7 +680,7 @@ namespace EventStore.Core.Services.Replication {
 			}
 
 			public readonly bool IsPromotable;
-			public readonly IPEndPoint ReplicaEndPoint;
+			public readonly EndPoint ReplicaEndPoint;
 			public readonly Guid SubscriptionId;
 
 			public TFChunkBulkReader BulkReader;
@@ -698,7 +698,7 @@ namespace EventStore.Core.Services.Replication {
 			private readonly TcpConnectionManager _connection;
 
 			public ReplicaSubscription(IPublisher tcpSendPublisher, TcpConnectionManager connection,
-				Guid subscriptionId, IPEndPoint replicaEndPoint, bool isPromotable) {
+				Guid subscriptionId, EndPoint replicaEndPoint, bool isPromotable) {
 				_tcpSendPublisher = tcpSendPublisher;
 				_connection = connection;
 				SubscriptionId = subscriptionId;

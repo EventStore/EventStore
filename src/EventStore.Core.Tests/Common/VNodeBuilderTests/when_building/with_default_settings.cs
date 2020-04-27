@@ -3,6 +3,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
@@ -102,10 +103,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(internalHttp, _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(externalHttp, _settings.NodeInfo.ExternalHttp);
 
-			Assert.AreEqual(internalTcp, _settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(externalTcp, _settings.GossipAdvertiseInfo.ExternalTcp);
-			Assert.AreEqual(internalHttp, _settings.GossipAdvertiseInfo.InternalHttp);
-			Assert.AreEqual(externalHttp, _settings.GossipAdvertiseInfo.ExternalHttp);
+			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.InternalTcp);
+			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.ExternalTcp);
+			Assert.AreEqual(internalHttp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.InternalHttp);
+			Assert.AreEqual(externalHttp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.ExternalHttp);
 		}
 
 		[Test]

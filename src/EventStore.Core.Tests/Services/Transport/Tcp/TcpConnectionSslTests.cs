@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
@@ -36,6 +37,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var mre = new ManualResetEventSlim(false);
 				var clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
+					listeningSocket.LocalEndPoint.GetHost(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					delegate { return (true, null); },
 					null,
@@ -99,6 +101,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 						Guid.NewGuid(),
+						listeningSocket.LocalEndPoint.GetHost(),
 						(IPEndPoint)listeningSocket.LocalEndPoint,
 						delegate { return (true, null); },
 						null,

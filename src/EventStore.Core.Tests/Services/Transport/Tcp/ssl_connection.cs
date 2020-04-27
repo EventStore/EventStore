@@ -5,6 +5,7 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Tcp;
@@ -65,6 +66,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
+				serverEndPoint.GetHost(),
 				serverEndPoint,
 				delegate { return (true, null); },
 				null,
