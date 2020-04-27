@@ -507,7 +507,7 @@ namespace EventStore.Core.Index {
 			if (dumpedEntryCount == numIndexEntries && requiredMidpointCount == midpoints.Count) {
 				//if these values don't match, something is wrong
 				bs.Flush();
-				fs.SetLength(fs.Position + midpoints.Count * indexEntrySize);
+				fs.SetLength(fs.Position + (long)midpoints.Count * indexEntrySize);
 				foreach (var pt in midpoints) {
 					AppendMidpointRecordTo(bs, buffer, version, pt, indexEntrySize);
 				}
