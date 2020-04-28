@@ -198,7 +198,7 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private static int GetIndexEntrySize(byte version) {
+		public static int GetIndexEntrySize(byte version) {
 			if (version == PTableVersions.IndexV1) {
 				return PTable.IndexEntryV1Size;
 			}
@@ -676,12 +676,12 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private static long GetFileSizeUpToIndexEntries(long numIndexEntries, byte version) {
+		public static long GetFileSizeUpToIndexEntries(long numIndexEntries, byte version) {
 			int indexEntrySize = GetIndexEntrySize(version);
 			return (long)PTableHeader.Size + numIndexEntries * indexEntrySize;
 		}
 
-		private static long GetFileSizeUpToMidpointEntries(long currentPosition, long numMidpointEntries, byte version) {
+		public static long GetFileSizeUpToMidpointEntries(long currentPosition, long numMidpointEntries, byte version) {
 			int indexEntrySize = GetIndexEntrySize(version);
 			return currentPosition + numMidpointEntries * indexEntrySize;
 		}
