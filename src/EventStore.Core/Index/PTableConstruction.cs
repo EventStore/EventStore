@@ -507,7 +507,8 @@ namespace EventStore.Core.Index {
 			if (dumpedEntryCount == numIndexEntries && requiredMidpointCount == midpoints.Count) {
 				//if these values don't match, something is wrong
 				bs.Flush();
-				fs.SetLength(fs.Position + (long)midpoints.Count * indexEntrySize);
+				long fileSizeUpToMidpointEntries = GetFileSizeUpToMidpointEntries(fs.Position, midpoints.Count, version);
+				fs.SetLength(fileSizeUpToMidpointEntries);
 				foreach (var pt in midpoints) {
 					AppendMidpointRecordTo(bs, buffer, version, pt, indexEntrySize);
 				}
@@ -678,6 +679,11 @@ namespace EventStore.Core.Index {
 		private static long GetFileSizeUpToIndexEntries(long numIndexEntries, byte version) {
 			int indexEntrySize = GetIndexEntrySize(version);
 			return (long)PTableHeader.Size + numIndexEntries * indexEntrySize;
+		}
+
+		private static long GetFileSizeUpToMidpointEntries(long currentPosition, long numMidpointEntries, byte version) {
+			int indexEntrySize = GetIndexEntrySize(version);
+			return currentPosition + numMidpointEntries * indexEntrySize;
 		}
 
 		private static int GetDepth(long indexEntriesFileSize, int minDepth) {
