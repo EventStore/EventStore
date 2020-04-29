@@ -689,7 +689,7 @@ namespace EventStore.Core.Index {
 		private static int GetDepth(long indexEntriesFileSize, int minDepth) {
 			minDepth = Math.Max(0, Math.Min(minDepth, 28));
 			if ((2L << 28) * 4096L < indexEntriesFileSize) return 28;
-			for (int i = 27; i > minDepth; i--) {
+			for (int i = 27; i >= minDepth; i--) {
 				if ((2L << i) * 4096L < indexEntriesFileSize) {
 					return i + 1;
 				}
