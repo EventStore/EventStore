@@ -155,6 +155,7 @@ namespace EventStore.Core.Messages {
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
 			public readonly Guid EpochId;
+			public readonly Guid EpochLeaderInstanceId;
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
@@ -166,6 +167,7 @@ namespace EventStore.Core.Messages {
 				int epochNumber,
 				long epochPosition,
 				Guid epochId,
+				Guid epochLeaderInstanceId,
 				long lastCommitPosition,
 				long writerCheckpoint,
 				long chaserCheckpoint,
@@ -176,6 +178,7 @@ namespace EventStore.Core.Messages {
 				EpochNumber = epochNumber;
 				EpochPosition = epochPosition;
 				EpochId = epochId;
+				EpochLeaderInstanceId = epochLeaderInstanceId;
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
@@ -190,6 +193,7 @@ namespace EventStore.Core.Messages {
 				EpochNumber = dto.EpochNumber;
 				EpochPosition = dto.EpochPosition;
 				EpochId = dto.EpochId;
+				EpochLeaderInstanceId = dto.EpochLeaderInstanceId;
 				LastCommitPosition = dto.LastCommitPosition;
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
@@ -199,9 +203,9 @@ namespace EventStore.Core.Messages {
 			public override string ToString() {
 				return string.Format(
 					"---- PrepareOk: view {0}, serverId {1}, serverHttp {2}, epochNumber {3}, " +
-					"epochPosition {4}, epochId {5}, lastCommitPosition {6}, writerCheckpoint {7}, chaserCheckpoint {8}, nodePriority: {9}",
+					"epochPosition {4}, epochId {5}, epochLeaderInstanceId {6:B}, lastCommitPosition {7}, writerCheckpoint {8}, chaserCheckpoint {9}, nodePriority: {10}",
 					View, ServerId, ServerHttpEndPoint, EpochNumber,
-					EpochPosition, EpochId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
+					EpochPosition, EpochId, EpochLeaderInstanceId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
 			}
 		}
 
@@ -221,13 +225,14 @@ namespace EventStore.Core.Messages {
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
 			public readonly Guid EpochId;
+			public readonly Guid EpochLeaderInstanceId;
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
 			public readonly int NodePriority;
 
 			public Proposal(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId, EndPoint leaderHttpEndPoint,
-				int view, int epochNumber, long epochPosition, Guid epochId,
+				int view, int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId,
 				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority) {
 				ServerId = serverId;
 				ServerHttpEndPoint = serverHttpEndPoint;
@@ -237,6 +242,7 @@ namespace EventStore.Core.Messages {
 				EpochNumber = epochNumber;
 				EpochPosition = epochPosition;
 				EpochId = epochId;
+				EpochLeaderInstanceId = epochLeaderInstanceId;
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
@@ -254,6 +260,7 @@ namespace EventStore.Core.Messages {
 				EpochNumber = dto.EpochNumber;
 				EpochPosition = dto.EpochPosition;
 				EpochId = dto.EpochId;
+				EpochLeaderInstanceId = dto.EpochLeaderInstanceId;
 				LastCommitPosition = dto.LastCommitPosition;
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
@@ -263,10 +270,10 @@ namespace EventStore.Core.Messages {
 			public override string ToString() {
 				return string.Format(
 					"---- Proposal: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, "
-					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B}, NodePriority {11}",
+					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B} (L={11:B}), NodePriority {12}",
 					ServerId, ServerHttpEndPoint, LeaderId, LeaderHttpEndPoint,
 					View, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
-					EpochNumber, EpochPosition, EpochId, NodePriority);
+					EpochNumber, EpochPosition, EpochId, EpochLeaderInstanceId, NodePriority);
 			}
 		}
 

@@ -39,7 +39,7 @@ namespace EventStore.Core.Cluster {
 		public void SendPrepareOk(ElectionMessage.PrepareOk prepareOk, EndPoint destinationEndpoint,
 			DateTime deadline) {
 			SendPrepareOkAsync(prepareOk.View, prepareOk.ServerId, prepareOk.ServerHttpEndPoint, prepareOk.EpochNumber,
-					prepareOk.EpochPosition, prepareOk.EpochId, prepareOk.LastCommitPosition,
+					prepareOk.EpochPosition, prepareOk.EpochId, prepareOk.EpochLeaderInstanceId, prepareOk.LastCommitPosition,
 					prepareOk.WriterCheckpoint,
 					prepareOk.ChaserCheckpoint, prepareOk.NodePriority, deadline)
 				.ContinueWith(r => {
@@ -53,7 +53,7 @@ namespace EventStore.Core.Cluster {
 		public void SendProposal(ElectionMessage.Proposal proposal, EndPoint destinationEndpoint, DateTime deadline) {
 			SendProposalAsync(proposal.ServerId, proposal.ServerHttpEndPoint, proposal.LeaderId,
 					proposal.LeaderHttpEndPoint,
-					proposal.View, proposal.EpochNumber, proposal.EpochPosition, proposal.EpochId,
+					proposal.View, proposal.EpochNumber, proposal.EpochPosition, proposal.EpochId,proposal.EpochLeaderInstanceId,
 					proposal.LastCommitPosition, proposal.WriterCheckpoint, proposal.ChaserCheckpoint,
 					proposal.NodePriority,
 					deadline)
@@ -124,7 +124,7 @@ namespace EventStore.Core.Cluster {
 		}
 
 		private async Task SendPrepareOkAsync(int view, Guid serverId, EndPoint serverHttpEndPoint, int epochNumber,
-			long epochPosition, Guid epochId, long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			long epochPosition, Guid epochId, Guid epochLeaderInstanceId, long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
 			int nodePriority, DateTime deadline) {
 			var request = new PrepareOkRequest {
 				View = view,
@@ -133,6 +133,7 @@ namespace EventStore.Core.Cluster {
 				EpochNumber = epochNumber,
 				EpochPosition = epochPosition,
 				EpochId = Uuid.FromGuid(epochId).ToDto(),
+				EpochLeaderInstanceId = Uuid.FromGuid(epochLeaderInstanceId).ToDto(),
 				LastCommitPosition = lastCommitPosition,
 				WriterCheckpoint = writerCheckpoint,
 				ChaserCheckpoint = chaserCheckpoint,
@@ -142,7 +143,7 @@ namespace EventStore.Core.Cluster {
 		}
 
 		private async Task SendProposalAsync(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId,
-			EndPoint leaderHttp, int view, int epochNumber, long epochPosition, Guid epochId,
+			EndPoint leaderHttp, int view, int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority,
 			DateTime deadline) {
 			var request = new ProposalRequest {
@@ -154,6 +155,7 @@ namespace EventStore.Core.Cluster {
 				EpochNumber = epochNumber,
 				EpochPosition = epochPosition,
 				EpochId = Uuid.FromGuid(epochId).ToDto(),
+				EpochLeaderInstanceId = Uuid.FromGuid(epochLeaderInstanceId).ToDto(),
 				LastCommitPosition = lastCommitPosition,
 				WriterCheckpoint = writerCheckpoint,
 				ChaserCheckpoint = chaserCheckpoint,
