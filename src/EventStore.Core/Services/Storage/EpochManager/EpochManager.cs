@@ -23,6 +23,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private readonly ICheckpoint _checkpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
+		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
 		private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
@@ -36,7 +37,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			ITransactionFileWriter writer,
 			int initialReaderCount,
 			int maxReaderCount,
-			Func<ITransactionFileReader> readerFactory) {
+			Func<ITransactionFileReader> readerFactory,
+			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
 			Ensure.NotNull(checkpoint, "checkpoint");
@@ -54,6 +56,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
 				maxReaderCount, readerFactory);
 			_writer = writer;
+			_instanceId = instanceId;
 		}
 
 		public void Init() {
@@ -200,26 +203,26 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
 			// excessive record, if present.
 			// If we are writing the very first epoch, last position will be -1.
-			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition);
+			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition, _instanceId);
 			UpdateLastEpoch(epoch, flushWriter: true);
 		}
 
-		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition) {
+		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition, Guid instanceId) {
 			long pos = _writer.Checkpoint.ReadNonFlushed();
-			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow);
+			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
 
 			if (!_writer.Write(rec, out pos)) {
-				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow);
+				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 				rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 					SystemRecordSerialization.Json, epoch.AsSerialized());
 				if (!_writer.Write(rec, out pos))
 					throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
 			}
 
-			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}).",
-				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition);
+			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
+				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
 
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
@@ -261,8 +264,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				_checkpoint.Flush();
 
 				Log.Debug(
-					"=== Update Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}).",
-					epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition);
+					"=== Update Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+					epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
 			}
 		}
 

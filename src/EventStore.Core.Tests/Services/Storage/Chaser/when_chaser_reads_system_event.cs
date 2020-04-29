@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		public override void When() {
 			_epochId = Guid.NewGuid();
 			_epochNumber = 7;
-			var epoch = new EpochRecord(0, _epochNumber, _epochId, -1, DateTime.UtcNow);
+			var epoch = new EpochRecord(0, _epochNumber, _epochId, -1, DateTime.UtcNow, Guid.Empty);
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
 
