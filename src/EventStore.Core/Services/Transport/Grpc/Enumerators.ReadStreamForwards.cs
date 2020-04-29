@@ -88,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsForward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName, _nextRevision.ToInt64(),
-					Math.Min(32, (int)_maxCount), _resolveLinks, _requiresLeader, default, _user, expires: _deadline));
+					(int)Math.Min(32, _maxCount), _resolveLinks, _requiresLeader, default, _user, expires: _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
 					return false;
