@@ -392,8 +392,7 @@ namespace EventStore.Core.Services {
 			_acceptsReceived.Clear();
 			_leaderProposal = null;
 
-			var leader = GetBestLeaderCandidate(_prepareOkReceived, _servers, _lastElectedLeader,
-				_resigningLeaderInstanceId);
+			var leader = GetBestLeaderCandidate(_prepareOkReceived, _servers, _resigningLeaderInstanceId);
 			if (leader == null) {
 				Log.Verbose("ELECTIONS: (V={lastAttemptedView}) NO LEADER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
@@ -416,25 +415,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public static LeaderCandidate GetBestLeaderCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
-			MemberInfo[] servers, Guid? lastElectedLeader, Guid? resigningLeaderInstanceId) {
-			if (lastElectedLeader.HasValue && lastElectedLeader.Value != resigningLeaderInstanceId) {
-				if (received.TryGetValue(lastElectedLeader.Value, out var leaderMsg)) {
-					return new LeaderCandidate(leaderMsg.ServerId, leaderMsg.ServerHttpEndPoint,
-						leaderMsg.EpochNumber, leaderMsg.EpochPosition, leaderMsg.EpochId, leaderMsg.EpochLeaderInstanceId,
-						leaderMsg.LastCommitPosition, leaderMsg.WriterCheckpoint, leaderMsg.ChaserCheckpoint,
-						leaderMsg.NodePriority);
-				}
-
-				var leader = servers.FirstOrDefault(x =>
-					x.IsAlive && x.InstanceId == lastElectedLeader && x.State == VNodeState.Leader);
-				if (leader != null) {
-					return new LeaderCandidate(leader.InstanceId, leader.HttpEndPoint,
-						leader.EpochNumber, leader.EpochPosition, leader.EpochId, leaderMsg.EpochLeaderInstanceId,
-						leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint,
-						leader.NodePriority);
-				}
-			}
-
+			MemberInfo[] servers, Guid? resigningLeaderInstanceId) {
 			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.LastCommitPosition)
@@ -445,6 +426,41 @@ namespace EventStore.Core.Services {
 				.FirstOrDefault();
 			if (best == null)
 				return null;
+
+			if (best.EpochLeaderInstanceId != Guid.Empty) {
+				//best.EpochLeaderInstanceId = id of the last leader/master which has been able to write an epoch record to the transaction log and get it replicated
+				//to the "best" node which has the latest data, i.e data that has been replicated to at least a quorum number of nodes for sure.
+				//We know that the data from the "best" node originates from this leader/master itself from this epoch record onwards, thus it implies that
+				//the leader/master in this epoch record must have the latest replicated data as well and is thus definitely a valid candidate for leader/master if it's still alive.
+				//NOTE 1: It does not matter if the "best" node's latest epoch record has been replicated to a quorum number of nodes or not, the
+				//leader/master in the epoch record must still have the latest replicated data
+				//NOTE 2: it is not necessary that this leader/master is the last elected leader/master in the cluster e.g a leader/master might be elected but
+				//has no time to replicate the epoch. In this case, it will need to truncate when joining the new leader.
+
+				var lastLeader = best.EpochLeaderInstanceId;
+				if (lastLeader != resigningLeaderInstanceId) {
+					if (received.TryGetValue(lastLeader, out var leaderMsg) &&
+						leaderMsg.EpochNumber == best.EpochNumber &&
+						leaderMsg.EpochId == best.EpochId) {
+						return new LeaderCandidate(leaderMsg.ServerId, leaderMsg.ServerHttpEndPoint,
+							leaderMsg.EpochNumber, leaderMsg.EpochPosition, leaderMsg.EpochId, leaderMsg.EpochLeaderInstanceId,
+							leaderMsg.LastCommitPosition, leaderMsg.WriterCheckpoint, leaderMsg.ChaserCheckpoint,
+							leaderMsg.NodePriority);
+					}
+
+					var leader = servers.FirstOrDefault(
+						x => x.InstanceId == lastLeader &&
+						x.IsAlive &&
+						x.EpochNumber == best.EpochNumber &&
+						x.EpochId == best.EpochId);
+					if (leader != null) {
+						return new LeaderCandidate(leader.InstanceId, leader.HttpEndPoint,
+							leader.EpochNumber, leader.EpochPosition, leader.EpochId, best.EpochLeaderInstanceId,
+							leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint,
+							leader.NodePriority);
+					}
+				}
+			}
 			return new LeaderCandidate(best.ServerId, best.ServerHttpEndPoint,
 				best.EpochNumber, best.EpochPosition, best.EpochId, best.EpochLeaderInstanceId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
