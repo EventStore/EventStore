@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
+using ClusterInfo = EventStore.Core.Cluster.ClusterInfo;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Elections {
@@ -80,7 +81,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.LastCommitPosition,
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
-				request.NodePriority));
+				request.NodePriority,
+				ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo)));
 			return EmptyResult;
 		}
 				

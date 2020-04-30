@@ -55,6 +55,7 @@ message PrepareOkRequest {
 	int64 writer_checkpoint = 9;
 	int64 chaser_checkpoint = 10;
 	int32 node_priority = 11;
+	ClusterInfo cluster_info = 12;
 }
 
 message ProposalRequest {

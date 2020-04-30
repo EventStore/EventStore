@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Cluster;
 
 namespace EventStore.Core.Messages {
 	public static class ElectionMessageDto {
@@ -76,6 +77,7 @@ namespace EventStore.Core.Messages {
 			public long ChaserCheckpoint { get; set; }
 
 			public int NodePriority { get; set; }
+			public ClusterInfo ClusterInfo { get; set; }
 
 			public PrepareOkDto() {
 			}
@@ -96,6 +98,7 @@ namespace EventStore.Core.Messages {
 				ChaserCheckpoint = message.ChaserCheckpoint;
 
 				NodePriority = message.NodePriority;
+				ClusterInfo = message.ClusterInfo;
 			}
 		}
 

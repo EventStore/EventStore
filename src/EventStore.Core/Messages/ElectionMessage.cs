@@ -160,6 +160,7 @@ namespace EventStore.Core.Messages {
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
 			public readonly int NodePriority;
+			public readonly ClusterInfo ClusterInfo;
 
 			public PrepareOk(int view,
 				Guid serverId,
@@ -171,7 +172,8 @@ namespace EventStore.Core.Messages {
 				long lastCommitPosition,
 				long writerCheckpoint,
 				long chaserCheckpoint,
-				int nodePriority) {
+				int nodePriority,
+				ClusterInfo clusterInfo) {
 				View = view;
 				ServerId = serverId;
 				ServerHttpEndPoint = serverHttpEndPoint;
@@ -183,6 +185,7 @@ namespace EventStore.Core.Messages {
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
 				NodePriority = nodePriority;
+				ClusterInfo = clusterInfo;
 			}
 
 			public PrepareOk(ElectionMessageDto.PrepareOkDto dto) {
@@ -198,14 +201,15 @@ namespace EventStore.Core.Messages {
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
 				NodePriority = dto.NodePriority;
+				ClusterInfo = dto.ClusterInfo;
 			}
 
 			public override string ToString() {
 				return string.Format(
 					"---- PrepareOk: view {0}, serverId {1}, serverHttp {2}, epochNumber {3}, " +
-					"epochPosition {4}, epochId {5}, epochLeaderInstanceId {6:B}, lastCommitPosition {7}, writerCheckpoint {8}, chaserCheckpoint {9}, nodePriority: {10}",
+					"epochPosition {4}, epochId {5}, epochLeaderInstanceId {6:B}, lastCommitPosition {7}, writerCheckpoint {8}, chaserCheckpoint {9}, nodePriority: {10}, clusterInfo: {11}",
 					View, ServerId, ServerHttpEndPoint, EpochNumber,
-					EpochPosition, EpochId, EpochLeaderInstanceId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
+					EpochPosition, EpochId, EpochLeaderInstanceId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority, ClusterInfo);
 			}
 		}
 

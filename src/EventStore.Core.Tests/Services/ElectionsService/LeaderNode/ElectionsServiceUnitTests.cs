@@ -250,7 +250,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var resigningLeadership = tc.ResigningLeader.HasValue
 				? (Guid?)IdForNode(tc.ResigningLeader.Value)
 				: null;
-			var mc = SUT.GetBestLeaderCandidate(prepareOks, members, resigningLeadership);
+			var mc = SUT.GetBestLeaderCandidate(prepareOks, members, resigningLeadership, 0);
 
 			Assert.AreEqual(IdForNode(tc.ExpectedLeaderCandidateNode), mc.InstanceId);
 
