@@ -84,7 +84,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadAllEventsBackward(
 					correlationId, correlationId, new CallbackEnvelope(OnMessage),
-					commitPosition, preparePosition, Math.Min(32, (int)_maxCount),
+					commitPosition, preparePosition, (int)Math.Min(32, _maxCount),
 					_resolveLinks, _requiresLeader, default, _user, _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
