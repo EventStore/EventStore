@@ -132,5 +132,18 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 			OneWriteCompletes();
 			Assert.AreEqual(3, eventNumber);
 		}
+		
+		[Test]
+		public void does_not_fail_if_link_event_target_does_not_exist() {
+			_stream.EmitEvents(
+				new[] {
+					new EmittedDataEvent(
+						"test_stream", Guid.NewGuid(), "$>", true, "0@foobar", null,
+						CheckpointTag.FromPosition(0, 150, 100), null)
+				});
+			Assert.AreEqual(0, _readyHandler.HandledFailedMessages.Count);
+			Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+			Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.ReadEvent>().Count());
+		}
 	}
 }
