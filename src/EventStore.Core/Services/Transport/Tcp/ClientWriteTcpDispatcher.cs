@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AddWrapper<ClientMessage.DeleteStreamCompleted>(WrapDeleteStreamCompleted, ClientVersion.V2);
 		}
 		private ClientMessage.WriteEvents UnwrapWriteEvents(TcpPackage package, IEnvelope envelope,
-			ClaimsPrincipal user, string login, string password) {
+			ClaimsPrincipal user) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.WriteEvents>();
 			if (dto == null) return null;
 
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			cts.CancelAfter(_writeTimeout);
 
 			return new ClientMessage.WriteEvents(Guid.NewGuid(), package.CorrelationId, envelopeWrapper, dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, events, user, login, password, cts.Token);
+				dto.EventStreamId, dto.ExpectedVersion, events, user, package.Tokens, cts.Token);
 
 			void OnMessage(Message m) {
 				cts.Dispose();
@@ -130,12 +130,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private static ClientMessage.TransactionStart UnwrapTransactionStart(TcpPackage package, IEnvelope envelope,
-			ClaimsPrincipal user, string login, string password) {
+			ClaimsPrincipal user) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.TransactionStart>();
 			if (dto == null) return null;
 			return new ClientMessage.TransactionStart(Guid.NewGuid(), package.CorrelationId, envelope,
 				dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, user, login, password);
+				dto.EventStreamId, dto.ExpectedVersion, user, package.Tokens);
 		}
 
 		private static TcpPackage WrapTransactionStart(ClientMessage.TransactionStart msg) {
@@ -159,7 +159,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private static ClientMessage.TransactionWrite UnwrapTransactionWrite(TcpPackage package, IEnvelope envelope,
-			ClaimsPrincipal user, string login, string password) {
+			ClaimsPrincipal user) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.TransactionWrite>();
 			if (dto == null) return null;
 
@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			return new ClientMessage.TransactionWrite(Guid.NewGuid(), package.CorrelationId, envelope,
 				dto.RequireLeader,
-				dto.TransactionId, events, user, login, password);
+				dto.TransactionId, events, user, package.Tokens);
 		}
 
 		private static TcpPackage WrapTransactionWrite(ClientMessage.TransactionWrite msg) {
@@ -203,12 +203,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private static ClientMessage.TransactionCommit UnwrapTransactionCommit(TcpPackage package, IEnvelope envelope,
-			ClaimsPrincipal user, string login, string password) {
+			ClaimsPrincipal user) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.TransactionCommit>();
 			if (dto == null) return null;
 			return new ClientMessage.TransactionCommit(Guid.NewGuid(), package.CorrelationId, envelope,
-				dto.RequireLeader,
-				dto.TransactionId, user, login, password);
+				dto.RequireLeader, dto.TransactionId, user, package.Tokens);
 		}
 
 		private static TcpPackage WrapTransactionCommit(ClientMessage.TransactionCommit msg) {
@@ -235,7 +234,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.DeleteStream UnwrapDeleteStream(TcpPackage package, IEnvelope envelope,
-			ClaimsPrincipal user, string login, string password) {
+			ClaimsPrincipal user) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.DeleteStream>();
 			if (dto == null) return null;
 
@@ -244,7 +243,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			cts.CancelAfter(_writeTimeout);
 
 			return new ClientMessage.DeleteStream(Guid.NewGuid(), package.CorrelationId, envelopeWrapper, dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, dto.HardDelete ?? false, user, login, password, cts.Token);
+				dto.EventStreamId, dto.ExpectedVersion, dto.HardDelete ?? false, user, package.Tokens, cts.Token);
 
 			void OnMessage(Message m) {
 				cts.Dispose();

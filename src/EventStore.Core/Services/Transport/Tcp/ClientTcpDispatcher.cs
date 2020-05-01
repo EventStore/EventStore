@@ -104,6 +104,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				WrapPersistentSubscriptionStreamEventAppearedV1, ClientVersion.V1);
 		}
 
+
 		private TcpPackage WrapCheckpointReached(ClientMessage.CheckpointReached msg) {
 			var dto = new TcpClientMessageDto.CheckpointReached(msg.Position.Value.CommitPosition,
 				msg.Position.Value.PreparePosition);
@@ -292,8 +293,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private ClientMessage.SubscribeToStream UnwrapSubscribeToStream(TcpPackage package,
 			IEnvelope envelope,
 			ClaimsPrincipal user,
-			string login,
-			string pass,
 			TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToStream>();
 			if (dto == null) return null;
@@ -304,8 +303,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private ClientMessage.FilteredSubscribeToStream UnwrapFilteredSubscribeToStream(TcpPackage package,
 			IEnvelope envelope,
 			ClaimsPrincipal user,
-			string login,
-			string pass,
 			TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.FilteredSubscribeToStream>();
 			if (dto == null) return null;
@@ -330,8 +327,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.CreatePersistentSubscription UnwrapCreatePersistentSubscription(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string username, string password,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
 			if (dto == null) return null;
 
@@ -352,8 +348,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.UpdatePersistentSubscription UnwrapUpdatePersistentSubscription(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string username, string password,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.UpdatePersistentSubscription>();
 			if (dto == null) return null;
 
@@ -374,8 +369,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.DeletePersistentSubscription UnwrapDeletePersistentSubscription(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string username, string password,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.CreatePersistentSubscription>();
 			if (dto == null) return null;
 			return new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
@@ -408,8 +402,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 
 		private ClientMessage.ConnectToPersistentSubscription UnwrapConnectToPersistentSubscription(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string login, string pass,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.ConnectToPersistentSubscription>();
 			if (dto == null) return null;
 			return new ClientMessage.ConnectToPersistentSubscription(Guid.NewGuid(), package.CorrelationId, envelope,
@@ -418,8 +411,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.PersistentSubscriptionAckEvents UnwrapPersistentSubscriptionAckEvents(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string login, string pass,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionAckEvents>();
 			if (dto == null) return null;
 			return new ClientMessage.PersistentSubscriptionAckEvents(
@@ -428,8 +420,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private ClientMessage.PersistentSubscriptionNackEvents UnwrapPersistentSubscriptionNackEvents(
-			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, string login, string pass,
-			TcpConnectionManager connection) {
+			TcpPackage package, IEnvelope envelope, ClaimsPrincipal user, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionNakEvents>();
 			if (dto == null) return null;
 			return new ClientMessage.PersistentSubscriptionNackEvents(

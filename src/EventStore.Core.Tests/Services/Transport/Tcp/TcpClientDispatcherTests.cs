@@ -2,6 +2,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Tcp;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Authentication;
 using System.Linq;
@@ -44,8 +45,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var dto = new TcpClientMessageDto.DeleteStream("test-stream", ExpectedVersion.Any, true, false);
 			var package = new TcpPackage(TcpCommand.DeleteStream, Guid.NewGuid(), dto.Serialize());
 
-			var msg = _dispatcher.UnwrapPackage(package, _envelope, SystemAccounts.System, "", "", _connection,
-				_version) as ClientMessage.DeleteStream;
+			var msg = _dispatcher.UnwrapPackage(package, _envelope, SystemAccounts.System,
+				new Dictionary<string, string>(), _connection, _version) as ClientMessage.DeleteStream;
 			Assert.IsNotNull(msg);
 		}
 

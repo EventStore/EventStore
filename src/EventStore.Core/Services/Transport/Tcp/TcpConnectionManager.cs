@@ -262,8 +262,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					break;
 				case TcpCommand.IdentifyClient: {
 					try {
-						var message = (ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope,
-							null, null, null, this, _version);
+						var message =
+							(ClientMessage.IdentifyClient)_dispatcher.UnwrapPackage(package, _tcpEnvelope, null, null,
+								this, _version);
 						Log.Information(
 							"Connection '{connectionName}' ({connectionId:B}) identified by client. Client connection name: '{clientConnectionName}', Client version: {clientVersion}.",
 							ConnectionName, ConnectionId, message.ConnectionName, (ClientVersion)message.Version);
@@ -295,7 +296,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					if ((package.Flags & TcpFlags.Authenticated) == 0)
 						ReplyNotAuthenticated(package.CorrelationId, "No user credentials provided.");
 					else {
-						var defaultUser = new UserCredentials(package.Login, package.Password, null);
+						var defaultUser = new UserCredentials(package.Tokens, null);
 						Interlocked.Exchange(ref _defaultUser, defaultUser);
 						_authProvider.Authenticate(new TcpDefaultAuthRequest(this, package.CorrelationId, defaultUser));
 					}
@@ -305,17 +306,16 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				default: {
 					var defaultUser = _defaultUser;
 					if ((package.Flags & TcpFlags.TrustedWrite) != 0) {
-						UnwrapAndPublishPackage(package, UserManagement.SystemAccounts.System, null, null);
+						UnwrapAndPublishPackage(package, UserManagement.SystemAccounts.System, null);
 					} else if ((package.Flags & TcpFlags.Authenticated) != 0) {
-						_authProvider.Authenticate(new TcpAuthRequest(this, package, package.Login, package.Password));
+						_authProvider.Authenticate(new TcpAuthRequest(this, package));
 					} else if (defaultUser != null) {
 						if (defaultUser.User != null)
-							UnwrapAndPublishPackage(package, defaultUser.User, defaultUser.Login, defaultUser.Password);
+							UnwrapAndPublishPackage(package, defaultUser.User, defaultUser.Tokens);
 						else
-							_authProvider.Authenticate(new TcpAuthRequest(this, package, defaultUser.Login,
-								defaultUser.Password));
+							_authProvider.Authenticate(new TcpAuthRequest(this, package));
 					} else {
-						UnwrapAndPublishPackage(package, Anonymous, null, null);
+						UnwrapAndPublishPackage(package, Anonymous, null);
 					}
 
 					break;
@@ -323,11 +323,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		private void UnwrapAndPublishPackage(TcpPackage package, ClaimsPrincipal user, string login, string password) {
+		private void UnwrapAndPublishPackage(TcpPackage package, ClaimsPrincipal user, IReadOnlyDictionary<string, string> tokens) {
 			Message message = null;
 			string error = "";
 			try {
-				message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, login, password, this, _version);
+				message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, user, tokens, this, _version);
 			} catch (Exception ex) {
 				error = ex.Message;
 			}
@@ -349,7 +349,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, ClaimsPrincipal user) {
-			var authCredentials = new UserCredentials(userCredentials.Login, userCredentials.Password, user);
+			var authCredentials = new UserCredentials(userCredentials.Tokens, user);
 			Interlocked.CompareExchange(ref _defaultUser, authCredentials, userCredentials);
 			_tcpEnvelope.ReplyWith(new TcpMessage.Authenticated(correlationId));
 		}
@@ -461,8 +461,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			private readonly TcpConnectionManager _manager;
 			private readonly TcpPackage _package;
 
-			public TcpAuthRequest(TcpConnectionManager manager, TcpPackage package, string login, string password)
-				: base($"(TCP) {manager.RemoteEndPoint}", login, password) {
+			public TcpAuthRequest(TcpConnectionManager manager, TcpPackage package)
+				: base($"(TCP) {manager.RemoteEndPoint}", package.Tokens) {
 				_manager = manager;
 				_package = package;
 			}
@@ -472,7 +472,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			public override void Authenticated(ClaimsPrincipal principal) {
-				_manager.UnwrapAndPublishPackage(_package, principal, Name, SuppliedPassword);
+				_manager.UnwrapAndPublishPackage(_package, principal, _package.Tokens);
 			}
 
 			public override void Error() {
@@ -492,7 +492,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			public TcpDefaultAuthRequest(TcpConnectionManager manager, Guid correlationId,
 				UserCredentials userCredentials)
-				: base($"(TCP) {manager.RemoteEndPoint}", userCredentials.Login, userCredentials.Password) {
+				: base($"(TCP) {manager.RemoteEndPoint}", userCredentials.Tokens) {
 				_manager = manager;
 				_correlationId = correlationId;
 				_userCredentials = userCredentials;
@@ -516,13 +516,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private class UserCredentials {
-			public readonly string Login;
-			public readonly string Password;
 			public readonly ClaimsPrincipal User;
+			public readonly IReadOnlyDictionary<string, string> Tokens;
 
-			public UserCredentials(string login, string password, ClaimsPrincipal user) {
-				Login = login;
-				Password = password;
+			public UserCredentials(IReadOnlyDictionary<string, string> tokens, ClaimsPrincipal user) {
+				Tokens = tokens;
 				User = user;
 			}
 		}

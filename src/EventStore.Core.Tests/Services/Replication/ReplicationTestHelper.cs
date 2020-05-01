@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -21,7 +22,10 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 					writeResult = (ClientMessage.WriteEventsCompleted)msg;
 					resetEvent.Set();
 				}), false, streamId, -1, events,
-				SystemAccounts.System, SystemUsers.Admin, SystemUsers.DefaultAdminPassword));
+				SystemAccounts.System, new Dictionary<string, string> {
+					["uid"] = SystemUsers.Admin,
+					["pwd"] = SystemUsers.DefaultAdminPassword
+				}));
 			if (!resetEvent.Wait(_timeout)) {
 				Assert.Fail("Timed out waiting for event to be written");
 				return null;
