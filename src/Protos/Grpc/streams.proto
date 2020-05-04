@@ -140,18 +140,37 @@ message AppendReq {
 }
 
 message AppendResp {
-	oneof current_revision_option {
-		uint64 current_revision = 1;
-		event_store.client.shared.Empty no_stream = 2;
-	}
-	oneof position_option {
-		Position position = 3;
-		event_store.client.shared.Empty no_position = 4;
+	oneof result {
+		Success success = 1;
+		WrongExpectedVersion wrong_expected_version = 2;
 	}
 
 	message Position {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
+	}
+
+	message Success {
+		oneof current_revision_option {
+			uint64 current_revision = 1;
+			event_store.client.shared.Empty no_stream = 2;
+		}
+		oneof position_option {
+			Position position = 3;
+			event_store.client.shared.Empty no_position = 4;
+		}
+	}
+
+	message WrongExpectedVersion {
+	  oneof current_revision_option {
+		  uint64 current_revision = 1;
+		  event_store.client.shared.Empty no_stream = 2;
+	  }
+	  oneof expected_revision_option {
+		  uint64 expected_revision = 3;
+		  event_store.client.shared.Empty any = 4;
+		  event_store.client.shared.Empty stream_exists = 5;
+		}
 	}
 }
 

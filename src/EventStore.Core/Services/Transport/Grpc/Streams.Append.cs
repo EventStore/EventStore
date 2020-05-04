@@ -103,21 +103,21 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return;
 				}
 
+				var response = new AppendResp();
 				switch (completed.Result) {
 					case OperationResult.Success:
-						var response = new AppendResp();
-
+						response.Success = new AppendResp.Types.Success();
 						if (completed.LastEventNumber == -1) {
-							response.NoStream = new Empty();
+							response.Success.NoStream = new Empty();
 						} else {
-							response.CurrentRevision = StreamRevision.FromInt64(completed.LastEventNumber);
+							response.Success.CurrentRevision = StreamRevision.FromInt64(completed.LastEventNumber);
 						}
 
 						if (completed.CommitPosition == -1) {
-							response.NoPosition = new Empty();
+							response.Success.NoPosition = new Empty();
 						} else {
 							var position = Position.FromInt64(completed.CommitPosition, completed.PreparePosition);
-							response.Position = new AppendResp.Types.Position {
+							response.Success.Position = new AppendResp.Types.Position {
 								CommitPosition = position.CommitPosition,
 								PreparePosition = position.PreparePosition
 							};
@@ -131,10 +131,28 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						appendResponseSource.TrySetException(RpcExceptions.Timeout());
 						return;
 					case OperationResult.WrongExpectedVersion:
-						appendResponseSource.TrySetException(RpcExceptions.WrongExpectedVersion(
-							streamName,
-							expectedVersion,
-							completed.CurrentVersion));
+						response.WrongExpectedVersion = new AppendResp.Types.WrongExpectedVersion();
+
+						if (completed.CurrentVersion == -1) {
+							response.WrongExpectedVersion.NoStream = new Empty();
+						} else {
+							response.WrongExpectedVersion.CurrentRevision
+								= StreamRevision.FromInt64(completed.CurrentVersion);
+						}
+
+						switch (options.ExpectedStreamRevisionCase) {
+							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any:
+								response.WrongExpectedVersion.Any = new Empty();
+								break;
+							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists:
+								response.WrongExpectedVersion.StreamExists = new Empty();
+								break;
+							default:
+								response.WrongExpectedVersion.ExpectedRevision 
+									= StreamRevision.FromInt64(expectedVersion);
+								break;
+						}
+						appendResponseSource.TrySetResult(response);
 						return;
 					case OperationResult.StreamDeleted:
 						appendResponseSource.TrySetException(RpcExceptions.StreamDeleted(streamName));
