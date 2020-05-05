@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Removed better ordering option. [#2368](https://github.com/EventStore/EventStore/pull/2368)
 - Application Defines [EventStore#2441](https://github.com/EventStore/EventStore/pull/2441)
 - Force option [EventStore#2442](https://github.com/EventStore/EventStore/pull/2442)
+- Get Gossip from the Gossip Controller as this is now done over gRPC [EventStore#2458](https://github.com/EventStore/EventStore/pull/2458)
 
 ### Added
 - Supports for pull request linting and automatic changelog update [EventStore#2391](https://github.com/EventStore/EventStore/pull/2391)
@@ -68,6 +69,9 @@ All notable changes to this project will be documented in this file.
 
 ### Bug
 - Event Counts in GRPC Transport no longer wrap to negative values if > int.MaxValue [EventStore#2452](https://github.com/EventStore/EventStore/pull/2452)
+
+### Updated
+- Changed the default schema on the projection and users manager to be https. [EventStore#2459](https://github.com/EventStore/EventStore/pull/2459)
 
 ## [6.0.0 - Preview 3] - 2020-03-11
 The changelog below is a summary of the all of the preview releases.
