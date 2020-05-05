@@ -239,8 +239,13 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			for (int index = 0; index < 3; index++) {
 				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint,
 					chaserCheckpoint, nodePriority);
+			}
+
+			var clusterInfo = new ClusterInfo(members);
+
+			for (int index = 0; index < 3; index++) {
 				var prepareOk = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-					nodePriority);
+					nodePriority, clusterInfo);
 				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
 
@@ -269,11 +274,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
-			Func<int, int> nodePriority) {
+			Func<int, int> nodePriority,
+			ClusterInfo clusterInfo) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
 			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, Guid.Empty, lastCommitPosition(i), writerCheckpoint(i),
-				chaserCheckpoint(i), nodePriority(i));
+				chaserCheckpoint(i), nodePriority(i), clusterInfo);
 		}
 
 		static SUT.LeaderCandidate CreateLeaderCandidate(int i, Guid epochId,
