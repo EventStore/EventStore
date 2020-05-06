@@ -107,6 +107,7 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe(ioDispatcher.ForwardReader);
 			mainBus.Subscribe(ioDispatcher.StreamDeleter);
 			mainBus.Subscribe(ioDispatcher.Writer);
+			mainBus.Subscribe(ioDispatcher.EventReader);
 			mainBus.Subscribe(ioDispatcher);
 
 			mainBus.Subscribe(projectionManagerMessageDispatcher);

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -701,7 +700,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 				if (report is EmittedEventResolutionNeeded resolution) {
 					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
-						OnEmittedLinkEventResolved(anyFound, eventToWrite, resp);
+						OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
 					});
 					
 					break;
@@ -728,8 +727,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				if (!long.TryParse(parts[0], out long eventNumber))
 					throw new Exception($"Unexpected exception: Emitted event is an invalid link event: Body ({eventToWrite.Data}) CausedByTag ({eventToWrite.CausedByTag}) StreamId ({eventToWrite.StreamId})");
 				
-				_alreadyCommittedEvents.Push(topAlreadyCommitted);
-				return new EmittedEventResolutionNeeded(streamId, eventNumber);
+				return new EmittedEventResolutionNeeded(streamId, eventNumber, topAlreadyCommitted);
 			}
 
 			if (failed) {
@@ -742,14 +740,19 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		// Used when we need to resolve a link event to see if it points to an event that no longer exists. If that
 		// event no longer exists, we skip it and resume the recovery process.
-		private void OnEmittedLinkEventResolved(bool anyFound, EmittedEvent eventToWrite, ClientMessage.ReadEventCompleted resp) {
-			var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
-			if (resp.Result != ReadEventResult.StreamDeleted && resp.Result != ReadEventResult.NotFound) {
+		private void OnEmittedLinkEventResolved(bool anyFound, EmittedEvent eventToWrite, Tuple<CheckpointTag, string, long> topAlreadyCommitted, ClientMessage.ReadEventCompleted resp) {
+			if (resp.Result != ReadEventResult.StreamDeleted && resp.Result != ReadEventResult.NotFound && resp.Result != ReadEventResult.NoStream && resp.Result != ReadEventResult.Success) {
 				throw CreateSequenceException(topAlreadyCommitted, eventToWrite);
 			}
 
 			Log.Verbose($"Emitted event ignored after resolution because it links to an event that no longer exists: eventId: {eventToWrite.EventId}, eventType: {eventToWrite.EventId}, checkpoint: {eventToWrite.CorrelationId}, causedBy: {eventToWrite.CausedBy}");
-			_pendingWrites.Dequeue();
+
+			if (resp.Result == ReadEventResult.Success) {
+				anyFound = true;
+				NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3);
+				_pendingWrites.Dequeue();
+			}
+			
 			SubmitWriteEventsInRecoveryLoop(anyFound);
 		}
 
@@ -818,12 +821,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 	}
 
 	sealed class EmittedEventResolutionNeeded : IValidatedEmittedEvent {
-		public string StreamId { get; private set; }
-		public long Revision { get; private set; }
+		public string StreamId { get; }
+		public long Revision { get; }
+		public Tuple<CheckpointTag, string, long> TopCommitted { get; }
 
-		public EmittedEventResolutionNeeded(string streamId, long revision) {
+		public EmittedEventResolutionNeeded(string streamId, long revision, Tuple<CheckpointTag, string, long> topCommitted) {
 			StreamId = streamId;
 			Revision = revision;
+			TopCommitted = topCommitted;
 		}
 	}
 }
