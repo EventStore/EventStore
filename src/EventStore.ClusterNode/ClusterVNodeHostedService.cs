@@ -5,8 +5,6 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Security;
 using System.Threading;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
@@ -372,11 +370,11 @@ namespace EventStore.ClusterNode {
 				? options.Config
 				: options.AuthenticationConfig;
 
-			var pluginDirectories = GetPluginDirectories();
+			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 			var authorizationProviderFactory =
-				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginDirectories);
+				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
 			var authenticationProviderFactory =
-				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginDirectories);
+				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
 
 			var plugInContainer = FindPlugins();
 
@@ -415,7 +413,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static AuthorizationProviderFactory GetAuthorizationProviderFactory(string authorizationType,
-			string authorizationConfigFile, IReadOnlyList<DirectoryInfo> pluginDirectories) {
+			string authorizationConfigFile, PluginLoader pluginLoader) {
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 				{
 					"internal", new AuthorizationProviderFactory(components =>
@@ -423,7 +421,7 @@ namespace EventStore.ClusterNode {
 				}
 			};
 
-			foreach (var potentialPlugin in LoadPlugins<IAuthorizationPlugin>(pluginDirectories)) {
+			foreach (var potentialPlugin in pluginLoader.Load<IAuthorizationPlugin>()) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
@@ -449,7 +447,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static AuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType,
-			string authenticationConfigFile, IReadOnlyList<DirectoryInfo> pluginDirectories) {
+			string authenticationConfigFile, PluginLoader pluginLoader) {
 			var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
 				{
 					"internal", new AuthenticationProviderFactory(components =>
@@ -457,7 +455,7 @@ namespace EventStore.ClusterNode {
 				}
 			};
 
-			foreach (var potentialPlugin in LoadPlugins<IAuthenticationPlugin>(pluginDirectories)) {
+			foreach (var potentialPlugin in pluginLoader.Load<IAuthenticationPlugin>()) {
 				try {
 					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
@@ -520,22 +518,6 @@ namespace EventStore.ClusterNode {
 			}
 
 			return new CompositionContainer(catalog);
-		}
-
-		private static IEnumerable<T> LoadPlugins<T>(IReadOnlyList<DirectoryInfo> pluginDirectories) =>
-			from loadContext in pluginDirectories.Select(directory => new PluginLoadContext(directory))
-			from pluginType in loadContext.Assemblies.SelectMany(assembly => assembly.GetExportedTypes())
-				.Where(typeof(T).IsAssignableFrom)
-				.ToArray()
-			select (T)Activator.CreateInstance(pluginType);
-
-		private static IReadOnlyList<DirectoryInfo> GetPluginDirectories() {
-			var rootPluginDirectory = new DirectoryInfo(Locations.PluginsDirectory);
-			var pluginDirectories = new List<DirectoryInfo> {rootPluginDirectory};
-
-			pluginDirectories.AddRange(rootPluginDirectory.EnumerateDirectories());
-
-			return pluginDirectories.AsReadOnly();
 		}
 
 		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(false);
