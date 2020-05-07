@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
+using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests {
@@ -51,6 +54,10 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public async Task plugin_exists_in_root_plugin_folder() {
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+				Assert.Warn($"Can't remove assemblies from disk once loaded via {nameof(AssemblyLoadContext)} on Windows.");
+				return;
+			}
 			var rootPluginDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
 
 			try {
@@ -60,14 +67,17 @@ namespace EventStore.Core.Tests {
 				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsNotEmpty(sut.Load<ICloneable>());
 			} finally {
-				GC.Collect();
-				GC.WaitForPendingFinalizers();
 				rootPluginDirectory.Delete(true);
 			}
 		}
 
 		[Test]
 		public async Task plugin_exists_in_sub_plugin_folder() {
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+				Assert.Warn($"Can't remove assemblies from disk once loaded via {nameof(AssemblyLoadContext)} on Windows.");
+				return;
+			}
+
 			var rootPluginDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
 
 			try {
@@ -79,8 +89,6 @@ namespace EventStore.Core.Tests {
 				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsNotEmpty(sut.Load<ICloneable>());
 			} finally {
-				GC.Collect();
-				GC.WaitForPendingFinalizers();
 				rootPluginDirectory.Delete(true);
 			}
 		}
