@@ -53,7 +53,7 @@ namespace EventStore.ClusterNode {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
 					x.Source = "Set by 'Development Mode' mode";
 				}
-				
+
 				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
@@ -119,7 +119,8 @@ namespace EventStore.ClusterNode {
 				$"\tPort\t: {opts.ExtHttpPort}\n");
 
 			if (opts.EnableAtomPubOverHTTP) {
-				Log.Warning("\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.02. It is recommended to use gRPC instead.\n");
+				Log.Warning(
+					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.02. It is recommended to use gRPC instead.\n");
 			}
 
 			if (opts.EnableExternalTCP) {
@@ -181,13 +182,21 @@ namespace EventStore.ClusterNode {
 			var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
 			var intTcp = options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
 			var intSecTcp = !options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var extTcp = options.EnableExternalTCP && options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
-			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTls ? new IPEndPoint(options.ExtIp, options.ExtTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && options.DisableExternalTls
+				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
+				: null;
+			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTls
+				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
+				: null;
 
 			var intTcpPortAdvertiseAs = options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
 			var intSecTcpPortAdvertiseAs = !options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
-			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
-			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTls ? options.ExtTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTls
+				? options.ExtTcpPortAdvertiseAs
+				: 0;
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTls
+				? options.ExtTcpPortAdvertiseAs
+				: 0;
 
 			var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
 			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
@@ -355,20 +364,22 @@ namespace EventStore.ClusterNode {
 			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 				builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 			} else {
-				throw new Exception($"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
+				throw new Exception(
+					$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
 			}
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
 				: options.AuthenticationConfig;
-			
-			var plugInContainer = FindPlugins();
-			
+
+			var pluginDirectories = GetPluginDirectories();
 			var authorizationProviderFactory =
-				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, plugInContainer);
+				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginDirectories);
 			var authenticationProviderFactory =
-				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, plugInContainer);
-			
+				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginDirectories);
+
+			var plugInContainer = FindPlugins();
+
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
 			builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
 				options.AuthenticationType == Opts.AuthenticationTypeDefault);
@@ -402,25 +413,25 @@ namespace EventStore.ClusterNode {
 
 			return strategyFactories.ToArray();
 		}
-		
-		private static AuthorizationProviderFactory GetAuthorizationProviderFactory(string authorizationType,
-			string authorizationConfigFile, CompositionContainer plugInContainer) {
-			var potentialPlugins = plugInContainer.GetExports<IAuthorizationPlugin>();
 
+		private static AuthorizationProviderFactory GetAuthorizationProviderFactory(string authorizationType,
+			string authorizationConfigFile, IReadOnlyList<DirectoryInfo> pluginDirectories) {
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
-				{"internal", new AuthorizationProviderFactory(components =>
-					new LegacyAuthorizationProviderFactory(components.MainQueue)) }
+				{
+					"internal", new AuthorizationProviderFactory(components =>
+						new LegacyAuthorizationProviderFactory(components.MainQueue))
+				}
 			};
 
-			foreach (var potentialPlugin in potentialPlugins) {
+			foreach (var potentialPlugin in LoadPlugins<IAuthorizationPlugin>(pluginDirectories)) {
 				try {
-					var plugin = potentialPlugin.Value;
-					var commandLine = plugin.CommandLineName.ToLowerInvariant();
+					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
 						"Loaded authorization plugin: {plugin} version {version} (Command Line: {commandLine})",
-						plugin.Name, plugin.Version, commandLine);
+						potentialPlugin.Name, potentialPlugin.Version, commandLine);
 					authorizationTypeToPlugin.Add(commandLine,
-						new AuthorizationProviderFactory(_ => plugin.GetAuthorizationProviderFactory(authorizationConfigFile)));
+						new AuthorizationProviderFactory(_ =>
+							potentialPlugin.GetAuthorizationProviderFactory(authorizationConfigFile)));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
@@ -438,38 +449,35 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static AuthenticationProviderFactory GetAuthenticationProviderFactory(string authenticationType,
-			string authenticationConfigFile, CompositionContainer plugInContainer) {
-			var potentialPlugins = plugInContainer.GetExports<IAuthenticationPlugin>();
-
+			string authenticationConfigFile, IReadOnlyList<DirectoryInfo> pluginDirectories) {
 			var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
-				{"internal", new AuthenticationProviderFactory(components => 
-					new InternalAuthenticationProviderFactory(components)) }
+				{
+					"internal", new AuthenticationProviderFactory(components =>
+						new InternalAuthenticationProviderFactory(components))
+				}
 			};
 
-			foreach (var potentialPlugin in potentialPlugins) {
+			foreach (var potentialPlugin in LoadPlugins<IAuthenticationPlugin>(pluginDirectories)) {
 				try {
-					var plugin = potentialPlugin.Value;
-					var commandLine = plugin.CommandLineName.ToLowerInvariant();
+					var commandLine = potentialPlugin.CommandLineName.ToLowerInvariant();
 					Log.Information(
 						"Loaded authentication plugin: {plugin} version {version} (Command Line: {commandLine})",
-						plugin.Name, plugin.Version, commandLine);
+						potentialPlugin.Name, potentialPlugin.Version, commandLine);
 					authenticationTypeToPlugin.Add(commandLine,
 						new AuthenticationProviderFactory(_ =>
-							plugin.GetAuthenticationProviderFactory(authenticationConfigFile)));
+							potentialPlugin.GetAuthenticationProviderFactory(authenticationConfigFile)));
 				} catch (CompositionException ex) {
 					Log.Error(ex, "Error loading authentication plugin.");
 				}
 			}
 
-			if (!authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out var factory)) {
-				throw new ApplicationInitializationException(
+			return authenticationTypeToPlugin.TryGetValue(authenticationType.ToLowerInvariant(), out var factory)
+				? factory
+				: throw new ApplicationInitializationException(
 					$"The authentication type {authenticationType} is not recognised. If this is supposed " +
 					$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
 					Environment.NewLine +
 					$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
-			}
-
-			return factory;
 		}
 
 		private static ISubsystemFactory[] GetPlugInSubsystemFactories(
@@ -512,6 +520,22 @@ namespace EventStore.ClusterNode {
 			}
 
 			return new CompositionContainer(catalog);
+		}
+
+		private static IEnumerable<T> LoadPlugins<T>(IReadOnlyList<DirectoryInfo> pluginDirectories) =>
+			from loadContext in pluginDirectories.Select(directory => new PluginLoadContext(directory))
+			from pluginType in loadContext.Assemblies.SelectMany(assembly => assembly.GetExportedTypes())
+				.Where(typeof(T).IsAssignableFrom)
+				.ToArray()
+			select (T)Activator.CreateInstance(pluginType);
+
+		private static IReadOnlyList<DirectoryInfo> GetPluginDirectories() {
+			var rootPluginDirectory = new DirectoryInfo(Locations.PluginsDirectory);
+			var pluginDirectories = new List<DirectoryInfo> {rootPluginDirectory};
+
+			pluginDirectories.AddRange(rootPluginDirectory.EnumerateDirectories());
+
+			return pluginDirectories.AsReadOnly();
 		}
 
 		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(false);
